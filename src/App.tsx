@@ -45,7 +45,7 @@ const CareersPage = lazy(() => import("./pages/CareersPage"));
 const CouponsPage = lazy(() => import("./pages/CouponsPage"));
 const DonationsPage = lazy(() => import("./pages/DonationsPage"));
 const LoanPage = lazy(() => import("./pages/LoanPage"));
-const InsurancePage = lazy(() => import("./pages/InsurancePage"));
+const InsurancePage = lazy(() => retryLazyImport(() => import("./pages/InsurancePage")));
 const GiftCardsPage = lazy(() => import("./pages/GiftCardsPage"));
 const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 
