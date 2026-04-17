@@ -745,17 +745,41 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
               </div>
 
-              {autoSaves.filter(a => a.is_active).length > 0 && (
-                <button onClick={() => setStep("autosave")} className="w-full flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary/8 border border-primary/20 text-primary text-[12px] font-semibold">
-                  <CalendarClock size={14} />
-                  {autoSaves.filter(a => a.is_active).length} active auto-save plan(s)
-                  <ChevronRight size={14} className="ml-auto opacity-50" />
-                </button>
-              )}
-
-              {/* Investment overview */}
+              {/* Premium 2×2 portfolio grid: DPS · Goals · Gold · Stocks */}
               <div className="grid grid-cols-2 gap-2.5">
-                <button onClick={() => setMainTab("gold")} className="text-left p-3.5 rounded-[18px] border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-amber-600/5 space-y-1.5">
+                {/* DPS PLANS tile */}
+                <button onClick={() => setStep("autosave")} className="text-left p-3.5 rounded-[18px] border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 space-y-1.5 hover:shadow-md hover:border-emerald-500/40 hover:-translate-y-0.5 transition-all">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, hsl(160 72% 38%), hsl(178 62% 28%))" }}>
+                    <CalendarClock size={16} className="text-white" />
+                  </div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">DPS Plans</p>
+                  <p className="text-[16px] font-black text-foreground tabular-nums">
+                    {autoSaves.filter(a => a.is_active).length > 0 ? `${autoSaves.filter(a => a.is_active).length} active` : "—"}
+                  </p>
+                  {autoSaves.filter(a => a.is_active).length > 0 && (
+                    <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      ৳{autoSaves.filter(a => a.is_active).reduce((s, a) => s + Number(a.amount) * Number(a.total_paid ?? 0), 0).toLocaleString()} saved
+                    </p>
+                  )}
+                </button>
+
+                {/* SAVING GOALS tile */}
+                <button onClick={() => { setMainTab("goals"); setStep("home"); }} className="text-left p-3.5 rounded-[18px] border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-violet-600/5 space-y-1.5 hover:shadow-md hover:border-violet-500/40 hover:-translate-y-0.5 transition-all">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, hsl(262 72% 55%), hsl(280 62% 45%))" }}>
+                    <Target size={16} className="text-white" />
+                  </div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Saving Goals</p>
+                  <p className="text-[16px] font-black text-foreground tabular-nums">
+                    {goals.length > 0 ? `${goals.length} active` : "—"}
+                  </p>
+                  {goals.length > 0 && (
+                    <p className="text-[10px] font-bold text-violet-600 dark:text-violet-400 tabular-nums">
+                      ৳{goals.reduce((s, g) => s + Number(g.saved_amount), 0).toLocaleString()} / ৳{goals.reduce((s, g) => s + Number(g.target_amount), 0).toLocaleString()}
+                    </p>
+                  )}
+                </button>
+
+                <button onClick={() => setMainTab("gold")} className="text-left p-3.5 rounded-[18px] border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-amber-600/5 space-y-1.5 hover:shadow-md hover:border-amber-500/40 hover:-translate-y-0.5 transition-all">
                   <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center"><Coins size={16} className="text-amber-600 dark:text-amber-400" /></div>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Gold</p>
                   <p className="text-[16px] font-black text-foreground">{totalGoldGrams > 0 ? `${totalGoldGrams}g` : "—"}</p>
@@ -796,17 +820,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 <ChevronRight size={18} className="text-muted-foreground shrink-0" />
               </motion.button>
 
-              {goals.length > 0 && (
-                <button onClick={() => { setMainTab("goals"); setStep("home"); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted/50 border border-border/40 hover:bg-muted/70 transition-colors">
-                  <Target size={16} className="text-primary shrink-0" />
-                  <div className="flex-1 text-left">
-                    <p className="text-[12px] font-bold text-foreground">{goals.length} Saving Goal{goals.length !== 1 ? "s" : ""}</p>
-                    <p className="text-[10px] text-muted-foreground">View & manage your goals</p>
-                  </div>
-                  <ChevronRight size={14} className="text-muted-foreground/50" />
-                </button>
-              )}
             </motion.div>
           )}
 
