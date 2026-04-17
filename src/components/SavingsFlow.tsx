@@ -1890,27 +1890,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             <motion.div key="goal-detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {/* Header Card */}
               {(() => {
-                const isWithdrawn = selectedGoal.status === "withdrawn";
-                const savedNum = Number(selectedGoal.saved_amount);
-                const targetNum = Number(selectedGoal.target_amount);
-                const isCompleted = !isWithdrawn && (selectedGoal.status === "completed" || (targetNum > 0 && savedNum >= targetNum));
-                const wAmount = Number((selectedGoal as any).withdrawn_amount ?? 0);
-                const wAtRaw = (selectedGoal as any).withdrawn_at ?? (selectedGoal as any).updated_at ?? (selectedGoal as any).created_at;
-                const wAt = wAtRaw ? new Date(wAtRaw) : null;
-                const pct = targetNum > 0 ? Math.min(100, (savedNum / targetNum) * 100) : 0;
-                return (
-                  <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center ${isWithdrawn ? "bg-muted/40 border-border/60 grayscale opacity-80" : "bg-gradient-to-br from-primary/15 to-primary/5 border-primary/20"}`}>
-                        <span className="text-[36px]">{selectedGoal.emoji}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[18px] font-black text-foreground">{selectedGoal.name}</p>
-                        {isWithdrawn ? (
-                          <p className="text-[12px] text-muted-foreground">Goal of ৳{targetNum.toLocaleString()} • Closed</p>
-                        ) : (
-              {/* Header Card */}
-              {(() => {
                 const isWithdrawn = selectedGoal.status === "withdrawn" || selectedGoal.status === "cancelled";
                 const savedNum = Number(selectedGoal.saved_amount);
                 const targetNum = Number(selectedGoal.target_amount);
