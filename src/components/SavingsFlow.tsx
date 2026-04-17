@@ -373,6 +373,19 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     return () => { supabase.removeChannel(ch); };
   }, [user, loadGoals, loadGoldHoldings, loadStockHoldings, loadMissedPayments, loadAutoSaves]);
 
+  // ─── Live price merge: instantly reflect polled prices in UI without DB round-trip ────────
+  useEffect(() => {
+    if (!liveStocks.length) return;
+    setStockHoldings(prev => prev.map(h => {
+      const live = liveStocks.find(s => s.symbol === h.symbol);
+      return live ? { ...h, currentPrice: live.price, change: live.change } : h;
+    }));
+  }, [liveStocks]);
+
+  // Gold holdings store grams + avg buy price; live price is read directly from
+  // LIVE_GOLD_PRICE / LIVE_GOLD_24K_PRICE in render, so updates flow automatically.
+  // No state merge needed — re-render is triggered by hook state change.
+
   // ─── Computed profit estimation for auto-save ────────
   const autoAmtNum = parseFloat(autoAmount) || 0;
   const selectedDuration = DURATION_OPTIONS.find(d => d.value === autoDuration) ?? DURATION_OPTIONS[1];
