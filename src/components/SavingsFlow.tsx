@@ -2206,8 +2206,24 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </button>
               )}
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">DSE Market — Top Halal Stocks</p>
-                {MOCK_STOCKS.map((stock, i) => {
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">DSE Market — Top Halal Stocks</p>
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={refreshStockPrices} className="p-1 rounded-lg hover:bg-muted transition-colors" disabled={stockPriceLoading} aria-label="Refresh prices">
+                      <RefreshCw size={11} className={`text-muted-foreground ${stockPriceLoading ? "animate-spin" : ""}`} />
+                    </button>
+                    <div className="flex items-center gap-1 text-[9px] font-bold">
+                      <div className={`w-1.5 h-1.5 rounded-full ${stockSource === "dse_live" ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                      <span className={stockSource === "dse_live" ? "text-emerald-600" : "text-amber-600"}>
+                        {stockSource === "dse_live" ? "Live" : "Indicative"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {stockUpdatedAt && (
+                  <p className="text-[9px] text-muted-foreground px-1">Updated: {new Date(stockUpdatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</p>
+                )}
+                {liveStocks.map((stock, i) => {
                   const holding = stockHoldings.find(h => h.symbol === stock.symbol);
                   return (
                     <motion.button key={stock.symbol} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
@@ -2266,7 +2282,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   {stockHoldings.map(h => {
                     const pl = (h.currentPrice - h.avgPrice) * h.qty;
                     const plPct = ((h.currentPrice - h.avgPrice) / h.avgPrice * 100);
-                    const stock = MOCK_STOCKS.find(s => s.symbol === h.symbol);
+                    const stock = liveStocks.find(s => s.symbol === h.symbol);
                     return (
                       <div key={h.symbol} className="w-full bg-card rounded-[16px] border border-border/60 shadow-[var(--shadow-xs)] p-3.5 space-y-2">
                         <button onClick={() => {
