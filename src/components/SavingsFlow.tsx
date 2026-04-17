@@ -909,20 +909,56 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     const displaySaved = Math.min(saved, target);
                     const bonus = Math.max(0, saved - target);
                     const remaining = Math.max(0, target - saved);
+                    const wAmount = Number((goal as any).withdrawn_amount ?? 0);
+                    const wAt = (goal as any).withdrawn_at ? new Date((goal as any).withdrawn_at) : null;
+                    const openDetail = async () => {
+                      setSelectedGoal(goal);
+                      const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", goal.id).order("created_at", { ascending: true });
+                      setGoalDeposits((deps as any[]) ?? []);
+                      setStep("goal-detail");
+                    };
+
+                    // ───────── WITHDRAWN: archived layout (no progress bar) ─────────
+                    if (isWithdrawn) {
+                      return (
+                        <motion.div key={goal.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, type: "spring", stiffness: 350, damping: 28 }}
+                          className="bg-muted/30 rounded-[20px] border border-border/40 p-4 backdrop-blur-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <button onClick={openDetail} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                              <div className="w-12 h-12 rounded-2xl bg-muted/60 border border-border/40 flex items-center justify-center grayscale opacity-70">
+                                <span className="text-[24px]">{goal.emoji}</span>
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="text-[14px] font-bold text-muted-foreground truncate">{goal.name}</p>
+                                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold uppercase tracking-wide">✓ Withdrawn</span>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                  ৳{(wAmount > 0 ? wAmount : saved).toLocaleString()} paid out
+                                  {wAt && ` • ${wAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                                </p>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => { setDeleteTarget({ type: "goal", id: goal.id, label: goal.name }); setDeletePin(""); setDeletePinError(""); }}
+                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                              aria-label="Archive goal"
+                            ><Trash2 size={14} /></button>
+                          </div>
+                        </motion.div>
+                      );
+                    }
+
+                    // ───────── ACTIVE / COMPLETED ─────────
                     return (
                       <motion.div key={goal.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, type: "spring", stiffness: 350, damping: 28 }}
-                        className={`bg-card rounded-[20px] border shadow-[var(--shadow-card)] p-4 space-y-3 backdrop-blur-sm ${isCompleted && !isWithdrawn ? "border-primary/60 ring-1 ring-primary/30" : "border-border/50"}`}>
+                        className={`bg-card rounded-[20px] border shadow-[var(--shadow-card)] p-4 space-y-3 backdrop-blur-sm ${isCompleted ? "border-primary/60 ring-1 ring-primary/30" : "border-border/50"}`}>
                         <div className="flex items-center justify-between">
-                          <button onClick={async () => {
-                            setSelectedGoal(goal);
-                            const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", goal.id).order("created_at", { ascending: true });
-                            setGoalDeposits((deps as any[]) ?? []);
-                            setStep("goal-detail");
-                          }} className="flex items-center gap-3 flex-1 min-w-0">
+                          <button onClick={openDetail} className="flex items-center gap-3 flex-1 min-w-0">
                             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
                               <span className="text-[24px]">{goal.emoji}</span>
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 text-left">
                               <p className="text-[14px] font-bold text-foreground truncate">{goal.name}</p>
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <p className="text-[11px] text-muted-foreground">৳{displaySaved.toLocaleString()} / ৳{target.toLocaleString()}</p>
@@ -931,20 +967,15 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                                     +৳{bonus.toLocaleString()} bonus
                                   </span>
                                 )}
-                                {isWithdrawn && (
-                                  <span className="px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground text-[9px] font-bold uppercase">Withdrawn</span>
+                                {isCompleted && (
+                                  <span className="px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wide">Ready to withdraw</span>
                                 )}
                               </div>
                             </div>
                           </button>
                           <div className="flex items-center gap-1.5">
                             {isCompleted ? <CheckCircle2 size={20} className="text-primary shrink-0" />
-                              : <button onClick={async () => {
-                                  setSelectedGoal(goal);
-                                  const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", goal.id).order("created_at", { ascending: true });
-                                  setGoalDeposits((deps as any[]) ?? []);
-                                  setStep("goal-detail");
-                                }}><ChevronRight size={16} className="text-muted-foreground/50 shrink-0" /></button>}
+                              : <button onClick={openDetail}><ChevronRight size={16} className="text-muted-foreground/50 shrink-0" /></button>}
                             <button onClick={() => { setDeleteTarget({ type: "goal", id: goal.id, label: goal.name }); setDeletePin(""); setDeletePinError(""); }} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                           </div>
                         </div>
@@ -965,7 +996,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                             </p>
                           </div>
                         </div>
-                        {isCompleted && !isWithdrawn && saved > 0 && (
+                        {isCompleted && saved > 0 && (
                           <motion.button
                             initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                             whileTap={{ scale: 0.97 }}
