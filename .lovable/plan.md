@@ -1,75 +1,98 @@
 
 
-## Fix: Goal Detail header shows "0% complete / ৳5,000 remaining" on withdrawn goals
+## Goals/DPS/Gold/Stocks — 60-day lock + history archive + live sync polish
 
-### Root cause confirmed (DB + code)
+### Requirements (restated)
 
-DB shows `Dream Bike` is `status='withdrawn'`, `saved_amount=0` — that's correct (funds already paid out to wallet). But `src/components/SavingsFlow.tsx` lines **1842-1866** render the same active-goal header for every status:
-- "৳0 / ৳5,000" subtitle (line 1849)
-- Progress bar at 0% (line 1857)
-- "0% complete / ৳5,000 remaining" labels (lines 1860-1861)
+1. **60-day lock on Goals**: After creating a goal, user **cannot withdraw or cancel for 60 days** — even if goal hits 100% saved before day 60.
+2. **History retention**: Show withdrawn/cancelled goals (and DPS / Gold / Stocks closed positions) for **up to 12 months**, then auto-hide.
+3. **Sort order**: All closed/withdrawn/cancelled items render **below** active ones in every list.
+4. **Live sync**: Background realtime updates already exist — make sure UI flips instantly without manual refresh.
 
-We fixed the deposit form and the list card in earlier batches but missed this header. Also: this goal's `withdrawn_at`/`withdrawn_amount` are NULL because it was withdrawn **before** those columns existed → backfill needed for the new layout to show the payout date/amount.
+---
 
-### Fix
+### Investigation
 
-**1. `src/components/SavingsFlow.tsx`** (Goal Detail header, lines ~1842-1866) — branch by status:
+Live DB has `savings_goals.created_at` (good — lock anchor). No `lock_until` column needed; compute from `created_at + 60 days`. Existing `withdraw_completed_goal` RPC needs a guard.
 
-```tsx
-const isWithdrawn = selectedGoal.status === "withdrawn";
-const savedNum = Number(selectedGoal.saved_amount);
-const targetNum = Number(selectedGoal.target_amount);
-const isCompleted = !isWithdrawn && (selectedGoal.status === "completed" || (targetNum > 0 && savedNum >= targetNum));
-const wAmount = Number((selectedGoal as any).withdrawn_amount ?? 0);
-const wAt = (selectedGoal as any).withdrawn_at ? new Date((selectedGoal as any).withdrawn_at) : null;
+`SavingsFlow.tsx` already lists goals but sorts by `created_at desc` regardless of status. DPS (`savings_auto_save`), Gold (`gold_holdings`), Stocks (`stock_holdings`) lists same issue. Realtime channels already wired for all four tables — instant sync is already working; only the local sort/filter logic needs updating.
 
-// Header card:
-{isWithdrawn ? (
-  // Archived layout — no progress bar, no "remaining"
-  <>
-    <subtitle>Goal achieved & withdrawn</subtitle>
-    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-[14px] p-3 text-center">
-      <p>✓ Withdrawn ৳{(wAmount || targetNum).toLocaleString()}</p>
-      {wAt && <p className="text-[11px] text-muted-foreground">on {wAt.toLocaleDateString("en-BD",{month:"short",day:"numeric",year:"numeric"})}</p>}
-    </div>
-  </>
-) : isCompleted ? (
-  // 100% gold bar + "Goal achieved 🎉" — no "remaining"
-  <full-bar /> <p>100% complete 🎉</p> <p>Ready to withdraw</p>
-) : (
-  // Existing active layout (unchanged)
-  <progress + "X% complete / ৳Y remaining" />
-)}
-```
+---
 
-Subtitle (line 1849) also needs `isWithdrawn` branch: instead of "৳0 / ৳5,000", show "Goal of ৳5,000 • Closed".
+### Changes
 
-**2. Migration — backfill the legacy `Dream Bike` row** so the new UI has data to display:
+#### A. DB — enforce 60-day lock + auto-archive helper
 
+**Migration** — update `withdraw_completed_goal` to reject if `now() < created_at + 60 days`:
 ```sql
-UPDATE savings_goals
-SET withdrawn_at = COALESCE(withdrawn_at, updated_at, created_at),
-    withdrawn_amount = COALESCE(withdrawn_amount, target_amount)
-WHERE status = 'withdrawn'
-  AND (withdrawn_at IS NULL OR withdrawn_amount IS NULL);
+CREATE OR REPLACE FUNCTION public.withdraw_completed_goal(p_goal_id uuid) ...
+DECLARE v_lock_until timestamptz;
+BEGIN
+  SELECT created_at + INTERVAL '60 days' INTO v_lock_until ...;
+  IF now() < v_lock_until THEN
+    RAISE EXCEPTION 'Goal is locked until %', to_char(v_lock_until, 'DD Mon YYYY')
+      USING ERRCODE = 'P0001';
+  END IF;
+  ...existing payout logic...
+END;
 ```
 
-(Uses `target_amount` as best-effort — for `Dream Bike` that's ৳5,000, which is what the user actually withdrew.)
+Also add a similar guard to the goal **delete/cancel** path (RLS policy + a new RPC `cancel_goal(p_goal_id)` that checks lock and refunds saved_amount to wallet if any).
 
-### What user sees after fix
+#### B. Frontend — `src/components/SavingsFlow.tsx`
 
-Opening the withdrawn `Dream Bike` goal:
-- **Header**: 🏍️ Dream Bike · "Goal of ৳5,000 • Closed"
-- **Green pill**: "✓ Withdrawn ৳5,000 on Apr 17, 2026"
-- **No progress bar, no "0% complete", no "remaining"**
-- **Deposit history timeline** stays (already works)
-- **No deposit form below** (already fixed in prior batch)
+**Lock helpers** (top of component):
+```ts
+const LOCK_DAYS = 60;
+const HISTORY_MONTHS = 12;
+const isLocked = (g) => Date.now() < new Date(g.created_at).getTime() + LOCK_DAYS * 86400_000;
+const lockDaysLeft = (g) => Math.ceil((new Date(g.created_at).getTime() + LOCK_DAYS*86400_000 - Date.now())/86400_000);
+const withinHistoryWindow = (closedAt) => Date.now() - new Date(closedAt).getTime() < HISTORY_MONTHS * 30 * 86400_000;
+```
+
+**List sort + filter** (Goals, DPS, Gold, Stocks tabs):
+```ts
+const visible = items
+  .filter(g => g.status === 'active' || withinHistoryWindow(g.withdrawn_at ?? g.updated_at))
+  .sort((a,b) => {
+    const aActive = a.status === 'active' ? 0 : 1;
+    const bActive = b.status === 'active' ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;       // active first
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+```
+
+**Goal Detail UI**:
+- If `isLocked(goal)` AND `goal.status === 'active'`:
+  - Show amber lock pill: **"🔒 Locked for {N} more days"** under the header.
+  - Disable Withdraw button + Cancel button with tooltip "Available after {unlockDate}".
+- If `isLocked(goal)` AND goal hits 100%:
+  - Replace "Withdraw to Wallet" with disabled "🔒 Withdrawable on {unlockDate}" pill.
+- After 60 days: existing Withdraw flow works.
+
+**Goal create sheet** — add a one-line disclosure under the target field:
+> "Funds are locked for 60 days from creation."
+
+**Cancel button** — wire to new `cancel_goal` RPC, show toast on lock-error.
+
+**Empty state for history** — if no active items, but archived exist, show small section header: "Closed (last 12 months)".
+
+#### C. DPS / Gold / Stocks — same sort + 12-month filter
+
+Apply the same `visible` filter/sort pattern to each tab's list. No lock for these (only Goals get the 60-day lock per request — let me know if DPS should also lock).
+
+#### D. Live sync verification
+
+Realtime is already subscribed for `savings_goals`, `savings_auto_save`, `gold_holdings`, `stock_holdings`. Confirm each tab calls `queryClient.invalidateQueries` on `postgres_changes` event (already does). No code change needed — just verify after deploy.
+
+---
 
 ### Files touched
-- `src/components/SavingsFlow.tsx` — Goal Detail header status-branch
-- New migration — backfill `withdrawn_at`/`withdrawn_amount` for legacy withdrawn goals
+- `src/components/SavingsFlow.tsx` — lock helpers, sort+filter, Goal Detail lock pill, cancel RPC wiring
+- New migration — `withdraw_completed_goal` lock guard + new `cancel_goal(p_goal_id)` RPC
 
 ### Out of scope
-- No changes to active/completed flow (only withdrawn breaks)
-- No DPS / Gold / Stocks / Loan changes (Batch 2 territory)
+- DPS early-exit lock (DPS has its own maturity logic — separate batch if needed)
+- Backfill of pre-existing locked goals (lock is computed from `created_at`, so historical rows automatically respect it; older goals already past 60 days are unaffected)
+- Pruning archived rows older than 12 months from DB (UI just hides them — DB retention handled by separate policy if desired)
 
