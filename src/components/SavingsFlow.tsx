@@ -1845,7 +1845,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 const targetNum = Number(selectedGoal.target_amount);
                 const isCompleted = !isWithdrawn && (selectedGoal.status === "completed" || (targetNum > 0 && savedNum >= targetNum));
                 const wAmount = Number((selectedGoal as any).withdrawn_amount ?? 0);
-                const wAtRaw = (selectedGoal as any).withdrawn_at ?? selectedGoal.updated_at;
+                const wAtRaw = (selectedGoal as any).withdrawn_at ?? (selectedGoal as any).updated_at ?? (selectedGoal as any).created_at;
                 const wAt = wAtRaw ? new Date(wAtRaw) : null;
                 const pct = targetNum > 0 ? Math.min(100, (savedNum / targetNum) * 100) : 0;
                 return (
