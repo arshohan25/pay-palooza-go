@@ -739,7 +739,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const totalStockValue = stockHoldings.reduce((s, h) => s + h.qty * h.currentPrice, 0);
   const totalStockCost = stockHoldings.reduce((s, h) => s + h.qty * h.avgPrice, 0);
   const totalStockProfit = totalStockValue - totalStockCost;
-  const totalSaved = goals.reduce((s, g) => s + Number(g.saved_amount), 0);
+  const activeGoals = goals.filter(g => g.status === "active");
+  const totalSaved = activeGoals.reduce((s, g) => s + Number(g.saved_amount), 0);
+  const totalGoalTarget = activeGoals.reduce((s, g) => s + Number(g.target_amount), 0);
 
   // ─── Header config ────────
   const headerGradient = mainTab === "savings"
@@ -756,7 +758,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const headerSub = mainTab === "savings"
     ? `Total Saved: ৳${totalSaved.toLocaleString()}`
     : mainTab === "goals"
-    ? `${goals.length} goal${goals.length !== 1 ? "s" : ""} • ৳${totalSaved.toLocaleString()} saved`
+    ? `${activeGoals.length} goal${activeGoals.length !== 1 ? "s" : ""} • ৳${totalSaved.toLocaleString()} saved`
     : mainTab === "gold" ? `Gold Price: ৳${LIVE_GOLD_PRICE.toLocaleString()}/g`
     : `Portfolio: ৳${Math.round(totalStockValue).toLocaleString()}`;
 
@@ -861,11 +863,11 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   </div>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Saving Goals</p>
                   <p className="text-[16px] font-black text-foreground tabular-nums">
-                    {goals.length > 0 ? `${goals.length} active` : "—"}
+                    {activeGoals.length > 0 ? `${activeGoals.length} active` : "—"}
                   </p>
-                  {goals.length > 0 && (
+                  {activeGoals.length > 0 && (
                     <p className="text-[10px] font-bold text-violet-600 dark:text-violet-400 tabular-nums">
-                      ৳{goals.reduce((s, g) => s + Number(g.saved_amount), 0).toLocaleString()} / ৳{goals.reduce((s, g) => s + Number(g.target_amount), 0).toLocaleString()}
+                      ৳{totalSaved.toLocaleString()} / ৳{totalGoalTarget.toLocaleString()}
                     </p>
                   )}
                 </button>
@@ -949,7 +951,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </motion.div>
               ) : (
                 <div className="space-y-2.5">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">Your Goals ({goals.length})</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">Your Goals ({activeGoals.length})</p>
                   {goals.map((goal, i) => {
                     const saved = Number(goal.saved_amount);
                     const target = Number(goal.target_amount);
