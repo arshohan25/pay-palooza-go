@@ -1,145 +1,75 @@
 
 
-## Audit + Production-Hardening: Savings (Goals/DPS), Gold, Stocks, Loan
+## Fix: Goal Detail header shows "0% complete / ৳5,000 remaining" on withdrawn goals
 
-### The immediate bug (screenshot)
+### Root cause confirmed (DB + code)
 
-"Dream Bike" shows `0% / ৳5,000 remaining` with a `WITHDRAWN` badge after payout. That's wrong — a withdrawn goal is **archived**, not "0% in progress". The card is rendering the active-goal layout (progress bar + "X remaining") for a terminal state.
+DB shows `Dream Bike` is `status='withdrawn'`, `saved_amount=0` — that's correct (funds already paid out to wallet). But `src/components/SavingsFlow.tsx` lines **1842-1866** render the same active-goal header for every status:
+- "৳0 / ৳5,000" subtitle (line 1849)
+- Progress bar at 0% (line 1857)
+- "0% complete / ৳5,000 remaining" labels (lines 1860-1861)
 
-**Root cause** — `src/components/SavingsFlow.tsx` Goals list card renders the same `<progress + remaining>` block for every status. Only `active` should show progress; `completed` should show "Ready to withdraw"; `withdrawn` should show an archived chip with the payout date and amount.
+We fixed the deposit form and the list card in earlier batches but missed this header. Also: this goal's `withdrawn_at`/`withdrawn_amount` are NULL because it was withdrawn **before** those columns existed → backfill needed for the new layout to show the payout date/amount.
 
----
+### Fix
 
-### Senior-dev audit — what's missing for production across all 5 flows
+**1. `src/components/SavingsFlow.tsx`** (Goal Detail header, lines ~1842-1866) — branch by status:
 
-I traced every flow against the live DB and found the gaps below. Each is a real production hole, not polish.
+```tsx
+const isWithdrawn = selectedGoal.status === "withdrawn";
+const savedNum = Number(selectedGoal.saved_amount);
+const targetNum = Number(selectedGoal.target_amount);
+const isCompleted = !isWithdrawn && (selectedGoal.status === "completed" || (targetNum > 0 && savedNum >= targetNum));
+const wAmount = Number((selectedGoal as any).withdrawn_amount ?? 0);
+const wAt = (selectedGoal as any).withdrawn_at ? new Date((selectedGoal as any).withdrawn_at) : null;
 
-#### 1. Goals (`savings_goals`) — **partially shipped**
-- ❌ List card shows "0% / remaining" for `withdrawn` (the bug above)
-- ❌ No payout amount/date stored on the row → "Withdrawn ৳7,200 on Apr 17" can't be displayed
-- ❌ No "Reopen / Top up again" path (user might want a fresh cycle on the same goal name)
-- ❌ Delete trash icon on a `withdrawn` row works, but no confirm dialog → accidental data loss
-- ❌ No empty-state when all goals are withdrawn (currently looks like no goals exist)
-
-#### 2. DPS (`savings_auto_save`) — **gaps**
-- ❌ No "Pause / Resume" — user can only delete, losing the streak
-- ❌ Missed-payment repayment UX exists but no consolidated "Catch up" button (user sees individual missed rows but can't bulk-repay)
-- ❌ No early-withdrawal path before maturity (with profit forfeiture warning)
-- ❌ No history view of past matured/settled plans (they just disappear from "Active")
-- ❌ Maturity claim banner doesn't show **days overdue** if user ignores it
-
-#### 3. Gold (`gold_holdings` + `gold_transactions`) — **major gap**
-- ❌ **No SELL flow** — users can buy gold but can't liquidate. Production blocker.
-- ❌ No price-alert subscription ("notify me when 22k drops below ৳X")
-- ❌ No P&L display (current value vs avg buy price → unrealized gain/loss %)
-- ❌ Holdings card doesn't link to Gold transaction history (only generic txns)
-
-#### 4. Stocks (`stock_holdings` + `stock_transactions`) — **major gap**
-- ❌ **No SELL flow** — same blocker as Gold
-- ❌ No portfolio-level P&L (sum of (current_price − avg_buy) × qty)
-- ❌ No watchlist / favorites
-- ❌ No order types beyond market (no limit orders, even paper-traded)
-- ❌ No dividend history table even though Sharia-screened stocks may distribute
-
-#### 5. Loan (`loans`) — **gaps**
-- ❌ No **partial repayment** — only full settle (production blocker for ৳10k+ loans)
-- ❌ No repayment schedule / EMI breakdown shown to user before disbursement
-- ❌ No reminder notifications on due date (and 3 / 1 day before)
-- ❌ No late-fee handling logic (Sharia: optional charity-redirected late fee)
-- ❌ No "Loan history" tab — settled loans vanish
-- ❌ Eligibility check is hardcoded; no dynamic credit-score-style display
-
-#### Cross-cutting gaps (all 5 flows)
-- ❌ **No PDF statement export** per asset class (gold purchase history, stock trades, DPS installments, loan schedule) — users will demand this for tax/audit
-- ❌ **No idempotency keys** on RPCs → double-tap on slider can double-charge
-- ❌ Realtime channels work but no **optimistic UI** → user waits 200-500ms after slide
-- ❌ No **transaction receipts** (the standard `TxnToast` + share-receipt) for savings/gold/stocks/loan operations — they only get a toast
-- ❌ No analytics events fired → admin can't see funnel drop-off
-
----
-
-### Scope decision — phase this work
-
-Doing all of the above in one ship will be ~12-15 files and risk regressions. I'll **phase it into 3 batches**, each independently shippable. This message ships **Batch 1 (the bug + the must-have production blockers)**. After approval of Batch 1 you can continue to Batch 2 and 3.
-
----
-
-## Batch 1 (THIS PLAN) — ship now
-
-### A. Fix the "Withdrawn shows 0%" bug
-**`src/components/SavingsFlow.tsx`** — Goals list card:
-- If `status === 'withdrawn'`: render archived layout
-  - Muted icon tile, name, **"Withdrawn ৳X • {date}"** subtitle
-  - No progress bar, no "remaining"
-  - Trash icon → confirm dialog before delete
-  - Tapping the card opens a read-only summary (no deposit form, already done)
-- If `status === 'completed'`: render "Ready to withdraw" amber pill + 100% gold bar
-- Active: unchanged
-
-### B. Store payout metadata so we can show it
-**Migration** — add columns + backfill:
-```sql
-ALTER TABLE savings_goals
-  ADD COLUMN IF NOT EXISTS withdrawn_at timestamptz,
-  ADD COLUMN IF NOT EXISTS withdrawn_amount numeric(14,2);
-
-CREATE OR REPLACE FUNCTION public.withdraw_completed_goal(p_goal_id uuid)
--- update existing function to also SET withdrawn_at = now(), withdrawn_amount = v_goal.saved_amount
+// Header card:
+{isWithdrawn ? (
+  // Archived layout — no progress bar, no "remaining"
+  <>
+    <subtitle>Goal achieved & withdrawn</subtitle>
+    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-[14px] p-3 text-center">
+      <p>✓ Withdrawn ৳{(wAmount || targetNum).toLocaleString()}</p>
+      {wAt && <p className="text-[11px] text-muted-foreground">on {wAt.toLocaleDateString("en-BD",{month:"short",day:"numeric",year:"numeric"})}</p>}
+    </div>
+  </>
+) : isCompleted ? (
+  // 100% gold bar + "Goal achieved 🎉" — no "remaining"
+  <full-bar /> <p>100% complete 🎉</p> <p>Ready to withdraw</p>
+) : (
+  // Existing active layout (unchanged)
+  <progress + "X% complete / ৳Y remaining" />
+)}
 ```
 
-### C. Gold SELL flow (production blocker)
-**Migration** — new RPC `sell_gold(p_grams numeric, p_purity text)`:
-- Validates user holds enough grams of that purity
-- Reads live price from `gold_prices` table (latest)
-- Credits wallet = grams × current_sell_price (5% spread vs buy)
-- Decrements `gold_holdings`, inserts `gold_transactions` row with `type='sell'`
-- Inserts `transactions` row `type='addmoney'` description `Gold Sale: Xg 22k`
-- Returns `{success, credited, new_balance, new_holding_grams}`
+Subtitle (line 1849) also needs `isWithdrawn` branch: instead of "৳0 / ৳5,000", show "Goal of ৳5,000 • Closed".
 
-**`src/components/SavingsFlow.tsx`** Gold tab:
-- Holdings card → add "Sell" button next to "Buy More"
-- Sell sheet: grams input + purity selector + live price preview + P&L delta + PIN + slide
+**2. Migration — backfill the legacy `Dream Bike` row** so the new UI has data to display:
 
-### D. Stocks SELL flow (production blocker)
-**Migration** — new RPC `sell_stock(p_symbol text, p_quantity int)`:
-- Validates holding qty ≥ requested
-- Reads latest `stock_prices` row for symbol
-- Credits wallet = qty × current_price (no spread, just 0.5% brokerage fee)
-- Decrements `stock_holdings`, inserts `stock_transactions` row `type='sell'`
-- Inserts `transactions` row `type='addmoney'` description `Stock Sale: Nx SYMBOL`
-- Returns `{success, credited, fee, new_balance, new_qty}`
+```sql
+UPDATE savings_goals
+SET withdrawn_at = COALESCE(withdrawn_at, updated_at, created_at),
+    withdrawn_amount = COALESCE(withdrawn_amount, target_amount)
+WHERE status = 'withdrawn'
+  AND (withdrawn_at IS NULL OR withdrawn_amount IS NULL);
+```
 
-**`src/components/SavingsFlow.tsx`** Stocks tab:
-- Each holding row → "Sell" button
-- Sell sheet: qty input (with "Sell All" shortcut) + live price + brokerage fee line + P&L delta + PIN + slide
+(Uses `target_amount` as best-effort — for `Dream Bike` that's ৳5,000, which is what the user actually withdrew.)
 
-### E. Loan partial repayment (production blocker)
-**Migration** — extend existing repay function (or new `repay_loan_partial(p_loan_id, p_amount)`):
-- Validates amount ≤ outstanding (principal + flat fee remaining)
-- Decrements `loans.outstanding_amount`, increments `loans.repaid_amount`
-- If outstanding hits 0 → status = 'settled'
-- Inserts `transactions` row `type='payment'` description `Loan Repayment: ৳X (partial)`
+### What user sees after fix
 
-**`src/pages/LoanPage.tsx`**:
-- Active loan card → "Repay" button opens sheet with amount input (default = full outstanding, "Repay All" shortcut)
-- Show updated outstanding after repayment in the sheet preview
+Opening the withdrawn `Dream Bike` goal:
+- **Header**: 🏍️ Dream Bike · "Goal of ৳5,000 • Closed"
+- **Green pill**: "✓ Withdrawn ৳5,000 on Apr 17, 2026"
+- **No progress bar, no "0% complete", no "remaining"**
+- **Deposit history timeline** stays (already works)
+- **No deposit form below** (already fixed in prior batch)
 
-### F. Notification trigger update for new descriptions
-**Migration** — extend the `notify_transaction_recipient` trigger we just shipped to also recognize:
-- `Gold Sale:%` → "You sold Xg 22k for ৳Y"
-- `Stock Sale:%` → "You sold Nx SYMBOL for ৳Y"
-- `Loan Repayment%(partial)` → "৳X repaid. ৳Y remaining"
+### Files touched
+- `src/components/SavingsFlow.tsx` — Goal Detail header status-branch
+- New migration — backfill `withdrawn_at`/`withdrawn_amount` for legacy withdrawn goals
 
----
-
-### Files touched (Batch 1)
-- `src/components/SavingsFlow.tsx` — withdrawn-state card, gold sell UI, stock sell UI
-- `src/pages/LoanPage.tsx` — partial repay sheet
-- New migration — `withdrawn_at`/`withdrawn_amount` cols, updated `withdraw_completed_goal`, `sell_gold` RPC, `sell_stock` RPC, `repay_loan_partial` RPC, updated `notify_transaction_recipient`
-
-### Out of scope (will propose as Batch 2 & 3 after this ships)
-- **Batch 2** — DPS pause/resume + bulk catch-up + history; Gold/Stock P&L cards + price alerts; Loan EMI schedule + reminders
-- **Batch 3** — PDF statement exports per asset class; idempotency keys on all RPCs; optimistic UI; receipt sheets via `TxnToast`/`ShareReceiptSheet`; admin analytics events; watchlist + dividend history
-
-This batching keeps each ship reviewable and lets you test the SELL flows live (the highest-impact change) before we layer polish.
+### Out of scope
+- No changes to active/completed flow (only withdrawn breaks)
+- No DPS / Gold / Stocks / Loan changes (Batch 2 territory)
 
