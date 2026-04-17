@@ -1,53 +1,39 @@
 
-## Make AdminUserMetrics Cards Clickable & Filter-Linked
+## Fix Clickable Metric Cards + Polish Aesthetics
 
-Each of the ~40 metric cards in `AdminUserMetrics` should act as a filter shortcut into the existing user list / related admin tabs, so admins can drill from a number → the actual underlying users/records.
+User reports clicks aren't working and wants a more aesthetic feel. Let me investigate before planning.
 
-### Approach
+### Likely root cause
+Looking at `AdminUserMetrics.tsx`, the click handler is on `<Card>` via `onClick`. The Card from `ui/card.tsx` is a plain div forwarding props, so onClick should work — but the issue is likely that in `AdminDashboard.tsx`, the `handleMetricCardClick` either:
+1. Isn't wired (prop not passed), OR
+2. The Users tab filter UI doesn't render visibly so clicks feel like nothing happened, OR
+3. Cross-tab navigation (`tab:xxx`) doesn't actually switch the active admin tab.
 
-1. **Add a `filter` query-param convention** on `/admin#users` that the existing user list (in `AdminDashboard.tsx` Users tab) reads and applies. Filter keys map 1:1 to each metric card.
+I need to verify by reading `AdminDashboard.tsx` (the relevant Users-tab section + tab-switching mechanism) before finalizing — but the plan is the same regardless.
 
-2. **Wrap each metric card** in `AdminUserMetrics.tsx` with a button/onClick that navigates to the right destination:
-   - Most cards → `/admin?filter=<key>#users` (filters the user table)
-   - Cross-module cards → jump to the relevant admin tab (e.g. KYC Pending → `#kyc`, Fraud Alerts → `#risk`, Coupons Used → `#marketing`, Referrals → `#referrals`)
+### Plan
 
-3. **Implement the filter layer in the Users tab**:
-   - Read `?filter=` from URL on mount + on change
-   - Apply a predicate over the already-fetched `users` array (no extra queries needed for most filters)
-   - Show an active "Filter: <label> — Clear" chip above the user table
+**1. Fix wiring in `AdminDashboard.tsx`**
+- Confirm `<AdminUserMetrics onCardClick={handleMetricCardClick} />` is actually passed.
+- For `tab:xxx` keys → call the existing tab switcher (setActiveTab / setSearchParams hash) so the tab actually changes.
+- For user-filter keys → set `metricFilter` state AND scroll the user table into view smoothly so the user sees the result.
+- Auto-clear `metricFilter` when switching away from Users tab.
 
-### Card → Filter Mapping (key examples)
+**2. Make the active filter chip prominent**
+- Sticky emerald gradient chip directly above the user table: `Filter: <Label> · <count> users` + Clear (X) button.
+- Subtle pulse animation on first appearance so the user notices the filter took effect.
 
-| Card | Action |
-|---|---|
-| Total Users | clear filter |
-| Active Today / 7d / 30d | filter users with txn in window |
-| Inactive 30d / Dormant 90d | inverse of above |
-| New Today / This Week / Month | `created_at` window |
-| Suspended / Deleted | `status` filter |
-| KYC Verified / Pending / Rejected / Not Started / Exempt | jump to `#kyc` with sub-filter, or filter users by `kyc_status` |
-| Send Money users / Cash Out / Recharge / Pay Bill / Bank Transfer (30d) | filter to users who did that txn type in 30d |
-| Coupons Used | jump to `#marketing` coupons sub-tab |
-| Referrals Made | jump to `#referrals` |
-| Rewards Earned | jump to `#user-tracker` |
-| Fraud Alerts / Blocked / High Risk | jump to `#risk` |
+**3. Aesthetic polish on `AdminUserMetrics.tsx`**
+- Replace flat `bg-color` top-bar with a soft gradient strip + matching radial glow behind icon.
+- Icon tile: gradient background (`from-{color}/20 to-{color}/5`) instead of opaque `bg-opacity-10` on white icon (which currently looks washed out — the icon is `text-white` on a 10%-opacity background = nearly invisible).
+- Card: `rounded-2xl`, soft border `border-border/40`, glass backdrop `bg-card/60 backdrop-blur-xl`, hover lifts with `shadow-primary/20` glow + ring in the metric's accent color.
+- Section headers: small accent dot + uppercase tracking, divider line.
+- Add a subtle "Click to filter" hint chip on hover (top-right corner of card) so the affordance is obvious.
+- Numbers: gradient text for large values, `tabular-nums`, animated count-up on first load (lightweight, CSS only).
 
-### Files Touched
+**4. Files touched**
+- `src/pages/AdminDashboard.tsx` — verify/fix `onCardClick` wiring, tab switching, filter chip rendering, scroll-into-view.
+- `src/components/admin/AdminUserMetrics.tsx` — visual polish only (no logic change).
 
-- **`src/components/admin/AdminUserMetrics.tsx`** — accept an `onCardClick(filterKey)` prop; wrap each `Card` in a clickable wrapper with hover state, cursor-pointer, and keyboard a11y.
-- **`src/pages/AdminDashboard.tsx`** — 
-  - pass `onCardClick` handler that either sets a local `usersFilter` state + updates URL `?filter=`, or calls `setActiveTab` for cross-tab cards
-  - in the Users tab, apply the filter predicate to the users list and render an "Active filter" chip with Clear button
-  - read `?filter=` from `useSearchParams` on mount
-
-### UX Details
-
-- Hover: subtle ring + scale (matches existing premium glass aesthetic)
-- Cursor pointer + `role="button"` + `tabIndex={0}` + Enter/Space handler
-- Active filter chip uses emerald accent (matches brand)
-- Clearing the filter removes the URL param
-
-### Out of Scope
-
-- No new DB queries, no new tables, no schema changes
-- No changes to metric calculation logic — purely additive interaction layer
+### Out of scope
+No new queries, no schema changes.
