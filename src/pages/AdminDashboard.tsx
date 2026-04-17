@@ -122,6 +122,7 @@ import AdminGiftCardManagement from "@/components/admin/AdminGiftCardManagement"
 import AdminAiAgent from "@/components/admin/AdminAiAgent";
 import AdminProfileEditor from "@/components/admin/AdminProfileEditor";
 import AdminUserPerformanceTracker from "@/components/admin/AdminUserPerformanceTracker";
+import { AdminUserMetrics } from "@/components/admin/AdminUserMetrics";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
