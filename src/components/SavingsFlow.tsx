@@ -1010,7 +1010,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                       </motion.div>
                     );
                   })}
-                  })}
                 </div>
               )}
             </motion.div>
