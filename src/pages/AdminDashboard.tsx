@@ -486,11 +486,23 @@ export default function AdminDashboard() {
     "txn:banktransfer": "Bank Transfer users (30d)",
   };
 
+  // Map shorthand metric tab keys → actual admin tab IDs
+  const TAB_KEY_MAP: Record<string, string> = {
+    "user-tracker": "user_performance",
+    "feature-locks": "locks",
+    "pin-history": "pin_history",
+    "gift-cards": "gift_cards_mgmt",
+    donations: "donation_funds",
+  };
+
   const handleMetricCardClick = async (key: string) => {
     // Cross-tab navigation
     if (key.startsWith("tab:")) {
-      const target = key.slice(4);
+      const raw = key.slice(4);
+      const target = TAB_KEY_MAP[raw] || raw;
       setActiveTab(target);
+      try { window.location.hash = target; } catch {}
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (key === "all") {
@@ -499,6 +511,11 @@ export default function AdminDashboard() {
       return;
     }
     setMetricFilter({ key, label: METRIC_LABELS[key] || key });
+
+    // Smooth scroll user list into view after state settles
+    setTimeout(() => {
+      document.getElementById("admin-users-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
 
     // Transaction-type filters → fetch user_ids that performed that txn type in last 30d
     if (key.startsWith("txn:")) {
