@@ -351,11 +351,14 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   }, [autoAmtNum, autoFreq, selectedDuration, selectedStrategyObj]);
 
   // ─── Savings handlers ────────
+  // ⚠️ PIN-reset rule: every early-return after PIN entry MUST clear pin
+  // (call setPin("") + setPinError("")). Use the `fail()` helper inside each handler.
   const handleSave = async () => {
     const amt = parseFloat(amount);
-    if (!amt || amt <= 0) { setError("Enter a valid amount"); return; }
-    if (amt > balance) { setError("Insufficient balance"); return; }
-    if (!selectedGoal) { setError("Select a savings goal"); return; }
+    const fail = (msg: string) => { setError(msg); setPin(""); setPinError(""); };
+    if (!amt || amt <= 0) return fail("Enter a valid amount");
+    if (amt > balance) return fail("Insufficient balance");
+    if (!selectedGoal) return fail("Select a savings goal");
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     setProcessing(true); setError(""); setPinError("");
     try {
