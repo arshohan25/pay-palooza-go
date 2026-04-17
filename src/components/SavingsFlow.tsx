@@ -863,11 +863,11 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   </div>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Saving Goals</p>
                   <p className="text-[16px] font-black text-foreground tabular-nums">
-                    {goals.length > 0 ? `${goals.length} active` : "—"}
+                    {activeGoals.length > 0 ? `${activeGoals.length} active` : "—"}
                   </p>
-                  {goals.length > 0 && (
+                  {activeGoals.length > 0 && (
                     <p className="text-[10px] font-bold text-violet-600 dark:text-violet-400 tabular-nums">
-                      ৳{goals.reduce((s, g) => s + Number(g.saved_amount), 0).toLocaleString()} / ৳{goals.reduce((s, g) => s + Number(g.target_amount), 0).toLocaleString()}
+                      ৳{totalSaved.toLocaleString()} / ৳{totalGoalTarget.toLocaleString()}
                     </p>
                   )}
                 </button>
