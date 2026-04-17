@@ -1909,13 +1909,56 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         {isWithdrawn ? (
                           <p className="text-[12px] text-muted-foreground">Goal of ৳{targetNum.toLocaleString()} • Closed</p>
                         ) : (
+              {/* Header Card */}
+              {(() => {
+                const isWithdrawn = selectedGoal.status === "withdrawn" || selectedGoal.status === "cancelled";
+                const savedNum = Number(selectedGoal.saved_amount);
+                const targetNum = Number(selectedGoal.target_amount);
+                const isCompleted = !isWithdrawn && (selectedGoal.status === "completed" || (targetNum > 0 && savedNum >= targetNum));
+                const wAmount = Number((selectedGoal as any).withdrawn_amount ?? 0);
+                const wAtRaw = (selectedGoal as any).withdrawn_at ?? (selectedGoal as any).updated_at ?? (selectedGoal as any).created_at;
+                const wAt = wAtRaw ? new Date(wAtRaw) : null;
+                const pct = targetNum > 0 ? Math.min(100, (savedNum / targetNum) * 100) : 0;
+                const locked = !isWithdrawn && isGoalLocked(selectedGoal);
+                const daysLeft = locked ? goalLockDaysLeft(selectedGoal) : 0;
+                const unlockDate = locked ? goalUnlockDate(selectedGoal) : null;
+                return (
+                  <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center ${isWithdrawn ? "bg-muted/40 border-border/60 grayscale opacity-80" : "bg-gradient-to-br from-primary/15 to-primary/5 border-primary/20"}`}>
+                        <span className="text-[36px]">{selectedGoal.emoji}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[18px] font-black text-foreground">{selectedGoal.name}</p>
+                        {isWithdrawn ? (
+                          <p className="text-[12px] text-muted-foreground">Goal of ৳{targetNum.toLocaleString()} • Closed</p>
+                        ) : (
                           <p className="text-[12px] text-muted-foreground">৳{savedNum.toLocaleString()} / ৳{targetNum.toLocaleString()}</p>
                         )}
                       </div>
                     </div>
+
+                    {locked && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-[12px] bg-amber-500/10 border border-amber-500/30">
+                        <Lock size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-bold text-amber-700 dark:text-amber-300 leading-tight">
+                            Locked for {daysLeft} more day{daysLeft === 1 ? "" : "s"}
+                          </p>
+                          {unlockDate && (
+                            <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                              Withdraw available {unlockDate.toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {isWithdrawn ? (
                       <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-[14px] p-3 text-center space-y-0.5">
-                        <p className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400">✓ Withdrawn ৳{(wAmount || targetNum).toLocaleString()}</p>
+                        <p className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400">
+                          {selectedGoal.status === "cancelled" ? "↩ Refunded" : "✓ Withdrawn"} ৳{(wAmount || targetNum).toLocaleString()}
+                        </p>
                         {wAt && <p className="text-[11px] text-muted-foreground">on {wAt.toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}</p>}
                       </div>
                     ) : isCompleted ? (
@@ -1925,7 +1968,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         </div>
                         <div className="flex items-center justify-between">
                           <p className="text-[12px] font-bold text-amber-600 dark:text-amber-400">100% complete 🎉</p>
-                          <p className="text-[11px] text-muted-foreground font-medium">Ready to withdraw</p>
+                          <p className="text-[11px] text-muted-foreground font-medium">{locked ? `Withdrawable in ${daysLeft}d` : "Ready to withdraw"}</p>
                         </div>
                       </div>
                     ) : (
