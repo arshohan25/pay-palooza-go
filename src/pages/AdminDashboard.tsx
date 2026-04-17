@@ -859,9 +859,26 @@ export default function AdminDashboard() {
 
   if (!isAdmin) return null;
 
-  const filteredUsers = users.filter(u =>
-    !searchQuery || u.phone?.includes(searchQuery) || u.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter(u => {
+    if (searchQuery && !(u.phone?.includes(searchQuery) || u.name?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
+    if (!metricFilter) return true;
+    const k = metricFilter.key;
+    if (k === "active") return (u.status || "active") === "active";
+    if (k === "suspended") return u.status === "suspended";
+    if (k === "kyc_verified") return u.kyc_status === "verified";
+    if (k === "kyc_pending") return u.kyc_status === "pending";
+    if (k === "kyc_rejected") return u.kyc_status === "rejected";
+    if (k === "kyc_exempt") return u.kyc_status === "exempt" || u.kyc_exempt === true;
+    if (k === "high_balance") return Number(u.balance || 0) >= 10000;
+    if (k === "new_today") return u.created_at && new Date(u.created_at).getTime() >= Date.now() - 86400000;
+    if (k === "new_7d") return u.created_at && new Date(u.created_at).getTime() >= Date.now() - 7 * 86400000;
+    if (k === "new_30d") return u.created_at && new Date(u.created_at).getTime() >= Date.now() - 30 * 86400000;
+    if (metricFilterUserIds) {
+      if (k === "inactive_30d" || k === "dormant_90d") return !metricFilterUserIds.has(u.user_id);
+      return metricFilterUserIds.has(u.user_id);
+    }
+    return true;
+  });
 
   const filteredTxns = transactions.filter(t =>
     !searchQuery || t.id?.includes(searchQuery) || t.recipient_phone?.includes(searchQuery) || t.type?.includes(searchQuery)
