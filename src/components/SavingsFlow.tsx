@@ -820,17 +820,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 <ChevronRight size={18} className="text-muted-foreground shrink-0" />
               </motion.button>
 
-              {goals.length > 0 && (
-                <button onClick={() => { setMainTab("goals"); setStep("home"); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted/50 border border-border/40 hover:bg-muted/70 transition-colors">
-                  <Target size={16} className="text-primary shrink-0" />
-                  <div className="flex-1 text-left">
-                    <p className="text-[12px] font-bold text-foreground">{goals.length} Saving Goal{goals.length !== 1 ? "s" : ""}</p>
-                    <p className="text-[10px] text-muted-foreground">View & manage your goals</p>
-                  </div>
-                  <ChevronRight size={14} className="text-muted-foreground/50" />
-                </button>
-              )}
             </motion.div>
           )}
 
