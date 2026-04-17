@@ -1911,28 +1911,67 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
               )}
 
-              {/* Deposit Section */}
-              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Add Deposit</p>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[20px] font-bold text-muted-foreground">৳</span>
-                  <input type="number" inputMode="decimal" placeholder="0.00" value={amount}
-                    onChange={e => { setAmount(e.target.value); setError(""); }}
-                    className="w-full pl-10 pr-4 py-3 text-[22px] font-bold bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/40" />
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {PRESET_AMOUNTS.map(q => (
-                    <button key={q} onClick={() => setAmount(String(q))}
-                      className={`flex-1 min-w-[60px] py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${amount === String(q) ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
-                      ৳{q >= 1000 ? `${q / 1000}k` : q}
-                    </button>
-                  ))}
-                </div>
-                {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
-              </div>
+              {/* Deposit Section — gated by goal status */}
+              {(() => {
+                const _saved = Number(selectedGoal.saved_amount);
+                const _target = Number(selectedGoal.target_amount);
+                const _isWithdrawn = selectedGoal.status === "withdrawn";
+                const _isCompleted = !_isWithdrawn && (selectedGoal.status === "completed" || (_target > 0 && _saved >= _target));
 
-              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
-              <SlideToConfirm onConfirm={handleSave} label={processing ? "Processing…" : "Slide to Save"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
+                if (_isWithdrawn) {
+                  return (
+                    <div className="bg-muted/40 border border-border/60 rounded-[20px] p-5 text-center">
+                      <CheckCircle2 className="mx-auto text-muted-foreground mb-2" size={28} />
+                      <p className="text-[13px] font-bold text-foreground">Goal Closed</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Funds withdrawn to your wallet. This goal is archived.</p>
+                    </div>
+                  );
+                }
+
+                if (_isCompleted) {
+                  return (
+                    <div className="bg-gradient-to-br from-emerald-500/10 to-amber-400/10 border border-emerald-500/30 rounded-[20px] p-5 text-center space-y-3">
+                      <CheckCircle2 className="mx-auto text-emerald-500" size={36} />
+                      <p className="text-[15px] font-black text-foreground">Goal Completed 🎉</p>
+                      <p className="text-[12px] text-muted-foreground">
+                        You've reached your ৳{_target.toLocaleString()} target. Withdraw your savings to your wallet.
+                      </p>
+                      <button
+                        onClick={() => handleWithdrawGoal(selectedGoal.id, selectedGoal.name, _saved)}
+                        disabled={processing}
+                        className="w-full py-3 rounded-[14px] bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-[13px] shadow-md disabled:opacity-60">
+                        {processing ? "Processing…" : `Withdraw ৳${_saved.toLocaleString()} to Wallet`}
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <>
+                    <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Add Deposit</p>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[20px] font-bold text-muted-foreground">৳</span>
+                        <input type="number" inputMode="decimal" placeholder="0.00" value={amount}
+                          onChange={e => { setAmount(e.target.value); setError(""); }}
+                          className="w-full pl-10 pr-4 py-3 text-[22px] font-bold bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/40" />
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {PRESET_AMOUNTS.map(q => (
+                          <button key={q} onClick={() => setAmount(String(q))}
+                            className={`flex-1 min-w-[60px] py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${amount === String(q) ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
+                            ৳{q >= 1000 ? `${q / 1000}k` : q}
+                          </button>
+                        ))}
+                      </div>
+                      {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
+                    </div>
+
+                    <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+                    <SlideToConfirm onConfirm={handleSave} label={processing ? "Processing…" : "Slide to Save"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
+                  </>
+                );
+              })()}
             </motion.div>
           )}
 
