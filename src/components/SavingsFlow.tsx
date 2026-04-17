@@ -86,6 +86,37 @@ const INVESTMENT_STRATEGIES = [
 
 type Strategy = typeof INVESTMENT_STRATEGIES[number]["key"];
 
+// ─── Goal lock + history retention ────────
+const GOAL_LOCK_DAYS = 60;
+const HISTORY_MONTHS = 12;
+const DAY_MS = 86_400_000;
+const isGoalLocked = (g: any) => {
+  if (!g?.created_at) return false;
+  return Date.now() < new Date(g.created_at).getTime() + GOAL_LOCK_DAYS * DAY_MS;
+};
+const goalLockDaysLeft = (g: any) => {
+  if (!g?.created_at) return 0;
+  return Math.max(0, Math.ceil((new Date(g.created_at).getTime() + GOAL_LOCK_DAYS * DAY_MS - Date.now()) / DAY_MS));
+};
+const goalUnlockDate = (g: any) => {
+  if (!g?.created_at) return null;
+  return new Date(new Date(g.created_at).getTime() + GOAL_LOCK_DAYS * DAY_MS);
+};
+const withinHistoryWindow = (closedAtRaw: any) => {
+  if (!closedAtRaw) return true;
+  return Date.now() - new Date(closedAtRaw).getTime() < HISTORY_MONTHS * 30 * DAY_MS;
+};
+const sortActiveFirst = <T extends { status?: string; created_at?: string; updated_at?: string }>(items: T[]): T[] => {
+  return [...items].sort((a, b) => {
+    const aActive = (a.status === "active" || !a.status) ? 0 : 1;
+    const bActive = (b.status === "active" || !b.status) ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    const aT = new Date(a.created_at ?? a.updated_at ?? 0).getTime();
+    const bT = new Date(b.created_at ?? b.updated_at ?? 0).getTime();
+    return bT - aT;
+  });
+};
+
 const DURATION_OPTIONS = [
   { value: "6m", label: "6 Months", months: 6, minLock: 3, penaltyPct: 2 },
   { value: "1y", label: "1 Year", months: 12, minLock: 3, penaltyPct: 1.5 },
@@ -257,14 +288,23 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!user) return;
     setLoading(true);
     const { data } = await supabase.from("savings_goals").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
-    setGoals((data as any[]) ?? []);
+    const all = (data as any[]) ?? [];
+    // Hide closed/withdrawn/cancelled older than 12 months
+    const filtered = all.filter((g) =>
+      g.status === "active" || withinHistoryWindow(g.withdrawn_at ?? g.updated_at ?? g.created_at)
+    );
+    setGoals(sortActiveFirst(filtered));
     setLoading(false);
   }, [user]);
 
   const loadAutoSaves = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("savings_auto_save").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
-    setAutoSaves((data as any[]) ?? []);
+    const all = (data as any[]) ?? [];
+    const filtered = all.filter((s) =>
+      s.is_active || withinHistoryWindow(s.ends_at ?? s.updated_at ?? s.created_at)
+    );
+    setAutoSaves(sortActiveFirst(filtered.map((s) => ({ ...s, status: s.is_active ? "active" : "closed" }))));
   }, [user]);
 
   const loadMissedPayments = useCallback(async () => {
@@ -407,26 +447,36 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   };
 
   const handleDeleteGoal = async (goalId: string) => {
-    // Check 3-month lock-in
     const goal = goals.find(g => g.id === goalId);
-    if (goal) {
-      const createdAt = new Date((goal as any).created_at || Date.now());
-      const threeMonthsLater = new Date(createdAt);
-      threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
-      if (Date.now() < threeMonthsLater.getTime()) {
-        const daysLeft = Math.ceil((threeMonthsLater.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-        toast.error(`Cannot cancel before 3-month lock-in period. ${daysLeft} days remaining.`);
-        setDeleteTarget(null); setDeletePin(""); setDeleting(false);
-        return;
-      }
+    if (goal && isGoalLocked(goal)) {
+      const daysLeft = goalLockDaysLeft(goal);
+      toast.error(`Cannot cancel: locked for ${daysLeft} more day${daysLeft === 1 ? "" : "s"} (60-day minimum).`);
+      setDeleteTarget(null); setDeletePin(""); setDeleting(false);
+      return;
     }
     if (deletePin.length < 4) { setDeletePinError("Enter your 4-digit PIN"); return; }
     setDeleting(true); setDeletePinError("");
     const pinValid = await verifyPin(deletePin);
     if (!pinValid) { setDeletePinError("Incorrect PIN"); setDeletePin(""); setDeleting(false); return; }
-    const { error } = await supabase.from("savings_goals").delete().eq("id", goalId);
-    if (error) { toast.error("Failed to delete goal"); setDeleting(false); return; }
-    toast.success("Goal cancelled"); loadGoals();
+
+    // For active goals, call cancel_goal RPC (refunds saved amount + archives).
+    // For already-archived rows (withdrawn/cancelled), allow hard-delete from history list.
+    if (goal && goal.status === "active") {
+      const { data, error } = await supabase.rpc("cancel_goal" as any, { p_goal_id: goalId });
+      if (error) {
+        toast.error(error.message || "Failed to cancel goal");
+        setDeleting(false);
+        return;
+      }
+      const refund = Number((data as any)?.refund ?? 0);
+      await fetchBalance();
+      toast.success(refund > 0 ? `Goal cancelled. ৳${refund.toLocaleString()} refunded to wallet.` : "Goal cancelled");
+    } else {
+      const { error } = await supabase.from("savings_goals").delete().eq("id", goalId);
+      if (error) { toast.error("Failed to remove goal"); setDeleting(false); return; }
+      toast.success("Goal removed from history");
+    }
+    loadGoals();
     setDeleteTarget(null); setDeletePin(""); setDeleting(false);
   };
 
@@ -1840,7 +1890,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             <motion.div key="goal-detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {/* Header Card */}
               {(() => {
-                const isWithdrawn = selectedGoal.status === "withdrawn";
+                const isWithdrawn = selectedGoal.status === "withdrawn" || selectedGoal.status === "cancelled";
                 const savedNum = Number(selectedGoal.saved_amount);
                 const targetNum = Number(selectedGoal.target_amount);
                 const isCompleted = !isWithdrawn && (selectedGoal.status === "completed" || (targetNum > 0 && savedNum >= targetNum));
@@ -1848,6 +1898,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 const wAtRaw = (selectedGoal as any).withdrawn_at ?? (selectedGoal as any).updated_at ?? (selectedGoal as any).created_at;
                 const wAt = wAtRaw ? new Date(wAtRaw) : null;
                 const pct = targetNum > 0 ? Math.min(100, (savedNum / targetNum) * 100) : 0;
+                const locked = !isWithdrawn && isGoalLocked(selectedGoal);
+                const daysLeft = locked ? goalLockDaysLeft(selectedGoal) : 0;
+                const unlockDate = locked ? goalUnlockDate(selectedGoal) : null;
                 return (
                   <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4">
                     <div className="flex items-center gap-4">
@@ -1863,9 +1916,28 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         )}
                       </div>
                     </div>
+
+                    {locked && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-[12px] bg-amber-500/10 border border-amber-500/30">
+                        <Lock size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-bold text-amber-700 dark:text-amber-300 leading-tight">
+                            Locked for {daysLeft} more day{daysLeft === 1 ? "" : "s"}
+                          </p>
+                          {unlockDate && (
+                            <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                              Withdraw available {unlockDate.toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {isWithdrawn ? (
                       <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-[14px] p-3 text-center space-y-0.5">
-                        <p className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400">✓ Withdrawn ৳{(wAmount || targetNum).toLocaleString()}</p>
+                        <p className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400">
+                          {selectedGoal.status === "cancelled" ? "↩ Refunded" : "✓ Withdrawn"} ৳{(wAmount || targetNum).toLocaleString()}
+                        </p>
                         {wAt && <p className="text-[11px] text-muted-foreground">on {wAt.toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}</p>}
                       </div>
                     ) : isCompleted ? (
@@ -1875,7 +1947,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         </div>
                         <div className="flex items-center justify-between">
                           <p className="text-[12px] font-bold text-amber-600 dark:text-amber-400">100% complete 🎉</p>
-                          <p className="text-[11px] text-muted-foreground font-medium">Ready to withdraw</p>
+                          <p className="text-[11px] text-muted-foreground font-medium">{locked ? `Withdrawable in ${daysLeft}d` : "Ready to withdraw"}</p>
                         </div>
                       </div>
                     ) : (
@@ -1974,15 +2046,19 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               {(() => {
                 const _saved = Number(selectedGoal.saved_amount);
                 const _target = Number(selectedGoal.target_amount);
-                const _isWithdrawn = selectedGoal.status === "withdrawn";
+                const _isWithdrawn = selectedGoal.status === "withdrawn" || selectedGoal.status === "cancelled";
                 const _isCompleted = !_isWithdrawn && (selectedGoal.status === "completed" || (_target > 0 && _saved >= _target));
+                const _locked = !_isWithdrawn && isGoalLocked(selectedGoal);
+                const _unlock = goalUnlockDate(selectedGoal);
 
                 if (_isWithdrawn) {
                   return (
                     <div className="bg-muted/40 border border-border/60 rounded-[20px] p-5 text-center">
                       <CheckCircle2 className="mx-auto text-muted-foreground mb-2" size={28} />
                       <p className="text-[13px] font-bold text-foreground">Goal Closed</p>
-                      <p className="text-[11px] text-muted-foreground mt-1">Funds withdrawn to your wallet. This goal is archived.</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        {selectedGoal.status === "cancelled" ? "Funds refunded to your wallet. This goal is archived." : "Funds withdrawn to your wallet. This goal is archived."}
+                      </p>
                     </div>
                   );
                 }
@@ -1993,13 +2069,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                       <CheckCircle2 className="mx-auto text-emerald-500" size={36} />
                       <p className="text-[15px] font-black text-foreground">Goal Completed 🎉</p>
                       <p className="text-[12px] text-muted-foreground">
-                        You've reached your ৳{_target.toLocaleString()} target. Withdraw your savings to your wallet.
+                        {_locked
+                          ? `Your funds are locked until ${_unlock?.toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}. You can withdraw after the 60-day minimum.`
+                          : `You've reached your ৳${_target.toLocaleString()} target. Withdraw your savings to your wallet.`}
                       </p>
                       <button
                         onClick={() => handleWithdrawGoal(selectedGoal.id, selectedGoal.name, _saved)}
-                        disabled={processing}
-                        className="w-full py-3 rounded-[14px] bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-[13px] shadow-md disabled:opacity-60">
-                        {processing ? "Processing…" : `Withdraw ৳${_saved.toLocaleString()} to Wallet`}
+                        disabled={processing || _locked}
+                        className="w-full py-3 rounded-[14px] bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-[13px] shadow-md disabled:opacity-60 inline-flex items-center justify-center gap-2">
+                        {_locked && <Lock size={14} />}
+                        {processing ? "Processing…" : _locked ? `Withdrawable ${_unlock?.toLocaleDateString("en-BD", { month: "short", day: "numeric" })}` : `Withdraw ৳${_saved.toLocaleString()} to Wallet`}
                       </button>
                     </div>
                   );
@@ -2725,15 +2804,28 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       {/* ─── Delete confirmation overlay ─── */}
       <AnimatePresence>
         {deleteTarget && (() => {
-          // Calculate lock-in and penalty info for the delete sheet
+          // Calculate lock-in and penalty info for the delete sheet (60-day lock for goals)
           const isGoal = deleteTarget.type === "goal";
           const goalForDelete = isGoal ? goals.find(g => g.id === deleteTarget.id) : null;
           const autoForDelete = !isGoal ? autoSaves.find(a => a.id === deleteTarget.id) : null;
-          const createdAt = goalForDelete ? new Date((goalForDelete as any).created_at || Date.now()) : autoForDelete ? new Date((autoForDelete as any).created_at || Date.now()) : new Date();
-          const threeMonthsLater = new Date(createdAt);
-          threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
-          const isWithinLockIn = Date.now() < threeMonthsLater.getTime();
-          const lockInDaysLeft = isWithinLockIn ? Math.ceil((threeMonthsLater.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+          const isArchivedGoal = isGoal && goalForDelete && goalForDelete.status !== "active";
+          const isWithinLockIn = isGoal
+            ? (goalForDelete && goalForDelete.status === "active" ? isGoalLocked(goalForDelete) : false)
+            : (() => {
+                const createdAt = new Date((autoForDelete as any)?.created_at || Date.now());
+                const threeMonthsLater = new Date(createdAt);
+                threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+                return Date.now() < threeMonthsLater.getTime();
+              })();
+          const lockInDaysLeft = !isWithinLockIn ? 0 : isGoal
+            ? goalLockDaysLeft(goalForDelete)
+            : (() => {
+                const createdAt = new Date((autoForDelete as any)?.created_at || Date.now());
+                const threeMonthsLater = new Date(createdAt);
+                threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+                return Math.ceil((threeMonthsLater.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              })();
+          const lockLabel = isGoal ? "60-day lock-in period" : "3-month lock-in period";
 
           // Calculate penalty
           const savedAmt = goalForDelete ? Number(goalForDelete.saved_amount) : 0;
@@ -2757,7 +2849,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     <>
                       <h3 className="text-lg font-bold text-foreground">Cannot Cancel Yet</h3>
                       <p className="text-sm text-muted-foreground">
-                        🔒 Your plan has a <strong>3-month lock-in period</strong>. You have <strong>{lockInDaysLeft} days</strong> remaining before you can cancel.
+                        🔒 Your plan has a <strong>{lockLabel}</strong>. You have <strong>{lockInDaysLeft} day{lockInDaysLeft === 1 ? "" : "s"}</strong> remaining before you can cancel or withdraw.
                       </p>
                       <div className="rounded-xl px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/20 mt-2">
                         <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold">

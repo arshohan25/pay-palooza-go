@@ -5137,6 +5137,7 @@ export type Database = {
         Args: { p_amount: number; p_txn_type: string }
         Returns: Json
       }
+      cancel_goal: { Args: { p_goal_id: string }; Returns: Json }
       cancel_order_escrow: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: Json
