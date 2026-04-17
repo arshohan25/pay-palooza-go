@@ -288,14 +288,23 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!user) return;
     setLoading(true);
     const { data } = await supabase.from("savings_goals").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
-    setGoals((data as any[]) ?? []);
+    const all = (data as any[]) ?? [];
+    // Hide closed/withdrawn/cancelled older than 12 months
+    const filtered = all.filter((g) =>
+      g.status === "active" || withinHistoryWindow(g.withdrawn_at ?? g.updated_at ?? g.created_at)
+    );
+    setGoals(sortActiveFirst(filtered));
     setLoading(false);
   }, [user]);
 
   const loadAutoSaves = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("savings_auto_save").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
-    setAutoSaves((data as any[]) ?? []);
+    const all = (data as any[]) ?? [];
+    const filtered = all.filter((s) =>
+      s.is_active || withinHistoryWindow(s.ends_at ?? s.updated_at ?? s.created_at)
+    );
+    setAutoSaves(sortActiveFirst(filtered.map((s) => ({ ...s, status: s.is_active ? "active" : "closed" }))));
   }, [user]);
 
   const loadMissedPayments = useCallback(async () => {
@@ -438,26 +447,36 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   };
 
   const handleDeleteGoal = async (goalId: string) => {
-    // Check 3-month lock-in
     const goal = goals.find(g => g.id === goalId);
-    if (goal) {
-      const createdAt = new Date((goal as any).created_at || Date.now());
-      const threeMonthsLater = new Date(createdAt);
-      threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
-      if (Date.now() < threeMonthsLater.getTime()) {
-        const daysLeft = Math.ceil((threeMonthsLater.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-        toast.error(`Cannot cancel before 3-month lock-in period. ${daysLeft} days remaining.`);
-        setDeleteTarget(null); setDeletePin(""); setDeleting(false);
-        return;
-      }
+    if (goal && isGoalLocked(goal)) {
+      const daysLeft = goalLockDaysLeft(goal);
+      toast.error(`Cannot cancel: locked for ${daysLeft} more day${daysLeft === 1 ? "" : "s"} (60-day minimum).`);
+      setDeleteTarget(null); setDeletePin(""); setDeleting(false);
+      return;
     }
     if (deletePin.length < 4) { setDeletePinError("Enter your 4-digit PIN"); return; }
     setDeleting(true); setDeletePinError("");
     const pinValid = await verifyPin(deletePin);
     if (!pinValid) { setDeletePinError("Incorrect PIN"); setDeletePin(""); setDeleting(false); return; }
-    const { error } = await supabase.from("savings_goals").delete().eq("id", goalId);
-    if (error) { toast.error("Failed to delete goal"); setDeleting(false); return; }
-    toast.success("Goal cancelled"); loadGoals();
+
+    // For active goals, call cancel_goal RPC (refunds saved amount + archives).
+    // For already-archived rows (withdrawn/cancelled), allow hard-delete from history list.
+    if (goal && goal.status === "active") {
+      const { data, error } = await supabase.rpc("cancel_goal" as any, { p_goal_id: goalId });
+      if (error) {
+        toast.error(error.message || "Failed to cancel goal");
+        setDeleting(false);
+        return;
+      }
+      const refund = Number((data as any)?.refund ?? 0);
+      await fetchBalance();
+      toast.success(refund > 0 ? `Goal cancelled. ৳${refund.toLocaleString()} refunded to wallet.` : "Goal cancelled");
+    } else {
+      const { error } = await supabase.from("savings_goals").delete().eq("id", goalId);
+      if (error) { toast.error("Failed to remove goal"); setDeleting(false); return; }
+      toast.success("Goal removed from history");
+    }
+    loadGoals();
     setDeleteTarget(null); setDeletePin(""); setDeleting(false);
   };
 
@@ -2756,15 +2775,28 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       {/* ─── Delete confirmation overlay ─── */}
       <AnimatePresence>
         {deleteTarget && (() => {
-          // Calculate lock-in and penalty info for the delete sheet
+          // Calculate lock-in and penalty info for the delete sheet (60-day lock for goals)
           const isGoal = deleteTarget.type === "goal";
           const goalForDelete = isGoal ? goals.find(g => g.id === deleteTarget.id) : null;
           const autoForDelete = !isGoal ? autoSaves.find(a => a.id === deleteTarget.id) : null;
-          const createdAt = goalForDelete ? new Date((goalForDelete as any).created_at || Date.now()) : autoForDelete ? new Date((autoForDelete as any).created_at || Date.now()) : new Date();
-          const threeMonthsLater = new Date(createdAt);
-          threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
-          const isWithinLockIn = Date.now() < threeMonthsLater.getTime();
-          const lockInDaysLeft = isWithinLockIn ? Math.ceil((threeMonthsLater.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+          const isArchivedGoal = isGoal && goalForDelete && goalForDelete.status !== "active";
+          const isWithinLockIn = isGoal
+            ? (goalForDelete && goalForDelete.status === "active" ? isGoalLocked(goalForDelete) : false)
+            : (() => {
+                const createdAt = new Date((autoForDelete as any)?.created_at || Date.now());
+                const threeMonthsLater = new Date(createdAt);
+                threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+                return Date.now() < threeMonthsLater.getTime();
+              })();
+          const lockInDaysLeft = !isWithinLockIn ? 0 : isGoal
+            ? goalLockDaysLeft(goalForDelete)
+            : (() => {
+                const createdAt = new Date((autoForDelete as any)?.created_at || Date.now());
+                const threeMonthsLater = new Date(createdAt);
+                threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+                return Math.ceil((threeMonthsLater.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              })();
+          const lockLabel = isGoal ? "60-day lock-in period" : "3-month lock-in period";
 
           // Calculate penalty
           const savedAmt = goalForDelete ? Number(goalForDelete.saved_amount) : 0;
@@ -2788,7 +2820,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     <>
                       <h3 className="text-lg font-bold text-foreground">Cannot Cancel Yet</h3>
                       <p className="text-sm text-muted-foreground">
-                        🔒 Your plan has a <strong>3-month lock-in period</strong>. You have <strong>{lockInDaysLeft} days</strong> remaining before you can cancel.
+                        🔒 Your plan has a <strong>{lockLabel}</strong>. You have <strong>{lockInDaysLeft} day{lockInDaysLeft === 1 ? "" : "s"}</strong> remaining before you can cancel or withdraw.
                       </p>
                       <div className="rounded-xl px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/20 mt-2">
                         <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold">
