@@ -15,6 +15,7 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useGoldPrice } from "@/hooks/use-gold-price";
+import { useStockPrices } from "@/hooks/use-stock-prices";
 import { useAuth } from "@/hooks/use-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -47,16 +48,8 @@ interface StockHolding { symbol: string; name: string; qty: number; avgPrice: nu
 
 // Gold prices fetched live via useGoldPrice hook
 
-const MOCK_STOCKS: { symbol: string; name: string; price: number; change: number; sector: string }[] = [
-  { symbol: "GRPH", name: "Grameenphone", price: 385.50, change: 2.4, sector: "Telecom" },
-  { symbol: "SQPH", name: "Square Pharma", price: 218.30, change: -0.8, sector: "Pharma" },
-  { symbol: "BRAC", name: "BRAC Bank", price: 42.10, change: 1.2, sector: "Banking" },
-  { symbol: "BATB", name: "BAT Bangladesh", price: 550.00, change: 3.1, sector: "FMCG" },
-  { symbol: "LHBL", name: "LafargeHolcim BD", price: 68.90, change: -1.5, sector: "Cement" },
-  { symbol: "RENP", name: "Renata Pharma", price: 1320.00, change: 0.6, sector: "Pharma" },
-  { symbol: "ISLB", name: "Islami Bank BD", price: 28.50, change: 4.2, sector: "Banking" },
-  { symbol: "WALP", name: "Walton Hi-Tech", price: 1250.00, change: -2.1, sector: "Tech" },
-];
+// Live stock list fetched via useStockPrices hook (DSE source w/ fallback)
+type StockQuote = { symbol: string; name: string; price: number; change: number; sector: string };
 
 // ─── Profit & Duration Config ────────────────────────────────────────
 // Returns vary by duration (months → annual %). Realistic 2%–6% range.
