@@ -758,7 +758,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const headerSub = mainTab === "savings"
     ? `Total Saved: ৳${totalSaved.toLocaleString()}`
     : mainTab === "goals"
-    ? `${goals.length} goal${goals.length !== 1 ? "s" : ""} • ৳${totalSaved.toLocaleString()} saved`
+    ? `${activeGoals.length} goal${activeGoals.length !== 1 ? "s" : ""} • ৳${totalSaved.toLocaleString()} saved`
     : mainTab === "gold" ? `Gold Price: ৳${LIVE_GOLD_PRICE.toLocaleString()}/g`
     : `Portfolio: ৳${Math.round(totalStockValue).toLocaleString()}`;
 
