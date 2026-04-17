@@ -1206,6 +1206,7 @@ export default function AdminDashboard() {
         {/* ═══ USER MANAGEMENT ═══ */}
         {activeTab === "users" && (
           <div className="space-y-4">
+            <AdminUserMetrics />
             <div className="flex items-center gap-2">
               {(["users", "agents", "merchants"] as const).map(tab => (
                 <Button
