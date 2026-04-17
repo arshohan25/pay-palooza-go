@@ -739,7 +739,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const totalStockValue = stockHoldings.reduce((s, h) => s + h.qty * h.currentPrice, 0);
   const totalStockCost = stockHoldings.reduce((s, h) => s + h.qty * h.avgPrice, 0);
   const totalStockProfit = totalStockValue - totalStockCost;
-  const totalSaved = goals.reduce((s, g) => s + Number(g.saved_amount), 0);
+  const activeGoals = goals.filter(g => g.status === "active");
+  const totalSaved = activeGoals.reduce((s, g) => s + Number(g.saved_amount), 0);
+  const totalGoalTarget = activeGoals.reduce((s, g) => s + Number(g.target_amount), 0);
 
   // ─── Header config ────────
   const headerGradient = mainTab === "savings"
