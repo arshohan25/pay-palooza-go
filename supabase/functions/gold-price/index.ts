@@ -22,25 +22,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch live gold spot price from Swissquote (free, no API key needed)
-    const res = await fetch(
-      'https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD',
-      { headers: { 'Accept': 'application/json' } }
-    );
+    // Try primary: Swissquote XAU/USD
+    let xauUsd: number | null = null;
+    try {
+      const res = await fetch(
+        'https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD',
+        { headers: { 'Accept': 'application/json' } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const standardProfile = data?.[0]?.spreadProfilePrices?.find(
+          (p: { spreadProfile: string }) => p.spreadProfile === 'standard'
+        );
+        const px = standardProfile ? (standardProfile.bid + standardProfile.ask) / 2 : null;
+        if (typeof px === 'number' && px > 100) xauUsd = px;
+      }
+    } catch (_) { /* fall through */ }
 
-    if (!res.ok) {
-      return respond({ ...FALLBACK, updatedAt: new Date().toISOString(), source: 'fallback' });
+    // Backup: gold-api.com (free, no key)
+    if (!xauUsd) {
+      try {
+        const res2 = await fetch('https://api.gold-api.com/price/XAU', {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (res2.ok) {
+          const d2 = await res2.json();
+          const px = Number(d2?.price);
+          if (isFinite(px) && px > 100) xauUsd = px;
+        }
+      } catch (_) { /* fall through */ }
     }
 
-    const data = await res.json();
-    const standardProfile = data?.[0]?.spreadProfilePrices?.find(
-      (p: { spreadProfile: string }) => p.spreadProfile === 'standard'
-    );
-    const xauUsd = standardProfile
-      ? (standardProfile.bid + standardProfile.ask) / 2
-      : null;
-
-    if (!xauUsd || typeof xauUsd !== 'number' || xauUsd < 100) {
+    if (!xauUsd) {
       return respond({ ...FALLBACK, updatedAt: new Date().toISOString(), source: 'fallback' });
     }
 
