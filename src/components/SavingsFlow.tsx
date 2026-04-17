@@ -376,11 +376,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   };
 
   const handleCreateGoal = async () => {
-    if (!newName.trim()) { setError("Enter a goal name"); return; }
+    const fail = (msg: string) => { setError(msg); setPin(""); setPinError(""); };
+    if (!newName.trim()) return fail("Enter a goal name");
     const target = parseFloat(newTarget);
-    if (!target || target <= 0) { setError("Enter a valid target amount"); return; }
+    if (!target || target <= 0) return fail("Enter a valid target amount");
     const initialAmt = parseFloat(newInitialDeposit) || 0;
-    if (initialAmt > balance) { setError("Initial deposit exceeds wallet balance"); return; }
+    if (initialAmt > balance) return fail("Initial deposit exceeds wallet balance");
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     if (!user) return;
     setProcessing(true); setError(""); setPinError("");
