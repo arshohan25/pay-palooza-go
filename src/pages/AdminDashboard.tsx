@@ -455,6 +455,78 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [userSubTab, setUserSubTab] = useState<"users" | "agents" | "merchants">("users");
+  const [metricFilter, setMetricFilter] = useState<{ key: string; label: string } | null>(null);
+  const [metricFilterUserIds, setMetricFilterUserIds] = useState<Set<string> | null>(null);
+  const [metricFilterLoading, setMetricFilterLoading] = useState(false);
+
+  const METRIC_LABELS: Record<string, string> = {
+    all: "All Users",
+    active: "Active Users",
+    suspended: "Suspended",
+    new_today: "New Today",
+    new_7d: "New (7 days)",
+    new_30d: "New (30 days)",
+    dau: "Active Today (DAU)",
+    wau: "Active This Week (WAU)",
+    mau: "Active This Month (MAU)",
+    inactive_30d: "Inactive 30+ days",
+    dormant_90d: "Dormant 90+ days",
+    high_balance: "Top Balance Holders",
+    kyc_verified: "KYC Verified",
+    kyc_pending: "KYC Pending",
+    kyc_rejected: "KYC Rejected",
+    kyc_exempt: "KYC Exempt",
+    "txn:send": "Send Money users (30d)",
+    "txn:cashout": "Cash Out users (30d)",
+    "txn:cashin": "Cash In users (30d)",
+    "txn:addmoney": "Add Money users (30d)",
+    "txn:payment": "Payment users (30d)",
+    "txn:recharge": "Recharge users (30d)",
+    "txn:paybill": "Bill Pay users (30d)",
+    "txn:banktransfer": "Bank Transfer users (30d)",
+  };
+
+  const handleMetricCardClick = async (key: string) => {
+    // Cross-tab navigation
+    if (key.startsWith("tab:")) {
+      const target = key.slice(4);
+      setActiveTab(target);
+      return;
+    }
+    if (key === "all") {
+      setMetricFilter(null);
+      setMetricFilterUserIds(null);
+      return;
+    }
+    setMetricFilter({ key, label: METRIC_LABELS[key] || key });
+
+    // Transaction-type filters → fetch user_ids that performed that txn type in last 30d
+    if (key.startsWith("txn:")) {
+      const type = key.slice(4);
+      setMetricFilterLoading(true);
+      const day30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const r = await supabase.from("transactions").select("user_id").eq("type", type as any).gte("created_at", day30);
+      setMetricFilterUserIds(new Set((r.data ?? []).map((x: any) => x.user_id)));
+      setMetricFilterLoading(false);
+      return;
+    }
+    // Activity windows
+    if (key === "dau" || key === "wau" || key === "mau" || key === "inactive_30d" || key === "dormant_90d") {
+      setMetricFilterLoading(true);
+      const days = key === "dau" ? 1 : key === "wau" ? 7 : key === "mau" ? 30 : key === "inactive_30d" ? 30 : 90;
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      const r = await supabase.from("transactions").select("user_id").gte("created_at", since);
+      setMetricFilterUserIds(new Set((r.data ?? []).map((x: any) => x.user_id)));
+      setMetricFilterLoading(false);
+      return;
+    }
+    setMetricFilterUserIds(null);
+  };
+
+  const clearMetricFilter = () => {
+    setMetricFilter(null);
+    setMetricFilterUserIds(null);
+  };
   const [lockTarget, setLockTarget] = useState<{ userId: string; label: string } | null>(null);
   const [chargebackTarget, setChargebackTarget] = useState<any>(null);
   const [showNavMenu, setShowNavMenu] = useState(false);
@@ -787,9 +859,26 @@ export default function AdminDashboard() {
 
   if (!isAdmin) return null;
 
-  const filteredUsers = users.filter(u =>
-    !searchQuery || u.phone?.includes(searchQuery) || u.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter(u => {
+    if (searchQuery && !(u.phone?.includes(searchQuery) || u.name?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
+    if (!metricFilter) return true;
+    const k = metricFilter.key;
+    if (k === "active") return (u.status || "active") === "active";
+    if (k === "suspended") return u.status === "suspended";
+    if (k === "kyc_verified") return u.kyc_status === "verified";
+    if (k === "kyc_pending") return u.kyc_status === "pending";
+    if (k === "kyc_rejected") return u.kyc_status === "rejected";
+    if (k === "kyc_exempt") return u.kyc_status === "exempt" || u.kyc_exempt === true;
+    if (k === "high_balance") return Number(u.balance || 0) >= 10000;
+    if (k === "new_today") return u.created_at && new Date(u.created_at).getTime() >= Date.now() - 86400000;
+    if (k === "new_7d") return u.created_at && new Date(u.created_at).getTime() >= Date.now() - 7 * 86400000;
+    if (k === "new_30d") return u.created_at && new Date(u.created_at).getTime() >= Date.now() - 30 * 86400000;
+    if (metricFilterUserIds) {
+      if (k === "inactive_30d" || k === "dormant_90d") return !metricFilterUserIds.has(u.user_id);
+      return metricFilterUserIds.has(u.user_id);
+    }
+    return true;
+  });
 
   const filteredTxns = transactions.filter(t =>
     !searchQuery || t.id?.includes(searchQuery) || t.recipient_phone?.includes(searchQuery) || t.type?.includes(searchQuery)
@@ -1207,7 +1296,18 @@ export default function AdminDashboard() {
         {/* ═══ USER MANAGEMENT ═══ */}
         {activeTab === "users" && (
           <div className="space-y-4">
-            <AdminUserMetrics />
+            <AdminUserMetrics onCardClick={handleMetricCardClick} />
+            {metricFilter && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                  Filter: {metricFilter.label}
+                  {metricFilterLoading ? " (loading…)" : ` · ${filteredUsers.length} users`}
+                </span>
+                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs ml-auto" onClick={clearMetricFilter}>
+                  Clear
+                </Button>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               {(["users", "agents", "merchants"] as const).map(tab => (
                 <Button
