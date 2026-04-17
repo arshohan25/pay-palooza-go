@@ -1,77 +1,80 @@
 
 
-## Fix: Notifications show "Payment to Someone" for savings/gold/stock buys
+Looking at screenshot: "Dream Bike" goal is completed (৳5,000 manual deposit shown on timeline, ৳2,600 saved label up top is stale but goal is completed). Yet the **ADD DEPOSIT** card with PIN + Slide to Save is still rendered below. User correctly points out: a completed goal shouldn't accept more deposits.
+
+Let me trace the deposit form rendering.
+<lov-tool-use id="toolu_vrtx_019CLH6Y5NkG4SxcJuWUiyuX" name="code--search_files" integration-id="code" data="{\"query\": \"ADD DEPOSIT|Slide to Save|add deposit\", \"include_patterns\": \"src/components/SavingsFlow.tsx\"}">
+</lov-tool-use>
+
+<lov-tool-use id="toolu_vrtx_01FyyQ4AkknPzZP5aDKz7dPr" name="code--search_files" integration-id="code" data="{\"query\": \"ADD DEPOSIT|Slide to Save|selectedGoal\", \"include_patterns\": \"src/components/SavingsFlow.tsx\"}">
+</lov-tool-use>
+
+<lov-tool-use id="toolu_vrtx_01V1GfABbL9Zypj3kPz5BZu5" name="code--view" integration-id="code" data="{\"file_path\": \"src/components/SavingsFlow.tsx\", \"lines\": \"1800-1900\"}">
+</lov-tool-use>
+
+<lov-tool-use id="toolu_vrtx_01G23QmzNHkjyQj4ycQL2GDh" name="code--view" integration-id="code" data="{\"file_path\": \"src/components/SavingsFlow.tsx\", \"lines\": \"1900-2010\"}">
+</lov-tool-use>
+I have enough context. The Goal Detail view (line 1914-1935) unconditionally renders the "Add Deposit" section + PIN + Slide to Save, regardless of whether the goal is `completed` or `withdrawn`.
+
+<lov-plan>
+
+## Hide deposit form on completed/withdrawn goals
+
+### Bug
+On the Goal Detail screen (`/savings` → Goals tab → tap a goal), the "Add Deposit" card, PIN entry, and "Slide to Save" slider are **always rendered** — even after the goal is `completed` or `withdrawn`. User screenshot shows ৳500 + ৳5,000 manual deposits (goal already completed) yet "Add Deposit" + PIN + slider still appear, inviting more deposits into a finished goal.
 
 ### Root cause
-
-Trigger `notify_transaction_recipient` (migration `…135506_…sql`) builds the body purely from `recipient_name`/`recipient_phone`. Internal "purchase" transactions — savings goal deposits, DPS top-ups, gold/stock buys, loan repayments — are written with `type='payment'` but **no recipient** (it's an internal transfer, not a person). So every internal `payment` row notifies as **"Payment of ৳X to Someone"**.
-
-Live evidence (DB):
-| description | recipient_name | notification body |
-|---|---|---|
-| Savings Goal: Dream Bike | NULL | "Payment of ৳5,000 to Someone" ❌ |
-| Gold Purchase: 2g 24k | NULL | "Payment of ৳37,504 to Someone" ❌ |
-| Stock Purchase: 5x GRPH | NULL | "Payment of ৳1,928 to Someone" ❌ |
-
-### The fix
-
-Update the trigger so the **`payment` branch reads `description` first** when `recipient_name` is NULL, and recognizes our internal categories with proper titles + clean copy.
-
-New migration `CREATE OR REPLACE FUNCTION public.notify_transaction_recipient()` — only the `WHEN 'payment'` branch changes:
-
-```sql
-WHEN 'payment' THEN
-  -- Detect internal purchases by description prefix
-  IF NEW.recipient_name IS NULL AND NEW.recipient_phone IS NULL THEN
-    IF NEW.description LIKE 'Savings Goal:%' THEN
-      v_title := 'Goal Deposit ৳' || NEW.amount::text;
-      v_body  := '৳' || v_formatted_amount || ' added to "' ||
-                 trim(substring(NEW.description from 15)) || '".' || v_balance_str;
-    ELSIF NEW.description LIKE 'Gold Purchase:%' THEN
-      v_title := 'Gold Purchased ৳' || NEW.amount::text;
-      v_body  := 'You bought ' || trim(substring(NEW.description from 16)) ||
-                 ' for ৳' || v_formatted_amount || '.' || v_balance_str;
-    ELSIF NEW.description LIKE 'Stock Purchase:%' THEN
-      v_title := 'Stock Purchased ৳' || NEW.amount::text;
-      v_body  := 'You bought ' || trim(substring(NEW.description from 17)) ||
-                 ' for ৳' || v_formatted_amount || '.' || v_balance_str;
-    ELSIF NEW.description LIKE 'DPS%' OR NEW.reference LIKE 'DPS-%' THEN
-      v_title := 'DPS Installment ৳' || NEW.amount::text;
-      v_body  := '৳' || v_formatted_amount || ' paid to your DPS plan.' || v_balance_str;
-    ELSIF NEW.description LIKE 'Loan Repayment%' OR NEW.reference LIKE 'LOAN-%' THEN
-      v_title := 'Loan Repayment ৳' || NEW.amount::text;
-      v_body  := '৳' || v_formatted_amount || ' repaid towards your loan.' || v_balance_str;
-    ELSE
-      -- Generic merchant payment with no name (rare) — use description if present
-      v_title := 'Payment ৳' || NEW.amount::text;
-      v_body  := 'Payment of ৳' || v_formatted_amount ||
-                 COALESCE(' for ' || NULLIF(NEW.description,''), '') || '.' || v_balance_str;
-    END IF;
-  ELSE
-    -- Real merchant payment with a recipient
-    v_title := 'Payment ৳' || NEW.amount::text;
-    v_body  := 'Payment of ৳' || v_formatted_amount || ' to ' || v_counterpart || '.' || v_balance_str;
-  END IF;
+`src/components/SavingsFlow.tsx` lines **1914-1935** render the Deposit + PIN + Slider block with no status guard:
+```tsx
+<div className="bg-card …">
+  <p>Add Deposit</p>
+  <input … />
+  …
+</div>
+<SavingsPinInput … />
+<SlideToConfirm onConfirm={handleSave} … />
 ```
 
-Also apply the same "prefer `description`" idea to the `addmoney` branch for `Goal Withdrawal:` / `DPS Maturity Payout` (currently shows generic "Money Added") so the new payout flows we just shipped read cleanly.
+### Fix (single file)
+
+**`src/components/SavingsFlow.tsx`** — wrap the entire Deposit + PIN + Slider block (lines 1914-1935) in:
+```tsx
+{selectedGoal.status === "active" ? (
+  <> … existing Add Deposit + PIN + SlideToConfirm … </>
+) : selectedGoal.status === "completed" ? (
+  // Completion banner + "Withdraw to Wallet" CTA (reuses existing handleWithdrawGoal)
+  <div className="bg-gradient-to-br from-emerald-500/10 to-amber-400/10 border border-emerald-500/30 rounded-[20px] p-5 text-center space-y-3">
+    <CheckCircle2 className="mx-auto text-emerald-500" size={36} />
+    <p className="text-[15px] font-black">Goal Completed 🎉</p>
+    <p className="text-[12px] text-muted-foreground">
+      You've reached your ৳{target} target. Withdraw your savings to your wallet.
+    </p>
+    <button onClick={() => handleWithdrawGoal(selectedGoal.id, selectedGoal.name, saved)}
+      className="w-full py-3 rounded-[14px] bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-[13px]">
+      Withdraw ৳{saved.toLocaleString()} to Wallet
+    </button>
+  </div>
+) : (
+  // status === "withdrawn"
+  <div className="bg-muted/40 border border-border/60 rounded-[20px] p-5 text-center">
+    <CheckCircle2 className="mx-auto text-muted-foreground mb-2" size={28} />
+    <p className="text-[13px] font-bold">Goal Closed</p>
+    <p className="text-[11px] text-muted-foreground mt-1">Funds withdrawn to your wallet. This goal is archived.</p>
+  </div>
+)}
+```
+
+Same logic applies in the Goals **list view** (around line 941-945): the "tap to add deposit" `<button>` should be disabled when `status !== 'active'` so users can't enter the deposit step at all on a closed goal. The button there already shows `<CheckCircle2 />` instead of an arrow when completed but the wrapping `<button>` is still clickable — gate the `onClick`.
 
 ### What user sees after fix
-
-| Action | Old notification | New notification |
-|---|---|---|
-| Save ৳500 to Dream Bike | "Payment of ৳500 to Someone" | "৳500 added to **Dream Bike**." |
-| Buy 2g gold | "Payment of ৳37,504 to Someone" | "You bought **2g 24k** for ৳37,504." |
-| Buy 5 GRPH stock | "Payment of ৳1,928 to Someone" | "You bought **5x GRPH** for ৳1,928." |
-| DPS installment | "Payment of ৳X to Someone" | "৳X paid to your DPS plan." |
-| Goal withdraw | "৳X added to your wallet" | "৳X withdrawn from **Dream Bike** to wallet." |
-| Real merchant pay | "Payment of ৳X to Rafiq Electronics" | unchanged ✅ |
+- **Active goal** → Add Deposit + PIN + Slide (unchanged).
+- **Completed goal** → Big celebration card with "Withdraw ৳X to Wallet" button (no deposit form).
+- **Withdrawn goal** → "Goal Closed" archive card (no actions).
 
 ### Files touched
-- New migration — `CREATE OR REPLACE` of `notify_transaction_recipient()` with the description-aware `payment` + `addmoney` branches above.
+- `src/components/SavingsFlow.tsx` — guard the deposit block in Goal Detail view + disable open-detail click on non-active goals in the list.
 
 ### Out of scope
-- No backfill of historical notifications (the two existing "to Someone" rows stay; users can clear them).
-- No UI changes — `NotificationCenter` already renders `title`/`body` as-is.
-- No SMS template changes (notify-recipient EF already gates on real recipient phone).
+- No DB changes (statuses already correct).
+- No new RPC (uses existing `handleWithdrawGoal`).
 
