@@ -287,12 +287,36 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!user) return;
     const { data } = await supabase.from("stock_holdings" as any).select("*").eq("user_id", user.id);
     const holdings = (data as any[]) ?? [];
-    setStockHoldings(holdings.map((h: any) => ({
-      symbol: h.symbol, name: h.name, qty: h.quantity,
-      avgPrice: Number(h.avg_buy_price), currentPrice: MOCK_STOCKS.find(s => s.symbol === h.symbol)?.price ?? Number(h.avg_buy_price),
-      change: MOCK_STOCKS.find(s => s.symbol === h.symbol)?.change ?? 0,
-    })));
-  }, [user]);
+    setStockHoldings(holdings.map((h: any) => {
+      const live = liveStocks.find(s => s.symbol === h.symbol);
+      const stored = Number(h.current_price);
+      const currentPrice = live?.price ?? (stored > 0 ? stored : Number(h.avg_buy_price));
+      return {
+        symbol: h.symbol, name: h.name, qty: h.quantity,
+        avgPrice: Number(h.avg_buy_price), currentPrice,
+        change: live?.change ?? 0,
+      };
+    }));
+  }, [user, liveStocks]);
+
+  // Persist live prices into stock_holdings so cross-session P/L stays accurate.
+  useEffect(() => {
+    if (!user || liveStocks.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("stock_holdings" as any).select("id, symbol").eq("user_id", user.id);
+      if (cancelled || !data) return;
+      const now = new Date().toISOString();
+      await Promise.all((data as any[]).map((row) => {
+        const live = liveStocks.find(s => s.symbol === row.symbol);
+        if (!live) return Promise.resolve();
+        return supabase.from("stock_holdings" as any)
+          .update({ current_price: live.price, last_price_update: now })
+          .eq("id", row.id);
+      }));
+    })();
+    return () => { cancelled = true; };
+  }, [user, liveStocks]);
 
   useEffect(() => { loadGoals(); loadAutoSaves(); loadGoldHoldings(); loadStockHoldings(); loadMissedPayments(); }, [loadGoals, loadAutoSaves, loadGoldHoldings, loadStockHoldings, loadMissedPayments]);
 
