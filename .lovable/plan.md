@@ -1,46 +1,48 @@
 
 
-# Fix: DPS/Goal Deposits Not Appearing in Transaction History
+## Investigation Result: How Gold & Stock Pricing Actually Works
 
-## Problem
-Goal deposits (via `savings_deposit` RPC) and DPS auto-installments (via `process-auto-save` edge function) deduct wallet balance but never insert a record into the `transactions` table. This means these operations are invisible in the user's transaction history.
+### Gold Price — ✅ Real-time (mostly)
+**Source**: `supabase/functions/gold-price/index.ts`
+- Fetches **live XAU/USD spot price** from Swissquote's free public quote feed
+- Converts troy ounce → gram, then USD → BDT using `frankfurter.dev` FX rate
+- 5-minute server-side cache + auto-refreshes every 5 min on the client (`use-gold-price.ts`)
+- Falls back to hardcoded ৳16,200 (22K) / ৳19,500 (24K) if either API fails
+- **Profit/Loss**: `goldValue - (grams × avgBuyPrice)` — real, based on live spot vs. your average buy price ✅
 
-## Root Cause
-1. **`savings_deposit` RPC** -- deducts from `profiles.balance`, inserts into `savings_deposits`, but skips `transactions`
-2. **`process-auto-save` edge function** -- same pattern: deducts balance, inserts into `savings_deposits`, no `transactions` record
-3. **DPS 1st installment** (client-side) -- calls `recordTransaction()` so it DOES appear, but uses type `"payment"` which is generic
-
-## Changes
-
-### 1. Update `savings_deposit` RPC (DB migration)
-Add a transaction record insert after the balance deduction:
-```sql
-INSERT INTO transactions (user_id, type, amount, fee, description, reference, status, balance_after, short_id)
-VALUES (v_user_id, 'payment', p_amount, 0,
-  'Savings Goal: ' || v_goal.name,
-  'GOAL-DEP-' || substring(gen_random_uuid()::text, 1, 8),
-  'completed', v_new_balance,
-  upper(substring(gen_random_uuid()::text, 1, 12)));
+### Stock Price — ❌ NOT real-time (mock data)
+**Source**: `MOCK_STOCKS` array hardcoded in `src/components/SavingsFlow.tsx` (line ~50)
+```ts
+const MOCK_STOCKS = [
+  { symbol: "GRPH", name: "Grameenphone", price: 385.50, change: 2.4, ... },
+  { symbol: "SQPH", name: "Square Pharma", price: 218.30, change: -0.8, ... },
+  // ...static values, never updated
+];
 ```
+- Prices and `change %` are **static literals** — they never change
+- "Current price" in your stock holdings just looks up the same hardcoded value
+- **Profit/Loss for stocks** = `(MOCK_PRICE − avgBuyPrice) × qty` → it's mathematically correct but the "current price" side is fake, so P/L will never move unless you edit the array
 
-### 2. Update `process-auto-save` edge function
-After the successful payment block (line ~150), insert a transaction record:
-```typescript
-await supabase.from("transactions").insert({
-  user_id: schedule.user_id,
-  type: "payment",
-  amount: schedule.amount,
-  fee: 0,
-  description: `DPS Installment: ${goal.name} (#${(schedule.total_paid ?? 0) + 1})`,
-  reference: `DPS-INST-${schedule.id.substring(0, 8)}`,
-  status: "completed",
-  balance_after: newBalance,
-});
-```
+### DPS / Auto-save "Estimated Profit" — ⚠️ Projected, not real
+- `calcEstimatedProfit()` uses a hardcoded `STRATEGY_RETURNS` table (2%–6% annual based on duration/strategy)
+- This is a **forecast** shown before opening a plan, not actual earned profit
+- No real profit is credited to DPS deposits today — `total_paid` just tracks installments collected
 
-### 3. Update client-side DPS 1st installment description (SavingsFlow.tsx ~line 450)
-Change `recordTransaction` description from `DPS 1st installment (weekly)` to include the plan/goal name for consistency.
+---
 
-## Result
-All savings operations -- manual goal deposits, DPS 1st installment, and auto-collected installments -- will appear in the transaction history with clear descriptions like "Savings Goal: Dream Bike" or "DPS Installment: Dream Bike (#3)".
+## What I Recommend Fixing
+
+Pick which to address (I can plan/implement any combination):
+
+1. **Make stock prices real-time** — build a `stock-price` edge function pulling DSE data (e.g. dsebd.org scrape, or a free API like `dsebd-api`) with 5-min cache, mirror the gold-price pattern. Update `MOCK_STOCKS` → live fetched list.
+
+2. **Persist live prices into `stock_holdings.current_price`** so realtime P/L works across sessions and admin reports.
+
+3. **Make DPS profit real** — credit actual earned profit on maturity (or periodically) into the savings plan based on the strategy's declared return, instead of just being a pre-purchase estimate.
+
+4. **Add a "Last updated" timestamp** badge to both Gold and Stock screens so users see freshness.
+
+5. **Disclose mock data** — until #1 ships, add a small "Indicative price" label on the stock cards to be transparent.
+
+**Which of these would you like me to plan and build?** (I'd suggest **#1 + #2 + #4** as the minimum viable fix.)
 
