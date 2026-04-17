@@ -86,6 +86,37 @@ const INVESTMENT_STRATEGIES = [
 
 type Strategy = typeof INVESTMENT_STRATEGIES[number]["key"];
 
+// ─── Goal lock + history retention ────────
+const GOAL_LOCK_DAYS = 60;
+const HISTORY_MONTHS = 12;
+const DAY_MS = 86_400_000;
+const isGoalLocked = (g: any) => {
+  if (!g?.created_at) return false;
+  return Date.now() < new Date(g.created_at).getTime() + GOAL_LOCK_DAYS * DAY_MS;
+};
+const goalLockDaysLeft = (g: any) => {
+  if (!g?.created_at) return 0;
+  return Math.max(0, Math.ceil((new Date(g.created_at).getTime() + GOAL_LOCK_DAYS * DAY_MS - Date.now()) / DAY_MS));
+};
+const goalUnlockDate = (g: any) => {
+  if (!g?.created_at) return null;
+  return new Date(new Date(g.created_at).getTime() + GOAL_LOCK_DAYS * DAY_MS);
+};
+const withinHistoryWindow = (closedAtRaw: any) => {
+  if (!closedAtRaw) return true;
+  return Date.now() - new Date(closedAtRaw).getTime() < HISTORY_MONTHS * 30 * DAY_MS;
+};
+const sortActiveFirst = <T extends { status?: string; created_at?: string; updated_at?: string }>(items: T[]): T[] => {
+  return [...items].sort((a, b) => {
+    const aActive = (a.status === "active" || !a.status) ? 0 : 1;
+    const bActive = (b.status === "active" || !b.status) ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    const aT = new Date(a.created_at ?? a.updated_at ?? 0).getTime();
+    const bT = new Date(b.created_at ?? b.updated_at ?? 0).getTime();
+    return bT - aT;
+  });
+};
+
 const DURATION_OPTIONS = [
   { value: "6m", label: "6 Months", months: 6, minLock: 3, penaltyPct: 2 },
   { value: "1y", label: "1 Year", months: 12, minLock: 3, penaltyPct: 1.5 },
