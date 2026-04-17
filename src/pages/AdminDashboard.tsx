@@ -1296,7 +1296,18 @@ export default function AdminDashboard() {
         {/* ═══ USER MANAGEMENT ═══ */}
         {activeTab === "users" && (
           <div className="space-y-4">
-            <AdminUserMetrics />
+            <AdminUserMetrics onCardClick={handleMetricCardClick} />
+            {metricFilter && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                  Filter: {metricFilter.label}
+                  {metricFilterLoading ? " (loading…)" : ` · ${filteredUsers.length} users`}
+                </span>
+                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs ml-auto" onClick={clearMetricFilter}>
+                  Clear
+                </Button>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               {(["users", "agents", "merchants"] as const).map(tab => (
                 <Button
