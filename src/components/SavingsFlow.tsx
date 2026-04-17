@@ -432,10 +432,11 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
   const handleCreateAutoSave = async () => {
     const amt = parseFloat(autoAmount);
-    if (!amt || amt <= 0) { setError("Select or enter an amount"); return; }
+    const fail = (msg: string) => { setError(msg); setPin(""); setPinError(""); };
+    if (!amt || amt <= 0) return fail("Select or enter an amount");
     const currentBal = getBalance();
-    if (amt > currentBal) { setError(`Insufficient balance. You need at least ৳${amt.toLocaleString()} for the 1st installment.`); return; }
-    if (!termsAccepted) { setError("Please accept Terms & Conditions"); return; }
+    if (amt > currentBal) return fail(`Insufficient balance. You need at least ৳${amt.toLocaleString()} for the 1st installment.`);
+    if (!termsAccepted) return fail("Please accept Terms & Conditions");
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     if (!user) return;
     setProcessing(true); setError(""); setPinError("");
