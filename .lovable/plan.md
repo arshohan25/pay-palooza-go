@@ -1,69 +1,63 @@
 
-The user reports the "Inactive 30d" (and likely "Dormant 90d") cards show wrong numbers vs real data. Let me think through what could be wrong with the RPC.
+## Redesign Savings Page Header Cards — Premium 2x2 Grid
 
-Current RPC logic:
-```sql
-'inactive_30d', (select count(*) from profiles p 
-  where p.phone not like 'staff-%' 
-  and p.created_at < now() - interval '30 days' 
-  and not exists (select 1 from transactions t where t.user_id = p.user_id and t.created_at >= now() - interval '30 days'))
+The user wants the "1 active auto-save plan(s)" pill and the "2 Saving Goals" row redesigned to match the premium card aesthetic of the Gold & Stocks tiles — turning them into a unified, balanced 2×2 grid showing balance + count.
+
+### Current state (from screenshot)
+- Total Saved hero card ✅ keep
+- Thin emerald pill: "1 active auto-save plan(s)" — feels like an afterthought
+- Gold tile (amber) + Stocks tile (blue) — premium look ✅ reference style
+- "Start a DPS Plan" CTA banner ✅ keep
+- Flat "2 Saving Goals" row at bottom — doesn't match
+
+### Redesign
+
+Replace the thin pill + flat goals row with **two new premium tiles** styled identically to Gold/Stocks, arranged in a 2×2 grid:
+
+```text
+┌──────── Total Saved hero ────────┐
+│   icon   TOTAL SAVED  ৳1,000     │
+└──────────────────────────────────┘
+
+┌──── DPS ────┐  ┌──── GOALS ────┐
+│ 📅 emerald  │  │ 🎯 violet     │
+│ DPS PLANS   │  │ SAVING GOALS  │
+│ 1 active    │  │ 2 active      │
+│ ৳500 saved  │  │ ৳1,200 / ৳5k  │
+└─────────────┘  └───────────────┘
+
+┌──── GOLD ────┐  ┌──── STOCKS ──┐
+│ (existing)   │  │ (existing)   │
+└──────────────┘  └──────────────┘
+
+┌──── Start a DPS Plan CTA ───────┐ (keep)
 ```
 
-Likely issues:
-1. **`p.created_at < now() - interval '30 days'` excludes recent users** — a user who signed up 10 days ago and never transacted is "inactive" but won't be counted. The Inactive card should mean "users with no activity in the last 30 days" regardless of signup date, OR at minimum include all users who existed at the start of the window.
-2. **No filter on profile status** — suspended/deleted users get counted as "inactive."
-3. The frontend card label says "Inactive 30d" but the user expectation is "users who haven't transacted in 30 days" — should include everyone (minus staff, minus suspended).
-4. Same logic issue applies to `dormant_90d`.
+### Tile spec (matches Gold/Stocks)
+- `rounded-2xl`, soft tinted gradient bg (`from-{accent}/15 to-{accent}/5`), border `border-{accent}/20`
+- Top-left: gradient icon tile (52px, `rounded-xl`, accent gradient, white icon)
+- Uppercase tracked label (`text-xs text-muted-foreground`)
+- Big value (`text-2xl font-bold tabular-nums`) — count or amount
+- Sub-line (`text-xs`) — supporting metric (saved total / progress)
+- Whole tile clickable → opens existing drawer (active plans / goals manager)
+- Hover: subtle lift + ring in accent color
 
-Also worth checking via DB probe:
-- Total non-staff profiles count
-- DAU/WAU/MAU numbers vs Inactive — they should add up sensibly (active in 30d + inactive 30d ≈ total)
+### Accent colors
+- DPS: emerald (matches existing brand savings color)
+- Goals: violet/indigo (Target icon — note: Target only, never PiggyBank)
+- Gold: amber (existing)
+- Stocks: blue (existing)
 
-### Plan
+### Data wiring
+Reuse what `SavingsFlow.tsx` already loads:
+- DPS active count + total saved → from existing `auto_save_plans` query
+- Goals count + total progress → from existing `savings_goals` query  
+- No new queries, no schema changes
 
-**1. Fix the RPC** (`supabase/migrations/...new.sql`) — replace the inactive/dormant calculations:
+### Files touched
+- `src/components/SavingsFlow.tsx` — replace the thin "active plans" pill + flat "Saving Goals" row with two new premium tiles in the same 2-col grid as Gold/Stocks. Keep hero card, Gold/Stocks tiles, and DPS CTA banner unchanged.
 
-```sql
-'inactive_30d', (
-  select count(*) from profiles p 
-  where p.phone not like 'staff-%' 
-  and coalesce(p.status,'active') = 'active'
-  and not exists (
-    select 1 from transactions t 
-    where t.user_id = p.user_id 
-    and t.created_at >= now() - interval '30 days'
-  )
-),
-'dormant_90d', (
-  select count(*) from profiles p 
-  where p.phone not like 'staff-%' 
-  and coalesce(p.status,'active') = 'active'
-  and not exists (
-    select 1 from transactions t 
-    where t.user_id = p.user_id 
-    and t.created_at >= now() - interval '90 days'
-  )
-),
-```
-
-Changes:
-- Remove the `created_at < now() - interval '30 days'` gate so newly-signed-up but inactive users are counted
-- Add `status = 'active'` so suspended users aren't double-counted in both "Suspended" and "Inactive"
-
-**2. Update the card hint** in `AdminUserMetrics.tsx` so the meaning is unambiguous:
-- "Inactive 30d" → hint: "No txn in 30d"
-- "Dormant 90d" → hint: "No txn in 90d"
-
-**3. Verify with a quick DB probe** before committing — confirm:
-- Total non-staff active users
-- MAU count
-- New inactive count (should equal total active non-staff − MAU)
-
-### Files Touched
-- New migration to `CREATE OR REPLACE` the `admin_user_metrics()` function
-- `src/components/admin/AdminUserMetrics.tsx` — minor hint text update only
-
-### Out of Scope
-- No UI/aesthetic changes
-- No changes to other metrics (those are accurate)
-- No changes to clickable filtering
+### Out of scope
+- No changes to Gold/Stocks tiles
+- No changes to drawers / detail screens
+- No new data fetches
