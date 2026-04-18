@@ -92,6 +92,7 @@ import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
 import AdminRiskControl from "@/components/admin/AdminRiskControl";
 import AdminFloatManagement from "@/components/admin/AdminFloatManagement";
 import AdminRevenueDashboard from "@/components/admin/AdminRevenueDashboard";
+import AdminInvestmentPnL from "@/components/admin/AdminInvestmentPnL";
 import AdminMfsMonitor from "@/components/admin/AdminMfsMonitor";
 import AdminMerchantApplications from "@/components/admin/AdminMerchantApplications";
 import AdminApiRequests from "@/components/admin/AdminApiRequests";
@@ -273,6 +274,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "treasury", label: "Treasury", icon: Wallet },
       { id: "float_mgmt", label: "Float Mgmt", icon: Wallet },
       { id: "revenue", label: "Revenue", icon: TrendingUp },
+      { id: "investment_pnl", label: "Investment P/L", icon: TrendingUp },
       { id: "deposit_accounts", label: "Deposit Accts", icon: CreditCard },
     ],
   },
@@ -1959,6 +1961,9 @@ export default function AdminDashboard() {
 
         {/* ═══ REVENUE DASHBOARD ═══ */}
         {activeTab === "revenue" && <AdminRevenueDashboard />}
+
+        {/* ═══ INVESTMENT P/L ═══ */}
+        {activeTab === "investment_pnl" && <AdminInvestmentPnL />}
 
         {/* ═══ MFS MONITOR ═══ */}
         {activeTab === "mfs_monitor" && <AdminMfsMonitor />}
