@@ -1,50 +1,45 @@
 
 
-## Admin Investment P/L Dashboard (Gold & Stocks)
+The user is asking how the **Investment P/L** dashboard works. This is a Q&A, not an implementation request — no plan needed, but since I'm in plan mode I'll explain clearly.
 
-### What to build
+## How the Investment P/L dashboard works
 
-New admin tab **"Investment P/L"** under Admin Dashboard showing platform-wide and per-user unrealized profit/loss for Gold and Stocks holdings.
+**Where to find it:** Admin Dashboard → "Investment P/L" tab (TrendingUp icon, under Revenue/Treasury group).
 
-### Component: `src/components/admin/AdminInvestmentPnL.tsx`
+### The math (computed live in the browser, not stored in DB)
 
-**Top summary cards (4):**
-- Total Gold Invested (sum of `avg_buy_price × grams`)
-- Total Gold Current Value (sum of `current_price_per_gram × grams`)
-- Total Stocks Invested (sum of `avg_buy_price × qty`)
-- Total Stocks Current Value (sum of `current_price × qty`)
-- Each card shows net P/L with green/red badge and % change
-
-**Two tabs: Gold | Stocks**
-
-Per-user table with columns:
-- User (name + phone)
-- Gold: grams · avg buy · current · invested · current value · **P/L (৳ + %)**
-- Stocks: symbol · qty · avg buy · current · invested · current value · **P/L (৳ + %)**
-- Sortable by P/L; filter winners/losers; CSV export
-
-**Live sync:** subscribe to `gold_holdings` and `stock_holdings` UPDATE events → recompute totals instantly (same pattern as user-side SavingsFlow).
-
-### Data fetching
-
-Two queries joining holdings with profiles:
-```ts
-supabase.from("gold_holdings").select("*, profiles!inner(name, phone)").gt("grams", 0)
-supabase.from("stock_holdings").select("*, profiles!inner(name, phone)").gt("qty", 0)
+For every user holding:
 ```
-P/L computed client-side from existing columns (no DB change needed — `current_price` is already kept fresh by the polling hook).
+Invested  = avg_buy_price × quantity (or grams)
+Value     = current_price × quantity (or grams)
+P/L       = Value − Invested
+P/L %     = (P/L ÷ Invested) × 100
+```
 
-### Wiring
+- **avg_buy_price** is locked in the DB row when the user buys (`gold_holdings` / `stock_holdings`).
+- **current_price** comes from two live sources:
+  - **Gold** → `gold-price` edge function (Swissquote → gold-api.com → static fallback), polled every 30s by `useGoldPrice`.
+  - **Stocks** → `stock-price` edge function, polled every 30s by `useStockPrices`.
 
-- Add tab entry in `src/pages/AdminDashboard.tsx` (under Revenue/Treasury group)
-- Icon: `TrendingUp` from lucide-react
-- Follow existing admin UI pattern (header with icon+title, card-based mobile layout, glass styling)
+### What you see on screen
 
-### Files touched
-- **New**: `src/components/admin/AdminInvestmentPnL.tsx`
-- **Edit**: `src/pages/AdminDashboard.tsx` (register new tab)
+1. **4 summary cards (top):** platform-wide totals — Gold Invested, Gold Value (+P/L badge), Stocks Invested, Stocks Value (+P/L badge). Green = profit, red = loss.
+2. **Filter bar:** search by user/phone, toggle All / Winners / Losers, sort by P/L ↑↓.
+3. **Two tabs:**
+   - **Gold:** every user's grams, karat, avg buy vs current ৳/g, invested, current value, P/L.
+   - **Stocks:** every user's symbol, qty, avg buy vs current ৳, invested, current value, P/L.
+4. **CSV export** button per tab → downloads filtered rows.
 
-### Out of scope
-- Realized P/L history (would need a `gold_trades` / `stock_trades` ledger — not present today)
-- Per-symbol aggregation across users (can add later as a 3rd sub-tab)
+### Why it updates without refresh
+
+- Subscribes to Postgres `*` events on `gold_holdings` and `stock_holdings` → re-fetches on any insert/update/delete (e.g. user buys/sells).
+- Merges live prices from `useStockPrices` straight into table rows every 30s → P/L recalculates instantly without a DB round-trip.
+
+### Important caveat
+
+This is **unrealized** P/L only (paper gains/losses on currently held positions). **Realized** P/L from past sales isn't tracked because there's no `gold_trades` / `stock_trades` ledger table yet — that would be a separate feature if you want it.
+
+### Want me to add anything?
+
+Possible next steps: per-symbol aggregation tab (e.g. "all users holding GRPH"), realized P/L ledger, or a top movers leaderboard.
 
