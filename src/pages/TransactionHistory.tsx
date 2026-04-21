@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth, subMonths, endOfMonth } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
   CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle, Phone,
@@ -107,23 +107,6 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   const [fromOpen, setFromOpen]   = useState(false);
   const [toOpen, setToOpen]       = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [datePreset, setDatePreset] = useState<"this_month" | "last_month" | "custom">("this_month");
-
-  const applyPreset = (preset: "this_month" | "last_month" | "custom") => {
-    setDatePreset(preset);
-    if (preset === "this_month") {
-      setDateFrom(startOfMonth(new Date()));
-      setDateTo(endOfDay(new Date()));
-      setShowFilters(false);
-    } else if (preset === "last_month") {
-      const lastMonth = subMonths(new Date(), 1);
-      setDateFrom(startOfMonth(lastMonth));
-      setDateTo(endOfMonth(lastMonth));
-      setShowFilters(false);
-    } else {
-      setShowFilters(true);
-    }
-  };
   const [selectedTx, setSelectedTx]   = useState<Transaction | null>(null);
   const [copied, setCopied]           = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -209,7 +192,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
     });
   }, [activeTab, search, dateFrom, dateTo, allTransactions]);
 
-  const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); setDatePreset("this_month"); setDateFrom(startOfMonth(new Date())); setDateTo(endOfDay(new Date())); };
+  const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); };
   const hasActiveFilters = search || dateFrom || dateTo || activeTab !== "all";
 
   const totalIn  = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
@@ -335,28 +318,6 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
             </button>
           )}
         </div>
-      </div>
-
-      {/* ── Quick date-range buttons ────────────────────────────────── */}
-      <div className="flex gap-1.5 mb-2">
-        {([
-          { id: "this_month" as const, label: "This Month" },
-          { id: "last_month" as const, label: "Last Month" },
-          { id: "custom" as const, label: "Custom" },
-        ]).map(({ id, label }) => (
-          <motion.button
-            key={id}
-            whileTap={{ scale: 0.93 }}
-            onClick={() => applyPreset(id)}
-            className={`flex-1 px-2 py-1.5 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all ${
-              datePreset === id
-                ? "gradient-primary text-primary-foreground shadow-glow"
-                : "bg-card border border-border/60 text-muted-foreground hover:text-foreground shadow-xs"
-            }`}
-          >
-            {label}
-          </motion.button>
-        ))}
       </div>
 
       {/* ── Date filters (collapsible) ───────────────────────────────────── */}
