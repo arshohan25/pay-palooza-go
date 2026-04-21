@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Search, Download, Shield, FileText, AlertTriangle, User, CreditCard,
   Smartphone, Key, Landmark, ArrowUpDown, Gavel, MessageSquare, Users,
-  Briefcase, Store, ClipboardList, Scale, CheckSquare
+  Briefcase, Store, ClipboardList, Scale, CheckSquare, History
 } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -58,6 +59,10 @@ export default function AdminLEARequest() {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<UserReport | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [reportId, setReportId] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({ authority: false, refNo: false, issueDate: false });
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const [includeSections, setIncludeSections] = useState<Record<SectionKey, boolean>>({
     devices: false,
@@ -80,6 +85,27 @@ export default function AdminLEARequest() {
     setIncludeSections(Object.fromEntries(Object.keys(OPTIONAL_SECTIONS).map(k => [k, val])) as Record<SectionKey, boolean>);
   };
 
+  const generateReportId = () => {
+    const d = new Date();
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `LEA-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}-${rand}`;
+  };
+
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const { data } = await supabase
+        .from("lea_reports")
+        .select("*")
+        .order("generated_at", { ascending: false })
+        .limit(50);
+      setHistory(data ?? []);
+    } catch { /* ignore */ }
+    setHistoryLoading(false);
+  }, []);
+
+  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
   const logAction = async (action: string, details: Record<string, any>) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
@@ -97,6 +123,7 @@ export default function AdminLEARequest() {
     if (!phone.trim()) return toast.error("Enter a phone number");
     setLoading(true);
     setReport(null);
+    setReportId("");
 
     try {
       const { data: profile, error } = await supabase
@@ -154,6 +181,8 @@ export default function AdminLEARequest() {
         auditLogs: auditRes.data ?? [],
       });
 
+      setReportId(generateReportId());
+
       await logAction("lea_data_search", { phone: phone.trim(), user_id: userId });
       toast.success("User data retrieved");
     } catch (err: any) {
@@ -163,15 +192,19 @@ export default function AdminLEARequest() {
     }
   };
 
-  const generateReportId = () => {
-    const d = new Date();
-    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `LEA-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}-${rand}`;
-  };
+  const hasValidationErrors = !authority.trim() || !refNo.trim() || !issueDate;
 
   const handleDownload = async () => {
-    if (!authority.trim()) return toast.error("Enter Requesting Authority");
-    if (!refNo.trim()) return toast.error("Enter Reference Number");
+    const errors = {
+      authority: !authority.trim(),
+      refNo: !refNo.trim(),
+      issueDate: !issueDate,
+    };
+    setFieldErrors(errors);
+    if (errors.authority || errors.refNo || errors.issueDate) {
+      toast.error("Please fill all required fields before downloading");
+      return;
+    }
     if (!reportRef.current) return;
 
     setGenerating(true);
@@ -181,9 +214,9 @@ export default function AdminLEARequest() {
       });
 
       const imgData = canvas.toDataURL("image/png");
-      const imgWidth = 210; // A4 width in mm
+      const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: imgHeight > 297 ? "portrait" : "portrait" });
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
       let yOffset = 0;
       const pageHeight = 297;
@@ -195,14 +228,39 @@ export default function AdminLEARequest() {
 
       pdf.save(`LEA-Report-${phone}-${new Date().toISOString().slice(0, 10)}.pdf`);
 
+      // Save to database
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const enabledSections = (Object.keys(OPTIONAL_SECTIONS) as SectionKey[]).filter(k => includeSections[k]);
+        await supabase.from("lea_reports").insert({
+          report_id: reportId,
+          phone: phone.trim(),
+          target_user_id: report?.profile?.user_id || null,
+          authority: authority.trim(),
+          reference_no: refNo.trim(),
+          issue_date: issueDate,
+          sections_included: enabledSections,
+          generated_by: session.user.id,
+          summary: {
+            total_txns: report?.transactions.length ?? 0,
+            total_in: totalIn,
+            total_out: totalOut,
+            fraud_alerts: report?.fraudAlerts.length ?? 0,
+            disputes: report?.disputes.length ?? 0,
+          },
+        } as any);
+      }
+
       await logAction("lea_report_download", {
         phone: phone.trim(),
         user_id: report?.profile?.user_id,
         authority: authority.trim(),
         reference_no: refNo.trim(),
+        report_id: reportId,
       });
 
       toast.success("PDF report downloaded");
+      fetchHistory();
     } catch {
       toast.error("Failed to generate report");
     } finally {
@@ -265,9 +323,8 @@ export default function AdminLEARequest() {
     </table>
   );
 
-  // Track print section numbering dynamically
   const getPrintSectionNumbers = () => {
-    let n = 5; // sections 1-4 are always present, next starts at 5
+    let n = 5;
     const nums: Partial<Record<SectionKey, number>> = {};
     (Object.keys(OPTIONAL_SECTIONS) as SectionKey[]).forEach(k => {
       if (includeSections[k]) { nums[k] = n; n++; }
@@ -296,10 +353,40 @@ export default function AdminLEARequest() {
           {report && (
             <>
               <div className="flex flex-col sm:flex-row gap-2">
-                <Input placeholder="Requesting Authority *" value={authority} onChange={e => setAuthority(e.target.value)} />
-                <Input placeholder="Reference No *" value={refNo} onChange={e => setRefNo(e.target.value)} />
-                <Input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} className="sm:max-w-[160px]" />
-                <Button onClick={handleDownload} disabled={generating} variant="destructive" className="shrink-0">
+                <div className="flex-1 space-y-1">
+                  <Input
+                    placeholder="Requesting Authority *"
+                    value={authority}
+                    onChange={e => { setAuthority(e.target.value); setFieldErrors(p => ({ ...p, authority: false })); }}
+                    className={fieldErrors.authority ? "border-destructive" : ""}
+                  />
+                  {fieldErrors.authority && <p className="text-[10px] text-destructive">Required</p>}
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Input
+                    placeholder="Reference No *"
+                    value={refNo}
+                    onChange={e => { setRefNo(e.target.value); setFieldErrors(p => ({ ...p, refNo: false })); }}
+                    className={fieldErrors.refNo ? "border-destructive" : ""}
+                  />
+                  {fieldErrors.refNo && <p className="text-[10px] text-destructive">Required</p>}
+                </div>
+                <div className="space-y-1 sm:max-w-[160px]">
+                  <Input
+                    type="date"
+                    value={issueDate}
+                    onChange={e => { setIssueDate(e.target.value); setFieldErrors(p => ({ ...p, issueDate: false })); }}
+                    className={fieldErrors.issueDate ? "border-destructive" : ""}
+                  />
+                  {fieldErrors.issueDate && <p className="text-[10px] text-destructive">Required</p>}
+                </div>
+                <Button
+                  onClick={handleDownload}
+                  disabled={generating || hasValidationErrors}
+                  variant="destructive"
+                  className="shrink-0"
+                  title={hasValidationErrors ? "Fill all required fields first" : "Download PDF"}
+                >
                   <Download className="w-4 h-4 mr-1" />{generating ? "Generating..." : "Download PDF"}
                 </Button>
               </div>
@@ -325,6 +412,15 @@ export default function AdminLEARequest() {
           )}
         </CardContent>
       </Card>
+
+      {/* Report ID Badge */}
+      {report && reportId && (
+        <div className="flex items-center gap-2 px-1">
+          <FileText className="w-4 h-4 text-primary" />
+          <span className="text-xs text-muted-foreground">Report ID:</span>
+          <Badge variant="outline" className="font-mono text-xs">{reportId}</Badge>
+        </div>
+      )}
 
       {/* On-screen preview */}
       {report && (
@@ -396,7 +492,7 @@ export default function AdminLEARequest() {
             </div>
             <Separator />
 
-            {/* 4. Roles (always visible) */}
+            {/* 4. Roles */}
             <div>
               <SectionTitle icon={Key} title="Roles & Permissions" />
               {report.roles.length > 0 ? (
@@ -732,7 +828,7 @@ export default function AdminLEARequest() {
               <tbody>
                 <tr>
                   <td style={{ padding: "6px 10px", fontWeight: "bold", color: "#555", background: "#f5f5f5", borderRight: "1px solid #d0d0d0", borderBottom: "1px solid #d0d0d0", width: "25%" }}>Report ID</td>
-                  <td style={{ padding: "6px 10px", fontWeight: "bold", borderBottom: "1px solid #d0d0d0", borderRight: "1px solid #d0d0d0", width: "25%" }}>{generateReportId()}</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", borderBottom: "1px solid #d0d0d0", borderRight: "1px solid #d0d0d0", width: "25%" }}>{reportId}</td>
                   <td style={{ padding: "6px 10px", fontWeight: "bold", color: "#555", background: "#f5f5f5", borderRight: "1px solid #d0d0d0", borderBottom: "1px solid #d0d0d0", width: "25%" }}>Issue Date</td>
                   <td style={{ padding: "6px 10px", fontWeight: "bold", borderBottom: "1px solid #d0d0d0", width: "25%" }}>{issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "_______________"}</td>
                 </tr>
@@ -1011,6 +1107,53 @@ export default function AdminLEARequest() {
           </div>
         </div>
       )}
+
+      {/* LEA Reports History */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History className="w-5 h-5" />
+            LEA Reports History
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Previously generated law enforcement disclosure reports.</p>
+        </CardHeader>
+        <CardContent>
+          {historyLoading ? (
+            <p className="text-xs text-muted-foreground">Loading...</p>
+          ) : history.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No reports generated yet.</p>
+          ) : (
+            <div className="overflow-auto max-h-80 border rounded">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Report ID</TableHead>
+                    <TableHead className="text-xs">Phone</TableHead>
+                    <TableHead className="text-xs">Authority</TableHead>
+                    <TableHead className="text-xs">Ref No</TableHead>
+                    <TableHead className="text-xs">Issue Date</TableHead>
+                    <TableHead className="text-xs">Generated</TableHead>
+                    <TableHead className="text-xs text-center">Sections</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.map((h) => (
+                    <TableRow key={h.id}>
+                      <TableCell className="font-mono text-[10px]">{h.report_id}</TableCell>
+                      <TableCell className="text-xs">{h.phone}</TableCell>
+                      <TableCell className="text-xs">{h.authority}</TableCell>
+                      <TableCell className="text-xs">{h.reference_no}</TableCell>
+                      <TableCell className="text-xs">{h.issue_date}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{new Date(h.generated_at).toLocaleString()}</TableCell>
+                      <TableCell className="text-xs text-center">{h.sections_included?.length ?? 0}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
