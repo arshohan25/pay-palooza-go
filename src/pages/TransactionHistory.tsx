@@ -253,7 +253,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
             whileTap={{ scale: 0.88 }}
             onClick={() => setShowFilters((v) => !v)}
             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-              showFilters || dateFrom || dateTo
+              showFilters || dateScopeChanged || search || activeTab !== "all"
                 ? "bg-white text-primary"
                 : "glass-hero"
             }`}
