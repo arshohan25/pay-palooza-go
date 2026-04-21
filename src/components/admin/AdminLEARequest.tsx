@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Search, Download, Shield, FileText, AlertTriangle, User, CreditCard,
   Smartphone, Key, Landmark, ArrowUpDown, Gavel, MessageSquare, Users,
-  Briefcase, Store, ClipboardList, Scale
+  Briefcase, Store, ClipboardList, Scale, CheckSquare
 } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
+import { generateWalletId } from "@/lib/walletId";
 
 interface UserReport {
   profile: any;
@@ -31,6 +33,22 @@ interface UserReport {
   auditLogs: any[];
 }
 
+const OPTIONAL_SECTIONS = {
+  devices: "Registered Devices",
+  savedBanks: "Saved Bank Accounts",
+  fundRequests: "Fund Requests",
+  loans: "Loan History",
+  fraudAlerts: "Fraud Alerts",
+  disputes: "Disputes",
+  complaints: "Support Complaints",
+  referrals: "Referral Activity",
+  agent: "Agent Profile",
+  merchant: "Merchant Profile",
+  auditLogs: "Audit Trail",
+} as const;
+
+type SectionKey = keyof typeof OPTIONAL_SECTIONS;
+
 export default function AdminLEARequest() {
   const [phone, setPhone] = useState("");
   const [authority, setAuthority] = useState("");
@@ -39,6 +57,26 @@ export default function AdminLEARequest() {
   const [report, setReport] = useState<UserReport | null>(null);
   const [generating, setGenerating] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const [includeSections, setIncludeSections] = useState<Record<SectionKey, boolean>>({
+    devices: false,
+    savedBanks: false,
+    fundRequests: false,
+    loans: false,
+    fraudAlerts: false,
+    disputes: false,
+    complaints: false,
+    referrals: false,
+    agent: false,
+    merchant: false,
+    auditLogs: false,
+  });
+
+  const toggleSection = (key: SectionKey) => setIncludeSections(p => ({ ...p, [key]: !p[key] }));
+  const allSelected = Object.values(includeSections).every(Boolean);
+  const toggleAll = () => {
+    const val = !allSelected;
+    setIncludeSections(Object.fromEntries(Object.keys(OPTIONAL_SECTIONS).map(k => [k, val])) as Record<SectionKey, boolean>);
+  };
 
   const logAction = async (action: string, details: Record<string, any>) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -160,6 +198,7 @@ export default function AdminLEARequest() {
     }
   };
 
+  const walletId = report ? generateWalletId(report.profile.user_id) : "";
   const totalIn = report?.transactions.filter(t => ["receive", "cashin", "addmoney", "deposit"].includes(t.type)).reduce((s, t) => s + Number(t.amount), 0) ?? 0;
   const totalOut = report?.transactions.filter(t => ["send", "cashout", "payment", "paybill", "recharge", "banktransfer"].includes(t.type)).reduce((s, t) => s + Number(t.amount), 0) ?? 0;
   const totalFees = report?.transactions.reduce((s, t) => s + Number(t.fee || 0), 0) ?? 0;
@@ -209,6 +248,16 @@ export default function AdminLEARequest() {
     </table>
   );
 
+  // Track print section numbering dynamically
+  const getPrintSectionNumbers = () => {
+    let n = 5; // sections 1-4 are always present, next starts at 5
+    const nums: Partial<Record<SectionKey, number>> = {};
+    (Object.keys(OPTIONAL_SECTIONS) as SectionKey[]).forEach(k => {
+      if (includeSections[k]) { nums[k] = n; n++; }
+    });
+    return nums;
+  };
+
   return (
     <div className="space-y-4">
       {/* Search */}
@@ -228,13 +277,33 @@ export default function AdminLEARequest() {
             </Button>
           </div>
           {report && (
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Input placeholder="Requesting Authority *" value={authority} onChange={e => setAuthority(e.target.value)} />
-              <Input placeholder="Reference No *" value={refNo} onChange={e => setRefNo(e.target.value)} />
-              <Button onClick={handleDownload} disabled={generating} variant="destructive" className="shrink-0">
-                <Download className="w-4 h-4 mr-1" />{generating ? "Generating..." : "Download Report"}
-              </Button>
-            </div>
+            <>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input placeholder="Requesting Authority *" value={authority} onChange={e => setAuthority(e.target.value)} />
+                <Input placeholder="Reference No *" value={refNo} onChange={e => setRefNo(e.target.value)} />
+                <Button onClick={handleDownload} disabled={generating} variant="destructive" className="shrink-0">
+                  <Download className="w-4 h-4 mr-1" />{generating ? "Generating..." : "Download Report"}
+                </Button>
+              </div>
+
+              {/* Optional sections toggle */}
+              <div className="border rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold flex items-center gap-1"><CheckSquare className="w-3.5 h-3.5" /> Optional Sections to Include</p>
+                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={toggleAll}>
+                    {allSelected ? "Deselect All" : "Select All"}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                  {(Object.entries(OPTIONAL_SECTIONS) as [SectionKey, string][]).map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-1.5 text-[11px] cursor-pointer hover:bg-muted/40 rounded px-1.5 py-1">
+                      <Checkbox checked={includeSections[key]} onCheckedChange={() => toggleSection(key)} className="h-3.5 w-3.5" />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -250,10 +319,10 @@ export default function AdminLEARequest() {
                 <InfoRow label="Name" value={report.profile.name} />
                 <InfoRow label="Phone" value={report.profile.phone} />
                 <InfoRow label="Email" value={report.profile.email} />
+                <InfoRow label="Wallet ID" value={walletId} />
                 <InfoRow label="Status" value={<Badge variant={report.profile.status === "active" ? "default" : "destructive"} className="text-[10px]">{report.profile.status}</Badge>} />
                 <InfoRow label="Balance" value={`৳${Number(report.profile.balance || 0).toLocaleString()}`} />
                 <InfoRow label="Registered" value={new Date(report.profile.created_at).toLocaleDateString()} />
-                <InfoRow label="Referral Code" value={report.profile.referral_code} />
                 <InfoRow label="KYC Exempt" value={report.profile.kyc_exempt ? "Yes" : "No"} />
                 <InfoRow label="Deactivated At" value={report.profile.deactivated_at ? new Date(report.profile.deactivated_at).toLocaleString() : null} />
                 <InfoRow label="Scheduled Deletion" value={report.profile.scheduled_deletion_at ? new Date(report.profile.scheduled_deletion_at).toLocaleString() : null} />
@@ -311,23 +380,7 @@ export default function AdminLEARequest() {
             </div>
             <Separator />
 
-            {/* 4. Devices */}
-            <div>
-              <SectionTitle icon={Smartphone} title="Registered Devices" count={report.devices.length} />
-              {report.devices.length > 0 ? (
-                <div className="text-xs space-y-1">
-                  {report.devices.map((d, i) => (
-                    <div key={i} className="flex justify-between bg-muted/30 p-1.5 rounded">
-                      <span className="font-mono text-[10px] truncate max-w-[60%]">{d.device_fingerprint}</span>
-                      <span className="text-muted-foreground">{new Date(d.created_at).toLocaleDateString()}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : <p className="text-xs text-muted-foreground">No devices registered</p>}
-            </div>
-            <Separator />
-
-            {/* 5. Roles */}
+            {/* 4. Roles (always visible) */}
             <div>
               <SectionTitle icon={Key} title="Roles & Permissions" />
               {report.roles.length > 0 ? (
@@ -336,189 +389,230 @@ export default function AdminLEARequest() {
                 </div>
               ) : <p className="text-xs text-muted-foreground">No roles assigned</p>}
             </div>
-            <Separator />
 
-            {/* 6. Saved Bank Accounts */}
-            <div>
-              <SectionTitle icon={Landmark} title="Saved Bank Accounts" count={report.savedBanks.length} />
-              {report.savedBanks.length > 0 ? (
-                <div className="max-h-40 overflow-auto border rounded text-xs">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr><th className="p-1.5 text-left">Bank</th><th className="p-1.5 text-left">Account No</th><th className="p-1.5 text-left">Holder</th><th className="p-1.5 text-left">Added</th></tr>
-                    </thead>
-                    <tbody>
-                      {report.savedBanks.map((b, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="p-1.5">{b.bank_name}</td><td className="p-1.5 font-mono">{b.account_number}</td>
-                          <td className="p-1.5">{b.account_holder}</td><td className="p-1.5">{new Date(b.created_at).toLocaleDateString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : <p className="text-xs text-muted-foreground">No saved bank accounts</p>}
-            </div>
-            <Separator />
+            {/* === OPTIONAL SECTIONS === */}
 
-            {/* 7. Fund Requests */}
-            <div>
-              <SectionTitle icon={ArrowUpDown} title="Fund Requests" count={report.fundRequests.length} />
-              {report.fundRequests.length > 0 ? (
-                <div className="max-h-40 overflow-auto border rounded text-xs">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr><th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">Type</th><th className="p-1.5 text-right">Amount</th><th className="p-1.5 text-left">Method</th><th className="p-1.5 text-left">Bank</th><th className="p-1.5 text-left">Account</th><th className="p-1.5 text-left">Status</th></tr>
-                    </thead>
-                    <tbody>
-                      {report.fundRequests.map((f, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="p-1.5">{new Date(f.created_at).toLocaleDateString()}</td>
-                          <td className="p-1.5">{f.type}</td>
-                          <td className="p-1.5 text-right">৳{Number(f.amount).toLocaleString()}</td>
-                          <td className="p-1.5">{f.source_method || "—"}</td>
-                          <td className="p-1.5">{f.bank_name || "—"}</td>
-                          <td className="p-1.5 font-mono">{f.account_number || "—"}</td>
-                          <td className="p-1.5"><Badge variant="outline" className="text-[10px]">{f.status}</Badge></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : <p className="text-xs text-muted-foreground">No fund requests</p>}
-            </div>
-            <Separator />
-
-            {/* 8. Loans */}
-            <div>
-              <SectionTitle icon={Scale} title="Loan History" count={report.loans.length} />
-              {report.loans.length > 0 ? (
-                <div className="max-h-40 overflow-auto border rounded text-xs">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr><th className="p-1.5 text-left">Applied</th><th className="p-1.5 text-right">Amount</th><th className="p-1.5 text-left">Tenure</th><th className="p-1.5 text-right">Repaid</th><th className="p-1.5 text-left">Status</th></tr>
-                    </thead>
-                    <tbody>
-                      {report.loans.map((l, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="p-1.5">{new Date(l.applied_at).toLocaleDateString()}</td>
-                          <td className="p-1.5 text-right">৳{Number(l.amount).toLocaleString()}</td>
-                          <td className="p-1.5">{l.tenure_days} days</td>
-                          <td className="p-1.5 text-right">৳{Number(l.repaid_amount || 0).toLocaleString()}</td>
-                          <td className="p-1.5"><Badge variant="outline" className="text-[10px]">{l.status}</Badge></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : <p className="text-xs text-muted-foreground">No loan history</p>}
-            </div>
-            <Separator />
-
-            {/* 9. Fraud Alerts */}
-            <div>
-              <SectionTitle icon={AlertTriangle} title="Fraud Alerts" count={report.fraudAlerts.length} />
-              {report.fraudAlerts.length > 0 ? (
-                <div className="max-h-40 overflow-auto border rounded text-xs">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr><th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">Rule</th><th className="p-1.5 text-left">Severity</th><th className="p-1.5 text-left">Status</th></tr>
-                    </thead>
-                    <tbody>
-                      {report.fraudAlerts.map((f, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="p-1.5">{new Date(f.created_at).toLocaleDateString()}</td>
-                          <td className="p-1.5">{f.rule_triggered}</td>
-                          <td className="p-1.5"><Badge variant={f.severity === "critical" ? "destructive" : "outline"} className="text-[10px]">{f.severity}</Badge></td>
-                          <td className="p-1.5">{f.status}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : <p className="text-xs text-muted-foreground">No fraud alerts</p>}
-            </div>
-            <Separator />
-
-            {/* 10. Disputes */}
-            <div>
-              <SectionTitle icon={Gavel} title="Disputes" count={report.disputes.length} />
-              {report.disputes.length > 0 ? (
-                <div className="max-h-40 overflow-auto border rounded text-xs">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr><th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">Subject</th><th className="p-1.5 text-left">Status</th><th className="p-1.5 text-left">Resolution</th></tr>
-                    </thead>
-                    <tbody>
-                      {report.disputes.map((d, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="p-1.5">{new Date(d.created_at).toLocaleDateString()}</td>
-                          <td className="p-1.5">{d.subject}</td>
-                          <td className="p-1.5"><Badge variant="outline" className="text-[10px]">{d.status}</Badge></td>
-                          <td className="p-1.5 max-w-[200px] truncate">{d.resolution_notes || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : <p className="text-xs text-muted-foreground">No disputes</p>}
-            </div>
-            <Separator />
-
-            {/* 11. Support Complaints */}
-            <div>
-              <SectionTitle icon={MessageSquare} title="Support Complaints" count={report.complaints.length} />
-              {report.complaints.length > 0 ? (
-                <div className="max-h-40 overflow-auto border rounded text-xs">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr><th className="p-1.5 text-left">Ticket</th><th className="p-1.5 text-left">Subject</th><th className="p-1.5 text-left">Priority</th><th className="p-1.5 text-left">Status</th></tr>
-                    </thead>
-                    <tbody>
-                      {report.complaints.map((c, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="p-1.5 font-mono">{c.complaint_number}</td>
-                          <td className="p-1.5">{c.subject}</td>
-                          <td className="p-1.5"><Badge variant="outline" className="text-[10px]">{c.priority}</Badge></td>
-                          <td className="p-1.5">{c.status}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : <p className="text-xs text-muted-foreground">No support complaints</p>}
-            </div>
-            <Separator />
-
-            {/* 12. Referrals */}
-            <div>
-              <SectionTitle icon={Users} title="Referral Activity" count={report.referrals.length} />
-              {report.referrals.length > 0 ? (
-                <div className="max-h-40 overflow-auto border rounded text-xs">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr><th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">Code</th><th className="p-1.5 text-left">Role</th><th className="p-1.5 text-right">Rewarded</th><th className="p-1.5 text-left">Status</th></tr>
-                    </thead>
-                    <tbody>
-                      {report.referrals.map((r, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="p-1.5">{new Date(r.created_at).toLocaleDateString()}</td>
-                          <td className="p-1.5 font-mono">{r.referral_code}</td>
-                          <td className="p-1.5">{r.referrer_id === report.profile.user_id ? "Referrer" : "Referee"}</td>
-                          <td className="p-1.5 text-right">৳{Number(r.total_rewarded || 0).toLocaleString()}</td>
-                          <td className="p-1.5">{r.status}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : <p className="text-xs text-muted-foreground">No referral activity</p>}
-            </div>
-            <Separator />
-
-            {/* 13. Agent Profile */}
-            {report.agent && (
+            {includeSections.devices && (
               <>
+                <Separator />
+                <div>
+                  <SectionTitle icon={Smartphone} title="Registered Devices" count={report.devices.length} />
+                  {report.devices.length > 0 ? (
+                    <div className="text-xs space-y-1">
+                      {report.devices.map((d, i) => (
+                        <div key={i} className="flex justify-between bg-muted/30 p-1.5 rounded">
+                          <span className="font-mono text-[10px] truncate max-w-[60%]">{d.device_fingerprint}</span>
+                          <span className="text-muted-foreground">{new Date(d.created_at).toLocaleDateString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="text-xs text-muted-foreground">No devices registered</p>}
+                </div>
+              </>
+            )}
+
+            {includeSections.savedBanks && (
+              <>
+                <Separator />
+                <div>
+                  <SectionTitle icon={Landmark} title="Saved Bank Accounts" count={report.savedBanks.length} />
+                  {report.savedBanks.length > 0 ? (
+                    <div className="max-h-40 overflow-auto border rounded text-xs">
+                      <table className="w-full">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr><th className="p-1.5 text-left">Bank</th><th className="p-1.5 text-left">Account No</th><th className="p-1.5 text-left">Holder</th><th className="p-1.5 text-left">Added</th></tr>
+                        </thead>
+                        <tbody>
+                          {report.savedBanks.map((b, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="p-1.5">{b.bank_name}</td><td className="p-1.5 font-mono">{b.account_number}</td>
+                              <td className="p-1.5">{b.account_holder}</td><td className="p-1.5">{new Date(b.created_at).toLocaleDateString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p className="text-xs text-muted-foreground">No saved bank accounts</p>}
+                </div>
+              </>
+            )}
+
+            {includeSections.fundRequests && (
+              <>
+                <Separator />
+                <div>
+                  <SectionTitle icon={ArrowUpDown} title="Fund Requests" count={report.fundRequests.length} />
+                  {report.fundRequests.length > 0 ? (
+                    <div className="max-h-40 overflow-auto border rounded text-xs">
+                      <table className="w-full">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr><th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">Type</th><th className="p-1.5 text-right">Amount</th><th className="p-1.5 text-left">Method</th><th className="p-1.5 text-left">Bank</th><th className="p-1.5 text-left">Account</th><th className="p-1.5 text-left">Status</th></tr>
+                        </thead>
+                        <tbody>
+                          {report.fundRequests.map((f, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="p-1.5">{new Date(f.created_at).toLocaleDateString()}</td>
+                              <td className="p-1.5">{f.type}</td>
+                              <td className="p-1.5 text-right">৳{Number(f.amount).toLocaleString()}</td>
+                              <td className="p-1.5">{f.source_method || "—"}</td>
+                              <td className="p-1.5">{f.bank_name || "—"}</td>
+                              <td className="p-1.5 font-mono">{f.account_number || "—"}</td>
+                              <td className="p-1.5"><Badge variant="outline" className="text-[10px]">{f.status}</Badge></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p className="text-xs text-muted-foreground">No fund requests</p>}
+                </div>
+              </>
+            )}
+
+            {includeSections.loans && (
+              <>
+                <Separator />
+                <div>
+                  <SectionTitle icon={Scale} title="Loan History" count={report.loans.length} />
+                  {report.loans.length > 0 ? (
+                    <div className="max-h-40 overflow-auto border rounded text-xs">
+                      <table className="w-full">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr><th className="p-1.5 text-left">Applied</th><th className="p-1.5 text-right">Amount</th><th className="p-1.5 text-left">Tenure</th><th className="p-1.5 text-right">Repaid</th><th className="p-1.5 text-left">Status</th></tr>
+                        </thead>
+                        <tbody>
+                          {report.loans.map((l, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="p-1.5">{new Date(l.applied_at).toLocaleDateString()}</td>
+                              <td className="p-1.5 text-right">৳{Number(l.amount).toLocaleString()}</td>
+                              <td className="p-1.5">{l.tenure_days} days</td>
+                              <td className="p-1.5 text-right">৳{Number(l.repaid_amount || 0).toLocaleString()}</td>
+                              <td className="p-1.5"><Badge variant="outline" className="text-[10px]">{l.status}</Badge></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p className="text-xs text-muted-foreground">No loan history</p>}
+                </div>
+              </>
+            )}
+
+            {includeSections.fraudAlerts && (
+              <>
+                <Separator />
+                <div>
+                  <SectionTitle icon={AlertTriangle} title="Fraud Alerts" count={report.fraudAlerts.length} />
+                  {report.fraudAlerts.length > 0 ? (
+                    <div className="max-h-40 overflow-auto border rounded text-xs">
+                      <table className="w-full">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr><th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">Rule</th><th className="p-1.5 text-left">Severity</th><th className="p-1.5 text-left">Status</th></tr>
+                        </thead>
+                        <tbody>
+                          {report.fraudAlerts.map((f, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="p-1.5">{new Date(f.created_at).toLocaleDateString()}</td>
+                              <td className="p-1.5">{f.rule_triggered}</td>
+                              <td className="p-1.5"><Badge variant={f.severity === "critical" ? "destructive" : "outline"} className="text-[10px]">{f.severity}</Badge></td>
+                              <td className="p-1.5">{f.status}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p className="text-xs text-muted-foreground">No fraud alerts</p>}
+                </div>
+              </>
+            )}
+
+            {includeSections.disputes && (
+              <>
+                <Separator />
+                <div>
+                  <SectionTitle icon={Gavel} title="Disputes" count={report.disputes.length} />
+                  {report.disputes.length > 0 ? (
+                    <div className="max-h-40 overflow-auto border rounded text-xs">
+                      <table className="w-full">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr><th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">Subject</th><th className="p-1.5 text-left">Status</th><th className="p-1.5 text-left">Resolution</th></tr>
+                        </thead>
+                        <tbody>
+                          {report.disputes.map((d, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="p-1.5">{new Date(d.created_at).toLocaleDateString()}</td>
+                              <td className="p-1.5">{d.subject}</td>
+                              <td className="p-1.5"><Badge variant="outline" className="text-[10px]">{d.status}</Badge></td>
+                              <td className="p-1.5 max-w-[200px] truncate">{d.resolution_notes || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p className="text-xs text-muted-foreground">No disputes</p>}
+                </div>
+              </>
+            )}
+
+            {includeSections.complaints && (
+              <>
+                <Separator />
+                <div>
+                  <SectionTitle icon={MessageSquare} title="Support Complaints" count={report.complaints.length} />
+                  {report.complaints.length > 0 ? (
+                    <div className="max-h-40 overflow-auto border rounded text-xs">
+                      <table className="w-full">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr><th className="p-1.5 text-left">Ticket</th><th className="p-1.5 text-left">Subject</th><th className="p-1.5 text-left">Priority</th><th className="p-1.5 text-left">Status</th></tr>
+                        </thead>
+                        <tbody>
+                          {report.complaints.map((c, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="p-1.5 font-mono">{c.complaint_number}</td>
+                              <td className="p-1.5">{c.subject}</td>
+                              <td className="p-1.5"><Badge variant="outline" className="text-[10px]">{c.priority}</Badge></td>
+                              <td className="p-1.5">{c.status}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p className="text-xs text-muted-foreground">No support complaints</p>}
+                </div>
+              </>
+            )}
+
+            {includeSections.referrals && (
+              <>
+                <Separator />
+                <div>
+                  <SectionTitle icon={Users} title="Referral Activity" count={report.referrals.length} />
+                  {report.referrals.length > 0 ? (
+                    <div className="max-h-40 overflow-auto border rounded text-xs">
+                      <table className="w-full">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr><th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">Wallet ID</th><th className="p-1.5 text-left">Role</th><th className="p-1.5 text-right">Rewarded</th><th className="p-1.5 text-left">Status</th></tr>
+                        </thead>
+                        <tbody>
+                          {report.referrals.map((r, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="p-1.5">{new Date(r.created_at).toLocaleDateString()}</td>
+                              <td className="p-1.5 font-mono">{r.referrer_id === report.profile.user_id ? generateWalletId(r.referee_id) : generateWalletId(r.referrer_id)}</td>
+                              <td className="p-1.5">{r.referrer_id === report.profile.user_id ? "Referrer" : "Referee"}</td>
+                              <td className="p-1.5 text-right">৳{Number(r.total_rewarded || 0).toLocaleString()}</td>
+                              <td className="p-1.5">{r.status}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p className="text-xs text-muted-foreground">No referral activity</p>}
+                </div>
+              </>
+            )}
+
+            {includeSections.agent && report.agent && (
+              <>
+                <Separator />
                 <div>
                   <SectionTitle icon={Briefcase} title="Agent Profile" />
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
@@ -532,13 +626,12 @@ export default function AdminLEARequest() {
                     <InfoRow label="Activated" value={report.agent.activated_at ? new Date(report.agent.activated_at).toLocaleDateString() : null} />
                   </div>
                 </div>
-                <Separator />
               </>
             )}
 
-            {/* 14. Merchant Profile */}
-            {report.merchant && (
+            {includeSections.merchant && report.merchant && (
               <>
+                <Separator />
                 <div>
                   <SectionTitle icon={Store} title="Merchant Profile" />
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
@@ -552,35 +645,39 @@ export default function AdminLEARequest() {
                     <InfoRow label="MDR Rate" value={report.merchant.mdr_rate ? `${report.merchant.mdr_rate}%` : null} />
                   </div>
                 </div>
-                <Separator />
               </>
             )}
 
-            {/* 15. Audit Trail */}
-            <div>
-              <SectionTitle icon={ClipboardList} title="Audit Trail (Last 100)" count={report.auditLogs.length} />
-              {report.auditLogs.length > 0 ? (
-                <div className="max-h-40 overflow-auto border rounded text-xs">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr><th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">Action</th><th className="p-1.5 text-left">Entity</th><th className="p-1.5 text-left">IP</th></tr>
-                    </thead>
-                    <tbody>
-                      {report.auditLogs.map((a, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="p-1.5 whitespace-nowrap">{new Date(a.created_at).toLocaleString()}</td>
-                          <td className="p-1.5">{a.action}</td>
-                          <td className="p-1.5">{a.entity_type || "—"}</td>
-                          <td className="p-1.5 font-mono text-[10px]">{a.ip_address || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            {includeSections.auditLogs && (
+              <>
+                <Separator />
+                <div>
+                  <SectionTitle icon={ClipboardList} title="Audit Trail (Last 100)" count={report.auditLogs.length} />
+                  {report.auditLogs.length > 0 ? (
+                    <div className="max-h-40 overflow-auto border rounded text-xs">
+                      <table className="w-full">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr><th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">Action</th><th className="p-1.5 text-left">Entity</th><th className="p-1.5 text-left">IP</th></tr>
+                        </thead>
+                        <tbody>
+                          {report.auditLogs.map((a, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="p-1.5 whitespace-nowrap">{new Date(a.created_at).toLocaleString()}</td>
+                              <td className="p-1.5">{a.action}</td>
+                              <td className="p-1.5">{a.entity_type || "—"}</td>
+                              <td className="p-1.5 font-mono text-[10px]">{a.ip_address || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p className="text-xs text-muted-foreground">No audit logs</p>}
                 </div>
-              ) : <p className="text-xs text-muted-foreground">No audit logs</p>}
-            </div>
+              </>
+            )}
 
             {/* Summary */}
+            <Separator />
             <div className="bg-muted/30 p-3 rounded-lg text-xs">
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-center">
                 <div><p className="text-muted-foreground">Total Txns</p><p className="font-bold text-sm">{report.transactions.length}</p></div>
@@ -622,10 +719,10 @@ export default function AdminLEARequest() {
               ["Name", report.profile.name || "—"],
               ["Phone", report.profile.phone],
               ["Email", report.profile.email || "—"],
+              ["Wallet ID", walletId],
               ["Account Status", report.profile.status],
               ["Current Balance", `৳${Number(report.profile.balance || 0).toLocaleString()}`],
               ["Registration Date", new Date(report.profile.created_at).toLocaleDateString()],
-              ["Referral Code", report.profile.referral_code || "—"],
               ["KYC Exempt", report.profile.kyc_exempt ? "Yes" : "No"],
               ["Deactivated At", report.profile.deactivated_at ? new Date(report.profile.deactivated_at).toLocaleString() : "—"],
               ["Scheduled Deletion", report.profile.scheduled_deletion_at ? new Date(report.profile.scheduled_deletion_at).toLocaleString() : "—"],
@@ -661,130 +758,164 @@ export default function AdminLEARequest() {
               ])}
             />
 
-            {/* 4. Devices */}
-            <h2 style={secH}>4. REGISTERED DEVICES ({report.devices.length})</h2>
-            {report.devices.length > 0 ? (
-              <PrintTable headers={[{ label: "Device Hash" }, { label: "Registered On" }]}
-                rows={report.devices.map(d => [d.device_fingerprint, new Date(d.created_at).toLocaleString()])} />
-            ) : <p>No device registrations found</p>}
-
-            {/* 5. Roles */}
-            <h2 style={secH}>5. ROLES & PERMISSIONS</h2>
+            {/* 4. Roles */}
+            <h2 style={secH}>4. ROLES & PERMISSIONS</h2>
             <p style={{ fontSize: 12 }}>{report.roles.length > 0 ? report.roles.map(r => r.role).join(", ") : "No roles assigned"}</p>
 
-            {/* 6. Saved Banks */}
-            <h2 style={secH}>6. SAVED BANK ACCOUNTS ({report.savedBanks.length})</h2>
-            {report.savedBanks.length > 0 ? (
-              <PrintTable headers={[{ label: "Bank" }, { label: "Account No" }, { label: "Holder" }, { label: "Added" }]}
-                rows={report.savedBanks.map(b => [b.bank_name, b.account_number, b.account_holder, new Date(b.created_at).toLocaleDateString()])} />
-            ) : <p>No saved bank accounts</p>}
+            {/* Optional print sections with dynamic numbering */}
+            {(() => {
+              const nums = getPrintSectionNumbers();
+              return (
+                <>
+                  {includeSections.devices && (
+                    <>
+                      <h2 style={secH}>{nums.devices}. REGISTERED DEVICES ({report.devices.length})</h2>
+                      {report.devices.length > 0 ? (
+                        <PrintTable headers={[{ label: "Device Hash" }, { label: "Registered On" }]}
+                          rows={report.devices.map(d => [d.device_fingerprint, new Date(d.created_at).toLocaleString()])} />
+                      ) : <p>No device registrations found</p>}
+                    </>
+                  )}
 
-            {/* 7. Fund Requests */}
-            <h2 style={secH}>7. FUND REQUESTS ({report.fundRequests.length})</h2>
-            {report.fundRequests.length > 0 ? (
-              <PrintTable
-                headers={[{ label: "Date" }, { label: "Type" }, { label: "Amount", align: "right" }, { label: "Method" }, { label: "Bank" }, { label: "Account" }, { label: "Status" }]}
-                rows={report.fundRequests.map(f => [
-                  new Date(f.created_at).toLocaleDateString(), f.type, `৳${Number(f.amount).toLocaleString()}`,
-                  f.source_method || "—", f.bank_name || "—", f.account_number || "—", f.status,
-                ])}
-              />
-            ) : <p>No fund requests</p>}
+                  {includeSections.savedBanks && (
+                    <>
+                      <h2 style={secH}>{nums.savedBanks}. SAVED BANK ACCOUNTS ({report.savedBanks.length})</h2>
+                      {report.savedBanks.length > 0 ? (
+                        <PrintTable headers={[{ label: "Bank" }, { label: "Account No" }, { label: "Holder" }, { label: "Added" }]}
+                          rows={report.savedBanks.map(b => [b.bank_name, b.account_number, b.account_holder, new Date(b.created_at).toLocaleDateString()])} />
+                      ) : <p>No saved bank accounts</p>}
+                    </>
+                  )}
 
-            {/* 8. Loans */}
-            <h2 style={secH}>8. LOAN HISTORY ({report.loans.length})</h2>
-            {report.loans.length > 0 ? (
-              <PrintTable
-                headers={[{ label: "Applied" }, { label: "Amount", align: "right" }, { label: "Tenure" }, { label: "Repaid", align: "right" }, { label: "Status" }]}
-                rows={report.loans.map(l => [
-                  new Date(l.applied_at).toLocaleDateString(), `৳${Number(l.amount).toLocaleString()}`,
-                  `${l.tenure_days} days`, `৳${Number(l.repaid_amount || 0).toLocaleString()}`, l.status,
-                ])}
-              />
-            ) : <p>No loan history</p>}
+                  {includeSections.fundRequests && (
+                    <>
+                      <h2 style={secH}>{nums.fundRequests}. FUND REQUESTS ({report.fundRequests.length})</h2>
+                      {report.fundRequests.length > 0 ? (
+                        <PrintTable
+                          headers={[{ label: "Date" }, { label: "Type" }, { label: "Amount", align: "right" }, { label: "Method" }, { label: "Bank" }, { label: "Account" }, { label: "Status" }]}
+                          rows={report.fundRequests.map(f => [
+                            new Date(f.created_at).toLocaleDateString(), f.type, `৳${Number(f.amount).toLocaleString()}`,
+                            f.source_method || "—", f.bank_name || "—", f.account_number || "—", f.status,
+                          ])}
+                        />
+                      ) : <p>No fund requests</p>}
+                    </>
+                  )}
 
-            {/* 9. Fraud Alerts */}
-            <h2 style={secH}>9. FRAUD ALERTS ({report.fraudAlerts.length})</h2>
-            {report.fraudAlerts.length > 0 ? (
-              <PrintTable
-                headers={[{ label: "Date" }, { label: "Rule Triggered" }, { label: "Severity" }, { label: "Status" }]}
-                rows={report.fraudAlerts.map(f => [new Date(f.created_at).toLocaleDateString(), f.rule_triggered, f.severity, f.status])}
-              />
-            ) : <p>No fraud alerts</p>}
+                  {includeSections.loans && (
+                    <>
+                      <h2 style={secH}>{nums.loans}. LOAN HISTORY ({report.loans.length})</h2>
+                      {report.loans.length > 0 ? (
+                        <PrintTable
+                          headers={[{ label: "Applied" }, { label: "Amount", align: "right" }, { label: "Tenure" }, { label: "Repaid", align: "right" }, { label: "Status" }]}
+                          rows={report.loans.map(l => [
+                            new Date(l.applied_at).toLocaleDateString(), `৳${Number(l.amount).toLocaleString()}`,
+                            `${l.tenure_days} days`, `৳${Number(l.repaid_amount || 0).toLocaleString()}`, l.status,
+                          ])}
+                        />
+                      ) : <p>No loan history</p>}
+                    </>
+                  )}
 
-            {/* 10. Disputes */}
-            <h2 style={secH}>10. DISPUTES ({report.disputes.length})</h2>
-            {report.disputes.length > 0 ? (
-              <PrintTable
-                headers={[{ label: "Date" }, { label: "Subject" }, { label: "Status" }, { label: "Resolution" }]}
-                rows={report.disputes.map(d => [new Date(d.created_at).toLocaleDateString(), d.subject, d.status, d.resolution_notes || "—"])}
-              />
-            ) : <p>No disputes</p>}
+                  {includeSections.fraudAlerts && (
+                    <>
+                      <h2 style={secH}>{nums.fraudAlerts}. FRAUD ALERTS ({report.fraudAlerts.length})</h2>
+                      {report.fraudAlerts.length > 0 ? (
+                        <PrintTable
+                          headers={[{ label: "Date" }, { label: "Rule Triggered" }, { label: "Severity" }, { label: "Status" }]}
+                          rows={report.fraudAlerts.map(f => [new Date(f.created_at).toLocaleDateString(), f.rule_triggered, f.severity, f.status])}
+                        />
+                      ) : <p>No fraud alerts</p>}
+                    </>
+                  )}
 
-            {/* 11. Support Complaints */}
-            <h2 style={secH}>11. SUPPORT COMPLAINTS ({report.complaints.length})</h2>
-            {report.complaints.length > 0 ? (
-              <PrintTable
-                headers={[{ label: "Ticket #" }, { label: "Subject" }, { label: "Priority" }, { label: "Status" }]}
-                rows={report.complaints.map(c => [c.complaint_number, c.subject, c.priority, c.status])}
-              />
-            ) : <p>No support complaints</p>}
+                  {includeSections.disputes && (
+                    <>
+                      <h2 style={secH}>{nums.disputes}. DISPUTES ({report.disputes.length})</h2>
+                      {report.disputes.length > 0 ? (
+                        <PrintTable
+                          headers={[{ label: "Date" }, { label: "Subject" }, { label: "Status" }, { label: "Resolution" }]}
+                          rows={report.disputes.map(d => [new Date(d.created_at).toLocaleDateString(), d.subject, d.status, d.resolution_notes || "—"])}
+                        />
+                      ) : <p>No disputes</p>}
+                    </>
+                  )}
 
-            {/* 12. Referrals */}
-            <h2 style={secH}>12. REFERRAL ACTIVITY ({report.referrals.length})</h2>
-            {report.referrals.length > 0 ? (
-              <PrintTable
-                headers={[{ label: "Date" }, { label: "Code" }, { label: "Role" }, { label: "Rewarded", align: "right" }, { label: "Status" }]}
-                rows={report.referrals.map(r => [
-                  new Date(r.created_at).toLocaleDateString(), r.referral_code,
-                  r.referrer_id === report.profile.user_id ? "Referrer" : "Referee",
-                  `৳${Number(r.total_rewarded || 0).toLocaleString()}`, r.status,
-                ])}
-              />
-            ) : <p>No referral activity</p>}
+                  {includeSections.complaints && (
+                    <>
+                      <h2 style={secH}>{nums.complaints}. SUPPORT COMPLAINTS ({report.complaints.length})</h2>
+                      {report.complaints.length > 0 ? (
+                        <PrintTable
+                          headers={[{ label: "Ticket #" }, { label: "Subject" }, { label: "Priority" }, { label: "Status" }]}
+                          rows={report.complaints.map(c => [c.complaint_number, c.subject, c.priority, c.status])}
+                        />
+                      ) : <p>No support complaints</p>}
+                    </>
+                  )}
 
-            {/* 13. Agent */}
-            {report.agent && (
-              <>
-                <h2 style={secH}>13. AGENT PROFILE</h2>
-                <PrintKV items={[
-                  ["Business Name", report.agent.business_name || "—"],
-                  ["NID", report.agent.nid_number || "—"],
-                  ["Trade License", report.agent.trade_license || "—"],
-                  ["Territory", report.agent.territory_code || "—"],
-                  ["Status", report.agent.status],
-                  ["Commission Earned", `৳${Number(report.agent.commission_earned || 0).toLocaleString()}`],
-                  ["Max Float", `৳${Number(report.agent.max_float || 0).toLocaleString()}`],
-                  ["Activated", report.agent.activated_at ? new Date(report.agent.activated_at).toLocaleDateString() : "—"],
-                ]} />
-              </>
-            )}
+                  {includeSections.referrals && (
+                    <>
+                      <h2 style={secH}>{nums.referrals}. REFERRAL ACTIVITY ({report.referrals.length})</h2>
+                      {report.referrals.length > 0 ? (
+                        <PrintTable
+                          headers={[{ label: "Date" }, { label: "Wallet ID" }, { label: "Role" }, { label: "Rewarded", align: "right" }, { label: "Status" }]}
+                          rows={report.referrals.map(r => [
+                            new Date(r.created_at).toLocaleDateString(),
+                            r.referrer_id === report.profile.user_id ? generateWalletId(r.referee_id) : generateWalletId(r.referrer_id),
+                            r.referrer_id === report.profile.user_id ? "Referrer" : "Referee",
+                            `৳${Number(r.total_rewarded || 0).toLocaleString()}`, r.status,
+                          ])}
+                        />
+                      ) : <p>No referral activity</p>}
+                    </>
+                  )}
 
-            {/* 14. Merchant */}
-            {report.merchant && (
-              <>
-                <h2 style={secH}>14. MERCHANT PROFILE</h2>
-                <PrintKV items={[
-                  ["Business Name", report.merchant.business_name || "—"],
-                  ["Category", report.merchant.category || "—"],
-                  ["Trade License", report.merchant.trade_license || "—"],
-                  ["Bank Name", report.merchant.bank_name || "—"],
-                  ["Bank Account", report.merchant.bank_account_number || "—"],
-                  ["Bank Holder", report.merchant.bank_account_holder || "—"],
-                  ["Status", report.merchant.status],
-                  ["MDR Rate", report.merchant.mdr_rate ? `${report.merchant.mdr_rate}%` : "—"],
-                ]} />
-              </>
-            )}
+                  {includeSections.agent && report.agent && (
+                    <>
+                      <h2 style={secH}>{nums.agent}. AGENT PROFILE</h2>
+                      <PrintKV items={[
+                        ["Business Name", report.agent.business_name || "—"],
+                        ["NID", report.agent.nid_number || "—"],
+                        ["Trade License", report.agent.trade_license || "—"],
+                        ["Territory", report.agent.territory_code || "—"],
+                        ["Status", report.agent.status],
+                        ["Commission Earned", `৳${Number(report.agent.commission_earned || 0).toLocaleString()}`],
+                        ["Max Float", `৳${Number(report.agent.max_float || 0).toLocaleString()}`],
+                        ["Activated", report.agent.activated_at ? new Date(report.agent.activated_at).toLocaleDateString() : "—"],
+                      ]} />
+                    </>
+                  )}
 
-            {/* 15. Audit Trail */}
-            <h2 style={secH}>15. AUDIT TRAIL (Last {report.auditLogs.length} entries)</h2>
-            {report.auditLogs.length > 0 ? (
-              <PrintTable
-                headers={[{ label: "Date" }, { label: "Action" }, { label: "Entity" }, { label: "IP Address" }]}
-                rows={report.auditLogs.map(a => [new Date(a.created_at).toLocaleString(), a.action, a.entity_type || "—", a.ip_address || "—"])}
-              />
-            ) : <p>No audit logs</p>}
+                  {includeSections.merchant && report.merchant && (
+                    <>
+                      <h2 style={secH}>{nums.merchant}. MERCHANT PROFILE</h2>
+                      <PrintKV items={[
+                        ["Business Name", report.merchant.business_name || "—"],
+                        ["Category", report.merchant.category || "—"],
+                        ["Trade License", report.merchant.trade_license || "—"],
+                        ["Bank Name", report.merchant.bank_name || "—"],
+                        ["Bank Account", report.merchant.bank_account_number || "—"],
+                        ["Bank Holder", report.merchant.bank_account_holder || "—"],
+                        ["Status", report.merchant.status],
+                        ["MDR Rate", report.merchant.mdr_rate ? `${report.merchant.mdr_rate}%` : "—"],
+                      ]} />
+                    </>
+                  )}
+
+                  {includeSections.auditLogs && (
+                    <>
+                      <h2 style={secH}>{nums.auditLogs}. AUDIT TRAIL (Last {report.auditLogs.length} entries)</h2>
+                      {report.auditLogs.length > 0 ? (
+                        <PrintTable
+                          headers={[{ label: "Date" }, { label: "Action" }, { label: "Entity" }, { label: "IP Address" }]}
+                          rows={report.auditLogs.map(a => [new Date(a.created_at).toLocaleString(), a.action, a.entity_type || "—", a.ip_address || "—"])}
+                        />
+                      ) : <p>No audit logs</p>}
+                    </>
+                  )}
+                </>
+              );
+            })()}
 
             {/* Summary Footer */}
             <div style={{ marginTop: 24, borderTop: "2px solid #111", paddingTop: 12 }}>
