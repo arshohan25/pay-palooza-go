@@ -711,18 +711,26 @@ export default function AdminLEARequest() {
       {/* Hidden printable report for html2canvas */}
       {report && (
         <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
-          <div ref={reportRef} style={{ width: 900, padding: 40, background: "#fff", color: "#111", fontFamily: "monospace", fontSize: 12 }}>
-            <div style={{ textAlign: "center", marginBottom: 24, borderBottom: "2px solid #111", paddingBottom: 16 }}>
-              <h1 style={{ fontSize: 18, fontWeight: "bold", letterSpacing: 2 }}>EASYPAY — USER DATA DISCLOSURE REPORT</h1>
-              <p style={{ fontSize: 11, color: "#c00", marginTop: 4 }}>CONFIDENTIAL — LAW ENFORCEMENT ONLY</p>
+          <div ref={reportRef} style={{ width: 900, padding: 40, background: "#fff", color: "#111", fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12 }}>
+            {/* Branded Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, paddingBottom: 12, borderBottom: "3px solid #0D9488" }}>
+              <div>
+                <h1 style={{ fontSize: 22, fontWeight: "bold", letterSpacing: 1, color: "#0D9488", margin: 0 }}>EasyPay</h1>
+                <p style={{ fontSize: 9, color: "#666", margin: "2px 0 0" }}>Digital Financial Services • Bangladesh</p>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: 14, fontWeight: "bold", margin: 0, letterSpacing: 1 }}>USER DATA DISCLOSURE REPORT</p>
+                <p style={{ fontSize: 10, color: "#c00", margin: "2px 0 0", fontWeight: "bold" }}>CONFIDENTIAL — LAW ENFORCEMENT ONLY</p>
+              </div>
             </div>
 
             <table style={{ width: "100%", marginBottom: 16, fontSize: 12 }}>
               <tbody>
-                <tr><td style={ps}>Report ID:</td><td style={{ ...ps, fontWeight: "bold" }}>{generateReportId()}</td></tr>
-                <tr><td style={ps}>Generated:</td><td style={ps}>{new Date().toLocaleString()}</td></tr>
-                <tr><td style={ps}>Requesting Authority:</td><td style={{ ...ps, fontWeight: "bold" }}>{authority || "_______________"}</td></tr>
-                <tr><td style={ps}>Reference No:</td><td style={{ ...ps, fontWeight: "bold" }}>{refNo || "_______________"}</td></tr>
+                <tr><td style={psw}>Report ID:</td><td style={{ ...ps, fontWeight: "bold" }}>{generateReportId()}</td></tr>
+                <tr><td style={psw}>Issue Date:</td><td style={{ ...ps, fontWeight: "bold" }}>{issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "_______________"}</td></tr>
+                <tr><td style={psw}>Generated At:</td><td style={ps}>{new Date().toLocaleString()}</td></tr>
+                <tr><td style={psw}>Requesting Authority:</td><td style={{ ...ps, fontWeight: "bold" }}>{authority || "_______________"}</td></tr>
+                <tr><td style={psw}>Reference No:</td><td style={{ ...ps, fontWeight: "bold" }}>{refNo || "_______________"}</td></tr>
               </tbody>
             </table>
 
