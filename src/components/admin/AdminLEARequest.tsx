@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { generateWalletId } from "@/lib/walletId";
 
 interface UserReport {
@@ -53,6 +54,7 @@ export default function AdminLEARequest() {
   const [phone, setPhone] = useState("");
   const [authority, setAuthority] = useState("");
   const [refNo, setRefNo] = useState("");
+  const [issueDate, setIssueDate] = useState(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<UserReport | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -178,10 +180,20 @@ export default function AdminLEARequest() {
         scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false,
       });
 
-      const link = document.createElement("a");
-      link.download = `LEA-Report-${phone}-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+      const imgData = canvas.toDataURL("image/png");
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: imgHeight > 297 ? "portrait" : "portrait" });
+
+      let yOffset = 0;
+      const pageHeight = 297;
+      while (yOffset < imgHeight) {
+        if (yOffset > 0) pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, -yOffset, imgWidth, imgHeight);
+        yOffset += pageHeight;
+      }
+
+      pdf.save(`LEA-Report-${phone}-${new Date().toISOString().slice(0, 10)}.pdf`);
 
       await logAction("lea_report_download", {
         phone: phone.trim(),
@@ -190,7 +202,7 @@ export default function AdminLEARequest() {
         reference_no: refNo.trim(),
       });
 
-      toast.success("Report downloaded");
+      toast.success("PDF report downloaded");
     } catch {
       toast.error("Failed to generate report");
     } finally {
@@ -281,8 +293,9 @@ export default function AdminLEARequest() {
               <div className="flex flex-col sm:flex-row gap-2">
                 <Input placeholder="Requesting Authority *" value={authority} onChange={e => setAuthority(e.target.value)} />
                 <Input placeholder="Reference No *" value={refNo} onChange={e => setRefNo(e.target.value)} />
+                <Input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} className="sm:max-w-[160px]" />
                 <Button onClick={handleDownload} disabled={generating} variant="destructive" className="shrink-0">
-                  <Download className="w-4 h-4 mr-1" />{generating ? "Generating..." : "Download Report"}
+                  <Download className="w-4 h-4 mr-1" />{generating ? "Generating..." : "Download PDF"}
                 </Button>
               </div>
 
@@ -698,18 +711,26 @@ export default function AdminLEARequest() {
       {/* Hidden printable report for html2canvas */}
       {report && (
         <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
-          <div ref={reportRef} style={{ width: 900, padding: 40, background: "#fff", color: "#111", fontFamily: "monospace", fontSize: 12 }}>
-            <div style={{ textAlign: "center", marginBottom: 24, borderBottom: "2px solid #111", paddingBottom: 16 }}>
-              <h1 style={{ fontSize: 18, fontWeight: "bold", letterSpacing: 2 }}>EASYPAY — USER DATA DISCLOSURE REPORT</h1>
-              <p style={{ fontSize: 11, color: "#c00", marginTop: 4 }}>CONFIDENTIAL — LAW ENFORCEMENT ONLY</p>
+          <div ref={reportRef} style={{ width: 900, padding: 40, background: "#fff", color: "#111", fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12 }}>
+            {/* Branded Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, paddingBottom: 12, borderBottom: "3px solid #0D9488" }}>
+              <div>
+                <h1 style={{ fontSize: 22, fontWeight: "bold", letterSpacing: 1, color: "#0D9488", margin: 0 }}>EasyPay</h1>
+                <p style={{ fontSize: 9, color: "#666", margin: "2px 0 0" }}>Digital Financial Services • Bangladesh</p>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: 14, fontWeight: "bold", margin: 0, letterSpacing: 1 }}>USER DATA DISCLOSURE REPORT</p>
+                <p style={{ fontSize: 10, color: "#c00", margin: "2px 0 0", fontWeight: "bold" }}>CONFIDENTIAL — LAW ENFORCEMENT ONLY</p>
+              </div>
             </div>
 
             <table style={{ width: "100%", marginBottom: 16, fontSize: 12 }}>
               <tbody>
-                <tr><td style={ps}>Report ID:</td><td style={{ ...ps, fontWeight: "bold" }}>{generateReportId()}</td></tr>
-                <tr><td style={ps}>Generated:</td><td style={ps}>{new Date().toLocaleString()}</td></tr>
-                <tr><td style={ps}>Requesting Authority:</td><td style={{ ...ps, fontWeight: "bold" }}>{authority || "_______________"}</td></tr>
-                <tr><td style={ps}>Reference No:</td><td style={{ ...ps, fontWeight: "bold" }}>{refNo || "_______________"}</td></tr>
+                <tr><td style={psw}>Report ID:</td><td style={{ ...ps, fontWeight: "bold" }}>{generateReportId()}</td></tr>
+                <tr><td style={psw}>Issue Date:</td><td style={{ ...ps, fontWeight: "bold" }}>{issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "_______________"}</td></tr>
+                <tr><td style={psw}>Generated At:</td><td style={ps}>{new Date().toLocaleString()}</td></tr>
+                <tr><td style={psw}>Requesting Authority:</td><td style={{ ...ps, fontWeight: "bold" }}>{authority || "_______________"}</td></tr>
+                <tr><td style={psw}>Reference No:</td><td style={{ ...ps, fontWeight: "bold" }}>{refNo || "_______________"}</td></tr>
               </tbody>
             </table>
 
@@ -938,8 +959,40 @@ export default function AdminLEARequest() {
                   </tr>
                 </tbody>
               </table>
-              <p style={{ fontSize: 10, color: "#888", marginTop: 8, textAlign: "center" }}>This document is confidential and intended solely for the requesting authority.</p>
-              <p style={{ fontSize: 10, color: "#888", textAlign: "center" }}>Generated by EasyPay Admin System • {new Date().toISOString()}</p>
+            </div>
+
+            {/* Authority Signature & Certification */}
+            <div style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid #ccc" }}>
+              <p style={{ fontSize: 11, fontWeight: "bold", marginBottom: 16 }}>CERTIFICATION & AUTHORITY SIGN-OFF</p>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 40 }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>Issuing Officer (EasyPay)</p>
+                  <div style={{ borderBottom: "1px solid #333", height: 40, marginBottom: 4 }} />
+                  <p style={{ fontSize: 9, color: "#888" }}>Name & Designation</p>
+                  <p style={{ fontSize: 9, color: "#888", marginTop: 2 }}>Date: {issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB") : "____/____/________"}</p>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>Receiving Authority</p>
+                  <div style={{ borderBottom: "1px solid #333", height: 40, marginBottom: 4 }} />
+                  <p style={{ fontSize: 9, color: "#888" }}>Name, Rank & Badge No.</p>
+                  <p style={{ fontSize: 9, color: "#888", marginTop: 2 }}>Authority: {authority || "_______________"}</p>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>Official Seal / Stamp</p>
+                  <div style={{ border: "1px dashed #aaa", height: 60, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 9, color: "#bbb" }}>[Seal]</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Branded Footer */}
+            <div style={{ marginTop: 30, paddingTop: 12, borderTop: "3px solid #0D9488", textAlign: "center" }}>
+              <p style={{ fontSize: 11, fontWeight: "bold", color: "#0D9488", margin: 0 }}>EasyPay — Digital Financial Services</p>
+              <p style={{ fontSize: 9, color: "#888", marginTop: 2 }}>Dhaka, Bangladesh • support@easypay.app • www.easypay.app</p>
+              <p style={{ fontSize: 9, color: "#aaa", marginTop: 6 }}>This document is confidential and intended solely for the requesting law enforcement authority.</p>
+              <p style={{ fontSize: 9, color: "#aaa" }}>Unauthorized disclosure, reproduction, or distribution is strictly prohibited.</p>
+              <p style={{ fontSize: 8, color: "#bbb", marginTop: 4 }}>Generated by EasyPay Admin System • {new Date().toISOString()}</p>
             </div>
           </div>
         </div>
