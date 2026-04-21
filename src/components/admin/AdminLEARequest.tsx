@@ -948,60 +948,65 @@ export default function AdminLEARequest() {
             })()}
 
             {/* Summary Footer */}
-            <div style={{ marginTop: 24, borderTop: "2px solid #111", paddingTop: 12 }}>
-              <table style={{ width: "100%", fontSize: 12, marginBottom: 12 }}>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: 4 }}>Total Transactions: <strong>{report.transactions.length}</strong></td>
-                    <td style={{ padding: 4 }}>Total Money In: <strong>৳{totalIn.toLocaleString()}</strong></td>
-                    <td style={{ padding: 4 }}>Total Money Out: <strong>৳{totalOut.toLocaleString()}</strong></td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: 4 }}>Total Fees Paid: <strong>৳{totalFees.toLocaleString()}</strong></td>
-                    <td style={{ padding: 4 }}>Loans Taken: <strong>৳{totalLoansTaken.toLocaleString()}</strong></td>
-                    <td style={{ padding: 4 }}>Loans Repaid: <strong>৳{totalLoansRepaid.toLocaleString()}</strong></td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: 4 }}>Fraud Alerts: <strong>{report.fraudAlerts.length}</strong></td>
-                    <td style={{ padding: 4 }}>Disputes: <strong>{report.disputes.length}</strong></td>
-                    <td style={{ padding: 4 }}>Account Age: <strong>{accountAgeDays} days</strong></td>
-                  </tr>
-                </tbody>
-              </table>
+            <div style={{ marginTop: 28, borderTop: "2px solid #0D9488", paddingTop: 16 }}>
+              <h2 style={secH}>FINANCIAL SUMMARY</h2>
+              <div style={{ display: "flex", gap: 0, flexWrap: "wrap" }}>
+                {[
+                  ["Total Transactions", report.transactions.length.toString()],
+                  ["Money In", `৳${totalIn.toLocaleString()}`],
+                  ["Money Out", `৳${totalOut.toLocaleString()}`],
+                  ["Fees Paid", `৳${totalFees.toLocaleString()}`],
+                  ["Loans Taken", `৳${totalLoansTaken.toLocaleString()}`],
+                  ["Loans Repaid", `৳${totalLoansRepaid.toLocaleString()}`],
+                  ["Fraud Alerts", report.fraudAlerts.length.toString()],
+                  ["Disputes", report.disputes.length.toString()],
+                  ["Account Age", `${accountAgeDays} days`],
+                ].map(([label, val], i) => (
+                  <div key={i} style={{ width: "33.33%", border: "1px solid #e0e0e0", padding: "8px 12px", boxSizing: "border-box" }}>
+                    <p style={{ fontSize: 9, color: "#888", margin: 0 }}>{label}</p>
+                    <p style={{ fontSize: 13, fontWeight: "bold", margin: "2px 0 0", color: "#111" }}>{val}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Authority Signature & Certification */}
-            <div style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid #ccc" }}>
-              <p style={{ fontSize: 11, fontWeight: "bold", marginBottom: 16 }}>CERTIFICATION & AUTHORITY SIGN-OFF</p>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 40 }}>
+            <div style={{ marginTop: 44, paddingTop: 24, borderTop: "2px solid #333" }}>
+              <p style={{ fontSize: 12, fontWeight: "bold", marginBottom: 20, letterSpacing: 0.5, textTransform: "uppercase" }}>Certification & Authority Sign-Off</p>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 48 }}>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>Issuing Officer (EasyPay)</p>
-                  <div style={{ borderBottom: "1px solid #333", height: 40, marginBottom: 4 }} />
-                  <p style={{ fontSize: 9, color: "#888" }}>Name & Designation</p>
-                  <p style={{ fontSize: 9, color: "#888", marginTop: 2 }}>Date: {issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB") : "____/____/________"}</p>
+                  <p style={{ fontSize: 10, color: "#444", marginBottom: 6, fontWeight: "bold" }}>Issuing Officer (EasyPay)</p>
+                  <div style={{ borderBottom: "2px solid #333", height: 48, marginBottom: 6 }} />
+                  <p style={{ fontSize: 9, color: "#777" }}>Name & Designation</p>
+                  <p style={{ fontSize: 9, color: "#777", marginTop: 3 }}>Date: {issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB") : "____/____/________"}</p>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>Receiving Authority</p>
-                  <div style={{ borderBottom: "1px solid #333", height: 40, marginBottom: 4 }} />
-                  <p style={{ fontSize: 9, color: "#888" }}>Name, Rank & Badge No.</p>
-                  <p style={{ fontSize: 9, color: "#888", marginTop: 2 }}>Authority: {authority || "_______________"}</p>
+                  <p style={{ fontSize: 10, color: "#444", marginBottom: 6, fontWeight: "bold" }}>Receiving Authority</p>
+                  <div style={{ borderBottom: "2px solid #333", height: 48, marginBottom: 6 }} />
+                  <p style={{ fontSize: 9, color: "#777" }}>Name, Rank & Badge No.</p>
+                  <p style={{ fontSize: 9, color: "#777", marginTop: 3 }}>Authority: {authority || "_______________"}</p>
+                  <p style={{ fontSize: 9, color: "#777", marginTop: 3 }}>Ref No: {refNo || "_______________"}</p>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>Official Seal / Stamp</p>
-                  <div style={{ border: "1px dashed #aaa", height: 60, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 9, color: "#bbb" }}>[Seal]</span>
+                  <p style={{ fontSize: 10, color: "#444", marginBottom: 6, fontWeight: "bold" }}>Official Seal / Stamp</p>
+                  <div style={{ border: "2px dashed #aaa", height: 70, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }}>
+                    <span style={{ fontSize: 10, color: "#bbb" }}>[Seal]</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Branded Footer */}
-            <div style={{ marginTop: 30, paddingTop: 12, borderTop: "3px solid #0D9488", textAlign: "center" }}>
-              <p style={{ fontSize: 11, fontWeight: "bold", color: "#0D9488", margin: 0 }}>EasyPay — Digital Financial Services</p>
-              <p style={{ fontSize: 9, color: "#888", marginTop: 2 }}>Dhaka, Bangladesh • support@easypay.app • www.easypay.app</p>
-              <p style={{ fontSize: 9, color: "#aaa", marginTop: 6 }}>This document is confidential and intended solely for the requesting law enforcement authority.</p>
-              <p style={{ fontSize: 9, color: "#aaa" }}>Unauthorized disclosure, reproduction, or distribution is strictly prohibited.</p>
-              <p style={{ fontSize: 8, color: "#bbb", marginTop: 4 }}>Generated by EasyPay Admin System • {new Date().toISOString()}</p>
+            <div style={{ marginTop: 36, paddingTop: 14, borderTop: "3px solid #0D9488", textAlign: "center" }}>
+              <p style={{ fontSize: 12, fontWeight: "bold", color: "#0D9488", margin: 0, letterSpacing: 1 }}>EasyPay — Digital Financial Services</p>
+              <p style={{ fontSize: 9, color: "#777", marginTop: 3 }}>Dhaka, Bangladesh • support@easypay.app • www.easypay.app</p>
+              <div style={{ marginTop: 10, padding: "6px 0", borderTop: "1px solid #eee" }}>
+                <p style={{ fontSize: 9, color: "#999", margin: 0 }}>
+                  <span style={{ color: "#dc2626", fontWeight: "bold" }}>RESTRICTED</span> — This document is confidential and intended solely for the requesting law enforcement authority.
+                </p>
+                <p style={{ fontSize: 9, color: "#999", margin: "2px 0 0" }}>Unauthorized disclosure, reproduction, or distribution is strictly prohibited under applicable law.</p>
+              </div>
+              <p style={{ fontSize: 8, color: "#bbb", marginTop: 6 }}>Generated by EasyPay Admin System • {new Date().toISOString()}</p>
             </div>
           </div>
         </div>
