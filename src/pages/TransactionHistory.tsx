@@ -93,7 +93,12 @@ interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void
 
 const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, customLabels }: TransactionHistoryProps) => {
   const { t } = useI18n();
-  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions();
+  const runningMonthFrom = useMemo(() => startOfMonth(new Date()).toISOString(), []);
+  const runningMonthTo = useMemo(() => endOfDay(new Date()).toISOString(), []);
+  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions(undefined, undefined, {
+    from: runningMonthFrom,
+    to: runningMonthTo,
+  });
   const visibleCategories = useMemo(() =>
     filterTypes
       ? CATEGORIES.filter((c) => c.id === "all" || filterTypes.includes(c.id))
@@ -102,8 +107,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   );
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
   const [search, setSearch]       = useState("");
-  const [dateFrom, setDateFrom]   = useState<Date | undefined>(startOfMonth(new Date()));
-  const [dateTo, setDateTo]       = useState<Date | undefined>(endOfDay(new Date()));
+  const [dateFrom, setDateFrom]   = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo]       = useState<Date | undefined>(undefined);
   const [fromOpen, setFromOpen]   = useState(false);
   const [toOpen, setToOpen]       = useState(false);
   const [showFilters, setShowFilters] = useState(false);
