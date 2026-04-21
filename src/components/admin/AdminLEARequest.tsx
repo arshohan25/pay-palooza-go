@@ -55,6 +55,7 @@ export default function AdminLEARequest() {
   const [authority, setAuthority] = useState("");
   const [refNo, setRefNo] = useState("");
   const [issueDate, setIssueDate] = useState(new Date().toISOString().slice(0, 10));
+  const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<UserReport | null>(null);
   const [generating, setGenerating] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
