@@ -209,7 +209,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
     });
   }, [activeTab, search, dateFrom, dateTo, allTransactions]);
 
-  const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); };
+  const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); setDatePreset("this_month"); setDateFrom(startOfMonth(new Date())); setDateTo(endOfDay(new Date())); };
   const hasActiveFilters = search || dateFrom || dateTo || activeTab !== "all";
 
   const totalIn  = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
