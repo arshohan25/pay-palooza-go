@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { generateWalletId } from "@/lib/walletId";
 
 interface UserReport {
