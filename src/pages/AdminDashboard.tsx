@@ -122,6 +122,7 @@ import AdminInsuranceManagement from "@/components/admin/AdminInsuranceManagemen
 import AdminGiftCardManagement from "@/components/admin/AdminGiftCardManagement";
 import AdminAiAgent from "@/components/admin/AdminAiAgent";
 import AdminProfileEditor from "@/components/admin/AdminProfileEditor";
+import AdminLEARequest from "@/components/admin/AdminLEARequest";
 import AdminUserPerformanceTracker from "@/components/admin/AdminUserPerformanceTracker";
 import { AdminUserMetrics } from "@/components/admin/AdminUserMetrics";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
@@ -323,6 +324,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "security", label: "Security", icon: Shield },
       { id: "risk_control", label: "Risk Control", icon: ShieldAlert },
       { id: "blacklist", label: "Blacklist", icon: Shield },
+      { id: "lea_request", label: "LEA Request", icon: FileText },
     ],
   },
   {
@@ -2012,6 +2014,9 @@ export default function AdminDashboard() {
 
         {/* ═══ BLACKLIST MANAGER ═══ */}
         {activeTab === "blacklist" && <AdminBlacklistManager />}
+
+        {/* ═══ LEA REQUEST ═══ */}
+        {activeTab === "lea_request" && <AdminLEARequest />}
 
         {/* ═══ AGENT LEADERBOARD ═══ */}
         {activeTab === "agent_leaderboard" && <AdminAgentLeaderboard />}
