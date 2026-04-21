@@ -107,6 +107,23 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   const [fromOpen, setFromOpen]   = useState(false);
   const [toOpen, setToOpen]       = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [datePreset, setDatePreset] = useState<"this_month" | "last_month" | "custom">("this_month");
+
+  const applyPreset = (preset: "this_month" | "last_month" | "custom") => {
+    setDatePreset(preset);
+    if (preset === "this_month") {
+      setDateFrom(startOfMonth(new Date()));
+      setDateTo(endOfDay(new Date()));
+      setShowFilters(false);
+    } else if (preset === "last_month") {
+      const lastMonth = subMonths(new Date(), 1);
+      setDateFrom(startOfMonth(lastMonth));
+      setDateTo(endOfMonth(lastMonth));
+      setShowFilters(false);
+    } else {
+      setShowFilters(true);
+    }
+  };
   const [selectedTx, setSelectedTx]   = useState<Transaction | null>(null);
   const [copied, setCopied]           = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
