@@ -337,6 +337,28 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         </div>
       </div>
 
+      {/* ── Quick date-range buttons ────────────────────────────────── */}
+      <div className="flex gap-1.5 mb-2">
+        {([
+          { id: "this_month" as const, label: "This Month" },
+          { id: "last_month" as const, label: "Last Month" },
+          { id: "custom" as const, label: "Custom" },
+        ]).map(({ id, label }) => (
+          <motion.button
+            key={id}
+            whileTap={{ scale: 0.93 }}
+            onClick={() => applyPreset(id)}
+            className={`flex-1 px-2 py-1.5 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all ${
+              datePreset === id
+                ? "gradient-primary text-primary-foreground shadow-glow"
+                : "bg-card border border-border/60 text-muted-foreground hover:text-foreground shadow-xs"
+            }`}
+          >
+            {label}
+          </motion.button>
+        ))}
+      </div>
+
       {/* ── Date filters (collapsible) ───────────────────────────────────── */}
       <AnimatePresence>
         {showFilters && (
