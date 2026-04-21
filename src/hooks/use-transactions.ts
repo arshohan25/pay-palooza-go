@@ -87,7 +87,7 @@ function normalizeTransaction(tx: RawDbTransaction): DbTransaction {
   };
 }
 
-export function useTransactions(limit?: number, refreshKey?: number) {
+export function useTransactions(limit?: number, refreshKey?: number, dateRange?: { from?: string; to?: string }) {
   const [transactions, setTransactions] = useState<DbTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const knownIds = useRef(new Set<string>());
@@ -108,6 +108,8 @@ export function useTransactions(limit?: number, refreshKey?: number) {
       .eq("user_id", session.user.id)
       .order("created_at", { ascending: false });
 
+    if (dateRange?.from) query = query.gte("created_at", dateRange.from);
+    if (dateRange?.to) query = query.lte("created_at", dateRange.to);
     if (limit) query = query.limit(limit);
 
     const { data } = await query;
@@ -120,7 +122,7 @@ export function useTransactions(limit?: number, refreshKey?: number) {
 
     setTransactions(txns);
     setLoading(false);
-  }, [limit]);
+  }, [limit, dateRange?.from, dateRange?.to]);
 
   useEffect(() => {
     fetchTxns();
