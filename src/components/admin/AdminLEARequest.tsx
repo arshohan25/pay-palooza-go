@@ -229,24 +229,24 @@ export default function AdminLEARequest() {
   );
 
   // Printable helpers
-  const ps = { padding: 2 } as React.CSSProperties;
-  const psw = { padding: 2, width: 180 } as React.CSSProperties;
-  const thS = { padding: 3, textAlign: "left" as const, border: "1px solid #ddd" };
+  const ps = { padding: "4px 6px" } as React.CSSProperties;
+  const psw = { padding: "4px 6px", width: 180, color: "#555", fontWeight: "bold" as const } as React.CSSProperties;
+  const thS = { padding: "6px 8px", textAlign: "left" as const, border: "1px solid #d0d0d0", background: "#0D9488", color: "#fff", fontWeight: "bold" as const, fontSize: 10 };
   const thR = { ...thS, textAlign: "right" as const };
-  const tdS = { padding: 3, border: "1px solid #ddd" };
+  const tdS = { padding: "5px 8px", border: "1px solid #e0e0e0", fontSize: 10 };
   const tdR = { ...tdS, textAlign: "right" as const };
-  const secH = { fontSize: 13, borderBottom: "1px solid #ccc", paddingBottom: 4, marginTop: 20 } as React.CSSProperties;
+  const secH = { fontSize: 13, fontWeight: "bold" as const, borderLeft: "4px solid #0D9488", paddingLeft: 10, paddingBottom: 4, marginTop: 24, marginBottom: 8, textTransform: "uppercase" as const, letterSpacing: 0.5, color: "#222" } as React.CSSProperties;
 
   const PrintTable = ({ headers, rows }: { headers: { label: string; align?: string }[]; rows: React.ReactNode[][] }) => (
-    <table style={{ width: "100%", fontSize: 10, borderCollapse: "collapse", marginBottom: 12 }}>
+    <table style={{ width: "100%", fontSize: 10, borderCollapse: "collapse", marginBottom: 14 }}>
       <thead>
-        <tr style={{ background: "#f0f0f0" }}>
+        <tr>
           {headers.map((h, i) => <th key={i} style={h.align === "right" ? thR : thS}>{h.label}</th>)}
         </tr>
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={i}>
+          <tr key={i} style={{ background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
             {r.map((c, j) => <td key={j} style={headers[j]?.align === "right" ? tdR : tdS}>{c}</td>)}
           </tr>
         ))}
@@ -255,8 +255,13 @@ export default function AdminLEARequest() {
   );
 
   const PrintKV = ({ items }: { items: [string, React.ReactNode][] }) => (
-    <table style={{ width: "100%", fontSize: 12, marginBottom: 12 }}>
-      <tbody>{items.map(([k, v], i) => <tr key={i}><td style={psw}>{k}:</td><td style={ps}>{v ?? "—"}</td></tr>)}</tbody>
+    <table style={{ width: "100%", fontSize: 11, marginBottom: 14, borderCollapse: "collapse" }}>
+      <tbody>{items.map(([k, v], i) => (
+        <tr key={i} style={{ background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
+          <td style={{ ...psw, borderBottom: "1px solid #eee" }}>{k}:</td>
+          <td style={{ ...ps, borderBottom: "1px solid #eee" }}>{v ?? "—"}</td>
+        </tr>
+      ))}</tbody>
     </table>
   );
 
@@ -337,8 +342,6 @@ export default function AdminLEARequest() {
                 <InfoRow label="Balance" value={`৳${Number(report.profile.balance || 0).toLocaleString()}`} />
                 <InfoRow label="Registered" value={new Date(report.profile.created_at).toLocaleDateString()} />
                 <InfoRow label="KYC Exempt" value={report.profile.kyc_exempt ? "Yes" : "No"} />
-                <InfoRow label="Deactivated At" value={report.profile.deactivated_at ? new Date(report.profile.deactivated_at).toLocaleString() : null} />
-                <InfoRow label="Scheduled Deletion" value={report.profile.scheduled_deletion_at ? new Date(report.profile.scheduled_deletion_at).toLocaleString() : null} />
                 <InfoRow label="Account Age" value={`${accountAgeDays} days`} />
               </div>
             </div>
@@ -711,26 +714,34 @@ export default function AdminLEARequest() {
       {/* Hidden printable report for html2canvas */}
       {report && (
         <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
-          <div ref={reportRef} style={{ width: 900, padding: 40, background: "#fff", color: "#111", fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12 }}>
+          <div ref={reportRef} style={{ width: 900, padding: 48, background: "#fff", color: "#111", fontFamily: "Arial, Helvetica, sans-serif", fontSize: 11, lineHeight: 1.6 }}>
             {/* Branded Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, paddingBottom: 12, borderBottom: "3px solid #0D9488" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, paddingBottom: 14, borderBottom: "3px solid #0D9488" }}>
               <div>
-                <h1 style={{ fontSize: 22, fontWeight: "bold", letterSpacing: 1, color: "#0D9488", margin: 0 }}>EasyPay</h1>
-                <p style={{ fontSize: 9, color: "#666", margin: "2px 0 0" }}>Digital Financial Services • Bangladesh</p>
+                <h1 style={{ fontSize: 24, fontWeight: "bold", letterSpacing: 1.5, color: "#0D9488", margin: 0 }}>EasyPay</h1>
+                <p style={{ fontSize: 9, color: "#666", margin: "3px 0 0" }}>Digital Financial Services • Bangladesh</p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: 14, fontWeight: "bold", margin: 0, letterSpacing: 1 }}>USER DATA DISCLOSURE REPORT</p>
-                <p style={{ fontSize: 10, color: "#c00", margin: "2px 0 0", fontWeight: "bold" }}>CONFIDENTIAL — LAW ENFORCEMENT ONLY</p>
+                <p style={{ fontSize: 15, fontWeight: "bold", margin: 0, letterSpacing: 1 }}>LAW ENFORCEMENT DISCLOSURE REPORT</p>
+                <span style={{ display: "inline-block", marginTop: 4, background: "#dc2626", color: "#fff", fontSize: 9, fontWeight: "bold", padding: "2px 10px", borderRadius: 3, letterSpacing: 1 }}>RESTRICTED</span>
               </div>
             </div>
 
-            <table style={{ width: "100%", marginBottom: 16, fontSize: 12 }}>
+            {/* Reference Grid */}
+            <table style={{ width: "100%", marginBottom: 20, fontSize: 11, borderCollapse: "collapse", border: "1px solid #d0d0d0" }}>
               <tbody>
-                <tr><td style={psw}>Report ID:</td><td style={{ ...ps, fontWeight: "bold" }}>{generateReportId()}</td></tr>
-                <tr><td style={psw}>Issue Date:</td><td style={{ ...ps, fontWeight: "bold" }}>{issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "_______________"}</td></tr>
-                <tr><td style={psw}>Generated At:</td><td style={ps}>{new Date().toLocaleString()}</td></tr>
-                <tr><td style={psw}>Requesting Authority:</td><td style={{ ...ps, fontWeight: "bold" }}>{authority || "_______________"}</td></tr>
-                <tr><td style={psw}>Reference No:</td><td style={{ ...ps, fontWeight: "bold" }}>{refNo || "_______________"}</td></tr>
+                <tr>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", color: "#555", background: "#f5f5f5", borderRight: "1px solid #d0d0d0", borderBottom: "1px solid #d0d0d0", width: "25%" }}>Report ID</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", borderBottom: "1px solid #d0d0d0", borderRight: "1px solid #d0d0d0", width: "25%" }}>{generateReportId()}</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", color: "#555", background: "#f5f5f5", borderRight: "1px solid #d0d0d0", borderBottom: "1px solid #d0d0d0", width: "25%" }}>Issue Date</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", borderBottom: "1px solid #d0d0d0", width: "25%" }}>{issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "_______________"}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", color: "#555", background: "#f5f5f5", borderRight: "1px solid #d0d0d0", width: "25%" }}>Requesting Authority</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", borderRight: "1px solid #d0d0d0" }}>{authority || "_______________"}</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", color: "#555", background: "#f5f5f5", borderRight: "1px solid #d0d0d0", width: "25%" }}>Reference No</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold" }}>{refNo || "_______________"}</td>
+                </tr>
               </tbody>
             </table>
 
@@ -745,8 +756,6 @@ export default function AdminLEARequest() {
               ["Current Balance", `৳${Number(report.profile.balance || 0).toLocaleString()}`],
               ["Registration Date", new Date(report.profile.created_at).toLocaleDateString()],
               ["KYC Exempt", report.profile.kyc_exempt ? "Yes" : "No"],
-              ["Deactivated At", report.profile.deactivated_at ? new Date(report.profile.deactivated_at).toLocaleString() : "—"],
-              ["Scheduled Deletion", report.profile.scheduled_deletion_at ? new Date(report.profile.scheduled_deletion_at).toLocaleString() : "—"],
               ["Account Age", `${accountAgeDays} days`],
             ]} />
 
@@ -939,60 +948,65 @@ export default function AdminLEARequest() {
             })()}
 
             {/* Summary Footer */}
-            <div style={{ marginTop: 24, borderTop: "2px solid #111", paddingTop: 12 }}>
-              <table style={{ width: "100%", fontSize: 12, marginBottom: 12 }}>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: 4 }}>Total Transactions: <strong>{report.transactions.length}</strong></td>
-                    <td style={{ padding: 4 }}>Total Money In: <strong>৳{totalIn.toLocaleString()}</strong></td>
-                    <td style={{ padding: 4 }}>Total Money Out: <strong>৳{totalOut.toLocaleString()}</strong></td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: 4 }}>Total Fees Paid: <strong>৳{totalFees.toLocaleString()}</strong></td>
-                    <td style={{ padding: 4 }}>Loans Taken: <strong>৳{totalLoansTaken.toLocaleString()}</strong></td>
-                    <td style={{ padding: 4 }}>Loans Repaid: <strong>৳{totalLoansRepaid.toLocaleString()}</strong></td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: 4 }}>Fraud Alerts: <strong>{report.fraudAlerts.length}</strong></td>
-                    <td style={{ padding: 4 }}>Disputes: <strong>{report.disputes.length}</strong></td>
-                    <td style={{ padding: 4 }}>Account Age: <strong>{accountAgeDays} days</strong></td>
-                  </tr>
-                </tbody>
-              </table>
+            <div style={{ marginTop: 28, borderTop: "2px solid #0D9488", paddingTop: 16 }}>
+              <h2 style={secH}>FINANCIAL SUMMARY</h2>
+              <div style={{ display: "flex", gap: 0, flexWrap: "wrap" }}>
+                {[
+                  ["Total Transactions", report.transactions.length.toString()],
+                  ["Money In", `৳${totalIn.toLocaleString()}`],
+                  ["Money Out", `৳${totalOut.toLocaleString()}`],
+                  ["Fees Paid", `৳${totalFees.toLocaleString()}`],
+                  ["Loans Taken", `৳${totalLoansTaken.toLocaleString()}`],
+                  ["Loans Repaid", `৳${totalLoansRepaid.toLocaleString()}`],
+                  ["Fraud Alerts", report.fraudAlerts.length.toString()],
+                  ["Disputes", report.disputes.length.toString()],
+                  ["Account Age", `${accountAgeDays} days`],
+                ].map(([label, val], i) => (
+                  <div key={i} style={{ width: "33.33%", border: "1px solid #e0e0e0", padding: "8px 12px", boxSizing: "border-box" }}>
+                    <p style={{ fontSize: 9, color: "#888", margin: 0 }}>{label}</p>
+                    <p style={{ fontSize: 13, fontWeight: "bold", margin: "2px 0 0", color: "#111" }}>{val}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Authority Signature & Certification */}
-            <div style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid #ccc" }}>
-              <p style={{ fontSize: 11, fontWeight: "bold", marginBottom: 16 }}>CERTIFICATION & AUTHORITY SIGN-OFF</p>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 40 }}>
+            <div style={{ marginTop: 44, paddingTop: 24, borderTop: "2px solid #333" }}>
+              <p style={{ fontSize: 12, fontWeight: "bold", marginBottom: 20, letterSpacing: 0.5, textTransform: "uppercase" }}>Certification & Authority Sign-Off</p>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 48 }}>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>Issuing Officer (EasyPay)</p>
-                  <div style={{ borderBottom: "1px solid #333", height: 40, marginBottom: 4 }} />
-                  <p style={{ fontSize: 9, color: "#888" }}>Name & Designation</p>
-                  <p style={{ fontSize: 9, color: "#888", marginTop: 2 }}>Date: {issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB") : "____/____/________"}</p>
+                  <p style={{ fontSize: 10, color: "#444", marginBottom: 6, fontWeight: "bold" }}>Issuing Officer (EasyPay)</p>
+                  <div style={{ borderBottom: "2px solid #333", height: 48, marginBottom: 6 }} />
+                  <p style={{ fontSize: 9, color: "#777" }}>Name & Designation</p>
+                  <p style={{ fontSize: 9, color: "#777", marginTop: 3 }}>Date: {issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB") : "____/____/________"}</p>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>Receiving Authority</p>
-                  <div style={{ borderBottom: "1px solid #333", height: 40, marginBottom: 4 }} />
-                  <p style={{ fontSize: 9, color: "#888" }}>Name, Rank & Badge No.</p>
-                  <p style={{ fontSize: 9, color: "#888", marginTop: 2 }}>Authority: {authority || "_______________"}</p>
+                  <p style={{ fontSize: 10, color: "#444", marginBottom: 6, fontWeight: "bold" }}>Receiving Authority</p>
+                  <div style={{ borderBottom: "2px solid #333", height: 48, marginBottom: 6 }} />
+                  <p style={{ fontSize: 9, color: "#777" }}>Name, Rank & Badge No.</p>
+                  <p style={{ fontSize: 9, color: "#777", marginTop: 3 }}>Authority: {authority || "_______________"}</p>
+                  <p style={{ fontSize: 9, color: "#777", marginTop: 3 }}>Ref No: {refNo || "_______________"}</p>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>Official Seal / Stamp</p>
-                  <div style={{ border: "1px dashed #aaa", height: 60, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 9, color: "#bbb" }}>[Seal]</span>
+                  <p style={{ fontSize: 10, color: "#444", marginBottom: 6, fontWeight: "bold" }}>Official Seal / Stamp</p>
+                  <div style={{ border: "2px dashed #aaa", height: 70, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }}>
+                    <span style={{ fontSize: 10, color: "#bbb" }}>[Seal]</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Branded Footer */}
-            <div style={{ marginTop: 30, paddingTop: 12, borderTop: "3px solid #0D9488", textAlign: "center" }}>
-              <p style={{ fontSize: 11, fontWeight: "bold", color: "#0D9488", margin: 0 }}>EasyPay — Digital Financial Services</p>
-              <p style={{ fontSize: 9, color: "#888", marginTop: 2 }}>Dhaka, Bangladesh • support@easypay.app • www.easypay.app</p>
-              <p style={{ fontSize: 9, color: "#aaa", marginTop: 6 }}>This document is confidential and intended solely for the requesting law enforcement authority.</p>
-              <p style={{ fontSize: 9, color: "#aaa" }}>Unauthorized disclosure, reproduction, or distribution is strictly prohibited.</p>
-              <p style={{ fontSize: 8, color: "#bbb", marginTop: 4 }}>Generated by EasyPay Admin System • {new Date().toISOString()}</p>
+            <div style={{ marginTop: 36, paddingTop: 14, borderTop: "3px solid #0D9488", textAlign: "center" }}>
+              <p style={{ fontSize: 12, fontWeight: "bold", color: "#0D9488", margin: 0, letterSpacing: 1 }}>EasyPay — Digital Financial Services</p>
+              <p style={{ fontSize: 9, color: "#777", marginTop: 3 }}>Dhaka, Bangladesh • support@easypay.app • www.easypay.app</p>
+              <div style={{ marginTop: 10, padding: "6px 0", borderTop: "1px solid #eee" }}>
+                <p style={{ fontSize: 9, color: "#999", margin: 0 }}>
+                  <span style={{ color: "#dc2626", fontWeight: "bold" }}>RESTRICTED</span> — This document is confidential and intended solely for the requesting law enforcement authority.
+                </p>
+                <p style={{ fontSize: 9, color: "#999", margin: "2px 0 0" }}>Unauthorized disclosure, reproduction, or distribution is strictly prohibited under applicable law.</p>
+              </div>
+              <p style={{ fontSize: 8, color: "#bbb", marginTop: 6 }}>Generated by EasyPay Admin System • {new Date().toISOString()}</p>
             </div>
           </div>
         </div>
