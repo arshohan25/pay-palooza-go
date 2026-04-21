@@ -333,26 +333,6 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         );
       })()}
 
-      {/* ── Search bar ──────────────────────────────────────────────────── */}
-      <div className="mb-2">
-        <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder={`${t("searchTransactions")} or Transaction ID`}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-9 h-11 bg-card border-border/60 rounded-2xl text-[13px] shadow-xs"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground tap-target"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* ── Date filters (collapsible) ───────────────────────────────────── */}
       <AnimatePresence>
