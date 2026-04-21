@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth, isBefore } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
   CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle, Phone,
@@ -93,13 +93,12 @@ interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void
 
 const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, customLabels }: TransactionHistoryProps) => {
   const { t } = useI18n();
-  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions();
-  const visibleCategories = useMemo(() =>
-    filterTypes
-      ? CATEGORIES.filter((c) => c.id === "all" || filterTypes.includes(c.id))
-      : CATEGORIES,
-    [filterTypes]
-  );
+  const runningMonthStart = useMemo(() => startOfMonth(new Date()), []);
+  const runningMonthEnd = useMemo(() => endOfDay(new Date()), []);
+  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions(undefined, undefined, {
+    from: runningMonthStart.toISOString(),
+    to: runningMonthEnd.toISOString(),
+  });
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
   const [search, setSearch]       = useState("");
   const [dateFrom, setDateFrom]   = useState<Date | undefined>(startOfMonth(new Date()));
@@ -192,23 +191,22 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
     });
   }, [activeTab, search, dateFrom, dateTo, allTransactions]);
 
-  const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); };
-  const hasActiveFilters = search || dateFrom || dateTo || activeTab !== "all";
+  const clearFilters    = () => { setDateFrom(runningMonthStart); setDateTo(runningMonthEnd); setSearch(""); setActiveTab("all"); };
+  const dateScopeChanged = Boolean(
+    (dateFrom && isBefore(startOfDay(runningMonthStart), startOfDay(dateFrom))) ||
+    (dateTo && isBefore(endOfDay(dateTo), runningMonthEnd)) ||
+    !dateFrom ||
+    !dateTo
+  );
+  const hasActiveFilters = search || activeTab !== "all" || dateScopeChanged;
 
-  // Month-fixed totals for summary chips (always current month, ignoring filters)
+  // DB-backed running-month totals for summary chips (ignores search/category filters)
   const { monthIn, monthOut, monthFees, monthCommission } = useMemo(() => {
-    const now = new Date();
-    const mStart = startOfMonth(now);
-    const mEnd = endOfDay(now);
-    const monthTxns = allTransactions.filter((tx) => {
-      const d = new Date(tx.date);
-      return isWithinInterval(d, { start: mStart, end: mEnd });
-    });
     return {
-      monthIn: monthTxns.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
-      monthOut: monthTxns.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
-      monthFees: monthTxns.reduce((s, t) => s + (t.fee || 0), 0),
-      monthCommission: monthTxns.reduce((s, t) => s + (t.commission || 0), 0),
+      monthIn: allTransactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
+      monthOut: allTransactions.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
+      monthFees: allTransactions.reduce((s, t) => s + (t.fee || 0), 0),
+      monthCommission: allTransactions.reduce((s, t) => s + (t.commission || 0), 0),
     };
   }, [allTransactions]);
 
