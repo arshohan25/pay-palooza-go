@@ -122,6 +122,7 @@ import AdminInsuranceManagement from "@/components/admin/AdminInsuranceManagemen
 import AdminGiftCardManagement from "@/components/admin/AdminGiftCardManagement";
 import AdminAiAgent from "@/components/admin/AdminAiAgent";
 import AdminProfileEditor from "@/components/admin/AdminProfileEditor";
+import AdminLEARequest from "@/components/admin/AdminLEARequest";
 import AdminUserPerformanceTracker from "@/components/admin/AdminUserPerformanceTracker";
 import { AdminUserMetrics } from "@/components/admin/AdminUserMetrics";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
