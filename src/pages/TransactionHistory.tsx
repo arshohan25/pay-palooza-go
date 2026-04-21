@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
   CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle, Phone,
@@ -102,8 +102,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   );
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
   const [search, setSearch]       = useState("");
-  const [dateFrom, setDateFrom]   = useState<Date | undefined>();
-  const [dateTo, setDateTo]       = useState<Date | undefined>();
+  const [dateFrom, setDateFrom]   = useState<Date | undefined>(startOfMonth(new Date()));
+  const [dateTo, setDateTo]       = useState<Date | undefined>(endOfDay(new Date()));
   const [fromOpen, setFromOpen]   = useState(false);
   const [toOpen, setToOpen]       = useState(false);
   const [showFilters, setShowFilters] = useState(false);
