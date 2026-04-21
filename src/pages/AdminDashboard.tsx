@@ -2015,6 +2015,9 @@ export default function AdminDashboard() {
         {/* ═══ BLACKLIST MANAGER ═══ */}
         {activeTab === "blacklist" && <AdminBlacklistManager />}
 
+        {/* ═══ LEA REQUEST ═══ */}
+        {activeTab === "lea_request" && <AdminLEARequest />}
+
         {/* ═══ AGENT LEADERBOARD ═══ */}
         {activeTab === "agent_leaderboard" && <AdminAgentLeaderboard />}
 
