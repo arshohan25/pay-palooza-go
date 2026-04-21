@@ -714,26 +714,34 @@ export default function AdminLEARequest() {
       {/* Hidden printable report for html2canvas */}
       {report && (
         <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
-          <div ref={reportRef} style={{ width: 900, padding: 40, background: "#fff", color: "#111", fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12 }}>
+          <div ref={reportRef} style={{ width: 900, padding: 48, background: "#fff", color: "#111", fontFamily: "Arial, Helvetica, sans-serif", fontSize: 11, lineHeight: 1.6 }}>
             {/* Branded Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, paddingBottom: 12, borderBottom: "3px solid #0D9488" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, paddingBottom: 14, borderBottom: "3px solid #0D9488" }}>
               <div>
-                <h1 style={{ fontSize: 22, fontWeight: "bold", letterSpacing: 1, color: "#0D9488", margin: 0 }}>EasyPay</h1>
-                <p style={{ fontSize: 9, color: "#666", margin: "2px 0 0" }}>Digital Financial Services • Bangladesh</p>
+                <h1 style={{ fontSize: 24, fontWeight: "bold", letterSpacing: 1.5, color: "#0D9488", margin: 0 }}>EasyPay</h1>
+                <p style={{ fontSize: 9, color: "#666", margin: "3px 0 0" }}>Digital Financial Services • Bangladesh</p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: 14, fontWeight: "bold", margin: 0, letterSpacing: 1 }}>USER DATA DISCLOSURE REPORT</p>
-                <p style={{ fontSize: 10, color: "#c00", margin: "2px 0 0", fontWeight: "bold" }}>CONFIDENTIAL — LAW ENFORCEMENT ONLY</p>
+                <p style={{ fontSize: 15, fontWeight: "bold", margin: 0, letterSpacing: 1 }}>LAW ENFORCEMENT DISCLOSURE REPORT</p>
+                <span style={{ display: "inline-block", marginTop: 4, background: "#dc2626", color: "#fff", fontSize: 9, fontWeight: "bold", padding: "2px 10px", borderRadius: 3, letterSpacing: 1 }}>RESTRICTED</span>
               </div>
             </div>
 
-            <table style={{ width: "100%", marginBottom: 16, fontSize: 12 }}>
+            {/* Reference Grid */}
+            <table style={{ width: "100%", marginBottom: 20, fontSize: 11, borderCollapse: "collapse", border: "1px solid #d0d0d0" }}>
               <tbody>
-                <tr><td style={psw}>Report ID:</td><td style={{ ...ps, fontWeight: "bold" }}>{generateReportId()}</td></tr>
-                <tr><td style={psw}>Issue Date:</td><td style={{ ...ps, fontWeight: "bold" }}>{issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "_______________"}</td></tr>
-                <tr><td style={psw}>Generated At:</td><td style={ps}>{new Date().toLocaleString()}</td></tr>
-                <tr><td style={psw}>Requesting Authority:</td><td style={{ ...ps, fontWeight: "bold" }}>{authority || "_______________"}</td></tr>
-                <tr><td style={psw}>Reference No:</td><td style={{ ...ps, fontWeight: "bold" }}>{refNo || "_______________"}</td></tr>
+                <tr>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", color: "#555", background: "#f5f5f5", borderRight: "1px solid #d0d0d0", borderBottom: "1px solid #d0d0d0", width: "25%" }}>Report ID</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", borderBottom: "1px solid #d0d0d0", borderRight: "1px solid #d0d0d0", width: "25%" }}>{generateReportId()}</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", color: "#555", background: "#f5f5f5", borderRight: "1px solid #d0d0d0", borderBottom: "1px solid #d0d0d0", width: "25%" }}>Issue Date</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", borderBottom: "1px solid #d0d0d0", width: "25%" }}>{issueDate ? new Date(issueDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "_______________"}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", color: "#555", background: "#f5f5f5", borderRight: "1px solid #d0d0d0", width: "25%" }}>Requesting Authority</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", borderRight: "1px solid #d0d0d0" }}>{authority || "_______________"}</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold", color: "#555", background: "#f5f5f5", borderRight: "1px solid #d0d0d0", width: "25%" }}>Reference No</td>
+                  <td style={{ padding: "6px 10px", fontWeight: "bold" }}>{refNo || "_______________"}</td>
+                </tr>
               </tbody>
             </table>
 
