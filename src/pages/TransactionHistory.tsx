@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth, isBefore } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
   CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle, Phone,
@@ -93,13 +93,12 @@ interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void
 
 const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, customLabels }: TransactionHistoryProps) => {
   const { t } = useI18n();
-  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions();
-  const visibleCategories = useMemo(() =>
-    filterTypes
-      ? CATEGORIES.filter((c) => c.id === "all" || filterTypes.includes(c.id))
-      : CATEGORIES,
-    [filterTypes]
-  );
+  const runningMonthStart = useMemo(() => startOfMonth(new Date()), []);
+  const runningMonthEnd = useMemo(() => endOfDay(new Date()), []);
+  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions(undefined, undefined, {
+    from: runningMonthStart.toISOString(),
+    to: runningMonthEnd.toISOString(),
+  });
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
   const [search, setSearch]       = useState("");
   const [dateFrom, setDateFrom]   = useState<Date | undefined>(startOfMonth(new Date()));
@@ -192,23 +191,22 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
     });
   }, [activeTab, search, dateFrom, dateTo, allTransactions]);
 
-  const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); };
-  const hasActiveFilters = search || dateFrom || dateTo || activeTab !== "all";
+  const clearFilters    = () => { setDateFrom(runningMonthStart); setDateTo(runningMonthEnd); setSearch(""); setActiveTab("all"); };
+  const dateScopeChanged = Boolean(
+    (dateFrom && isBefore(startOfDay(runningMonthStart), startOfDay(dateFrom))) ||
+    (dateTo && isBefore(endOfDay(dateTo), runningMonthEnd)) ||
+    !dateFrom ||
+    !dateTo
+  );
+  const hasActiveFilters = search || activeTab !== "all" || dateScopeChanged;
 
-  // Month-fixed totals for summary chips (always current month, ignoring filters)
+  // DB-backed running-month totals for summary chips (ignores search/category filters)
   const { monthIn, monthOut, monthFees, monthCommission } = useMemo(() => {
-    const now = new Date();
-    const mStart = startOfMonth(now);
-    const mEnd = endOfDay(now);
-    const monthTxns = allTransactions.filter((tx) => {
-      const d = new Date(tx.date);
-      return isWithinInterval(d, { start: mStart, end: mEnd });
-    });
     return {
-      monthIn: monthTxns.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
-      monthOut: monthTxns.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
-      monthFees: monthTxns.reduce((s, t) => s + (t.fee || 0), 0),
-      monthCommission: monthTxns.reduce((s, t) => s + (t.commission || 0), 0),
+      monthIn: allTransactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
+      monthOut: allTransactions.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
+      monthFees: allTransactions.reduce((s, t) => s + (t.fee || 0), 0),
+      monthCommission: allTransactions.reduce((s, t) => s + (t.commission || 0), 0),
     };
   }, [allTransactions]);
 
@@ -265,24 +263,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           </motion.button>
         </div>
 
-        {/* Summary chips — strict 3-col grid */}
-        <div className="grid grid-cols-3 gap-2 w-full">
-          {[
-            { label: t("moneyIn"),  value: `+৳${monthIn.toLocaleString("en-IN")}`,  color: "text-green-300" },
-            { label: t("moneyOut"), value: `-৳${monthOut.toLocaleString("en-IN")}`, color: "text-rose-300"  },
-            agentView
-              ? { label: "Commission", value: `৳${monthCommission.toLocaleString("en-IN")}`, color: "text-emerald-300" }
-              : { label: "Fees",       value: `৳${monthFees.toLocaleString("en-IN")}`,       color: "text-amber-300" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center min-w-0 overflow-hidden">
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-white/60 mb-0.5 truncate">{label}</p>
-              <p className={`text-[12px] font-bold leading-tight truncate ${color}`}>{value}</p>
-            </div>
-          ))}
-        </div>
-
         {/* Search bar inside hero */}
-        <div className="mt-3 relative">
+        <div className="mb-3 relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" />
           <Input
             placeholder={`${t("searchTransactions")} or Transaction ID`}
@@ -298,6 +280,22 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
               <X size={14} />
             </button>
           )}
+        </div>
+
+        {/* Summary chips — strict 3-col grid */}
+        <div className="grid grid-cols-3 gap-2 w-full">
+          {[
+            { label: t("moneyIn"),  value: `+৳${monthIn.toLocaleString("en-IN")}`,  color: "text-green-300" },
+            { label: t("moneyOut"), value: `-৳${monthOut.toLocaleString("en-IN")}`, color: "text-rose-300"  },
+            agentView
+              ? { label: "Commission", value: `৳${monthCommission.toLocaleString("en-IN")}`, color: "text-emerald-300" }
+              : { label: "Fees",       value: `৳${monthFees.toLocaleString("en-IN")}`,       color: "text-amber-300" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center min-w-0 overflow-hidden">
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-white/60 mb-0.5 truncate">{label}</p>
+              <p className={`text-[12px] font-bold leading-tight truncate ${color}`}>{value}</p>
+            </div>
+          ))}
         </div>
       </div>
 

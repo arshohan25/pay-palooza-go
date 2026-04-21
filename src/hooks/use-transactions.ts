@@ -30,6 +30,11 @@ const TXN_GRADIENTS: Record<string, string> = {
 type SupportedTxnType = "send" | "receive" | "cashout" | "cashin" | "banktransfer" | "payment" | "recharge" | "paybill" | "addmoney";
 type RawTxnType = SupportedTxnType | "deposit";
 
+interface TransactionQueryOptions {
+  from?: string;
+  to?: string;
+}
+
 export interface DbTransaction {
   id: string;
   short_id: string;
@@ -87,11 +92,12 @@ function normalizeTransaction(tx: RawDbTransaction): DbTransaction {
   };
 }
 
-export function useTransactions(limit?: number, refreshKey?: number) {
+export function useTransactions(limit?: number, refreshKey?: number, options: TransactionQueryOptions = {}) {
   const [transactions, setTransactions] = useState<DbTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const knownIds = useRef(new Set<string>());
   const initialLoad = useRef(true);
+  const { from, to } = options;
 
   const fetchTxns = useCallback(async () => {
     setLoading(true);
@@ -108,6 +114,8 @@ export function useTransactions(limit?: number, refreshKey?: number) {
       .eq("user_id", session.user.id)
       .order("created_at", { ascending: false });
 
+    if (from) query = query.gte("created_at", from);
+    if (to) query = query.lte("created_at", to);
     if (limit) query = query.limit(limit);
 
     const { data } = await query;
@@ -120,7 +128,7 @@ export function useTransactions(limit?: number, refreshKey?: number) {
 
     setTransactions(txns);
     setLoading(false);
-  }, [limit]);
+  }, [limit, from, to]);
 
   useEffect(() => {
     fetchTxns();
