@@ -229,24 +229,24 @@ export default function AdminLEARequest() {
   );
 
   // Printable helpers
-  const ps = { padding: 2 } as React.CSSProperties;
-  const psw = { padding: 2, width: 180 } as React.CSSProperties;
-  const thS = { padding: 3, textAlign: "left" as const, border: "1px solid #ddd" };
+  const ps = { padding: "4px 6px" } as React.CSSProperties;
+  const psw = { padding: "4px 6px", width: 180, color: "#555", fontWeight: "bold" as const } as React.CSSProperties;
+  const thS = { padding: "6px 8px", textAlign: "left" as const, border: "1px solid #d0d0d0", background: "#0D9488", color: "#fff", fontWeight: "bold" as const, fontSize: 10 };
   const thR = { ...thS, textAlign: "right" as const };
-  const tdS = { padding: 3, border: "1px solid #ddd" };
+  const tdS = { padding: "5px 8px", border: "1px solid #e0e0e0", fontSize: 10 };
   const tdR = { ...tdS, textAlign: "right" as const };
-  const secH = { fontSize: 13, borderBottom: "1px solid #ccc", paddingBottom: 4, marginTop: 20 } as React.CSSProperties;
+  const secH = { fontSize: 13, fontWeight: "bold" as const, borderLeft: "4px solid #0D9488", paddingLeft: 10, paddingBottom: 4, marginTop: 24, marginBottom: 8, textTransform: "uppercase" as const, letterSpacing: 0.5, color: "#222" } as React.CSSProperties;
 
   const PrintTable = ({ headers, rows }: { headers: { label: string; align?: string }[]; rows: React.ReactNode[][] }) => (
-    <table style={{ width: "100%", fontSize: 10, borderCollapse: "collapse", marginBottom: 12 }}>
+    <table style={{ width: "100%", fontSize: 10, borderCollapse: "collapse", marginBottom: 14 }}>
       <thead>
-        <tr style={{ background: "#f0f0f0" }}>
+        <tr>
           {headers.map((h, i) => <th key={i} style={h.align === "right" ? thR : thS}>{h.label}</th>)}
         </tr>
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={i}>
+          <tr key={i} style={{ background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
             {r.map((c, j) => <td key={j} style={headers[j]?.align === "right" ? tdR : tdS}>{c}</td>)}
           </tr>
         ))}
@@ -255,8 +255,13 @@ export default function AdminLEARequest() {
   );
 
   const PrintKV = ({ items }: { items: [string, React.ReactNode][] }) => (
-    <table style={{ width: "100%", fontSize: 12, marginBottom: 12 }}>
-      <tbody>{items.map(([k, v], i) => <tr key={i}><td style={psw}>{k}:</td><td style={ps}>{v ?? "—"}</td></tr>)}</tbody>
+    <table style={{ width: "100%", fontSize: 11, marginBottom: 14, borderCollapse: "collapse" }}>
+      <tbody>{items.map(([k, v], i) => (
+        <tr key={i} style={{ background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
+          <td style={{ ...psw, borderBottom: "1px solid #eee" }}>{k}:</td>
+          <td style={{ ...ps, borderBottom: "1px solid #eee" }}>{v ?? "—"}</td>
+        </tr>
+      ))}</tbody>
     </table>
   );
 
@@ -337,8 +342,6 @@ export default function AdminLEARequest() {
                 <InfoRow label="Balance" value={`৳${Number(report.profile.balance || 0).toLocaleString()}`} />
                 <InfoRow label="Registered" value={new Date(report.profile.created_at).toLocaleDateString()} />
                 <InfoRow label="KYC Exempt" value={report.profile.kyc_exempt ? "Yes" : "No"} />
-                <InfoRow label="Deactivated At" value={report.profile.deactivated_at ? new Date(report.profile.deactivated_at).toLocaleString() : null} />
-                <InfoRow label="Scheduled Deletion" value={report.profile.scheduled_deletion_at ? new Date(report.profile.scheduled_deletion_at).toLocaleString() : null} />
                 <InfoRow label="Account Age" value={`${accountAgeDays} days`} />
               </div>
             </div>
