@@ -200,22 +200,11 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); };
   const hasActiveFilters = search || dateFrom || dateTo || activeTab !== "all";
 
-  // Month-fixed totals for summary chips (always current month, ignoring filters)
-  const { monthIn, monthOut, monthFees, monthCommission } = useMemo(() => {
-    const now = new Date();
-    const mStart = startOfMonth(now);
-    const mEnd = endOfDay(now);
-    const monthTxns = allTransactions.filter((tx) => {
-      const d = new Date(tx.date);
-      return isWithinInterval(d, { start: mStart, end: mEnd });
-    });
-    return {
-      monthIn: monthTxns.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
-      monthOut: monthTxns.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
-      monthFees: monthTxns.reduce((s, t) => s + (t.fee || 0), 0),
-      monthCommission: monthTxns.reduce((s, t) => s + (t.commission || 0), 0),
-    };
-  }, [allTransactions]);
+  // Summary totals from DB-only current month data
+  const monthIn = useMemo(() => allTransactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0), [allTransactions]);
+  const monthOut = useMemo(() => allTransactions.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0), [allTransactions]);
+  const monthFees = useMemo(() => allTransactions.reduce((s, t) => s + (t.fee || 0), 0), [allTransactions]);
+  const monthCommission = useMemo(() => allTransactions.reduce((s, t) => s + (t.commission || 0), 0), [allTransactions]);
 
   const totalFees = filtered.reduce((s, t) => s + (t.fee || 0), 0);
   const totalCommission = filtered.reduce((s, t) => s + (t.commission || 0), 0);
