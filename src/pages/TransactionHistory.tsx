@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth, subMonths, endOfMonth } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
   CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle, Phone,
