@@ -180,10 +180,20 @@ export default function AdminLEARequest() {
         scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false,
       });
 
-      const link = document.createElement("a");
-      link.download = `LEA-Report-${phone}-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+      const imgData = canvas.toDataURL("image/png");
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: imgHeight > 297 ? "portrait" : "portrait" });
+
+      let yOffset = 0;
+      const pageHeight = 297;
+      while (yOffset < imgHeight) {
+        if (yOffset > 0) pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, -yOffset, imgWidth, imgHeight);
+        yOffset += pageHeight;
+      }
+
+      pdf.save(`LEA-Report-${phone}-${new Date().toISOString().slice(0, 10)}.pdf`);
 
       await logAction("lea_report_download", {
         phone: phone.trim(),
@@ -192,7 +202,7 @@ export default function AdminLEARequest() {
         reference_no: refNo.trim(),
       });
 
-      toast.success("Report downloaded");
+      toast.success("PDF report downloaded");
     } catch {
       toast.error("Failed to generate report");
     } finally {
