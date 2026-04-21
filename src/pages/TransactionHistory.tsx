@@ -102,8 +102,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   );
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
   const [search, setSearch]       = useState("");
-  const [dateFrom, setDateFrom]   = useState<Date | undefined>();
-  const [dateTo, setDateTo]       = useState<Date | undefined>();
+  const [dateFrom, setDateFrom]   = useState<Date | undefined>(startOfMonth(new Date()));
+  const [dateTo, setDateTo]       = useState<Date | undefined>(endOfDay(new Date()));
   const [fromOpen, setFromOpen]   = useState(false);
   const [toOpen, setToOpen]       = useState(false);
   const [showFilters, setShowFilters] = useState(false);
