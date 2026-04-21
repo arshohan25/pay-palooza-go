@@ -324,6 +324,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "security", label: "Security", icon: Shield },
       { id: "risk_control", label: "Risk Control", icon: ShieldAlert },
       { id: "blacklist", label: "Blacklist", icon: Shield },
+      { id: "lea_request", label: "LEA Request", icon: FileText },
     ],
   },
   {
