@@ -263,24 +263,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           </motion.button>
         </div>
 
-        {/* Summary chips — strict 3-col grid */}
-        <div className="grid grid-cols-3 gap-2 w-full">
-          {[
-            { label: t("moneyIn"),  value: `+৳${monthIn.toLocaleString("en-IN")}`,  color: "text-green-300" },
-            { label: t("moneyOut"), value: `-৳${monthOut.toLocaleString("en-IN")}`, color: "text-rose-300"  },
-            agentView
-              ? { label: "Commission", value: `৳${monthCommission.toLocaleString("en-IN")}`, color: "text-emerald-300" }
-              : { label: "Fees",       value: `৳${monthFees.toLocaleString("en-IN")}`,       color: "text-amber-300" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center min-w-0 overflow-hidden">
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-white/60 mb-0.5 truncate">{label}</p>
-              <p className={`text-[12px] font-bold leading-tight truncate ${color}`}>{value}</p>
-            </div>
-          ))}
-        </div>
-
         {/* Search bar inside hero */}
-        <div className="mt-3 relative">
+        <div className="mb-3 relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" />
           <Input
             placeholder={`${t("searchTransactions")} or Transaction ID`}
@@ -296,6 +280,22 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
               <X size={14} />
             </button>
           )}
+        </div>
+
+        {/* Summary chips — strict 3-col grid */}
+        <div className="grid grid-cols-3 gap-2 w-full">
+          {[
+            { label: t("moneyIn"),  value: `+৳${monthIn.toLocaleString("en-IN")}`,  color: "text-green-300" },
+            { label: t("moneyOut"), value: `-৳${monthOut.toLocaleString("en-IN")}`, color: "text-rose-300"  },
+            agentView
+              ? { label: "Commission", value: `৳${monthCommission.toLocaleString("en-IN")}`, color: "text-emerald-300" }
+              : { label: "Fees",       value: `৳${monthFees.toLocaleString("en-IN")}`,       color: "text-amber-300" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center min-w-0 overflow-hidden">
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-white/60 mb-0.5 truncate">{label}</p>
+              <p className={`text-[12px] font-bold leading-tight truncate ${color}`}>{value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
