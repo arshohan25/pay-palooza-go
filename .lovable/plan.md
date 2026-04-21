@@ -1,28 +1,63 @@
 
 
-## Fix LEA Report PDF Format — Professional Polish
+## LEA Report: Report ID Display, Input Validation, and Report History
 
-### Changes to `src/components/admin/AdminLEARequest.tsx`
+### Changes
 
-**1. Remove "Deactivated At" and "Scheduled Deletion" rows**
+**1. New database table: `lea_reports`**
 
-Remove these two rows from both:
-- On-screen preview (lines 340-341): the `InfoRow` entries for "Deactivated At" and "Scheduled Deletion"
-- Printable report (lines 748-749): the `PrintKV` items for "Deactivated At" and "Scheduled Deletion"
+Create a migration for a new table to persist all generated LEA reports:
 
-**2. Professional PDF layout improvements**
+```sql
+CREATE TABLE public.lea_reports (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  report_id text NOT NULL,
+  phone text NOT NULL,
+  target_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  authority text NOT NULL,
+  reference_no text NOT NULL,
+  issue_date date NOT NULL,
+  sections_included text[] NOT NULL DEFAULT '{}',
+  generated_by uuid NOT NULL,
+  generated_at timestamptz NOT NULL DEFAULT now(),
+  summary jsonb DEFAULT '{}'
+);
 
-Redesign the hidden printable div to produce a polished, government-grade document:
+ALTER TABLE public.lea_reports ENABLE ROW LEVEL SECURITY;
 
-- **Header**: Add a horizontal rule with EasyPay teal accent, add a document classification badge ("RESTRICTED"), and include a reference grid (Report ID, Issue Date, Authority, Ref No) in a bordered two-column table instead of loose rows
-- **Section headings**: Use teal left-border accent bars with uppercase bold text and consistent spacing
-- **Tables**: Improve table styling with alternating row backgrounds (`#f9f9f9`), stronger header row styling with teal background (`#0D9488`) and white text, consistent cell padding (6px)
-- **Key-Value sections**: Use a clean two-column bordered table layout with left column in bold gray and right column in regular weight
-- **Summary footer**: Convert to a bordered grid card layout with labeled stat boxes instead of a plain table
-- **Signature section**: Add proper spacing, thicker signature lines, clearer labels, and a reference number field under "Receiving Authority"
-- **Footer**: Add page number placeholder text, strengthen confidentiality notice with bold red "RESTRICTED" label
-- **Overall**: Increase base font to 11px for readability, add `lineHeight: 1.6` for better text spacing, use consistent 48px padding
+CREATE POLICY "Admins can manage LEA reports"
+  ON public.lea_reports FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(), 'admin'))
+  WITH CHECK (public.has_role(auth.uid(), 'admin'));
+```
+
+The `summary` JSONB column stores key stats (total txns, total in/out, fraud count, etc.) for the history list view without needing to re-query.
+
+**2. File: `src/components/admin/AdminLEARequest.tsx`**
+
+**Report ID on-screen display:**
+- Generate the Report ID once when a user is found (store in state via `useState<string>("")`), not on every render call
+- Show the Report ID in the on-screen preview card header (e.g. between the search card and the data preview card) as a prominent Badge
+- The printable header already shows it; ensure it uses the same stored value instead of calling `generateReportId()` again each render
+
+**Input validation with visual warnings:**
+- Add `fieldErrors` state: `{ authority: boolean; refNo: boolean; issueDate: boolean }`
+- Show red border + "Required" text under Authority, Ref No, and Issue Date inputs when empty on download attempt
+- Validate Issue Date is a valid date (not empty string)
+- Clear field errors on input change
+- Disable the Download PDF button entirely when any required field is empty (gray out with tooltip)
+
+**Save report to database on download:**
+- After successful PDF generation, insert a row into `lea_reports` with: report_id, phone, target_user_id, authority, reference_no, issue_date, sections_included (array of enabled section keys), generated_by (current admin user ID), and summary JSON (total txns, total in/out, fraud alerts count, disputes count)
+
+**Report History section:**
+- Add a new Card below the main content titled "LEA Reports History"
+- Fetch from `lea_reports` ordered by `generated_at DESC`, limit 50
+- Display as a compact table with columns: Report ID, Phone, Authority, Ref No, Issue Date, Generated At, Sections Count
+- Auto-refresh the history list after each new download
+- Load history on component mount
 
 ### Files touched
-- `src/components/admin/AdminLEARequest.tsx` (edit only)
+- New migration for `lea_reports` table
+- `src/components/admin/AdminLEARequest.tsx` (edit)
 
