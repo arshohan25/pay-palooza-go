@@ -756,8 +756,6 @@ export default function AdminLEARequest() {
               ["Current Balance", `৳${Number(report.profile.balance || 0).toLocaleString()}`],
               ["Registration Date", new Date(report.profile.created_at).toLocaleDateString()],
               ["KYC Exempt", report.profile.kyc_exempt ? "Yes" : "No"],
-              ["Deactivated At", report.profile.deactivated_at ? new Date(report.profile.deactivated_at).toLocaleString() : "—"],
-              ["Scheduled Deletion", report.profile.scheduled_deletion_at ? new Date(report.profile.scheduled_deletion_at).toLocaleString() : "—"],
               ["Account Age", `${accountAgeDays} days`],
             ]} />
 
