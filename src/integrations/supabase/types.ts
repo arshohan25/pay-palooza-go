@@ -1997,6 +1997,48 @@ export type Database = {
         }
         Relationships: []
       }
+      lea_reports: {
+        Row: {
+          authority: string
+          generated_at: string
+          generated_by: string
+          id: string
+          issue_date: string
+          phone: string
+          reference_no: string
+          report_id: string
+          sections_included: string[]
+          summary: Json | null
+          target_user_id: string | null
+        }
+        Insert: {
+          authority: string
+          generated_at?: string
+          generated_by: string
+          id?: string
+          issue_date: string
+          phone: string
+          reference_no: string
+          report_id: string
+          sections_included?: string[]
+          summary?: Json | null
+          target_user_id?: string | null
+        }
+        Update: {
+          authority?: string
+          generated_at?: string
+          generated_by?: string
+          id?: string
+          issue_date?: string
+          phone?: string
+          reference_no?: string
+          report_id?: string
+          sections_included?: string[]
+          summary?: Json | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       loan_applications: {
         Row: {
           admin_notes: string | null
