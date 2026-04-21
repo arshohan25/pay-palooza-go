@@ -268,17 +268,36 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         {/* Summary chips — strict 3-col grid */}
         <div className="grid grid-cols-3 gap-2 w-full">
           {[
-            { label: t("moneyIn"),  value: `+৳${totalIn.toLocaleString("en-IN")}`,  color: "text-green-300" },
-            { label: t("moneyOut"), value: `-৳${totalOut.toLocaleString("en-IN")}`, color: "text-rose-300"  },
+            { label: t("moneyIn"),  value: `+৳${monthIn.toLocaleString("en-IN")}`,  color: "text-green-300" },
+            { label: t("moneyOut"), value: `-৳${monthOut.toLocaleString("en-IN")}`, color: "text-rose-300"  },
             agentView
-              ? { label: "Commission", value: `৳${totalCommission.toLocaleString("en-IN")}`, color: "text-emerald-300" }
-              : { label: "Fees",       value: `৳${totalFees.toLocaleString("en-IN")}`,       color: "text-amber-300" },
+              ? { label: "Commission", value: `৳${monthCommission.toLocaleString("en-IN")}`, color: "text-emerald-300" }
+              : { label: "Fees",       value: `৳${monthFees.toLocaleString("en-IN")}`,       color: "text-amber-300" },
           ].map(({ label, value, color }) => (
             <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center min-w-0 overflow-hidden">
               <p className="text-[9px] font-semibold uppercase tracking-wide text-white/60 mb-0.5 truncate">{label}</p>
               <p className={`text-[12px] font-bold leading-tight truncate ${color}`}>{value}</p>
             </div>
           ))}
+        </div>
+
+        {/* Search bar inside hero */}
+        <div className="mt-3 relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" />
+          <Input
+            placeholder={`${t("searchTransactions")} or Transaction ID`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 pr-9 h-10 bg-white/10 border-white/15 rounded-2xl text-[13px] text-white placeholder:text-white/40 focus-visible:ring-white/30"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white tap-target"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
