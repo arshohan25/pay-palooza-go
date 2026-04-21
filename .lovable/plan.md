@@ -1,26 +1,23 @@
 
 
-## Default to Current Month in Transaction History
+## Move Search Bar into Hero & Lock Summary to Current Month
 
 ### Problem
-The Transaction History page loads **all** transactions by default. The user wants it to show only the **current month's** data initially.
+1. The search bar sits below the hero card — user wants it inside the hero header area (between the title row and the summary chips).
+2. The Money In / Money Out / Fees summary chips currently reflect whatever filters are active. User wants them to always show **current month totals only**, regardless of search, category, or date filters.
 
-### Change
+### Changes
 
 **File: `src/pages/TransactionHistory.tsx`**
 
-Initialize `dateFrom` and `dateTo` state to the current month boundaries instead of `undefined`:
+1. **Compute month-fixed totals** — add a new `useMemo` that filters `allTransactions` to current month only (using `startOfMonth` / `endOfDay(new Date())`), then computes `monthIn`, `monthOut`, `monthFees`, `monthCommission`. These replace `totalIn`/`totalOut`/`totalFees`/`totalCommission` in the summary chips.
 
-```ts
-const [dateFrom, setDateFrom] = useState<Date | undefined>(startOfMonth(new Date()));
-const [dateTo, setDateTo]     = useState<Date | undefined>(endOfDay(new Date()));
-```
+2. **Move search bar into the hero** — relocate the search `<Input>` block (currently at ~line 302-321) into the hero `<div>` between the title row and the summary grid (~line 251). Restyle the input to match the hero context (glass background, white text, white placeholder).
 
-- Import `startOfMonth` from `date-fns` (already using `date-fns`).
-- The filter panel (`showFilters`) will start collapsed but the date range is already active, so the summary cards (Money In, Money Out, Fees) and the transaction list will reflect current month only.
-- The filter toggle button will show its "active" style (white bg) since `dateFrom` is set.
-- "Clear filters" resets to `undefined` (all data) as before.
+3. **Summary chips use month-fixed values** — change the 3 summary chip values from `totalIn`/`totalOut`/`totalFees` to `monthIn`/`monthOut`/`monthFees`.
+
+4. **Fee/Commission breakdowns unchanged** — these still use `filtered` data so they respond to user filters as before.
 
 ### Files touched
-- `src/pages/TransactionHistory.tsx` — add `startOfMonth` import, change default state for `dateFrom`/`dateTo`.
+- `src/pages/TransactionHistory.tsx`
 
