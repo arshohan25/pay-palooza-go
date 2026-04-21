@@ -293,8 +293,9 @@ export default function AdminLEARequest() {
               <div className="flex flex-col sm:flex-row gap-2">
                 <Input placeholder="Requesting Authority *" value={authority} onChange={e => setAuthority(e.target.value)} />
                 <Input placeholder="Reference No *" value={refNo} onChange={e => setRefNo(e.target.value)} />
+                <Input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} className="sm:max-w-[160px]" />
                 <Button onClick={handleDownload} disabled={generating} variant="destructive" className="shrink-0">
-                  <Download className="w-4 h-4 mr-1" />{generating ? "Generating..." : "Download Report"}
+                  <Download className="w-4 h-4 mr-1" />{generating ? "Generating..." : "Download PDF"}
                 </Button>
               </div>
 
