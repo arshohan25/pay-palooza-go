@@ -1151,34 +1151,99 @@ export default function AdminLEARequest() {
           ) : history.length === 0 ? (
             <p className="text-xs text-muted-foreground">No reports generated yet.</p>
           ) : (
-            <div className="overflow-auto max-h-80 border rounded">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Report ID</TableHead>
-                    <TableHead className="text-xs">Phone</TableHead>
-                    <TableHead className="text-xs">Authority</TableHead>
-                    <TableHead className="text-xs">Ref No</TableHead>
-                    <TableHead className="text-xs">Issue Date</TableHead>
-                    <TableHead className="text-xs">Generated</TableHead>
-                    <TableHead className="text-xs text-center">Sections</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {history.map((h) => (
-                    <TableRow key={h.id}>
-                      <TableCell className="font-mono text-[10px]">{h.report_id}</TableCell>
-                      <TableCell className="text-xs">{h.phone}</TableCell>
-                      <TableCell className="text-xs">{h.authority}</TableCell>
-                      <TableCell className="text-xs">{h.reference_no}</TableCell>
-                      <TableCell className="text-xs">{h.issue_date}</TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">{new Date(h.generated_at).toLocaleString()}</TableCell>
-                      <TableCell className="text-xs text-center">{h.sections_included?.length ?? 0}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+             <div className="overflow-auto max-h-[500px] border rounded">
+               <Table>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead className="text-xs w-8"></TableHead>
+                     <TableHead className="text-xs">Report ID</TableHead>
+                     <TableHead className="text-xs">Phone</TableHead>
+                     <TableHead className="text-xs">Authority</TableHead>
+                     <TableHead className="text-xs">Ref No</TableHead>
+                     <TableHead className="text-xs">Issue Date</TableHead>
+                     <TableHead className="text-xs">Generated</TableHead>
+                     <TableHead className="text-xs text-center">Sections</TableHead>
+                   </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                   {history.map((h) => {
+                     const isSelected = selectedHistoryId === h.id;
+                     const admin = adminCache[h.generated_by];
+                     const summary = (h.summary && typeof h.summary === "object") ? h.summary as Record<string, any> : {};
+                     return (
+                       <React.Fragment key={h.id}>
+                         <TableRow
+                           className="cursor-pointer hover:bg-muted/60 transition-colors"
+                           onClick={() => handleSelectHistory(h.id)}
+                         >
+                           <TableCell className="px-2">
+                             <Eye className={`w-3.5 h-3.5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                           </TableCell>
+                           <TableCell className="font-mono text-[10px]">{h.report_id}</TableCell>
+                           <TableCell className="text-xs">{h.phone}</TableCell>
+                           <TableCell className="text-xs">{h.authority}</TableCell>
+                           <TableCell className="text-xs">{h.reference_no}</TableCell>
+                           <TableCell className="text-xs">{h.issue_date}</TableCell>
+                           <TableCell className="text-xs whitespace-nowrap">{new Date(h.generated_at).toLocaleString()}</TableCell>
+                           <TableCell className="text-xs text-center">{h.sections_included?.length ?? 0}</TableCell>
+                         </TableRow>
+                         {isSelected && (
+                           <TableRow>
+                             <TableCell colSpan={8} className="p-0">
+                               <div className="bg-muted/40 border-t border-b p-4 space-y-3">
+                                 <div className="flex items-center justify-between">
+                                   <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                                     <Eye className="w-4 h-4 text-primary" /> Audit Detail
+                                   </h4>
+                                   <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedHistoryId(null); }}>
+                                     <X className="w-3.5 h-3.5" />
+                                   </Button>
+                                 </div>
+                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-xs">
+                                   <div><span className="text-muted-foreground">Timestamp:</span><br/><span className="font-medium">{new Date(h.generated_at).toISOString()}</span></div>
+                                   <div><span className="text-muted-foreground">Admin Name:</span><br/><span className="font-medium">{admin?.name ?? "Loading…"}</span></div>
+                                   <div><span className="text-muted-foreground">Admin Phone:</span><br/><span className="font-medium">{admin?.phone ?? "—"}</span></div>
+                                   <div><span className="text-muted-foreground">Searched Phone:</span><br/><span className="font-medium">{h.phone}</span></div>
+                                   <div><span className="text-muted-foreground">Authority:</span><br/><span className="font-medium">{h.authority}</span></div>
+                                   <div><span className="text-muted-foreground">Reference No:</span><br/><span className="font-medium">{h.reference_no}</span></div>
+                                   <div><span className="text-muted-foreground">Issue Date:</span><br/><span className="font-medium">{h.issue_date}</span></div>
+                                   <div><span className="text-muted-foreground">Report ID:</span><br/><span className="font-mono font-medium">{h.report_id}</span></div>
+                                   <div><span className="text-muted-foreground">Download Status:</span><br/><Badge variant="outline" className="text-[10px] mt-0.5">Downloaded ✓</Badge></div>
+                                 </div>
+                                 {h.sections_included?.length > 0 && (
+                                   <div>
+                                     <p className="text-xs text-muted-foreground mb-1">Sections Included:</p>
+                                     <div className="flex flex-wrap gap-1">
+                                       {h.sections_included.map((s: string) => (
+                                         <Badge key={s} variant="secondary" className="text-[10px]">
+                                           {(OPTIONAL_SECTIONS as any)[s] || s}
+                                         </Badge>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
+                                 {Object.keys(summary).length > 0 && (
+                                   <div>
+                                     <p className="text-xs text-muted-foreground mb-1">Summary Stats:</p>
+                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                       {summary.total_txns != null && <div className="bg-background rounded p-2 text-center"><p className="text-[10px] text-muted-foreground">Transactions</p><p className="font-semibold text-sm">{summary.total_txns}</p></div>}
+                                       {summary.total_in != null && <div className="bg-background rounded p-2 text-center"><p className="text-[10px] text-muted-foreground">Total In</p><p className="font-semibold text-sm text-emerald-600">৳{Number(summary.total_in).toLocaleString()}</p></div>}
+                                       {summary.total_out != null && <div className="bg-background rounded p-2 text-center"><p className="text-[10px] text-muted-foreground">Total Out</p><p className="font-semibold text-sm text-red-500">৳{Number(summary.total_out).toLocaleString()}</p></div>}
+                                       {summary.fraud_alerts != null && <div className="bg-background rounded p-2 text-center"><p className="text-[10px] text-muted-foreground">Fraud Alerts</p><p className="font-semibold text-sm">{summary.fraud_alerts}</p></div>}
+                                       {summary.disputes != null && <div className="bg-background rounded p-2 text-center"><p className="text-[10px] text-muted-foreground">Disputes</p><p className="font-semibold text-sm">{summary.disputes}</p></div>}
+                                     </div>
+                                   </div>
+                                 )}
+                               </div>
+                             </TableCell>
+                           </TableRow>
+                         )}
+                       </React.Fragment>
+                     );
+                   })}
+                 </TableBody>
+               </Table>
+             </div>
           )}
         </CardContent>
       </Card>
