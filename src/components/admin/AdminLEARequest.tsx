@@ -504,7 +504,7 @@ export default function AdminLEARequest() {
                     <tr>
                       <th className="p-1.5 text-left">Date</th><th className="p-1.5 text-left">ID</th><th className="p-1.5 text-left">Type</th>
                       <th className="p-1.5 text-right">Amount</th><th className="p-1.5 text-right">Fee</th><th className="p-1.5 text-right">Bal After</th>
-                      <th className="p-1.5 text-left">Recipient</th><th className="p-1.5 text-left">Phone</th><th className="p-1.5 text-left">Ref</th><th className="p-1.5 text-left">Status</th>
+                      <th className="p-1.5 text-left">Name</th><th className="p-1.5 text-left">Phone</th><th className="p-1.5 text-left">Ref</th><th className="p-1.5 text-left">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -910,7 +910,7 @@ export default function AdminLEARequest() {
               headers={[
                 { label: "Date" }, { label: "ID" }, { label: "Type" },
                 { label: "Amount", align: "right" }, { label: "Fee", align: "right" }, { label: "Bal After", align: "right" },
-                { label: "Recipient" }, { label: "Phone" }, { label: "Ref" }, { label: "Status" },
+                { label: "Name" }, { label: "Phone" }, { label: "Ref" }, { label: "Status" },
               ]}
               rows={report.transactions.map(t => [
                 new Date(t.created_at).toLocaleString(), t.short_id || "—", t.type,
