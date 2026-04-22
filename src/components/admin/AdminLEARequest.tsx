@@ -331,8 +331,13 @@ export default function AdminLEARequest() {
   const tdR = { ...tdS, textAlign: "right" as const };
   const secH = { fontSize: 13, fontWeight: "bold" as const, borderLeft: "4px solid #0D9488", paddingLeft: 10, paddingBottom: 4, marginTop: 24, marginBottom: 8, textTransform: "uppercase" as const, letterSpacing: 0.5, color: "#222" } as React.CSSProperties;
 
-  const PrintTable = ({ headers, rows }: { headers: { label: string; align?: string }[]; rows: React.ReactNode[][] }) => (
-    <table style={{ width: "100%", fontSize: 10, borderCollapse: "collapse", marginBottom: 14 }}>
+  const PrintTable = ({ headers, rows, colWidths, fontSize }: { headers: { label: string; align?: string }[]; rows: React.ReactNode[][]; colWidths?: string[]; fontSize?: number }) => (
+    <table style={{ width: "100%", fontSize: fontSize ?? 10, borderCollapse: "collapse", marginBottom: 14, tableLayout: colWidths ? "fixed" : "auto" }}>
+      {colWidths && (
+        <colgroup>
+          {colWidths.map((w, i) => <col key={i} style={{ width: w }} />)}
+        </colgroup>
+      )}
       <thead>
         <tr>
           {headers.map((h, i) => <th key={i} style={h.align === "right" ? thR : thS}>{h.label}</th>)}
@@ -341,7 +346,7 @@ export default function AdminLEARequest() {
       <tbody>
         {rows.map((r, i) => (
           <tr key={i} style={{ background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
-            {r.map((c, j) => <td key={j} style={headers[j]?.align === "right" ? tdR : tdS}>{c}</td>)}
+            {r.map((c, j) => <td key={j} style={{ ...(headers[j]?.align === "right" ? tdR : tdS), wordBreak: "break-word", whiteSpace: "normal", overflow: "hidden" }}>{c}</td>)}
           </tr>
         ))}
       </tbody>
