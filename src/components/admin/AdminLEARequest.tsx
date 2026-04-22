@@ -63,6 +63,8 @@ export default function AdminLEARequest() {
   const [fieldErrors, setFieldErrors] = useState({ authority: false, refNo: false, issueDate: false });
   const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
+  const [adminCache, setAdminCache] = useState<Record<string, { name: string; phone: string }>>({});
   const reportRef = useRef<HTMLDivElement>(null);
   const [includeSections, setIncludeSections] = useState<Record<SectionKey, boolean>>({
     devices: false,
