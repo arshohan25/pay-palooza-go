@@ -108,21 +108,29 @@ export default function AdminLEARequest() {
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
+  const adminCacheRef = useRef<Record<string, { name: string; phone: string }>>({});
+
   const fetchAdminProfile = useCallback(async (adminId: string) => {
-    if (adminCache[adminId]) return adminCache[adminId];
+    if (adminCacheRef.current[adminId]) {
+      setAdminCache(prev => ({ ...prev, [adminId]: adminCacheRef.current[adminId] }));
+      return adminCacheRef.current[adminId];
+    }
     try {
       const { data } = await supabase
         .from("profiles")
         .select("name, phone")
         .eq("user_id", adminId)
-        .single();
-      const info = { name: data?.name || "Unknown", phone: data?.phone || "—" };
+        .maybeSingle();
+      const info = { name: data?.name || "Unknown Admin", phone: data?.phone || "—" };
+      adminCacheRef.current[adminId] = info;
       setAdminCache(prev => ({ ...prev, [adminId]: info }));
       return info;
     } catch {
-      return { name: "Unknown", phone: "—" };
+      const fallback = { name: "Unknown", phone: "—" };
+      setAdminCache(prev => ({ ...prev, [adminId]: fallback }));
+      return fallback;
     }
-  }, [adminCache]);
+  }, []);
 
   const handleSelectHistory = async (id: string) => {
     if (selectedHistoryId === id) {
