@@ -910,7 +910,7 @@ export default function AdminLEARequest() {
               headers={[
                 { label: "Date" }, { label: "ID" }, { label: "Type" },
                 { label: "Amount", align: "right" }, { label: "Fee", align: "right" }, { label: "Bal After", align: "right" },
-                { label: "Recipient" }, { label: "Phone" }, { label: "Ref" }, { label: "Status" },
+                { label: "Name" }, { label: "Phone" }, { label: "Ref" }, { label: "Status" },
               ]}
               rows={report.transactions.map(t => [
                 new Date(t.created_at).toLocaleString(), t.short_id || "—", t.type,
