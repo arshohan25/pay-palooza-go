@@ -331,8 +331,13 @@ export default function AdminLEARequest() {
   const tdR = { ...tdS, textAlign: "right" as const };
   const secH = { fontSize: 13, fontWeight: "bold" as const, borderLeft: "4px solid #0D9488", paddingLeft: 10, paddingBottom: 4, marginTop: 24, marginBottom: 8, textTransform: "uppercase" as const, letterSpacing: 0.5, color: "#222" } as React.CSSProperties;
 
-  const PrintTable = ({ headers, rows }: { headers: { label: string; align?: string }[]; rows: React.ReactNode[][] }) => (
-    <table style={{ width: "100%", fontSize: 10, borderCollapse: "collapse", marginBottom: 14 }}>
+  const PrintTable = ({ headers, rows, colWidths, fontSize }: { headers: { label: string; align?: string }[]; rows: React.ReactNode[][]; colWidths?: string[]; fontSize?: number }) => (
+    <table style={{ width: "100%", fontSize: fontSize ?? 10, borderCollapse: "collapse", marginBottom: 14, tableLayout: colWidths ? "fixed" : "auto" }}>
+      {colWidths && (
+        <colgroup>
+          {colWidths.map((w, i) => <col key={i} style={{ width: w }} />)}
+        </colgroup>
+      )}
       <thead>
         <tr>
           {headers.map((h, i) => <th key={i} style={h.align === "right" ? thR : thS}>{h.label}</th>)}
@@ -341,7 +346,7 @@ export default function AdminLEARequest() {
       <tbody>
         {rows.map((r, i) => (
           <tr key={i} style={{ background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
-            {r.map((c, j) => <td key={j} style={headers[j]?.align === "right" ? tdR : tdS}>{c}</td>)}
+            {r.map((c, j) => <td key={j} style={{ ...(headers[j]?.align === "right" ? tdR : tdS), wordBreak: "break-word", whiteSpace: "normal", overflow: "hidden" }}>{c}</td>)}
           </tr>
         ))}
       </tbody>
@@ -912,8 +917,10 @@ export default function AdminLEARequest() {
                 { label: "Amount", align: "right" }, { label: "Fee", align: "right" }, { label: "Bal After", align: "right" },
                 { label: "Name" }, { label: "Phone" }, { label: "Ref" }, { label: "Status" },
               ]}
+              colWidths={["11%", "7%", "7%", "9%", "7%", "9%", "18%", "12%", "12%", "8%"]}
+              fontSize={9}
               rows={report.transactions.map(t => [
-                new Date(t.created_at).toLocaleString(), t.short_id || "—", t.type,
+                new Date(t.created_at).toLocaleDateString(), t.short_id || "—", t.type,
                 `৳${Number(t.amount).toLocaleString()}`, `৳${Number(t.fee || 0).toLocaleString()}`,
                 t.balance_after != null ? `৳${Number(t.balance_after).toLocaleString()}` : "—",
                 t.recipient_name || "—", t.recipient_phone || "—", t.reference || "—", t.status,
@@ -1203,9 +1210,35 @@ export default function AdminLEARequest() {
                                    <h4 className="text-sm font-semibold flex items-center gap-1.5">
                                      <Eye className="w-4 h-4 text-primary" /> Audit Detail
                                    </h4>
-                                   <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedHistoryId(null); }}>
-                                     <X className="w-3.5 h-3.5" />
-                                   </Button>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 text-xs"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setPhone(h.phone);
+                                          setAuthority(h.authority);
+                                          setRefNo(h.reference_no);
+                                          setIssueDate(h.issue_date);
+                                          setReportId(h.report_id);
+                                          if (h.sections_included?.length) {
+                                            const secs = { ...includeSections };
+                                            (Object.keys(OPTIONAL_SECTIONS) as SectionKey[]).forEach(k => {
+                                              secs[k] = h.sections_included.includes(k);
+                                            });
+                                            setIncludeSections(secs);
+                                          }
+                                          setTimeout(() => handleSearch(), 100);
+                                          toast.info("Form pre-filled. Data will reload for re-download.");
+                                        }}
+                                      >
+                                        <Download className="w-3 h-3 mr-1" /> Re-download
+                                      </Button>
+                                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedHistoryId(null); }}>
+                                        <X className="w-3.5 h-3.5" />
+                                      </Button>
+                                    </div>
                                  </div>
                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-xs">
                                    <div><span className="text-muted-foreground">Timestamp:</span><br/><span className="font-medium">{new Date(h.generated_at).toISOString()}</span></div>
