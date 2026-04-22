@@ -108,6 +108,32 @@ export default function AdminLEARequest() {
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
+  const fetchAdminProfile = useCallback(async (adminId: string) => {
+    if (adminCache[adminId]) return adminCache[adminId];
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", adminId)
+        .single();
+      const info = { name: data?.full_name || "Unknown", phone: data?.phone || "—" };
+      setAdminCache(prev => ({ ...prev, [adminId]: info }));
+      return info;
+    } catch {
+      return { name: "Unknown", phone: "—" };
+    }
+  }, [adminCache]);
+
+  const handleSelectHistory = async (id: string) => {
+    if (selectedHistoryId === id) {
+      setSelectedHistoryId(null);
+      return;
+    }
+    setSelectedHistoryId(id);
+    const row = history.find(h => h.id === id);
+    if (row) await fetchAdminProfile(row.generated_by);
+  };
+
   const logAction = async (action: string, details: Record<string, any>) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
