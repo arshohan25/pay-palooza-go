@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Search, Download, Shield, FileText, AlertTriangle, User, CreditCard,
   Smartphone, Key, Landmark, ArrowUpDown, Gavel, MessageSquare, Users,
-  Briefcase, Store, ClipboardList, Scale, CheckSquare, History
+  Briefcase, Store, ClipboardList, Scale, CheckSquare, History, Eye, X
 } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
