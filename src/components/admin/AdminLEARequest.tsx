@@ -113,10 +113,10 @@ export default function AdminLEARequest() {
     try {
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, phone")
-        .eq("id", adminId)
+        .select("name, phone")
+        .eq("user_id", adminId)
         .single();
-      const info = { name: data?.full_name || "Unknown", phone: data?.phone || "—" };
+      const info = { name: data?.name || "Unknown", phone: data?.phone || "—" };
       setAdminCache(prev => ({ ...prev, [adminId]: info }));
       return info;
     } catch {
