@@ -702,6 +702,36 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
         </Card>
       ) : (
         <>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Card className="border-0 shadow-[var(--shadow-card)]">
+              <CardHeader><CardTitle className="text-base">Advanced Feature Analytics</CardTitle><p className="text-xs text-muted-foreground">Enablement counts and estimated business impact by phase.</p></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="rounded-md bg-muted/40 p-3"><p className="text-lg font-bold text-foreground">{liveCount}</p><p className="text-muted-foreground">Live</p></div>
+                  <div className="rounded-md bg-muted/40 p-3"><p className="text-lg font-bold text-foreground">{previewCount}</p><p className="text-muted-foreground">Preview</p></div>
+                  <div className="rounded-md bg-muted/40 p-3"><p className="text-lg font-bold text-foreground">{hiddenCount}</p><p className="text-muted-foreground">Hidden</p></div>
+                </div>
+                {analytics.byPhase.map((phase) => (
+                  <div key={phase.phase} className="space-y-1 rounded-md border bg-background/60 p-3">
+                    <div className="flex justify-between text-xs"><span className="font-semibold text-foreground">Phase {phase.phase} impact readiness</span><span>{phase.impact}%</span></div>
+                    <Progress value={phase.impact} className="h-2" />
+                    <p className="text-[11px] text-muted-foreground">{phase.live} live · {phase.preview} preview · {phase.hidden} hidden</p>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">Top 7 split: {analytics.topSplit.visible} live, {analytics.topSplit.disabled} preview, {analytics.topSplit.hidden} hidden.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-[var(--shadow-card)]">
+              <CardHeader><CardTitle className="text-base">Visibility Safety Check</CardTitle><p className="text-xs text-muted-foreground">Hidden feature entry points remain dormant outside admin previews.</p></CardHeader>
+              <CardContent className="space-y-2 text-xs text-muted-foreground">
+                {["Hidden features are excluded from app-style previews and emulator popups.", "Admin Preview features render only inside this admin dashboard.", "Live entry points must be wired with visibility === visible / isLive guards.", "User, merchant, agent, and loan pages currently only reference future flags without rendering hidden UI."].map((item) => (
+                  <p key={item} className="flex gap-2 rounded-md bg-muted/30 p-2"><ShieldAlert className="h-3.5 w-3.5 shrink-0 text-primary" />{item}</p>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
           <Card className="overflow-hidden rounded-[19px] border border-border/70 bg-card/80 shadow-[var(--shadow-elevated)] backdrop-blur-xl">
             <CardHeader className="relative space-y-3 pb-4">
               <div className="pointer-events-none absolute -right-14 -top-14 h-36 w-36 rounded-full bg-primary/15 blur-3xl" />
