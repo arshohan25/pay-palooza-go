@@ -273,7 +273,7 @@ export default function AdminLEARequest() {
     return "Preparing...";
   };
 
-  const handleDownload = async () => {
+  const validatePdfFields = () => {
     const errors = {
       authority: !authority.trim(),
       refNo: !refNo.trim(),
@@ -284,6 +284,17 @@ export default function AdminLEARequest() {
       toast.error("Please fill all required fields before downloading");
       return false;
     }
+    return true;
+  };
+
+  const openPdfConfirmation = (mode: "download" | "redownload") => {
+    if (!validatePdfFields()) return;
+    setConfirmMode(mode);
+    setConfirmOpen(true);
+  };
+
+  const handleDownload = async () => {
+    if (!validatePdfFields()) return false;
     if (!reportRef.current) return false;
 
     setGenerating(true);
