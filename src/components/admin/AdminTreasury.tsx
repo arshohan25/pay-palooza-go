@@ -72,8 +72,6 @@ const LEDGER_TYPE_CONFIG: Record<string, { label: string; color: string; icon: t
 };
 
 function formatBDT(amount: number) {
-  if (amount >= 1e7) return `৳${(amount / 1e7).toFixed(2)} Cr`;
-  if (amount >= 1e5) return `৳${(amount / 1e5).toFixed(2)} L`;
   return `৳${amount.toLocaleString("en-BD")}`;
 }
 
