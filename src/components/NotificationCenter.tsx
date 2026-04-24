@@ -93,12 +93,33 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
   const { t } = useI18n();
   const { notifications, unreadCount, markRead, markAllRead, dismiss, clearAll } = useNotifications();
   const [detailNotif, setDetailNotif] = useState<DbNotification | null>(null);
+  const [filter, setFilter] = useState<FulfillmentFilter>("all");
   const navigate = useNavigate();
 
   // Sort by created_at descending — latest first
   const sorted = [...notifications].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
+
+  // Apply filter
+  const filtered = sorted.filter((n) => {
+    switch (filter) {
+      case "all": return true;
+      case "unread": return !n.read;
+      case "fulfillment": return isFulfillment(n);
+      case "shipped": return isFulfillment(n) && (getFulfillmentStatus(n) === "shipped" || (!getFulfillmentStatus(n) && n.category === "fulfillment"));
+      case "partial": return isFulfillment(n) && (getFulfillmentStatus(n) === "partial" || getFulfillmentStatus(n) === "partially_shipped");
+      case "delivered": return isFulfillment(n) && getFulfillmentStatus(n) === "delivered";
+      default: return true;
+    }
+  });
+
+  const fulfillmentUnread = sorted.filter((n) => isFulfillment(n) && !n.read).length;
+
+  const markFilteredRead = async () => {
+    const ids = filtered.filter((n) => !n.read).map((n) => n.id);
+    for (const id of ids) await markRead(id);
+  };
 
   const handleNotifClick = (n: DbNotification) => {
     markRead(n.id);
