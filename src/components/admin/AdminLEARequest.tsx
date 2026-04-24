@@ -545,6 +545,63 @@ export default function AdminLEARequest() {
 
   return (
     <div className="space-y-4">
+      <Dialog open={confirmOpen} onOpenChange={(open) => {
+        setConfirmOpen(open);
+        if (!open && confirmMode === "redownload" && !generating) {
+          setReDownloadingId(null);
+          setRedownloadPhase("idle");
+          pendingRedownloadIdRef.current = null;
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" /> Confirm LEA PDF {confirmMode === "redownload" ? "Re-download" : "Generation"}
+            </DialogTitle>
+            <DialogDescription>Review readiness and internal audit note before creating the official PDF.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {readinessItems.map(item => (
+                <div key={item.label} className="flex items-center gap-2 rounded-md border bg-muted/20 p-2 text-xs">
+                  {item.ready ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <AlertCircle className="h-4 w-4 text-muted-foreground" />}
+                  <span className={item.ready ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+              <div><span className="text-muted-foreground">Phone</span><p className="font-medium">{phone.trim() || "—"}</p></div>
+              <div><span className="text-muted-foreground">Report ID</span><p className="font-mono font-medium">{reportId || "—"}</p></div>
+              <div><span className="text-muted-foreground">Authority</span><p className="font-medium">{authority.trim() || "—"}</p></div>
+              <div><span className="text-muted-foreground">Ref No</span><p className="font-medium">{refNo.trim() || "—"}</p></div>
+            </div>
+            <div className="rounded-md border bg-background p-3 text-xs">
+              <p className="mb-1 font-semibold">Internal Manager Note</p>
+              <p className="whitespace-pre-wrap text-muted-foreground">{internalNote.trim() || "No internal note added."}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={generating}>Review Again</Button>
+            <Button
+              variant="destructive"
+              disabled={generating}
+              onClick={async () => {
+                setConfirmOpen(false);
+                const ok = await handleDownload();
+                if (confirmMode === "redownload") {
+                  setReDownloadingId(null);
+                  setRedownloadPhase("idle");
+                }
+                if (!ok && confirmMode === "redownload") pendingRedownloadIdRef.current = null;
+              }}
+            >
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Confirm & Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Search */}
       <Card>
         <CardHeader className="pb-3">
