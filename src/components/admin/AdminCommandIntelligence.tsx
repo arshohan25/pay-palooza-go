@@ -44,6 +44,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 
 type AnyRow = Record<string, any>;
+type UserIntelligenceTab = "timeline" | "risk" | "records" | "notes" | "actions";
 
 const currency = (value: number) => `৳${Math.round(value || 0).toLocaleString()}`;
 const shortDate = (value?: string | null) => value ? new Date(value).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
@@ -175,6 +176,27 @@ function scoreUser(profile: AnyRow | null, kyc: AnyRow | null, txns: AnyRow[], d
   return { score, label, health, reasons };
 }
 
+function getRemediationActions(detail: any, selected: AnyRow | null) {
+  const score = Number(detail?.score?.score ?? 0);
+  const label = detail?.score?.label ?? "Low Risk";
+  const kycStatus = detail?.kyc?.status;
+  const devices = detail?.devices ?? [];
+  const fraud = detail?.fraud ?? [];
+  const transactions = detail?.transactions ?? [];
+  const highTransfers = transactions.filter((txn: AnyRow) => Number(txn.amount) >= 50000);
+  const actions: Array<{ title: string; reason: string; priority: string; tab: UserIntelligenceTab; audit?: string }> = [];
+
+  if (!detail || !selected) return actions;
+  if ((!kycStatus && !selected.kyc_exempt) || kycStatus === "rejected") actions.push({ title: kycStatus === "rejected" ? "Request KYC resubmission" : "Request KYC verification", reason: kycStatus === "rejected" ? "KYC rejection is contributing to this risk level." : "Missing KYC leaves the user identity unresolved.", priority: kycStatus === "rejected" ? "High" : "Medium", tab: "actions", audit: "kyc_resubmission_request" });
+  if (devices.length > 2) actions.push({ title: "Review registered devices", reason: `${devices.length} devices are linked to this user. Confirm known devices and remove suspicious ones.`, priority: "Medium", tab: "records" });
+  if (highTransfers.length > 0) actions.push({ title: "Verify high-value transfers", reason: `${highTransfers.length} transfer(s) at or above ৳50,000 need source-of-funds review.`, priority: "High", tab: "records" });
+  if (fraud.length > 0) actions.push({ title: "Review fraud alerts", reason: `${fraud.length} fraud alert(s) are open or recently recorded for this profile.`, priority: "High", tab: "records" });
+  if (score >= 42) actions.push({ title: score >= 80 ? "Open investigation workflow" : "Add user to watchlist", reason: `${label} accounts should be monitored before sensitive actions are approved.`, priority: score >= 80 ? "Critical" : "High", tab: "actions", audit: "user_watchlist_request" });
+  if (actions.length === 0) actions.push({ title: "Document low-risk review", reason: "No elevated signals found. Add a case note if this profile was manually reviewed.", priority: "Low", tab: "notes" });
+
+  return actions;
+}
+
 export function AdminUserIntelligenceCenter() {
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<AnyRow[]>([]);
@@ -182,6 +204,7 @@ export function AdminUserIntelligenceCenter() {
   const [detail, setDetail] = useState<any>(null);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<UserIntelligenceTab>("timeline");
 
   const loadUsers = async () => {
     setLoading(true);
@@ -228,6 +251,13 @@ export function AdminUserIntelligenceCenter() {
   }, [selected]);
 
   const filtered = users.filter((u) => !query || [u.name, u.phone, u.user_id, u.wallet_id].some((v) => String(v || "").toLowerCase().includes(query.toLowerCase())));
+  const remediationActions = useMemo(() => getRemediationActions(detail, selected), [detail, selected]);
+  const runRemediationAction = async (action: { title: string; tab: UserIntelligenceTab; audit?: string }) => {
+    setActiveTab(action.tab);
+    if (!action.audit || !selected?.user_id) return;
+    await insertAudit(action.audit, "user", selected.user_id, { source: "risk_remediation", title: action.title, risk_score: detail?.score?.score });
+    toast.success(`${action.title} logged`);
+  };
   const addNote = async () => {
     if (!selected?.user_id || !note.trim()) return;
     const { error } = await supabase.from("admin_user_notes" as any).insert({ target_user_id: selected.user_id, note_type: "case", note, status: "open" } as any);
@@ -241,7 +271,8 @@ export function AdminUserIntelligenceCenter() {
         <Card className="border-border/50 bg-card/70"><CardHeader className="pb-3"><div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search users..." className="pl-9" /></div></CardHeader><CardContent className="max-h-[620px] space-y-2 overflow-y-auto">{filtered.map((u) => <button key={u.id} onClick={() => setSelected(u)} className={`w-full rounded-lg border p-3 text-left transition ${selected?.user_id === u.user_id ? "border-primary bg-primary/10" : "border-border bg-background/60 hover:bg-muted/60"}`}><p className="truncate text-sm font-semibold text-foreground">{u.name || "Unnamed user"}</p><p className="text-xs text-muted-foreground">{u.phone || u.user_id}</p><div className="mt-2 flex items-center justify-between"><span className="text-xs font-medium">{currency(Number(u.balance))}</span><StatusBadge status={u.status || "active"} /></div></button>)}</CardContent></Card>
         <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-4"><Card className="border-border/50 bg-card/70 shadow-[var(--shadow-card)]"><CardContent className="p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="flex items-center gap-1.5"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Risk Score</p><RiskScoreTooltip score={detail?.score} /></div><p className="mt-1 truncate text-2xl font-bold text-foreground">{detail?.score?.score ?? "—"}</p>{detail?.score?.label && <p className="mt-1 text-xs text-muted-foreground">{detail.score.label}</p>}</div><div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-muted"><Gauge className="h-4 w-4 text-primary" /></div></div></CardContent></Card><MetricCard label="Health" value={detail?.score?.health ?? "—"} icon={Activity} /><MetricCard label="KYC" value={detail?.kyc?.status || (selected?.kyc_exempt ? "exempt" : "not started")} icon={Shield} /><MetricCard label="Balance" value={currency(Number(selected?.balance))} icon={Wallet} /></div>
-          <Tabs defaultValue="timeline"><TabsList className="grid h-auto w-full grid-cols-5"><TabsTrigger value="timeline">Timeline</TabsTrigger><TabsTrigger value="risk">Risk</TabsTrigger><TabsTrigger value="records">Records</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger><TabsTrigger value="actions">Actions</TabsTrigger></TabsList>
+          <Card className="border-border/50 bg-card/70"><CardHeader className="pb-2"><CardTitle className="text-sm">Recommended remediation</CardTitle></CardHeader><CardContent className="grid gap-2 md:grid-cols-2">{remediationActions.map((action) => <div key={action.title} className="flex flex-col gap-3 rounded-lg border border-border/60 bg-background/60 p-3 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0 space-y-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-foreground">{action.title}</p><StatusBadge status={action.priority} /></div><p className="text-xs leading-relaxed text-muted-foreground">{action.reason}</p></div><Button size="sm" variant="outline" className="shrink-0" onClick={() => runRemediationAction(action)}>Open {humanize(action.tab)}</Button></div>)}</CardContent></Card>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as UserIntelligenceTab)}><TabsList className="grid h-auto w-full grid-cols-5"><TabsTrigger value="timeline">Timeline</TabsTrigger><TabsTrigger value="risk">Risk</TabsTrigger><TabsTrigger value="records">Records</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger><TabsTrigger value="actions">Actions</TabsTrigger></TabsList>
             <TabsContent value="timeline"><Card><CardContent className="p-4"><div className="space-y-3">{(detail?.timeline ?? []).map((item: AnyRow, i: number) => <div key={i} className="flex gap-3 rounded-lg border border-border/60 p-3"><div className="mt-1 h-2 w-2 rounded-full bg-primary" /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-medium text-foreground">{item.title}</p><StatusBadge status={item.status || item.type} /></div><p className="text-xs text-muted-foreground">{item.type} • {shortDate(item.at)}</p></div></div>)}{!loading && !detail?.timeline?.length && <p className="py-8 text-center text-sm text-muted-foreground">No timeline activity found.</p>}</div></CardContent></Card></TabsContent>
             <TabsContent value="risk"><Card><CardContent className="space-y-4 p-4"><Progress value={detail?.score?.score ?? 0} /><div className="grid gap-2 md:grid-cols-2">{(detail?.score?.reasons ?? []).map((r: string) => <div key={r} className="rounded-lg bg-muted/60 p-3 text-sm text-foreground"><AlertTriangle className="mr-2 inline h-4 w-4 text-primary" />{r}</div>)}</div></CardContent></Card></TabsContent>
             <TabsContent value="records"><div className="grid gap-3 md:grid-cols-2">{[["Devices", detail?.devices], ["Feature Locks", detail?.locks], ["Fraud Alerts", detail?.fraud], ["Referrals", detail?.referrals], ["Orders", detail?.orders], ["Transactions", detail?.transactions]].map(([label, rows]: any) => <Card key={label}><CardHeader className="pb-2"><CardTitle className="text-sm">{label} ({rows?.length ?? 0})</CardTitle></CardHeader><CardContent className="space-y-2">{(rows ?? []).slice(0, 5).map((r: AnyRow, i: number) => <div key={r.id || i} className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">{r.status || r.type || r.action || r.id} • {shortDate(r.created_at)}</div>)}</CardContent></Card>)}</div></TabsContent>

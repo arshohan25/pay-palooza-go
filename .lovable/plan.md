@@ -1,48 +1,33 @@
-# Add Risk Score Calculation Tooltip
+Plan to add recommended remediation actions to the User Intelligence Center:
 
-## Summary
-Add a detailed "How this score was calculated" tooltip next to the Risk Score in the User Intelligence Center that shows the exact factors and points contributing to the score.
+1. Make the risk tabs controllable
+   - Change the current internal tabs from `defaultValue` to React state so buttons can navigate to `timeline`, `risk`, `records`, `notes`, or `actions` with one click.
 
-## Changes Required
+2. Generate recommended actions from live risk data
+   - Add a helper that reads the selected user’s current score, KYC status, device count, fraud alerts, profile status, and high-value transactions.
+   - Recommended actions will include examples such as:
+     - Request KYC / KYC resubmission when KYC is missing or rejected.
+     - Review registered devices when multiple devices contributed to risk.
+     - Verify high-value transfers when transactions >= ৳50,000 are present.
+     - Review fraud alerts when fraud records exist.
+     - Add to watchlist or restrict account for high-risk / investigation-level users.
+     - Open case notes for follow-up documentation.
 
-### 1. Import Additions
-- Add `HelpCircle` icon from lucide-react
-- Import `Tooltip`, `TooltipContent`, `TooltipProvider`, `TooltipTrigger` from @/components/ui/tooltip
-- Rename `Tooltip` import from recharts to `RechartsTooltip` to avoid naming conflict
+3. Add a remediation panel near the risk score
+   - Display a compact “Recommended remediation” card under the metric cards.
+   - Each item will show priority, reason, and a short admin instruction.
+   - Use existing glass/card styling and badges so it matches the admin UI.
 
-### 2. Risk Score Component Enhancement
-Modify the Risk Score MetricCard to include:
-- A help icon button next to the score value
-- A rich tooltip content showing:
-  - Header: "Risk Score Breakdown"
-  - List of all contributing factors with their point values
-  - Visual indicator (colored dot) for each factor type
-  - Total score and final risk label
-  - Brief explanation of the scoring methodology
+4. Add one-click navigation and logging
+   - Each recommended action will include a button that switches directly to the relevant tab:
+     - KYC / transfers / devices / fraud -> `Records`
+     - score details -> `Risk`
+     - case documentation -> `Notes`
+     - operational controls -> `Actions`
+   - For audit-oriented actions like “Request KYC” or “Add Watchlist”, reuse the existing `insertAudit` pattern and show success toasts.
 
-### 3. Tooltip Content Structure
-The tooltip should display:
-- **Base Score**: 12 points (starting value)
-- **Account Age**: +10 if < 14 days
-- **Profile Status**: +30 if suspended/deactivated
-- **KYC Status**: +18 if rejected, +8 if no KYC
-- **Devices**: +12 if > 2 devices
-- **Fraud Alerts**: +12 per alert (max 28)
-- **High-Value Transfers**: +5 per transfer ≥৳50,000 (max 20)
-- **Final Score**: Capped at 100
-- **Risk Label**: Based on score thresholds
-
-### 4. UI/UX Considerations
-- Tooltip should be positioned to the right (side="right")
-- Use a card-like appearance within the tooltip
-- Color-code risk factors (amber for warnings, red for critical)
-- Include a brief footer explaining that scores are recalculated in real-time
-
-## Files to Modify
-- `src/components/admin/AdminCommandIntelligence.tsx`
-
-## Testing
-- Verify tooltip appears on hover/click of help icon
-- Confirm all risk factors are displayed with correct point values
-- Check that the tooltip is responsive and doesn't overflow on smaller screens
-- Validate that the risk score calculation matches the displayed breakdown
+Technical details:
+- Main file: `src/components/admin/AdminCommandIntelligence.tsx`.
+- No database schema changes are needed.
+- The implementation will reuse the already-loaded `detail` object, including `detail.score`, `detail.kyc`, `detail.devices`, `detail.fraud`, and `detail.transactions`.
+- After implementation, run TypeScript/build validation to catch JSX or type issues.
