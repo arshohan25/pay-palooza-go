@@ -597,15 +597,22 @@ export function AdminUserSegmentationBuilder() {
                   {definition.rules.map((rule, idx) => (
                     <AccordionItem key={rule.label} value={`rule-${idx}`}>
                       <AccordionTrigger className="text-sm">
-                        <div className="flex flex-1 items-center justify-between gap-3 pr-2">
-                          <span className="font-medium text-left">{idx + 1}. {rule.label}</span>
-                          <Badge variant="secondary" className="font-mono text-[10px]">{rule.source}</Badge>
+                        <div className="flex flex-1 flex-col gap-1 pr-2 text-left">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-medium">{idx + 1}. {rule.label}</span>
+                            <Badge variant="secondary" className="font-mono text-[10px] shrink-0">{rule.source}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground font-normal">{rule.summary}</p>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-3">
-                        <p className="text-sm text-muted-foreground">{rule.description}</p>
+                        <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+                          <p className="text-[10px] uppercase tracking-wide text-primary/80">In plain English</p>
+                          <p className="mt-1 text-sm font-medium">{rule.summary}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{rule.description}</p>
+                        </div>
                         <div className="rounded-md border border-border bg-muted/40 p-3">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Expression</p>
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">SQL-style expression</p>
                           <code className="block mt-1 text-xs font-mono break-all">{rule.expression}</code>
                         </div>
                         <div className="rounded-md border border-border bg-muted/40 p-3">
