@@ -1254,8 +1254,11 @@ export default function AdminLEARequest() {
                                         variant="outline"
                                         size="sm"
                                         className="h-7 text-xs"
-                                        onClick={(e) => {
+                                         disabled={loading || generating || reDownloadingId === h.id}
+                                         onClick={async (e) => {
                                           e.stopPropagation();
+                                           setReDownloadingId(h.id);
+                                           pendingRedownloadIdRef.current = h.id;
                                           setPhone(h.phone);
                                           setAuthority(h.authority);
                                           setRefNo(h.reference_no);
@@ -1268,11 +1271,17 @@ export default function AdminLEARequest() {
                                             });
                                             setIncludeSections(secs);
                                           }
-                                          setTimeout(() => handleSearch(), 100);
-                                          toast.info("Form pre-filled. Data will reload for re-download.");
+                                           const ok = await handleSearch({ phone: h.phone, reportId: h.report_id });
+                                           if (!ok) {
+                                             pendingRedownloadIdRef.current = null;
+                                             setReDownloadingId(null);
+                                           } else {
+                                             toast.info("Data reloaded. Preparing PDF download...");
+                                           }
                                         }}
                                       >
-                                        <Download className="w-3 h-3 mr-1" /> Re-download
+                                         {reDownloadingId === h.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
+                                         {reDownloadingId === h.id ? "Preparing..." : "Re-download"}
                                       </Button>
                                       <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedHistoryId(null); }}>
                                         <X className="w-3.5 h-3.5" />
