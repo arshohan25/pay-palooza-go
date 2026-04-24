@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Package, Clock, CheckCircle2, Truck, CircleCheck, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import FulfillmentSheet from "@/components/merchant/FulfillmentSheet";
 
 interface MerchantOrder {
   id: string;
