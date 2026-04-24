@@ -1192,6 +1192,44 @@ export type Database = {
           },
         ]
       }
+      coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          discount_amount: number
+          flow: string
+          id: string
+          redeemed_at: string
+          txn_id: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_id: string
+          discount_amount?: number
+          flow: string
+          id?: string
+          redeemed_at?: string
+          txn_id?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_id?: string
+          discount_amount?: number
+          flow?: string
+          id?: string
+          redeemed_at?: string
+          txn_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           applicable_flow: string | null
@@ -1206,6 +1244,7 @@ export type Database = {
           max_discount: number | null
           merchant_id: string | null
           min_order_amount: number | null
+          per_user_limit: number | null
           starts_at: string | null
           updated_at: string
           usage_limit: number | null
@@ -1224,6 +1263,7 @@ export type Database = {
           max_discount?: number | null
           merchant_id?: string | null
           min_order_amount?: number | null
+          per_user_limit?: number | null
           starts_at?: string | null
           updated_at?: string
           usage_limit?: number | null
@@ -1242,6 +1282,7 @@ export type Database = {
           max_discount?: number | null
           merchant_id?: string | null
           min_order_amount?: number | null
+          per_user_limit?: number | null
           starts_at?: string | null
           updated_at?: string
           usage_limit?: number | null
@@ -2106,6 +2147,7 @@ export type Database = {
           code: string
           created_at: string
           denomination: number
+          expires_at: string
           id: string
           purchased_at: string
           purchaser_id: string
@@ -2120,6 +2162,7 @@ export type Database = {
           code?: string
           created_at?: string
           denomination: number
+          expires_at?: string
           id?: string
           purchased_at?: string
           purchaser_id: string
@@ -2134,6 +2177,7 @@ export type Database = {
           code?: string
           created_at?: string
           denomination?: number
+          expires_at?: string
           id?: string
           purchased_at?: string
           purchaser_id?: string
@@ -5624,6 +5668,7 @@ export type Database = {
         }[]
       }
       expire_stale_payment_sessions: { Args: never; Returns: number }
+      expire_stale_promotions: { Args: never; Returns: undefined }
       find_chat_user_by_phone: { Args: { p_phone: string }; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
       generate_short_id: { Args: never; Returns: string }
@@ -5793,6 +5838,15 @@ export type Database = {
         Args: { p_action: string; p_admin_note?: string; p_refund_id: string }
         Returns: Json
       }
+      record_coupon_redemption: {
+        Args: {
+          p_code: string
+          p_discount: number
+          p_flow: string
+          p_txn_id: string
+        }
+        Returns: Json
+      }
       record_transaction:
         | {
             Args: {
@@ -5818,6 +5872,7 @@ export type Database = {
             }
             Returns: Json
           }
+      redeem_gift_card: { Args: { p_code: string }; Returns: Json }
       release_escrow: { Args: { p_order_id: string }; Returns: Json }
       repay_loan: { Args: { p_loan_id: string }; Returns: undefined }
       repay_loan_partial: {
