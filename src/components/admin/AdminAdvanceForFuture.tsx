@@ -826,8 +826,14 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {phaseFeatures.map((feature) => <Badge key={feature.key} variant="outline" className="text-[10px]">{feature.title}</Badge>)}
+                    <div className="space-y-3">
+                      {phaseFeatures.map((feature) => (
+                        <div key={feature.key} className="space-y-2 rounded-lg border bg-muted/20 p-2">
+                          <div className="flex items-center justify-between gap-2"><p className="text-xs font-semibold text-foreground">{feature.title}</p><Badge variant={visibilityCopy[getVisibility(feature.key)].variant} className="text-[10px]">{visibilityCopy[getVisibility(feature.key)].label}</Badge></div>
+                          <Progress value={feature.readiness} className="h-1.5" />
+                          {renderChecklist(feature)}
+                        </div>
+                      ))}
                     </div>
                     <Separator />
                     <div className="grid gap-2">
