@@ -413,6 +413,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   const [loading, setLoading] = useState(true);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   const [bulkPending, setBulkPending] = useState<{ title: string; group: BulkGroup; keys: string[]; visibility: Visibility } | null>(null);
+  const [bulkEmulatorPreview, setBulkEmulatorPreview] = useState<{ title: string; group: BulkGroup; keys: string[] } | null>(null);
   const [deviceFrame, setDeviceFrame] = useState<DeviceFrame>("mobile");
   const [featurePending, setFeaturePending] = useState<{ feature: FutureFeature; visibility: FeatureAction } | null>(null);
   const [previewFeature, setPreviewFeature] = useState<FutureFeature | null>(null);
@@ -523,7 +524,16 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   };
 
   const openBulkConfirm = (title: string, group: BulkGroup, keys: string[], visibility: Visibility) => {
-    setBulkPending({ title, group, keys, visibility });
+    if (visibility === "disabled") setBulkEmulatorPreview({ title, group, keys });
+    else setBulkPending({ title, group, keys, visibility });
+  };
+
+  const confirmBulkPreview = () => {
+    if (!bulkEmulatorPreview) return;
+    const pending = bulkEmulatorPreview;
+    setBulkEmulatorPreview(null);
+    setBulkPending({ ...pending, visibility: "disabled" });
+    setTimeout(() => runBulkAction(), 0);
   };
 
   const runBulkAction = async () => {
@@ -605,6 +615,15 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     keys
       .map((key) => futureFeatures.find((feature) => feature.key === key))
       .filter((feature): feature is FutureFeature => Boolean(feature) && getVisibility(feature.key) !== "hidden");
+
+  const getCandidateFeatures = (keys: string[]) =>
+    keys.map((key) => futureFeatures.find((feature) => feature.key === key)).filter((feature): feature is FutureFeature => Boolean(feature));
+
+  const groupFeaturesByRole = (features: FutureFeature[]) =>
+    features.reduce<Record<AppRole, FutureFeature[]>>((acc, feature) => {
+      getFeatureAppRoles(feature.target).forEach((role) => acc[role].push(feature));
+      return acc;
+    }, { user: [], merchant: [], agent: [], admin: [] });
 
   const previewBadge = (key: string) => {
     const visibility = getVisibility(key);
