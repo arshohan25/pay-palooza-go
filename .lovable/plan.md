@@ -1,81 +1,32 @@
-## Plan: Add Admin Operations Wall
+Plan to make large Data Quality sample sets fast and safe:
 
-### Goal
-Create a new admin dashboard module that acts as a command-center view for operations teams, showing:
+1. Add backend pagination support
+- Replace/extend the current `get_data_quality_samples(p_check, p_limit)` behavior with an offset-aware response.
+- Enforce a backend hard cap per request, e.g. max 25 rows per page, regardless of what the UI sends.
+- Return metadata alongside rows: requested limit, offset, number loaded, and `has_more` so the UI can show a reliable “Load more” button without guessing.
+- Keep the existing admin/staff authorization check in the function.
 
-- Real-time gateway health
-- Failed transaction counts and failure trends
-- Liquidity-related alerts
-- Live operational event stream
+2. Keep queries bounded and index-friendly
+- Update each sample query to use `LIMIT safe_limit + 1` internally, then trim to `safe_limit`; the extra row determines `has_more`.
+- Apply `OFFSET safe_offset` for simple pagination.
+- Preserve selective column lists and existing optimized `NOT EXISTS`/duplicate checks so the function does not load large datasets into the client.
+- Add any missing partial indexes needed for the paginated checks if inspection shows a query still scans too broadly.
 
-### What will be added
+3. Update the modal UI
+- Track `sampleOffset`, `sampleHasMore`, and `samplePageSize` in `AdminDataQualityMonitor`.
+- On “View Samples”, load only the first page and reset filter/selection.
+- Add a “Load more” button in the dialog footer or below the list.
+- Append new rows instead of replacing existing rows.
+- Disable the button while loading and hide/label it when there are no more rows.
+- Update the dialog description from “Showing up to 25” to something like “Showing 25 loaded samples. Load more for additional records.”
 
-1. **New Operations Wall module**
-   - Add a new component: `src/components/admin/AdminOperationsWall.tsx`
-   - Present a full-screen-friendly admin panel with compact KPI cards, live lists, and alert sections.
-   - Match the existing admin glass/card style and responsive layout.
+4. Preserve stable-key behavior
+- Continue using the existing `sampleRowKey(row, index)` helper for rendering.
+- When appending pages, avoid duplicate keys by checking the computed key before appending.
+- Keep the current sanity logging for total rows, visible rows, duplicate keys, and selected-row preservation.
+- Ensure selected row remains selected after filtering, closing, reopening the same check, and loading more pages if that row is still in the loaded set.
 
-2. **Gateway health section**
-   - Read existing gateway sources:
-     - `payment_gateways`
-     - `recharge_api_configs`
-     - `merchant_api_logs`
-     - `payment_sessions`
-     - `merchant_payment_sessions`
-   - Show enabled/disabled status, configured/test status, API success rate, average response time, webhook delivery problems, and recent gateway failures.
-   - Classify each provider as Healthy, Warning, or Critical using recent errors and test status.
-
-3. **Failed transaction monitoring**
-   - Read recent `transactions` and payment session data.
-   - Show failed transaction counts for today and the last hour.
-   - Break failures down by transaction type/provider where available.
-   - Add a live failure feed with amount, type/provider, time, and reason/status.
-
-4. **Liquidity alerts**
-   - Read `platform_treasury`, `treasury_ledger`, `agents`, `profiles`, and existing payment/fund-request data.
-   - Show treasury balance, net cash flow, projected shortfall, low-float agents, pending fund requests, and gateway/offline risk signals.
-   - Generate alert cards such as “Treasury below threshold”, “Negative net flow”, “Agent low float”, or “High pending add-money volume”.
-
-5. **Realtime updates**
-   - Subscribe to changes on operational tables using `postgres_changes`:
-     - `transactions`
-     - `payment_sessions`
-     - `merchant_payment_sessions`
-     - `merchant_api_logs`
-     - `payment_gateways`
-     - `recharge_api_configs`
-     - `platform_treasury`
-     - `treasury_ledger`
-     - `fund_requests`
-     - `agents`
-   - Update counters and live feed without refresh, following the project’s zero-refresh policy.
-   - Include pause/resume and manual refresh controls.
-
-6. **Admin dashboard integration**
-   - Import the new component into `src/pages/AdminDashboard.tsx`.
-   - Add a new sidebar item under **Operations** named **Operations Wall**.
-   - Render the module when `activeTab === "operations_wall"`.
-
-### Technical details
-
-- No database schema changes are required for the first version.
-- The module will use existing tables and current RLS/admin permissions.
-- Data will be capped with practical query limits to avoid heavy admin loads.
-- Health scoring will be computed client-side from recent operational data:
-
-```text
-Gateway health = enabled/configured status
-               + recent API status codes
-               + payment session failures
-               + webhook delivery status
-               + recharge API test status
-
-Liquidity alert = treasury balance
-                + recent inflow/outflow
-                + pending fund requests
-                + low agent/profile balances
-                + recent cash-out pressure
-```
-
-### Expected result
-Admins will get a dedicated **Operations Wall** in the admin dashboard that continuously surfaces gateway problems, transaction failures, and liquidity risks in one command-center screen, with live updates and clear severity indicators.
+5. Verify
+- Run the production build.
+- If backend access is available, smoke-test the RPC for at least one high-volume check and confirm it returns bounded pages with `has_more`.
+- Confirm the modal never renders an unbounded result set and remains responsive even when a check has many problematic records.
