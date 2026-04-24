@@ -9,7 +9,7 @@ import {
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
   Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, Shield, Star, Building2, Megaphone, CalendarClock,
-  ShoppingBag, Heart, Bot, Sparkles, Key,
+  ShoppingBag, Heart, Bot, Sparkles, Key, Rocket,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -121,6 +121,7 @@ import AdminLoanManagement from "@/components/admin/AdminLoanManagement";
 import AdminInsuranceManagement from "@/components/admin/AdminInsuranceManagement";
 import AdminGiftCardManagement from "@/components/admin/AdminGiftCardManagement";
 import AdminAiAgent from "@/components/admin/AdminAiAgent";
+import AdminAdvanceForFuture from "@/components/admin/AdminAdvanceForFuture";
 import AdminProfileEditor from "@/components/admin/AdminProfileEditor";
 import AdminLEARequest from "@/components/admin/AdminLEARequest";
 import AdminUserPerformanceTracker from "@/components/admin/AdminUserPerformanceTracker";
@@ -332,6 +333,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
     pro: true,
     items: [
       { id: "ai_agent", label: "AI Agent", icon: Sparkles },
+      { id: "advance_future", label: "Advance for Future", icon: Rocket },
       { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
       { id: "auto_rules", label: "Auto Rules", icon: Bot },
       { id: "geo_tracking", label: "Geo Track", icon: Building2 },
@@ -1936,6 +1938,9 @@ export default function AdminDashboard() {
 
         {/* ═══ AI USER AGENT ═══ */}
         {activeTab === "ai_agent" && <AdminAiAgent />}
+
+        {/* ═══ ADVANCE FOR FUTURE ═══ */}
+        {activeTab === "advance_future" && <AdminAdvanceForFuture onNavigate={setActiveTab} />}
 
         {/* ═══ AI FRAUD DETECTION ═══ */}
         {activeTab === "ai_fraud" && <AdminAiFraudDetection />}
