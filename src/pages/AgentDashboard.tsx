@@ -27,6 +27,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 import { haptics } from "@/lib/haptics";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { useFutureFeatures } from "@/hooks/use-future-features";
 
 /* ─── Types ─── */
 interface AgentInfo {
@@ -54,6 +55,8 @@ const AgentDashboard = () => {
   const navigate = useNavigate();
   useUserSessionTimeout("agent");
   const { isDisabled } = useGlobalToggles();
+  const futureFeatures = useFutureFeatures();
+  void futureFeatures.visibility.future_agent_liquidity_intel;
 
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
   const [balance, setBalance] = useState(0);

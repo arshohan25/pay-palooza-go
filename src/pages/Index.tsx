@@ -20,6 +20,7 @@ import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } fr
 import { getCachedStatus, requestContacts, requestCamera } from "@/lib/permissions";
 import { saveContacts } from "@/lib/contactStore";
 import { retryLazyImport } from "@/lib/cacheReset";
+import { useFutureFeatures } from "@/hooks/use-future-features";
 
 // ── Critical above-fold: eagerly imported for instant render ──
 import AppHeader from "@/components/AppHeader";
@@ -62,6 +63,9 @@ const Index = () => {
   useUserSessionTimeout("user");
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
+  const futureFeatures = useFutureFeatures();
+  void futureFeatures.visibility.future_ai_copilot;
+  void futureFeatures.visibility.future_scam_shield;
   const { status: kycStatus, rejectionReason, loading: kycLoading } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
   const [splashDone, setSplashDone]           = useState(() => localStorage.getItem("splashDone") === "1");
