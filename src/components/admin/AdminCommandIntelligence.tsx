@@ -232,6 +232,7 @@ export function AdminUserIntelligenceCenter() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<UserIntelligenceTab>("timeline");
   const [evidenceAction, setEvidenceAction] = useState<RemediationAction | null>(null);
+  const [selectedRemediations, setSelectedRemediations] = useState<Record<string, boolean>>({});
 
   const loadUsers = async () => {
     setLoading(true);
