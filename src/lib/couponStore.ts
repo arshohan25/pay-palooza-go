@@ -36,6 +36,29 @@ export function clearPendingCoupon() {
 }
 
 /**
+ * Record a coupon redemption server-side. Safe to call without a txn id.
+ * Idempotent per (coupon, user, txn_id).
+ */
+export async function recordCouponRedemption(params: {
+  code: string;
+  flow: string;
+  txnId?: string | null;
+  discount: number;
+}) {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    await supabase.rpc("record_coupon_redemption", {
+      p_code: params.code,
+      p_flow: params.flow,
+      p_txn_id: params.txnId ?? null,
+      p_discount: params.discount,
+    });
+  } catch (e) {
+    console.warn("[coupon] failed to record redemption", e);
+  }
+}
+
+/**
  * Calculate the discount amount for a given transaction amount.
  */
 export function calcCouponDiscount(coupon: PendingCoupon, txnAmount: number): number {
