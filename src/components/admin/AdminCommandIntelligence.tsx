@@ -44,6 +44,7 @@ type AnyRow = Record<string, any>;
 
 const currency = (value: number) => `৳${Math.round(value || 0).toLocaleString()}`;
 const shortDate = (value?: string | null) => value ? new Date(value).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+const humanize = (value: string) => String(value || "").split("_").join(" ");
 
 async function insertAudit(action: string, entityType: string, entityId: string, details: AnyRow = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -92,7 +93,7 @@ function MetricCard({ label, value, icon: Icon, hint }: { label: string; value: 
 
 function StatusBadge({ status }: { status: string }) {
   const variant = ["approved", "active", "healthy", "low risk", "live"].includes(status.toLowerCase()) ? "secondary" : ["rejected", "critical", "restricted", "failed"].includes(status.toLowerCase()) ? "destructive" : "outline";
-  return <Badge variant={variant as any} className="text-xs capitalize">{status.replaceAll("_", " ")}</Badge>;
+  return <Badge variant={variant as any} className="text-xs capitalize">{humanize(status)}</Badge>;
 }
 
 function scoreUser(profile: AnyRow | null, kyc: AnyRow | null, txns: AnyRow[], devices: AnyRow[], fraud: AnyRow[]) {
@@ -142,7 +143,7 @@ export function AdminUserIntelligenceCenter() {
         supabase.from("transactions").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(25),
         supabase.from("device_registrations").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(10),
         supabase.from("audit_logs").select("*").or(`actor_id.eq.${uid},entity_id.eq.${uid}`).order("created_at", { ascending: false }).limit(25),
-        supabase.from("feature_locks").select("*").eq("user_id", uid).limit(20),
+        (supabase.from("feature_locks" as any) as any).select("*").eq("user_id", uid).limit(20),
         supabase.from("fraud_alerts").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(20),
         supabase.from("referrals").select("*").or(`referrer_id.eq.${uid},referred_user_id.eq.${uid}`).limit(20),
         supabase.from("orders").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(20),
