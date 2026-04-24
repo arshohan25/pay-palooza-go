@@ -1964,6 +1964,17 @@ export default function AdminDashboard() {
         {/* ═══ ADVANCE FOR FUTURE ═══ */}
         {activeTab === "advance_future" && <AdminAdvanceForFuture onNavigate={setActiveTab} />}
 
+        {activeTab === "user_intelligence" && <AdminUserIntelligenceCenter />}
+        {activeTab === "segments" && <AdminUserSegmentationBuilder />}
+        {activeTab === "bulk_actions" && <AdminBulkUserActionCenter />}
+        {activeTab === "business_intel" && <AdminBusinessIntelligence />}
+        {activeTab === "approval_queue" && <AdminApprovalQueue />}
+        {activeTab === "security_policies" && <AdminSecurityPolicyCenter />}
+        {activeTab === "launch_control" && <AdminLaunchControlRoom />}
+        {activeTab === "data_quality" && <AdminDataQualityMonitor />}
+        {activeTab === "evidence_vault" && <AdminEvidenceVault />}
+        {activeTab === "customization" && <AdminCustomizationCenter />}
+
         {/* ═══ AI FRAUD DETECTION ═══ */}
         {activeTab === "ai_fraud" && <AdminAiFraudDetection />}
 
