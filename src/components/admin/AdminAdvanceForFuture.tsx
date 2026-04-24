@@ -55,6 +55,7 @@ type PhaseId = 1 | 2 | 3;
 type BulkGroup = "top_7" | "phase_1" | "phase_2" | "phase_3";
 type DeviceFrame = "mobile" | "tablet" | "desktop";
 type FeatureAction = "hidden" | "disabled" | "visible";
+type AppRole = "user" | "merchant" | "agent" | "admin";
 
 interface FutureToggle {
   id: string;
@@ -371,25 +372,34 @@ const getStage = (visibility?: string): LaunchStage => {
 const isLowerComplexity = (complexity: Complexity) => complexity === "Low" || complexity === "Medium";
 
 const previewFeatureKeys = {
-  user: ["future_ai_copilot", "future_scam_shield", "future_easypay_score", "future_smart_rewards_engine", "future_predictive_loan_eligibility", "future_bangla_voice_assistant", "future_dynamic_risk_limits"],
-  merchant: ["future_merchant_growth_os", "future_smart_rewards_engine", "future_partner_qr_api"],
-  agent: ["future_agent_liquidity_intel", "future_scam_shield", "future_bangla_voice_assistant"],
-  admin: ["future_compliance_center", "future_ai_fraud_investigator", "future_open_finance_hub", "future_predictive_support"],
+  user: ["future_ai_copilot", "future_scam_shield", "future_easypay_score", "future_smart_rewards_engine", "future_predictive_loan_eligibility", "future_bangla_voice_assistant", "future_dynamic_risk_limits", "future_identity_wallet", "future_predictive_support"],
+  merchant: ["future_merchant_growth_os", "future_smart_rewards_engine", "future_partner_qr_api", "future_identity_wallet"],
+  agent: ["future_agent_liquidity_intel", "future_scam_shield", "future_bangla_voice_assistant", "future_identity_wallet"],
+  admin: ["future_compliance_center", "future_ai_fraud_investigator", "future_open_finance_hub", "future_predictive_support", "future_dynamic_risk_limits"],
 };
 
 const deviceFrameClass: Record<DeviceFrame, string> = {
-  mobile: "mx-auto max-w-[360px]",
-  tablet: "mx-auto max-w-[720px]",
+  mobile: "mx-auto max-w-[390px]",
+  tablet: "mx-auto max-w-[760px]",
   desktop: "w-full",
 };
 
 const impactScore: Record<Impact, number> = { High: 3, Medium: 2, Low: 1 };
 
-const getFeatureAppType = (target: string): "user" | "merchant" | "agent" | "admin" => {
-  if (target.includes("Merchant")) return "merchant";
-  if (target.includes("Agent") || target.includes("Distributor")) return "agent";
-  if (target.includes("Admin")) return "admin";
-  return "user";
+const getFeatureAppRoles = (target: string): AppRole[] => {
+  const roles: AppRole[] = [];
+  if (target.includes("User")) roles.push("user");
+  if (target.includes("Merchant") || target.includes("Partner")) roles.push("merchant");
+  if (target.includes("Agent") || target.includes("Distributor")) roles.push("agent");
+  if (target.includes("Admin")) roles.push("admin");
+  return roles.length ? roles : ["user"];
+};
+
+const roleMeta: Record<AppRole, { title: string; label: string; hero: string; icon: typeof Sparkles }> = {
+  user: { title: "EasyPay User App", label: "User", hero: "Available Balance", icon: WalletCards },
+  merchant: { title: "EasyPay Merchant App", label: "Merchant", hero: "Today sales", icon: Store },
+  agent: { title: "EasyPay Agent App", label: "Agent", hero: "Field float", icon: TrendingUp },
+  admin: { title: "EasyPay Admin Console", label: "Admin", hero: "Risk operations", icon: BellRing },
 };
 
 const readinessChecklistFor = (feature: FutureFeature) => ({
