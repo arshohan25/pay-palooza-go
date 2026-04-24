@@ -875,6 +875,35 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
             </CardContent>
           </Card>
 
+          <Card className="border-0 shadow-[var(--shadow-card)]">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><CardTitle className="text-base">Launch Audit Log</CardTitle><p className="text-xs text-muted-foreground">Detailed history for bulk and per-feature future launches.</p></div>
+              <Button size="sm" variant="outline" onClick={loadAuditEntries} disabled={auditLoading} className="gap-2">{auditLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />} Refresh</Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {auditEntries.map((entry) => {
+                const details = entry.details ?? {};
+                const keys = Array.isArray(details.feature_keys) ? details.feature_keys as string[] : details.feature_key ? [String(details.feature_key)] : [];
+                const status = String(details.new_visibility ?? "hidden") as Visibility;
+                return (
+                  <div key={entry.id} className="rounded-lg border bg-muted/20 p-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0"><p className="text-sm font-semibold text-foreground">{entry.action.replaceAll("_", " ")}</p><p className="break-all text-[11px] text-muted-foreground">Actor {entry.actor_id} · {new Date(entry.created_at).toLocaleString()}</p></div>
+                      <Badge variant={visibilityCopy[status]?.variant ?? "outline"} className="w-fit text-[10px]">{visibilityCopy[status]?.label ?? status}</Badge>
+                    </div>
+                    <div className="mt-2 grid gap-2 text-xs sm:grid-cols-3">
+                      <div className="rounded-md bg-background/60 p-2"><p className="text-muted-foreground">Group</p><p className="font-medium">{String(details.bulk_group ?? "Single feature")}</p></div>
+                      <div className="rounded-md bg-background/60 p-2"><p className="text-muted-foreground">Affected</p><p className="font-medium">{String(details.affected_count ?? keys.length)}</p></div>
+                      <div className="rounded-md bg-background/60 p-2"><p className="text-muted-foreground">Stage</p><p className="font-medium">{String(details.launch_stage ?? getStage(status))}</p></div>
+                    </div>
+                    <div className="mt-2 flex max-h-20 flex-wrap gap-1.5 overflow-auto">{keys.map((key) => <Badge key={key} variant="outline" className="text-[10px]">{key}</Badge>)}</div>
+                  </div>
+                );
+              })}
+              {!auditEntries.length && <p className="rounded-lg border border-dashed p-5 text-center text-xs text-muted-foreground">No launch audit entries yet.</p>}
+            </CardContent>
+          </Card>
+
           <div className="grid gap-4 xl:grid-cols-2">
             {futureFeatures.map((feature, index) => {
               const toggle = toggleMap.get(feature.key);
