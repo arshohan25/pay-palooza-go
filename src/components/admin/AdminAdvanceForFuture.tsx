@@ -7,7 +7,6 @@ import {
   BellRing,
   Bot,
   CheckCircle2,
-  CircleDollarSign,
   CreditCard,
   Eye,
   EyeOff,
