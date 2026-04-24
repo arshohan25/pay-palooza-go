@@ -96,6 +96,61 @@ function MetricCard({ label, value, icon: Icon, hint }: { label: string; value: 
   );
 }
 
+function RiskScoreTooltip({ score }: { score?: { score: number; label: string; reasons: string[] } }) {
+  const reasons = score?.reasons ?? [];
+  const has = (text: string) => reasons.some((reason) => reason.toLowerCase().includes(text));
+  const fraudReason = reasons.find((reason) => reason.toLowerCase().includes("fraud alert"));
+  const transferReason = reasons.find((reason) => reason.toLowerCase().includes("high-value transfer"));
+
+  const rows = [
+    { label: "Base account review score", points: "+12", active: reasons.includes("Base account review score"), tone: "bg-primary" },
+    { label: "Account age under 14 days", points: "+10", active: has("under 14 days"), tone: "bg-amber-500" },
+    { label: "Suspended/deactivated profile", points: "+30", active: has("profile status"), tone: "bg-destructive" },
+    { label: "KYC rejected", points: "+18", active: has("kyc rejection"), tone: "bg-destructive" },
+    { label: "No KYC record", points: "+8", active: has("no kyc"), tone: "bg-amber-500" },
+    { label: "More than 2 registered devices", points: "+12", active: has("multiple registered devices"), tone: "bg-amber-500" },
+    { label: fraudReason || "Fraud alerts", points: "+12 each, max +28", active: Boolean(fraudReason), tone: "bg-destructive" },
+    { label: transferReason || "High-value transfers ≥৳50,000", points: "+5 each, max +20", active: Boolean(transferReason), tone: "bg-amber-500" },
+  ];
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" aria-label="How this score was calculated" className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <HelpCircle className="h-4 w-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right" align="start" className="w-[min(22rem,calc(100vw-2rem))] p-0 text-left">
+          <div className="space-y-3 p-4">
+            <div>
+              <p className="text-sm font-semibold text-popover-foreground">How this score was calculated</p>
+              <p className="text-xs text-muted-foreground">Active factors are included in the current user score.</p>
+            </div>
+            <div className="space-y-2">
+              {rows.map((row) => (
+                <div key={row.label} className="flex items-start justify-between gap-3 text-xs">
+                  <span className="flex min-w-0 items-center gap-2 text-popover-foreground">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${row.active ? row.tone : "bg-muted-foreground/30"}`} />
+                    <span className={row.active ? "font-medium" : "text-muted-foreground"}>{row.label}</span>
+                  </span>
+                  <span className={row.active ? "font-semibold text-popover-foreground" : "text-muted-foreground"}>{row.points}</span>
+                </div>
+              ))}
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Final score capped at 100</span>
+              <span className="font-semibold text-popover-foreground">{score?.score ?? "—"} · {score?.label ?? "No score"}</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">Labels: 80+ Investigation Required, 60+ Restricted, 42+ High Risk, 25+ Watchlist, below 25 Low Risk. Recalculated from live profile, KYC, device, fraud, and transaction data.</p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const variant = ["approved", "active", "healthy", "low risk", "live"].includes(status.toLowerCase()) ? "secondary" : ["rejected", "critical", "restricted", "failed"].includes(status.toLowerCase()) ? "destructive" : "outline";
   return <Badge variant={variant as any} className="text-xs capitalize">{humanize(status)}</Badge>;
