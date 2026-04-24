@@ -62,6 +62,42 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_brand_settings: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          setting_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          setting_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          setting_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       admin_bulk_actions: {
         Row: {
           action_type: string
