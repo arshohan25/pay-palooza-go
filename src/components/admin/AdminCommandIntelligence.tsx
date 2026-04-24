@@ -47,7 +47,7 @@ import { toast } from "sonner";
 type AnyRow = Record<string, any>;
 type UserIntelligenceTab = "timeline" | "risk" | "records" | "notes" | "actions";
 type EvidenceField = { label: string; value: string | number | boolean | null | undefined; source: string };
-type RemediationAction = { title: string; reason: string; priority: string; tab: UserIntelligenceTab; audit?: string; evidence: EvidenceField[]; records?: Array<{ title: string; fields: EvidenceField[] }> };
+type RemediationAction = { id: string; title: string; reason: string; priority: string; tab: UserIntelligenceTab; audit?: string; evidence: EvidenceField[]; records?: Array<{ title: string; fields: EvidenceField[] }>; impact: number; signals: string[] };
 
 const currency = (value: number) => `৳${Math.round(value || 0).toLocaleString()}`;
 const shortDate = (value?: string | null) => value ? new Date(value).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
