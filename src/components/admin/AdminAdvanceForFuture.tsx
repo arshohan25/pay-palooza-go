@@ -489,9 +489,27 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
         previous_visibility: toggle.visibility,
         new_visibility: visibility,
         launch_stage: getStage(visibility),
+        target: feature.target,
+        phase: feature.phase,
+        impact: feature.impact,
+        complexity: feature.complexity,
+        readiness: feature.readiness,
       });
+      loadAuditEntries();
     }
     setUpdatingKey(null);
+  };
+
+  const requestFeatureAction = (feature: FutureFeature, visibility: FeatureAction) => {
+    if (visibility === "disabled") setPreviewFeature(feature);
+    else setFeaturePending({ feature, visibility });
+  };
+
+  const confirmFeatureAction = async () => {
+    if (!featurePending) return;
+    const pending = featurePending;
+    setFeaturePending(null);
+    await setVisibility(pending.feature, pending.visibility);
   };
 
   const openBulkConfirm = (title: string, group: BulkGroup, keys: string[], visibility: Visibility) => {
@@ -523,6 +541,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
         launch_stage: getStage(bulkPending.visibility),
         affected_count: bulkPending.keys.length,
       });
+      loadAuditEntries();
     }
 
     setBulkPending(null);
