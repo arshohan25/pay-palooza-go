@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Search, Download, Shield, FileText, AlertTriangle, User, CreditCard,
   Smartphone, Key, Landmark, ArrowUpDown, Gavel, MessageSquare, Users,
-  Briefcase, Store, ClipboardList, Scale, CheckSquare, History, Eye, X, Loader2
+  Briefcase, Store, ClipboardList, Scale, CheckSquare, History, Eye, X, Loader2,
+  CheckCircle2, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -66,6 +68,10 @@ export default function AdminLEARequest() {
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [adminCache, setAdminCache] = useState<Record<string, { name: string; phone: string }>>({});
   const [reDownloadingId, setReDownloadingId] = useState<string | null>(null);
+  const [redownloadPhase, setRedownloadPhase] = useState<"idle" | "loading" | "preparing" | "downloading">("idle");
+  const [historyFilter, setHistoryFilter] = useState("");
+  const [internalNote, setInternalNote] = useState("");
+  const [paginationResult, setPaginationResult] = useState<{ mode: "measured" | "fallback"; pages: number } | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const pendingRedownloadIdRef = useRef<string | null>(null);
   const [includeSections, setIncludeSections] = useState<Record<SectionKey, boolean>>({
@@ -237,6 +243,32 @@ export default function AdminLEARequest() {
   };
 
   const hasValidationErrors = !authority.trim() || !refNo.trim() || !issueDate;
+  const enabledSections = (Object.keys(OPTIONAL_SECTIONS) as SectionKey[]).filter(k => includeSections[k]);
+  const readinessItems = [
+    { label: "Phone searched", ready: !!phone.trim() },
+    { label: "User profile found", ready: !!report?.profile },
+    { label: "Requesting authority filled", ready: !!authority.trim() },
+    { label: "Reference number filled", ready: !!refNo.trim() },
+    { label: "Issue date selected", ready: !!issueDate },
+    { label: "Report ID generated", ready: !!reportId },
+    { label: "Transaction data loaded", ready: !!report },
+    { label: "Optional sections selected", ready: enabledSections.length > 0 },
+  ];
+
+  const filteredHistory = useMemo(() => {
+    const q = historyFilter.trim().toLowerCase();
+    if (!q) return history;
+    return history.filter(h => [h.phone, h.report_id, h.authority, h.reference_no]
+      .some(value => String(value ?? "").toLowerCase().includes(q)));
+  }, [history, historyFilter]);
+
+  const getRedownloadLabel = (id: string) => {
+    if (reDownloadingId !== id) return "Re-download";
+    if (redownloadPhase === "loading") return "Loading data...";
+    if (redownloadPhase === "preparing") return "Preparing PDF...";
+    if (redownloadPhase === "downloading") return "Downloading...";
+    return "Preparing...";
+  };
 
   const handleDownload = async () => {
     const errors = {
@@ -247,11 +279,12 @@ export default function AdminLEARequest() {
     setFieldErrors(errors);
     if (errors.authority || errors.refNo || errors.issueDate) {
       toast.error("Please fill all required fields before downloading");
-      return;
+      return false;
     }
-    if (!reportRef.current) return;
+    if (!reportRef.current) return false;
 
     setGenerating(true);
+    if (reDownloadingId) setRedownloadPhase("preparing");
     try {
       const canvas = await html2canvas(reportRef.current, {
         scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false,
@@ -262,6 +295,7 @@ export default function AdminLEARequest() {
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
       const pageHeight = 297;
+      const minSegmentHeightPx = Math.max(80, Math.floor(canvas.height * 0.015));
       const rootRect = reportRef.current.getBoundingClientRect();
       const canvasPxPerDomPx = canvas.height / rootRect.height;
       const pageHeightPx = pageHeight * (canvas.height / imgHeight);
@@ -324,7 +358,20 @@ export default function AdminLEARequest() {
       };
 
       const measurementsConsistent = Number.isFinite(canvasPxPerDomPx) && Number.isFinite(pageHeightPx) && rootRect.height > 0 && rowBounds.every(row => row.height > 0 && row.top >= 0 && row.bottom <= canvas.height + 2);
-      const segments = measurementsConsistent && isContinuous(measuredSegments) ? measuredSegments : buildMmFallbackSegments();
+      const mergeTinyTrailingSegment = (items: { startPx: number; endPx: number }[]) => {
+        if (items.length > 1) {
+          const last = items[items.length - 1];
+          if (last.endPx - last.startPx < minSegmentHeightPx) {
+            items[items.length - 2].endPx = last.endPx;
+            items.pop();
+          }
+        }
+        return items.filter(segment => segment.endPx - segment.startPx >= 1);
+      };
+      const useMeasured = measurementsConsistent && isContinuous(measuredSegments);
+      const segments = mergeTinyTrailingSegment(useMeasured ? measuredSegments : buildMmFallbackSegments());
+      const paginationMode = useMeasured ? "measured" : "fallback";
+      setPaginationResult({ mode: paginationMode, pages: Math.max(segments.length, 1) });
 
       segments.forEach((segment, index) => {
         const sourceY = segment.startPx;
@@ -342,12 +389,29 @@ export default function AdminLEARequest() {
         pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
       }
 
+      const pageCount = pdf.getNumberOfPages();
+      const footerGeneratedAt = new Date().toISOString();
+      const footerAdmin = "EasyPay Admin";
+      for (let page = 1; page <= pageCount; page++) {
+        pdf.setPage(page);
+        pdf.setFontSize(7);
+        pdf.setTextColor(110);
+        pdf.text(
+          `Report ID: ${reportId} | Generated: ${footerGeneratedAt} | Phone: ${phone.trim()} | Ref: ${refNo.trim()} | Sections: ${enabledSections.length} | ${paginationMode}`,
+          8,
+          292,
+          { maxWidth: 160 },
+        );
+        pdf.text(`Page ${page} of ${pageCount}`, 190, 292, { align: "right" });
+        pdf.text(`Generated by: ${footerAdmin}`, 8, 295);
+      }
+
+      if (reDownloadingId) setRedownloadPhase("downloading");
       pdf.save(`LEA-Report-${phone}-${new Date().toISOString().slice(0, 10)}.pdf`);
 
       // Save to database
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const enabledSections = (Object.keys(OPTIONAL_SECTIONS) as SectionKey[]).filter(k => includeSections[k]);
         await supabase.from("lea_reports").insert({
           report_id: reportId,
           phone: phone.trim(),
@@ -363,6 +427,9 @@ export default function AdminLEARequest() {
             total_out: totalOut,
             fraud_alerts: report?.fraudAlerts.length ?? 0,
             disputes: report?.disputes.length ?? 0,
+            internal_note: internalNote.trim() || null,
+            pagination_mode: paginationMode,
+            page_count: pageCount,
           },
         } as any);
       }
@@ -377,8 +444,10 @@ export default function AdminLEARequest() {
 
       toast.success("PDF report downloaded");
       fetchHistory();
+      return true;
     } catch {
       toast.error("Failed to generate report");
+      return false;
     } finally {
       setGenerating(false);
     }
@@ -387,7 +456,7 @@ export default function AdminLEARequest() {
   useEffect(() => {
     if (!report || !reDownloadingId || loading || generating || pendingRedownloadIdRef.current !== reDownloadingId) return;
     pendingRedownloadIdRef.current = null;
-    handleDownload().finally(() => setReDownloadingId(null));
+    handleDownload().finally(() => { setReDownloadingId(null); setRedownloadPhase("idle"); });
   }, [report, reDownloadingId, loading, generating]);
 
   const walletId = report ? generateWalletId(report.profile.user_id) : "";
