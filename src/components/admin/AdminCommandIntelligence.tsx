@@ -258,6 +258,7 @@ export function AdminSecurityPolicyCenter() {
 }
 
 export function AdminDataQualityMonitor() {
+  const SAMPLE_PAGE_SIZE = 25;
   const checks = ["Users without profiles", "Profiles without KYC records", "Merchants without stores", "Agents without float", "Orders without settlement status", "Transactions missing fees", "Failed webhook delivery", "Duplicate phone/device records"];
   const [sampleOpen, setSampleOpen] = useState(false);
   const [sampleTitle, setSampleTitle] = useState("");
@@ -265,6 +266,8 @@ export function AdminDataQualityMonitor() {
   const [sampleLoading, setSampleLoading] = useState(false);
   const [sampleFilter, setSampleFilter] = useState("");
   const [selectedSampleKey, setSelectedSampleKey] = useState<string | null>(null);
+  const [sampleOffset, setSampleOffset] = useState(0);
+  const [sampleHasMore, setSampleHasMore] = useState(false);
   const keyedSampleRows = useMemo(() => sampleRows.map((row, index) => ({ row, key: sampleRowKey(row, index), label: sampleRowLabel(row, index) })), [sampleRows]);
   const filteredSampleRows = useMemo(() => {
     const needle = sampleFilter.trim().toLowerCase();
@@ -290,25 +293,42 @@ export function AdminDataQualityMonitor() {
     if (selectedSampleKey && !selectedStillVisible) console.debug("[DataQualityMonitor] selected sample row is preserved but currently hidden by filter", { selectedSampleKey, filter: sampleFilter });
   }, [filteredSampleRows, keyedSampleRows, sampleFilter, sampleLoading, sampleOpen, sampleRows.length, sampleTitle, selectedSampleKey]);
 
-  const loadSamples = async (check: string) => {
+  const loadSamples = async (check: string, append = false) => {
+    const nextOffset = append ? sampleOffset : 0;
     setSampleTitle(check);
     setSampleOpen(true);
     setSampleLoading(true);
-    setSampleRows([]);
-    setSampleFilter("");
+    if (!append) {
+      setSampleRows([]);
+      setSampleFilter("");
+      setSampleOffset(0);
+      setSampleHasMore(false);
+    }
 
     try {
       let rows: AnyRow[] = [];
+      let hasMore = false;
+      let responseNextOffset = nextOffset;
       if (check !== "Users without profiles") {
-        const { data, error } = await (supabase as any).rpc("get_data_quality_samples", { p_check: check, p_limit: 25 });
+        const { data, error } = await (supabase as any).rpc("get_data_quality_samples", { p_check: check, p_limit: SAMPLE_PAGE_SIZE, p_offset: nextOffset });
         if (error) throw error;
-        rows = Array.isArray(data) ? data : [];
+        rows = Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : [];
+        hasMore = Boolean(data?.has_more);
+        responseNextOffset = Number(data?.next_offset ?? nextOffset + rows.length);
       }
-      setSampleRows(rows);
-      setSelectedSampleKey((current) => {
-        if (current && rows.some((row, index) => sampleRowKey(row, index) === current)) return current;
-        return rows[0] ? sampleRowKey(rows[0], 0) : null;
+      setSampleRows((currentRows) => {
+        const mergedRows = append ? currentRows : [];
+        const existingKeys = new Set(mergedRows.map((row, index) => sampleRowKey(row, index)));
+        const uniqueRows = rows.filter((row, index) => !existingKeys.has(sampleRowKey(row, mergedRows.length + index)));
+        const nextRows = [...mergedRows, ...uniqueRows];
+        setSelectedSampleKey((current) => {
+          if (current && nextRows.some((row, index) => sampleRowKey(row, index) === current)) return current;
+          return nextRows[0] ? sampleRowKey(nextRows[0], 0) : null;
+        });
+        return nextRows;
       });
+      setSampleOffset(responseNextOffset);
+      setSampleHasMore(hasMore);
     } catch (error: any) {
       toast.error(error?.message || "Failed to load samples");
     } finally {
