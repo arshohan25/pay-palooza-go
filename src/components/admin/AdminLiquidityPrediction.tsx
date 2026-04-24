@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, TrendingDown, Droplets, AlertTriangle, BarChart3, DollarSign } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar } from "recharts";
+import { ResponsiveChartFrame } from "@/components/admin/ResponsiveChartFrame";
 
 export default function AdminLiquidityPrediction() {
   const [loading, setLoading] = useState(true);
@@ -157,9 +158,10 @@ export default function AdminLiquidityPrediction() {
           {/* Daily Flow Chart */}
           <Card className="border-0 shadow-sm">
             <CardHeader className="pb-2"><CardTitle className="text-sm">30-Day Cash Flow</CardTitle></CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={dailyFlow}>
+            <CardContent className="min-w-0 overflow-hidden">
+              <ResponsiveChartFrame className="h-64">
+              <ResponsiveContainer width="100%" height="100%" debounce={0}>
+                <BarChart data={dailyFlow} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="date" tick={{ fontSize: 9 }} className="fill-muted-foreground" />
                   <YAxis tick={{ fontSize: 9 }} className="fill-muted-foreground" />
@@ -168,15 +170,17 @@ export default function AdminLiquidityPrediction() {
                   <Bar dataKey="outflow" fill="hsl(350,65%,50%)" radius={[2, 2, 0, 0]} name="Outflow" />
                 </BarChart>
               </ResponsiveContainer>
+              </ResponsiveChartFrame>
             </CardContent>
           </Card>
 
           {/* Prediction Chart */}
           <Card className="border-0 shadow-sm">
             <CardHeader className="pb-2"><CardTitle className="text-sm">Balance Forecast</CardTitle></CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={prediction}>
+            <CardContent className="min-w-0 overflow-hidden">
+              <ResponsiveChartFrame className="h-52 md:h-56">
+              <ResponsiveContainer width="100%" height="100%" debounce={0}>
+                <AreaChart data={prediction} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="date" tick={{ fontSize: 9 }} className="fill-muted-foreground" />
                   <YAxis tick={{ fontSize: 9 }} className="fill-muted-foreground" />
@@ -190,6 +194,7 @@ export default function AdminLiquidityPrediction() {
                   <Area type="monotone" dataKey="predicted" stroke="hsl(var(--primary))" fill="url(#predictGrad)" strokeWidth={2} name="Predicted Balance" />
                 </AreaChart>
               </ResponsiveContainer>
+              </ResponsiveChartFrame>
             </CardContent>
           </Card>
         </>
