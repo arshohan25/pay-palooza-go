@@ -237,20 +237,27 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
               {/* Body — flat chronological list, latest first */}
               <div className="flex-1 overflow-y-auto">
                 <AnimatePresence initial={false}>
-                  {sorted.length === 0 ? (
+                  {filtered.length === 0 ? (
                     <motion.div key="empty" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                       className="flex flex-col items-center justify-center h-full gap-3 py-20">
                       <div className="w-16 h-16 rounded-3xl bg-muted flex items-center justify-center">
                         <BellOff size={28} className="text-muted-foreground" />
                       </div>
-                      <p className="font-bold text-foreground text-sm">{t("allCaughtUp")}</p>
-                      <p className="text-xs text-muted-foreground">{t("noNotificationsRightNow")}</p>
+                      <p className="font-bold text-foreground text-sm">
+                        {filter === "all" ? t("allCaughtUp") : "No matching notifications"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {filter === "all" ? t("noNotificationsRightNow") : "Try a different filter"}
+                      </p>
                     </motion.div>
                   ) : (
-                    sorted.map((n) => {
-                      const { icon: Icon, iconClass } = getIcon(n.category);
+                    filtered.map((n) => {
+                      const fStatus = getFulfillmentStatus(n);
+                      const { icon: Icon, iconClass } = getIcon(n.category, fStatus);
                       const timeAgo = formatDistanceToNow(new Date(n.created_at), { addSuffix: true });
                       const isRich = RICH_CATEGORIES.includes(n.category);
+                      const fulfillment = isFulfillment(n);
+                      const meta = n.metadata as any;
                       return (
                         <motion.div key={n.id} layout
                           initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
@@ -266,22 +273,41 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                           <div className="flex-1 min-w-0">
                             <p className={`text-[13px] leading-snug ${!n.read ? "font-bold text-foreground" : "font-semibold text-foreground/80"}`}>{n.title}</p>
                             <p className="text-[11.5px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">{n.body}</p>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md ${iconClass}`}>
-                                {n.category}
+                                {fulfillment ? (fStatus || "fulfillment") : n.category}
                               </span>
+                              {fulfillment && meta?.tracking_number && (
+                                <span className="text-[9px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md font-mono">
+                                  #{String(meta.tracking_number).slice(0, 12)}
+                                </span>
+                              )}
                               <p className="text-[10px] text-muted-foreground/60">{timeAgo}</p>
                               {isRich && (
                                 <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
                                   Tap for details
                                 </span>
                               )}
+                              {fulfillment && meta?.order_id && (
+                                <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
+                                  View order →
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }}
-                            className="shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted transition-colors mt-0.5">
-                            <X size={12} />
-                          </button>
+                          <div className="flex flex-col gap-1 shrink-0">
+                            {!n.read && (
+                              <button onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
+                                title="Mark as read"
+                                className="w-6 h-6 rounded-lg flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors">
+                                <CheckCheck size={12} />
+                              </button>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }}
+                              className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted transition-colors">
+                              <X size={12} />
+                            </button>
+                          </div>
                         </motion.div>
                       );
                     })
