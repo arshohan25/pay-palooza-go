@@ -65,6 +65,7 @@ export default function AdminLEARequest() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [adminCache, setAdminCache] = useState<Record<string, { name: string; phone: string }>>({});
+  const [reDownloadingId, setReDownloadingId] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const [includeSections, setIncludeSections] = useState<Record<SectionKey, boolean>>({
     devices: false,
@@ -155,24 +156,28 @@ export default function AdminLEARequest() {
     }
   };
 
-  const handleSearch = async () => {
-    if (!phone.trim()) return toast.error("Enter a phone number");
+  const handleSearch = async (overrides?: { phone?: string; reportId?: string }) => {
+    const searchPhone = (overrides?.phone ?? phone).trim();
+    if (!searchPhone) {
+      toast.error("Enter a phone number");
+      return false;
+    }
     setLoading(true);
     setReport(null);
-    setReportId("");
+    setReportId(overrides?.reportId ?? "");
 
     try {
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("phone", phone.trim())
+        .eq("phone", searchPhone)
         .maybeSingle();
 
       if (error) throw error;
       if (!profile) {
         toast.error("No user found with this number");
         setLoading(false);
-        return;
+        return false;
       }
 
       const userId = profile.user_id;
@@ -217,12 +222,14 @@ export default function AdminLEARequest() {
         auditLogs: auditRes.data ?? [],
       });
 
-      setReportId(generateReportId());
+      setReportId(overrides?.reportId ?? generateReportId());
 
-      await logAction("lea_data_search", { phone: phone.trim(), user_id: userId });
+      await logAction("lea_data_search", { phone: searchPhone, user_id: userId });
       toast.success("User data retrieved");
+      return true;
     } catch (err: any) {
       toast.error(err.message || "Search failed");
+      return false;
     } finally {
       setLoading(false);
     }
