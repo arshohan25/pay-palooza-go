@@ -553,16 +553,32 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     const updating = updatingKey === feature.key;
     return (
       <div className={`grid gap-2 ${compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-3"}`}>
-        <Button variant="outline" size="sm" disabled={updating} onClick={() => setVisibility(feature, "hidden")} className="gap-1.5 text-xs">
-          {updating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />} Keep Hidden
+        <Button variant="outline" size="sm" disabled={updating} onClick={() => requestFeatureAction(feature, "hidden")} className="gap-1.5 text-xs">
+          {updating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />} Hide
         </Button>
-        <Button variant="secondary" size="sm" disabled={updating} onClick={() => setVisibility(feature, "disabled")} className="gap-1.5 text-xs">
+        <Button variant="secondary" size="sm" disabled={updating} onClick={() => requestFeatureAction(feature, "disabled")} className="gap-1.5 text-xs">
           <Eye className="h-3.5 w-3.5" /> Preview
         </Button>
-        <Button size="sm" disabled={updating} onClick={() => setVisibility(feature, visibility === "visible" ? "hidden" : "visible")} className="gap-1.5 text-xs">
+        <Button size="sm" disabled={updating} onClick={() => requestFeatureAction(feature, visibility === "visible" ? "hidden" : "visible")} className="gap-1.5 text-xs">
           {visibility === "visible" ? <RotateCcw className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
           {visibility === "visible" ? "Rollback" : "Launch"}
         </Button>
+      </div>
+    );
+  };
+
+  const renderChecklist = (feature: FutureFeature) => {
+    const checklist = readinessChecklistFor(feature);
+    return (
+      <div className="grid gap-2 text-[11px] md:grid-cols-3">
+        {Object.entries(checklist).map(([group, items]) => (
+          <div key={group} className="rounded-md border bg-background/60 p-2">
+            <p className="mb-1 font-semibold capitalize text-foreground">{group.replace(/([A-Z])/g, " $1")}</p>
+            <div className="space-y-1 text-muted-foreground">
+              {items.map((item) => <p key={item} className="flex gap-1"><CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-primary" />{item}</p>)}
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
