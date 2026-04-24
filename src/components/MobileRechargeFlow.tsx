@@ -489,7 +489,10 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       description: packDesc + " [API]" + (pendingCoupon ? ` [Coupon: ${pendingCoupon.code}]` : ""),
     });
 
-    if (pendingCoupon) clearPendingCoupon();
+    if (pendingCoupon) {
+      await recordCouponRedemption({ code: pendingCoupon.code, flow: "recharge", txnId: txnId.current, discount: couponDiscVal });
+      clearPendingCoupon();
+    }
     showTxnToast({
       type: "Live Recharge",
       amount: `৳${finalPrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,

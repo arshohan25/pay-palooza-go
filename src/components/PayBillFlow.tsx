@@ -321,7 +321,10 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
       reference: txnId.current,
     });
 
-    if (pendingCoupon) clearPendingCoupon();
+    if (pendingCoupon) {
+      await recordCouponRedemption({ code: pendingCoupon.code, flow: "bill_pay", txnId: txnId.current, discount: couponDiscVal });
+      clearPendingCoupon();
+    }
     showTxnToast({
       type: "Bill Payment",
       amount: `৳${finalAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,

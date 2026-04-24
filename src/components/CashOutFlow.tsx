@@ -360,7 +360,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
       setProcessing(false);
       return;
     }
-    if (pendingCoupon) clearPendingCoupon();
+    if (pendingCoupon) {
+      await recordCouponRedemption({ code: pendingCoupon.code, flow: "cash_out", txnId: txnId.current, discount: couponDiscVal });
+      clearPendingCoupon();
+    }
     showTxnToast({ type: "Cash Out", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-cashout" });
     setDirection(1);
     setStep("success");
