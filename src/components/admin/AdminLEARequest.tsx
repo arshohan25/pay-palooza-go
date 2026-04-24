@@ -238,12 +238,6 @@ export default function AdminLEARequest() {
 
   const hasValidationErrors = !authority.trim() || !refNo.trim() || !issueDate;
 
-  useEffect(() => {
-    if (!report || !reDownloadingId || loading || generating || pendingRedownloadIdRef.current !== reDownloadingId) return;
-    pendingRedownloadIdRef.current = null;
-    handleDownload().finally(() => setReDownloadingId(null));
-  }, [report, reDownloadingId, loading, generating]);
-
   const handleDownload = async () => {
     const errors = {
       authority: !authority.trim(),
@@ -342,6 +336,12 @@ export default function AdminLEARequest() {
       setGenerating(false);
     }
   };
+
+  useEffect(() => {
+    if (!report || !reDownloadingId || loading || generating || pendingRedownloadIdRef.current !== reDownloadingId) return;
+    pendingRedownloadIdRef.current = null;
+    handleDownload().finally(() => setReDownloadingId(null));
+  }, [report, reDownloadingId, loading, generating]);
 
   const walletId = report ? generateWalletId(report.profile.user_id) : "";
   const totalIn = report?.transactions.filter(t => ["receive", "cashin", "addmoney", "deposit"].includes(t.type)).reduce((s, t) => s + Number(t.amount), 0) ?? 0;
