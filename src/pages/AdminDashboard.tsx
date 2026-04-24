@@ -144,7 +144,8 @@ import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AdminNavReorder, { type NavGroup } from "@/components/admin/AdminNavReorder";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Bell } from "lucide-react";
+import AdminPushSetupWizard from "@/components/admin/AdminPushSetupWizard";
 
 interface Stats {
   totalUsers: number;
@@ -1903,6 +1904,7 @@ export default function AdminDashboard() {
 
         {/* ═══ API HUB ═══ */}
         {activeTab === "apihub" && <AdminApiHub onNavigate={setActiveTab} />}
+        {activeTab === "push_setup" && <AdminPushSetupWizard />}
 
         {/* ═══ BILLER API CONFIGS ═══ */}
         {activeTab === "billers" && <AdminBillerConfig />}
