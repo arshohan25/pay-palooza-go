@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAiRewards } from "@/hooks/use-ai-rewards";
+import { useFutureFeatures } from "@/hooks/use-future-features";
 import AiRewardBanner from "@/components/AiRewardBanner";
 
 const AMOUNTS = [1000, 2000, 3000, 5000, 10000, 15000, 25000, 50000];
@@ -70,6 +71,8 @@ type TabType = "apply" | "active" | "history";
 const LoanPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const futureFeatures = useFutureFeatures();
+  void futureFeatures.visibility.future_easypay_score;
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [amount, setAmount] = useState("5000");
   const [tenure, setTenure] = useState("90");

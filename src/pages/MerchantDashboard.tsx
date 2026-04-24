@@ -50,6 +50,7 @@ import MerchantStaffTab from "@/components/merchant/MerchantStaffTab";
 import MerchantCustomersTab from "@/components/merchant/MerchantCustomersTab";
 import MerchantCouponsTab from "@/components/merchant/MerchantCouponsTab";
 import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
+import { useFutureFeatures } from "@/hooks/use-future-features";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts";
@@ -156,6 +157,8 @@ const MerchantDashboard = () => {
   useUserSessionTimeout("merchant");
   const { toast } = useToast();
   const { isDisabled } = useGlobalToggles();
+  const futureFeatures = useFutureFeatures();
+  void futureFeatures.visibility.future_merchant_growth_os;
 
   // Staff role-based tab restrictions
   const staffAllowedTabs = useMemo<Set<MerchTab> | null>(() => {
