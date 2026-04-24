@@ -5614,7 +5614,7 @@ export type Database = {
         }[]
       }
       get_data_quality_samples: {
-        Args: { p_check: string; p_limit?: number }
+        Args: { p_check: string; p_limit?: number; p_offset?: number }
         Returns: Json
       }
       get_merchant_customers: {

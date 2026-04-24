@@ -258,6 +258,7 @@ export function AdminSecurityPolicyCenter() {
 }
 
 export function AdminDataQualityMonitor() {
+  const SAMPLE_PAGE_SIZE = 25;
   const checks = ["Users without profiles", "Profiles without KYC records", "Merchants without stores", "Agents without float", "Orders without settlement status", "Transactions missing fees", "Failed webhook delivery", "Duplicate phone/device records"];
   const [sampleOpen, setSampleOpen] = useState(false);
   const [sampleTitle, setSampleTitle] = useState("");
@@ -265,6 +266,8 @@ export function AdminDataQualityMonitor() {
   const [sampleLoading, setSampleLoading] = useState(false);
   const [sampleFilter, setSampleFilter] = useState("");
   const [selectedSampleKey, setSelectedSampleKey] = useState<string | null>(null);
+  const [sampleOffset, setSampleOffset] = useState(0);
+  const [sampleHasMore, setSampleHasMore] = useState(false);
   const keyedSampleRows = useMemo(() => sampleRows.map((row, index) => ({ row, key: sampleRowKey(row, index), label: sampleRowLabel(row, index) })), [sampleRows]);
   const filteredSampleRows = useMemo(() => {
     const needle = sampleFilter.trim().toLowerCase();
@@ -290,25 +293,42 @@ export function AdminDataQualityMonitor() {
     if (selectedSampleKey && !selectedStillVisible) console.debug("[DataQualityMonitor] selected sample row is preserved but currently hidden by filter", { selectedSampleKey, filter: sampleFilter });
   }, [filteredSampleRows, keyedSampleRows, sampleFilter, sampleLoading, sampleOpen, sampleRows.length, sampleTitle, selectedSampleKey]);
 
-  const loadSamples = async (check: string) => {
+  const loadSamples = async (check: string, append = false) => {
+    const nextOffset = append ? sampleOffset : 0;
     setSampleTitle(check);
     setSampleOpen(true);
     setSampleLoading(true);
-    setSampleRows([]);
-    setSampleFilter("");
+    if (!append) {
+      setSampleRows([]);
+      setSampleFilter("");
+      setSampleOffset(0);
+      setSampleHasMore(false);
+    }
 
     try {
       let rows: AnyRow[] = [];
+      let hasMore = false;
+      let responseNextOffset = nextOffset;
       if (check !== "Users without profiles") {
-        const { data, error } = await (supabase as any).rpc("get_data_quality_samples", { p_check: check, p_limit: 25 });
+        const { data, error } = await (supabase as any).rpc("get_data_quality_samples", { p_check: check, p_limit: SAMPLE_PAGE_SIZE, p_offset: nextOffset });
         if (error) throw error;
-        rows = Array.isArray(data) ? data : [];
+        rows = Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : [];
+        hasMore = Boolean(data?.has_more);
+        responseNextOffset = Number(data?.next_offset ?? nextOffset + rows.length);
       }
-      setSampleRows(rows);
-      setSelectedSampleKey((current) => {
-        if (current && rows.some((row, index) => sampleRowKey(row, index) === current)) return current;
-        return rows[0] ? sampleRowKey(rows[0], 0) : null;
+      setSampleRows((currentRows) => {
+        const mergedRows = append ? currentRows : [];
+        const existingKeys = new Set(mergedRows.map((row, index) => sampleRowKey(row, index)));
+        const uniqueRows = rows.filter((row, index) => !existingKeys.has(sampleRowKey(row, mergedRows.length + index)));
+        const nextRows = [...mergedRows, ...uniqueRows];
+        setSelectedSampleKey((current) => {
+          if (current && nextRows.some((row, index) => sampleRowKey(row, index) === current)) return current;
+          return nextRows[0] ? sampleRowKey(nextRows[0], 0) : null;
+        });
+        return nextRows;
       });
+      setSampleOffset(responseNextOffset);
+      setSampleHasMore(hasMore);
     } catch (error: any) {
       toast.error(error?.message || "Failed to load samples");
     } finally {
@@ -316,7 +336,7 @@ export function AdminDataQualityMonitor() {
     }
   };
 
-  return <Shell title="Data Quality Monitor" description="Track missing, inconsistent, duplicate, or operationally risky data before it breaks workflows." icon={Gauge}><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{checks.map((c, i) => <Card key={c}><CardContent className="p-4"><div className="flex items-start justify-between"><p className="text-sm font-semibold">{c}</p><StatusBadge status={i % 3 === 0 ? "review" : "stable"} /></div><p className="mt-3 text-3xl font-bold">{[0, 18, 4, 7, 11, 2, 6, 3][i]}</p><p className="text-xs text-muted-foreground">Severity: {i % 3 === 0 ? "High" : i % 2 === 0 ? "Medium" : "Low"}</p><Button size="sm" variant="outline" className="mt-3 w-full" onClick={() => loadSamples(c)}>View Samples</Button></CardContent></Card>)}</div><Dialog open={sampleOpen} onOpenChange={setSampleOpen}><DialogContent className="max-w-3xl"><DialogHeader><DialogTitle>{sampleTitle}</DialogTitle><DialogDescription>Showing up to 25 sample records for this data quality check.</DialogDescription></DialogHeader><Input value={sampleFilter} onChange={(event) => setSampleFilter(event.target.value)} placeholder="Filter samples by key, source, or row data..." /><div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">Selected row: {selectedSampleKey || "none"}</div><div className="max-h-[420px] space-y-2 overflow-y-auto">{sampleLoading ? <p className="py-8 text-center text-sm text-muted-foreground">Loading samples…</p> : filteredSampleRows.length ? filteredSampleRows.map(({ row, key, label }) => <button key={key} type="button" onClick={() => setSelectedSampleKey(key)} className={`w-full rounded-lg border p-3 text-left transition ${selectedSampleKey === key ? "border-primary bg-primary/10" : "border-border bg-muted/30 hover:bg-muted/60"}`}><div className="mb-2 flex flex-wrap items-center justify-between gap-2"><span className="break-all text-xs font-semibold text-foreground">{label}</span><Badge variant="outline" className="max-w-full break-all font-mono text-[10px]">{key}</Badge></div><pre className="whitespace-pre-wrap break-words text-xs text-foreground">{JSON.stringify(row, null, 2)}</pre></button>) : <p className="py-8 text-center text-sm text-muted-foreground">No sample records found.</p>}</div><DialogFooter><Button variant="outline" onClick={() => setSampleOpen(false)}>Close</Button></DialogFooter></DialogContent></Dialog></Shell>;
+  return <Shell title="Data Quality Monitor" description="Track missing, inconsistent, duplicate, or operationally risky data before it breaks workflows." icon={Gauge}><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{checks.map((c, i) => <Card key={c}><CardContent className="p-4"><div className="flex items-start justify-between"><p className="text-sm font-semibold">{c}</p><StatusBadge status={i % 3 === 0 ? "review" : "stable"} /></div><p className="mt-3 text-3xl font-bold">{[0, 18, 4, 7, 11, 2, 6, 3][i]}</p><p className="text-xs text-muted-foreground">Severity: {i % 3 === 0 ? "High" : i % 2 === 0 ? "Medium" : "Low"}</p><Button size="sm" variant="outline" className="mt-3 w-full" onClick={() => loadSamples(c)}>View Samples</Button></CardContent></Card>)}</div><Dialog open={sampleOpen} onOpenChange={setSampleOpen}><DialogContent className="max-w-3xl"><DialogHeader><DialogTitle>{sampleTitle}</DialogTitle><DialogDescription>Showing {sampleRows.length} loaded sample{sampleRows.length === 1 ? "" : "s"}. Each request is capped at {SAMPLE_PAGE_SIZE} records; load more only when needed.</DialogDescription></DialogHeader><Input value={sampleFilter} onChange={(event) => setSampleFilter(event.target.value)} placeholder="Filter loaded samples by key, source, or row data..." /><div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">Selected row: {selectedSampleKey || "none"}</div><div className="max-h-[420px] space-y-2 overflow-y-auto">{sampleLoading && !sampleRows.length ? <p className="py-8 text-center text-sm text-muted-foreground">Loading samples…</p> : filteredSampleRows.length ? filteredSampleRows.map(({ row, key, label }) => <button key={key} type="button" onClick={() => setSelectedSampleKey(key)} className={`w-full rounded-lg border p-3 text-left transition ${selectedSampleKey === key ? "border-primary bg-primary/10" : "border-border bg-muted/30 hover:bg-muted/60"}`}><div className="mb-2 flex flex-wrap items-center justify-between gap-2"><span className="break-all text-xs font-semibold text-foreground">{label}</span><Badge variant="outline" className="max-w-full break-all font-mono text-[10px]">{key}</Badge></div><pre className="whitespace-pre-wrap break-words text-xs text-foreground">{JSON.stringify(row, null, 2)}</pre></button>) : <p className="py-8 text-center text-sm text-muted-foreground">No loaded sample records found.</p>}{sampleLoading && sampleRows.length > 0 && <p className="py-3 text-center text-sm text-muted-foreground">Loading more samples…</p>}</div><DialogFooter><div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">{sampleHasMore ? `More records available after ${sampleRows.length} loaded samples.` : sampleRows.length ? "All available loaded pages are shown." : "No additional sample pages available."}</p><div className="flex gap-2"><Button variant="outline" onClick={() => setSampleOpen(false)}>Close</Button><Button onClick={() => loadSamples(sampleTitle, true)} disabled={sampleLoading || !sampleHasMore}>{sampleLoading && sampleRows.length ? "Loading…" : sampleHasMore ? "Load more" : "No more rows"}</Button></div></div></DialogFooter></DialogContent></Dialog></Shell>;
 }
 
 export function AdminEvidenceVault() {
