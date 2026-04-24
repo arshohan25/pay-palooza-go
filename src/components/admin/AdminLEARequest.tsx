@@ -1406,10 +1406,11 @@ export default function AdminLEARequest() {
                                         variant="outline"
                                         size="sm"
                                         className="h-7 text-xs"
-                                         disabled={loading || generating || reDownloadingId === h.id}
+                                          disabled={loading || generating || !!reDownloadingId}
                                          onClick={async (e) => {
                                           e.stopPropagation();
                                            setReDownloadingId(h.id);
+                                            setRedownloadPhase("loading");
                                            pendingRedownloadIdRef.current = h.id;
                                           setPhone(h.phone);
                                           setAuthority(h.authority);
@@ -1427,13 +1428,15 @@ export default function AdminLEARequest() {
                                            if (!ok) {
                                              pendingRedownloadIdRef.current = null;
                                              setReDownloadingId(null);
+                                              setRedownloadPhase("idle");
                                            } else {
-                                             toast.info("Data reloaded. Preparing PDF download...");
+                                              setRedownloadPhase("preparing");
+                                              toast.info("Data reloaded. Preparing PDF download...");
                                            }
                                         }}
                                       >
                                          {reDownloadingId === h.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
-                                         {reDownloadingId === h.id ? "Preparing..." : "Re-download"}
+                                          {getRedownloadLabel(h.id)}
                                       </Button>
                                       <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedHistoryId(null); }}>
                                         <X className="w-3.5 h-3.5" />
@@ -1450,7 +1453,15 @@ export default function AdminLEARequest() {
                                    <div><span className="text-muted-foreground">Issue Date:</span><br/><span className="font-medium">{h.issue_date}</span></div>
                                    <div><span className="text-muted-foreground">Report ID:</span><br/><span className="font-mono font-medium">{h.report_id}</span></div>
                                    <div><span className="text-muted-foreground">Download Status:</span><br/><Badge variant="outline" className="text-[10px] mt-0.5">Downloaded ✓</Badge></div>
+                                    {summary.page_count != null && <div><span className="text-muted-foreground">PDF Pages:</span><br/><span className="font-medium">{summary.page_count}</span></div>}
+                                    {summary.pagination_mode && <div><span className="text-muted-foreground">Pagination:</span><br/><span className="font-medium capitalize">{summary.pagination_mode}</span></div>}
                                  </div>
+                                  {summary.internal_note && (
+                                    <div className="rounded-md bg-background p-3 text-xs">
+                                      <p className="text-muted-foreground mb-1">Internal Manager Note:</p>
+                                      <p className="font-medium whitespace-pre-wrap">{summary.internal_note}</p>
+                                    </div>
+                                  )}
                                  {h.sections_included?.length > 0 && (
                                    <div>
                                      <p className="text-xs text-muted-foreground mb-1">Sections Included:</p>
