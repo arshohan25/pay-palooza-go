@@ -1096,9 +1096,9 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                 {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize" aria-pressed={deviceFrame === frame} aria-label={`Show ${frame} emulator frame`}>{frame}</Button>)}
               </div>
               {previewFeatureGroups && previewRoles.length > 1 ? (
-                <Tabs value={previewRoleTab} onValueChange={(value) => setPreviewRoleTab(value as AppRole)} className="space-y-4">
-                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-                    {previewRoles.map((role) => <TabsTrigger key={role} value={role}>{roleMeta[role].label}</TabsTrigger>)}
+                <Tabs value={previewRoleTab} onValueChange={(value) => setPreviewRoleTab(value as AppRole)} className="space-y-4" aria-label="Target app role screens">
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4" aria-label="Switch emulator app role">
+                    {previewRoles.map((role) => <TabsTrigger key={role} value={role} aria-label={`Show ${roleMeta[role].label} emulator screen`}>{roleMeta[role].label}</TabsTrigger>)}
                   </TabsList>
                   {previewRoles.map((role) => {
                     const meta = roleMeta[role];
@@ -1139,9 +1139,9 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                 <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">{bulkPreviewFeatures.length} preview candidates</Badge>
               </div>
               {bulkPreviewRoles.length > 1 ? (
-                <Tabs value={bulkPreviewRoleTab} onValueChange={(value) => setBulkPreviewRoleTab(value as AppRole)} className="space-y-4">
-                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-                    {bulkPreviewRoles.map((role) => <TabsTrigger key={role} value={role}>{roleMeta[role].label}</TabsTrigger>)}
+                <Tabs value={bulkPreviewRoleTab} onValueChange={(value) => setBulkPreviewRoleTab(value as AppRole)} className="space-y-4" aria-label="Target app role screens">
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4" aria-label="Switch emulator app role">
+                    {bulkPreviewRoles.map((role) => <TabsTrigger key={role} value={role} aria-label={`Show ${roleMeta[role].label} emulator screen`}>{roleMeta[role].label}</TabsTrigger>)}
                   </TabsList>
                   {bulkPreviewRoles.map((role) => {
                     const meta = roleMeta[role];
