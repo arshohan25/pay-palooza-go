@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import type { Json } from "@/integrations/supabase/types";
 
 type Visibility = "hidden" | "disabled" | "visible";
 type LaunchStage = "Planned" | "Admin Ready" | "App Ready" | "Live";
@@ -201,7 +202,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
       action,
       entity_type: "future_feature_toggle",
       entity_id: entityId,
-      details,
+      details: details as Json,
     }]).then();
   };
 
