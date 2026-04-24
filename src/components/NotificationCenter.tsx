@@ -20,7 +20,20 @@ const FLOW_FEATURES = new Set([
   "payment", "bank-transfer", "shop", "savings", "merchant-apply", "scan-pay", "kyc",
 ]);
 
-function getIcon(cat: string): { icon: LucideIcon; iconClass: string } {
+function getIcon(cat: string, fulfillmentStatus?: string): { icon: LucideIcon; iconClass: string } {
+  // Fulfillment-aware icons override the generic category icon
+  if (cat === "fulfillment" || fulfillmentStatus) {
+    switch (fulfillmentStatus) {
+      case "delivered":
+        return { icon: PackageCheck, iconClass: "text-emerald-600 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/30" };
+      case "partial":
+      case "partially_shipped":
+        return { icon: Package, iconClass: "text-amber-600 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30" };
+      case "shipped":
+      default:
+        return { icon: Truck, iconClass: "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30" };
+    }
+  }
   switch (cat) {
     case "transaction":
     case "payment":
@@ -45,6 +58,28 @@ function getIcon(cat: string): { icon: LucideIcon; iconClass: string } {
     default:
       return { icon: Bell, iconClass: "text-muted-foreground bg-muted" };
   }
+}
+
+type FulfillmentFilter = "all" | "fulfillment" | "shipped" | "partial" | "delivered" | "unread";
+
+const FULFILLMENT_TABS: { key: FulfillmentFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "unread", label: "Unread" },
+  { key: "fulfillment", label: "Orders" },
+  { key: "shipped", label: "Shipped" },
+  { key: "partial", label: "Partial" },
+  { key: "delivered", label: "Delivered" },
+];
+
+function isFulfillment(n: DbNotification): boolean {
+  if (n.category === "fulfillment") return true;
+  const m = n.metadata as any;
+  return !!(m?.fulfillment_status || m?.order_id || m?.tracking_number);
+}
+
+function getFulfillmentStatus(n: DbNotification): string | undefined {
+  const m = n.metadata as any;
+  return m?.fulfillment_status;
 }
 
 const RICH_CATEGORIES = ["promo", "promotion", "offer", "coupon", "cashback", "update"];
