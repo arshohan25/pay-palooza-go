@@ -324,10 +324,20 @@ const GiftCardsPage = () => {
                             <div className="flex items-start justify-between">
                               <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-80">GIFT CARD</span>
-                                <Badge variant={card.status === "active" ? "default" : "secondary"}
-                                  className={`text-[9px] h-4 px-1.5 ${card.status === "active" ? "bg-white/20 text-white border-white/30 backdrop-blur-sm" : ""}`}>
-                                  {card.status}
-                                </Badge>
+                                {(() => {
+                                  const expired = isExpired(card);
+                                  const label = expired ? "expired" : card.status;
+                                  const tone = expired
+                                    ? "bg-red-500/30 text-white border-red-300/40"
+                                    : card.status === "active"
+                                      ? "bg-white/20 text-white border-white/30"
+                                      : "bg-white/10 text-white/80 border-white/20";
+                                  return (
+                                    <Badge variant="secondary" className={`text-[9px] h-4 px-1.5 backdrop-blur-sm ${tone}`}>
+                                      {label}
+                                    </Badge>
+                                  );
+                                })()}
                               </div>
                               <img src="/icons/easypay-logo.webp" alt="EasyPay" className="h-6 object-contain brightness-0 invert" />
                             </div>
@@ -350,6 +360,12 @@ const GiftCardsPage = () => {
                                 <p className="text-[10px] opacity-60">{new Date(card.purchased_at).toLocaleDateString()}</p>
                               </div>
                               <div className="flex items-center gap-1.5">
+                                {card.status === "active" && !isExpired(card) && (
+                                  <motion.button whileTap={{ scale: 0.9 }} onClick={() => redeemCard(card)}
+                                    className="px-3 h-7 rounded-full bg-white text-foreground text-[11px] font-bold hover:bg-white/90 transition-colors shadow">
+                                    Redeem
+                                  </motion.button>
+                                )}
                                 <motion.button whileTap={{ scale: 0.85 }} onClick={() => copyCode(card.code)}
                                   className="p-2 rounded-full bg-white/15 hover:bg-white/25 transition-colors backdrop-blur-sm">
                                   <Copy className="w-3.5 h-3.5" />
