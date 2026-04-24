@@ -27,14 +27,6 @@ const STATUS_META: Record<string, { label: string; color: string; icon: React.El
   shipped: { label: "Shipped", color: "#2196F3", icon: Truck },
   out_for_delivery: { label: "Out for Delivery", color: "#FF5722", icon: Package },
   delivered: { label: "Delivered", color: "#43A047", icon: CircleCheck },
-const STATUS_FLOW = ["processing", "confirmed", "shipped", "out_for_delivery", "delivered"];
-const STATUS_META: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  processing: { label: "Processing", color: "#FF9800", icon: Clock },
-  confirmed: { label: "Confirmed", color: "#9C27B0", icon: CheckCircle2 },
-  partially_shipped: { label: "Partially Shipped", color: "#0288D1", icon: Truck },
-  shipped: { label: "Shipped", color: "#2196F3", icon: Truck },
-  out_for_delivery: { label: "Out for Delivery", color: "#FF5722", icon: Package },
-  delivered: { label: "Delivered", color: "#43A047", icon: CircleCheck },
   cancelled: { label: "Cancelled", color: "#9E9E9E", icon: X },
 };
 
