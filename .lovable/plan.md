@@ -1,331 +1,221 @@
 
-## Revised Plan: Advance for Future Preview, Governance, and Safety Upgrade
+## Fix Advance for Future previews so features show as Android-style app emulators
 
 ### Goal
-Upgrade `AdminAdvanceForFuture` with the exact behavior requested:
+Update `AdminAdvanceForFuture` so every **Preview** action shows the selected future features inside a realistic app-screen emulator instead of a generic confirmation card like the screenshot.
 
-- Device frame switcher: **Mobile / Tablet / Desktop**
-- Preview button opens a **popup Android-emulator-style app screen**
-- Popup preview shows the related linked app experience: **User / Merchant / Agent / Admin**
-- Per-feature **Launch / Preview / Hide** buttons for all 15 items with confirmation dialogs
-- Detailed audit log view for bulk launch actions
-- Dependency and readiness checklist inside roadmap cards
-- Analytics panel for phase/visibility/business impact
-- Safety verification that hidden features do not render user/merchant/agent entry points
+This applies to:
+
+- Per-feature **Preview** buttons
+- **Preview Top 7**
+- **Preview Phase 1**
+- **Preview Phase 2**
+- **Preview Phase 3**
+- User, Merchant, Agent, and Admin linked app surfaces
 
 ---
 
-## 1. Device Frame Switcher for App-Style Preview
+## What will be fixed
 
-Add a segmented control in `AdminAdvanceForFuture.tsx`:
+### 1. Replace plain Preview confirmation with emulator preview popup
+The current bulk preview confirmation is a standard dialog listing affected features, status, targets, and keys. It does not look like an app emulator.
+
+I will change the Preview flow so clicking any preview button opens a dedicated emulator popup:
 
 ```text
-Preview Device:  Mobile | Tablet | Desktop
+Preview Phase 2 — Revenue and Ecosystem Growth
+┌──────────────── Android emulator frame ────────────────┐
+│ status bar                                               │
+│ EasyPay User / Merchant / Agent / Admin app mock screen  │
+│ real feature cards rendered in app-style layout          │
+│ bottom Android navigation bar                            │
+└─────────────────────────────────────────────────────────┘
+
+Cancel | Enable Admin Preview
 ```
 
-The selected frame controls the preview layout sizes:
+The plain confirmation dialog will remain only for:
 
-- **Mobile**: narrow phone frame, Android-emulator style
-- **Tablet**: wider tablet frame with 2-column app content
-- **Desktop**: full dashboard-style preview frame
-
-This device setting will be used for:
-
-- The existing Original App Preview section
-- The new popup preview opened from each feature’s **Preview** button
+- Launch
+- Hide / Rollback
 
 ---
 
-## 2. Preview Button Opens Popup App Emulator
+### 2. Show all selected features inside the emulator before enabling preview
+Right now the persistent “Original App Preview” only shows features already set to `Admin Preview` or `Live`. That is correct for the dashboard section, but it makes Preview actions feel empty when features are still hidden.
 
-Change the per-feature **Preview** action behavior.
+I will add a separate preview-popup mode:
 
-Current behavior:
-- Preview button directly sets feature visibility to `disabled`.
+- Dashboard “Original App Preview”:
+  - Shows only `disabled` and `visible`
+  - Keeps hidden features excluded
 
-New behavior:
-- Clicking **Preview** first opens a popup dialog.
-- The popup shows how that feature will look inside the related app.
-- The popup uses an Android-emulator-style device frame inside the admin dashboard.
-- The admin can then confirm **Enable Admin Preview** from the popup.
+- Preview popup:
+  - Shows the clicked feature, Top 7 group, or phase group even if currently hidden
+  - Labels them as “Preview candidate”
+  - Lets the admin inspect how they will look before confirming
 
-Popup content will be role-aware:
+This keeps hidden features safe while making the Preview button useful.
 
-### User App Popup Preview
-Used for:
-- AI Financial Copilot
-- Real-Time Scam Shield
-- EasyPay Trust Score
-- Smart Rewards & Offer Engine
-- Predictive Loan Eligibility
-- Voice & Bengali Assistant
-- Risk-Based Dynamic Limits
-- Identity Wallet where applicable
+---
 
-Style:
-- Wallet-home mockup
-- Balance card style
-- Quick-action-like tiles
-- Glass cards, `rounded-[19px]`, `gradient-hero`
+### 3. Create a stronger Android emulator frame
+Update the current `AppEmulator` component so it looks more like an Android app screen:
 
-### Merchant App Popup Preview
-Used for:
-- Merchant Growth OS
-- Smart Rewards & Offer Engine
-- Bangla QR / Partner API Ecosystem
-- Identity Wallet where applicable
+- Rounded phone/tablet/desktop device shell
+- Top status bar with time, signal, Wi-Fi, battery indicators
+- App header inside the frame
+- Role-specific screen content
+- Bottom Android navigation pill / navigation bar
+- Dark glassmorphism styling matching EasyPay
+- `rounded-[19px]`, `gradient-hero`, soft bokeh, glass cards, compact tiles
 
-Style:
-- Merchant dashboard mockup
-- Sales, orders, campaign, QR/API readiness cards
+Device modes:
 
-### Agent App Popup Preview
-Used for:
-- Agent Liquidity Intelligence
-- Real-Time Scam Shield
-- Voice & Bengali Assistant
-- Identity Wallet where applicable
+- **Mobile**: tall phone emulator
+- **Tablet**: wider tablet emulator with denser layout
+- **Desktop**: dashboard-style app preview frame
 
-Style:
-- Agent operations mockup
-- Float, cash-in, territory, risk-check cards
+---
 
-### Admin App Popup Preview
-Used for:
-- Compliance Command Center
-- AI Fraud Case Investigator
-- Open Finance Data Hub
-- Predictive Support Automation
-- Dynamic Risk Limits where applicable
+### 4. Render role-specific app layouts, not generic tiles only
+The popup will map each selected feature to its linked app type and show it in the correct mock screen.
 
-Style:
-- Admin intelligence mockup
-- Compliance, fraud, support, open-finance cards
+#### User app emulator
+For user-linked features:
 
-The popup will clearly show:
+- Wallet balance-style hero
+- Quick-action style feature tiles
+- Scam Shield warning card
+- AI Copilot insight card
+- Trust Score / Loan Eligibility / Rewards cards
+- Bengali assistant floating CTA when relevant
 
-- Feature name
-- Toggle key
-- Target app
-- Current visibility
-- Device frame
-- Preview mockup
+#### Merchant app emulator
+For merchant-linked features:
+
+- Merchant sales hero
+- Growth OS analytics card
+- Campaign / Smart Rewards card
+- QR/API readiness card
+- Store/order style mini metrics
+
+#### Agent app emulator
+For agent/distributor-linked features:
+
+- Float balance hero
+- Liquidity intelligence card
+- Territory risk / restock suggestion
+- Scam Shield risk check
+- Voice assistant helper tile
+
+#### Admin app emulator
+For admin-linked features:
+
+- Risk/compliance command screen
+- Fraud investigator card
+- Open Finance governance card
+- Predictive support queue card
+
+---
+
+### 5. Handle multi-target features correctly
+Some features target more than one app, for example:
+
+- `future_scam_shield` → User + Agent
+- `future_identity_wallet` → User + Merchant + Agent
+- `future_smart_rewards_engine` → User + Merchant
+- `future_dynamic_risk_limits` → User + Admin
+
+I will add a target resolver so the emulator popup can show the feature in every relevant linked app screen, not just the first detected target.
+
+Example:
+
+```text
+Preview: Real-Time Scam Shield
+
+Tabs/sections:
+- User App Emulator
+- Agent App Emulator
+```
+
+For bulk preview, it will group selected features by app type and show all relevant emulator screens.
+
+---
+
+### 6. Keep Launch and Hide confirmations consistent
+Launch and Hide will still use confirmation dialogs, but Preview will become emulator-first.
+
+Flow will be:
+
+#### Preview
+```text
+Click Preview
+→ Android emulator popup opens
+→ Admin reviews app-style screen
+→ Click Enable Admin Preview
+→ Confirmation/update sets visibility = disabled
+```
+
+#### Launch
+```text
+Click Launch
+→ Confirmation dialog opens
+→ Sets visibility = visible
+```
+
+#### Hide / Rollback
+```text
+Click Hide/Rollback
+→ Confirmation dialog opens
+→ Sets visibility = hidden
+```
+
+---
+
+### 7. Update bulk preview behavior
+For bulk actions:
+
+- **Preview Top 7**
+- **Preview Phase 1**
+- **Preview Phase 2**
+- **Preview Phase 3**
+
+I will replace the current plain bulk confirmation popup with a bulk emulator preview popup.
+
+The popup will show:
+
+- Title and affected count
+- Device switcher
+- Emulator screens grouped by app role
+- Feature chips/keys
+- Current visibility summary
 - Confirm button: **Enable Admin Preview**
-- Cancel button
+
+Only after confirming will it bulk-update those features to `disabled`.
 
 ---
 
-## 3. Consistent Confirmation Dialogs for Each Feature
+### 8. Preserve safety rules
+No user/merchant/agent app routes will be changed.
 
-For all 15 catalog items, replace direct visibility updates with confirmation flows.
+Safety behavior remains:
 
-Each feature will have:
-
-- **Preview**
-  - Opens popup app emulator first
-  - Then confirms setting visibility to `disabled`
-
-- **Launch**
-  - Opens confirmation dialog
-  - Sets visibility to `visible`
-  - Shows warning that related app entry points may appear when wired to live flags
-
-- **Hide / Rollback**
-  - Opens confirmation dialog
-  - Sets visibility to `hidden`
-
-Confirmation dialogs will include:
-
-- Feature title
-- Toggle key
-- Current visibility
-- New visibility
-- Phase
-- Target app
-- Impact
-- Complexity
-- Readiness percentage
-- Launch stage after change
-
-All actions will continue writing audit logs.
+- Hidden features do not render in real user/merchant/agent UI
+- Hidden features do not appear in the persistent Original App Preview
+- Hidden features may appear only inside admin-only emulator popups for review
+- Admin Preview features remain admin-only unless future real app wiring uses `isLive(...)`
+- Live app entry points must still be gated by `visibility === "visible"` / `isLive(...)`
 
 ---
 
-## 4. Detailed Bulk Launch Audit Log View
-
-Add a new section:
-
-```text
-Launch Audit Log
-```
-
-It will query `audit_logs` for:
-
-- `future_feature_bulk_visibility_changed`
-- `future_feature_visibility_changed`
-
-The view will show:
-
-- Action type
-- Actor/admin ID
-- Bulk group: Top 7, Phase 1, Phase 2, Phase 3
-- Feature keys affected
-- Previous visibility values
-- New visibility
-- Affected count
-- Launch stage
-- Timestamp
-
-Layout:
-
-- Mobile: stacked timeline cards
-- Desktop: compact table/card hybrid
-- Long feature key lists shown inside expandable/scrollable detail areas
-- Add a refresh button
-
-No database schema change is needed because `audit_logs` already stores `details`.
-
----
-
-## 5. Dependency and Readiness Checklist in Roadmap Cards
-
-Enhance each Phase 1 / Phase 2 / Phase 3 roadmap card.
-
-Each feature inside a phase will show compact checklist groups:
-
-```text
-Data Sources
-- Transactions
-- KYC
-- Orders
-- Audit logs
-- Support history
-- Agent float data
-
-APIs / Backend
-- Toggle seeded
-- Audit logging active
-- Linked backend/RPC/admin module ready where applicable
-
-UI Entry Points
-- Admin preview ready
-- User/Merchant/Agent entry point dormant
-- Live rendering must use visibility === "visible"
-```
-
-Implementation approach:
-
-- Extend each `futureFeatures` item with structured checklist metadata:
-  - `readinessChecklist.dataSources`
-  - `readinessChecklist.apis`
-  - `readinessChecklist.uiEntryPoints`
-- Render this checklist inside roadmap cards in a compact accordion-like or nested card layout.
-- Keep the roadmap readable by showing concise checklist rows instead of large blocks.
-
----
-
-## 6. Analytics Panel
-
-Add an `Advanced Feature Analytics` panel near the summary counters.
-
-It will show:
-
-- Total recommendations: 15
-- Live count
-- Admin Preview count
-- Hidden count
-- Top 7 visibility split
-- Phase 1 / Phase 2 / Phase 3 enablement progress
-- Estimated business impact by phase
-- High-impact features live / preview / hidden
-- Complexity distribution
-
-Estimated impact formula:
-
-```text
-High impact = 3 points
-Medium impact = 2 points
-Low impact = 1 point
-
-Live = 100% of points
-Admin Preview = 50% of points
-Hidden = 0% of points
-```
-
-This produces planning-only metrics such as:
-
-```text
-Phase 1 estimated impact readiness: 62%
-Phase 2 estimated impact readiness: 34%
-Phase 3 estimated impact readiness: 18%
-```
-
-No customer-facing behavior depends on these analytics.
-
----
-
-## 7. Hidden Feature Safety Verification
-
-Keep the user/merchant/agent routes safe.
-
-Verified current pattern:
-- `Index.tsx`
-- `LoanPage.tsx`
-- `MerchantDashboard.tsx`
-- `AgentDashboard.tsx`
-
-They currently only reference future feature visibility with `void` and do not render visible UI entry points.
-
-Add a safety panel inside `AdminAdvanceForFuture`:
-
-```text
-Visibility Safety Check
-```
-
-It will show:
-
-- Hidden features are excluded from app-style previews
-- Admin Preview features appear only inside admin preview/emulator popup
-- Live features are eligible for future app entry points
-- User / merchant / agent pages must use `isLive(...)` before rendering future UI
-- Current user / merchant / agent app routes do not render hidden future feature entry points
-
-Implementation rule:
-- Hidden features must not appear in emulator previews.
-- Disabled/Admin Preview features appear only in admin preview areas.
-- User/Merchant/Agent pages remain unchanged unless future UI is explicitly gated by `isLive(featureKey)`.
-
----
-
-## 8. Files to Update
-
-Primary file:
+## Main file to update
 
 - `src/components/admin/AdminAdvanceForFuture.tsx`
 
-Verification only:
-
-- `src/hooks/use-future-features.ts`
-- `src/pages/Index.tsx`
-- `src/pages/LoanPage.tsx`
-- `src/pages/MerchantDashboard.tsx`
-- `src/pages/AgentDashboard.tsx`
-
-No database schema change is required.
+No database schema changes are needed.
 
 ---
 
-## 9. Expected Result
-
-After implementation, the admin dashboard will have:
-
-- Mobile/tablet/desktop device frame switcher
-- Android-emulator-style popup preview when clicking each feature’s **Preview**
-- Role-specific previews for User, Merchant, Agent, and Admin
-- Per-feature Preview / Launch / Hide controls with confirmations
-- Detailed bulk and per-feature audit log view
-- Dependency/readiness checklist in roadmap cards
-- Analytics panel for enablement and business impact
-- Safety verification that hidden features are not exposed to user/merchant/agent UI
-
-The 15 advanced recommendations remain controlled by feature flags, and nothing appears in user/merchant/agent apps unless explicitly toggled live and wired through `isLive(...)`.
+## Expected result
+After the fix, clicking **Preview** will no longer show a plain dialog like the screenshot. It will open an Android-emulator-style popup showing exactly how the selected feature, phase, or Top 7 set would appear inside the linked EasyPay User, Merchant, Agent, or Admin app screen before enabling Admin Preview.
