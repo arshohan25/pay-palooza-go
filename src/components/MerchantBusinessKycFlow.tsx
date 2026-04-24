@@ -47,9 +47,14 @@ export default function MerchantBusinessKycFlow({ open, onOpenChange }: Props) {
       setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
-      const { data: profile } = await supabase.from("profiles").select("kyc_status").eq("id", session.user.id).maybeSingle();
-      setUserKycOk((profile?.kyc_status === "verified"));
+      const [{ data: profile }, { data: kyc }] = await Promise.all([
+        supabase.from("profiles").select("kyc_exempt").eq("user_id", session.user.id).maybeSingle(),
+        supabase.from("kyc_verifications").select("status").eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+      setUserKycOk(!!profile?.kyc_exempt || kyc?.status === "verified");
       const { data: m } = await supabase.from("merchants").select("*").eq("user_id", session.user.id).maybeSingle();
+      setExisting(m);
+      setLoading(false);
       setExisting(m);
       setLoading(false);
     })();
