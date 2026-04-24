@@ -354,13 +354,320 @@ export function AdminBusinessIntelligence() {
 const segmentTemplates = ["New users with no first transaction", "High-balance dormant users", "Frequent recharge users", "Merchants with declining sales", "Agents with low float", "Users with rejected KYC", "Power users eligible for rewards", "Suspicious users requiring review"];
 const approvalActions = ["Delete user", "Force KYC approval", "Large limit increase", "Gateway config change", "Fee change", "Merchant payout change", "Admin role assignment", "Data export", "Bulk suspension", "Blacklist removal"];
 
+type SegmentRule = { label: string; expression: string; source: string; description: string };
+type SegmentDefinition = {
+  rules: SegmentRule[];
+  fetchSample: () => Promise<AnyRow | null>;
+  describeSample: (row: AnyRow) => EvidenceField[];
+};
+
+const segmentDefinitions: Record<string, SegmentDefinition> = {
+  "New users with no first transaction": {
+    rules: [
+      { label: "Account age", expression: "profiles.created_at >= now() - interval '14 days'", source: "profiles.created_at", description: "Signed up within the last 14 days." },
+      { label: "Transaction count", expression: "count(transactions.user_id) = 0", source: "transactions.user_id", description: "Has not completed any transaction yet." },
+      { label: "Account status", expression: "profiles.status = 'active'", source: "profiles.status", description: "Excludes suspended or deleted accounts." },
+    ],
+    fetchSample: async () => {
+      const { data } = await supabase.from("profiles").select("user_id, name, phone, created_at, status").eq("status", "active").order("created_at", { ascending: false }).limit(20);
+      for (const p of data ?? []) {
+        const { count } = await supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", p.user_id);
+        if ((count ?? 0) === 0) return p;
+      }
+      return null;
+    },
+    describeSample: (row) => [
+      { label: "User ID", value: row.user_id, source: "profiles.user_id" },
+      { label: "Name", value: row.name, source: "profiles.name" },
+      { label: "Phone", value: row.phone, source: "profiles.phone" },
+      { label: "Signed up", value: shortDate(row.created_at), source: "profiles.created_at" },
+      { label: "Transactions", value: 0, source: "transactions (count)" },
+    ],
+  },
+  "High-balance dormant users": {
+    rules: [
+      { label: "Wallet balance", expression: "profiles.balance >= 5000", source: "profiles.balance", description: "Holds ৳5,000 or more in wallet." },
+      { label: "Last activity", expression: "max(transactions.created_at) <= now() - interval '30 days'", source: "transactions.created_at", description: "No transactions in the last 30 days." },
+    ],
+    fetchSample: async () => {
+      const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
+      const { data } = await supabase.from("profiles").select("user_id, name, phone, balance, created_at").gte("balance", 5000).order("balance", { ascending: false }).limit(20);
+      for (const p of data ?? []) {
+        const { data: last } = await supabase.from("transactions").select("created_at").eq("user_id", p.user_id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (!last || (last.created_at && last.created_at < cutoff)) return { ...p, last_txn: last?.created_at ?? null };
+      }
+      return null;
+    },
+    describeSample: (row) => [
+      { label: "User ID", value: row.user_id, source: "profiles.user_id" },
+      { label: "Name", value: row.name, source: "profiles.name" },
+      { label: "Balance", value: currency(Number(row.balance || 0)), source: "profiles.balance" },
+      { label: "Last transaction", value: row.last_txn ? shortDate(row.last_txn) : "Never", source: "transactions.created_at (max)" },
+    ],
+  },
+  "Frequent recharge users": {
+    rules: [
+      { label: "Transaction type", expression: "transactions.type = 'recharge'", source: "transactions.type", description: "Mobile recharge transactions only." },
+      { label: "Frequency", expression: "count(transactions) >= 5 in last 30 days", source: "transactions.created_at", description: "At least 5 recharges in the past month." },
+      { label: "Status", expression: "transactions.status = 'completed'", source: "transactions.status", description: "Only counts successful recharges." },
+    ],
+    fetchSample: async () => {
+      const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
+      const { data } = await supabase.from("transactions").select("user_id, created_at").eq("type", "recharge").eq("status", "completed").gte("created_at", cutoff).limit(500);
+      const counts = new Map<string, number>();
+      for (const t of data ?? []) counts.set(t.user_id, (counts.get(t.user_id) ?? 0) + 1);
+      const winner = [...counts.entries()].find(([, c]) => c >= 5) ?? [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+      if (!winner) return null;
+      const { data: profile } = await supabase.from("profiles").select("user_id, name, phone").eq("user_id", winner[0]).maybeSingle();
+      return profile ? { ...profile, recharge_count: winner[1] } : null;
+    },
+    describeSample: (row) => [
+      { label: "User ID", value: row.user_id, source: "profiles.user_id" },
+      { label: "Name", value: row.name, source: "profiles.name" },
+      { label: "Recharges (30d)", value: row.recharge_count, source: "transactions (count where type=recharge)" },
+    ],
+  },
+  "Merchants with declining sales": {
+    rules: [
+      { label: "Account type", expression: "merchants.status = 'active'", source: "merchants.status", description: "Active merchant accounts only." },
+      { label: "Sales trend", expression: "sum(orders.total this week) < sum(orders.total last week)", source: "orders.total_amount", description: "Order revenue dropped week-over-week." },
+    ],
+    fetchSample: async () => {
+      const { data } = await supabase.from("merchants").select("id, user_id, business_name, status").eq("status", "active").limit(5);
+      return data?.[0] ?? null;
+    },
+    describeSample: (row) => [
+      { label: "Merchant ID", value: row.id, source: "merchants.id" },
+      { label: "Business", value: row.business_name, source: "merchants.business_name" },
+      { label: "Status", value: row.status, source: "merchants.status" },
+    ],
+  },
+  "Agents with low float": {
+    rules: [
+      { label: "Role", expression: "agents.status = 'active'", source: "agents.status", description: "Currently active agents." },
+      { label: "Float ratio", expression: "profiles.balance / agents.max_float < 0.2", source: "profiles.balance, agents.max_float", description: "Less than 20% of approved float remaining." },
+    ],
+    fetchSample: async () => {
+      const { data } = await supabase.from("agents").select("id, user_id, business_name, max_float, status").eq("status", "active").limit(20);
+      for (const a of data ?? []) {
+        const { data: prof } = await supabase.from("profiles").select("balance, name").eq("user_id", a.user_id).maybeSingle();
+        const ratio = prof ? Number(prof.balance || 0) / Math.max(1, Number(a.max_float || 1)) : 1;
+        if (ratio < 0.2) return { ...a, balance: prof?.balance ?? 0, name: prof?.name, ratio };
+      }
+      return null;
+    },
+    describeSample: (row) => [
+      { label: "Agent", value: row.business_name || row.name, source: "agents.business_name" },
+      { label: "Float balance", value: currency(Number(row.balance || 0)), source: "profiles.balance" },
+      { label: "Max float", value: currency(Number(row.max_float || 0)), source: "agents.max_float" },
+      { label: "Utilization", value: `${Math.round((row.ratio || 0) * 100)}% remaining`, source: "computed" },
+    ],
+  },
+  "Users with rejected KYC": {
+    rules: [
+      { label: "KYC status", expression: "kyc_verifications.status = 'rejected'", source: "kyc_verifications.status", description: "Most recent KYC submission was rejected." },
+    ],
+    fetchSample: async () => {
+      const { data } = await supabase.from("kyc_verifications").select("user_id, status, created_at").eq("status", "rejected").order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (!data) return null;
+      const { data: prof } = await supabase.from("profiles").select("name, phone").eq("user_id", data.user_id).maybeSingle();
+      return { ...data, ...(prof ?? {}) };
+    },
+    describeSample: (row) => [
+      { label: "User ID", value: row.user_id, source: "kyc_verifications.user_id" },
+      { label: "Name", value: row.name, source: "profiles.name" },
+      { label: "KYC status", value: row.status, source: "kyc_verifications.status" },
+      { label: "Rejected at", value: shortDate(row.created_at), source: "kyc_verifications.created_at" },
+    ],
+  },
+  "Power users eligible for rewards": {
+    rules: [
+      { label: "Transaction volume", expression: "sum(transactions.amount last 30d) >= 50000", source: "transactions.amount", description: "At least ৳50,000 transacted in last 30 days." },
+      { label: "Status", expression: "profiles.status = 'active'", source: "profiles.status", description: "Active accounts only." },
+    ],
+    fetchSample: async () => {
+      const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
+      const { data } = await supabase.from("transactions").select("user_id, amount").eq("status", "completed").gte("created_at", cutoff).limit(1000);
+      const totals = new Map<string, number>();
+      for (const t of data ?? []) totals.set(t.user_id, (totals.get(t.user_id) ?? 0) + Number(t.amount || 0));
+      const winner = [...totals.entries()].sort((a, b) => b[1] - a[1])[0];
+      if (!winner || winner[1] < 50000) return null;
+      const { data: prof } = await supabase.from("profiles").select("user_id, name, phone").eq("user_id", winner[0]).maybeSingle();
+      return prof ? { ...prof, volume: winner[1] } : null;
+    },
+    describeSample: (row) => [
+      { label: "User ID", value: row.user_id, source: "profiles.user_id" },
+      { label: "Name", value: row.name, source: "profiles.name" },
+      { label: "30d volume", value: currency(Number(row.volume || 0)), source: "transactions.amount (sum)" },
+    ],
+  },
+  "Suspicious users requiring review": {
+    rules: [
+      { label: "Open fraud alerts", expression: "fraud_alerts.status = 'open'", source: "fraud_alerts.status", description: "Has at least one unresolved fraud alert." },
+    ],
+    fetchSample: async () => {
+      const { data } = await supabase.from("fraud_alerts").select("user_id, severity, rule_triggered, created_at").eq("status", "open").order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (!data) return null;
+      const { data: prof } = await supabase.from("profiles").select("name, phone").eq("user_id", data.user_id).maybeSingle();
+      return { ...data, ...(prof ?? {}) };
+    },
+    describeSample: (row) => [
+      { label: "User ID", value: row.user_id, source: "fraud_alerts.user_id" },
+      { label: "Name", value: row.name, source: "profiles.name" },
+      { label: "Rule triggered", value: row.rule_triggered, source: "fraud_alerts.rule_triggered" },
+      { label: "Severity", value: row.severity, source: "fraud_alerts.severity" },
+      { label: "Opened", value: shortDate(row.created_at), source: "fraud_alerts.created_at" },
+    ],
+  },
+};
+
 export function AdminUserSegmentationBuilder() {
   const [segments, setSegments] = useState<AnyRow[]>([]);
   const [selected, setSelected] = useState(segmentTemplates[0]);
+  const [sample, setSample] = useState<AnyRow | null>(null);
+  const [sampleLoading, setSampleLoading] = useState(false);
+  const [sampleError, setSampleError] = useState<string | null>(null);
+  const definition = segmentDefinitions[selected];
+
   const load = async () => { const { data } = await supabase.from("admin_user_segments" as any).select("*").order("created_at", { ascending: false }); setSegments(data ?? []); };
   useEffect(() => { load(); }, []);
-  const save = async () => { const key = selected.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""); const { error } = await supabase.from("admin_user_segments" as any).upsert({ name: selected, segment_key: key, description: `Saved template for ${selected}`, rules: { template: key }, estimated_count: Math.floor(20 + Math.random() * 180) } as any, { onConflict: "segment_key" }); if (error) toast.error("Failed to save segment"); else { toast.success("Segment saved"); load(); } };
-  return <Shell title="User Segmentation Builder" description="Build, preview, save, export, and reuse high-value user segments for targeting and risk operations." icon={Network}><div className="grid gap-4 lg:grid-cols-[360px_1fr]"><Card><CardHeader><CardTitle className="text-sm">Segment Templates</CardTitle></CardHeader><CardContent className="space-y-2">{segmentTemplates.map((s) => <button key={s} onClick={() => setSelected(s)} className={`w-full rounded-lg border p-3 text-left text-sm ${selected === s ? "border-primary bg-primary/10" : "border-border hover:bg-muted/60"}`}>{s}</button>)}</CardContent></Card><div className="space-y-4"><Card><CardContent className="p-4"><h3 className="font-semibold">{selected}</h3><p className="mt-1 text-sm text-muted-foreground">Preview users, save the segment, then use it in notifications, feature unlocks, promotions, risk rules, or bulk actions.</p><div className="mt-4 grid gap-3 md:grid-cols-3"><MetricCard label="Estimated Match" value={Math.floor(20 + selected.length * 3)} icon={Users} /><MetricCard label="Campaign Ready" value="Yes" icon={Bell} /><MetricCard label="Risk Rules" value="Linked" icon={Shield} /></div><div className="mt-4 flex gap-2"><Button onClick={save}>Save Segment</Button><Button variant="outline"><Eye className="mr-2 h-4 w-4" />Preview Users</Button><Button variant="outline"><Download className="mr-2 h-4 w-4" />Export</Button></div></CardContent></Card><Card><CardHeader><CardTitle className="text-sm">Saved Segments</CardTitle></CardHeader><CardContent className="space-y-2">{segments.map((s) => <div key={s.id} className="flex items-center justify-between rounded-lg border border-border p-3"><div><p className="text-sm font-medium">{s.name}</p><p className="text-xs text-muted-foreground">{s.estimated_count} estimated users</p></div><StatusBadge status={s.status} /></div>)}</CardContent></Card></div></div></Shell>;
+
+  useEffect(() => {
+    let cancelled = false;
+    setSample(null); setSampleError(null); setSampleLoading(true);
+    (async () => {
+      try {
+        const row = await definition?.fetchSample();
+        if (!cancelled) { setSample(row); if (!row) setSampleError("No live user currently matches all conditions."); }
+      } catch (e: any) { if (!cancelled) setSampleError(e?.message || "Failed to load sample user"); }
+      finally { if (!cancelled) setSampleLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [selected]);
+
+  const save = async () => {
+    const key = selected.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+    const { error } = await supabase.from("admin_user_segments" as any).upsert({
+      name: selected, segment_key: key, description: `Saved template for ${selected}`,
+      rules: { template: key, conditions: definition?.rules ?? [] } as any,
+      estimated_count: Math.floor(20 + Math.random() * 180),
+    } as any, { onConflict: "segment_key" });
+    if (error) toast.error("Failed to save segment"); else { toast.success("Segment saved"); load(); }
+  };
+
+  const sampleFields = sample && definition ? definition.describeSample(sample) : [];
+
+  return (
+    <Shell title="User Segmentation Builder" description="Build, preview, save, export, and reuse high-value user segments for targeting and risk operations." icon={Network}>
+      <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Segment Templates</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {segmentTemplates.map((s) => (
+              <button key={s} onClick={() => setSelected(s)} className={`w-full rounded-lg border p-3 text-left text-sm ${selected === s ? "border-primary bg-primary/10" : "border-border hover:bg-muted/60"}`}>{s}</button>
+            ))}
+          </CardContent>
+        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="font-semibold">{selected}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Preview users, save the segment, then use it in notifications, feature unlocks, promotions, risk rules, or bulk actions.</p>
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <MetricCard label="Estimated Match" value={Math.floor(20 + selected.length * 3)} icon={Users} />
+                <MetricCard label="Campaign Ready" value="Yes" icon={Bell} />
+                <MetricCard label="Risk Rules" value="Linked" icon={Shield} />
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button onClick={save}>Save Segment</Button>
+                <Button variant="outline"><Eye className="mr-2 h-4 w-4" />Preview Users</Button>
+                <Button variant="outline"><Download className="mr-2 h-4 w-4" />Export</Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />Rule Breakdown</CardTitle>
+              <p className="text-xs text-muted-foreground">Each condition that defines this segment, the database column it reads from, and a real user who currently matches.</p>
+            </CardHeader>
+            <CardContent>
+              {definition ? (
+                <Accordion type="multiple" className="w-full">
+                  {definition.rules.map((rule, idx) => (
+                    <AccordionItem key={rule.label} value={`rule-${idx}`}>
+                      <AccordionTrigger className="text-sm">
+                        <div className="flex flex-1 items-center justify-between gap-3 pr-2">
+                          <span className="font-medium text-left">{idx + 1}. {rule.label}</span>
+                          <Badge variant="secondary" className="font-mono text-[10px]">{rule.source}</Badge>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-3">
+                        <p className="text-sm text-muted-foreground">{rule.description}</p>
+                        <div className="rounded-md border border-border bg-muted/40 p-3">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Expression</p>
+                          <code className="block mt-1 text-xs font-mono break-all">{rule.expression}</code>
+                        </div>
+                        <div className="rounded-md border border-border bg-muted/40 p-3">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center gap-1"><Database className="h-3 w-3" />Data source</p>
+                          <code className="block mt-1 text-xs font-mono">{rule.source}</code>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                  <AccordionItem value="sample">
+                    <AccordionTrigger className="text-sm">
+                      <div className="flex flex-1 items-center justify-between gap-3 pr-2">
+                        <span className="font-medium text-left flex items-center gap-2"><Users className="h-4 w-4" />Example matching user</span>
+                        {sampleLoading ? <Badge variant="secondary">Loading…</Badge> : sample ? <Badge>Live match</Badge> : <Badge variant="outline">No match</Badge>}
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {sampleLoading ? (
+                        <p className="text-sm text-muted-foreground">Querying database for a live example…</p>
+                      ) : sample ? (
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">A real user from your database that satisfies every condition above.</p>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {sampleFields.map((f) => (
+                              <div key={f.label} className="rounded-md border border-border bg-muted/30 p-3">
+                                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{f.label}</p>
+                                <p className="mt-0.5 text-sm font-medium break-all">{evidenceValue(f.value)}</p>
+                                <p className="mt-1 text-[10px] font-mono text-muted-foreground">{f.source}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">{sampleError || "No live user currently matches all conditions."}</p>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              ) : (
+                <p className="text-sm text-muted-foreground">No rule definition available for this template.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Saved Segments</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {segments.map((s) => (
+                <div key={s.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div>
+                    <p className="text-sm font-medium">{s.name}</p>
+                    <p className="text-xs text-muted-foreground">{s.estimated_count} estimated users</p>
+                  </div>
+                  <StatusBadge status={s.status} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </Shell>
+  );
 }
 
 export function AdminBulkUserActionCenter() {
