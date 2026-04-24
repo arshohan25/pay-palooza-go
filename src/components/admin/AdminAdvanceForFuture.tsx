@@ -1012,6 +1012,62 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!previewFeature} onOpenChange={(open) => !open && setPreviewFeature(null)}>
+        <DialogContent className="max-h-[92vh] max-w-5xl overflow-auto">
+          <DialogHeader>
+            <DialogTitle>{previewFeature?.title} app emulator</DialogTitle>
+            <DialogDescription>Admin-only popup preview for the linked {previewFeature?.target} surface.</DialogDescription>
+          </DialogHeader>
+          {previewFeature && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize">{frame}</Button>)}
+              </div>
+              <AppEmulator title={previewFeature.title} role={previewFeature.target} features={[previewFeature]} hero={previewFeature.capabilities[0]} icon={previewFeature.icon} />
+              <div className="grid gap-2 text-xs sm:grid-cols-4">
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Current</p><p className="font-semibold">{visibilityCopy[getVisibility(previewFeature.key)].label}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">New</p><p className="font-semibold">Admin Preview</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Phase</p><p className="font-semibold">Phase {previewFeature.phase}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Readiness</p><p className="font-semibold">{previewFeature.readiness}%</p></div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewFeature(null)}>Cancel</Button>
+            <Button onClick={() => { if (previewFeature) setFeaturePending({ feature: previewFeature, visibility: "disabled" }); setPreviewFeature(null); }}>Enable Admin Preview</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!featurePending} onOpenChange={(open) => !open && setFeaturePending(null)}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{featurePending ? `${visibilityCopy[featurePending.visibility].label}: ${featurePending.feature.title}` : "Confirm feature action"}</AlertDialogTitle>
+            <AlertDialogDescription>Confirm this per-feature rollout change before updating app visibility.</AlertDialogDescription>
+          </AlertDialogHeader>
+          {featurePending && (
+            <div className="space-y-3 text-sm">
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Current</p><p className="font-semibold">{visibilityCopy[getVisibility(featurePending.feature.key)].label}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">New</p><p className="font-semibold">{visibilityCopy[featurePending.visibility].label}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Target</p><p className="font-semibold">{featurePending.feature.target}</p></div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Phase</p><p className="font-semibold">Phase {featurePending.feature.phase}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Impact</p><p className="font-semibold">{featurePending.feature.impact}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Complexity</p><p className="font-semibold">{featurePending.feature.complexity}</p></div>
+              </div>
+              <p className="break-all rounded-md border p-3 text-xs text-muted-foreground">{featurePending.feature.key} · readiness {featurePending.feature.readiness}% · stage {getStage(featurePending.visibility)}</p>
+              {featurePending.visibility === "visible" && <p className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">Launching as Live can expose prepared app entry points when they are wired through live feature guards.</p>}
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmFeatureAction}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
