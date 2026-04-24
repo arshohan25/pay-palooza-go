@@ -1,41 +1,48 @@
-Plan to make the Customization Center template editor safer and fully interactive:
+# Add Risk Score Calculation Tooltip
 
-1. Build a richer notification template editor
-- Replace the current simple preview block with a split editor/preview dialog.
-- Keep fields for template key, category, title/subject, body, image URL, and enabled/disabled state.
-- Add a variable helper that detects placeholders like `{{name}}`, `{{amount}}`, `{{phone}}`, `{{status}}` from the title/body.
-- Show a live rendered preview as the admin types.
+## Summary
+Add a detailed "How this score was calculated" tooltip next to the Risk Score in the User Intelligence Center that shows the exact factors and points contributing to the score.
 
-2. Add test recipient simulation before saving
-- Add a “Test recipient” panel with editable sample values, for example name, phone, amount, transaction ID, status, date, support ticket, and app link.
-- Render the title/body by replacing `{{variable}}` placeholders with the simulated recipient values.
-- Show unresolved variables clearly so admins can fix them before saving.
-- Add quick simulation presets such as Transaction Alert, KYC Update, Support Ticket, Merchant Approval, and Recharge Confirmation.
-- Add a “Send test preview” simulation button that validates the rendered message and displays a success toast/preview state without creating real notifications.
+## Changes Required
 
-3. Add unsaved changes indicators across the Customization Center
-- Track dirty state separately for:
-  - Department homepage/layout configuration
-  - Brand settings
-  - Notification template editor
-- Add visible badges like “Unsaved changes” on tab triggers/cards/dialog headers when edits differ from the last saved or loaded values.
-- Disable silent close where it would lose edits; show a lightweight confirmation path inside the dialog: Save, Keep Editing, or Discard.
+### 1. Import Additions
+- Add `HelpCircle` icon from lucide-react
+- Import `Tooltip`, `TooltipContent`, `TooltipProvider`, `TooltipTrigger` from @/components/ui/tooltip
+- Rename `Tooltip` import from recharts to `RechartsTooltip` to avoid naming conflict
 
-4. Add draft restore so tab switching does not lose work
-- Persist in-progress edits to local draft storage scoped to the admin customization center.
-- Draft keys will be scoped by editor type and record identity, for example `customization:template:<id-or-name>` and `customization:brand:global`.
-- When reopening a template or switching back to a tab, restore the draft automatically if it is newer than the loaded record.
-- Show a “Draft restored” indicator with actions to discard draft or save it.
-- Clear the relevant draft after a successful save or explicit discard.
+### 2. Risk Score Component Enhancement
+Modify the Risk Score MetricCard to include:
+- A help icon button next to the score value
+- A rich tooltip content showing:
+  - Header: "Risk Score Breakdown"
+  - List of all contributing factors with their point values
+  - Visual indicator (colored dot) for each factor type
+  - Total score and final risk label
+  - Brief explanation of the scoring methodology
 
-5. Keep existing database writes compatible
-- Use the current `notification_templates` fields currently used by the UI: `name`, `title`, `body`, `category`, `image_url`, and `is_active`.
-- Do not require a schema change unless the current database has the newer alternate columns only; if needed, add a compatibility migration rather than changing the generated client files manually.
-- Continue writing audit log entries for template, brand, and layout saves.
+### 3. Tooltip Content Structure
+The tooltip should display:
+- **Base Score**: 12 points (starting value)
+- **Account Age**: +10 if < 14 days
+- **Profile Status**: +30 if suspended/deactivated
+- **KYC Status**: +18 if rejected, +8 if no KYC
+- **Devices**: +12 if > 2 devices
+- **Fraud Alerts**: +12 per alert (max 28)
+- **High-Value Transfers**: +5 per transfer ≥৳50,000 (max 20)
+- **Final Score**: Capped at 100
+- **Risk Label**: Based on score thresholds
 
-Technical details
-- Main implementation target: `src/components/admin/AdminCommandIntelligence.tsx` inside `AdminCustomizationCenter`.
-- Use existing UI primitives: `Dialog`, `Tabs`, `Input`, `Textarea`, `Badge`, `Button`, `Separator`, and existing toast/audit patterns.
-- Add helper functions for stable draft keys, dirty comparison, placeholder extraction, variable rendering, and draft serialization.
-- Add small local state for active customization tab, draft metadata, simulated recipient data, and close-confirmation prompts.
-- Run a production build after implementation to verify TypeScript and bundling.
+### 4. UI/UX Considerations
+- Tooltip should be positioned to the right (side="right")
+- Use a card-like appearance within the tooltip
+- Color-code risk factors (amber for warnings, red for critical)
+- Include a brief footer explaining that scores are recalculated in real-time
+
+## Files to Modify
+- `src/components/admin/AdminCommandIntelligence.tsx`
+
+## Testing
+- Verify tooltip appears on hover/click of help icon
+- Confirm all risk factors are displayed with correct point values
+- Check that the tooltip is responsive and doesn't overflow on smaller screens
+- Validate that the risk score calculation matches the displayed breakdown
