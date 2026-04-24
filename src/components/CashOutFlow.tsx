@@ -9,7 +9,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
-import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, type PendingCoupon } from "@/lib/couponStore";
+import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, recordCouponRedemption, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { Textarea } from "@/components/ui/textarea";
