@@ -9,7 +9,7 @@ import {
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
   Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, Shield, Star, Building2, Megaphone, CalendarClock,
-  ShoppingBag, Heart, Bot, Sparkles, Key, Rocket,
+  ShoppingBag, Heart, Bot, Sparkles, Key, Rocket, ClipboardCheck, FileArchive, Palette, Network, Gauge,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -122,6 +122,18 @@ import AdminInsuranceManagement from "@/components/admin/AdminInsuranceManagemen
 import AdminGiftCardManagement from "@/components/admin/AdminGiftCardManagement";
 import AdminAiAgent from "@/components/admin/AdminAiAgent";
 import AdminAdvanceForFuture from "@/components/admin/AdminAdvanceForFuture";
+import {
+  AdminApprovalQueue,
+  AdminBulkUserActionCenter,
+  AdminBusinessIntelligence,
+  AdminCustomizationCenter,
+  AdminDataQualityMonitor,
+  AdminEvidenceVault,
+  AdminLaunchControlRoom,
+  AdminSecurityPolicyCenter,
+  AdminUserIntelligenceCenter,
+  AdminUserSegmentationBuilder,
+} from "@/components/admin/AdminCommandIntelligence";
 import AdminProfileEditor from "@/components/admin/AdminProfileEditor";
 import AdminLEARequest from "@/components/admin/AdminLEARequest";
 import AdminUserPerformanceTracker from "@/components/admin/AdminUserPerformanceTracker";
