@@ -693,6 +693,9 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   ];
 
   const bulkTargets = bulkPending?.keys.map((key) => futureFeatures.find((feature) => feature.key === key)).filter(Boolean) as FutureFeature[] | undefined;
+  const previewFeatureGroups = previewFeature ? groupFeaturesByRole([previewFeature]) : null;
+  const bulkPreviewFeatures = bulkEmulatorPreview ? getCandidateFeatures(bulkEmulatorPreview.keys) : [];
+  const bulkPreviewGroups = groupFeaturesByRole(bulkPreviewFeatures);
 
   return (
     <div className="space-y-5">
