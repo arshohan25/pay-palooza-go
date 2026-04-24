@@ -117,6 +117,20 @@ const GiftCardsPage = () => {
     } else copyCode(card.code);
   };
 
+  const redeemCard = async (card: any) => {
+    const { data, error } = await supabase.rpc("redeem_gift_card", { p_code: card.code });
+    if (error) { toast.error(error.message); return; }
+    const res = data as { success: boolean; error?: string; credited_amount?: number; brand?: string };
+    if (!res?.success) { toast.error(res?.error || "Redemption failed"); return; }
+    toast.success(`৳${res.credited_amount} ${res.brand} credited to your wallet!`);
+    if (user) {
+      const { data: refreshed } = await supabase.from("gift_cards").select("*").eq("purchaser_id", user.id).order("created_at", { ascending: false });
+      setCards(refreshed || []);
+    }
+  };
+
+  const isExpired = (card: any) => card.status === "expired" || (card.expires_at && new Date(card.expires_at) < new Date());
+
   const selectedBrand = BRANDS.find(b => b.id === brand) || BRANDS[0];
 
   return (
