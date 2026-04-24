@@ -148,7 +148,10 @@ export default function CouponsPage() {
         .eq("is_active", true)
         .or(`expires_at.is.null,expires_at.gt.${now}`)
         .order("created_at", { ascending: false });
-      if (data) setCoupons(data as Coupon[]);
+      const filtered = (data || []).filter((c: any) =>
+        c.usage_limit == null || (c.used_count ?? 0) < c.usage_limit
+      );
+      setCoupons(filtered as Coupon[]);
       setLoading(false);
     };
     load();
