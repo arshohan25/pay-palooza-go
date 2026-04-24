@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -52,6 +53,8 @@ type Impact = "High" | "Medium" | "Low";
 type Complexity = "High" | "Medium" | "Low";
 type PhaseId = 1 | 2 | 3;
 type BulkGroup = "top_7" | "phase_1" | "phase_2" | "phase_3";
+type DeviceFrame = "mobile" | "tablet" | "desktop";
+type FeatureAction = "hidden" | "disabled" | "visible";
 
 interface FutureToggle {
   id: string;
@@ -79,6 +82,15 @@ interface FutureFeature {
   category: string;
   topRank?: number;
   topReason?: string;
+}
+
+interface AuditEntry {
+  id: string;
+  action: string;
+  actor_id: string;
+  entity_id: string | null;
+  created_at: string;
+  details: Record<string, unknown> | null;
 }
 
 const futureFeatures: FutureFeature[] = [
@@ -365,11 +377,37 @@ const previewFeatureKeys = {
   admin: ["future_compliance_center", "future_ai_fraud_investigator", "future_open_finance_hub", "future_predictive_support"],
 };
 
+const deviceFrameClass: Record<DeviceFrame, string> = {
+  mobile: "mx-auto max-w-[360px]",
+  tablet: "mx-auto max-w-[720px]",
+  desktop: "w-full",
+};
+
+const impactScore: Record<Impact, number> = { High: 3, Medium: 2, Low: 1 };
+
+const getFeatureAppType = (target: string): "user" | "merchant" | "agent" | "admin" => {
+  if (target.includes("Merchant")) return "merchant";
+  if (target.includes("Agent") || target.includes("Distributor")) return "agent";
+  if (target.includes("Admin")) return "admin";
+  return "user";
+};
+
+const readinessChecklistFor = (feature: FutureFeature) => ({
+  dataSources: feature.dependencies,
+  apis: ["Feature toggle seeded", "Audit logging active", ...feature.adminLinks.map((link) => `${link.label} module linked`)],
+  uiEntryPoints: ["Admin emulator preview ready", `${feature.target} entry point dormant`, "Live rendering requires visibility === visible"],
+});
+
 export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const [toggles, setToggles] = useState<FutureToggle[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   const [bulkPending, setBulkPending] = useState<{ title: string; group: BulkGroup; keys: string[]; visibility: Visibility } | null>(null);
+  const [deviceFrame, setDeviceFrame] = useState<DeviceFrame>("mobile");
+  const [featurePending, setFeaturePending] = useState<{ feature: FutureFeature; visibility: FeatureAction } | null>(null);
+  const [previewFeature, setPreviewFeature] = useState<FutureFeature | null>(null);
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const featureKeys = useMemo(() => futureFeatures.map((feature) => feature.key), []);
   const topSeven = useMemo(() => futureFeatures.filter((feature) => feature.topRank).sort((a, b) => (a.topRank ?? 0) - (b.topRank ?? 0)), []);
@@ -386,8 +424,23 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     setLoading(false);
   }, [featureKeys]);
 
+  const loadAuditEntries = useCallback(async () => {
+    setAuditLoading(true);
+    const { data, error } = await supabase
+      .from("audit_logs")
+      .select("id, action, actor_id, entity_id, created_at, details")
+      .in("action", ["future_feature_bulk_visibility_changed", "future_feature_visibility_changed"])
+      .order("created_at", { ascending: false })
+      .limit(12);
+
+    if (error) toast.error("Failed to load launch audit log");
+    else setAuditEntries(((data as unknown as AuditEntry[]) ?? []).map((entry) => ({ ...entry, details: entry.details ?? null })));
+    setAuditLoading(false);
+  }, []);
+
   useEffect(() => {
     loadToggles();
+    loadAuditEntries();
     const channel = supabase
       .channel("admin-advance-for-future")
       .on("postgres_changes", { event: "*", schema: "public", table: "global_feature_toggles" }, loadToggles)
@@ -436,9 +489,27 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
         previous_visibility: toggle.visibility,
         new_visibility: visibility,
         launch_stage: getStage(visibility),
+        target: feature.target,
+        phase: feature.phase,
+        impact: feature.impact,
+        complexity: feature.complexity,
+        readiness: feature.readiness,
       });
+      loadAuditEntries();
     }
     setUpdatingKey(null);
+  };
+
+  const requestFeatureAction = (feature: FutureFeature, visibility: FeatureAction) => {
+    if (visibility === "disabled") setPreviewFeature(feature);
+    else setFeaturePending({ feature, visibility });
+  };
+
+  const confirmFeatureAction = async () => {
+    if (!featurePending) return;
+    const pending = featurePending;
+    setFeaturePending(null);
+    await setVisibility(pending.feature, pending.visibility);
   };
 
   const openBulkConfirm = (title: string, group: BulkGroup, keys: string[], visibility: Visibility) => {
@@ -470,6 +541,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
         launch_stage: getStage(bulkPending.visibility),
         affected_count: bulkPending.keys.length,
       });
+      loadAuditEntries();
     }
 
     setBulkPending(null);
@@ -481,16 +553,32 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     const updating = updatingKey === feature.key;
     return (
       <div className={`grid gap-2 ${compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-3"}`}>
-        <Button variant="outline" size="sm" disabled={updating} onClick={() => setVisibility(feature, "hidden")} className="gap-1.5 text-xs">
-          {updating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />} Keep Hidden
+        <Button variant="outline" size="sm" disabled={updating} onClick={() => requestFeatureAction(feature, "hidden")} className="gap-1.5 text-xs">
+          {updating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />} Hide
         </Button>
-        <Button variant="secondary" size="sm" disabled={updating} onClick={() => setVisibility(feature, "disabled")} className="gap-1.5 text-xs">
+        <Button variant="secondary" size="sm" disabled={updating} onClick={() => requestFeatureAction(feature, "disabled")} className="gap-1.5 text-xs">
           <Eye className="h-3.5 w-3.5" /> Preview
         </Button>
-        <Button size="sm" disabled={updating} onClick={() => setVisibility(feature, visibility === "visible" ? "hidden" : "visible")} className="gap-1.5 text-xs">
+        <Button size="sm" disabled={updating} onClick={() => requestFeatureAction(feature, visibility === "visible" ? "hidden" : "visible")} className="gap-1.5 text-xs">
           {visibility === "visible" ? <RotateCcw className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
           {visibility === "visible" ? "Rollback" : "Launch"}
         </Button>
+      </div>
+    );
+  };
+
+  const renderChecklist = (feature: FutureFeature) => {
+    const checklist = readinessChecklistFor(feature);
+    return (
+      <div className="grid gap-2 text-[11px] md:grid-cols-3">
+        {Object.entries(checklist).map(([group, items]) => (
+          <div key={group} className="rounded-md border bg-background/60 p-2">
+            <p className="mb-1 font-semibold capitalize text-foreground">{group.replace(/([A-Z])/g, " $1")}</p>
+            <div className="space-y-1 text-muted-foreground">
+              {items.map((item) => <p key={item} className="flex gap-1"><CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-primary" />{item}</p>)}
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
@@ -525,12 +613,45 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     </div>
   );
 
+  const AppEmulator = ({ title, role, features, hero, icon: Icon }: { title: string; role: string; features: FutureFeature[]; hero: string; icon: typeof Sparkles }) => (
+    <div className={deviceFrameClass[deviceFrame]}>
+      <div className="overflow-hidden rounded-[28px] border border-border/70 bg-background/80 p-2 shadow-[var(--shadow-elevated)] backdrop-blur-xl">
+        <div className="rounded-[22px] border border-border/50 bg-card p-3">
+          <div className="mb-3 flex items-center justify-between">
+            <div><p className="text-sm font-bold text-foreground">{title}</p><p className="text-[10px] text-muted-foreground">{role} · {deviceFrame} emulator</p></div>
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+          <div className="rounded-[19px] gradient-hero p-4 text-primary-foreground shadow-glow">
+            <p className="text-[11px] opacity-80">{hero}</p>
+            <p className="mt-1 text-2xl font-black">EasyPay</p>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]"><span>Secure</span><span>Live gated</span><span>Preview</span></div>
+          </div>
+          <div className={`mt-3 grid gap-2 ${deviceFrame === "mobile" ? "grid-cols-2" : deviceFrame === "tablet" ? "grid-cols-3" : "grid-cols-4"}`}>
+            {features.map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.icon} />)}
+          </div>
+          {!features.length && <p className="mt-3 rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Hidden items are not rendered in this app preview.</p>}
+        </div>
+      </div>
+    </div>
+  );
+
   const userPreview = getPreviewFeatures(previewFeatureKeys.user);
   const merchantPreview = getPreviewFeatures(previewFeatureKeys.merchant);
   const agentPreview = getPreviewFeatures(previewFeatureKeys.agent);
   const adminPreview = getPreviewFeatures(previewFeatureKeys.admin);
 
   const rolePreviewCount = userPreview.length + merchantPreview.length + agentPreview.length + adminPreview.length;
+
+  const analytics = useMemo(() => {
+    const byPhase = ([1, 2, 3] as PhaseId[]).map((phase) => {
+      const items = visibleFeatures.filter((feature) => feature.phase === phase);
+      const max = items.reduce((sum, feature) => sum + impactScore[feature.impact], 0) || 1;
+      const active = items.reduce((sum, feature) => sum + impactScore[feature.impact] * (feature.visibility === "visible" ? 1 : feature.visibility === "disabled" ? 0.5 : 0), 0);
+      return { phase, live: items.filter((item) => item.visibility === "visible").length, preview: items.filter((item) => item.visibility === "disabled").length, hidden: items.filter((item) => item.visibility === "hidden").length, impact: Math.round((active / max) * 100) };
+    });
+    const topSplit = topSeven.reduce<Record<Visibility, number>>((acc, feature) => { acc[getVisibility(feature.key)] += 1; return acc; }, { hidden: 0, disabled: 0, visible: 0 });
+    return { byPhase, topSplit };
+  }, [visibleFeatures, topSeven, toggleMap]);
 
   const matrixGroups = [
     { title: "High Impact / Low-Medium Complexity", note: "Quick wins and near-term release candidates", items: visibleFeatures.filter((feature) => feature.impact === "High" && isLowerComplexity(feature.complexity)) },
@@ -581,6 +702,36 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
         </Card>
       ) : (
         <>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Card className="border-0 shadow-[var(--shadow-card)]">
+              <CardHeader><CardTitle className="text-base">Advanced Feature Analytics</CardTitle><p className="text-xs text-muted-foreground">Enablement counts and estimated business impact by phase.</p></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="rounded-md bg-muted/40 p-3"><p className="text-lg font-bold text-foreground">{liveCount}</p><p className="text-muted-foreground">Live</p></div>
+                  <div className="rounded-md bg-muted/40 p-3"><p className="text-lg font-bold text-foreground">{previewCount}</p><p className="text-muted-foreground">Preview</p></div>
+                  <div className="rounded-md bg-muted/40 p-3"><p className="text-lg font-bold text-foreground">{hiddenCount}</p><p className="text-muted-foreground">Hidden</p></div>
+                </div>
+                {analytics.byPhase.map((phase) => (
+                  <div key={phase.phase} className="space-y-1 rounded-md border bg-background/60 p-3">
+                    <div className="flex justify-between text-xs"><span className="font-semibold text-foreground">Phase {phase.phase} impact readiness</span><span>{phase.impact}%</span></div>
+                    <Progress value={phase.impact} className="h-2" />
+                    <p className="text-[11px] text-muted-foreground">{phase.live} live · {phase.preview} preview · {phase.hidden} hidden</p>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">Top 7 split: {analytics.topSplit.visible} live, {analytics.topSplit.disabled} preview, {analytics.topSplit.hidden} hidden.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-[var(--shadow-card)]">
+              <CardHeader><CardTitle className="text-base">Visibility Safety Check</CardTitle><p className="text-xs text-muted-foreground">Hidden feature entry points remain dormant outside admin previews.</p></CardHeader>
+              <CardContent className="space-y-2 text-xs text-muted-foreground">
+                {["Hidden features are excluded from app-style previews and emulator popups.", "Admin Preview features render only inside this admin dashboard.", "Live entry points must be wired with visibility === visible / isLive guards.", "User, merchant, agent, and loan pages currently only reference future flags without rendering hidden UI."].map((item) => (
+                  <p key={item} className="flex gap-2 rounded-md bg-muted/30 p-2"><ShieldAlert className="h-3.5 w-3.5 shrink-0 text-primary" />{item}</p>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
           <Card className="overflow-hidden rounded-[19px] border border-border/70 bg-card/80 shadow-[var(--shadow-elevated)] backdrop-blur-xl">
             <CardHeader className="relative space-y-3 pb-4">
               <div className="pointer-events-none absolute -right-14 -top-14 h-36 w-36 rounded-full bg-primary/15 blur-3xl" />
@@ -590,75 +741,19 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                   <CardTitle className="text-base">Original App Preview</CardTitle>
                   <p className="text-xs text-muted-foreground">App-style preview surfaces for features marked Admin Preview or Live.</p>
                 </div>
-                <Badge variant="secondary" className="w-fit text-[10px] uppercase tracking-wide">{rolePreviewCount} preview items active</Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => (
+                    <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="h-8 text-xs capitalize">{frame}</Button>
+                  ))}
+                  <Badge variant="secondary" className="w-fit text-[10px] uppercase tracking-wide">{rolePreviewCount} preview items active</Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="grid gap-4 xl:grid-cols-2">
-              <div className="rounded-[19px] border border-border/70 bg-background/60 p-3 shadow-[var(--shadow-card)]">
-                <div className="mb-3 flex items-center justify-between px-1">
-                  <div><p className="text-sm font-bold text-foreground">EasyPay User App Preview</p><p className="text-[10px] text-muted-foreground">Wallet home mockup</p></div>
-                  <Badge variant="outline" className="text-[10px]">User</Badge>
-                </div>
-                <div className="relative overflow-hidden rounded-[19px] border border-primary/20 bg-card p-4 shadow-glow">
-                  <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-primary/20 blur-2xl" />
-                  <div className="absolute -bottom-14 left-6 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
-                  <div className="relative rounded-[19px] gradient-hero p-4 text-primary-foreground shadow-glow">
-                    <p className="text-[11px] opacity-80">Available Balance</p>
-                    <div className="mt-1 flex items-end justify-between gap-3"><p className="text-2xl font-black">৳ 24,850</p><Badge className="bg-primary-foreground/15 text-primary-foreground hover:bg-primary-foreground/20">EasyPay</Badge></div>
-                    <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]"><span>Trust 86</span><span>Limit healthy</span><span>Rewards ready</span></div>
-                  </div>
-                  <div className="relative mt-3 grid grid-cols-4 gap-2">
-                    {userPreview.slice(0, 4).map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.icon} />)}
-                  </div>
-                  <div className="relative mt-3 grid gap-2 sm:grid-cols-2">
-                    {userPreview.slice(4).map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.key === "future_dynamic_risk_limits" ? Gauge : feature.icon} />)}
-                  </div>
-                  {!userPreview.length && <p className="relative rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Preview user features to see the app-like mockup.</p>}
-                </div>
-              </div>
-
-              <div className="rounded-[19px] border border-border/70 bg-background/60 p-3 shadow-[var(--shadow-card)]">
-                <div className="mb-3 flex items-center justify-between px-1">
-                  <div><p className="text-sm font-bold text-foreground">EasyPay Merchant App Preview</p><p className="text-[10px] text-muted-foreground">Store dashboard mockup</p></div>
-                  <Badge variant="outline" className="text-[10px]">Merchant</Badge>
-                </div>
-                <div className="rounded-[19px] border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
-                  <div className="rounded-[19px] bg-muted/30 p-4">
-                    <div className="flex items-center justify-between"><div><p className="text-[11px] text-muted-foreground">Today sales</p><p className="text-xl font-black text-foreground">৳ 18,420</p></div><LineChart className="h-9 w-9 text-primary" /></div>
-                    <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[10px]"><span className="rounded-2xl bg-background/70 p-2">Orders 42</span><span className="rounded-2xl bg-background/70 p-2">Repeat 31%</span><span className="rounded-2xl bg-background/70 p-2">Stock 8</span></div>
-                  </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-3">{merchantPreview.map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.key === "future_partner_qr_api" ? QrCode : feature.icon} />)}</div>
-                  {!merchantPreview.length && <p className="mt-3 rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Preview merchant features to see the store mockup.</p>}
-                </div>
-              </div>
-
-              <div className="rounded-[19px] border border-border/70 bg-background/60 p-3 shadow-[var(--shadow-card)]">
-                <div className="mb-3 flex items-center justify-between px-1">
-                  <div><p className="text-sm font-bold text-foreground">EasyPay Agent App Preview</p><p className="text-[10px] text-muted-foreground">Field operations mockup</p></div>
-                  <Badge variant="outline" className="text-[10px]">Agent</Badge>
-                </div>
-                <div className="rounded-[19px] border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="rounded-[19px] bg-primary/10 p-3 text-primary"><p className="font-black">৳ 92k</p><p className="text-[10px]">Float</p></div>
-                    <div className="rounded-[19px] bg-muted/40 p-3"><p className="font-black text-foreground">12</p><p className="text-[10px] text-muted-foreground">Cash-in</p></div>
-                    <div className="rounded-[19px] bg-muted/40 p-3"><p className="font-black text-foreground">Low</p><p className="text-[10px] text-muted-foreground">Risk</p></div>
-                  </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-3">{agentPreview.map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.icon} />)}</div>
-                  {!agentPreview.length && <p className="mt-3 rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Preview agent features to see the field mockup.</p>}
-                </div>
-              </div>
-
-              <div className="rounded-[19px] border border-border/70 bg-background/60 p-3 shadow-[var(--shadow-card)]">
-                <div className="mb-3 flex items-center justify-between px-1">
-                  <div><p className="text-sm font-bold text-foreground">EasyPay Admin Preview</p><p className="text-[10px] text-muted-foreground">Command intelligence mockup</p></div>
-                  <Badge variant="outline" className="text-[10px]">Admin</Badge>
-                </div>
-                <div className="rounded-[19px] border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
-                  <div className="mb-3 flex items-center justify-between rounded-[19px] bg-muted/30 p-3"><div><p className="text-xs font-bold text-foreground">Risk operations</p><p className="text-[10px] text-muted-foreground">Compliance, fraud and support intelligence</p></div><BellRing className="h-5 w-5 text-primary" /></div>
-                  <div className="grid gap-2 sm:grid-cols-2">{adminPreview.map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.key === "future_open_finance_hub" ? Landmark : feature.icon} />)}</div>
-                  {!adminPreview.length && <p className="rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Preview admin features to see the intelligence mockup.</p>}
-                </div>
-              </div>
+              <AppEmulator title="EasyPay User App Preview" role="User" features={userPreview} hero="Available Balance" icon={WalletCards} />
+              <AppEmulator title="EasyPay Merchant App Preview" role="Merchant" features={merchantPreview} hero="Today sales" icon={Store} />
+              <AppEmulator title="EasyPay Agent App Preview" role="Agent" features={agentPreview} hero="Field float" icon={TrendingUp} />
+              <AppEmulator title="EasyPay Admin Preview" role="Admin" features={adminPreview} hero="Risk operations" icon={BellRing} />
             </CardContent>
           </Card>
 
@@ -731,8 +826,14 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {phaseFeatures.map((feature) => <Badge key={feature.key} variant="outline" className="text-[10px]">{feature.title}</Badge>)}
+                    <div className="space-y-3">
+                      {phaseFeatures.map((feature) => (
+                        <div key={feature.key} className="space-y-2 rounded-lg border bg-muted/20 p-2">
+                          <div className="flex items-center justify-between gap-2"><p className="text-xs font-semibold text-foreground">{feature.title}</p><Badge variant={visibilityCopy[getVisibility(feature.key)].variant} className="text-[10px]">{visibilityCopy[getVisibility(feature.key)].label}</Badge></div>
+                          <Progress value={feature.readiness} className="h-1.5" />
+                          {renderChecklist(feature)}
+                        </div>
+                      ))}
                     </div>
                     <Separator />
                     <div className="grid gap-2">
@@ -771,6 +872,35 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                   </div>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-[var(--shadow-card)]">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><CardTitle className="text-base">Launch Audit Log</CardTitle><p className="text-xs text-muted-foreground">Detailed history for bulk and per-feature future launches.</p></div>
+              <Button size="sm" variant="outline" onClick={loadAuditEntries} disabled={auditLoading} className="gap-2">{auditLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />} Refresh</Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {auditEntries.map((entry) => {
+                const details = entry.details ?? {};
+                const keys = Array.isArray(details.feature_keys) ? details.feature_keys as string[] : details.feature_key ? [String(details.feature_key)] : [];
+                const status = String(details.new_visibility ?? "hidden") as Visibility;
+                return (
+                  <div key={entry.id} className="rounded-lg border bg-muted/20 p-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0"><p className="text-sm font-semibold text-foreground">{entry.action.replace(/_/g, " ")}</p><p className="break-all text-[11px] text-muted-foreground">Actor {entry.actor_id} · {new Date(entry.created_at).toLocaleString()}</p></div>
+                      <Badge variant={visibilityCopy[status]?.variant ?? "outline"} className="w-fit text-[10px]">{visibilityCopy[status]?.label ?? status}</Badge>
+                    </div>
+                    <div className="mt-2 grid gap-2 text-xs sm:grid-cols-3">
+                      <div className="rounded-md bg-background/60 p-2"><p className="text-muted-foreground">Group</p><p className="font-medium">{String(details.bulk_group ?? "Single feature")}</p></div>
+                      <div className="rounded-md bg-background/60 p-2"><p className="text-muted-foreground">Affected</p><p className="font-medium">{String(details.affected_count ?? keys.length)}</p></div>
+                      <div className="rounded-md bg-background/60 p-2"><p className="text-muted-foreground">Stage</p><p className="font-medium">{String(details.launch_stage ?? getStage(status))}</p></div>
+                    </div>
+                    <div className="mt-2 flex max-h-20 flex-wrap gap-1.5 overflow-auto">{keys.map((key) => <Badge key={key} variant="outline" className="text-[10px]">{key}</Badge>)}</div>
+                  </div>
+                );
+              })}
+              {!auditEntries.length && <p className="rounded-lg border border-dashed p-5 text-center text-xs text-muted-foreground">No launch audit entries yet.</p>}
             </CardContent>
           </Card>
 
@@ -879,6 +1009,62 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
               {updatingKey === bulkPending?.group ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirm
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={!!previewFeature} onOpenChange={(open) => !open && setPreviewFeature(null)}>
+        <DialogContent className="max-h-[92vh] max-w-5xl overflow-auto">
+          <DialogHeader>
+            <DialogTitle>{previewFeature?.title} app emulator</DialogTitle>
+            <DialogDescription>Admin-only popup preview for the linked {previewFeature?.target} surface.</DialogDescription>
+          </DialogHeader>
+          {previewFeature && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize">{frame}</Button>)}
+              </div>
+              <AppEmulator title={previewFeature.title} role={previewFeature.target} features={[previewFeature]} hero={previewFeature.capabilities[0]} icon={previewFeature.icon} />
+              <div className="grid gap-2 text-xs sm:grid-cols-4">
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Current</p><p className="font-semibold">{visibilityCopy[getVisibility(previewFeature.key)].label}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">New</p><p className="font-semibold">Admin Preview</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Phase</p><p className="font-semibold">Phase {previewFeature.phase}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Readiness</p><p className="font-semibold">{previewFeature.readiness}%</p></div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewFeature(null)}>Cancel</Button>
+            <Button onClick={() => { if (previewFeature) setFeaturePending({ feature: previewFeature, visibility: "disabled" }); setPreviewFeature(null); }}>Enable Admin Preview</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!featurePending} onOpenChange={(open) => !open && setFeaturePending(null)}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{featurePending ? `${visibilityCopy[featurePending.visibility].label}: ${featurePending.feature.title}` : "Confirm feature action"}</AlertDialogTitle>
+            <AlertDialogDescription>Confirm this per-feature rollout change before updating app visibility.</AlertDialogDescription>
+          </AlertDialogHeader>
+          {featurePending && (
+            <div className="space-y-3 text-sm">
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Current</p><p className="font-semibold">{visibilityCopy[getVisibility(featurePending.feature.key)].label}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">New</p><p className="font-semibold">{visibilityCopy[featurePending.visibility].label}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Target</p><p className="font-semibold">{featurePending.feature.target}</p></div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Phase</p><p className="font-semibold">Phase {featurePending.feature.phase}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Impact</p><p className="font-semibold">{featurePending.feature.impact}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Complexity</p><p className="font-semibold">{featurePending.feature.complexity}</p></div>
+              </div>
+              <p className="break-all rounded-md border p-3 text-xs text-muted-foreground">{featurePending.feature.key} · readiness {featurePending.feature.readiness}% · stage {getStage(featurePending.visibility)}</p>
+              {featurePending.visibility === "visible" && <p className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">Launching as Live can expose prepared app entry points when they are wired through live feature guards.</p>}
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmFeatureAction}>Confirm</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
