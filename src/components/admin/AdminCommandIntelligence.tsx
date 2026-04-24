@@ -280,6 +280,13 @@ export function AdminUserIntelligenceCenter() {
 
   const filtered = users.filter((u) => !query || [u.name, u.phone, u.user_id, u.wallet_id].some((v) => String(v || "").toLowerCase().includes(query.toLowerCase())));
   const remediationActions = useMemo(() => getRemediationActions(detail, selected), [detail, selected]);
+  useEffect(() => { setSelectedRemediations({}); }, [selected?.user_id]);
+  const currentScore = Number(detail?.score?.score ?? 0);
+  const selectedActionsList = remediationActions.filter((a) => selectedRemediations[a.id]);
+  const estimatedReduction = Math.min(currentScore, selectedActionsList.reduce((sum, a) => sum + a.impact, 0));
+  const projectedScore = Math.max(0, currentScore - estimatedReduction);
+  const addressedSignals = Array.from(new Set(selectedActionsList.flatMap((a) => a.signals)));
+  const toggleRemediation = (id: string) => setSelectedRemediations((prev) => ({ ...prev, [id]: !prev[id] }));
   const runRemediationAction = async (action: RemediationAction) => {
     setActiveTab(action.tab);
     setEvidenceAction(null);
