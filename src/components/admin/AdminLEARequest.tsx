@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Search, Download, Shield, FileText, AlertTriangle, User, CreditCard,
   Smartphone, Key, Landmark, ArrowUpDown, Gavel, MessageSquare, Users,
@@ -72,6 +73,8 @@ export default function AdminLEARequest() {
   const [historyFilter, setHistoryFilter] = useState("");
   const [internalNote, setInternalNote] = useState("");
   const [paginationResult, setPaginationResult] = useState<{ mode: "measured" | "fallback"; pages: number } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMode, setConfirmMode] = useState<"download" | "redownload">("download");
   const reportRef = useRef<HTMLDivElement>(null);
   const pendingRedownloadIdRef = useRef<string | null>(null);
   const [includeSections, setIncludeSections] = useState<Record<SectionKey, boolean>>({
