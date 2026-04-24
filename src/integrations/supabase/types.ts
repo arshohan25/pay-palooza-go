@@ -3466,6 +3466,59 @@ export type Database = {
         }
         Relationships: []
       }
+      order_item_fulfillments: {
+        Row: {
+          courier_provider: string | null
+          created_at: string
+          created_by: string | null
+          delivered_at: string | null
+          id: string
+          order_id: string
+          order_item_index: number
+          qty_shipped: number
+          shipped_at: string
+          status: string
+          tracking_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          courier_provider?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          id?: string
+          order_id: string
+          order_item_index: number
+          qty_shipped: number
+          shipped_at?: string
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          courier_provider?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          id?: string
+          order_id?: string
+          order_item_index?: number
+          qty_shipped?: number
+          shipped_at?: string
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_fulfillments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -4050,6 +4103,7 @@ export type Database = {
       }
       product_variants: {
         Row: {
+          attributes: Json
           created_at: string
           id: string
           image_url: string | null
@@ -4058,10 +4112,12 @@ export type Database = {
           product_id: string
           sku: string | null
           stock: number
+          updated_at: string
           variant_name: string
           variant_value: string
         }
         Insert: {
+          attributes?: Json
           created_at?: string
           id?: string
           image_url?: string | null
@@ -4070,10 +4126,12 @@ export type Database = {
           product_id: string
           sku?: string | null
           stock?: number
+          updated_at?: string
           variant_name: string
           variant_value: string
         }
         Update: {
+          attributes?: Json
           created_at?: string
           id?: string
           image_url?: string | null
@@ -4082,6 +4140,7 @@ export type Database = {
           product_id?: string
           sku?: string | null
           stock?: number
+          updated_at?: string
           variant_name?: string
           variant_value?: string
         }
@@ -4263,6 +4322,36 @@ export type Database = {
           updated_at?: string
           usage_limit?: number | null
           used_count?: number
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -5823,6 +5912,10 @@ export type Database = {
           p_order_id: string
         }
         Returns: Json
+      }
+      decrement_variant_stock: {
+        Args: { p_qty: number; p_variant_id: string }
+        Returns: undefined
       }
       disburse_loan: {
         Args: { p_admin_id: string; p_loan_id: string }
