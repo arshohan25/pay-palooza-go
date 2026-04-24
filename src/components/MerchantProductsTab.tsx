@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, Search, ToggleLeft, ToggleRight,
-  ImagePlus, X, Loader2, Video, Play, Upload,
+  ImagePlus, X, Loader2, Video, Play, Upload, Layers,
 } from "lucide-react";
+import VariantsEditorSheet from "@/components/merchant/VariantsEditorSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -207,6 +208,8 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
+  const [variantsProductId, setVariantsProductId] = useState<string | null>(null);
+  const [variantsProductName, setVariantsProductName] = useState<string>("");
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [form, setForm] = useState({
@@ -524,6 +527,10 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                 <button onClick={() => toggleActive(p)} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                   {p.is_active ? <Eye size={13} className="text-green-600" /> : <EyeOff size={13} className="text-muted-foreground" />}
                 </button>
+                <button onClick={() => { setVariantsProductId(p.id); setVariantsProductName(p.name); }}
+                  className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center" title="Variants">
+                  <Layers size={12} className="text-primary" />
+                </button>
                 <button onClick={() => openEdit(p)} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                   <Pencil size={12} className="text-muted-foreground" />
                 </button>
@@ -712,6 +719,13 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <VariantsEditorSheet
+        productId={variantsProductId}
+        productName={variantsProductName}
+        open={!!variantsProductId}
+        onOpenChange={(o) => { if (!o) setVariantsProductId(null); }}
+      />
     </div>
   );
 };

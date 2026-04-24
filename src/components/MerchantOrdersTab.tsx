@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Package, Clock, CheckCircle2, Truck, CircleCheck, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import FulfillmentSheet from "@/components/merchant/FulfillmentSheet";
 
 interface MerchantOrder {
   id: string;
@@ -23,6 +24,7 @@ const STATUS_FLOW = ["processing", "confirmed", "shipped", "out_for_delivery", "
 const STATUS_META: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   processing: { label: "Processing", color: "#FF9800", icon: Clock },
   confirmed: { label: "Confirmed", color: "#9C27B0", icon: CheckCircle2 },
+  partially_shipped: { label: "Partially Shipped", color: "#0288D1", icon: Truck },
   shipped: { label: "Shipped", color: "#2196F3", icon: Truck },
   out_for_delivery: { label: "Out for Delivery", color: "#FF5722", icon: Package },
   delivered: { label: "Delivered", color: "#43A047", icon: CircleCheck },
@@ -36,6 +38,7 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
   const [orders, setOrders] = useState<MerchantOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [fulfillOrder, setFulfillOrder] = useState<MerchantOrder | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -157,14 +160,14 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
                   </div>
                 )}
 
-                {/* Advance button */}
-                {canAdvance && (
+                {/* Fulfill button */}
+                {order.status !== "cancelled" && order.status !== "delivered" && (
                   <button
-                    onClick={() => advanceStatus(order)}
-                    className="w-full py-2.5 rounded-xl text-white text-[12px] font-bold"
-                    style={{ background: STATUS_META[STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1]]?.color || "#FF7043" }}
+                    onClick={() => setFulfillOrder(order)}
+                    className="w-full py-2.5 rounded-xl text-white text-[12px] font-bold flex items-center justify-center gap-1.5"
+                    style={{ background: "#0288D1" }}
                   >
-                    Mark as {STATUS_META[STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1]]?.label}
+                    <Truck size={13} /> Fulfill / Update Shipment
                   </button>
                 )}
               </div>
@@ -172,6 +175,14 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
           </motion.div>
         );
       })}
+
+      <FulfillmentSheet
+        orderId={fulfillOrder?.id ?? null}
+        items={Array.isArray(fulfillOrder?.items) ? fulfillOrder!.items : []}
+        open={!!fulfillOrder}
+        onOpenChange={(o) => { if (!o) setFulfillOrder(null); }}
+        onUpdated={load}
+      />
     </div>
   );
 };
