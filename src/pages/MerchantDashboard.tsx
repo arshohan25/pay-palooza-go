@@ -21,8 +21,9 @@ import {
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
   ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine,
   Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package, MessageCircle, Search,
-  Undo2, Ticket
+  Undo2, Ticket, XCircle, Loader2
 } from "lucide-react";
+import MerchantBusinessKycFlow from "@/components/MerchantBusinessKycFlow";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -677,6 +678,40 @@ const MerchantDashboard = () => {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Benefits Page (for non-merchants) ── */
 const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }) => {
+  const [kycFlowOpen, setKycFlowOpen] = useState(false);
+  const [kycStatus, setKycStatus] = useState<"none" | "pending" | "approved" | "rejected">("none");
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+
+  const refreshStatus = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setKycStatus("none");
+      setLoadingStatus(false);
+      return;
+    }
+    const { data } = await supabase
+      .from("merchants")
+      .select("business_kyc_status, business_kyc_rejection_reason")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+    if (!data) {
+      setKycStatus("none");
+      setRejectionReason(null);
+    } else {
+      const s = (data.business_kyc_status as string) || "pending";
+      if (s === "approved" || s === "pending" || s === "rejected") {
+        setKycStatus(s);
+      } else {
+        setKycStatus("pending");
+      }
+      setRejectionReason(data.business_kyc_rejection_reason ?? null);
+    }
+    setLoadingStatus(false);
+  }, []);
+
+  useEffect(() => { refreshStatus(); }, [refreshStatus]);
+
   const benefits = [
     { icon: QrCode, title: "QR Payments", desc: "Accept instant payments via QR scan — no card machine needed", color: "from-primary/20 to-primary/5" },
     { icon: Zap, title: "Instant Settlement", desc: "Get your money next business day with T+1 settlement", color: "from-amber-500/20 to-amber-500/5" },
@@ -692,6 +727,54 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
     { value: "0.5%", label: "Lowest MDR" },
     { value: "T+1", label: "Settlement" },
   ];
+
+  const ctaLabel =
+    kycStatus === "approved" ? "Go to Merchant Dashboard"
+    : kycStatus === "pending" ? "View Application Status"
+    : kycStatus === "rejected" ? "Reapply Now"
+    : "Apply as Vendor";
+
+  const handleCtaClick = () => {
+    if (kycStatus === "approved") {
+      window.location.reload();
+    } else {
+      setKycFlowOpen(true);
+    }
+  };
+
+  const StatusPill = () => {
+    if (loadingStatus || kycStatus === "none") return null;
+    if (kycStatus === "pending") {
+      return (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <Clock size={14} className="text-amber-600 shrink-0" />
+          <p className="text-xs font-semibold text-amber-700">Application under review — we'll notify you once approved</p>
+        </div>
+      );
+    }
+    if (kycStatus === "rejected") {
+      return (
+        <div className="flex flex-col gap-1.5 px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/20">
+          <div className="flex items-center gap-2">
+            <XCircle size={14} className="text-destructive shrink-0" />
+            <p className="text-xs font-semibold text-destructive">Application rejected — action required</p>
+          </div>
+          {rejectionReason && (
+            <p className="text-[11px] text-destructive/80 leading-relaxed pl-6">{rejectionReason}</p>
+          )}
+        </div>
+      );
+    }
+    if (kycStatus === "approved") {
+      return (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+          <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+          <p className="text-xs font-semibold text-emerald-700">Verified vendor — refresh to enter your dashboard</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -786,21 +869,36 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           className="space-y-3"
         >
+          <StatusPill />
           <Button
-            onClick={() => navigate("/")}
+            onClick={handleCtaClick}
+            disabled={loadingStatus}
             className="w-full h-14 rounded-2xl text-base font-bold shadow-glow-lg"
             style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
           >
-            <Store size={18} className="mr-2" /> Register as Merchant
+            {loadingStatus ? (
+              <><Loader2 size={18} className="mr-2 animate-spin" /> Loading…</>
+            ) : (
+              <><Store size={18} className="mr-2" /> {ctaLabel}</>
+            )}
           </Button>
           <Button onClick={() => navigate("/")} variant="outline" className="w-full h-12 rounded-2xl">
             <ArrowLeft size={16} className="mr-2" /> Back to Home
           </Button>
         </motion.div>
       </div>
+
+      <MerchantBusinessKycFlow
+        open={kycFlowOpen}
+        onOpenChange={(v) => {
+          setKycFlowOpen(v);
+          if (!v) refreshStatus();
+        }}
+      />
     </div>
   );
 };
+
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Overview Tab ── */
