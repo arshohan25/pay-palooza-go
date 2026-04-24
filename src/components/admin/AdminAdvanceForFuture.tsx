@@ -515,7 +515,10 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   };
 
   const requestFeatureAction = (feature: FutureFeature, visibility: FeatureAction) => {
-    if (visibility === "disabled") setPreviewFeature(feature);
+    if (visibility === "disabled") {
+      setPreviewRoleTab(getFeatureAppRoles(feature.target)[0]);
+      setPreviewFeature(feature);
+    }
     else setFeaturePending({ feature, visibility });
   };
 
@@ -527,7 +530,11 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   };
 
   const openBulkConfirm = (title: string, group: BulkGroup, keys: string[], visibility: Visibility) => {
-    if (visibility === "disabled") setBulkEmulatorPreview({ title, group, keys });
+    if (visibility === "disabled") {
+      const firstRole = getCandidateFeatures(keys).flatMap((feature) => getFeatureAppRoles(feature.target))[0] ?? "user";
+      setBulkPreviewRoleTab(firstRole);
+      setBulkEmulatorPreview({ title, group, keys });
+    }
     else setBulkPending({ title, group, keys, visibility });
   };
 
