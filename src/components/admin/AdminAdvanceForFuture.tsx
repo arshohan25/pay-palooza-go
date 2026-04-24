@@ -1049,7 +1049,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
       )}
 
       <AlertDialog open={!!bulkPending} onOpenChange={(open) => !open && setBulkPending(null)}>
-        <AlertDialogContent className="max-w-2xl">
+        <AlertDialogContent className="max-w-2xl" aria-label={bulkPending ? `${bulkPending.title} confirmation dialog` : "Bulk launch confirmation dialog"}>
           <AlertDialogHeader>
             <AlertDialogTitle>{bulkPending?.title}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1075,8 +1075,8 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
             </div>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => runBulkAction()}>
+            <AlertDialogCancel aria-label="Cancel bulk visibility change">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => runBulkAction()} aria-label={`Confirm ${bulkPending?.title ?? "bulk visibility change"}`}>
               {updatingKey === bulkPending?.group ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirm
             </AlertDialogAction>
@@ -1085,7 +1085,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
       </AlertDialog>
 
       <Dialog open={!!previewFeature} onOpenChange={(open) => !open && setPreviewFeature(null)}>
-        <DialogContent className="max-h-[92vh] max-w-5xl overflow-auto">
+        <DialogContent className="max-h-[92vh] max-w-5xl overflow-auto" aria-label={previewFeature ? `${previewFeature.title} emulator preview dialog` : "Feature emulator preview dialog"}>
           <DialogHeader>
             <DialogTitle>{previewFeature?.title} app emulator</DialogTitle>
             <DialogDescription>Admin-only popup preview for the linked {previewFeature?.target} surface.</DialogDescription>
@@ -1093,7 +1093,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
           {previewFeature && (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize">{frame}</Button>)}
+                {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize" aria-pressed={deviceFrame === frame} aria-label={`Show ${frame} emulator frame`}>{frame}</Button>)}
               </div>
               {previewFeatureGroups && previewRoles.length > 1 ? (
                 <Tabs value={previewRoleTab} onValueChange={(value) => setPreviewRoleTab(value as AppRole)} className="space-y-4">
@@ -1120,14 +1120,14 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPreviewFeature(null)}>Cancel</Button>
-            <Button onClick={() => { if (previewFeature) setFeaturePending({ feature: previewFeature, visibility: "disabled" }); setPreviewFeature(null); }}>Enable Admin Preview</Button>
+            <Button variant="outline" onClick={() => setPreviewFeature(null)} aria-label="Cancel feature emulator preview">Cancel</Button>
+            <Button onClick={() => { if (previewFeature) setFeaturePending({ feature: previewFeature, visibility: "disabled" }); setPreviewFeature(null); }} aria-label={previewFeature ? `Enable Admin Preview for ${previewFeature.title}` : "Enable Admin Preview"}>Enable Admin Preview</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!bulkEmulatorPreview} onOpenChange={(open) => !open && setBulkEmulatorPreview(null)}>
-        <DialogContent className="max-h-[92vh] max-w-6xl overflow-auto">
+        <DialogContent className="max-h-[92vh] max-w-6xl overflow-auto" aria-label={bulkEmulatorPreview ? `${bulkEmulatorPreview.title} emulator preview dialog` : "Bulk emulator preview dialog"}>
           <DialogHeader>
             <DialogTitle>{bulkEmulatorPreview?.title} emulator preview</DialogTitle>
             <DialogDescription>Review selected features as app screens before enabling Admin Preview.</DialogDescription>
@@ -1135,7 +1135,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
           {bulkEmulatorPreview && (
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
-                {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize">{frame}</Button>)}
+                {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize" aria-pressed={deviceFrame === frame} aria-label={`Show ${frame} emulator frame`}>{frame}</Button>)}
                 <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">{bulkPreviewFeatures.length} preview candidates</Badge>
               </div>
               {bulkPreviewRoles.length > 1 ? (
@@ -1163,8 +1163,8 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkEmulatorPreview(null)}>Cancel</Button>
-            <Button onClick={confirmBulkPreview} disabled={updatingKey === bulkEmulatorPreview?.group}>
+            <Button variant="outline" onClick={() => setBulkEmulatorPreview(null)} aria-label="Cancel bulk emulator preview">Cancel</Button>
+            <Button onClick={confirmBulkPreview} disabled={updatingKey === bulkEmulatorPreview?.group} aria-label={`Enable Admin Preview for ${bulkEmulatorPreview?.title ?? "selected features"}`}>
               {updatingKey === bulkEmulatorPreview?.group ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Enable Admin Preview
             </Button>
@@ -1173,7 +1173,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
       </Dialog>
 
       <AlertDialog open={!!featurePending} onOpenChange={(open) => !open && setFeaturePending(null)}>
-        <AlertDialogContent className="max-w-2xl">
+        <AlertDialogContent className="max-w-2xl" aria-label={featurePending ? `${featurePending.feature.title} ${visibilityCopy[featurePending.visibility].label} confirmation dialog` : "Feature action confirmation dialog"}>
           <AlertDialogHeader>
             <AlertDialogTitle>{featurePending ? `${visibilityCopy[featurePending.visibility].label}: ${featurePending.feature.title}` : "Confirm feature action"}</AlertDialogTitle>
             <AlertDialogDescription>Confirm this per-feature rollout change before updating app visibility.</AlertDialogDescription>
@@ -1195,8 +1195,8 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
             </div>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmFeatureAction}>Confirm</AlertDialogAction>
+            <AlertDialogCancel aria-label="Cancel feature visibility change">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmFeatureAction} aria-label={featurePending ? `Confirm ${visibilityCopy[featurePending.visibility].label} for ${featurePending.feature.title}` : "Confirm feature visibility change"}>Confirm</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
