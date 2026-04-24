@@ -67,6 +67,7 @@ export default function AdminLEARequest() {
   const [adminCache, setAdminCache] = useState<Record<string, { name: string; phone: string }>>({});
   const [reDownloadingId, setReDownloadingId] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+  const pendingRedownloadIdRef = useRef<string | null>(null);
   const [includeSections, setIncludeSections] = useState<Record<SectionKey, boolean>>({
     devices: false,
     savedBanks: false,
@@ -394,7 +395,7 @@ export default function AdminLEARequest() {
         <CardContent className="space-y-3">
           <div className="flex gap-2">
             <Input placeholder="Enter phone number (e.g. 01XXXXXXXXX)" value={phone} onChange={e => setPhone(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSearch()} />
-            <Button onClick={handleSearch} disabled={loading} className="shrink-0">
+            <Button onClick={() => handleSearch()} disabled={loading} className="shrink-0">
               <Search className="w-4 h-4 mr-1" />{loading ? "..." : "Search"}
             </Button>
           </div>
