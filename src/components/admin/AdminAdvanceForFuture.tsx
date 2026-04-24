@@ -403,6 +403,11 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   const [loading, setLoading] = useState(true);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   const [bulkPending, setBulkPending] = useState<{ title: string; group: BulkGroup; keys: string[]; visibility: Visibility } | null>(null);
+  const [deviceFrame, setDeviceFrame] = useState<DeviceFrame>("mobile");
+  const [featurePending, setFeaturePending] = useState<{ feature: FutureFeature; visibility: FeatureAction } | null>(null);
+  const [previewFeature, setPreviewFeature] = useState<FutureFeature | null>(null);
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const featureKeys = useMemo(() => futureFeatures.map((feature) => feature.key), []);
   const topSeven = useMemo(() => futureFeatures.filter((feature) => feature.topRank).sort((a, b) => (a.topRank ?? 0) - (b.topRank ?? 0)), []);
@@ -419,8 +424,23 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     setLoading(false);
   }, [featureKeys]);
 
+  const loadAuditEntries = useCallback(async () => {
+    setAuditLoading(true);
+    const { data, error } = await supabase
+      .from("audit_logs")
+      .select("id, action, actor_id, entity_id, created_at, details")
+      .in("action", ["future_feature_bulk_visibility_changed", "future_feature_visibility_changed"])
+      .order("created_at", { ascending: false })
+      .limit(12);
+
+    if (error) toast.error("Failed to load launch audit log");
+    else setAuditEntries(((data as unknown as AuditEntry[]) ?? []).map((entry) => ({ ...entry, details: entry.details ?? null })));
+    setAuditLoading(false);
+  }, []);
+
   useEffect(() => {
     loadToggles();
+    loadAuditEntries();
     const channel = supabase
       .channel("admin-advance-for-future")
       .on("postgres_changes", { event: "*", schema: "public", table: "global_feature_toggles" }, loadToggles)
