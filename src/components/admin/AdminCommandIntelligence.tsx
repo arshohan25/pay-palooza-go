@@ -207,6 +207,21 @@ function getRemediationActions(detail: any, selected: AnyRow | null): Remediatio
   return actions;
 }
 
+function RemediationEvidenceDrawer({ action, open, onOpenChange, onProceed }: { action: RemediationAction | null; open: boolean; onOpenChange: (open: boolean) => void; onProceed: (action: RemediationAction) => void }) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="flex w-full flex-col overflow-y-auto sm:max-w-xl">
+        <SheetHeader className="pr-8">
+          <SheetTitle>{action?.title || "Remediation evidence"}</SheetTitle>
+          <SheetDescription>{action?.reason || "Review the exact fields behind this recommendation."}</SheetDescription>
+        </SheetHeader>
+        {action && <div className="mt-5 flex-1 space-y-5"><div className="flex flex-wrap items-center gap-2"><StatusBadge status={action.priority} /><Badge variant="outline" className="capitalize">Opens {humanize(action.tab)}</Badge>{action.audit && <Badge variant="outline">Audit logged</Badge>}</div><div className="space-y-2"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Evidence fields</p><div className="rounded-lg border border-border/60">{action.evidence.map((field) => <div key={`${field.source}-${field.label}`} className="grid gap-1 border-b border-border/60 p-3 last:border-b-0 sm:grid-cols-[150px_1fr]"><div><p className="text-xs font-medium text-foreground">{field.label}</p><p className="text-[11px] text-muted-foreground">{field.source}</p></div><p className="break-words text-sm text-foreground">{evidenceValue(field.value)}</p></div>)}</div></div>{Boolean(action.records?.length) && <div className="space-y-2"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Supporting records</p><div className="space-y-3">{action.records?.map((record) => <div key={record.title} className="rounded-lg border border-border/60 bg-muted/30 p-3"><p className="text-sm font-semibold text-foreground">{record.title}</p><div className="mt-2 space-y-2">{record.fields.map((field) => <div key={`${record.title}-${field.source}-${field.label}`} className="grid gap-1 text-xs sm:grid-cols-[130px_1fr]"><span className="text-muted-foreground">{field.label}</span><span className="break-words text-foreground">{evidenceValue(field.value)}</span></div>)}</div></div>)}</div></div>}</div>}
+        <SheetFooter className="mt-6 gap-2 sm:space-x-0"><Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button><Button disabled={!action} onClick={() => action && onProceed(action)}>Open {action ? humanize(action.tab) : "tab"}</Button></SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 export function AdminUserIntelligenceCenter() {
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<AnyRow[]>([]);
