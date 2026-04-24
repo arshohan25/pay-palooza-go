@@ -94,6 +94,7 @@ import AdminFloatManagement from "@/components/admin/AdminFloatManagement";
 import AdminRevenueDashboard from "@/components/admin/AdminRevenueDashboard";
 import AdminInvestmentPnL from "@/components/admin/AdminInvestmentPnL";
 import AdminMfsMonitor from "@/components/admin/AdminMfsMonitor";
+import AdminOperationsWall from "@/components/admin/AdminOperationsWall";
 import AdminMerchantApplications from "@/components/admin/AdminMerchantApplications";
 import AdminApiRequests from "@/components/admin/AdminApiRequests";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
@@ -252,6 +253,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "transactions", label: "Transactions", icon: Receipt },
       { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
+      { id: "operations_wall", label: "Operations Wall", icon: Activity },
       { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
       { id: "complaints", label: "Complaints", icon: AlertTriangle },
@@ -1992,6 +1994,9 @@ export default function AdminDashboard() {
 
         {/* ═══ REAL-TIME MONITOR ═══ */}
         {activeTab === "live_monitor" && <AdminRealtimeMonitor />}
+
+        {/* ═══ OPERATIONS WALL ═══ */}
+        {activeTab === "operations_wall" && <AdminOperationsWall />}
 
         {/* ═══ RISK CONTROL ═══ */}
         {activeTab === "risk_control" && <AdminRiskControl />}
