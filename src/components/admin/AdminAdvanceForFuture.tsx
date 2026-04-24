@@ -1059,7 +1059,12 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
               <div className="flex flex-wrap gap-2">
                 {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize">{frame}</Button>)}
               </div>
-              <AppEmulator title={previewFeature.title} role={previewFeature.target} features={[previewFeature]} hero={previewFeature.capabilities[0]} icon={previewFeature.icon} />
+              <div className="grid gap-4 xl:grid-cols-2">
+                {previewFeatureGroups && (Object.keys(previewFeatureGroups) as AppRole[]).filter((role) => previewFeatureGroups[role].length).map((role) => {
+                  const meta = roleMeta[role];
+                  return <AppEmulator key={role} title={meta.title} role={meta.label} features={previewFeatureGroups[role]} hero={meta.hero} icon={meta.icon} candidate />;
+                })}
+              </div>
               <div className="grid gap-2 text-xs sm:grid-cols-4">
                 <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Current</p><p className="font-semibold">{visibilityCopy[getVisibility(previewFeature.key)].label}</p></div>
                 <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">New</p><p className="font-semibold">Admin Preview</p></div>
@@ -1071,6 +1076,42 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
           <DialogFooter>
             <Button variant="outline" onClick={() => setPreviewFeature(null)}>Cancel</Button>
             <Button onClick={() => { if (previewFeature) setFeaturePending({ feature: previewFeature, visibility: "disabled" }); setPreviewFeature(null); }}>Enable Admin Preview</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!bulkEmulatorPreview} onOpenChange={(open) => !open && setBulkEmulatorPreview(null)}>
+        <DialogContent className="max-h-[92vh] max-w-6xl overflow-auto">
+          <DialogHeader>
+            <DialogTitle>{bulkEmulatorPreview?.title} emulator preview</DialogTitle>
+            <DialogDescription>Review selected features as app screens before enabling Admin Preview.</DialogDescription>
+          </DialogHeader>
+          {bulkEmulatorPreview && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize">{frame}</Button>)}
+                <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">{bulkPreviewFeatures.length} preview candidates</Badge>
+              </div>
+              <div className="grid gap-4 xl:grid-cols-2">
+                {(Object.keys(bulkPreviewGroups) as AppRole[]).filter((role) => bulkPreviewGroups[role].length).map((role) => {
+                  const meta = roleMeta[role];
+                  return <AppEmulator key={role} title={meta.title} role={meta.label} features={bulkPreviewGroups[role]} hero={meta.hero} icon={meta.icon} candidate />;
+                })}
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="mb-2 text-xs font-semibold text-foreground">Feature keys</p>
+                <div className="flex max-h-24 flex-wrap gap-1.5 overflow-auto">
+                  {bulkEmulatorPreview.keys.map((key) => <Badge key={key} variant="outline" className="text-[10px]">{key}</Badge>)}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkEmulatorPreview(null)}>Cancel</Button>
+            <Button onClick={confirmBulkPreview} disabled={updatingKey === bulkEmulatorPreview?.group}>
+              {updatingKey === bulkEmulatorPreview?.group ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Enable Admin Preview
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
