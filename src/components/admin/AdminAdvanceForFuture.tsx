@@ -532,34 +532,33 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     if (!bulkEmulatorPreview) return;
     const pending = bulkEmulatorPreview;
     setBulkEmulatorPreview(null);
-    setBulkPending({ ...pending, visibility: "disabled" });
-    setTimeout(() => runBulkAction(), 0);
+    runBulkAction({ ...pending, visibility: "disabled" });
   };
 
-  const runBulkAction = async () => {
-    if (!bulkPending) return;
-    setUpdatingKey(bulkPending.group);
-    const previousVisibility = bulkPending.keys.reduce<Record<string, string>>((acc, key) => {
+  const runBulkAction = async (pending = bulkPending) => {
+    if (!pending) return;
+    setUpdatingKey(pending.group);
+    const previousVisibility = pending.keys.reduce<Record<string, string>>((acc, key) => {
       acc[key] = getVisibility(key);
       return acc;
     }, {});
 
     const { error } = await supabase
       .from("global_feature_toggles")
-      .update({ visibility: bulkPending.visibility, is_enabled: bulkPending.visibility === "visible" } as any)
-      .in("feature_key", bulkPending.keys);
+      .update({ visibility: pending.visibility, is_enabled: pending.visibility === "visible" } as any)
+      .in("feature_key", pending.keys);
 
     if (error) {
       toast.error("Bulk launch control failed");
     } else {
-      toast.success(`${bulkPending.title} → ${visibilityCopy[bulkPending.visibility].label}`);
-      auditLog("future_feature_bulk_visibility_changed", bulkPending.group, {
-        bulk_group: bulkPending.group,
-        feature_keys: bulkPending.keys,
+      toast.success(`${pending.title} → ${visibilityCopy[pending.visibility].label}`);
+      auditLog("future_feature_bulk_visibility_changed", pending.group, {
+        bulk_group: pending.group,
+        feature_keys: pending.keys,
         previous_visibility: previousVisibility,
-        new_visibility: bulkPending.visibility,
-        launch_stage: getStage(bulkPending.visibility),
-        affected_count: bulkPending.keys.length,
+        new_visibility: pending.visibility,
+        launch_stage: getStage(pending.visibility),
+        affected_count: pending.keys.length,
       });
       loadAuditEntries();
     }
