@@ -160,14 +160,14 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
                   </div>
                 )}
 
-                {/* Advance button */}
-                {canAdvance && (
+                {/* Fulfill button */}
+                {order.status !== "cancelled" && order.status !== "delivered" && (
                   <button
-                    onClick={() => advanceStatus(order)}
-                    className="w-full py-2.5 rounded-xl text-white text-[12px] font-bold"
-                    style={{ background: STATUS_META[STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1]]?.color || "#FF7043" }}
+                    onClick={() => setFulfillOrder(order)}
+                    className="w-full py-2.5 rounded-xl text-white text-[12px] font-bold flex items-center justify-center gap-1.5"
+                    style={{ background: "#0288D1" }}
                   >
-                    Mark as {STATUS_META[STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1]]?.label}
+                    <Truck size={13} /> Fulfill / Update Shipment
                   </button>
                 )}
               </div>
@@ -175,6 +175,14 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
           </motion.div>
         );
       })}
+
+      <FulfillmentSheet
+        orderId={fulfillOrder?.id ?? null}
+        items={Array.isArray(fulfillOrder?.items) ? fulfillOrder!.items : []}
+        open={!!fulfillOrder}
+        onOpenChange={(o) => { if (!o) setFulfillOrder(null); }}
+        onUpdated={load}
+      />
     </div>
   );
 };
