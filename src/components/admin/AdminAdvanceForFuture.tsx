@@ -634,6 +634,30 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
       return acc;
     }, { user: [], merchant: [], agent: [], admin: [] });
 
+  const EmulatorSummaryPanel = ({ features }: { features: FutureFeature[] }) => (
+    <div className="rounded-[19px] border bg-muted/25 p-3">
+      <p className="mb-2 text-xs font-semibold text-foreground">Selected feature summary</p>
+      <div className="space-y-2">
+        {features.map((feature) => {
+          const isAdminPreview = getVisibility(feature.key) === "disabled";
+          return (
+            <div key={feature.key} className="flex flex-col gap-2 rounded-md bg-background/60 p-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold text-foreground">{feature.title}</p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {getFeatureAppRoles(feature.target).map((role) => <Badge key={role} variant="outline" className="text-[10px]">{roleMeta[role].label}</Badge>)}
+                </div>
+              </div>
+              <Badge variant={isAdminPreview ? "secondary" : "outline"} className="w-fit text-[10px] uppercase tracking-wide">
+                {isAdminPreview ? "Already admin preview" : "Preview candidate"}
+              </Badge>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   const previewBadge = (key: string) => {
     const visibility = getVisibility(key);
     const state = visibilityCopy[visibility] ?? visibilityCopy.hidden;
@@ -1086,6 +1110,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                 const meta = roleMeta[role];
                 return <AppEmulator title={meta.title} role={meta.label} features={previewFeatureGroups[role]} hero={meta.hero} icon={meta.icon} candidate />;
               })() : null}
+              <EmulatorSummaryPanel features={[previewFeature]} />
               <div className="grid gap-2 text-xs sm:grid-cols-4">
                 <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Current</p><p className="font-semibold">{visibilityCopy[getVisibility(previewFeature.key)].label}</p></div>
                 <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">New</p><p className="font-semibold">Admin Preview</p></div>
@@ -1128,6 +1153,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                 const meta = roleMeta[role];
                 return <AppEmulator title={meta.title} role={meta.label} features={bulkPreviewGroups[role]} hero={meta.hero} icon={meta.icon} candidate />;
               })() : null}
+              <EmulatorSummaryPanel features={bulkPreviewFeatures} />
               <div className="rounded-md border p-3">
                 <p className="mb-2 text-xs font-semibold text-foreground">Feature keys</p>
                 <div className="flex max-h-24 flex-wrap gap-1.5 overflow-auto">
