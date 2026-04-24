@@ -1110,6 +1110,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                 const meta = roleMeta[role];
                 return <AppEmulator title={meta.title} role={meta.label} features={previewFeatureGroups[role]} hero={meta.hero} icon={meta.icon} candidate />;
               })() : null}
+              <EmulatorSummaryPanel features={[previewFeature]} />
               <div className="grid gap-2 text-xs sm:grid-cols-4">
                 <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Current</p><p className="font-semibold">{visibilityCopy[getVisibility(previewFeature.key)].label}</p></div>
                 <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">New</p><p className="font-semibold">Admin Preview</p></div>
@@ -1152,6 +1153,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                 const meta = roleMeta[role];
                 return <AppEmulator title={meta.title} role={meta.label} features={bulkPreviewGroups[role]} hero={meta.hero} icon={meta.icon} candidate />;
               })() : null}
+              <EmulatorSummaryPanel features={bulkPreviewFeatures} />
               <div className="rounded-md border p-3">
                 <p className="mb-2 text-xs font-semibold text-foreground">Feature keys</p>
                 <div className="flex max-h-24 flex-wrap gap-1.5 overflow-auto">
