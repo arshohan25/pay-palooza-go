@@ -7,7 +7,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
-import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, type PendingCoupon } from "@/lib/couponStore";
+import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, recordCouponRedemption, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 
@@ -321,7 +321,10 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
       reference: txnId.current,
     });
 
-    if (pendingCoupon) clearPendingCoupon();
+    if (pendingCoupon) {
+      await recordCouponRedemption({ code: pendingCoupon.code, flow: "bill_pay", txnId: txnId.current, discount: couponDiscVal });
+      clearPendingCoupon();
+    }
     showTxnToast({
       type: "Bill Payment",
       amount: `৳${finalAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,

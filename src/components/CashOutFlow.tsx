@@ -9,7 +9,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
-import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, type PendingCoupon } from "@/lib/couponStore";
+import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, recordCouponRedemption, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { Textarea } from "@/components/ui/textarea";
@@ -360,7 +360,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
       setProcessing(false);
       return;
     }
-    if (pendingCoupon) clearPendingCoupon();
+    if (pendingCoupon) {
+      await recordCouponRedemption({ code: pendingCoupon.code, flow: "cash_out", txnId: txnId.current, discount: couponDiscVal });
+      clearPendingCoupon();
+    }
     showTxnToast({ type: "Cash Out", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-cashout" });
     setDirection(1);
     setStep("success");

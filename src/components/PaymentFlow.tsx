@@ -8,7 +8,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
-import { calcCouponDiscount, clearPendingCoupon, type PendingCoupon } from "@/lib/couponStore";
+import { calcCouponDiscount, clearPendingCoupon, recordCouponRedemption, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 
@@ -440,7 +440,10 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
       setProcessing(false);
       return;
     }
-    if (pendingCoupon) clearPendingCoupon();
+    if (pendingCoupon) {
+      await recordCouponRedemption({ code: pendingCoupon.code, flow: "payment", txnId: txnId.current, discount: couponDiscVal });
+      clearPendingCoupon();
+    }
     showTxnToast({ type: "Payment", amount: `৳${effectiveAmtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-payment" });
     setDirection(1);
     setStep("success");

@@ -8,7 +8,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
-import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, type PendingCoupon } from "@/lib/couponStore";
+import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, recordCouponRedemption, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { supabase } from "@/integrations/supabase/client";
@@ -489,7 +489,10 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       description: packDesc + " [API]" + (pendingCoupon ? ` [Coupon: ${pendingCoupon.code}]` : ""),
     });
 
-    if (pendingCoupon) clearPendingCoupon();
+    if (pendingCoupon) {
+      await recordCouponRedemption({ code: pendingCoupon.code, flow: "recharge", txnId: txnId.current, discount: couponDiscVal });
+      clearPendingCoupon();
+    }
     showTxnToast({
       type: "Live Recharge",
       amount: `৳${finalPrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
