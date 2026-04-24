@@ -888,7 +888,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                 return (
                   <div key={entry.id} className="rounded-lg border bg-muted/20 p-3">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0"><p className="text-sm font-semibold text-foreground">{entry.action.replaceAll("_", " ")}</p><p className="break-all text-[11px] text-muted-foreground">Actor {entry.actor_id} · {new Date(entry.created_at).toLocaleString()}</p></div>
+                      <div className="min-w-0"><p className="text-sm font-semibold text-foreground">{entry.action.replace(/_/g, " ")}</p><p className="break-all text-[11px] text-muted-foreground">Actor {entry.actor_id} · {new Date(entry.created_at).toLocaleString()}</p></div>
                       <Badge variant={visibilityCopy[status]?.variant ?? "outline"} className="w-fit text-[10px]">{visibilityCopy[status]?.label ?? status}</Badge>
                     </div>
                     <div className="mt-2 grid gap-2 text-xs sm:grid-cols-3">
