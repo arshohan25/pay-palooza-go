@@ -354,7 +354,7 @@ export function AdminBusinessIntelligence() {
 const segmentTemplates = ["New users with no first transaction", "High-balance dormant users", "Frequent recharge users", "Merchants with declining sales", "Agents with low float", "Users with rejected KYC", "Power users eligible for rewards", "Suspicious users requiring review"];
 const approvalActions = ["Delete user", "Force KYC approval", "Large limit increase", "Gateway config change", "Fee change", "Merchant payout change", "Admin role assignment", "Data export", "Bulk suspension", "Blacklist removal"];
 
-type SegmentRule = { label: string; expression: string; source: string; description: string };
+type SegmentRule = { label: string; summary: string; expression: string; source: string; description: string };
 type SegmentDefinition = {
   rules: SegmentRule[];
   fetchSample: () => Promise<AnyRow | null>;
