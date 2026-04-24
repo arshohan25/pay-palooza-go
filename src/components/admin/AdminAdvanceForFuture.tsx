@@ -1037,7 +1037,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
           )}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={runBulkAction}>
+            <AlertDialogAction onClick={() => runBulkAction()}>
               {updatingKey === bulkPending?.group ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirm
             </AlertDialogAction>
