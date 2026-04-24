@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_approval_requests: {
+        Row: {
+          action_type: string
+          created_at: string
+          decision_notes: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          payload: Json
+          reason: string
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          decision_notes?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          payload?: Json
+          reason: string
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          decision_notes?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          payload?: Json
+          reason?: string
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_bulk_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          reason: string
+          requested_by: string
+          result: Json
+          rollback_payload: Json
+          status: string
+          target_segment_id: string | null
+          target_user_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          reason: string
+          requested_by?: string
+          result?: Json
+          rollback_payload?: Json
+          status?: string
+          target_segment_id?: string | null
+          target_user_ids?: string[]
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          requested_by?: string
+          result?: Json
+          rollback_payload?: Json
+          status?: string
+          target_segment_id?: string | null
+          target_user_ids?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_canned_replies: {
         Row: {
           content: string
@@ -38,6 +128,135 @@ export type Database = {
           label?: string
           sort_order?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      admin_dashboard_layouts: {
+        Row: {
+          created_at: string
+          department: string
+          favorite_modules: string[]
+          id: string
+          layout: Json
+          owner_user_id: string
+          role_key: string | null
+          saved_filters: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string
+          favorite_modules?: string[]
+          id?: string
+          layout?: Json
+          owner_user_id?: string
+          role_key?: string | null
+          saved_filters?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string
+          favorite_modules?: string[]
+          id?: string
+          layout?: Json
+          owner_user_id?: string
+          role_key?: string | null
+          saved_filters?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_evidence_vault: {
+        Row: {
+          case_title: string
+          case_type: string
+          created_at: string
+          created_by: string
+          evidence_hash: string | null
+          evidence_type: string
+          id: string
+          notes: string | null
+          related_user_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          case_title: string
+          case_type?: string
+          created_at?: string
+          created_by?: string
+          evidence_hash?: string | null
+          evidence_type?: string
+          id?: string
+          notes?: string | null
+          related_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          case_title?: string
+          case_type?: string
+          created_at?: string
+          created_by?: string
+          evidence_hash?: string | null
+          evidence_type?: string
+          id?: string
+          notes?: string | null
+          related_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_launch_calendar: {
+        Row: {
+          business_impact: string | null
+          created_at: string
+          created_by: string
+          dependency_status: string
+          feature_key: string
+          id: string
+          launch_notes: string | null
+          live_date: string | null
+          owner: string | null
+          preview_date: string | null
+          rollback_plan: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          business_impact?: string | null
+          created_at?: string
+          created_by?: string
+          dependency_status?: string
+          feature_key: string
+          id?: string
+          launch_notes?: string | null
+          live_date?: string | null
+          owner?: string | null
+          preview_date?: string | null
+          rollback_plan?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          business_impact?: string | null
+          created_at?: string
+          created_by?: string
+          dependency_status?: string
+          feature_key?: string
+          id?: string
+          launch_notes?: string | null
+          live_date?: string | null
+          owner?: string | null
+          preview_date?: string | null
+          rollback_plan?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -80,6 +299,156 @@ export type Database = {
           target_roles?: string[] | null
           target_user?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      admin_security_policies: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_enabled: boolean
+          name: string
+          policy_key: string
+          settings: Json
+          severity: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          name: string
+          policy_key: string
+          settings?: Json
+          severity?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          name?: string
+          policy_key?: string
+          settings?: Json
+          severity?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      admin_sensitive_access_logs: {
+        Row: {
+          actor_id: string
+          created_at: string
+          data_type: string
+          id: string
+          metadata: Json
+          reason: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          actor_id?: string
+          created_at?: string
+          data_type: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          data_type?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      admin_user_notes: {
+        Row: {
+          assigned_staff_id: string | null
+          created_at: string
+          created_by: string
+          follow_up_at: string | null
+          id: string
+          note: string
+          note_type: string
+          status: string
+          target_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_staff_id?: string | null
+          created_at?: string
+          created_by?: string
+          follow_up_at?: string | null
+          id?: string
+          note: string
+          note_type?: string
+          status?: string
+          target_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_staff_id?: string | null
+          created_at?: string
+          created_by?: string
+          follow_up_at?: string | null
+          id?: string
+          note?: string
+          note_type?: string
+          status?: string
+          target_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_user_segments: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          estimated_count: number
+          id: string
+          name: string
+          rules: Json
+          segment_key: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          estimated_count?: number
+          id?: string
+          name: string
+          rules?: Json
+          segment_key: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          estimated_count?: number
+          id?: string
+          name?: string
+          rules?: Json
+          segment_key?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -5342,6 +5711,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_command_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_chat_participant: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
