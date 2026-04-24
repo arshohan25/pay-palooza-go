@@ -14,7 +14,7 @@ import RoleGuard from "@/components/RoleGuard";
 import { retryLazyImport } from "@/lib/cacheReset";
 
 const Index = lazy(() => retryLazyImport(() => import("./pages/Index")));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminDashboard = lazy(() => retryLazyImport(() => import("./pages/AdminDashboard")));
 const AgentDashboard = lazy(() => import("./pages/AgentDashboard"));
 const AgentCashIn = lazy(() => import("./pages/AgentCashIn"));
 const AgentB2B = lazy(() => import("./pages/AgentB2B"));
