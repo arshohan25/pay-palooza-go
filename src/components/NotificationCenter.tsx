@@ -228,7 +228,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
               {fulfillmentUnread > 0 && filter === "all" && (
                 <button
                   onClick={() => setFilter("fulfillment")}
-                  className="mx-3 mt-2 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-[11px] font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                  className="mx-3 mt-2 px-3 py-1.5 rounded-lg bg-primary/10 text-[11px] font-semibold text-primary flex items-center gap-2 hover:bg-primary/15 transition-colors"
                 >
                   <Truck size={12} /> {fulfillmentUnread} unread order update{fulfillmentUnread > 1 ? "s" : ""} →
                 </button>
