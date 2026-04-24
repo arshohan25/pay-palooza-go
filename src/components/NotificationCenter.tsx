@@ -167,6 +167,12 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                   </AnimatePresence>
                 </div>
                 <div className="flex items-center gap-1">
+                  {filter !== "all" && filter !== "unread" && filtered.some((n) => !n.read) && (
+                    <button onClick={markFilteredRead}
+                      className="text-[11px] font-semibold text-primary px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-1">
+                      <CheckCheck size={12} /> Mark filter
+                    </button>
+                  )}
                   {unreadCount > 0 && (
                     <button onClick={markAllRead}
                       className="text-[11px] font-semibold text-primary px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-1">
@@ -185,6 +191,48 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                   </button>
                 </div>
               </div>
+
+              {/* Filter tabs — horizontal scroll */}
+              <div className="flex gap-1.5 px-3 py-2 border-b border-border/60 overflow-x-auto scrollbar-none shrink-0">
+                {FULFILLMENT_TABS.map((tab) => {
+                  const active = filter === tab.key;
+                  const count =
+                    tab.key === "all" ? sorted.length :
+                    tab.key === "unread" ? unreadCount :
+                    tab.key === "fulfillment" ? sorted.filter(isFulfillment).length :
+                    tab.key === "shipped" ? sorted.filter((n) => isFulfillment(n) && (getFulfillmentStatus(n) === "shipped" || (!getFulfillmentStatus(n) && n.category === "fulfillment"))).length :
+                    tab.key === "partial" ? sorted.filter((n) => isFulfillment(n) && (getFulfillmentStatus(n) === "partial" || getFulfillmentStatus(n) === "partially_shipped")).length :
+                    tab.key === "delivered" ? sorted.filter((n) => isFulfillment(n) && getFulfillmentStatus(n) === "delivered").length : 0;
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setFilter(tab.key)}
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5 ${
+                        active
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted text-muted-foreground hover:bg-muted/70"
+                      }`}
+                    >
+                      {tab.label}
+                      {count > 0 && (
+                        <span className={`text-[9px] font-bold px-1.5 rounded-full min-w-[16px] ${
+                          active ? "bg-primary-foreground/20" : "bg-background/60"
+                        }`}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {fulfillmentUnread > 0 && filter === "all" && (
+                <button
+                  onClick={() => setFilter("fulfillment")}
+                  className="mx-3 mt-2 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-[11px] font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                >
+                  <Truck size={12} /> {fulfillmentUnread} unread order update{fulfillmentUnread > 1 ? "s" : ""} →
+                </button>
+              )}
 
               {/* Body — flat chronological list, latest first */}
               <div className="flex-1 overflow-y-auto">
