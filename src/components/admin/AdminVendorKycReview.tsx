@@ -28,11 +28,28 @@ export default function AdminVendorKycReview() {
     setLoading(true);
     const { data } = await supabase
       .from("merchants")
-      .select("*, profiles!merchants_user_id_fkey(name, phone, kyc_status)")
+      .select("*")
       .eq("business_kyc_status", filter)
       .order("created_at", { ascending: false })
       .limit(100);
-    setMerchants(data ?? []);
+    const rows = data ?? [];
+    // Hydrate owner profile + kyc separately
+    const userIds = Array.from(new Set(rows.map((r: any) => r.user_id).filter(Boolean)));
+    if (userIds.length > 0) {
+      const [{ data: profs }, { data: kycs }] = await Promise.all([
+        supabase.from("profiles").select("user_id, name, phone, kyc_exempt").in("user_id", userIds),
+        supabase.from("kyc_verifications").select("user_id, status").in("user_id", userIds),
+      ]);
+      const profMap = new Map((profs ?? []).map((p: any) => [p.user_id, p]));
+      const kycMap = new Map<string, string>();
+      (kycs ?? []).forEach((k: any) => { if (!kycMap.has(k.user_id)) kycMap.set(k.user_id, k.status); });
+      rows.forEach((r: any) => {
+        const p = profMap.get(r.user_id);
+        const kycStatus = p?.kyc_exempt ? "verified" : (kycMap.get(r.user_id) || "none");
+        r.profiles = { name: p?.name, phone: p?.phone, kyc_status: kycStatus };
+      });
+    }
+    setMerchants(rows);
     setLoading(false);
   }, [filter]);
 
