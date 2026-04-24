@@ -583,8 +583,34 @@ export default function AdminLEARequest() {
                   className="shrink-0"
                   title={hasValidationErrors ? "Fill all required fields first" : "Download PDF"}
                 >
-                  <Download className="w-4 h-4 mr-1" />{generating ? "Generating..." : "Download PDF"}
+                  {generating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}{generating ? "Generating..." : "Download PDF"}
                 </Button>
+              </div>
+
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-primary" /> Compliance Readiness</p>
+                  {paginationResult && <Badge variant="outline" className="text-[10px]">PDF: {paginationResult.pages}p · {paginationResult.mode}</Badge>}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {readinessItems.map(item => (
+                    <div key={item.label} className="flex items-center gap-1.5 rounded-md bg-background px-2 py-1 text-[10px]">
+                      {item.ready ? <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> : <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />}
+                      <span className={item.ready ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Textarea
+                  value={internalNote}
+                  onChange={e => setInternalNote(e.target.value)}
+                  placeholder="Internal manager note (audit history only, not printed on official PDF)"
+                  className="min-h-[72px] text-xs"
+                  maxLength={500}
+                />
+                <p className="text-[10px] text-muted-foreground text-right">{internalNote.length}/500</p>
               </div>
 
               {/* Optional sections toggle */}
