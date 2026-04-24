@@ -422,6 +422,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   const [previewFeature, setPreviewFeature] = useState<FutureFeature | null>(null);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [ariaStatus, setAriaStatus] = useState("Advance for Future controls ready.");
 
   const featureKeys = useMemo(() => futureFeatures.map((feature) => feature.key), []);
   const topSeven = useMemo(() => futureFeatures.filter((feature) => feature.topRank).sort((a, b) => (a.topRank ?? 0) - (b.topRank ?? 0)), []);
@@ -488,15 +489,20 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
       return;
     }
 
+    setAriaStatus(`Starting ${visibilityCopy[visibility].label} for ${feature.title}.`);
     setUpdatingKey(feature.key);
     const { error } = await supabase
       .from("global_feature_toggles")
       .update({ visibility, is_enabled: visibility === "visible" } as any)
       .eq("id", toggle.id);
 
-    if (error) toast.error("Failed to update launch control");
+    if (error) {
+      setAriaStatus(`Failed to update ${feature.title}.`);
+      toast.error("Failed to update launch control");
+    }
     else {
       toast.success(`${feature.title} → ${visibilityCopy[visibility].label}`);
+      setAriaStatus(`${feature.title} changed to ${visibilityCopy[visibility].label}.`);
       auditLog("future_feature_visibility_changed", toggle.id, {
         feature_key: feature.key,
         title: feature.title,
@@ -547,6 +553,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
 
   const runBulkAction = async (pending = bulkPending) => {
     if (!pending) return;
+    setAriaStatus(`Starting ${visibilityCopy[pending.visibility].label} for ${pending.keys.length} selected features.`);
     setUpdatingKey(pending.group);
     const previousVisibility = pending.keys.reduce<Record<string, string>>((acc, key) => {
       acc[key] = getVisibility(key);
@@ -559,9 +566,11 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
       .in("feature_key", pending.keys);
 
     if (error) {
+      setAriaStatus(`Failed to update ${pending.keys.length} selected features.`);
       toast.error("Bulk launch control failed");
     } else {
       toast.success(`${pending.title} → ${visibilityCopy[pending.visibility].label}`);
+      setAriaStatus(`${pending.keys.length} selected features changed to ${visibilityCopy[pending.visibility].label}.`);
       auditLog("future_feature_bulk_visibility_changed", pending.group, {
         bulk_group: pending.group,
         feature_keys: pending.keys,
@@ -735,6 +744,9 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
 
   return (
     <div className="space-y-5">
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {ariaStatus}
+      </div>
       <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-[var(--shadow-card)]">
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
