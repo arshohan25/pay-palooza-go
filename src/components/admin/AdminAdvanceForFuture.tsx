@@ -4,16 +4,21 @@ import {
   Activity,
   ArrowRight,
   BadgeCheck,
+  BellRing,
   Bot,
   CheckCircle2,
   CreditCard,
   Eye,
   EyeOff,
   FileCheck2,
+  Gauge,
   KeyRound,
+  Landmark,
+  LineChart,
   Loader2,
   Mic,
   Network,
+  QrCode,
   Radar,
   RotateCcw,
   ShieldAlert,
@@ -353,6 +358,13 @@ const getStage = (visibility?: string): LaunchStage => {
 
 const isLowerComplexity = (complexity: Complexity) => complexity === "Low" || complexity === "Medium";
 
+const previewFeatureKeys = {
+  user: ["future_ai_copilot", "future_scam_shield", "future_easypay_score", "future_smart_rewards_engine", "future_predictive_loan_eligibility", "future_bangla_voice_assistant", "future_dynamic_risk_limits"],
+  merchant: ["future_merchant_growth_os", "future_smart_rewards_engine", "future_partner_qr_api"],
+  agent: ["future_agent_liquidity_intel", "future_scam_shield", "future_bangla_voice_assistant"],
+  admin: ["future_compliance_center", "future_ai_fraud_investigator", "future_open_finance_hub", "future_predictive_support"],
+};
+
 export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const [toggles, setToggles] = useState<FutureToggle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -491,6 +503,35 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     return { live, preview, hidden, readiness };
   };
 
+  const getPreviewFeatures = (keys: string[]) =>
+    keys
+      .map((key) => futureFeatures.find((feature) => feature.key === key))
+      .filter((feature): feature is FutureFeature => Boolean(feature) && getVisibility(feature.key) !== "hidden");
+
+  const previewBadge = (key: string) => {
+    const visibility = getVisibility(key);
+    const state = visibilityCopy[visibility] ?? visibilityCopy.hidden;
+    return <Badge variant={state.variant} className="h-5 px-2 text-[9px] uppercase tracking-wide">{state.label}</Badge>;
+  };
+
+  const PreviewTile = ({ feature, icon: Icon }: { feature: FutureFeature; icon: typeof Sparkles }) => (
+    <div className="rounded-[19px] border border-border/60 bg-card/55 p-3 shadow-[var(--shadow-card)] backdrop-blur-xl">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-glow"><Icon className="h-4 w-4" /></span>
+        {previewBadge(feature.key)}
+      </div>
+      <p className="text-xs font-bold leading-tight text-foreground">{feature.title}</p>
+      <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">{feature.capabilities[0]}</p>
+    </div>
+  );
+
+  const userPreview = getPreviewFeatures(previewFeatureKeys.user);
+  const merchantPreview = getPreviewFeatures(previewFeatureKeys.merchant);
+  const agentPreview = getPreviewFeatures(previewFeatureKeys.agent);
+  const adminPreview = getPreviewFeatures(previewFeatureKeys.admin);
+
+  const rolePreviewCount = userPreview.length + merchantPreview.length + agentPreview.length + adminPreview.length;
+
   const matrixGroups = [
     { title: "High Impact / Low-Medium Complexity", note: "Quick wins and near-term release candidates", items: visibleFeatures.filter((feature) => feature.impact === "High" && isLowerComplexity(feature.complexity)) },
     { title: "High Impact / High Complexity", note: "Strategic bets requiring phased rollout", items: visibleFeatures.filter((feature) => feature.impact === "High" && feature.complexity === "High") },
@@ -540,6 +581,87 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
         </Card>
       ) : (
         <>
+          <Card className="overflow-hidden rounded-[19px] border border-border/70 bg-card/80 shadow-[var(--shadow-elevated)] backdrop-blur-xl">
+            <CardHeader className="relative space-y-3 pb-4">
+              <div className="pointer-events-none absolute -right-14 -top-14 h-36 w-36 rounded-full bg-primary/15 blur-3xl" />
+              <div className="pointer-events-none absolute left-1/3 top-4 h-20 w-20 rounded-full bg-accent/10 blur-2xl" />
+              <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <CardTitle className="text-base">Original App Preview</CardTitle>
+                  <p className="text-xs text-muted-foreground">App-style preview surfaces for features marked Admin Preview or Live.</p>
+                </div>
+                <Badge variant="secondary" className="w-fit text-[10px] uppercase tracking-wide">{rolePreviewCount} preview items active</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-4 xl:grid-cols-2">
+              <div className="rounded-[19px] border border-border/70 bg-background/60 p-3 shadow-[var(--shadow-card)]">
+                <div className="mb-3 flex items-center justify-between px-1">
+                  <div><p className="text-sm font-bold text-foreground">EasyPay User App Preview</p><p className="text-[10px] text-muted-foreground">Wallet home mockup</p></div>
+                  <Badge variant="outline" className="text-[10px]">User</Badge>
+                </div>
+                <div className="relative overflow-hidden rounded-[19px] border border-primary/20 bg-card p-4 shadow-glow">
+                  <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-primary/20 blur-2xl" />
+                  <div className="absolute -bottom-14 left-6 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
+                  <div className="relative rounded-[19px] gradient-hero p-4 text-primary-foreground shadow-glow">
+                    <p className="text-[11px] opacity-80">Available Balance</p>
+                    <div className="mt-1 flex items-end justify-between gap-3"><p className="text-2xl font-black">৳ 24,850</p><Badge className="bg-primary-foreground/15 text-primary-foreground hover:bg-primary-foreground/20">EasyPay</Badge></div>
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]"><span>Trust 86</span><span>Limit healthy</span><span>Rewards ready</span></div>
+                  </div>
+                  <div className="relative mt-3 grid grid-cols-4 gap-2">
+                    {userPreview.slice(0, 4).map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.icon} />)}
+                  </div>
+                  <div className="relative mt-3 grid gap-2 sm:grid-cols-2">
+                    {userPreview.slice(4).map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.key === "future_dynamic_risk_limits" ? Gauge : feature.icon} />)}
+                  </div>
+                  {!userPreview.length && <p className="relative rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Preview user features to see the app-like mockup.</p>}
+                </div>
+              </div>
+
+              <div className="rounded-[19px] border border-border/70 bg-background/60 p-3 shadow-[var(--shadow-card)]">
+                <div className="mb-3 flex items-center justify-between px-1">
+                  <div><p className="text-sm font-bold text-foreground">EasyPay Merchant App Preview</p><p className="text-[10px] text-muted-foreground">Store dashboard mockup</p></div>
+                  <Badge variant="outline" className="text-[10px]">Merchant</Badge>
+                </div>
+                <div className="rounded-[19px] border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
+                  <div className="rounded-[19px] bg-muted/30 p-4">
+                    <div className="flex items-center justify-between"><div><p className="text-[11px] text-muted-foreground">Today sales</p><p className="text-xl font-black text-foreground">৳ 18,420</p></div><LineChart className="h-9 w-9 text-primary" /></div>
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[10px]"><span className="rounded-2xl bg-background/70 p-2">Orders 42</span><span className="rounded-2xl bg-background/70 p-2">Repeat 31%</span><span className="rounded-2xl bg-background/70 p-2">Stock 8</span></div>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-3">{merchantPreview.map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.key === "future_partner_qr_api" ? QrCode : feature.icon} />)}</div>
+                  {!merchantPreview.length && <p className="mt-3 rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Preview merchant features to see the store mockup.</p>}
+                </div>
+              </div>
+
+              <div className="rounded-[19px] border border-border/70 bg-background/60 p-3 shadow-[var(--shadow-card)]">
+                <div className="mb-3 flex items-center justify-between px-1">
+                  <div><p className="text-sm font-bold text-foreground">EasyPay Agent App Preview</p><p className="text-[10px] text-muted-foreground">Field operations mockup</p></div>
+                  <Badge variant="outline" className="text-[10px]">Agent</Badge>
+                </div>
+                <div className="rounded-[19px] border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="rounded-[19px] bg-primary/10 p-3 text-primary"><p className="font-black">৳ 92k</p><p className="text-[10px]">Float</p></div>
+                    <div className="rounded-[19px] bg-muted/40 p-3"><p className="font-black text-foreground">12</p><p className="text-[10px] text-muted-foreground">Cash-in</p></div>
+                    <div className="rounded-[19px] bg-muted/40 p-3"><p className="font-black text-foreground">Low</p><p className="text-[10px] text-muted-foreground">Risk</p></div>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-3">{agentPreview.map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.icon} />)}</div>
+                  {!agentPreview.length && <p className="mt-3 rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Preview agent features to see the field mockup.</p>}
+                </div>
+              </div>
+
+              <div className="rounded-[19px] border border-border/70 bg-background/60 p-3 shadow-[var(--shadow-card)]">
+                <div className="mb-3 flex items-center justify-between px-1">
+                  <div><p className="text-sm font-bold text-foreground">EasyPay Admin Preview</p><p className="text-[10px] text-muted-foreground">Command intelligence mockup</p></div>
+                  <Badge variant="outline" className="text-[10px]">Admin</Badge>
+                </div>
+                <div className="rounded-[19px] border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
+                  <div className="mb-3 flex items-center justify-between rounded-[19px] bg-muted/30 p-3"><div><p className="text-xs font-bold text-foreground">Risk operations</p><p className="text-[10px] text-muted-foreground">Compliance, fraud and support intelligence</p></div><BellRing className="h-5 w-5 text-primary" /></div>
+                  <div className="grid gap-2 sm:grid-cols-2">{adminPreview.map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.key === "future_open_finance_hub" ? Landmark : feature.icon} />)}</div>
+                  {!adminPreview.length && <p className="rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Preview admin features to see the intelligence mockup.</p>}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardHeader className="space-y-3">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
