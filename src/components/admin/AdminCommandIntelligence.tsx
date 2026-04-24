@@ -46,6 +46,7 @@ const currency = (value: number) => `৳${Math.round(value || 0).toLocaleString(
 const shortDate = (value?: string | null) => value ? new Date(value).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 const humanize = (value: string) => String(value || "").split("_").join(" ");
 const sampleRowKey = (row: AnyRow, index: number) => `${row.source || "sample"}:${row.id || row.user_id || row.reference || row.duplicate_value || "row"}:${row.created_at || index}`;
+const sampleRowLabel = (row: AnyRow, index: number) => `${row.source || "sample"} / ${row.id || row.user_id || row.reference || row.duplicate_value || `row-${index + 1}`}`;
 
 async function insertAudit(action: string, entityType: string, entityId: string, details: AnyRow = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -262,12 +263,39 @@ export function AdminDataQualityMonitor() {
   const [sampleTitle, setSampleTitle] = useState("");
   const [sampleRows, setSampleRows] = useState<AnyRow[]>([]);
   const [sampleLoading, setSampleLoading] = useState(false);
+  const [sampleFilter, setSampleFilter] = useState("");
+  const [selectedSampleKey, setSelectedSampleKey] = useState<string | null>(null);
+  const keyedSampleRows = useMemo(() => sampleRows.map((row, index) => ({ row, key: sampleRowKey(row, index), label: sampleRowLabel(row, index) })), [sampleRows]);
+  const filteredSampleRows = useMemo(() => {
+    const needle = sampleFilter.trim().toLowerCase();
+    if (!needle) return keyedSampleRows;
+    return keyedSampleRows.filter(({ row, key, label }) => [key, label, JSON.stringify(row)].some((value) => value.toLowerCase().includes(needle)));
+  }, [keyedSampleRows, sampleFilter]);
+
+  useEffect(() => {
+    if (!sampleOpen || sampleLoading) return;
+    const keys = keyedSampleRows.map((item) => item.key);
+    const duplicateKeys = keys.filter((key, index) => keys.indexOf(key) !== index);
+    const selectedStillVisible = !selectedSampleKey || filteredSampleRows.some((item) => item.key === selectedSampleKey);
+    console.debug("[DataQualityMonitor] sample row key sanity", {
+      check: sampleTitle,
+      totalRows: sampleRows.length,
+      visibleRows: filteredSampleRows.length,
+      keys,
+      duplicateKeys,
+      selectedSampleKey,
+      selectedStillVisible,
+    });
+    if (duplicateKeys.length) console.warn("[DataQualityMonitor] duplicate sample row keys detected", duplicateKeys);
+    if (selectedSampleKey && !selectedStillVisible) console.debug("[DataQualityMonitor] selected sample row is preserved but currently hidden by filter", { selectedSampleKey, filter: sampleFilter });
+  }, [filteredSampleRows, keyedSampleRows, sampleFilter, sampleLoading, sampleOpen, sampleRows.length, sampleTitle, selectedSampleKey]);
 
   const loadSamples = async (check: string) => {
     setSampleTitle(check);
     setSampleOpen(true);
     setSampleLoading(true);
     setSampleRows([]);
+    setSampleFilter("");
 
     try {
       let rows: AnyRow[] = [];
@@ -277,6 +305,10 @@ export function AdminDataQualityMonitor() {
         rows = Array.isArray(data) ? data : [];
       }
       setSampleRows(rows);
+      setSelectedSampleKey((current) => {
+        if (current && rows.some((row, index) => sampleRowKey(row, index) === current)) return current;
+        return rows[0] ? sampleRowKey(rows[0], 0) : null;
+      });
     } catch (error: any) {
       toast.error(error?.message || "Failed to load samples");
     } finally {
