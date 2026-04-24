@@ -45,6 +45,7 @@ type AnyRow = Record<string, any>;
 const currency = (value: number) => `৳${Math.round(value || 0).toLocaleString()}`;
 const shortDate = (value?: string | null) => value ? new Date(value).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 const humanize = (value: string) => String(value || "").split("_").join(" ");
+const sampleRowKey = (row: AnyRow, index: number) => `${row.source || "sample"}:${row.id || row.user_id || row.reference || row.duplicate_value || "row"}:${row.created_at || index}`;
 
 async function insertAudit(action: string, entityType: string, entityId: string, details: AnyRow = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -270,41 +271,10 @@ export function AdminDataQualityMonitor() {
 
     try {
       let rows: AnyRow[] = [];
-      if (check === "Profiles without KYC records") {
-        const [{ data: profiles }, { data: kyc }] = await Promise.all([
-          supabase.from("profiles").select("user_id,name,phone,status,created_at").not("phone", "like", "staff-%").limit(200),
-          supabase.from("kyc_verifications").select("user_id").limit(1000),
-        ]);
-        const kycUsers = new Set((kyc ?? []).map((x: AnyRow) => x.user_id));
-        rows = (profiles ?? []).filter((p: AnyRow) => !kycUsers.has(p.user_id)).slice(0, 25);
-      } else if (check === "Merchants without stores") {
-        const [{ data: merchants }, { data: stores }] = await Promise.all([
-          supabase.from("merchants").select("id,business_name,user_id,status,created_at").limit(200),
-          (supabase as any).from("vendor_stores").select("merchant_id").limit(1000),
-        ]);
-        const storeMerchants = new Set((stores ?? []).map((x: AnyRow) => x.merchant_id));
-        rows = (merchants ?? []).filter((m: AnyRow) => !storeMerchants.has(m.id)).slice(0, 25);
-      } else if (check === "Agents without float") {
-        const { data } = await (supabase as any).from("agents").select("id,user_id,business_name,status,float_balance,max_float,created_at").limit(200);
-        rows = (data ?? []).filter((a: AnyRow) => Number(a.float_balance ?? 0) <= 0).slice(0, 25);
-      } else if (check === "Orders without settlement status") {
-        const { data } = await (supabase as any).from("orders").select("id,user_id,status,total,settlement_status,created_at").limit(200);
-        rows = (data ?? []).filter((o: AnyRow) => !o.settlement_status).slice(0, 25);
-      } else if (check === "Transactions missing fees") {
-        const { data } = await supabase.from("transactions").select("id,type,amount,fee,status,created_at").limit(200);
-        rows = (data ?? []).filter((t: AnyRow) => t.fee === null || t.fee === undefined).slice(0, 25);
-      } else if (check === "Failed webhook delivery") {
-        const { data } = await (supabase as any).from("merchant_payment_sessions").select("id,merchant_id,reference,status,webhook_delivered,webhook_attempts,created_at").eq("webhook_delivered", false).gt("webhook_attempts", 0).limit(25);
-        rows = data ?? [];
-      } else if (check === "Duplicate phone/device records") {
-        const [{ data: profiles }, { data: devices }] = await Promise.all([
-          supabase.from("profiles").select("user_id,name,phone,created_at").not("phone", "is", null).limit(1000),
-          supabase.from("device_registrations").select("user_id,device_fingerprint,created_at").limit(1000),
-        ]);
-        const seen = new Set<string>();
-        const dupes = new Set<string>();
-        [...(profiles ?? []).map((p: AnyRow) => `phone:${p.phone}`), ...(devices ?? []).map((d: AnyRow) => `device:${d.device_fingerprint}`)].forEach((key) => seen.has(key) ? dupes.add(key) : seen.add(key));
-        rows = [...(profiles ?? []), ...(devices ?? [])].filter((row: AnyRow) => dupes.has(row.phone ? `phone:${row.phone}` : `device:${row.device_fingerprint}`)).slice(0, 25);
+      if (check !== "Users without profiles") {
+        const { data, error } = await (supabase as any).rpc("get_data_quality_samples", { p_check: check, p_limit: 25 });
+        if (error) throw error;
+        rows = Array.isArray(data) ? data : [];
       }
       setSampleRows(rows);
     } catch (error: any) {
@@ -314,7 +284,7 @@ export function AdminDataQualityMonitor() {
     }
   };
 
-  return <Shell title="Data Quality Monitor" description="Track missing, inconsistent, duplicate, or operationally risky data before it breaks workflows." icon={Gauge}><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{checks.map((c, i) => <Card key={c}><CardContent className="p-4"><div className="flex items-start justify-between"><p className="text-sm font-semibold">{c}</p><StatusBadge status={i % 3 === 0 ? "review" : "stable"} /></div><p className="mt-3 text-3xl font-bold">{[0, 18, 4, 7, 11, 2, 6, 3][i]}</p><p className="text-xs text-muted-foreground">Severity: {i % 3 === 0 ? "High" : i % 2 === 0 ? "Medium" : "Low"}</p><Button size="sm" variant="outline" className="mt-3 w-full" onClick={() => loadSamples(c)}>View Samples</Button></CardContent></Card>)}</div><Dialog open={sampleOpen} onOpenChange={setSampleOpen}><DialogContent className="max-w-3xl"><DialogHeader><DialogTitle>{sampleTitle}</DialogTitle><DialogDescription>Showing up to 25 sample records for this data quality check.</DialogDescription></DialogHeader><div className="max-h-[420px] space-y-2 overflow-y-auto">{sampleLoading ? <p className="py-8 text-center text-sm text-muted-foreground">Loading samples…</p> : sampleRows.length ? sampleRows.map((row, i) => <div key={row.id || row.user_id || i} className="rounded-lg border border-border bg-muted/30 p-3"><pre className="whitespace-pre-wrap break-words text-xs text-foreground">{JSON.stringify(row, null, 2)}</pre></div>) : <p className="py-8 text-center text-sm text-muted-foreground">No sample records found.</p>}</div><DialogFooter><Button variant="outline" onClick={() => setSampleOpen(false)}>Close</Button></DialogFooter></DialogContent></Dialog></Shell>;
+  return <Shell title="Data Quality Monitor" description="Track missing, inconsistent, duplicate, or operationally risky data before it breaks workflows." icon={Gauge}><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{checks.map((c, i) => <Card key={c}><CardContent className="p-4"><div className="flex items-start justify-between"><p className="text-sm font-semibold">{c}</p><StatusBadge status={i % 3 === 0 ? "review" : "stable"} /></div><p className="mt-3 text-3xl font-bold">{[0, 18, 4, 7, 11, 2, 6, 3][i]}</p><p className="text-xs text-muted-foreground">Severity: {i % 3 === 0 ? "High" : i % 2 === 0 ? "Medium" : "Low"}</p><Button size="sm" variant="outline" className="mt-3 w-full" onClick={() => loadSamples(c)}>View Samples</Button></CardContent></Card>)}</div><Dialog open={sampleOpen} onOpenChange={setSampleOpen}><DialogContent className="max-w-3xl"><DialogHeader><DialogTitle>{sampleTitle}</DialogTitle><DialogDescription>Showing up to 25 sample records for this data quality check.</DialogDescription></DialogHeader><div className="max-h-[420px] space-y-2 overflow-y-auto">{sampleLoading ? <p className="py-8 text-center text-sm text-muted-foreground">Loading samples…</p> : sampleRows.length ? sampleRows.map((row, i) => <div key={sampleRowKey(row, i)} className="rounded-lg border border-border bg-muted/30 p-3"><pre className="whitespace-pre-wrap break-words text-xs text-foreground">{JSON.stringify(row, null, 2)}</pre></div>) : <p className="py-8 text-center text-sm text-muted-foreground">No sample records found.</p>}</div><DialogFooter><Button variant="outline" onClick={() => setSampleOpen(false)}>Close</Button></DialogFooter></DialogContent></Dialog></Shell>;
 }
 
 export function AdminEvidenceVault() {
