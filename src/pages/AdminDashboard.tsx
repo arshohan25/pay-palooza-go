@@ -145,6 +145,7 @@ import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator"
 import { useIsMobile } from "@/hooks/use-mobile";
 import AdminNavReorder, { type NavGroup } from "@/components/admin/AdminNavReorder";
 import { GripVertical } from "lucide-react";
+import AdminPushSetupWizard from "@/components/admin/AdminPushSetupWizard";
 
 interface Stats {
   totalUsers: number;
@@ -326,6 +327,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "permissions", label: "Permissions", icon: ShieldAlert },
       { id: "sys_settings", label: "Settings", icon: Settings },
       { id: "apihub", label: "API Hub", icon: Plug },
+      { id: "push_setup", label: "Push Setup", icon: Bell },
       { id: "api_requests", label: "API Requests", icon: Plug },
       { id: "webhooks", label: "Webhooks", icon: Activity },
       { id: "devices", label: "Devices", icon: Smartphone },
@@ -1902,6 +1904,7 @@ export default function AdminDashboard() {
 
         {/* ═══ API HUB ═══ */}
         {activeTab === "apihub" && <AdminApiHub onNavigate={setActiveTab} />}
+        {activeTab === "push_setup" && <AdminPushSetupWizard />}
 
         {/* ═══ BILLER API CONFIGS ═══ */}
         {activeTab === "billers" && <AdminBillerConfig />}
