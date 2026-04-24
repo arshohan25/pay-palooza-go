@@ -719,6 +719,13 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <VariantsEditorSheet
+        productId={variantsProductId}
+        productName={variantsProductName}
+        open={!!variantsProductId}
+        onOpenChange={(o) => { if (!o) setVariantsProductId(null); }}
+      />
     </div>
   );
 };
