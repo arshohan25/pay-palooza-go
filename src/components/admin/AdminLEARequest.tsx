@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Search, Download, Shield, FileText, AlertTriangle, User, CreditCard,
   Smartphone, Key, Landmark, ArrowUpDown, Gavel, MessageSquare, Users,
@@ -72,6 +73,8 @@ export default function AdminLEARequest() {
   const [historyFilter, setHistoryFilter] = useState("");
   const [internalNote, setInternalNote] = useState("");
   const [paginationResult, setPaginationResult] = useState<{ mode: "measured" | "fallback"; pages: number } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMode, setConfirmMode] = useState<"download" | "redownload">("download");
   const reportRef = useRef<HTMLDivElement>(null);
   const pendingRedownloadIdRef = useRef<string | null>(null);
   const [includeSections, setIncludeSections] = useState<Record<SectionKey, boolean>>({
@@ -270,7 +273,7 @@ export default function AdminLEARequest() {
     return "Preparing...";
   };
 
-  const handleDownload = async () => {
+  const validatePdfFields = () => {
     const errors = {
       authority: !authority.trim(),
       refNo: !refNo.trim(),
@@ -281,6 +284,17 @@ export default function AdminLEARequest() {
       toast.error("Please fill all required fields before downloading");
       return false;
     }
+    return true;
+  };
+
+  const openPdfConfirmation = (mode: "download" | "redownload") => {
+    if (!validatePdfFields()) return;
+    setConfirmMode(mode);
+    setConfirmOpen(true);
+  };
+
+  const handleDownload = async () => {
+    if (!validatePdfFields()) return false;
     if (!reportRef.current) return false;
 
     setGenerating(true);
@@ -456,7 +470,8 @@ export default function AdminLEARequest() {
   useEffect(() => {
     if (!report || !reDownloadingId || loading || generating || pendingRedownloadIdRef.current !== reDownloadingId) return;
     pendingRedownloadIdRef.current = null;
-    handleDownload().finally(() => { setReDownloadingId(null); setRedownloadPhase("idle"); });
+    setConfirmMode("redownload");
+    setConfirmOpen(true);
   }, [report, reDownloadingId, loading, generating]);
 
   const walletId = report ? generateWalletId(report.profile.user_id) : "";
@@ -530,6 +545,63 @@ export default function AdminLEARequest() {
 
   return (
     <div className="space-y-4">
+      <Dialog open={confirmOpen} onOpenChange={(open) => {
+        setConfirmOpen(open);
+        if (!open && confirmMode === "redownload" && !generating) {
+          setReDownloadingId(null);
+          setRedownloadPhase("idle");
+          pendingRedownloadIdRef.current = null;
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" /> Confirm LEA PDF {confirmMode === "redownload" ? "Re-download" : "Generation"}
+            </DialogTitle>
+            <DialogDescription>Review readiness and internal audit note before creating the official PDF.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {readinessItems.map(item => (
+                <div key={item.label} className="flex items-center gap-2 rounded-md border bg-muted/20 p-2 text-xs">
+                  {item.ready ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <AlertCircle className="h-4 w-4 text-muted-foreground" />}
+                  <span className={item.ready ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+              <div><span className="text-muted-foreground">Phone</span><p className="font-medium">{phone.trim() || "—"}</p></div>
+              <div><span className="text-muted-foreground">Report ID</span><p className="font-mono font-medium">{reportId || "—"}</p></div>
+              <div><span className="text-muted-foreground">Authority</span><p className="font-medium">{authority.trim() || "—"}</p></div>
+              <div><span className="text-muted-foreground">Ref No</span><p className="font-medium">{refNo.trim() || "—"}</p></div>
+            </div>
+            <div className="rounded-md border bg-background p-3 text-xs">
+              <p className="mb-1 font-semibold">Internal Manager Note</p>
+              <p className="whitespace-pre-wrap text-muted-foreground">{internalNote.trim() || "No internal note added."}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={generating}>Review Again</Button>
+            <Button
+              variant="destructive"
+              disabled={generating}
+              onClick={async () => {
+                setConfirmOpen(false);
+                const ok = await handleDownload();
+                if (confirmMode === "redownload") {
+                  setReDownloadingId(null);
+                  setRedownloadPhase("idle");
+                }
+                if (!ok && confirmMode === "redownload") pendingRedownloadIdRef.current = null;
+              }}
+            >
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Confirm & Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Search */}
       <Card>
         <CardHeader className="pb-3">
@@ -577,7 +649,7 @@ export default function AdminLEARequest() {
                   {fieldErrors.issueDate && <p className="text-[10px] text-destructive">Required</p>}
                 </div>
                 <Button
-                  onClick={handleDownload}
+                  onClick={() => openPdfConfirmation("download")}
                   disabled={generating || hasValidationErrors}
                   variant="destructive"
                   className="shrink-0"
