@@ -208,6 +208,8 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
+  const [variantsProductId, setVariantsProductId] = useState<string | null>(null);
+  const [variantsProductName, setVariantsProductName] = useState<string>("");
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [form, setForm] = useState({
