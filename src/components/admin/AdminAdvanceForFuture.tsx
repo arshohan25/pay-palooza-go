@@ -744,6 +744,9 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
 
   return (
     <div className="space-y-5">
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {ariaStatus}
+      </div>
       <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-[var(--shadow-card)]">
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
