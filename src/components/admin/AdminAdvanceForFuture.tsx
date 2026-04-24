@@ -196,13 +196,13 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   const auditLog = async (action: string, entityId: string, details: Record<string, unknown>) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
-    supabase.from("audit_logs").insert({
+    supabase.from("audit_logs").insert([{
       actor_id: session.user.id,
       action,
       entity_type: "future_feature_toggle",
       entity_id: entityId,
       details,
-    }).then();
+    }]).then();
   };
 
   const setVisibility = async (feature: FutureFeature, visibility: Visibility) => {
@@ -360,7 +360,7 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                       <Button variant="secondary" size="sm" disabled={updating} onClick={() => setVisibility(feature, "disabled")} className="gap-1.5 text-xs">
                         <Eye className="h-3.5 w-3.5" /> Preview in Admin
                       </Button>
-                      <Button size="sm" disabled={updating} onClick={() => setVisibility(feature, "visible")} className="gap-1.5 text-xs">
+                      <Button size="sm" disabled={updating} onClick={() => setVisibility(feature, visibility === "visible" ? "hidden" : "visible")} className="gap-1.5 text-xs">
                         {visibility === "visible" ? <RotateCcw className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                         {visibility === "visible" ? "Rollback / Hide" : "Launch to App"}
                       </Button>
