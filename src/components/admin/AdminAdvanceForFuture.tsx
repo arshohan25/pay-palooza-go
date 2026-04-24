@@ -359,6 +359,13 @@ const getStage = (visibility?: string): LaunchStage => {
 
 const isLowerComplexity = (complexity: Complexity) => complexity === "Low" || complexity === "Medium";
 
+const previewFeatureKeys = {
+  user: ["future_ai_copilot", "future_scam_shield", "future_easypay_score", "future_smart_rewards_engine", "future_predictive_loan_eligibility", "future_bangla_voice_assistant", "future_dynamic_risk_limits"],
+  merchant: ["future_merchant_growth_os", "future_smart_rewards_engine", "future_partner_qr_api"],
+  agent: ["future_agent_liquidity_intel", "future_scam_shield", "future_bangla_voice_assistant"],
+  admin: ["future_compliance_center", "future_ai_fraud_investigator", "future_open_finance_hub", "future_predictive_support"],
+};
+
 export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const [toggles, setToggles] = useState<FutureToggle[]>([]);
   const [loading, setLoading] = useState(true);
