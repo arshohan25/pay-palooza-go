@@ -38,6 +38,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -45,10 +46,13 @@ import { toast } from "sonner";
 
 type AnyRow = Record<string, any>;
 type UserIntelligenceTab = "timeline" | "risk" | "records" | "notes" | "actions";
+type EvidenceField = { label: string; value: string | number | boolean | null | undefined; source: string };
+type RemediationAction = { title: string; reason: string; priority: string; tab: UserIntelligenceTab; audit?: string; evidence: EvidenceField[]; records?: Array<{ title: string; fields: EvidenceField[] }> };
 
 const currency = (value: number) => `৳${Math.round(value || 0).toLocaleString()}`;
 const shortDate = (value?: string | null) => value ? new Date(value).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 const humanize = (value: string) => String(value || "").split("_").join(" ");
+const evidenceValue = (value: EvidenceField["value"]) => value === null || value === undefined || value === "" ? "—" : String(value);
 const sampleRowKey = (row: AnyRow, index: number) => `${row.source || "sample"}:${row.id || row.user_id || row.reference || row.duplicate_value || "row"}:${row.created_at || index}`;
 const sampleRowLabel = (row: AnyRow, index: number) => `${row.source || "sample"} / ${row.id || row.user_id || row.reference || row.duplicate_value || `row-${index + 1}`}`;
 
@@ -176,7 +180,7 @@ function scoreUser(profile: AnyRow | null, kyc: AnyRow | null, txns: AnyRow[], d
   return { score, label, health, reasons };
 }
 
-function getRemediationActions(detail: any, selected: AnyRow | null) {
+function getRemediationActions(detail: any, selected: AnyRow | null): RemediationAction[] {
   const score = Number(detail?.score?.score ?? 0);
   const label = detail?.score?.label ?? "Low Risk";
   const kycStatus = detail?.kyc?.status;
@@ -184,17 +188,38 @@ function getRemediationActions(detail: any, selected: AnyRow | null) {
   const fraud = detail?.fraud ?? [];
   const transactions = detail?.transactions ?? [];
   const highTransfers = transactions.filter((txn: AnyRow) => Number(txn.amount) >= 50000);
-  const actions: Array<{ title: string; reason: string; priority: string; tab: UserIntelligenceTab; audit?: string }> = [];
+  const baseEvidence: EvidenceField[] = [
+    { label: "User ID", value: selected?.user_id, source: "profiles.user_id" },
+    { label: "Profile status", value: selected?.status || "active", source: "profiles.status" },
+    { label: "Risk score", value: detail?.score?.score, source: "computed.score" },
+    { label: "Risk label", value: detail?.score?.label, source: "computed.label" },
+  ];
+  const actions: RemediationAction[] = [];
 
   if (!detail || !selected) return actions;
-  if ((!kycStatus && !selected.kyc_exempt) || kycStatus === "rejected") actions.push({ title: kycStatus === "rejected" ? "Request KYC resubmission" : "Request KYC verification", reason: kycStatus === "rejected" ? "KYC rejection is contributing to this risk level." : "Missing KYC leaves the user identity unresolved.", priority: kycStatus === "rejected" ? "High" : "Medium", tab: "actions", audit: "kyc_resubmission_request" });
-  if (devices.length > 2) actions.push({ title: "Review registered devices", reason: `${devices.length} devices are linked to this user. Confirm known devices and remove suspicious ones.`, priority: "Medium", tab: "records" });
-  if (highTransfers.length > 0) actions.push({ title: "Verify high-value transfers", reason: `${highTransfers.length} transfer(s) at or above ৳50,000 need source-of-funds review.`, priority: "High", tab: "records" });
-  if (fraud.length > 0) actions.push({ title: "Review fraud alerts", reason: `${fraud.length} fraud alert(s) are open or recently recorded for this profile.`, priority: "High", tab: "records" });
-  if (score >= 42) actions.push({ title: score >= 80 ? "Open investigation workflow" : "Add user to watchlist", reason: `${label} accounts should be monitored before sensitive actions are approved.`, priority: score >= 80 ? "Critical" : "High", tab: "actions", audit: "user_watchlist_request" });
-  if (actions.length === 0) actions.push({ title: "Document low-risk review", reason: "No elevated signals found. Add a case note if this profile was manually reviewed.", priority: "Low", tab: "notes" });
+  if ((!kycStatus && !selected.kyc_exempt) || kycStatus === "rejected") actions.push({ title: kycStatus === "rejected" ? "Request KYC resubmission" : "Request KYC verification", reason: kycStatus === "rejected" ? "KYC rejection is contributing to this risk level." : "Missing KYC leaves the user identity unresolved.", priority: kycStatus === "rejected" ? "High" : "Medium", tab: "actions", audit: "kyc_resubmission_request", evidence: [...baseEvidence, { label: "KYC status", value: kycStatus || "not_started", source: "kyc_verifications.status" }, { label: "KYC exempt", value: Boolean(selected.kyc_exempt), source: "profiles.kyc_exempt" }, { label: "KYC record ID", value: detail?.kyc?.id, source: "kyc_verifications.id" }] });
+  if (devices.length > 2) actions.push({ title: "Review registered devices", reason: `${devices.length} devices are linked to this user. Confirm known devices and remove suspicious ones.`, priority: "Medium", tab: "records", evidence: [...baseEvidence, { label: "Registered device count", value: devices.length, source: "device_registrations.count" }, { label: "Risk factor points", value: "+12", source: "scoreUser.devices" }], records: devices.slice(0, 5).map((device: AnyRow) => ({ title: `Device ${String(device.device_fingerprint || device.id || "unknown").slice(0, 18)}`, fields: [{ label: "Device ID", value: device.id, source: "device_registrations.id" }, { label: "Fingerprint", value: device.device_fingerprint, source: "device_registrations.device_fingerprint" }, { label: "Status", value: device.status || "registered", source: "device_registrations.status" }, { label: "Registered at", value: shortDate(device.created_at), source: "device_registrations.created_at" }] })) });
+  if (highTransfers.length > 0) actions.push({ title: "Verify high-value transfers", reason: `${highTransfers.length} transfer(s) at or above ৳50,000 need source-of-funds review.`, priority: "High", tab: "records", evidence: [...baseEvidence, { label: "High-value transfer count", value: highTransfers.length, source: "transactions.amount >= 50000" }, { label: "Highest transfer", value: currency(Math.max(...highTransfers.map((txn: AnyRow) => Number(txn.amount || 0)))), source: "transactions.amount" }, { label: "Risk factor points", value: `+${Math.min(20, highTransfers.length * 5)}`, source: "scoreUser.highValueTransfers" }], records: highTransfers.slice(0, 5).map((txn: AnyRow) => ({ title: `${txn.type || "Transaction"} ${currency(Number(txn.amount))}`, fields: [{ label: "Transaction ID", value: txn.id, source: "transactions.id" }, { label: "Amount", value: currency(Number(txn.amount)), source: "transactions.amount" }, { label: "Status", value: txn.status, source: "transactions.status" }, { label: "Type", value: txn.type, source: "transactions.type" }, { label: "Created at", value: shortDate(txn.created_at), source: "transactions.created_at" }] })) });
+  if (fraud.length > 0) actions.push({ title: "Review fraud alerts", reason: `${fraud.length} fraud alert(s) are open or recently recorded for this profile.`, priority: "High", tab: "records", evidence: [...baseEvidence, { label: "Fraud alert count", value: fraud.length, source: "fraud_alerts.count" }, { label: "Risk factor points", value: `+${Math.min(28, fraud.length * 12)}`, source: "scoreUser.fraudAlerts" }], records: fraud.slice(0, 5).map((alert: AnyRow) => ({ title: alert.reason || alert.alert_type || "Fraud alert", fields: [{ label: "Alert ID", value: alert.id, source: "fraud_alerts.id" }, { label: "Status", value: alert.status, source: "fraud_alerts.status" }, { label: "Severity", value: alert.severity, source: "fraud_alerts.severity" }, { label: "Reason", value: alert.reason || alert.alert_type, source: "fraud_alerts.reason" }, { label: "Created at", value: shortDate(alert.created_at), source: "fraud_alerts.created_at" }] })) });
+  if (score >= 42) actions.push({ title: score >= 80 ? "Open investigation workflow" : "Add user to watchlist", reason: `${label} accounts should be monitored before sensitive actions are approved.`, priority: score >= 80 ? "Critical" : "High", tab: "actions", audit: "user_watchlist_request", evidence: [...baseEvidence, { label: "Score threshold met", value: score >= 80 ? "80+ investigation" : "42+ high risk", source: "computed.threshold" }, { label: "Score reasons", value: detail?.score?.reasons?.join("; "), source: "computed.reasons" }] });
+  if (actions.length === 0) actions.push({ title: "Document low-risk review", reason: "No elevated signals found. Add a case note if this profile was manually reviewed.", priority: "Low", tab: "notes", evidence: [...baseEvidence, { label: "KYC status", value: kycStatus || (selected.kyc_exempt ? "exempt" : "not_started"), source: "kyc_verifications.status / profiles.kyc_exempt" }, { label: "Device count", value: devices.length, source: "device_registrations.count" }, { label: "Fraud alert count", value: fraud.length, source: "fraud_alerts.count" }] });
 
   return actions;
+}
+
+function RemediationEvidenceDrawer({ action, open, onOpenChange, onProceed }: { action: RemediationAction | null; open: boolean; onOpenChange: (open: boolean) => void; onProceed: (action: RemediationAction) => void }) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="flex w-full flex-col overflow-y-auto sm:max-w-xl">
+        <SheetHeader className="pr-8">
+          <SheetTitle>{action?.title || "Remediation evidence"}</SheetTitle>
+          <SheetDescription>{action?.reason || "Review the exact fields behind this recommendation."}</SheetDescription>
+        </SheetHeader>
+        {action && <div className="mt-5 flex-1 space-y-5"><div className="flex flex-wrap items-center gap-2"><StatusBadge status={action.priority} /><Badge variant="outline" className="capitalize">Opens {humanize(action.tab)}</Badge>{action.audit && <Badge variant="outline">Audit logged</Badge>}</div><div className="space-y-2"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Evidence fields</p><div className="rounded-lg border border-border/60">{action.evidence.map((field) => <div key={`${field.source}-${field.label}`} className="grid gap-1 border-b border-border/60 p-3 last:border-b-0 sm:grid-cols-[150px_1fr]"><div><p className="text-xs font-medium text-foreground">{field.label}</p><p className="text-[11px] text-muted-foreground">{field.source}</p></div><p className="break-words text-sm text-foreground">{evidenceValue(field.value)}</p></div>)}</div></div>{Boolean(action.records?.length) && <div className="space-y-2"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Supporting records</p><div className="space-y-3">{action.records?.map((record) => <div key={record.title} className="rounded-lg border border-border/60 bg-muted/30 p-3"><p className="text-sm font-semibold text-foreground">{record.title}</p><div className="mt-2 space-y-2">{record.fields.map((field) => <div key={`${record.title}-${field.source}-${field.label}`} className="grid gap-1 text-xs sm:grid-cols-[130px_1fr]"><span className="text-muted-foreground">{field.label}</span><span className="break-words text-foreground">{evidenceValue(field.value)}</span></div>)}</div></div>)}</div></div>}</div>}
+        <SheetFooter className="mt-6 gap-2 sm:space-x-0"><Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button><Button disabled={!action} onClick={() => action && onProceed(action)}>Open {action ? humanize(action.tab) : "tab"}</Button></SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
 }
 
 export function AdminUserIntelligenceCenter() {
@@ -205,6 +230,7 @@ export function AdminUserIntelligenceCenter() {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<UserIntelligenceTab>("timeline");
+  const [evidenceAction, setEvidenceAction] = useState<RemediationAction | null>(null);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -252,8 +278,9 @@ export function AdminUserIntelligenceCenter() {
 
   const filtered = users.filter((u) => !query || [u.name, u.phone, u.user_id, u.wallet_id].some((v) => String(v || "").toLowerCase().includes(query.toLowerCase())));
   const remediationActions = useMemo(() => getRemediationActions(detail, selected), [detail, selected]);
-  const runRemediationAction = async (action: { title: string; tab: UserIntelligenceTab; audit?: string }) => {
+  const runRemediationAction = async (action: RemediationAction) => {
     setActiveTab(action.tab);
+    setEvidenceAction(null);
     if (!action.audit || !selected?.user_id) return;
     await insertAudit(action.audit, "user", selected.user_id, { source: "risk_remediation", title: action.title, risk_score: detail?.score?.score });
     toast.success(`${action.title} logged`);
@@ -267,11 +294,12 @@ export function AdminUserIntelligenceCenter() {
 
   return (
     <Shell title="User Intelligence Center" description="360-degree profile timeline, risk score, health labels, case notes, and lifecycle actions." icon={Users} action={<Button variant="outline" size="sm" onClick={loadUsers}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>}>
+      <RemediationEvidenceDrawer action={evidenceAction} open={Boolean(evidenceAction)} onOpenChange={(open) => !open && setEvidenceAction(null)} onProceed={runRemediationAction} />
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         <Card className="border-border/50 bg-card/70"><CardHeader className="pb-3"><div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search users..." className="pl-9" /></div></CardHeader><CardContent className="max-h-[620px] space-y-2 overflow-y-auto">{filtered.map((u) => <button key={u.id} onClick={() => setSelected(u)} className={`w-full rounded-lg border p-3 text-left transition ${selected?.user_id === u.user_id ? "border-primary bg-primary/10" : "border-border bg-background/60 hover:bg-muted/60"}`}><p className="truncate text-sm font-semibold text-foreground">{u.name || "Unnamed user"}</p><p className="text-xs text-muted-foreground">{u.phone || u.user_id}</p><div className="mt-2 flex items-center justify-between"><span className="text-xs font-medium">{currency(Number(u.balance))}</span><StatusBadge status={u.status || "active"} /></div></button>)}</CardContent></Card>
         <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-4"><Card className="border-border/50 bg-card/70 shadow-[var(--shadow-card)]"><CardContent className="p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="flex items-center gap-1.5"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Risk Score</p><RiskScoreTooltip score={detail?.score} /></div><p className="mt-1 truncate text-2xl font-bold text-foreground">{detail?.score?.score ?? "—"}</p>{detail?.score?.label && <p className="mt-1 text-xs text-muted-foreground">{detail.score.label}</p>}</div><div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-muted"><Gauge className="h-4 w-4 text-primary" /></div></div></CardContent></Card><MetricCard label="Health" value={detail?.score?.health ?? "—"} icon={Activity} /><MetricCard label="KYC" value={detail?.kyc?.status || (selected?.kyc_exempt ? "exempt" : "not started")} icon={Shield} /><MetricCard label="Balance" value={currency(Number(selected?.balance))} icon={Wallet} /></div>
-          <Card className="border-border/50 bg-card/70"><CardHeader className="pb-2"><CardTitle className="text-sm">Recommended remediation</CardTitle></CardHeader><CardContent className="grid gap-2 md:grid-cols-2">{remediationActions.map((action) => <div key={action.title} className="flex flex-col gap-3 rounded-lg border border-border/60 bg-background/60 p-3 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0 space-y-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-foreground">{action.title}</p><StatusBadge status={action.priority} /></div><p className="text-xs leading-relaxed text-muted-foreground">{action.reason}</p></div><Button size="sm" variant="outline" className="shrink-0" onClick={() => runRemediationAction(action)}>Open {humanize(action.tab)}</Button></div>)}</CardContent></Card>
+          <Card className="border-border/50 bg-card/70"><CardHeader className="pb-2"><CardTitle className="text-sm">Recommended remediation</CardTitle></CardHeader><CardContent className="grid gap-2 md:grid-cols-2">{remediationActions.map((action) => <div key={action.title} className="flex flex-col gap-3 rounded-lg border border-border/60 bg-background/60 p-3 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0 space-y-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-foreground">{action.title}</p><StatusBadge status={action.priority} /></div><p className="text-xs leading-relaxed text-muted-foreground">{action.reason}</p></div><Button size="sm" variant="outline" className="shrink-0" onClick={() => setEvidenceAction(action)}>View evidence</Button></div>)}</CardContent></Card>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as UserIntelligenceTab)}><TabsList className="grid h-auto w-full grid-cols-5"><TabsTrigger value="timeline">Timeline</TabsTrigger><TabsTrigger value="risk">Risk</TabsTrigger><TabsTrigger value="records">Records</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger><TabsTrigger value="actions">Actions</TabsTrigger></TabsList>
             <TabsContent value="timeline"><Card><CardContent className="p-4"><div className="space-y-3">{(detail?.timeline ?? []).map((item: AnyRow, i: number) => <div key={i} className="flex gap-3 rounded-lg border border-border/60 p-3"><div className="mt-1 h-2 w-2 rounded-full bg-primary" /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-medium text-foreground">{item.title}</p><StatusBadge status={item.status || item.type} /></div><p className="text-xs text-muted-foreground">{item.type} • {shortDate(item.at)}</p></div></div>)}{!loading && !detail?.timeline?.length && <p className="py-8 text-center text-sm text-muted-foreground">No timeline activity found.</p>}</div></CardContent></Card></TabsContent>
             <TabsContent value="risk"><Card><CardContent className="space-y-4 p-4"><Progress value={detail?.score?.score ?? 0} /><div className="grid gap-2 md:grid-cols-2">{(detail?.score?.reasons ?? []).map((r: string) => <div key={r} className="rounded-lg bg-muted/60 p-3 text-sm text-foreground"><AlertTriangle className="mr-2 inline h-4 w-4 text-primary" />{r}</div>)}</div></CardContent></Card></TabsContent>
