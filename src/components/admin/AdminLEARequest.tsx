@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Search, Download, Shield, FileText, AlertTriangle, User, CreditCard,
   Smartphone, Key, Landmark, ArrowUpDown, Gavel, MessageSquare, Users,
-  Briefcase, Store, ClipboardList, Scale, CheckSquare, History, Eye, X
+  Briefcase, Store, ClipboardList, Scale, CheckSquare, History, Eye, X, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -65,7 +65,9 @@ export default function AdminLEARequest() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [adminCache, setAdminCache] = useState<Record<string, { name: string; phone: string }>>({});
+  const [reDownloadingId, setReDownloadingId] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+  const pendingRedownloadIdRef = useRef<string | null>(null);
   const [includeSections, setIncludeSections] = useState<Record<SectionKey, boolean>>({
     devices: false,
     savedBanks: false,
@@ -155,24 +157,28 @@ export default function AdminLEARequest() {
     }
   };
 
-  const handleSearch = async () => {
-    if (!phone.trim()) return toast.error("Enter a phone number");
+  const handleSearch = async (overrides?: { phone?: string; reportId?: string }) => {
+    const searchPhone = (overrides?.phone ?? phone).trim();
+    if (!searchPhone) {
+      toast.error("Enter a phone number");
+      return false;
+    }
     setLoading(true);
     setReport(null);
-    setReportId("");
+    setReportId(overrides?.reportId ?? "");
 
     try {
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("phone", phone.trim())
+        .eq("phone", searchPhone)
         .maybeSingle();
 
       if (error) throw error;
       if (!profile) {
         toast.error("No user found with this number");
         setLoading(false);
-        return;
+        return false;
       }
 
       const userId = profile.user_id;
@@ -217,12 +223,14 @@ export default function AdminLEARequest() {
         auditLogs: auditRes.data ?? [],
       });
 
-      setReportId(generateReportId());
+      setReportId(overrides?.reportId ?? generateReportId());
 
-      await logAction("lea_data_search", { phone: phone.trim(), user_id: userId });
+      await logAction("lea_data_search", { phone: searchPhone, user_id: userId });
       toast.success("User data retrieved");
+      return true;
     } catch (err: any) {
       toast.error(err.message || "Search failed");
+      return false;
     } finally {
       setLoading(false);
     }
@@ -249,17 +257,42 @@ export default function AdminLEARequest() {
         scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false,
       });
 
-      const imgData = canvas.toDataURL("image/png");
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
-      let yOffset = 0;
       const pageHeight = 297;
-      while (yOffset < imgHeight) {
-        if (yOffset > 0) pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, -yOffset, imgWidth, imgHeight);
-        yOffset += pageHeight;
+      const rootRect = reportRef.current.getBoundingClientRect();
+      const mmPerPx = imgHeight / rootRect.height;
+      const safeRows = Array.from(reportRef.current.querySelectorAll<HTMLElement>('[data-lea-paginate-row="true"]')).map(row => {
+        const rect = row.getBoundingClientRect();
+        return { top: (rect.top - rootRect.top) * mmPerPx, bottom: (rect.bottom - rootRect.top) * mmPerPx };
+      });
+      const segments: { start: number; end: number }[] = [];
+      let yOffset = 0;
+      while (yOffset < imgHeight - 0.5) {
+        let nextBreak = Math.min(yOffset + pageHeight, imgHeight);
+        const splitRow = safeRows.find(row => row.top > yOffset + 8 && row.top < nextBreak && row.bottom > nextBreak - 1);
+        if (splitRow && splitRow.top - yOffset > 35) nextBreak = Math.max(yOffset + 1, splitRow.top - 1);
+        segments.push({ start: yOffset, end: nextBreak });
+        yOffset = nextBreak;
+      }
+
+      const pxPerMm = canvas.height / imgHeight;
+      segments.forEach((segment, index) => {
+        const sourceY = Math.floor(segment.start * pxPerMm);
+        const sourceHeight = Math.min(canvas.height - sourceY, Math.ceil((segment.end - segment.start) * pxPerMm));
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceHeight;
+        const context = pageCanvas.getContext("2d");
+        context?.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+        if (index > 0) pdf.addPage();
+        pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", 0, 0, imgWidth, segment.end - segment.start);
+      });
+
+      if (segments.length === 0) {
+        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
       }
 
       pdf.save(`LEA-Report-${phone}-${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -304,6 +337,12 @@ export default function AdminLEARequest() {
     }
   };
 
+  useEffect(() => {
+    if (!report || !reDownloadingId || loading || generating || pendingRedownloadIdRef.current !== reDownloadingId) return;
+    pendingRedownloadIdRef.current = null;
+    handleDownload().finally(() => setReDownloadingId(null));
+  }, [report, reDownloadingId, loading, generating]);
+
   const walletId = report ? generateWalletId(report.profile.user_id) : "";
   const totalIn = report?.transactions.filter(t => ["receive", "cashin", "addmoney", "deposit"].includes(t.type)).reduce((s, t) => s + Number(t.amount), 0) ?? 0;
   const totalOut = report?.transactions.filter(t => ["send", "cashout", "payment", "paybill", "recharge", "banktransfer"].includes(t.type)).reduce((s, t) => s + Number(t.amount), 0) ?? 0;
@@ -345,7 +384,7 @@ export default function AdminLEARequest() {
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={i} style={{ background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
+          <tr key={i} data-lea-paginate-row="true" style={{ background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
             {r.map((c, j) => <td key={j} style={{ ...(headers[j]?.align === "right" ? tdR : tdS), wordBreak: "break-word", whiteSpace: "normal", overflow: "hidden" }}>{c}</td>)}
           </tr>
         ))}
@@ -387,7 +426,7 @@ export default function AdminLEARequest() {
         <CardContent className="space-y-3">
           <div className="flex gap-2">
             <Input placeholder="Enter phone number (e.g. 01XXXXXXXXX)" value={phone} onChange={e => setPhone(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSearch()} />
-            <Button onClick={handleSearch} disabled={loading} className="shrink-0">
+            <Button onClick={() => handleSearch()} disabled={loading} className="shrink-0">
               <Search className="w-4 h-4 mr-1" />{loading ? "..." : "Search"}
             </Button>
           </div>
@@ -1215,8 +1254,11 @@ export default function AdminLEARequest() {
                                         variant="outline"
                                         size="sm"
                                         className="h-7 text-xs"
-                                        onClick={(e) => {
+                                         disabled={loading || generating || reDownloadingId === h.id}
+                                         onClick={async (e) => {
                                           e.stopPropagation();
+                                           setReDownloadingId(h.id);
+                                           pendingRedownloadIdRef.current = h.id;
                                           setPhone(h.phone);
                                           setAuthority(h.authority);
                                           setRefNo(h.reference_no);
@@ -1229,11 +1271,17 @@ export default function AdminLEARequest() {
                                             });
                                             setIncludeSections(secs);
                                           }
-                                          setTimeout(() => handleSearch(), 100);
-                                          toast.info("Form pre-filled. Data will reload for re-download.");
+                                           const ok = await handleSearch({ phone: h.phone, reportId: h.report_id });
+                                           if (!ok) {
+                                             pendingRedownloadIdRef.current = null;
+                                             setReDownloadingId(null);
+                                           } else {
+                                             toast.info("Data reloaded. Preparing PDF download...");
+                                           }
                                         }}
                                       >
-                                        <Download className="w-3 h-3 mr-1" /> Re-download
+                                         {reDownloadingId === h.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
+                                         {reDownloadingId === h.id ? "Preparing..." : "Re-download"}
                                       </Button>
                                       <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedHistoryId(null); }}>
                                         <X className="w-3.5 h-3.5" />
