@@ -1341,11 +1341,19 @@ export default function AdminLEARequest() {
           </CardTitle>
           <p className="text-xs text-muted-foreground">Previously generated law enforcement disclosure reports.</p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <Input
+            value={historyFilter}
+            onChange={e => setHistoryFilter(e.target.value)}
+            placeholder="Filter by phone, report ID, authority, or reference no"
+            className="text-xs"
+          />
           {historyLoading ? (
             <p className="text-xs text-muted-foreground">Loading...</p>
           ) : history.length === 0 ? (
             <p className="text-xs text-muted-foreground">No reports generated yet.</p>
+          ) : filteredHistory.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No history records match this filter.</p>
           ) : (
              <div className="overflow-auto max-h-[500px] border rounded">
                <Table>
@@ -1358,11 +1366,12 @@ export default function AdminLEARequest() {
                      <TableHead className="text-xs">Ref No</TableHead>
                      <TableHead className="text-xs">Issue Date</TableHead>
                      <TableHead className="text-xs">Generated</TableHead>
+                      <TableHead className="text-xs">Status</TableHead>
                      <TableHead className="text-xs text-center">Sections</TableHead>
                    </TableRow>
                  </TableHeader>
                  <TableBody>
-                   {history.map((h) => {
+                    {filteredHistory.map((h) => {
                      const isSelected = selectedHistoryId === h.id;
                      const admin = adminCache[h.generated_by];
                      const summary = (h.summary && typeof h.summary === "object") ? h.summary as Record<string, any> : {};
@@ -1380,12 +1389,13 @@ export default function AdminLEARequest() {
                            <TableCell className="text-xs">{h.authority}</TableCell>
                            <TableCell className="text-xs">{h.reference_no}</TableCell>
                            <TableCell className="text-xs">{h.issue_date}</TableCell>
-                           <TableCell className="text-xs whitespace-nowrap">{new Date(h.generated_at).toLocaleString()}</TableCell>
+                            <TableCell className="text-xs whitespace-nowrap">{new Date(h.generated_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</TableCell>
+                            <TableCell><Badge variant="secondary" className="text-[10px]">Downloaded</Badge></TableCell>
                            <TableCell className="text-xs text-center">{h.sections_included?.length ?? 0}</TableCell>
                          </TableRow>
                          {isSelected && (
                            <TableRow>
-                             <TableCell colSpan={8} className="p-0">
+                              <TableCell colSpan={9} className="p-0">
                                <div className="bg-muted/40 border-t border-b p-4 space-y-3">
                                  <div className="flex items-center justify-between">
                                    <h4 className="text-sm font-semibold flex items-center gap-1.5">
