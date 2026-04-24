@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, Search, ToggleLeft, ToggleRight,
-  ImagePlus, X, Loader2, Video, Play, Upload,
+  ImagePlus, X, Loader2, Video, Play, Upload, Layers,
 } from "lucide-react";
+import VariantsEditorSheet from "@/components/merchant/VariantsEditorSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
