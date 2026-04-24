@@ -416,6 +416,8 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   const [bulkPending, setBulkPending] = useState<{ title: string; group: BulkGroup; keys: string[]; visibility: Visibility } | null>(null);
   const [bulkEmulatorPreview, setBulkEmulatorPreview] = useState<{ title: string; group: BulkGroup; keys: string[] } | null>(null);
   const [deviceFrame, setDeviceFrame] = useState<DeviceFrame>("mobile");
+  const [previewRoleTab, setPreviewRoleTab] = useState<AppRole>("user");
+  const [bulkPreviewRoleTab, setBulkPreviewRoleTab] = useState<AppRole>("user");
   const [featurePending, setFeaturePending] = useState<{ feature: FutureFeature; visibility: FeatureAction } | null>(null);
   const [previewFeature, setPreviewFeature] = useState<FutureFeature | null>(null);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
