@@ -263,32 +263,41 @@ export default function AdminLEARequest() {
 
       const pageHeight = 297;
       const rootRect = reportRef.current.getBoundingClientRect();
-      const mmPerPx = imgHeight / rootRect.height;
-      const safeRows = Array.from(reportRef.current.querySelectorAll<HTMLElement>('[data-lea-paginate-row="true"]')).map(row => {
+      const canvasPxPerDomPx = canvas.height / rootRect.height;
+      const pageHeightPx = pageHeight * (canvas.height / imgHeight);
+      const rowBounds = Array.from(reportRef.current.querySelectorAll<HTMLElement>('[data-lea-paginate-row="true"]')).map(row => {
         const rect = row.getBoundingClientRect();
-        return { top: (rect.top - rootRect.top) * mmPerPx, bottom: (rect.bottom - rootRect.top) * mmPerPx };
-      });
-      const segments: { start: number; end: number }[] = [];
+        return {
+          top: Math.round((rect.top - rootRect.top) * canvasPxPerDomPx),
+          bottom: Math.round((rect.bottom - rootRect.top) * canvasPxPerDomPx),
+          height: Math.round(rect.height * canvasPxPerDomPx),
+        };
+      }).filter(row => row.bottom > row.top);
+      const rowBreaks = Array.from(new Set(rowBounds.flatMap(row => [row.top, row.bottom]))).sort((a, b) => a - b);
+      const segments: { startPx: number; endPx: number }[] = [];
       let yOffset = 0;
-      while (yOffset < imgHeight - 0.5) {
-        let nextBreak = Math.min(yOffset + pageHeight, imgHeight);
-        const splitRow = safeRows.find(row => row.top > yOffset + 8 && row.top < nextBreak && row.bottom > nextBreak - 1);
-        if (splitRow && splitRow.top - yOffset > 35) nextBreak = Math.max(yOffset + 1, splitRow.top - 1);
-        segments.push({ start: yOffset, end: nextBreak });
+      while (yOffset < canvas.height) {
+        const targetBreak = Math.min(yOffset + pageHeightPx, canvas.height);
+        const rowCrossingBreak = rowBounds.find(row => row.top < targetBreak && row.bottom > targetBreak);
+        const validRowBreak = rowBreaks.filter(point => point > yOffset && point <= targetBreak).at(-1);
+        let nextBreak = rowCrossingBreak && validRowBreak ? validRowBreak : targetBreak;
+        const tallestRowOnPage = rowBounds.find(row => row.top <= yOffset && row.bottom > targetBreak);
+        if (tallestRowOnPage) nextBreak = targetBreak;
+        if (nextBreak <= yOffset) nextBreak = Math.min(yOffset + pageHeightPx, canvas.height);
+        segments.push({ startPx: Math.floor(yOffset), endPx: Math.floor(nextBreak) });
         yOffset = nextBreak;
       }
 
-      const pxPerMm = canvas.height / imgHeight;
       segments.forEach((segment, index) => {
-        const sourceY = Math.floor(segment.start * pxPerMm);
-        const sourceHeight = Math.min(canvas.height - sourceY, Math.ceil((segment.end - segment.start) * pxPerMm));
+        const sourceY = segment.startPx;
+        const sourceHeight = Math.min(canvas.height - sourceY, segment.endPx - segment.startPx);
         const pageCanvas = document.createElement("canvas");
         pageCanvas.width = canvas.width;
         pageCanvas.height = sourceHeight;
         const context = pageCanvas.getContext("2d");
         context?.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
         if (index > 0) pdf.addPage();
-        pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", 0, 0, imgWidth, segment.end - segment.start);
+        pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", 0, 0, imgWidth, sourceHeight * (imgHeight / canvas.height));
       });
 
       if (segments.length === 0) {
