@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   Package, Store, Star, Ticket, Search, RefreshCw, Trash2, Eye, Edit2,
   ShoppingBag, TrendingUp, AlertTriangle, MoreHorizontal, Plus, Tag,
-  Image, Megaphone, CreditCard, Wallet, Truck, Smartphone,
+  Image, Megaphone, CreditCard, Wallet, Truck, Smartphone, ShieldCheck, Percent,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -23,6 +23,9 @@ import AdminFlashSales from "./AdminFlashSales";
 import AdminCourierProviders from "./AdminCourierProviders";
 import AdminDeliveryZones from "./AdminDeliveryZones";
 import AdminReturnRequests from "./AdminReturnRequests";
+import AdminVendorKycReview from "./AdminVendorKycReview";
+import AdminVendorCommissionManager from "./AdminVendorCommissionManager";
+import AdminVendorPayouts from "./AdminVendorPayouts";
 
 async function auditLog(action: string, entityType: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -33,10 +36,13 @@ async function auditLog(action: string, entityType: string, entityId: string, de
   }
 }
 
-type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones" | "returns" | "payments";
+type SubTab = "dashboard" | "products" | "stores" | "vendor_kyc" | "commissions" | "vendor_payouts" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones" | "returns" | "payments";
 
 const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
   { key: "dashboard", label: "Dashboard", icon: TrendingUp },
+  { key: "vendor_kyc", label: "Vendor KYC", icon: ShieldCheck },
+  { key: "vendor_payouts", label: "Vendor Payouts", icon: Wallet },
+  { key: "commissions", label: "Commissions", icon: Percent },
   { key: "products", label: "Products", icon: Package },
   { key: "stores", label: "Vendor Stores", icon: Store },
   { key: "reviews", label: "Reviews", icon: Star },
@@ -620,6 +626,9 @@ export default function AdminEcommerceHub() {
       {subTab === "marketing" && <AdminMarketingTools />}
       {subTab === "returns" && <AdminReturnRequests />}
       {subTab === "payments" && <PaymentMethodsTab />}
+      {subTab === "vendor_kyc" && <AdminVendorKycReview />}
+      {subTab === "vendor_payouts" && <AdminVendorPayouts />}
+      {subTab === "commissions" && <AdminVendorCommissionManager />}
     </div>
   );
 }

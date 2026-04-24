@@ -3010,8 +3010,11 @@ export type Database = {
           amount: number
           bank_name: string | null
           created_at: string
+          credited_txn_id: string | null
+          destination_user_id: string | null
           id: string
           merchant_id: string
+          payout_method: string
           reference: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -3025,8 +3028,11 @@ export type Database = {
           amount: number
           bank_name?: string | null
           created_at?: string
+          credited_txn_id?: string | null
+          destination_user_id?: string | null
           id?: string
           merchant_id: string
+          payout_method?: string
           reference?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -3040,8 +3046,11 @@ export type Database = {
           amount?: number
           bank_name?: string | null
           created_at?: string
+          credited_txn_id?: string | null
+          destination_user_id?: string | null
           id?: string
           merchant_id?: string
+          payout_method?: string
           reference?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -3264,15 +3273,24 @@ export type Database = {
           bank_branch: string | null
           bank_name: string | null
           bank_routing: string | null
+          bank_statement_url: string | null
+          business_kyc_rejection_reason: string | null
+          business_kyc_reviewed_at: string | null
+          business_kyc_reviewed_by: string | null
+          business_kyc_status: string
           business_name: string
           category: Database["public"]["Enums"]["merchant_category"]
+          commission_rate: number
           created_at: string
           id: string
           mdr_rate: number
+          nid_back_url: string | null
+          nid_front_url: string | null
           qr_code_data: string | null
           settlement_frequency: string
           status: Database["public"]["Enums"]["agent_status"]
           trade_license: string | null
+          trade_license_url: string | null
           updated_at: string
           user_id: string
         }
@@ -3282,15 +3300,24 @@ export type Database = {
           bank_branch?: string | null
           bank_name?: string | null
           bank_routing?: string | null
+          bank_statement_url?: string | null
+          business_kyc_rejection_reason?: string | null
+          business_kyc_reviewed_at?: string | null
+          business_kyc_reviewed_by?: string | null
+          business_kyc_status?: string
           business_name: string
           category?: Database["public"]["Enums"]["merchant_category"]
+          commission_rate?: number
           created_at?: string
           id?: string
           mdr_rate?: number
+          nid_back_url?: string | null
+          nid_front_url?: string | null
           qr_code_data?: string | null
           settlement_frequency?: string
           status?: Database["public"]["Enums"]["agent_status"]
           trade_license?: string | null
+          trade_license_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -3300,15 +3327,24 @@ export type Database = {
           bank_branch?: string | null
           bank_name?: string | null
           bank_routing?: string | null
+          bank_statement_url?: string | null
+          business_kyc_rejection_reason?: string | null
+          business_kyc_reviewed_at?: string | null
+          business_kyc_reviewed_by?: string | null
+          business_kyc_status?: string
           business_name?: string
           category?: Database["public"]["Enums"]["merchant_category"]
+          commission_rate?: number
           created_at?: string
           id?: string
           mdr_rate?: number
+          nid_back_url?: string | null
+          nid_front_url?: string | null
           qr_code_data?: string | null
           settlement_frequency?: string
           status?: Database["public"]["Enums"]["agent_status"]
           trade_license?: string | null
+          trade_license_url?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -5449,6 +5485,88 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_commission_overrides: {
+        Row: {
+          category: string
+          commission_rate: number
+          created_at: string
+          id: string
+          merchant_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          commission_rate: number
+          created_at?: string
+          id?: string
+          merchant_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          merchant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_commission_overrides_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_earnings_ledger: {
+        Row: {
+          commission_amount: number
+          commission_rate: number
+          created_at: string
+          gross_amount: number
+          id: string
+          merchant_id: string
+          net_amount: number
+          order_id: string | null
+          released_at: string | null
+          status: string
+        }
+        Insert: {
+          commission_amount: number
+          commission_rate: number
+          created_at?: string
+          gross_amount: number
+          id?: string
+          merchant_id: string
+          net_amount: number
+          order_id?: string | null
+          released_at?: string | null
+          status?: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          gross_amount?: number
+          id?: string
+          merchant_id?: string
+          net_amount?: number
+          order_id?: string | null
+          released_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_earnings_ledger_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_stores: {
         Row: {
           banner_url: string | null
@@ -5500,6 +5618,41 @@ export type Database = {
             foreignKeyName: "vendor_stores_merchant_id_fkey"
             columns: ["merchant_id"]
             isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_wallets: {
+        Row: {
+          available_balance: number
+          lifetime_earnings: number
+          lifetime_withdrawn: number
+          merchant_id: string
+          pending_balance: number
+          updated_at: string
+        }
+        Insert: {
+          available_balance?: number
+          lifetime_earnings?: number
+          lifetime_withdrawn?: number
+          merchant_id: string
+          pending_balance?: number
+          updated_at?: string
+        }
+        Update: {
+          available_balance?: number
+          lifetime_earnings?: number
+          lifetime_withdrawn?: number
+          merchant_id?: string
+          pending_balance?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_wallets_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: true
             referencedRelation: "merchants"
             referencedColumns: ["id"]
           },
@@ -5586,6 +5739,14 @@ export type Database = {
         }
         Returns: string
       }
+      approve_business_kyc: {
+        Args: { p_commission_rate?: number; p_merchant_id: string }
+        Returns: Json
+      }
+      approve_vendor_payout: {
+        Args: { p_note?: string; p_payout_id: string }
+        Returns: Json
+      }
       buy_gold: {
         Args: {
           p_grams: number
@@ -5654,6 +5815,15 @@ export type Database = {
         }
         Returns: Json
       }
+      credit_vendor_earnings: {
+        Args: {
+          p_category?: string
+          p_gross_amount: number
+          p_merchant_id: string
+          p_order_id: string
+        }
+        Returns: Json
+      }
       disburse_loan: {
         Args: { p_admin_id: string; p_loan_id: string }
         Returns: undefined
@@ -5697,6 +5867,10 @@ export type Database = {
       get_data_quality_samples: {
         Args: { p_check: string; p_limit?: number; p_offset?: number }
         Returns: Json
+      }
+      get_effective_commission_rate: {
+        Args: { p_category: string; p_merchant_id: string }
+        Returns: number
       }
       get_merchant_customers: {
         Args: { p_merchant_id: string }
@@ -5873,12 +6047,22 @@ export type Database = {
             Returns: Json
           }
       redeem_gift_card: { Args: { p_code: string }; Returns: Json }
+      reject_business_kyc: {
+        Args: { p_merchant_id: string; p_reason: string }
+        Returns: Json
+      }
+      reject_vendor_payout: {
+        Args: { p_payout_id: string; p_reason: string }
+        Returns: Json
+      }
       release_escrow: { Args: { p_order_id: string }; Returns: Json }
+      release_vendor_earnings: { Args: { p_order_id: string }; Returns: Json }
       repay_loan: { Args: { p_loan_id: string }; Returns: undefined }
       repay_loan_partial: {
         Args: { p_amount: number; p_loan_id: string }
         Returns: Json
       }
+      request_vendor_payout: { Args: { p_amount: number }; Returns: Json }
       require_kyc_verified: { Args: { p_user_id: string }; Returns: undefined }
       resolve_payment_merchant: {
         Args: { p_identifier: string }
@@ -5921,6 +6105,21 @@ export type Database = {
           p_proof_url?: string
           p_source_method?: string
           p_transaction_id_proof?: string
+        }
+        Returns: Json
+      }
+      submit_business_kyc: {
+        Args: {
+          p_bank_account_holder: string
+          p_bank_account_number: string
+          p_bank_name: string
+          p_bank_statement_url: string
+          p_business_name: string
+          p_category: string
+          p_nid_back_url: string
+          p_nid_front_url: string
+          p_trade_license: string
+          p_trade_license_url: string
         }
         Returns: Json
       }
