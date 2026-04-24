@@ -38,6 +38,7 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
   const [orders, setOrders] = useState<MerchantOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [fulfillOrder, setFulfillOrder] = useState<MerchantOrder | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
