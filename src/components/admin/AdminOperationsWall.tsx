@@ -25,6 +25,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { ResponsiveChartFrame } from "@/components/admin/ResponsiveChartFrame";
 
 type Severity = "healthy" | "warning" | "critical";
 
@@ -374,9 +375,10 @@ export default function AdminOperationsWall() {
         <div className="space-y-4">
           <Card className="border-border/60 bg-card/80 shadow-[var(--shadow-card)]">
             <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><Activity className="h-4 w-4 text-primary" />Failure Trend</CardTitle></CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={state.failureTrend}>
+            <CardContent className="min-w-0 overflow-hidden">
+              <ResponsiveChartFrame className="h-44 md:h-48">
+              <ResponsiveContainer width="100%" height="100%" debounce={0}>
+                <BarChart data={state.failureTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
                   <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" />
@@ -384,6 +386,7 @@ export default function AdminOperationsWall() {
                   <Bar dataKey="failed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              </ResponsiveChartFrame>
             </CardContent>
           </Card>
 
