@@ -504,6 +504,35 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     return { live, preview, hidden, readiness };
   };
 
+  const getPreviewFeatures = (keys: string[]) =>
+    keys
+      .map((key) => futureFeatures.find((feature) => feature.key === key))
+      .filter((feature): feature is FutureFeature => Boolean(feature) && getVisibility(feature.key) !== "hidden");
+
+  const previewBadge = (key: string) => {
+    const visibility = getVisibility(key);
+    const state = visibilityCopy[visibility] ?? visibilityCopy.hidden;
+    return <Badge variant={state.variant} className="h-5 px-2 text-[9px] uppercase tracking-wide">{state.label}</Badge>;
+  };
+
+  const PreviewTile = ({ feature, icon: Icon }: { feature: FutureFeature; icon: typeof Sparkles }) => (
+    <div className="rounded-[19px] border border-border/60 bg-card/55 p-3 shadow-[var(--shadow-card)] backdrop-blur-xl">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-glow"><Icon className="h-4 w-4" /></span>
+        {previewBadge(feature.key)}
+      </div>
+      <p className="text-xs font-bold leading-tight text-foreground">{feature.title}</p>
+      <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">{feature.capabilities[0]}</p>
+    </div>
+  );
+
+  const userPreview = getPreviewFeatures(previewFeatureKeys.user);
+  const merchantPreview = getPreviewFeatures(previewFeatureKeys.merchant);
+  const agentPreview = getPreviewFeatures(previewFeatureKeys.agent);
+  const adminPreview = getPreviewFeatures(previewFeatureKeys.admin);
+
+  const rolePreviewCount = userPreview.length + merchantPreview.length + agentPreview.length + adminPreview.length;
+
   const matrixGroups = [
     { title: "High Impact / Low-Medium Complexity", note: "Quick wins and near-term release candidates", items: visibleFeatures.filter((feature) => feature.impact === "High" && isLowerComplexity(feature.complexity)) },
     { title: "High Impact / High Complexity", note: "Strategic bets requiring phased rollout", items: visibleFeatures.filter((feature) => feature.impact === "High" && feature.complexity === "High") },
