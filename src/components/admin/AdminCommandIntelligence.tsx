@@ -364,9 +364,9 @@ type SegmentDefinition = {
 const segmentDefinitions: Record<string, SegmentDefinition> = {
   "New users with no first transaction": {
     rules: [
-      { label: "Account age", expression: "profiles.created_at >= now() - interval '14 days'", source: "profiles.created_at", description: "Signed up within the last 14 days." },
-      { label: "Transaction count", expression: "count(transactions.user_id) = 0", source: "transactions.user_id", description: "Has not completed any transaction yet." },
-      { label: "Account status", expression: "profiles.status = 'active'", source: "profiles.status", description: "Excludes suspended or deleted accounts." },
+      { label: "Account age", summary: "Joined in the past 2 weeks", expression: "profiles.created_at >= now() - interval '14 days'", source: "profiles.created_at", description: "Signed up within the last 14 days." },
+      { label: "Transaction count", summary: "Has never transacted", expression: "count(transactions.user_id) = 0", source: "transactions.user_id", description: "Has not completed any transaction yet." },
+      { label: "Account status", summary: "Account is active", expression: "profiles.status = 'active'", source: "profiles.status", description: "Excludes suspended or deleted accounts." },
     ],
     fetchSample: async () => {
       const { data } = await supabase.from("profiles").select("user_id, name, phone, created_at, status").eq("status", "active").order("created_at", { ascending: false }).limit(20);
@@ -386,8 +386,8 @@ const segmentDefinitions: Record<string, SegmentDefinition> = {
   },
   "High-balance dormant users": {
     rules: [
-      { label: "Wallet balance", expression: "profiles.balance >= 5000", source: "profiles.balance", description: "Holds ৳5,000 or more in wallet." },
-      { label: "Last activity", expression: "max(transactions.created_at) <= now() - interval '30 days'", source: "transactions.created_at", description: "No transactions in the last 30 days." },
+      { label: "Wallet balance", summary: "Holds ৳5,000 or more", expression: "profiles.balance >= 5000", source: "profiles.balance", description: "Holds ৳5,000 or more in wallet." },
+      { label: "Last activity", summary: "No activity in the past 30 days", expression: "max(transactions.created_at) <= now() - interval '30 days'", source: "transactions.created_at", description: "No transactions in the last 30 days." },
     ],
     fetchSample: async () => {
       const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
@@ -407,9 +407,9 @@ const segmentDefinitions: Record<string, SegmentDefinition> = {
   },
   "Frequent recharge users": {
     rules: [
-      { label: "Transaction type", expression: "transactions.type = 'recharge'", source: "transactions.type", description: "Mobile recharge transactions only." },
-      { label: "Frequency", expression: "count(transactions) >= 5 in last 30 days", source: "transactions.created_at", description: "At least 5 recharges in the past month." },
-      { label: "Status", expression: "transactions.status = 'completed'", source: "transactions.status", description: "Only counts successful recharges." },
+      { label: "Transaction type", summary: "Mobile recharge transactions", expression: "transactions.type = 'recharge'", source: "transactions.type", description: "Mobile recharge transactions only." },
+      { label: "Frequency", summary: "5+ recharges in the last 30 days", expression: "count(transactions) >= 5 in last 30 days", source: "transactions.created_at", description: "At least 5 recharges in the past month." },
+      { label: "Status", summary: "Recharge succeeded", expression: "transactions.status = 'completed'", source: "transactions.status", description: "Only counts successful recharges." },
     ],
     fetchSample: async () => {
       const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
@@ -429,8 +429,8 @@ const segmentDefinitions: Record<string, SegmentDefinition> = {
   },
   "Merchants with declining sales": {
     rules: [
-      { label: "Account type", expression: "merchants.status = 'active'", source: "merchants.status", description: "Active merchant accounts only." },
-      { label: "Sales trend", expression: "sum(orders.total this week) < sum(orders.total last week)", source: "orders.total_amount", description: "Order revenue dropped week-over-week." },
+      { label: "Account type", summary: "Active merchant", expression: "merchants.status = 'active'", source: "merchants.status", description: "Active merchant accounts only." },
+      { label: "Sales trend", summary: "Sales fell vs. last week", expression: "sum(orders.total this week) < sum(orders.total last week)", source: "orders.total_amount", description: "Order revenue dropped week-over-week." },
     ],
     fetchSample: async () => {
       const { data } = await supabase.from("merchants").select("id, user_id, business_name, status").eq("status", "active").limit(5);
@@ -444,8 +444,8 @@ const segmentDefinitions: Record<string, SegmentDefinition> = {
   },
   "Agents with low float": {
     rules: [
-      { label: "Role", expression: "agents.status = 'active'", source: "agents.status", description: "Currently active agents." },
-      { label: "Float ratio", expression: "profiles.balance / agents.max_float < 0.2", source: "profiles.balance, agents.max_float", description: "Less than 20% of approved float remaining." },
+      { label: "Role", summary: "Currently active agent", expression: "agents.status = 'active'", source: "agents.status", description: "Currently active agents." },
+      { label: "Float ratio", summary: "Less than 20% float remaining", expression: "profiles.balance / agents.max_float < 0.2", source: "profiles.balance, agents.max_float", description: "Less than 20% of approved float remaining." },
     ],
     fetchSample: async () => {
       const { data } = await supabase.from("agents").select("id, user_id, business_name, max_float, status").eq("status", "active").limit(20);
@@ -465,7 +465,7 @@ const segmentDefinitions: Record<string, SegmentDefinition> = {
   },
   "Users with rejected KYC": {
     rules: [
-      { label: "KYC status", expression: "kyc_verifications.status = 'rejected'", source: "kyc_verifications.status", description: "Most recent KYC submission was rejected." },
+      { label: "KYC status", summary: "Latest KYC was rejected", expression: "kyc_verifications.status = 'rejected'", source: "kyc_verifications.status", description: "Most recent KYC submission was rejected." },
     ],
     fetchSample: async () => {
       const { data } = await supabase.from("kyc_verifications").select("user_id, status, created_at").eq("status", "rejected").order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -482,8 +482,8 @@ const segmentDefinitions: Record<string, SegmentDefinition> = {
   },
   "Power users eligible for rewards": {
     rules: [
-      { label: "Transaction volume", expression: "sum(transactions.amount last 30d) >= 50000", source: "transactions.amount", description: "At least ৳50,000 transacted in last 30 days." },
-      { label: "Status", expression: "profiles.status = 'active'", source: "profiles.status", description: "Active accounts only." },
+      { label: "Transaction volume", summary: "Spent ৳50,000+ in the last 30 days", expression: "sum(transactions.amount last 30d) >= 50000", source: "transactions.amount", description: "At least ৳50,000 transacted in last 30 days." },
+      { label: "Status", summary: "Account is active", expression: "profiles.status = 'active'", source: "profiles.status", description: "Active accounts only." },
     ],
     fetchSample: async () => {
       const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
@@ -503,7 +503,7 @@ const segmentDefinitions: Record<string, SegmentDefinition> = {
   },
   "Suspicious users requiring review": {
     rules: [
-      { label: "Open fraud alerts", expression: "fraud_alerts.status = 'open'", source: "fraud_alerts.status", description: "Has at least one unresolved fraud alert." },
+      { label: "Open fraud alerts", summary: "Has unresolved fraud alerts", expression: "fraud_alerts.status = 'open'", source: "fraud_alerts.status", description: "Has at least one unresolved fraud alert." },
     ],
     fetchSample: async () => {
       const { data } = await supabase.from("fraud_alerts").select("user_id, severity, rule_triggered, created_at").eq("status", "open").order("created_at", { ascending: false }).limit(1).maybeSingle();
