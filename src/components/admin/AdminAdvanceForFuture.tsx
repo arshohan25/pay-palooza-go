@@ -377,6 +377,27 @@ const previewFeatureKeys = {
   admin: ["future_compliance_center", "future_ai_fraud_investigator", "future_open_finance_hub", "future_predictive_support"],
 };
 
+const deviceFrameClass: Record<DeviceFrame, string> = {
+  mobile: "mx-auto max-w-[360px]",
+  tablet: "mx-auto max-w-[720px]",
+  desktop: "w-full",
+};
+
+const impactScore: Record<Impact, number> = { High: 3, Medium: 2, Low: 1 };
+
+const getFeatureAppType = (target: string): "user" | "merchant" | "agent" | "admin" => {
+  if (target.includes("Merchant")) return "merchant";
+  if (target.includes("Agent") || target.includes("Distributor")) return "agent";
+  if (target.includes("Admin")) return "admin";
+  return "user";
+};
+
+const readinessChecklistFor = (feature: FutureFeature) => ({
+  dataSources: feature.dependencies,
+  apis: ["Feature toggle seeded", "Audit logging active", ...feature.adminLinks.map((link) => `${link.label} module linked`)],
+  uiEntryPoints: ["Admin emulator preview ready", `${feature.target} entry point dormant`, "Live rendering requires visibility === visible"],
+});
+
 export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const [toggles, setToggles] = useState<FutureToggle[]>([]);
   const [loading, setLoading] = useState(true);
