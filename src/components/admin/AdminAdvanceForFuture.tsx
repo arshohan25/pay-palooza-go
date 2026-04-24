@@ -34,6 +34,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -415,6 +416,8 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   const [bulkPending, setBulkPending] = useState<{ title: string; group: BulkGroup; keys: string[]; visibility: Visibility } | null>(null);
   const [bulkEmulatorPreview, setBulkEmulatorPreview] = useState<{ title: string; group: BulkGroup; keys: string[] } | null>(null);
   const [deviceFrame, setDeviceFrame] = useState<DeviceFrame>("mobile");
+  const [previewRoleTab, setPreviewRoleTab] = useState<AppRole>("user");
+  const [bulkPreviewRoleTab, setBulkPreviewRoleTab] = useState<AppRole>("user");
   const [featurePending, setFeaturePending] = useState<{ feature: FutureFeature; visibility: FeatureAction } | null>(null);
   const [previewFeature, setPreviewFeature] = useState<FutureFeature | null>(null);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
@@ -512,7 +515,10 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   };
 
   const requestFeatureAction = (feature: FutureFeature, visibility: FeatureAction) => {
-    if (visibility === "disabled") setPreviewFeature(feature);
+    if (visibility === "disabled") {
+      setPreviewRoleTab(getFeatureAppRoles(feature.target)[0]);
+      setPreviewFeature(feature);
+    }
     else setFeaturePending({ feature, visibility });
   };
 
@@ -524,7 +530,11 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   };
 
   const openBulkConfirm = (title: string, group: BulkGroup, keys: string[], visibility: Visibility) => {
-    if (visibility === "disabled") setBulkEmulatorPreview({ title, group, keys });
+    if (visibility === "disabled") {
+      const firstRole = getCandidateFeatures(keys).flatMap((feature) => getFeatureAppRoles(feature.target))[0] ?? "user";
+      setBulkPreviewRoleTab(firstRole);
+      setBulkEmulatorPreview({ title, group, keys });
+    }
     else setBulkPending({ title, group, keys, visibility });
   };
 
@@ -694,8 +704,10 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
 
   const bulkTargets = bulkPending?.keys.map((key) => futureFeatures.find((feature) => feature.key === key)).filter(Boolean) as FutureFeature[] | undefined;
   const previewFeatureGroups = previewFeature ? groupFeaturesByRole([previewFeature]) : null;
+  const previewRoles = previewFeatureGroups ? (Object.keys(previewFeatureGroups) as AppRole[]).filter((role) => previewFeatureGroups[role].length) : [];
   const bulkPreviewFeatures = bulkEmulatorPreview ? getCandidateFeatures(bulkEmulatorPreview.keys) : [];
   const bulkPreviewGroups = groupFeaturesByRole(bulkPreviewFeatures);
+  const bulkPreviewRoles = (Object.keys(bulkPreviewGroups) as AppRole[]).filter((role) => bulkPreviewGroups[role].length);
 
   return (
     <div className="space-y-5">
@@ -1059,12 +1071,21 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
               <div className="flex flex-wrap gap-2">
                 {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize">{frame}</Button>)}
               </div>
-              <div className="grid gap-4 xl:grid-cols-2">
-                {previewFeatureGroups && (Object.keys(previewFeatureGroups) as AppRole[]).filter((role) => previewFeatureGroups[role].length).map((role) => {
-                  const meta = roleMeta[role];
-                  return <AppEmulator key={role} title={meta.title} role={meta.label} features={previewFeatureGroups[role]} hero={meta.hero} icon={meta.icon} candidate />;
-                })}
-              </div>
+              {previewFeatureGroups && previewRoles.length > 1 ? (
+                <Tabs value={previewRoleTab} onValueChange={(value) => setPreviewRoleTab(value as AppRole)} className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                    {previewRoles.map((role) => <TabsTrigger key={role} value={role}>{roleMeta[role].label}</TabsTrigger>)}
+                  </TabsList>
+                  {previewRoles.map((role) => {
+                    const meta = roleMeta[role];
+                    return <TabsContent key={role} value={role}><AppEmulator title={meta.title} role={meta.label} features={previewFeatureGroups[role]} hero={meta.hero} icon={meta.icon} candidate /></TabsContent>;
+                  })}
+                </Tabs>
+              ) : previewFeatureGroups && previewRoles[0] ? (() => {
+                const role = previewRoles[0];
+                const meta = roleMeta[role];
+                return <AppEmulator title={meta.title} role={meta.label} features={previewFeatureGroups[role]} hero={meta.hero} icon={meta.icon} candidate />;
+              })() : null}
               <div className="grid gap-2 text-xs sm:grid-cols-4">
                 <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Current</p><p className="font-semibold">{visibilityCopy[getVisibility(previewFeature.key)].label}</p></div>
                 <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">New</p><p className="font-semibold">Admin Preview</p></div>
@@ -1092,12 +1113,21 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
                 {(["mobile", "tablet", "desktop"] as DeviceFrame[]).map((frame) => <Button key={frame} size="sm" variant={deviceFrame === frame ? "default" : "outline"} onClick={() => setDeviceFrame(frame)} className="capitalize">{frame}</Button>)}
                 <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">{bulkPreviewFeatures.length} preview candidates</Badge>
               </div>
-              <div className="grid gap-4 xl:grid-cols-2">
-                {(Object.keys(bulkPreviewGroups) as AppRole[]).filter((role) => bulkPreviewGroups[role].length).map((role) => {
-                  const meta = roleMeta[role];
-                  return <AppEmulator key={role} title={meta.title} role={meta.label} features={bulkPreviewGroups[role]} hero={meta.hero} icon={meta.icon} candidate />;
-                })}
-              </div>
+              {bulkPreviewRoles.length > 1 ? (
+                <Tabs value={bulkPreviewRoleTab} onValueChange={(value) => setBulkPreviewRoleTab(value as AppRole)} className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                    {bulkPreviewRoles.map((role) => <TabsTrigger key={role} value={role}>{roleMeta[role].label}</TabsTrigger>)}
+                  </TabsList>
+                  {bulkPreviewRoles.map((role) => {
+                    const meta = roleMeta[role];
+                    return <TabsContent key={role} value={role}><AppEmulator title={meta.title} role={meta.label} features={bulkPreviewGroups[role]} hero={meta.hero} icon={meta.icon} candidate /></TabsContent>;
+                  })}
+                </Tabs>
+              ) : bulkPreviewRoles[0] ? (() => {
+                const role = bulkPreviewRoles[0];
+                const meta = roleMeta[role];
+                return <AppEmulator title={meta.title} role={meta.label} features={bulkPreviewGroups[role]} hero={meta.hero} icon={meta.icon} candidate />;
+              })() : null}
               <div className="rounded-md border p-3">
                 <p className="mb-2 text-xs font-semibold text-foreground">Feature keys</p>
                 <div className="flex max-h-24 flex-wrap gap-1.5 overflow-auto">
