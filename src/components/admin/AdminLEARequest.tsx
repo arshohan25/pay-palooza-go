@@ -265,6 +265,7 @@ export default function AdminLEARequest() {
       const rootRect = reportRef.current.getBoundingClientRect();
       const canvasPxPerDomPx = canvas.height / rootRect.height;
       const pageHeightPx = pageHeight * (canvas.height / imgHeight);
+      const mmPerDomPx = imgHeight / rootRect.height;
       const rowBounds = Array.from(reportRef.current.querySelectorAll<HTMLElement>('[data-lea-paginate-row="true"]')).map(row => {
         const rect = row.getBoundingClientRect();
         return {
@@ -274,7 +275,7 @@ export default function AdminLEARequest() {
         };
       }).filter(row => row.bottom > row.top);
       const rowBreaks = Array.from(new Set(rowBounds.flatMap(row => [row.top, row.bottom]))).sort((a, b) => a - b);
-      const segments: { startPx: number; endPx: number }[] = [];
+      const measuredSegments: { startPx: number; endPx: number }[] = [];
       let yOffset = 0;
       while (yOffset < canvas.height) {
         const targetBreak = Math.min(yOffset + pageHeightPx, canvas.height);
@@ -284,9 +285,46 @@ export default function AdminLEARequest() {
         const tallestRowOnPage = rowBounds.find(row => row.top <= yOffset && row.bottom > targetBreak);
         if (tallestRowOnPage) nextBreak = targetBreak;
         if (nextBreak <= yOffset) nextBreak = Math.min(yOffset + pageHeightPx, canvas.height);
-        segments.push({ startPx: Math.floor(yOffset), endPx: Math.floor(nextBreak) });
+        measuredSegments.push({ startPx: Math.floor(yOffset), endPx: Math.floor(nextBreak) });
         yOffset = nextBreak;
       }
+
+      const isContinuous = (items: { startPx: number; endPx: number }[]) => {
+        if (!items.length || items[0].startPx !== 0 || items.at(-1)?.endPx !== canvas.height) return false;
+        return items.every((segment, index) => {
+          const previous = items[index - 1];
+          const hasValidBounds = segment.startPx >= 0 && segment.endPx > segment.startPx && segment.endPx <= canvas.height;
+          return hasValidBounds && (index === 0 || segment.startPx === previous.endPx);
+        });
+      };
+
+      const buildMmFallbackSegments = () => {
+        const safeRows = Array.from(reportRef.current!.querySelectorAll<HTMLElement>('[data-lea-paginate-row="true"]')).map(row => {
+          const rect = row.getBoundingClientRect();
+          return { top: (rect.top - rootRect.top) * mmPerDomPx, bottom: (rect.bottom - rootRect.top) * mmPerDomPx };
+        });
+        const fallback: { startPx: number; endPx: number }[] = [];
+        let mmOffset = 0;
+        while (mmOffset < imgHeight - 0.5) {
+          let nextBreak = Math.min(mmOffset + pageHeight, imgHeight);
+          const splitRow = safeRows.find(row => row.top > mmOffset + 8 && row.top < nextBreak && row.bottom > nextBreak - 1);
+          if (splitRow && splitRow.top - mmOffset > 35) nextBreak = Math.max(mmOffset + 1, splitRow.top - 1);
+          fallback.push({
+            startPx: Math.floor(mmOffset * (canvas.height / imgHeight)),
+            endPx: Math.min(canvas.height, Math.floor(nextBreak * (canvas.height / imgHeight))),
+          });
+          mmOffset = nextBreak;
+        }
+        if (fallback.length) {
+          fallback[0].startPx = 0;
+          fallback[fallback.length - 1].endPx = canvas.height;
+          for (let i = 1; i < fallback.length; i++) fallback[i].startPx = fallback[i - 1].endPx;
+        }
+        return fallback;
+      };
+
+      const measurementsConsistent = Number.isFinite(canvasPxPerDomPx) && Number.isFinite(pageHeightPx) && rootRect.height > 0 && rowBounds.every(row => row.height > 0 && row.top >= 0 && row.bottom <= canvas.height + 2);
+      const segments = measurementsConsistent && isContinuous(measuredSegments) ? measuredSegments : buildMmFallbackSegments();
 
       segments.forEach((segment, index) => {
         const sourceY = segment.startPx;
