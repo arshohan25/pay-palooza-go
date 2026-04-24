@@ -1,12 +1,8 @@
-import { Resend } from "npm:resend@4.0.0";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -30,11 +26,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { error: emailError } = await resend.emails.send({
-      from: "EasyPay <EasyPay@smartshop.bd>",
-      to: [email],
-      subject: "Your EasyPay Team Account",
-      html: `
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (!RESEND_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "Email service is not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "EasyPay <EasyPay@smartshop.bd>",
+        to: [email],
+        subject: "Your EasyPay Team Account",
+        html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 20px;">
           <h2 style="color: #333; margin-bottom: 4px;">Welcome to EasyPay, ${displayName || "Team Member"}!</h2>
           <p style="color: #666; font-size: 14px; margin-bottom: 24px;">Your team account has been created. Here are your login credentials.</p>
@@ -73,12 +83,14 @@ Deno.serve(async (req) => {
           <p style="color: #aaa; font-size: 11px; margin-top: 24px; text-align: center;">This is an automated message from EasyPay. Do not share these credentials with anyone.</p>
         </div>
       `,
+      }),
     });
 
-    if (emailError) {
+    if (!emailResponse.ok) {
+      const emailError = await emailResponse.text();
       console.error("Resend error:", emailError);
       return new Response(
-        JSON.stringify({ error: "Failed to send email", details: emailError.message }),
+        JSON.stringify({ error: "Failed to send email", details: emailError }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
