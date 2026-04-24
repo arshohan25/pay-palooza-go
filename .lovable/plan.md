@@ -1,221 +1,393 @@
-
-## Fix Advance for Future previews so features show as Android-style app emulators
+## Plan: Add All Recommended Future Enhancements to the Admin Panel
 
 ### Goal
-Update `AdminAdvanceForFuture` so every **Preview** action shows the selected future features inside a realistic app-screen emulator instead of a generic confirmation card like the screenshot.
+Implement a production-style **Admin Command Intelligence Upgrade** that adds the requested user management, analytics, security, customization, and feature-launch enhancements while preserving the current dark glassmorphism admin design and existing role-based access patterns.
 
-This applies to:
-
-- Per-feature **Preview** buttons
-- **Preview Top 7**
-- **Preview Phase 1**
-- **Preview Phase 2**
-- **Preview Phase 3**
-- User, Merchant, Agent, and Admin linked app surfaces
+Because this is a large admin expansion, I will implement it as a set of connected admin modules, with real database-backed records where persistence/audit is required and safe calculated dashboards where data already exists.
 
 ---
 
-## What will be fixed
+## 1. New Admin Navigation Modules
 
-### 1. Replace plain Preview confirmation with emulator preview popup
-The current bulk preview confirmation is a standard dialog listing affected features, status, targets, and keys. It does not look like an app emulator.
+Add these modules to the Admin sidebar:
 
-I will change the Preview flow so clicking any preview button opens a dedicated emulator popup:
+- **User Intelligence**
+- **Business Intelligence**
+- **Approval Queue**
+- **Security Policies**
+- **Launch Control**
+- **Data Quality**
+- **Evidence Vault**
+- **Segments**
+- **Bulk Actions**
+- **Customization**
+
+The existing modules will remain unchanged, and the nav reorder system will automatically append the new modules for existing admins.
+
+---
+
+## 2. User Intelligence Center
+
+Create a dedicated admin screen for 360-degree user review:
+
+- Search by name, phone, user ID, wallet ID
+- Profile summary with KYC, account status, balance, account age, and account health
+- Automatically calculated **risk score** with labels:
+  - Low Risk
+  - Watchlist
+  - High Risk
+  - Restricted
+  - Investigation Required
+- Timeline combining available records from:
+  - profile changes / audit logs
+  - KYC records
+  - device registrations
+  - login/session events
+  - transactions
+  - feature locks
+  - fraud alerts
+  - PIN changes
+  - support tickets/conversations
+  - merchant/agent relationship records
+  - referrals
+  - orders
+  - wallet balance activity
+- Admin notes and internal case history
+- Follow-up reminders and assigned staff
+- Quick lifecycle actions:
+  - suspend/reactivate
+  - lock features
+  - request KYC resubmission
+  - add to watchlist
+  - revoke device
+  - export user intelligence snapshot
+
+### Risk score logic
+Use a transparent scoring model based on available signals:
+
+- failed OTP/login events
+- device count/changes
+- transaction velocity/high-value transfers
+- blacklist/fraud alerts
+- KYC rejection status/history
+- chargeback/dispute activity
+- account age
+- restricted/suspended profile state
+
+The UI will show both the score and the contributing reasons so admins can understand why a user is flagged.
+
+---
+
+## 3. User Segmentation Builder
+
+Create a new segment builder screen with ready-made segment templates:
+
+- New users with no first transaction
+- High-balance dormant users
+- Frequent recharge users
+- Merchants with declining sales
+- Agents with low float
+- Users with rejected KYC
+- Power users eligible for rewards
+- Suspicious users requiring review
+
+Admins will be able to:
+
+- preview matching users
+- save segment definitions
+- export segment users
+- use saved segments as a source for notifications, bulk actions, feature unlocks, and promotion targeting
+
+---
+
+## 4. Bulk User Action Center
+
+Add a dedicated bulk action command center for selected users/segments:
+
+- suspend users
+- reactivate users
+- unlock/lock features
+- assign badge/label
+- send notification
+- export selected users
+- request KYC resubmission
+- revoke devices
+- apply custom limits
+- add to watchlist
+
+Each action will include:
+
+- confirmation dialog
+- required reason field for sensitive actions
+- audit log entry
+- rollback metadata where practical
+- option to route high-risk actions through Approval Queue
+
+---
+
+## 5. Executive Business Intelligence Dashboard
+
+Add a consolidated analytics dashboard with:
+
+- total processed volume
+- net revenue
+- daily/monthly active users
+- new users
+- KYC conversion rate
+- failed transaction rate
+- fraud rate
+- merchant GMV
+- agent liquidity health
+- recharge volume
+- loan status
+- gift card sales
+- e-commerce order volume
+
+Also add analytics sections for:
+
+- cohort analytics: D1/D7/D30 retention, KYC completion, first transaction conversion
+- funnel analytics: user onboarding, merchant funnel, agent funnel
+- revenue attribution by transaction type, segment, merchant category, network, gateway, and feature usage
+- predictive cards for churn risk, inactive merchants, low-float agents, support demand, fraud forecast, and revenue forecast
+- real-time operations wall mode for command-center monitoring
+
+---
+
+## 6. Approval Queue and Four-Eyes Workflow
+
+Create a database-backed approval workflow for sensitive actions:
+
+- delete user
+- force KYC approval
+- large limit increase
+- gateway config changes
+- fee changes
+- merchant payout changes
+- admin role assignment
+- data export
+- bulk suspension
+- blacklist removal
+
+Flow:
 
 ```text
-Preview Phase 2 — Revenue and Ecosystem Growth
-┌──────────────── Android emulator frame ────────────────┐
-│ status bar                                               │
-│ EasyPay User / Merchant / Agent / Admin app mock screen  │
-│ real feature cards rendered in app-style layout          │
-│ bottom Android navigation bar                            │
-└─────────────────────────────────────────────────────────┘
-
-Cancel | Enable Admin Preview
+Admin A requests action
+  -> Approval Queue records pending request
+  -> Admin B reviews and approves/rejects
+  -> Approved action executes or is marked ready for execution
+  -> Audit log records requester, reviewer, decision, reason, and payload
 ```
 
-The plain confirmation dialog will remain only for:
-
-- Launch
-- Hide / Rollback
+To avoid unsafe privilege escalation, role/admin checks will use existing server-side role validation patterns, not client-side storage.
 
 ---
 
-### 2. Show all selected features inside the emulator before enabling preview
-Right now the persistent “Original App Preview” only shows features already set to `Admin Preview` or `Live`. That is correct for the dashboard section, but it makes Preview actions feel empty when features are still hidden.
+## 7. Security Policy Center
 
-I will add a separate preview-popup mode:
+Add configurable admin security policies:
 
-- Dashboard “Original App Preview”:
-  - Shows only `disabled` and `visible`
-  - Keeps hidden features excluded
+- require 2FA for admin roles
+- block admin login from unknown devices
+- restrict admin access by IP
+- auto-expire inactive staff accounts
+- require reason for sensitive actions
+- limit export frequency
+- require approval for permission changes
+- temporary access grants with expiry
+- per-module read/create/update/delete/export/approve permission matrix
+- permission change history
+- “view as staff member” simulator for permission review
 
-- Preview popup:
-  - Shows the clicked feature, Top 7 group, or phase group even if currently hidden
-  - Labels them as “Preview candidate”
-  - Lets the admin inspect how they will look before confirming
+Also add monitoring panels for:
 
-This keeps hidden features safe while making the Preview button useful.
-
----
-
-### 3. Create a stronger Android emulator frame
-Update the current `AppEmulator` component so it looks more like an Android app screen:
-
-- Rounded phone/tablet/desktop device shell
-- Top status bar with time, signal, Wi-Fi, battery indicators
-- App header inside the frame
-- Role-specific screen content
-- Bottom Android navigation pill / navigation bar
-- Dark glassmorphism styling matching EasyPay
-- `rounded-[19px]`, `gradient-hero`, soft bokeh, glass cards, compact tiles
-
-Device modes:
-
-- **Mobile**: tall phone emulator
-- **Tablet**: wider tablet emulator with denser layout
-- **Desktop**: dashboard-style app preview frame
+- new admin device login alerts
+- impossible-travel style warnings using available IP/location metadata
+- after-hours login warnings
+- excessive export attempts
+- repeated failed staff login attempts
+- admin account risk score
+- sensitive data access logs
 
 ---
 
-### 4. Render role-specific app layouts, not generic tiles only
-The popup will map each selected feature to its linked app type and show it in the correct mock screen.
+## 8. Sensitive Data Access Logs and Evidence Vault
 
-#### User app emulator
-For user-linked features:
+Add compliance-grade records for sensitive views and exports:
 
-- Wallet balance-style hero
-- Quick-action style feature tiles
-- Scam Shield warning card
-- AI Copilot insight card
-- Trust Score / Loan Eligibility / Rewards cards
-- Bengali assistant floating CTA when relevant
+- KYC documents / NID / passport fields
+- bank details
+- phone numbers
+- device fingerprints
+- transaction history
+- deleted user snapshots
+- exported reports
 
-#### Merchant app emulator
-For merchant-linked features:
+Create an **Evidence Vault** for:
 
-- Merchant sales hero
-- Growth OS analytics card
-- Campaign / Smart Rewards card
-- QR/API readiness card
-- Store/order style mini metrics
-
-#### Agent app emulator
-For agent/distributor-linked features:
-
-- Float balance hero
-- Liquidity intelligence card
-- Territory risk / restock suggestion
-- Scam Shield risk check
-- Voice assistant helper tile
-
-#### Admin app emulator
-For admin-linked features:
-
-- Risk/compliance command screen
-- Fraud investigator card
-- Open Finance governance card
-- Predictive support queue card
+- LEA requests
+- audit exports
+- approval records
+- sensitive access logs
+- report hashes
+- investigation notes
+- evidence timeline
 
 ---
 
-### 5. Handle multi-target features correctly
-Some features target more than one app, for example:
+## 9. Data Quality Monitor
 
-- `future_scam_shield` → User + Agent
-- `future_identity_wallet` → User + Merchant + Agent
-- `future_smart_rewards_engine` → User + Merchant
-- `future_dynamic_risk_limits` → User + Admin
+Add a screen that highlights operational data gaps:
 
-I will add a target resolver so the emulator popup can show the feature in every relevant linked app screen, not just the first detected target.
+- users without profiles
+- profiles without KYC records
+- merchants without stores
+- agents without float
+- orders without settlement status
+- transactions missing fees
+- failed webhook delivery
+- duplicate phone/device records
 
-Example:
-
-```text
-Preview: Real-Time Scam Shield
-
-Tabs/sections:
-- User App Emulator
-- Agent App Emulator
-```
-
-For bulk preview, it will group selected features by app type and show all relevant emulator screens.
+Each issue group will show counts, samples, severity, and suggested remediation.
 
 ---
 
-### 6. Keep Launch and Hide confirmations consistent
-Launch and Hide will still use confirmation dialogs, but Preview will become emulator-first.
+## 10. Admin Customization and Role-Based Homepages
 
-Flow will be:
+Add admin personalization features:
 
-#### Preview
-```text
-Click Preview
-→ Android emulator popup opens
-→ Admin reviews app-style screen
-→ Click Enable Admin Preview
-→ Confirmation/update sets visibility = disabled
-```
+- dashboard layout builder with draggable cards
+- custom widgets per role
+- saved dashboard layouts
+- department-specific homepages:
+  - Support
+  - Finance
+  - Risk/Compliance
+  - Marketing
+  - Operations
+- favorite modules
+- recently used tools
+- saved filters
 
-#### Launch
-```text
-Click Launch
-→ Confirmation dialog opens
-→ Sets visibility = visible
-```
-
-#### Hide / Rollback
-```text
-Click Hide/Rollback
-→ Confirmation dialog opens
-→ Sets visibility = hidden
-```
+Persist user-specific admin preferences locally first where safe, and use the backend for shared/team-level settings.
 
 ---
 
-### 7. Update bulk preview behavior
-For bulk actions:
+## 11. Feature Launch Control Room
 
-- **Preview Top 7**
-- **Preview Phase 1**
-- **Preview Phase 2**
-- **Preview Phase 3**
+Extend the current **Advance for Future** system into a launch control room:
 
-I will replace the current plain bulk confirmation popup with a bulk emulator preview popup.
+- launch calendar
+- scheduled preview date
+- scheduled live date
+- owner assignment
+- dependency status
+- rollback plan
+- business impact estimate
+- launch notes
+- checklist
+- existing emulator preview integration
+- audit trail
 
-The popup will show:
-
-- Title and affected count
-- Device switcher
-- Emulator screens grouped by app role
-- Feature chips/keys
-- Current visibility summary
-- Confirm button: **Enable Admin Preview**
-
-Only after confirming will it bulk-update those features to `disabled`.
+This will build on the current preview/launch/hide functionality instead of replacing it.
 
 ---
 
-### 8. Preserve safety rules
-No user/merchant/agent app routes will be changed.
+## 12. White-Label, Brand, and Template Controls
 
-Safety behavior remains:
+Add customization screens for:
 
-- Hidden features do not render in real user/merchant/agent UI
-- Hidden features do not appear in the persistent Original App Preview
-- Hidden features may appear only inside admin-only emulator popups for review
-- Admin Preview features remain admin-only unless future real app wiring uses `isLive(...)`
-- Live app entry points must still be gated by `visibility === "visible"` / `isLive(...)`
+- app logo/splash metadata preview
+- primary color preview
+- festival theme defaults
+- merchant storefront themes
+- receipt branding
+- invoice branding
+- notification language/tone
+- role-specific PWA branding previews
+
+Add a notification template builder for:
+
+- OTP messages
+- transaction alerts
+- KYC approval/rejection
+- merchant approval
+- agent onboarding
+- support ticket updates
+- loan reminders
+- donation receipts
+- recharge confirmation
+- fraud warnings
+
+Support English/Bengali versions and a preview before saving.
 
 ---
 
-## Main file to update
+## Technical Implementation
 
+### Frontend files to add
+New admin components such as:
+
+- `AdminUserIntelligenceCenter.tsx`
+- `AdminBusinessIntelligence.tsx`
+- `AdminApprovalQueue.tsx`
+- `AdminSecurityPolicyCenter.tsx`
+- `AdminDataQualityMonitor.tsx`
+- `AdminEvidenceVault.tsx`
+- `AdminUserSegmentationBuilder.tsx`
+- `AdminBulkUserActionCenter.tsx`
+- `AdminCustomizationCenter.tsx`
+- `AdminLaunchControlRoom.tsx`
+
+### Existing files to update
+
+- `src/pages/AdminDashboard.tsx`
+  - add imports
+  - add nav items
+  - route active tabs to new modules
+- `src/hooks/use-admin.ts`
+  - add safe helper fetchers/actions where useful
 - `src/components/admin/AdminAdvanceForFuture.tsx`
+  - connect Launch Control entry points where needed
 
-No database schema changes are needed.
+### Backend/database changes required
+Use Lovable Cloud migrations for persistent admin governance data:
+
+- `admin_user_notes`
+- `admin_user_segments`
+- `admin_bulk_actions`
+- `admin_approval_requests`
+- `admin_security_policies`
+- `admin_sensitive_access_logs`
+- `admin_evidence_vault`
+- `admin_dashboard_layouts`
+- `admin_launch_calendar`
+- `notification_templates`
+- optional rollback/audit metadata tables if not covered by existing `audit_logs`
+
+All new tables will have RLS enabled. Admin/staff access will be controlled through server-side role checks and existing role patterns. No roles will be stored on profiles/users.
+
+### Safety rules
+
+- Sensitive actions will require reason fields.
+- High-impact actions will be routed to Approval Queue.
+- Every sensitive read/write will create an audit/access record.
+- Existing hard delete and role workflows will not be weakened.
+- No anonymous signups or client-side admin checks will be introduced.
 
 ---
 
-## Expected result
-After the fix, clicking **Preview** will no longer show a plain dialog like the screenshot. It will open an Android-emulator-style popup showing exactly how the selected feature, phase, or Top 7 set would appear inside the linked EasyPay User, Merchant, Agent, or Admin app screen before enabling Admin Preview.
+## Expected Result
+
+After implementation, the admin panel will include a full command-center layer:
+
+- one-screen user intelligence and lifecycle review
+- automated risk/health scoring
+- saved user segments and bulk operations
+- executive analytics, cohorts, funnels, attribution, predictions, and operations wall
+- two-admin approval queue for sensitive changes
+- stronger admin security policy management
+- sensitive data access logs and evidence vault
+- data quality monitoring
+- role-based/customizable admin dashboards
+- launch calendar/control room for future features
+- brand and notification template customization controls

@@ -9,7 +9,7 @@ import {
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
   Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, Shield, Star, Building2, Megaphone, CalendarClock,
-  ShoppingBag, Heart, Bot, Sparkles, Key, Rocket,
+  ShoppingBag, Heart, Bot, Sparkles, Key, Rocket, ClipboardCheck, FileArchive, Palette, Network, Gauge,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -122,6 +122,18 @@ import AdminInsuranceManagement from "@/components/admin/AdminInsuranceManagemen
 import AdminGiftCardManagement from "@/components/admin/AdminGiftCardManagement";
 import AdminAiAgent from "@/components/admin/AdminAiAgent";
 import AdminAdvanceForFuture from "@/components/admin/AdminAdvanceForFuture";
+import {
+  AdminApprovalQueue,
+  AdminBulkUserActionCenter,
+  AdminBusinessIntelligence,
+  AdminCustomizationCenter,
+  AdminDataQualityMonitor,
+  AdminEvidenceVault,
+  AdminLaunchControlRoom,
+  AdminSecurityPolicyCenter,
+  AdminUserIntelligenceCenter,
+  AdminUserSegmentationBuilder,
+} from "@/components/admin/AdminCommandIntelligence";
 import AdminProfileEditor from "@/components/admin/AdminProfileEditor";
 import AdminLEARequest from "@/components/admin/AdminLEARequest";
 import AdminUserPerformanceTracker from "@/components/admin/AdminUserPerformanceTracker";
@@ -228,6 +240,9 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "overview", label: "Dashboard", icon: LayoutDashboard },
       { id: "users", label: "Users", icon: UserCog },
+      { id: "user_intelligence", label: "User Intelligence", icon: Users },
+      { id: "segments", label: "Segments", icon: Network },
+      { id: "bulk_actions", label: "Bulk Actions", icon: ClipboardCheck },
       { id: "team", label: "Team", icon: Users },
       { id: "team_activity", label: "Team Activity", icon: Activity },
     ],
@@ -323,8 +338,11 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "alerts", label: "Fraud Alerts", icon: AlertTriangle },
       { id: "security", label: "Security", icon: Shield },
+      { id: "approval_queue", label: "Approval Queue", icon: ClipboardCheck },
+      { id: "security_policies", label: "Security Policies", icon: ShieldCheck },
       { id: "risk_control", label: "Risk Control", icon: ShieldAlert },
       { id: "blacklist", label: "Blacklist", icon: Shield },
+      { id: "evidence_vault", label: "Evidence Vault", icon: FileArchive },
       { id: "lea_request", label: "LEA Request", icon: FileText },
     ],
   },
@@ -334,6 +352,9 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "ai_agent", label: "AI Agent", icon: Sparkles },
       { id: "advance_future", label: "Advance for Future", icon: Rocket },
+      { id: "launch_control", label: "Launch Control", icon: Rocket },
+      { id: "business_intel", label: "Business Intel", icon: BarChart3 },
+      { id: "data_quality", label: "Data Quality", icon: Gauge },
       { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
       { id: "auto_rules", label: "Auto Rules", icon: Bot },
       { id: "geo_tracking", label: "Geo Track", icon: Building2 },
@@ -353,6 +374,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "feedback", label: "Feedback", icon: Star },
       { id: "changelog", label: "Changelog", icon: FileText },
       { id: "festival_themes", label: "Festivals", icon: Star },
+      { id: "customization", label: "Customization", icon: Palette },
       { id: "user_performance", label: "User Perf.", icon: TrendingUp },
     ],
   },
@@ -1941,6 +1963,17 @@ export default function AdminDashboard() {
 
         {/* ═══ ADVANCE FOR FUTURE ═══ */}
         {activeTab === "advance_future" && <AdminAdvanceForFuture onNavigate={setActiveTab} />}
+
+        {activeTab === "user_intelligence" && <AdminUserIntelligenceCenter />}
+        {activeTab === "segments" && <AdminUserSegmentationBuilder />}
+        {activeTab === "bulk_actions" && <AdminBulkUserActionCenter />}
+        {activeTab === "business_intel" && <AdminBusinessIntelligence />}
+        {activeTab === "approval_queue" && <AdminApprovalQueue />}
+        {activeTab === "security_policies" && <AdminSecurityPolicyCenter />}
+        {activeTab === "launch_control" && <AdminLaunchControlRoom />}
+        {activeTab === "data_quality" && <AdminDataQualityMonitor />}
+        {activeTab === "evidence_vault" && <AdminEvidenceVault />}
+        {activeTab === "customization" && <AdminCustomizationCenter />}
 
         {/* ═══ AI FRAUD DETECTION ═══ */}
         {activeTab === "ai_fraud" && <AdminAiFraudDetection />}
