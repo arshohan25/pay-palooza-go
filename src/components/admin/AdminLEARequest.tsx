@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Search, Download, Shield, FileText, AlertTriangle, User, CreditCard,
   Smartphone, Key, Landmark, ArrowUpDown, Gavel, MessageSquare, Users,
-  Briefcase, Store, ClipboardList, Scale, CheckSquare, History, Eye, X
+  Briefcase, Store, ClipboardList, Scale, CheckSquare, History, Eye, X, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -238,6 +238,12 @@ export default function AdminLEARequest() {
 
   const hasValidationErrors = !authority.trim() || !refNo.trim() || !issueDate;
 
+  useEffect(() => {
+    if (!report || !reDownloadingId || loading || generating || pendingRedownloadIdRef.current !== reDownloadingId) return;
+    pendingRedownloadIdRef.current = null;
+    handleDownload().finally(() => setReDownloadingId(null));
+  }, [report, reDownloadingId, loading, generating]);
+
   const handleDownload = async () => {
     const errors = {
       authority: !authority.trim(),
@@ -257,17 +263,42 @@ export default function AdminLEARequest() {
         scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false,
       });
 
-      const imgData = canvas.toDataURL("image/png");
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
-      let yOffset = 0;
       const pageHeight = 297;
-      while (yOffset < imgHeight) {
-        if (yOffset > 0) pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, -yOffset, imgWidth, imgHeight);
-        yOffset += pageHeight;
+      const rootRect = reportRef.current.getBoundingClientRect();
+      const mmPerPx = imgHeight / rootRect.height;
+      const safeRows = Array.from(reportRef.current.querySelectorAll<HTMLElement>('[data-lea-paginate-row="true"]')).map(row => {
+        const rect = row.getBoundingClientRect();
+        return { top: (rect.top - rootRect.top) * mmPerPx, bottom: (rect.bottom - rootRect.top) * mmPerPx };
+      });
+      const segments: { start: number; end: number }[] = [];
+      let yOffset = 0;
+      while (yOffset < imgHeight - 0.5) {
+        let nextBreak = Math.min(yOffset + pageHeight, imgHeight);
+        const splitRow = safeRows.find(row => row.top > yOffset + 8 && row.top < nextBreak && row.bottom > nextBreak - 1);
+        if (splitRow && splitRow.top - yOffset > 35) nextBreak = Math.max(yOffset + 1, splitRow.top - 1);
+        segments.push({ start: yOffset, end: nextBreak });
+        yOffset = nextBreak;
+      }
+
+      const pxPerMm = canvas.height / imgHeight;
+      segments.forEach((segment, index) => {
+        const sourceY = Math.floor(segment.start * pxPerMm);
+        const sourceHeight = Math.min(canvas.height - sourceY, Math.ceil((segment.end - segment.start) * pxPerMm));
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceHeight;
+        const context = pageCanvas.getContext("2d");
+        context?.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+        if (index > 0) pdf.addPage();
+        pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", 0, 0, imgWidth, segment.end - segment.start);
+      });
+
+      if (segments.length === 0) {
+        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
       }
 
       pdf.save(`LEA-Report-${phone}-${new Date().toISOString().slice(0, 10)}.pdf`);
