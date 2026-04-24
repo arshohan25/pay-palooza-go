@@ -527,6 +527,10 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                 <button onClick={() => toggleActive(p)} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                   {p.is_active ? <Eye size={13} className="text-green-600" /> : <EyeOff size={13} className="text-muted-foreground" />}
                 </button>
+                <button onClick={() => { setVariantsProductId(p.id); setVariantsProductName(p.name); }}
+                  className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center" title="Variants">
+                  <Layers size={12} className="text-primary" />
+                </button>
                 <button onClick={() => openEdit(p)} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                   <Pencil size={12} className="text-muted-foreground" />
                 </button>
