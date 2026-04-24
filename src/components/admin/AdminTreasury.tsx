@@ -305,17 +305,17 @@ export default function AdminTreasury() {
     <div className="space-y-6">
       <RealtimeUpdateIndicator visible={visible} />
       {/* ═══ Overview Cards ═══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="border-0 shadow-[var(--shadow-card)] bg-gradient-to-br from-primary/10 to-primary/5">
             <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-primary flex items-center justify-center">
                   <Wallet className="w-5 h-5 text-primary-foreground" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Platform Balance</span>
+                <span className="text-sm font-medium text-muted-foreground leading-snug">Platform Balance</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{formatBDT(treasury?.balance ?? 0)}</p>
+              <p className="text-xl md:text-2xl font-bold text-foreground break-words leading-tight">{formatBDT(treasury?.balance ?? 0)}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -323,13 +323,13 @@ export default function AdminTreasury() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-emerald-500 flex items-center justify-center">
                   <TrendingUp className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Total Earnings</span>
+                <span className="text-sm font-medium text-muted-foreground leading-snug">Total Earnings</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{formatBDT(treasury?.total_earnings ?? 0)}</p>
+              <p className="text-xl md:text-2xl font-bold text-foreground break-words leading-tight">{formatBDT(treasury?.total_earnings ?? 0)}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -337,13 +337,13 @@ export default function AdminTreasury() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-purple-500 flex items-center justify-center">
                   <HandCoins className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Commissions Paid</span>
+                <span className="text-sm font-medium text-muted-foreground leading-snug">Commissions Paid</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{formatBDT(treasury?.total_commissions_paid ?? 0)}</p>
+              <p className="text-xl md:text-2xl font-bold text-foreground break-words leading-tight">{formatBDT(treasury?.total_commissions_paid ?? 0)}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -351,13 +351,13 @@ export default function AdminTreasury() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-orange-500 flex items-center justify-center">
                   <ArrowUpCircle className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Total Disbursed</span>
+                <span className="text-sm font-medium text-muted-foreground leading-snug">Total Disbursed</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{formatBDT(treasury?.total_disbursed ?? 0)}</p>
+              <p className="text-xl md:text-2xl font-bold text-foreground break-words leading-tight">{formatBDT(treasury?.total_disbursed ?? 0)}</p>
             </CardContent>
           </Card>
         </motion.div>
