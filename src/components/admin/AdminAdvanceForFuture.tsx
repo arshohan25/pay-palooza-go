@@ -630,34 +630,38 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     return <Badge variant={state.variant} className="h-5 px-2 text-[9px] uppercase tracking-wide">{state.label}</Badge>;
   };
 
-  const PreviewTile = ({ feature, icon: Icon }: { feature: FutureFeature; icon: typeof Sparkles }) => (
-    <div className="rounded-[19px] border border-border/60 bg-card/55 p-3 shadow-[var(--shadow-card)] backdrop-blur-xl">
+  const PreviewTile = ({ feature, icon: Icon, candidate = false }: { feature: FutureFeature; icon: typeof Sparkles; candidate?: boolean }) => (
+    <div className="rounded-[19px] border border-primary/20 bg-card/55 p-3 shadow-[var(--shadow-card)] backdrop-blur-xl">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-glow"><Icon className="h-4 w-4" /></span>
-        {previewBadge(feature.key)}
+        {candidate ? <Badge variant="secondary" className="h-5 px-2 text-[9px] uppercase tracking-wide">Preview candidate</Badge> : previewBadge(feature.key)}
       </div>
       <p className="text-xs font-bold leading-tight text-foreground">{feature.title}</p>
       <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">{feature.capabilities[0]}</p>
     </div>
   );
 
-  const AppEmulator = ({ title, role, features, hero, icon: Icon }: { title: string; role: string; features: FutureFeature[]; hero: string; icon: typeof Sparkles }) => (
+  const AppEmulator = ({ title, role, features, hero, icon: Icon, candidate = false }: { title: string; role: string; features: FutureFeature[]; hero: string; icon: typeof Sparkles; candidate?: boolean }) => (
     <div className={deviceFrameClass[deviceFrame]}>
-      <div className="overflow-hidden rounded-[28px] border border-border/70 bg-background/80 p-2 shadow-[var(--shadow-elevated)] backdrop-blur-xl">
-        <div className="rounded-[22px] border border-border/50 bg-card p-3">
+      <div className="overflow-hidden rounded-[34px] border border-border/70 bg-background/90 p-2 shadow-[var(--shadow-elevated)] backdrop-blur-xl">
+        <div className="rounded-[28px] border border-border/50 bg-gradient-to-b from-card to-background p-3">
+          <div className="mb-3 flex items-center justify-between rounded-full bg-muted/40 px-3 py-1.5 text-[10px] text-muted-foreground">
+            <span>9:41</span><span className="flex items-center gap-1"><span className="h-1.5 w-4 rounded-full bg-primary/70" /><span className="h-1.5 w-3 rounded-full bg-foreground/50" /><span className="h-2 w-4 rounded-sm border border-foreground/40" /></span>
+          </div>
           <div className="mb-3 flex items-center justify-between">
-            <div><p className="text-sm font-bold text-foreground">{title}</p><p className="text-[10px] text-muted-foreground">{role} · {deviceFrame} emulator</p></div>
-            <Icon className="h-5 w-5 text-primary" />
+            <div><p className="text-sm font-bold text-foreground">{title}</p><p className="text-[10px] text-muted-foreground">{role} app · {deviceFrame} Android emulator</p></div>
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
           </div>
           <div className="rounded-[19px] gradient-hero p-4 text-primary-foreground shadow-glow">
             <p className="text-[11px] opacity-80">{hero}</p>
-            <p className="mt-1 text-2xl font-black">EasyPay</p>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]"><span>Secure</span><span>Live gated</span><span>Preview</span></div>
+            <p className="mt-1 text-2xl font-black">{role === "User" ? "৳ 24,850.00" : role === "Merchant" ? "৳ 86,420" : role === "Agent" ? "৳ 420,000" : "98.7%"}</p>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]"><span>Secure</span><span>Live gated</span><span>{candidate ? "Candidate" : "Preview"}</span></div>
           </div>
           <div className={`mt-3 grid gap-2 ${deviceFrame === "mobile" ? "grid-cols-2" : deviceFrame === "tablet" ? "grid-cols-3" : "grid-cols-4"}`}>
-            {features.map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.icon} />)}
+            {features.map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.icon} candidate={candidate} />)}
           </div>
           {!features.length && <p className="mt-3 rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Hidden items are not rendered in this app preview.</p>}
+          <div className="mx-auto mt-4 h-1.5 w-24 rounded-full bg-foreground/25" />
         </div>
       </div>
     </div>
