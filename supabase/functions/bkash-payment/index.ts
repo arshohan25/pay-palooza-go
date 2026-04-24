@@ -26,7 +26,7 @@ function getBaseUrl(mode: string): string {
  * Read bKash credentials from payment_gateways DB table (service role).
  * Falls back to env vars for backward compatibility.
  */
-async function getCredentials(supabaseAdmin: ReturnType<typeof createClient>): Promise<BkashCredentials | null> {
+async function getCredentials(supabaseAdmin: any): Promise<BkashCredentials | null> {
   // Try DB first
   const { data } = await supabaseAdmin
     .from("payment_gateways")
@@ -143,7 +143,7 @@ async function executePayment(creds: BkashCredentials, idToken: string, paymentI
  * Atomically credit a user's balance with idempotency check.
  */
 async function creditUserBalance(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   userId: string,
   amount: number,
   description: string,
@@ -392,8 +392,8 @@ Deno.serve(async (req) => {
 });
 
 async function handleExecuteResult(
-  supabaseAdmin: ReturnType<typeof createClient>,
-  session: Record<string, unknown>,
+  supabaseAdmin: any,
+  session: any,
   result: Record<string, unknown>
 ) {
   const trxID = result.trxID as string;

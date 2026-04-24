@@ -17,7 +17,7 @@ interface AsthapayCredentials {
 }
 
 async function getCredentials(
-  supabaseAdmin: ReturnType<typeof createClient>
+  supabaseAdmin: any
 ): Promise<AsthapayCredentials | null> {
   const { data } = await supabaseAdmin
     .from("payment_gateways")
@@ -49,7 +49,7 @@ async function getCredentials(
  * Idempotent balance credit via direct DB operations (same pattern as bkash-payment).
  */
 async function creditUserBalance(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   userId: string,
   amount: number,
   description: string,

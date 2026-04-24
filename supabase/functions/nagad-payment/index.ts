@@ -24,7 +24,7 @@ function getBaseUrl(mode: string): string {
  * Read Nagad credentials from payment_gateways DB table (service role).
  * Falls back to env vars for backward compatibility.
  */
-async function getCredentials(supabaseAdmin: ReturnType<typeof createClient>): Promise<NagadCredentials> {
+async function getCredentials(supabaseAdmin: any): Promise<NagadCredentials> {
   // Try DB first
   const { data } = await supabaseAdmin
     .from("payment_gateways")
@@ -107,7 +107,7 @@ const commonHeaders = {
 };
 
 async function creditUserBalance(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   userId: string,
   amount: number,
   description: string,
