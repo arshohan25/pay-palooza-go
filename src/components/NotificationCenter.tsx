@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, ArrowDownLeft, ArrowUpRight, Tag, ShieldAlert,
   CheckCheck, Trash2, Bell, BellOff, type LucideIcon,
-  Gift, Copy, ExternalLink, Coins, Megaphone,
+  Gift, Copy, ExternalLink, Coins, Megaphone, Truck, PackageCheck, Package,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useNotifications, type DbNotification } from "@/hooks/use-notifications";
