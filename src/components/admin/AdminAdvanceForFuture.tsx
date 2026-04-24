@@ -613,12 +613,45 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     </div>
   );
 
+  const AppEmulator = ({ title, role, features, hero, icon: Icon }: { title: string; role: string; features: FutureFeature[]; hero: string; icon: typeof Sparkles }) => (
+    <div className={deviceFrameClass[deviceFrame]}>
+      <div className="overflow-hidden rounded-[28px] border border-border/70 bg-background/80 p-2 shadow-[var(--shadow-elevated)] backdrop-blur-xl">
+        <div className="rounded-[22px] border border-border/50 bg-card p-3">
+          <div className="mb-3 flex items-center justify-between">
+            <div><p className="text-sm font-bold text-foreground">{title}</p><p className="text-[10px] text-muted-foreground">{role} · {deviceFrame} emulator</p></div>
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+          <div className="rounded-[19px] gradient-hero p-4 text-primary-foreground shadow-glow">
+            <p className="text-[11px] opacity-80">{hero}</p>
+            <p className="mt-1 text-2xl font-black">EasyPay</p>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]"><span>Secure</span><span>Live gated</span><span>Preview</span></div>
+          </div>
+          <div className={`mt-3 grid gap-2 ${deviceFrame === "mobile" ? "grid-cols-2" : deviceFrame === "tablet" ? "grid-cols-3" : "grid-cols-4"}`}>
+            {features.map((feature) => <PreviewTile key={feature.key} feature={feature} icon={feature.icon} />)}
+          </div>
+          {!features.length && <p className="mt-3 rounded-[19px] border border-dashed p-4 text-center text-xs text-muted-foreground">Hidden items are not rendered in this app preview.</p>}
+        </div>
+      </div>
+    </div>
+  );
+
   const userPreview = getPreviewFeatures(previewFeatureKeys.user);
   const merchantPreview = getPreviewFeatures(previewFeatureKeys.merchant);
   const agentPreview = getPreviewFeatures(previewFeatureKeys.agent);
   const adminPreview = getPreviewFeatures(previewFeatureKeys.admin);
 
   const rolePreviewCount = userPreview.length + merchantPreview.length + agentPreview.length + adminPreview.length;
+
+  const analytics = useMemo(() => {
+    const byPhase = ([1, 2, 3] as PhaseId[]).map((phase) => {
+      const items = visibleFeatures.filter((feature) => feature.phase === phase);
+      const max = items.reduce((sum, feature) => sum + impactScore[feature.impact], 0) || 1;
+      const active = items.reduce((sum, feature) => sum + impactScore[feature.impact] * (feature.visibility === "visible" ? 1 : feature.visibility === "disabled" ? 0.5 : 0), 0);
+      return { phase, live: items.filter((item) => item.visibility === "visible").length, preview: items.filter((item) => item.visibility === "disabled").length, hidden: items.filter((item) => item.visibility === "hidden").length, impact: Math.round((active / max) * 100) };
+    });
+    const topSplit = topSeven.reduce<Record<Visibility, number>>((acc, feature) => { acc[getVisibility(feature.key)] += 1; return acc; }, { hidden: 0, disabled: 0, visible: 0 });
+    return { byPhase, topSplit };
+  }, [visibleFeatures, topSeven, toggleMap]);
 
   const matrixGroups = [
     { title: "High Impact / Low-Medium Complexity", note: "Quick wins and near-term release candidates", items: visibleFeatures.filter((feature) => feature.impact === "High" && isLowerComplexity(feature.complexity)) },
