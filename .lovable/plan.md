@@ -1,29 +1,41 @@
-Plan to make the Admin Customization Center fully functional:
+Plan to make the Customization Center template editor safer and fully interactive:
 
-1. Replace placeholder cards with interactive admin tools
-   - Homepages: each department Configure button opens an editor for role/department landing modules, favorites, saved filters, and recently used tools.
-   - Layouts: make dashboard widgets selectable/reorderable enough for practical use, with save/reset actions.
-   - Brand: add editable brand settings with live preview for primary color, logo/splash/receipt/invoice/PWA labels, and festival defaults metadata.
-   - Templates: add editable notification template forms with subject/title/body, category/channel/status, variables, and EN/BN preview where supported.
+1. Build a richer notification template editor
+- Replace the current simple preview block with a split editor/preview dialog.
+- Keep fields for template key, category, title/subject, body, image URL, and enabled/disabled state.
+- Add a variable helper that detects placeholders like `{{name}}`, `{{amount}}`, `{{phone}}`, `{{status}}` from the title/body.
+- Show a live rendered preview as the admin types.
 
-2. Persist settings to the existing backend
-   - Use the existing `admin_dashboard_layouts` table for department homepage/layout configuration.
-   - Use the existing `notification_templates` table for template management, adapting the UI to the actual current schema.
-   - Add a small dedicated `admin_brand_settings` table for brand configuration because no existing table cleanly stores these global brand controls.
-   - Add RLS so only authorized admin/staff users can manage these settings.
+2. Add test recipient simulation before saving
+- Add a “Test recipient” panel with editable sample values, for example name, phone, amount, transaction ID, status, date, support ticket, and app link.
+- Render the title/body by replacing `{{variable}}` placeholders with the simulated recipient values.
+- Show unresolved variables clearly so admins can fix them before saving.
+- Add quick simulation presets such as Transaction Alert, KYC Update, Support Ticket, Merchant Approval, and Recharge Confirmation.
+- Add a “Send test preview” simulation button that validates the rendered message and displays a success toast/preview state without creating real notifications.
 
-3. Improve UX and responsiveness
-   - Keep the mobile-friendly card layout from the screenshot, but add dialogs/forms, loading states, empty states, validation, save feedback, and refresh buttons.
-   - Use responsive grids and overflow-safe tab lists so the panel works at the current 1086x598 viewport and smaller mobile widths.
-   - Add preview panels so admins can see homepage cards, brand styling, and template output before saving.
+3. Add unsaved changes indicators across the Customization Center
+- Track dirty state separately for:
+  - Department homepage/layout configuration
+  - Brand settings
+  - Notification template editor
+- Add visible badges like “Unsaved changes” on tab triggers/cards/dialog headers when edits differ from the last saved or loaded values.
+- Disable silent close where it would lose edits; show a lightweight confirmation path inside the dialog: Save, Keep Editing, or Discard.
 
-4. Add auditability and safe fallbacks
-   - Log meaningful admin actions through the existing audit logging helper where practical.
-   - Seed or generate sensible defaults for the five departments and common templates when no backend rows exist yet.
-   - Avoid hardcoding business rules outside the editable configuration.
+4. Add draft restore so tab switching does not lose work
+- Persist in-progress edits to local draft storage scoped to the admin customization center.
+- Draft keys will be scoped by editor type and record identity, for example `customization:template:<id-or-name>` and `customization:brand:global`.
+- When reopening a template or switching back to a tab, restore the draft automatically if it is newer than the loaded record.
+- Show a “Draft restored” indicator with actions to discard draft or save it.
+- Clear the relevant draft after a successful save or explicit discard.
+
+5. Keep existing database writes compatible
+- Use the current `notification_templates` fields currently used by the UI: `name`, `title`, `body`, `category`, `image_url`, and `is_active`.
+- Do not require a schema change unless the current database has the newer alternate columns only; if needed, add a compatibility migration rather than changing the generated client files manually.
+- Continue writing audit log entries for template, brand, and layout saves.
 
 Technical details
-- Main file to update: `src/components/admin/AdminCommandIntelligence.tsx`, specifically `AdminCustomizationCenter`.
-- Backend migration: create `admin_brand_settings` with JSON config, timestamps, created/updated user fields, RLS, updated-at trigger, and optional seed default.
-- I will not edit autogenerated backend client/type files manually; the app code can use typed existing tables where available and safe `as any` for newly migrated structures until generated types refresh.
-- Validation/build check after implementation: run the project build and fix any TypeScript/UI issues.
+- Main implementation target: `src/components/admin/AdminCommandIntelligence.tsx` inside `AdminCustomizationCenter`.
+- Use existing UI primitives: `Dialog`, `Tabs`, `Input`, `Textarea`, `Badge`, `Button`, `Separator`, and existing toast/audit patterns.
+- Add helper functions for stable draft keys, dirty comparison, placeholder extraction, variable rendering, and draft serialization.
+- Add small local state for active customization tab, draft metadata, simulated recipient data, and close-confirmation prompts.
+- Run a production build after implementation to verify TypeScript and bundling.
