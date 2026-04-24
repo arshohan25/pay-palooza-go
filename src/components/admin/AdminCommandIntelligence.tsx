@@ -38,6 +38,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -45,10 +46,13 @@ import { toast } from "sonner";
 
 type AnyRow = Record<string, any>;
 type UserIntelligenceTab = "timeline" | "risk" | "records" | "notes" | "actions";
+type EvidenceField = { label: string; value: string | number | boolean | null | undefined; source: string };
+type RemediationAction = { title: string; reason: string; priority: string; tab: UserIntelligenceTab; audit?: string; evidence: EvidenceField[]; records?: Array<{ title: string; fields: EvidenceField[] }> };
 
 const currency = (value: number) => `৳${Math.round(value || 0).toLocaleString()}`;
 const shortDate = (value?: string | null) => value ? new Date(value).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 const humanize = (value: string) => String(value || "").split("_").join(" ");
+const evidenceValue = (value: EvidenceField["value"]) => value === null || value === undefined || value === "" ? "—" : String(value);
 const sampleRowKey = (row: AnyRow, index: number) => `${row.source || "sample"}:${row.id || row.user_id || row.reference || row.duplicate_value || "row"}:${row.created_at || index}`;
 const sampleRowLabel = (row: AnyRow, index: number) => `${row.source || "sample"} / ${row.id || row.user_id || row.reference || row.duplicate_value || `row-${index + 1}`}`;
 
