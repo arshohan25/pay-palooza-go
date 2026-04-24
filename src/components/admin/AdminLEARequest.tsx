@@ -470,7 +470,8 @@ export default function AdminLEARequest() {
   useEffect(() => {
     if (!report || !reDownloadingId || loading || generating || pendingRedownloadIdRef.current !== reDownloadingId) return;
     pendingRedownloadIdRef.current = null;
-    handleDownload().finally(() => { setReDownloadingId(null); setRedownloadPhase("idle"); });
+    setConfirmMode("redownload");
+    setConfirmOpen(true);
   }, [report, reDownloadingId, loading, generating]);
 
   const walletId = report ? generateWalletId(report.profile.user_id) : "";
@@ -591,7 +592,7 @@ export default function AdminLEARequest() {
                   {fieldErrors.issueDate && <p className="text-[10px] text-destructive">Required</p>}
                 </div>
                 <Button
-                  onClick={handleDownload}
+                  onClick={() => openPdfConfirmation("download")}
                   disabled={generating || hasValidationErrors}
                   variant="destructive"
                   className="shrink-0"
