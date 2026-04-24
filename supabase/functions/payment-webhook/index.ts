@@ -10,7 +10,7 @@ const corsHeaders = {
  * Atomically credit a user's balance with idempotency check.
  */
 async function creditUserBalance(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   userId: string,
   amount: number,
   description: string,
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
 async function handleBkashCallback(
   req: Request,
   url: URL,
-  supabaseAdmin: ReturnType<typeof createClient>
+  supabaseAdmin: any
 ) {
   // bKash sends callback as GET with query params: paymentID, status
   const paymentID = url.searchParams.get("paymentID");
@@ -164,7 +164,7 @@ async function handleBkashCallback(
 async function handleNagadCallback(
   req: Request,
   url: URL,
-  supabaseAdmin: ReturnType<typeof createClient>
+  supabaseAdmin: any
 ) {
   // Nagad sends callback with payment info
   let callbackData: Record<string, unknown> = {};
@@ -191,7 +191,7 @@ async function handleNagadCallback(
   }
 
   // Find session
-  let session;
+  let session: any;
   if (sessionId) {
     const { data } = await supabaseAdmin
       .from("payment_sessions")
@@ -311,7 +311,7 @@ interface AsthapayCredentials {
 }
 
 async function getAsthapayCredentials(
-  supabaseAdmin: ReturnType<typeof createClient>
+  supabaseAdmin: any
 ): Promise<AsthapayCredentials | null> {
   const { data } = await supabaseAdmin
     .from("payment_gateways")
@@ -330,7 +330,7 @@ async function getAsthapayCredentials(
 
 async function handleAsthapayIPN(
   req: Request,
-  supabaseAdmin: ReturnType<typeof createClient>
+  supabaseAdmin: any
 ) {
   // AsthaPay sends IPN as POST with JSON body
   let ipnData: Record<string, unknown> = {};
@@ -357,7 +357,7 @@ async function handleAsthapayIPN(
   }
 
   // Find payment session
-  let session: Record<string, unknown> | null = null;
+  let session: any = null;
 
   if (transactionId) {
     const { data } = await supabaseAdmin
