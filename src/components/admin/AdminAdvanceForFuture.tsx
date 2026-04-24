@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -52,6 +53,8 @@ type Impact = "High" | "Medium" | "Low";
 type Complexity = "High" | "Medium" | "Low";
 type PhaseId = 1 | 2 | 3;
 type BulkGroup = "top_7" | "phase_1" | "phase_2" | "phase_3";
+type DeviceFrame = "mobile" | "tablet" | "desktop";
+type FeatureAction = "hidden" | "disabled" | "visible";
 
 interface FutureToggle {
   id: string;
@@ -79,6 +82,15 @@ interface FutureFeature {
   category: string;
   topRank?: number;
   topReason?: string;
+}
+
+interface AuditEntry {
+  id: string;
+  action: string;
+  actor_id: string;
+  entity_id: string | null;
+  created_at: string;
+  details: Record<string, unknown> | null;
 }
 
 const futureFeatures: FutureFeature[] = [
