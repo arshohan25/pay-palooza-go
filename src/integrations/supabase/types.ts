@@ -5613,12 +5613,10 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_data_quality_samples:
-        | { Args: { p_check: string; p_limit?: number }; Returns: Json }
-        | {
-            Args: { p_check: string; p_limit?: number; p_offset?: number }
-            Returns: Json
-          }
+      get_data_quality_samples: {
+        Args: { p_check: string; p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
       get_merchant_customers: {
         Args: { p_merchant_id: string }
         Returns: {
