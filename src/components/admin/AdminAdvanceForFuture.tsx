@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
   Activity,
   ArrowRight,
+  BadgeCheck,
   Bot,
   CheckCircle2,
   CreditCard,
@@ -11,6 +12,8 @@ import {
   FileCheck2,
   KeyRound,
   Loader2,
+  Mic,
+  Network,
   Radar,
   RotateCcw,
   ShieldAlert,
@@ -25,11 +28,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
 
 type Visibility = "hidden" | "disabled" | "visible";
 type LaunchStage = "Planned" | "Admin Ready" | "App Ready" | "Live";
+type Impact = "High" | "Medium" | "Low";
+type Complexity = "High" | "Medium" | "Low";
+type PhaseId = 1 | 2 | 3;
+type BulkGroup = "top_7" | "phase_1" | "phase_2" | "phase_3";
 
 interface FutureToggle {
   id: string;
@@ -51,37 +68,55 @@ interface FutureFeature {
   capabilities: string[];
   dependencies: string[];
   readiness: number;
+  phase: PhaseId;
+  impact: Impact;
+  complexity: Complexity;
+  category: string;
+  topRank?: number;
+  topReason?: string;
 }
 
 const futureFeatures: FutureFeature[] = [
   {
     key: "future_ai_copilot",
     title: "AI Financial Copilot",
-    summary: "Spending intelligence, low-balance prediction, and personalized budget or offer recommendations.",
+    summary: "Personalized financial guidance, spending insights, low-balance prediction, budget nudges, and smart offers.",
     target: "User App",
     risk: "Medium",
     icon: Bot,
     adminLinks: [{ label: "AI Agent", tab: "ai_agent" }, { label: "User Performance", tab: "user_performance" }],
-    capabilities: ["Spending insights", "Low-balance prediction", "Personalized recommendations"],
+    capabilities: ["Spending insights", "Low-balance prediction", "Budget nudges"],
     dependencies: ["Transactions", "Budget manager", "AI reward signals"],
     readiness: 72,
+    phase: 1,
+    impact: "High",
+    complexity: "Medium",
+    category: "User Retention",
+    topRank: 2,
+    topReason: "Drives daily engagement and gives the user app a differentiated advisory experience.",
   },
   {
     key: "future_scam_shield",
     title: "Real-Time Scam Shield",
-    summary: "Pre-confirmation transaction risk warnings using velocity, recipient history, device trust, and unusual amount checks.",
+    summary: "Pre-confirmation risk warnings before send money, cash out, and payment using velocity, device, recipient, and amount signals.",
     target: "User / Agent App",
     risk: "High",
     icon: ShieldAlert,
     adminLinks: [{ label: "AI Fraud", tab: "ai_fraud" }, { label: "Risk Control", tab: "risk_control" }, { label: "Fraud Alerts", tab: "alerts" }],
-    capabilities: ["Monitor / Warn / Block", "Velocity checks", "Device and recipient risk"],
+    capabilities: ["Monitor / Warn / Block", "Velocity checks", "Recipient risk"],
     dependencies: ["Fraud rules", "Device manager", "Transaction history"],
     readiness: 68,
+    phase: 1,
+    impact: "High",
+    complexity: "Medium",
+    category: "Risk & Compliance",
+    topRank: 1,
+    topReason: "Highest trust and safety value because it can stop fraud before money leaves the wallet.",
   },
   {
     key: "future_easypay_score",
     title: "EasyPay Trust Score",
-    summary: "Alternative-data scoring for Qard Hasan eligibility, offer targeting, account limits, and risk controls.",
+    summary: "Alternative-data trust scoring using account age, KYC, transaction history, repayment behavior, and fraud flags.",
     target: "User App",
     risk: "High",
     icon: CreditCard,
@@ -89,11 +124,17 @@ const futureFeatures: FutureFeature[] = [
     capabilities: ["KYC + activity scoring", "Repayment behavior", "Limit intelligence"],
     dependencies: ["KYC", "Loans", "Fraud signals"],
     readiness: 64,
+    phase: 2,
+    impact: "High",
+    complexity: "High",
+    category: "Revenue Growth",
+    topRank: 4,
+    topReason: "Foundation for lending, dynamic limits, personalized offers, and safer risk controls.",
   },
   {
     key: "future_compliance_center",
     title: "Compliance Command Center",
-    summary: "LEA integrity, PDF hash verification, suspicious activity timelines, and audit readiness controls.",
+    summary: "LEA integrity, report hash verification, suspicious activity timelines, and audit readiness status.",
     target: "Admin App",
     risk: "Medium",
     icon: FileCheck2,
@@ -101,6 +142,12 @@ const futureFeatures: FutureFeature[] = [
     capabilities: ["Report integrity", "Hash verification", "Audit timeline"],
     dependencies: ["LEA reports", "Audit logs", "Data export"],
     readiness: 80,
+    phase: 1,
+    impact: "High",
+    complexity: "Medium",
+    category: "Risk & Compliance",
+    topRank: 3,
+    topReason: "Strengthens legal defensibility, regulator readiness, and internal evidence quality.",
   },
   {
     key: "future_agent_liquidity_intel",
@@ -113,11 +160,17 @@ const futureFeatures: FutureFeature[] = [
     capabilities: ["Float prediction", "Territory ranking", "Restock recommendations"],
     dependencies: ["Agent network", "Float management", "MFS monitor"],
     readiness: 76,
+    phase: 2,
+    impact: "High",
+    complexity: "Medium",
+    category: "Agent Operations",
+    topRank: 6,
+    topReason: "Improves cash availability, distributor operations, and field service reliability.",
   },
   {
     key: "future_merchant_growth_os",
     title: "Merchant Growth OS",
-    summary: "Sales trend insights, inventory reorder suggestions, and customer retention opportunities.",
+    summary: "Sales trend insights, inventory reorder recommendations, and customer retention opportunities.",
     target: "Merchant App",
     risk: "Low",
     icon: Store,
@@ -125,11 +178,17 @@ const futureFeatures: FutureFeature[] = [
     capabilities: ["Sales trends", "Inventory reorder", "Retention opportunities"],
     dependencies: ["Orders", "Products", "Merchant analytics"],
     readiness: 70,
+    phase: 2,
+    impact: "High",
+    complexity: "Medium",
+    category: "Merchant Growth",
+    topRank: 5,
+    topReason: "Creates direct merchant retention and revenue-growth opportunities.",
   },
   {
     key: "future_identity_wallet",
-    title: "Identity & Security Upgrades",
-    summary: "Passkey-ready security, reusable KYC wallet status, and device trust scoring.",
+    title: "Identity Wallet & Passkey Security",
+    summary: "Reusable KYC profile, passkey-ready security, verifiable identity status, and device trust scoring.",
     target: "User / Merchant / Agent App",
     risk: "High",
     icon: KeyRound,
@@ -137,20 +196,148 @@ const futureFeatures: FutureFeature[] = [
     capabilities: ["Passkey readiness", "Reusable KYC profile", "Device trust score"],
     dependencies: ["KYC", "Device manager", "Security center"],
     readiness: 62,
+    phase: 3,
+    impact: "High",
+    complexity: "High",
+    category: "Identity & Security",
   },
   {
     key: "future_partner_qr_api",
-    title: "Bangla QR / Partner Ecosystem",
-    summary: "QR interoperability readiness, partner API controls, webhook readiness, and sandbox launch tools.",
-    target: "Partner / Merchant App",
+    title: "Bangla QR / Partner API Ecosystem",
+    summary: "QR interoperability, partner API controls, webhook readiness, and sandbox launch tools.",
+    target: "Merchant / Partner App",
     risk: "Medium",
     icon: WalletCards,
     adminLinks: [{ label: "API Hub", tab: "apihub" }, { label: "API Requests", tab: "api_requests" }, { label: "Webhooks", tab: "webhooks" }],
     capabilities: ["QR interoperability", "Partner API", "Webhook readiness"],
     dependencies: ["Developer portal", "API Hub", "Payment sessions"],
     readiness: 74,
+    phase: 2,
+    impact: "High",
+    complexity: "High",
+    category: "Platform Infrastructure",
+  },
+  {
+    key: "future_predictive_loan_eligibility",
+    title: "Predictive Loan Eligibility",
+    summary: "Pre-qualified Qard Hasan eligibility and smart repayment guidance based on wallet behavior and trust signals.",
+    target: "User App",
+    risk: "High",
+    icon: BadgeCheck,
+    adminLinks: [{ label: "Loan Management", tab: "loans" }, { label: "Limits", tab: "limits" }],
+    capabilities: ["Pre-qualification", "Repayment guidance", "Eligibility nudges"],
+    dependencies: ["Trust score", "Loan history", "KYC"],
+    readiness: 58,
+    phase: 2,
+    impact: "High",
+    complexity: "High",
+    category: "Revenue Growth",
+  },
+  {
+    key: "future_ai_fraud_investigator",
+    title: "AI Fraud Case Investigator",
+    summary: "Summarizes suspicious activity, user patterns, related transactions, and recommended admin actions.",
+    target: "Admin App",
+    risk: "Medium",
+    icon: Radar,
+    adminLinks: [{ label: "AI Fraud", tab: "ai_fraud" }, { label: "Fraud Alerts", tab: "alerts" }, { label: "Risk Control", tab: "risk_control" }],
+    capabilities: ["Case summaries", "Pattern detection", "Action recommendations"],
+    dependencies: ["Fraud alerts", "Audit logs", "AI Gateway"],
+    readiness: 66,
+    phase: 1,
+    impact: "High",
+    complexity: "Medium",
+    category: "Risk & Compliance",
+  },
+  {
+    key: "future_smart_rewards_engine",
+    title: "Smart Rewards & Offer Engine",
+    summary: "Personalized cashback, lifecycle offers, merchant campaigns, and retention incentives.",
+    target: "User / Merchant App",
+    risk: "Low",
+    icon: Sparkles,
+    adminLinks: [{ label: "Marketing", tab: "marketing" }, { label: "Loyalty", tab: "loyalty" }, { label: "User Perf.", tab: "user_performance" }],
+    capabilities: ["Cashback targeting", "Lifecycle campaigns", "Merchant offers"],
+    dependencies: ["Campaigns", "Cashback rules", "Usage metrics"],
+    readiness: 78,
+    phase: 1,
+    impact: "High",
+    complexity: "Low",
+    category: "User Retention",
+    topRank: 7,
+    topReason: "Improves retention, campaign targeting, and transaction frequency.",
+  },
+  {
+    key: "future_bangla_voice_assistant",
+    title: "Voice & Bengali Assistant",
+    summary: "Bengali voice guidance for payments, support, accessibility, and agent-assisted workflows.",
+    target: "User / Agent App",
+    risk: "Medium",
+    icon: Mic,
+    adminLinks: [{ label: "Support", tab: "tickets" }, { label: "AI Agent", tab: "ai_agent" }],
+    capabilities: ["Voice guidance", "Bengali support", "Accessibility flows"],
+    dependencies: ["Support content", "AI Agent", "Voice UX"],
+    readiness: 50,
+    phase: 3,
+    impact: "Medium",
+    complexity: "High",
+    category: "User Retention",
+  },
+  {
+    key: "future_open_finance_hub",
+    title: "Open Finance Data Hub",
+    summary: "Future-ready consented data sharing and external financial integrations for partner ecosystems.",
+    target: "Admin / Partner App",
+    risk: "High",
+    icon: Network,
+    adminLinks: [{ label: "API Hub", tab: "apihub" }, { label: "Developer Portal", tab: "api_requests" }],
+    capabilities: ["Consented sharing", "Partner integrations", "Data controls"],
+    dependencies: ["API governance", "Consent model", "Security review"],
+    readiness: 46,
+    phase: 3,
+    impact: "Medium",
+    complexity: "High",
+    category: "Platform Infrastructure",
+  },
+  {
+    key: "future_predictive_support",
+    title: "Predictive Support Automation",
+    summary: "Detect likely support issues before tickets are opened and route proactive help to users or admins.",
+    target: "User / Admin App",
+    risk: "Low",
+    icon: Activity,
+    adminLinks: [{ label: "Tickets", tab: "tickets" }, { label: "Chat Monitor", tab: "chat_monitor" }],
+    capabilities: ["Issue prediction", "Proactive help", "Ticket routing"],
+    dependencies: ["Support history", "Notifications", "Chat signals"],
+    readiness: 60,
+    phase: 3,
+    impact: "Medium",
+    complexity: "Low",
+    category: "User Retention",
+  },
+  {
+    key: "future_dynamic_risk_limits",
+    title: "Risk-Based Dynamic Limits",
+    summary: "Adjust wallet limits based on trust score, fraud signals, KYC strength, device health, and behavior.",
+    target: "User / Admin App",
+    risk: "High",
+    icon: CheckCircle2,
+    adminLinks: [{ label: "Limits", tab: "limits" }, { label: "Risk Control", tab: "risk_control" }, { label: "Security", tab: "security" }],
+    capabilities: ["Adaptive limits", "Risk scoring", "KYC-aware controls"],
+    dependencies: ["Trust score", "Limits engine", "Fraud rules"],
+    readiness: 56,
+    phase: 2,
+    impact: "High",
+    complexity: "High",
+    category: "Risk & Compliance",
   },
 ];
+
+const phases: Record<PhaseId, { title: string; focus: string; group: BulkGroup }> = {
+  1: { title: "Phase 1 — Immediate Competitive Advantage", focus: "Safety, compliance, trust, and admin-ready intelligence.", group: "phase_1" },
+  2: { title: "Phase 2 — Revenue and Ecosystem Growth", focus: "Lending, merchant growth, agent performance, and partner expansion.", group: "phase_2" },
+  3: { title: "Phase 3 — Future Platform Differentiation", focus: "Identity, voice, open finance, and predictive support.", group: "phase_3" },
+};
 
 const visibilityCopy: Record<Visibility, { label: string; icon: typeof Eye; variant: "default" | "secondary" | "outline" | "destructive" }> = {
   hidden: { label: "Hidden", icon: EyeOff, variant: "outline" },
@@ -164,22 +351,28 @@ const getStage = (visibility?: string): LaunchStage => {
   return "Planned";
 };
 
+const isLowerComplexity = (complexity: Complexity) => complexity === "Low" || complexity === "Medium";
+
 export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const [toggles, setToggles] = useState<FutureToggle[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
+  const [bulkPending, setBulkPending] = useState<{ title: string; group: BulkGroup; keys: string[]; visibility: Visibility } | null>(null);
+
+  const featureKeys = useMemo(() => futureFeatures.map((feature) => feature.key), []);
+  const topSeven = useMemo(() => futureFeatures.filter((feature) => feature.topRank).sort((a, b) => (a.topRank ?? 0) - (b.topRank ?? 0)), []);
 
   const loadToggles = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("global_feature_toggles")
       .select("id, feature_key, label, description, is_enabled, visibility")
-      .in("feature_key", futureFeatures.map((feature) => feature.key));
+      .in("feature_key", featureKeys);
 
     if (error) toast.error("Failed to load future feature controls");
     else setToggles((data as FutureToggle[] | null) ?? []);
     setLoading(false);
-  }, []);
+  }, [featureKeys]);
 
   useEffect(() => {
     loadToggles();
@@ -191,8 +384,11 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
   }, [loadToggles]);
 
   const toggleMap = useMemo(() => new Map(toggles.map((toggle) => [toggle.feature_key, toggle])), [toggles]);
-  const liveCount = toggles.filter((toggle) => toggle.visibility === "visible").length;
-  const previewCount = toggles.filter((toggle) => toggle.visibility === "disabled").length;
+  const getVisibility = (key: string): Visibility => ((toggleMap.get(key)?.visibility as Visibility) || "hidden") as Visibility;
+  const visibleFeatures = futureFeatures.map((feature) => ({ ...feature, visibility: getVisibility(feature.key) }));
+  const liveCount = visibleFeatures.filter((feature) => feature.visibility === "visible").length;
+  const previewCount = visibleFeatures.filter((feature) => feature.visibility === "disabled").length;
+  const hiddenCount = visibleFeatures.filter((feature) => feature.visibility === "hidden").length;
 
   const auditLog = async (action: string, entityId: string, details: Record<string, unknown>) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -233,6 +429,77 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
     setUpdatingKey(null);
   };
 
+  const openBulkConfirm = (title: string, group: BulkGroup, keys: string[], visibility: Visibility) => {
+    setBulkPending({ title, group, keys, visibility });
+  };
+
+  const runBulkAction = async () => {
+    if (!bulkPending) return;
+    setUpdatingKey(bulkPending.group);
+    const previousVisibility = bulkPending.keys.reduce<Record<string, string>>((acc, key) => {
+      acc[key] = getVisibility(key);
+      return acc;
+    }, {});
+
+    const { error } = await supabase
+      .from("global_feature_toggles")
+      .update({ visibility: bulkPending.visibility, is_enabled: bulkPending.visibility === "visible" } as any)
+      .in("feature_key", bulkPending.keys);
+
+    if (error) {
+      toast.error("Bulk launch control failed");
+    } else {
+      toast.success(`${bulkPending.title} → ${visibilityCopy[bulkPending.visibility].label}`);
+      auditLog("future_feature_bulk_visibility_changed", bulkPending.group, {
+        bulk_group: bulkPending.group,
+        feature_keys: bulkPending.keys,
+        previous_visibility: previousVisibility,
+        new_visibility: bulkPending.visibility,
+        launch_stage: getStage(bulkPending.visibility),
+        affected_count: bulkPending.keys.length,
+      });
+    }
+
+    setBulkPending(null);
+    setUpdatingKey(null);
+  };
+
+  const renderFeatureControls = (feature: FutureFeature, compact = false) => {
+    const visibility = getVisibility(feature.key);
+    const updating = updatingKey === feature.key;
+    return (
+      <div className={`grid gap-2 ${compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-3"}`}>
+        <Button variant="outline" size="sm" disabled={updating} onClick={() => setVisibility(feature, "hidden")} className="gap-1.5 text-xs">
+          {updating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />} Keep Hidden
+        </Button>
+        <Button variant="secondary" size="sm" disabled={updating} onClick={() => setVisibility(feature, "disabled")} className="gap-1.5 text-xs">
+          <Eye className="h-3.5 w-3.5" /> Preview
+        </Button>
+        <Button size="sm" disabled={updating} onClick={() => setVisibility(feature, visibility === "visible" ? "hidden" : "visible")} className="gap-1.5 text-xs">
+          {visibility === "visible" ? <RotateCcw className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+          {visibility === "visible" ? "Rollback" : "Launch"}
+        </Button>
+      </div>
+    );
+  };
+
+  const phaseStats = (features: FutureFeature[]) => {
+    const live = features.filter((feature) => getVisibility(feature.key) === "visible").length;
+    const preview = features.filter((feature) => getVisibility(feature.key) === "disabled").length;
+    const hidden = features.filter((feature) => getVisibility(feature.key) === "hidden").length;
+    const readiness = Math.round(features.reduce((sum, feature) => sum + feature.readiness, 0) / features.length);
+    return { live, preview, hidden, readiness };
+  };
+
+  const matrixGroups = [
+    { title: "High Impact / Low-Medium Complexity", note: "Quick wins and near-term release candidates", items: visibleFeatures.filter((feature) => feature.impact === "High" && isLowerComplexity(feature.complexity)) },
+    { title: "High Impact / High Complexity", note: "Strategic bets requiring phased rollout", items: visibleFeatures.filter((feature) => feature.impact === "High" && feature.complexity === "High") },
+    { title: "Medium Impact / Low Complexity", note: "Useful enhancements for version upgrades", items: visibleFeatures.filter((feature) => feature.impact === "Medium" && feature.complexity === "Low") },
+    { title: "Medium Impact / High Complexity", note: "Future roadmap items that need more preparation", items: visibleFeatures.filter((feature) => feature.impact === "Medium" && feature.complexity === "High") },
+  ];
+
+  const bulkTargets = bulkPending?.keys.map((key) => futureFeatures.find((feature) => feature.key === key)).filter(Boolean) as FutureFeature[] | undefined;
+
   return (
     <div className="space-y-5">
       <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-[var(--shadow-card)]">
@@ -244,23 +511,23 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
               </div>
               <div>
                 <h2 className="text-xl font-bold tracking-tight text-foreground">Advance for Future</h2>
-                <p className="text-sm text-muted-foreground">Admin-only command center for future app-version releases.</p>
+                <p className="text-sm text-muted-foreground">15-item strategic roadmap with phase and Top 7 one-click launch controls.</p>
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center sm:min-w-80">
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-lg font-bold text-foreground">{futureFeatures.length}</p>
-              <p className="text-xs text-muted-foreground">Planned</p>
-            </div>
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-lg font-bold text-foreground">{previewCount}</p>
-              <p className="text-xs text-muted-foreground">Preview</p>
-            </div>
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-lg font-bold text-foreground">{liveCount}</p>
-              <p className="text-xs text-muted-foreground">Live</p>
-            </div>
+          <div className="grid grid-cols-5 gap-2 text-center sm:min-w-[34rem]">
+            {[
+              [futureFeatures.length, "Total"],
+              [topSeven.length, "Top 7"],
+              [liveCount, "Live"],
+              [previewCount, "Preview"],
+              [hiddenCount, "Hidden"],
+            ].map(([value, label]) => (
+              <div key={label} className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-lg font-bold text-foreground">{value}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -272,107 +539,227 @@ export default function AdminAdvanceForFuture({ onNavigate }: { onNavigate?: (ta
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {futureFeatures.map((feature, index) => {
-            const toggle = toggleMap.get(feature.key);
-            const visibility = ((toggle?.visibility as Visibility) || "hidden") as Visibility;
-            const visibilityState = visibilityCopy[visibility] ?? visibilityCopy.hidden;
-            const VisibilityIcon = visibilityState.icon;
-            const Icon = feature.icon;
-            const stage = getStage(visibility);
-            const updating = updatingKey === feature.key;
-
-            return (
-              <motion.div
-                key={feature.key}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: index * 0.03 }}
-              >
-                <Card className="h-full border-0 shadow-[var(--shadow-card)]">
-                  <CardHeader className="space-y-3 pb-3">
+        <>
+          <Card className="border-0 shadow-[var(--shadow-card)]">
+            <CardHeader className="space-y-3">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <CardTitle className="text-base">Top 7 Priority Recommendations</CardTitle>
+                  <p className="text-xs text-muted-foreground">Highest-impact release candidates ranked by strategic value.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => openBulkConfirm("Launch Top 7 to App", "top_7", topSeven.map((feature) => feature.key), "visible")}>Launch Top 7</Button>
+                  <Button size="sm" variant="secondary" onClick={() => openBulkConfirm("Preview Top 7 in Admin", "top_7", topSeven.map((feature) => feature.key), "disabled")}>Preview Top 7</Button>
+                  <Button size="sm" variant="outline" onClick={() => openBulkConfirm("Hide Top 7", "top_7", topSeven.map((feature) => feature.key), "hidden")}>Hide Top 7</Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-3 xl:grid-cols-2">
+              {topSeven.map((feature) => {
+                const visibility = getVisibility(feature.key);
+                const state = visibilityCopy[visibility] ?? visibilityCopy.hidden;
+                return (
+                  <div key={feature.key} className="rounded-lg border bg-muted/20 p-3">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <CardTitle className="text-base leading-tight">{feature.title}</CardTitle>
-                          <p className="mt-1 text-xs text-muted-foreground">{feature.summary}</p>
+                      <div className="flex min-w-0 gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary text-sm font-bold">#{feature.topRank}</div>
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-foreground">{feature.title}</p>
+                            <Badge variant={state.variant} className="text-[10px]">{state.label}</Badge>
+                          </div>
+                          <p className="break-all text-[11px] text-muted-foreground">{feature.key}</p>
+                          <p className="text-xs text-muted-foreground">{feature.topReason}</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            <Badge variant="secondary" className="text-[10px]">{feature.target}</Badge>
+                            <Badge variant="outline" className="text-[10px]">{feature.impact} impact</Badge>
+                            <Badge variant="outline" className="text-[10px]">{feature.complexity} complexity</Badge>
+                          </div>
                         </div>
                       </div>
-                      <Badge variant={visibilityState.variant} className="shrink-0 gap-1 text-[10px]">
-                        <VisibilityIcon className="h-3 w-3" /> {visibilityState.label}
-                      </Badge>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div className="rounded-md bg-muted/40 p-2">
-                        <p className="text-muted-foreground">Stage</p>
-                        <p className="font-semibold text-foreground">{stage}</p>
-                      </div>
-                      <div className="rounded-md bg-muted/40 p-2">
-                        <p className="text-muted-foreground">Target</p>
-                        <p className="font-semibold text-foreground">{feature.target}</p>
-                      </div>
-                      <div className="rounded-md bg-muted/40 p-2">
-                        <p className="text-muted-foreground">Risk</p>
-                        <p className="font-semibold text-foreground">{feature.risk}</p>
-                      </div>
+                    <div className="mt-3">{renderFeatureControls(feature)}</div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 xl:grid-cols-3">
+            {([1, 2, 3] as PhaseId[]).map((phaseId) => {
+              const phaseFeatures = futureFeatures.filter((feature) => feature.phase === phaseId);
+              const stats = phaseStats(phaseFeatures);
+              const phase = phases[phaseId];
+              return (
+                <Card key={phaseId} className="border-0 shadow-[var(--shadow-card)]">
+                  <CardHeader className="space-y-3 pb-3">
+                    <div>
+                      <CardTitle className="text-base leading-tight">{phase.title}</CardTitle>
+                      <p className="mt-1 text-xs text-muted-foreground">{phase.focus}</p>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                      <div className="rounded-md bg-muted/40 p-2"><p className="font-bold text-foreground">{phaseFeatures.length}</p><p className="text-muted-foreground">Items</p></div>
+                      <div className="rounded-md bg-muted/40 p-2"><p className="font-bold text-foreground">{stats.live}</p><p className="text-muted-foreground">Live</p></div>
+                      <div className="rounded-md bg-muted/40 p-2"><p className="font-bold text-foreground">{stats.preview}</p><p className="text-muted-foreground">Preview</p></div>
+                      <div className="rounded-md bg-muted/40 p-2"><p className="font-bold text-foreground">{stats.hidden}</p><p className="text-muted-foreground">Hidden</p></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs"><span className="text-muted-foreground">Average readiness</span><span className="font-medium">{stats.readiness}%</span></div>
+                      <Progress value={stats.readiness} className="h-2" />
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Release readiness</span>
-                        <span className="font-medium text-foreground">{feature.readiness}%</span>
-                      </div>
-                      <Progress value={feature.readiness} className="h-2" />
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {phaseFeatures.map((feature) => <Badge key={feature.key} variant="outline" className="text-[10px]">{feature.title}</Badge>)}
                     </div>
-
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><Radar className="h-3.5 w-3.5" /> Capabilities</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {feature.capabilities.map((item) => <Badge key={item} variant="secondary" className="text-[10px]">{item}</Badge>)}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><Activity className="h-3.5 w-3.5" /> Dependencies</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {feature.dependencies.map((item) => <Badge key={item} variant="outline" className="text-[10px]">{item}</Badge>)}
-                        </div>
-                      </div>
-                    </div>
-
                     <Separator />
-
-                    <div className="flex flex-wrap gap-2">
-                      {feature.adminLinks.map((link) => (
-                        <Button key={link.tab} variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => onNavigate?.(link.tab)}>
-                          {link.label} <ArrowRight className="h-3 w-3" />
-                        </Button>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                      <Button variant="outline" size="sm" disabled={updating} onClick={() => setVisibility(feature, "hidden")} className="gap-1.5 text-xs">
-                        {updating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />} Keep Hidden
-                      </Button>
-                      <Button variant="secondary" size="sm" disabled={updating} onClick={() => setVisibility(feature, "disabled")} className="gap-1.5 text-xs">
-                        <Eye className="h-3.5 w-3.5" /> Preview in Admin
-                      </Button>
-                      <Button size="sm" disabled={updating} onClick={() => setVisibility(feature, visibility === "visible" ? "hidden" : "visible")} className="gap-1.5 text-xs">
-                        {visibility === "visible" ? <RotateCcw className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                        {visibility === "visible" ? "Rollback / Hide" : "Launch to App"}
-                      </Button>
+                    <div className="grid gap-2">
+                      <Button size="sm" onClick={() => openBulkConfirm(`Launch ${phase.title}`, phase.group, phaseFeatures.map((feature) => feature.key), "visible")}>Launch Phase</Button>
+                      <Button size="sm" variant="secondary" onClick={() => openBulkConfirm(`Preview ${phase.title}`, phase.group, phaseFeatures.map((feature) => feature.key), "disabled")}>Preview Phase</Button>
+                      <Button size="sm" variant="outline" onClick={() => openBulkConfirm(`Hide ${phase.title}`, phase.group, phaseFeatures.map((feature) => feature.key), "hidden")}>Hide Phase</Button>
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+
+          <Card className="border-0 shadow-[var(--shadow-card)]">
+            <CardHeader>
+              <CardTitle className="text-base">Strategic Value Matrix</CardTitle>
+              <p className="text-xs text-muted-foreground">Grouped by business impact and implementation complexity for faster release planning.</p>
+            </CardHeader>
+            <CardContent className="grid gap-4 lg:grid-cols-2">
+              {matrixGroups.map((group) => (
+                <div key={group.title} className="rounded-lg border bg-muted/20 p-3">
+                  <div className="mb-3">
+                    <p className="font-semibold text-foreground">{group.title}</p>
+                    <p className="text-xs text-muted-foreground">{group.note}</p>
+                  </div>
+                  <div className="space-y-2">
+                    {group.items.map((feature) => (
+                      <div key={feature.key} className="flex items-center justify-between gap-2 rounded-md bg-background/60 p-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">{feature.title}</p>
+                          <p className="truncate text-[11px] text-muted-foreground">Phase {feature.phase} · {feature.category}</p>
+                        </div>
+                        <Badge variant={visibilityCopy[feature.visibility].variant} className="shrink-0 text-[10px]">{visibilityCopy[feature.visibility].label}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            {futureFeatures.map((feature, index) => {
+              const toggle = toggleMap.get(feature.key);
+              const visibility = getVisibility(feature.key);
+              const visibilityState = visibilityCopy[visibility] ?? visibilityCopy.hidden;
+              const VisibilityIcon = visibilityState.icon;
+              const Icon = feature.icon;
+              const stage = getStage(visibility);
+
+              return (
+                <motion.div key={feature.key} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: index * 0.02 }}>
+                  <Card className="h-full border-0 shadow-[var(--shadow-card)]">
+                    <CardHeader className="space-y-3 pb-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <CardTitle className="text-base leading-tight">{feature.title}</CardTitle>
+                            <p className="mt-1 text-xs text-muted-foreground">{feature.summary}</p>
+                            <p className="mt-1 break-all text-[11px] text-muted-foreground">Key: {feature.key}</p>
+                          </div>
+                        </div>
+                        <Badge variant={visibilityState.variant} className="shrink-0 gap-1 text-[10px]">
+                          <VisibilityIcon className="h-3 w-3" /> {visibilityState.label}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Stage</p><p className="font-semibold text-foreground">{stage}</p></div>
+                        <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Phase</p><p className="font-semibold text-foreground">Phase {feature.phase}</p></div>
+                        <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Target</p><p className="font-semibold text-foreground">{feature.target}</p></div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Impact</p><p className="font-semibold text-foreground">{feature.impact}</p></div>
+                        <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Complexity</p><p className="font-semibold text-foreground">{feature.complexity}</p></div>
+                        <div className="rounded-md bg-muted/40 p-2"><p className="text-muted-foreground">Risk</p><p className="font-semibold text-foreground">{feature.risk}</p></div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs"><span className="text-muted-foreground">Release readiness</span><span className="font-medium text-foreground">{feature.readiness}%</span></div>
+                        <Progress value={feature.readiness} className="h-2" />
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><Radar className="h-3.5 w-3.5" /> Capabilities</p>
+                          <div className="flex flex-wrap gap-1.5">{feature.capabilities.map((item) => <Badge key={item} variant="secondary" className="text-[10px]">{item}</Badge>)}</div>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><Activity className="h-3.5 w-3.5" /> Dependencies</p>
+                          <div className="flex flex-wrap gap-1.5">{feature.dependencies.map((item) => <Badge key={item} variant="outline" className="text-[10px]">{item}</Badge>)}</div>
+                        </div>
+                      </div>
+                      <Separator />
+                      <div className="flex flex-wrap gap-2">
+                        {feature.adminLinks.map((link) => (
+                          <Button key={link.tab} variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => onNavigate?.(link.tab)}>
+                            {link.label} <ArrowRight className="h-3 w-3" />
+                          </Button>
+                        ))}
+                        {!toggle && <Badge variant="destructive" className="text-[10px]">Toggle not seeded</Badge>}
+                      </div>
+                      {renderFeatureControls(feature)}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        </>
       )}
+
+      <AlertDialog open={!!bulkPending} onOpenChange={(open) => !open && setBulkPending(null)}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{bulkPending?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Review this rollout before changing feature visibility for user, merchant, or agent app entry points.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {bulkPending && (
+            <div className="space-y-3 text-sm">
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Affected</p><p className="font-semibold">{bulkPending.keys.length} features</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">New status</p><p className="font-semibold">{visibilityCopy[bulkPending.visibility].label}</p></div>
+                <div className="rounded-md bg-muted/40 p-2"><p className="text-xs text-muted-foreground">Targets</p><p className="font-semibold">{Array.from(new Set(bulkTargets?.map((feature) => feature.target))).join(", ")}</p></div>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="mb-2 text-xs font-semibold text-foreground">Feature keys</p>
+                <div className="flex max-h-32 flex-wrap gap-1.5 overflow-auto">
+                  {bulkPending.keys.map((key) => <Badge key={key} variant="outline" className="text-[10px]">{key}</Badge>)}
+                </div>
+              </div>
+              <p className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+                Current counts: {hiddenCount} hidden, {previewCount} preview, {liveCount} live. Launching as Live may make prepared app entry points visible after future app-version wiring.
+              </p>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={runBulkAction}>
+              {updatingKey === bulkPending?.group ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

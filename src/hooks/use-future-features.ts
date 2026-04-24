@@ -10,6 +10,13 @@ export const FUTURE_FEATURE_KEYS = [
   "future_merchant_growth_os",
   "future_identity_wallet",
   "future_partner_qr_api",
+  "future_predictive_loan_eligibility",
+  "future_ai_fraud_investigator",
+  "future_smart_rewards_engine",
+  "future_bangla_voice_assistant",
+  "future_open_finance_hub",
+  "future_predictive_support",
+  "future_dynamic_risk_limits",
 ] as const;
 
 export type FutureFeatureKey = (typeof FUTURE_FEATURE_KEYS)[number];
