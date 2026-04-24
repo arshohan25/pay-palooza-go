@@ -12,6 +12,7 @@ import {
   Eye,
   FileArchive,
   Gauge,
+  HelpCircle,
   LayoutDashboard,
   Lock,
   Network,
@@ -26,7 +27,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 type AnyRow = Record<string, any>;
@@ -91,6 +93,61 @@ function MetricCard({ label, value, icon: Icon, hint }: { label: string; value: 
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function RiskScoreTooltip({ score }: { score?: { score: number; label: string; reasons: string[] } }) {
+  const reasons = score?.reasons ?? [];
+  const has = (text: string) => reasons.some((reason) => reason.toLowerCase().includes(text));
+  const fraudReason = reasons.find((reason) => reason.toLowerCase().includes("fraud alert"));
+  const transferReason = reasons.find((reason) => reason.toLowerCase().includes("high-value transfer"));
+
+  const rows = [
+    { label: "Base account review score", points: "+12", active: reasons.includes("Base account review score"), tone: "bg-primary" },
+    { label: "Account age under 14 days", points: "+10", active: has("under 14 days"), tone: "bg-amber-500" },
+    { label: "Suspended/deactivated profile", points: "+30", active: has("profile status"), tone: "bg-destructive" },
+    { label: "KYC rejected", points: "+18", active: has("kyc rejection"), tone: "bg-destructive" },
+    { label: "No KYC record", points: "+8", active: has("no kyc"), tone: "bg-amber-500" },
+    { label: "More than 2 registered devices", points: "+12", active: has("multiple registered devices"), tone: "bg-amber-500" },
+    { label: fraudReason || "Fraud alerts", points: "+12 each, max +28", active: Boolean(fraudReason), tone: "bg-destructive" },
+    { label: transferReason || "High-value transfers ≥৳50,000", points: "+5 each, max +20", active: Boolean(transferReason), tone: "bg-amber-500" },
+  ];
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" aria-label="How this score was calculated" className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <HelpCircle className="h-4 w-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right" align="start" className="w-[min(22rem,calc(100vw-2rem))] p-0 text-left">
+          <div className="space-y-3 p-4">
+            <div>
+              <p className="text-sm font-semibold text-popover-foreground">How this score was calculated</p>
+              <p className="text-xs text-muted-foreground">Active factors are included in the current user score.</p>
+            </div>
+            <div className="space-y-2">
+              {rows.map((row) => (
+                <div key={row.label} className="flex items-start justify-between gap-3 text-xs">
+                  <span className="flex min-w-0 items-center gap-2 text-popover-foreground">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${row.active ? row.tone : "bg-muted-foreground/30"}`} />
+                    <span className={row.active ? "font-medium" : "text-muted-foreground"}>{row.label}</span>
+                  </span>
+                  <span className={row.active ? "font-semibold text-popover-foreground" : "text-muted-foreground"}>{row.points}</span>
+                </div>
+              ))}
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Final score capped at 100</span>
+              <span className="font-semibold text-popover-foreground">{score?.score ?? "—"} · {score?.label ?? "No score"}</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">Labels: 80+ Investigation Required, 60+ Restricted, 42+ High Risk, 25+ Watchlist, below 25 Low Risk. Recalculated from live profile, KYC, device, fraud, and transaction data.</p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -183,7 +240,7 @@ export function AdminUserIntelligenceCenter() {
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         <Card className="border-border/50 bg-card/70"><CardHeader className="pb-3"><div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search users..." className="pl-9" /></div></CardHeader><CardContent className="max-h-[620px] space-y-2 overflow-y-auto">{filtered.map((u) => <button key={u.id} onClick={() => setSelected(u)} className={`w-full rounded-lg border p-3 text-left transition ${selected?.user_id === u.user_id ? "border-primary bg-primary/10" : "border-border bg-background/60 hover:bg-muted/60"}`}><p className="truncate text-sm font-semibold text-foreground">{u.name || "Unnamed user"}</p><p className="text-xs text-muted-foreground">{u.phone || u.user_id}</p><div className="mt-2 flex items-center justify-between"><span className="text-xs font-medium">{currency(Number(u.balance))}</span><StatusBadge status={u.status || "active"} /></div></button>)}</CardContent></Card>
         <div className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-4"><MetricCard label="Risk Score" value={detail?.score?.score ?? "—"} icon={Gauge} hint={detail?.score?.label} /><MetricCard label="Health" value={detail?.score?.health ?? "—"} icon={Activity} /><MetricCard label="KYC" value={detail?.kyc?.status || (selected?.kyc_exempt ? "exempt" : "not started")} icon={Shield} /><MetricCard label="Balance" value={currency(Number(selected?.balance))} icon={Wallet} /></div>
+          <div className="grid gap-3 md:grid-cols-4"><Card className="border-border/50 bg-card/70 shadow-[var(--shadow-card)]"><CardContent className="p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="flex items-center gap-1.5"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Risk Score</p><RiskScoreTooltip score={detail?.score} /></div><p className="mt-1 truncate text-2xl font-bold text-foreground">{detail?.score?.score ?? "—"}</p>{detail?.score?.label && <p className="mt-1 text-xs text-muted-foreground">{detail.score.label}</p>}</div><div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-muted"><Gauge className="h-4 w-4 text-primary" /></div></div></CardContent></Card><MetricCard label="Health" value={detail?.score?.health ?? "—"} icon={Activity} /><MetricCard label="KYC" value={detail?.kyc?.status || (selected?.kyc_exempt ? "exempt" : "not started")} icon={Shield} /><MetricCard label="Balance" value={currency(Number(selected?.balance))} icon={Wallet} /></div>
           <Tabs defaultValue="timeline"><TabsList className="grid h-auto w-full grid-cols-5"><TabsTrigger value="timeline">Timeline</TabsTrigger><TabsTrigger value="risk">Risk</TabsTrigger><TabsTrigger value="records">Records</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger><TabsTrigger value="actions">Actions</TabsTrigger></TabsList>
             <TabsContent value="timeline"><Card><CardContent className="p-4"><div className="space-y-3">{(detail?.timeline ?? []).map((item: AnyRow, i: number) => <div key={i} className="flex gap-3 rounded-lg border border-border/60 p-3"><div className="mt-1 h-2 w-2 rounded-full bg-primary" /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-medium text-foreground">{item.title}</p><StatusBadge status={item.status || item.type} /></div><p className="text-xs text-muted-foreground">{item.type} • {shortDate(item.at)}</p></div></div>)}{!loading && !detail?.timeline?.length && <p className="py-8 text-center text-sm text-muted-foreground">No timeline activity found.</p>}</div></CardContent></Card></TabsContent>
             <TabsContent value="risk"><Card><CardContent className="space-y-4 p-4"><Progress value={detail?.score?.score ?? 0} /><div className="grid gap-2 md:grid-cols-2">{(detail?.score?.reasons ?? []).map((r: string) => <div key={r} className="rounded-lg bg-muted/60 p-3 text-sm text-foreground"><AlertTriangle className="mr-2 inline h-4 w-4 text-primary" />{r}</div>)}</div></CardContent></Card></TabsContent>
@@ -221,7 +278,7 @@ export function AdminBusinessIntelligence() {
   const typeData = useMemo(() => Object.values(completed.reduce((acc: AnyRow, t: AnyRow) => { acc[t.type] ||= { name: t.type, value: 0, revenue: 0 }; acc[t.type].value += Number(t.amount || 0); acc[t.type].revenue += Number(t.fee || 0); return acc; }, {})), [completed.length]);
   const kycApproved = data.kyc.filter((k: AnyRow) => k.status === "verified" || k.status === "approved").length;
   const funnel = [{ name: "Install", value: data.profiles.length + 120 }, { name: "Signup", value: data.profiles.length }, { name: "OTP", value: Math.round(data.profiles.length * .92) }, { name: "Profile", value: Math.round(data.profiles.length * .84) }, { name: "KYC", value: data.kyc.length }, { name: "Approved", value: kycApproved }, { name: "First Txn", value: new Set(completed.map((t: AnyRow) => t.user_id)).size }];
-  return <Shell title="Business Intelligence Dashboard" description="Executive analytics, cohorts, funnels, attribution, predictions, and real-time operations wall." icon={BarChart3}>{loading ? <p className="py-10 text-center text-muted-foreground">Loading intelligence…</p> : <div className="space-y-4"><div className="grid gap-3 md:grid-cols-4"><MetricCard label="Processed Volume" value={currency(volume)} icon={Wallet} /><MetricCard label="Net Revenue" value={currency(revenue)} icon={BarChart3} /><MetricCard label="New Users" value={data.profiles.length} icon={Users} /><MetricCard label="Fraud Rate" value={`${completed.length ? ((data.fraud.length / completed.length) * 100).toFixed(1) : 0}%`} icon={ShieldAlert} /></div><Tabs defaultValue="executive"><TabsList className="grid h-auto w-full grid-cols-5"><TabsTrigger value="executive">Executive</TabsTrigger><TabsTrigger value="cohort">Cohorts</TabsTrigger><TabsTrigger value="funnel">Funnels</TabsTrigger><TabsTrigger value="predictive">Predictive</TabsTrigger><TabsTrigger value="wall">Ops Wall</TabsTrigger></TabsList><TabsContent value="executive"><div className="grid gap-4 lg:grid-cols-2"><Card><CardHeader><CardTitle className="text-sm">Daily Volume</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><AreaChart data={daily as any[]}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="date" /><YAxis /><Tooltip /><Area dataKey="volume" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / .2)" /></AreaChart></ResponsiveContainer></CardContent></Card><Card><CardHeader><CardTitle className="text-sm">Revenue Attribution</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><PieChart><Pie data={typeData as any[]} dataKey="revenue" nameKey="name" outerRadius={96}>{(typeData as any[]).map((_, i) => <Cell key={i} fill={`hsl(var(--chart-${(i % 5) + 1}))`} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></CardContent></Card></div></TabsContent><TabsContent value="cohort"><div className="grid gap-3 md:grid-cols-4">{["Day 1 retention", "Day 7 retention", "Day 30 retention", "KYC completion", "First deposit", "Repeat txn", "Merchant activation", "Agent activation"].map((x, i) => <MetricCard key={x} label={x} value={`${Math.max(18, 86 - i * 7)}%`} icon={Activity} />)}</div></TabsContent><TabsContent value="funnel"><Card><CardContent className="h-80 p-4"><ResponsiveContainer><BarChart data={funnel}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card></TabsContent><TabsContent value="predictive"><div className="grid gap-3 md:grid-cols-3">{["Users likely to churn", "Merchants likely inactive", "Agents low float", "Support demand", "High-value offers", "Fraud forecast", "Revenue forecast", "KYC backlog"].map((x, i) => <Card key={x}><CardContent className="p-4"><p className="text-sm font-semibold">{x}</p><p className="mt-2 text-2xl font-bold">{[24, 9, 17, 38, 52, 6, 14, 31][i]}</p><p className="text-xs text-muted-foreground">Predictive signal from current operating data</p></CardContent></Card>)}</div></TabsContent><TabsContent value="wall"><div className="grid gap-3 md:grid-cols-3">{["Live transaction volume", "Failed transactions", "Gateway health", "Fraud alerts", "Recharge API", "Support queue", "KYC backlog", "Agent liquidity", "Merchant spikes"].map((x, i) => <Card key={x} className="bg-card/80"><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-sm font-medium">{x}</p><span className="h-2 w-2 rounded-full bg-primary" /></div><p className="mt-3 text-2xl font-bold">{[completed.length, data.txns.length - completed.length, "99.2%", data.fraud.length, "OK", 12, data.kyc.filter((k: AnyRow) => k.status === "pending").length, "Stable", data.orders.length][i]}</p></CardContent></Card>)}</div></TabsContent></Tabs></div>}</Shell>;
+  return <Shell title="Business Intelligence Dashboard" description="Executive analytics, cohorts, funnels, attribution, predictions, and real-time operations wall." icon={BarChart3}>{loading ? <p className="py-10 text-center text-muted-foreground">Loading intelligence…</p> : <div className="space-y-4"><div className="grid gap-3 md:grid-cols-4"><MetricCard label="Processed Volume" value={currency(volume)} icon={Wallet} /><MetricCard label="Net Revenue" value={currency(revenue)} icon={BarChart3} /><MetricCard label="New Users" value={data.profiles.length} icon={Users} /><MetricCard label="Fraud Rate" value={`${completed.length ? ((data.fraud.length / completed.length) * 100).toFixed(1) : 0}%`} icon={ShieldAlert} /></div><Tabs defaultValue="executive"><TabsList className="grid h-auto w-full grid-cols-5"><TabsTrigger value="executive">Executive</TabsTrigger><TabsTrigger value="cohort">Cohorts</TabsTrigger><TabsTrigger value="funnel">Funnels</TabsTrigger><TabsTrigger value="predictive">Predictive</TabsTrigger><TabsTrigger value="wall">Ops Wall</TabsTrigger></TabsList><TabsContent value="executive"><div className="grid gap-4 lg:grid-cols-2"><Card><CardHeader><CardTitle className="text-sm">Daily Volume</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><AreaChart data={daily as any[]}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="date" /><YAxis /><RechartsTooltip /><Area dataKey="volume" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / .2)" /></AreaChart></ResponsiveContainer></CardContent></Card><Card><CardHeader><CardTitle className="text-sm">Revenue Attribution</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><PieChart><Pie data={typeData as any[]} dataKey="revenue" nameKey="name" outerRadius={96}>{(typeData as any[]).map((_, i) => <Cell key={i} fill={`hsl(var(--chart-${(i % 5) + 1}))`} />)}</Pie><RechartsTooltip /></PieChart></ResponsiveContainer></CardContent></Card></div></TabsContent><TabsContent value="cohort"><div className="grid gap-3 md:grid-cols-4">{["Day 1 retention", "Day 7 retention", "Day 30 retention", "KYC completion", "First deposit", "Repeat txn", "Merchant activation", "Agent activation"].map((x, i) => <MetricCard key={x} label={x} value={`${Math.max(18, 86 - i * 7)}%`} icon={Activity} />)}</div></TabsContent><TabsContent value="funnel"><Card><CardContent className="h-80 p-4"><ResponsiveContainer><BarChart data={funnel}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="name" /><YAxis /><RechartsTooltip /><Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card></TabsContent><TabsContent value="predictive"><div className="grid gap-3 md:grid-cols-3">{["Users likely to churn", "Merchants likely inactive", "Agents low float", "Support demand", "High-value offers", "Fraud forecast", "Revenue forecast", "KYC backlog"].map((x, i) => <Card key={x}><CardContent className="p-4"><p className="text-sm font-semibold">{x}</p><p className="mt-2 text-2xl font-bold">{[24, 9, 17, 38, 52, 6, 14, 31][i]}</p><p className="text-xs text-muted-foreground">Predictive signal from current operating data</p></CardContent></Card>)}</div></TabsContent><TabsContent value="wall"><div className="grid gap-3 md:grid-cols-3">{["Live transaction volume", "Failed transactions", "Gateway health", "Fraud alerts", "Recharge API", "Support queue", "KYC backlog", "Agent liquidity", "Merchant spikes"].map((x, i) => <Card key={x} className="bg-card/80"><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-sm font-medium">{x}</p><span className="h-2 w-2 rounded-full bg-primary" /></div><p className="mt-3 text-2xl font-bold">{[completed.length, data.txns.length - completed.length, "99.2%", data.fraud.length, "OK", 12, data.kyc.filter((k: AnyRow) => k.status === "pending").length, "Stable", data.orders.length][i]}</p></CardContent></Card>)}</div></TabsContent></Tabs></div>}</Shell>;
 }
 
 const segmentTemplates = ["New users with no first transaction", "High-balance dormant users", "Frequent recharge users", "Merchants with declining sales", "Agents with low float", "Users with rejected KYC", "Power users eligible for rewards", "Suspicious users requiring review"];
