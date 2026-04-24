@@ -384,7 +384,7 @@ export default function AdminLEARequest() {
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={i} style={{ background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
+          <tr key={i} data-lea-paginate-row="true" style={{ background: i % 2 === 1 ? "#f9f9f9" : "#fff" }}>
             {r.map((c, j) => <td key={j} style={{ ...(headers[j]?.align === "right" ? tdR : tdS), wordBreak: "break-word", whiteSpace: "normal", overflow: "hidden" }}>{c}</td>)}
           </tr>
         ))}
