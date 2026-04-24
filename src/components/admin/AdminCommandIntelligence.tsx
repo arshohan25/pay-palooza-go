@@ -44,6 +44,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 
 type AnyRow = Record<string, any>;
+type UserIntelligenceTab = "timeline" | "risk" | "records" | "notes" | "actions";
 
 const currency = (value: number) => `৳${Math.round(value || 0).toLocaleString()}`;
 const shortDate = (value?: string | null) => value ? new Date(value).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
@@ -175,6 +176,27 @@ function scoreUser(profile: AnyRow | null, kyc: AnyRow | null, txns: AnyRow[], d
   return { score, label, health, reasons };
 }
 
+function getRemediationActions(detail: any, selected: AnyRow | null) {
+  const score = Number(detail?.score?.score ?? 0);
+  const label = detail?.score?.label ?? "Low Risk";
+  const kycStatus = detail?.kyc?.status;
+  const devices = detail?.devices ?? [];
+  const fraud = detail?.fraud ?? [];
+  const transactions = detail?.transactions ?? [];
+  const highTransfers = transactions.filter((txn: AnyRow) => Number(txn.amount) >= 50000);
+  const actions: Array<{ title: string; reason: string; priority: string; tab: UserIntelligenceTab; audit?: string }> = [];
+
+  if (!detail || !selected) return actions;
+  if ((!kycStatus && !selected.kyc_exempt) || kycStatus === "rejected") actions.push({ title: kycStatus === "rejected" ? "Request KYC resubmission" : "Request KYC verification", reason: kycStatus === "rejected" ? "KYC rejection is contributing to this risk level." : "Missing KYC leaves the user identity unresolved.", priority: kycStatus === "rejected" ? "High" : "Medium", tab: "actions", audit: "kyc_resubmission_request" });
+  if (devices.length > 2) actions.push({ title: "Review registered devices", reason: `${devices.length} devices are linked to this user. Confirm known devices and remove suspicious ones.`, priority: "Medium", tab: "records" });
+  if (highTransfers.length > 0) actions.push({ title: "Verify high-value transfers", reason: `${highTransfers.length} transfer(s) at or above ৳50,000 need source-of-funds review.`, priority: "High", tab: "records" });
+  if (fraud.length > 0) actions.push({ title: "Review fraud alerts", reason: `${fraud.length} fraud alert(s) are open or recently recorded for this profile.`, priority: "High", tab: "records" });
+  if (score >= 42) actions.push({ title: score >= 80 ? "Open investigation workflow" : "Add user to watchlist", reason: `${label} accounts should be monitored before sensitive actions are approved.`, priority: score >= 80 ? "Critical" : "High", tab: "actions", audit: "user_watchlist_request" });
+  if (actions.length === 0) actions.push({ title: "Document low-risk review", reason: "No elevated signals found. Add a case note if this profile was manually reviewed.", priority: "Low", tab: "notes" });
+
+  return actions;
+}
+
 export function AdminUserIntelligenceCenter() {
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<AnyRow[]>([]);
@@ -182,6 +204,7 @@ export function AdminUserIntelligenceCenter() {
   const [detail, setDetail] = useState<any>(null);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<UserIntelligenceTab>("timeline");
 
   const loadUsers = async () => {
     setLoading(true);
@@ -228,6 +251,13 @@ export function AdminUserIntelligenceCenter() {
   }, [selected]);
 
   const filtered = users.filter((u) => !query || [u.name, u.phone, u.user_id, u.wallet_id].some((v) => String(v || "").toLowerCase().includes(query.toLowerCase())));
+  const remediationActions = useMemo(() => getRemediationActions(detail, selected), [detail, selected]);
+  const runRemediationAction = async (action: { title: string; tab: UserIntelligenceTab; audit?: string }) => {
+    setActiveTab(action.tab);
+    if (!action.audit || !selected?.user_id) return;
+    await insertAudit(action.audit, "user", selected.user_id, { source: "risk_remediation", title: action.title, risk_score: detail?.score?.score });
+    toast.success(`${action.title} logged`);
+  };
   const addNote = async () => {
     if (!selected?.user_id || !note.trim()) return;
     const { error } = await supabase.from("admin_user_notes" as any).insert({ target_user_id: selected.user_id, note_type: "case", note, status: "open" } as any);
