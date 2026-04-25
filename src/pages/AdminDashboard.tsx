@@ -328,6 +328,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "permissions", label: "Permissions", icon: ShieldAlert },
       { id: "sys_settings", label: "Settings", icon: Settings },
       { id: "thresholds", label: "Thresholds", icon: Settings },
+      { id: "push_logs", label: "Push Logs", icon: Settings },
       { id: "apihub", label: "API Hub", icon: Plug },
       { id: "push_setup", label: "Push Setup", icon: Bell },
       { id: "api_requests", label: "API Requests", icon: Plug },
