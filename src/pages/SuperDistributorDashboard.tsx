@@ -666,6 +666,9 @@ const SuperDistributorDashboard = () => {
               </div>
             ))}
           </div>
+          <div className="mt-5 pt-4 border-t border-border/40">
+            <NotificationPreferences scope="distributor" />
+          </div>
         </SheetContent>
       </Sheet>
 
