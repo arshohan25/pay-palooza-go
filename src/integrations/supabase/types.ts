@@ -4047,6 +4047,42 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_thresholds: {
+        Row: {
+          description: string | null
+          key: string
+          label: string
+          max_value: number | null
+          min_value: number | null
+          unit: string | null
+          updated_at: string
+          updated_by: string | null
+          value: number
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          label: string
+          max_value?: number | null
+          min_value?: number | null
+          unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value: number
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          label?: string
+          max_value?: number | null
+          min_value?: number | null
+          unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
       platform_treasury: {
         Row: {
           balance: number
@@ -6078,6 +6114,10 @@ export type Database = {
           merchant_id: string
           staff_role: string
         }[]
+      }
+      get_threshold: {
+        Args: { p_default: number; p_key: string }
+        Returns: number
       }
       get_user_feature_visibility: {
         Args: { p_feature_key: string; p_user_id: string }
