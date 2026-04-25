@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { haptics } from "@/lib/haptics";
 import SupportChat from "@/components/SupportChat";
+import NotificationPreferences from "@/components/NotificationPreferences";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import TransactionHistory from "./TransactionHistory";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
