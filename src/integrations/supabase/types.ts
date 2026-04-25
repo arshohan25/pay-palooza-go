@@ -4394,6 +4394,51 @@ export type Database = {
         }
         Relationships: []
       }
+      push_delivery_logs: {
+        Row: {
+          body: string | null
+          category: string | null
+          created_at: string
+          endpoint: string | null
+          error_message: string | null
+          id: string
+          metadata: Json
+          status: string
+          status_code: number | null
+          title: string
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          category?: string | null
+          created_at?: string
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          status: string
+          status_code?: number | null
+          title: string
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          category?: string | null
+          created_at?: string
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          status?: string
+          status_code?: number | null
+          title?: string
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string

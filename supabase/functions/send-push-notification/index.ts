@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
 
     // If a category is provided, filter out users who have disabled push for that category
     let allowedUserIds: string[] = user_ids;
+    const skippedByPref: string[] = [];
     if (category && typeof category === "string") {
       const { data: prefs } = await sb
         .from("notification_preferences")
@@ -47,6 +48,17 @@ Deno.serve(async (req) => {
         (prefs ?? []).filter((p: any) => p.push_enabled === false).map((p: any) => p.user_id),
       );
       allowedUserIds = user_ids.filter((id: string) => !disabled.has(id));
+      for (const id of user_ids) if (disabled.has(id)) skippedByPref.push(id);
+
+      if (skippedByPref.length > 0) {
+        await sb.from("push_delivery_logs").insert(
+          skippedByPref.map((uid) => ({
+            user_id: uid, title, body: msg ?? "", url: url ?? null, category,
+            status: "skipped", error_message: "user opted out of category",
+          })),
+        );
+      }
+
       if (allowedUserIds.length === 0) {
         return new Response(JSON.stringify({ sent: 0, failed: 0, total: 0, skipped: user_ids.length }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -60,6 +72,7 @@ Deno.serve(async (req) => {
 
     let sent = 0, failed = 0;
     const payload = JSON.stringify({ title, body: msg ?? "", url: url ?? "/" });
+    const logs: any[] = [];
 
     for (const s of subs ?? []) {
       try {
@@ -68,12 +81,26 @@ Deno.serve(async (req) => {
           payload,
         );
         sent++;
+        logs.push({
+          user_id: s.user_id, endpoint: s.endpoint, title, body: msg ?? "",
+          url: url ?? null, category: category ?? null, status: "sent", status_code: 201,
+        });
       } catch (err: any) {
         failed++;
-        if (err?.statusCode === 410 || err?.statusCode === 404) {
+        const code = err?.statusCode ?? null;
+        logs.push({
+          user_id: s.user_id, endpoint: s.endpoint, title, body: msg ?? "",
+          url: url ?? null, category: category ?? null, status: "failed",
+          status_code: code, error_message: String(err?.message ?? err).slice(0, 500),
+        });
+        if (code === 410 || code === 404) {
           await sb.from("push_subscriptions").delete().eq("endpoint", s.endpoint);
         }
       }
+    }
+
+    if (logs.length > 0) {
+      await sb.from("push_delivery_logs").insert(logs);
     }
 
     return new Response(JSON.stringify({ sent, failed, total: (subs ?? []).length }),
