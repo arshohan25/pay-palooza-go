@@ -16,6 +16,7 @@ import { useProfile } from "@/hooks/use-profile";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import UserQrModal from "@/components/UserQrModal";
+import NotificationPreferences from "@/components/NotificationPreferences";
 
 interface AgentMenuDrawerProps {
   open: boolean;
@@ -293,6 +294,16 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               Detailed customer KYC tracking will be available soon.
             </p>
           </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Notifications Preferences Sheet */}
+      <Sheet open={notifSheetOpen} onOpenChange={setNotifSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto">
+          <SheetHeader className="text-left mb-3">
+            <SheetTitle className="text-base font-bold">Notification Preferences</SheetTitle>
+          </SheetHeader>
+          <NotificationPreferences scope="agent" />
         </SheetContent>
       </Sheet>
     </>
