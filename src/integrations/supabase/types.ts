@@ -5781,6 +5781,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _dispatch_push: {
+        Args: {
+          p_body: string
+          p_title: string
+          p_url?: string
+          p_user_ids: string[]
+        }
+        Returns: undefined
+      }
       admin_approve_fund_request: {
         Args: { p_admin_note?: string; p_request_id: string }
         Returns: Json

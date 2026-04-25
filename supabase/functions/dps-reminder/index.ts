@@ -59,14 +59,29 @@ Deno.serve(async (req) => {
         hour12: true,
       });
 
+      const title = "🔔 DPS Installment Due Tomorrow";
+      const body = needsMore
+        ? `Your DPS installment of ৳${Number(schedule.amount).toLocaleString()} is due tomorrow. You need ৳${Math.ceil(shortfall).toLocaleString()} more in your wallet. Please top up to avoid missing a payment.`
+        : `Your DPS installment of ৳${Number(schedule.amount).toLocaleString()} will be auto-collected tomorrow. Your wallet balance is sufficient.`;
+
       await supabase.from("notifications").insert({
         user_id: schedule.user_id,
-        title: "🔔 DPS Installment Due Tomorrow",
-        body: needsMore
-          ? `Your DPS installment of ৳${Number(schedule.amount).toLocaleString()} is due tomorrow. You need ৳${Math.ceil(shortfall).toLocaleString()} more in your wallet. Please top up to avoid missing a payment.`
-          : `Your DPS installment of ৳${Number(schedule.amount).toLocaleString()} will be auto-collected tomorrow. Your wallet balance is sufficient.`,
+        title,
+        body,
         category: "savings_reminder",
       });
+
+      // Web push (best-effort)
+      try {
+        await supabase.functions.invoke("send-push-notification", {
+          body: {
+            user_ids: [schedule.user_id],
+            title,
+            body,
+            url: "/savings",
+          },
+        });
+      } catch (_) { /* swallow */ }
 
       sent++;
     }
