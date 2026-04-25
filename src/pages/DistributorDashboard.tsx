@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { haptics } from "@/lib/haptics";
 import SupportChat from "@/components/SupportChat";
+import NotificationPreferences from "@/components/NotificationPreferences";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import TransactionHistory from "./TransactionHistory";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
@@ -709,7 +710,7 @@ const DistributorDashboard = () => {
 
       {/* ═══ Notifications Sheet ═══ */}
       <Sheet open={notifOpen} onOpenChange={setNotifOpen}>
-        <SheetContent side="right" className="w-80">
+        <SheetContent side="right" className="w-80 overflow-y-auto">
           <SheetHeader><SheetTitle className="text-sm">Notifications</SheetTitle></SheetHeader>
           <div className="mt-4 space-y-2">
             {notifications.length === 0 ? (
@@ -722,6 +723,9 @@ const DistributorDashboard = () => {
                 </div>
               ))
             )}
+          </div>
+          <div className="mt-5 pt-4 border-t border-border/40">
+            <NotificationPreferences scope="distributor" />
           </div>
         </SheetContent>
       </Sheet>

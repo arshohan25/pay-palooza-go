@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { haptics } from "@/lib/haptics";
 import SupportChat from "@/components/SupportChat";
+import NotificationPreferences from "@/components/NotificationPreferences";
 import TransactionHistory from "./TransactionHistory";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
@@ -665,6 +666,9 @@ const SuperDistributorDashboard = () => {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="mt-5 pt-4 border-t border-border/40">
+            <NotificationPreferences scope="distributor" />
           </div>
         </SheetContent>
       </Sheet>
