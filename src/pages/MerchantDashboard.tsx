@@ -54,7 +54,7 @@ import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts";
+type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts" | "notifications";
 
 interface MerchantInfo {
   id: string;
@@ -143,6 +143,7 @@ const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: strin
   { id: "customers",    icon: Users,        label: "Customers",        desc: "Customer directory & insights",  toggleKey: "merchant_customers" },
   { id: "coupons",      icon: Ticket,       label: "Coupons",          desc: "Create store discount codes",    toggleKey: "merchant_coupons" },
   { id: "payouts",      icon: Landmark,     label: "Payouts",          desc: "Request bank withdrawals",       toggleKey: "merchant_payouts" },
+  { id: "notifications",icon: Bell,         label: "Notifications",    desc: "Push alerts & preferences" },
 ];
 
 const stagger = {
