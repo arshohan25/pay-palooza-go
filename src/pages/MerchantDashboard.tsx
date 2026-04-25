@@ -51,6 +51,7 @@ import MerchantStaffTab from "@/components/merchant/MerchantStaffTab";
 import MerchantCustomersTab from "@/components/merchant/MerchantCustomersTab";
 import MerchantCouponsTab from "@/components/merchant/MerchantCouponsTab";
 import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
+import NotificationPreferences from "@/components/NotificationPreferences";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 
 /* ─── Types ─── */
