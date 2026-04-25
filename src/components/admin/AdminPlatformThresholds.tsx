@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Save, RotateCcw, Sliders, Bell } from "lucide-react";
+import { Loader2, Save, RotateCcw, Sliders, Bell, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useAdmin } from "@/hooks/use-admin";
 
 interface Threshold {
   key: string;
@@ -25,6 +26,7 @@ const DEFAULTS: Record<string, number> = {
 };
 
 export default function AdminPlatformThresholds() {
+  const { isAdmin, loading: adminLoading } = useAdmin();
   const [rows, setRows] = useState<Threshold[]>([]);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -42,8 +44,9 @@ export default function AdminPlatformThresholds() {
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    if (isAdmin) load();
+    else setLoading(false);
+  }, [isAdmin]);
 
   const save = async (row: Threshold) => {
     const raw = edits[row.key];
@@ -96,6 +99,28 @@ export default function AdminPlatformThresholds() {
     toast.success(`Reset to default (${def}${row.unit ?? ""})`);
     load();
   };
+
+  if (adminLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <Card className="border-destructive/40">
+        <CardContent className="py-10 text-center space-y-2">
+          <ShieldAlert className="w-8 h-8 text-destructive mx-auto" />
+          <p className="text-sm font-semibold text-foreground">Admin access required</p>
+          <p className="text-xs text-muted-foreground">
+            Only administrators can view or modify platform thresholds.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
