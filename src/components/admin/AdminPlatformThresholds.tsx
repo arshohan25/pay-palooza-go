@@ -100,6 +100,28 @@ export default function AdminPlatformThresholds() {
     load();
   };
 
+  if (adminLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <Card className="border-destructive/40">
+        <CardContent className="py-10 text-center space-y-2">
+          <ShieldAlert className="w-8 h-8 text-destructive mx-auto" />
+          <p className="text-sm font-semibold text-foreground">Admin access required</p>
+          <p className="text-xs text-muted-foreground">
+            Only administrators can view or modify platform thresholds.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
