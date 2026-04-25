@@ -1,91 +1,44 @@
-## Phase 3 Close-out — Partial Shipment Push + VAPID Activation
+## Phase 4 — Merchant + Agent/Distributor push & scheduled digests ✅
 
-### 1. Migration: partial-shipment trigger on `orders`
+### Migration applied
+`20260425_phase4_push_triggers.sql` (via migration tool) added:
+- Shared helper `public._dispatch_push(uuid[], text, text, text)` — wraps `net.http_post` to `send-push-notification`, exception-safe.
+- 7 new triggers (all also write to `notifications`):
+  - `trg_notify_merchant_new_order` (orders INSERT)
+  - `trg_notify_merchant_payout_paid` (merchant_payouts → paid/completed/credited)
+  - `trg_notify_merchant_refund_request` (return_requests INSERT)
+  - `trg_notify_merchant_low_stock` (merchant_products.stock crossing ≤5 from above)
+  - `trg_notify_agent_float_low` (profiles.balance — agent users only, < 10% of max_float, crossing)
+  - `trg_notify_commission_credited` (commission_logs INSERT — agent + distributor + master_distributor)
+  - `trg_notify_fund_request_decision` (fund_requests → approved | rejected)
 
-Add `notify_order_partial_shipment()` so buyers get one rolled-up alert when an order flips into `partially_shipped` (complementing the per-fulfillment trigger from earlier in Phase 3).
+### Edge functions
+- **NEW** `send-daily-summary` — aggregates yesterday's completed transactions per user, sends one rolled-up push per user. De-dupes via `category=daily_summary` per BDT day.
+- **NEW** `send-wishlist-nudge` — finds wishlist items 24h–7d old, pushes one notification per user. 3-day cooldown.
+- **EXTENDED** `dps-reminder` — now also dispatches web push alongside the existing in-app insert.
 
-```sql
-CREATE OR REPLACE FUNCTION public.notify_order_partial_shipment()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_title text;
-  v_body  text;
-BEGIN
-  IF NEW.status = 'partially_shipped'
-     AND COALESCE(OLD.status, '') <> 'partially_shipped' THEN
+### Cron jobs (scheduled via `cron.schedule`, not migrations)
+| Job | Schedule (UTC) | Local (BDT) |
+|---|---|---|
+| `phase4-daily-summary` | `0 14 * * *` | 8:00 PM |
+| `phase4-wishlist-nudge` | `0 */6 * * *` | every 6h |
+| `phase4-dps-reminder` | `0 3 * * *` | 9:00 AM |
 
-    v_title := 'Order partially shipped 📦';
-    v_body  := format('Some items from order #%s are on the way', NEW.order_num);
+### UI mounting
+`PushOptInPrompt` already lives in `AppLayout` → surfaces on every authenticated route automatically. No per-dashboard mounting needed.
 
-    -- In-app notification
-    INSERT INTO public.notifications (user_id, title, body, category, metadata)
-    VALUES (
-      NEW.user_id, v_title, v_body, 'order',
-      jsonb_build_object(
-        'order_id', NEW.id,
-        'event', 'partial',
-        'order_num', NEW.order_num,
-        'fulfillment_status', 'partial'
-      )
-    );
+### Notes / known limitations
+- **Low-stock threshold** is a flat `≤ 5` because `merchant_products` has no per-product `low_stock_threshold` column. If you want per-product, add the column and tweak the trigger.
+- **Abandoned cart** became **wishlist nudge** because there's no `carts` table — the closest available signal is the `wishlists` table.
+- **Agent float** is derived from `profiles.balance / agents.max_float` (no separate float-balance table exists).
+- 4 pre-existing public-bucket linter warnings remain — unrelated to this phase.
 
-    -- Web push via Edge Function
-    PERFORM net.http_post(
-      url := current_setting('app.supabase_url', true)
-             || '/functions/v1/send-push-notification',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || current_setting('app.service_role_key', true)
-      ),
-      body := jsonb_build_object(
-        'user_ids', jsonb_build_array(NEW.user_id),
-        'title', v_title,
-        'body', v_body,
-        'url', '/orders/' || NEW.id
-      )
-    );
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_notify_order_partial ON public.orders;
-CREATE TRIGGER trg_notify_order_partial
-AFTER UPDATE OF status ON public.orders
-FOR EACH ROW
-EXECUTE FUNCTION public.notify_order_partial_shipment();
-```
-
-### 2. VAPID secrets (runtime)
-
-After the migration runs, I'll request these via `add_secret`:
-- `VAPID_PUBLIC_KEY`
-- `VAPID_PRIVATE_KEY`
-- `VAPID_SUBJECT` (e.g. `mailto:support@easypay.app`)
-
-Generate with: `npx web-push generate-vapid-keys`
-
-### 3. Build secret (manual)
-
-You'll need to add this yourself in **Workspace Settings → Build Secrets** (tools can't manage build secrets):
-- `VITE_VAPID_PUBLIC_KEY` — must exactly match `VAPID_PUBLIC_KEY`
-
-Then republish so the value is baked into the client bundle.
-
-### 4. Verification
-
-1. **Admin → Push Setup wizard** — all status pills should turn green.
-2. Click **Subscribe this device** → row appears in `push_subscriptions`.
-3. Click **Send test push** → browser notification arrives.
-4. Mark a test order item as `shipped` / `delivered` / flip the parent order to `partially_shipped` → confirm in-app + push fire.
-
-### Files
-
-**New**
-- `supabase/migrations/<timestamp>_phase3_partial_shipment_push.sql`
-
-**No code changes** — the Edge Function (`send-push-notification`), hook (`use-push-subscription`), wizard (`AdminPushSetupWizard`), and opt-in prompt (`PushOptInPrompt`) are already in place from earlier in Phase 3.
+### Verification
+- New order on the shop → buyer + each affected merchant gets push.
+- Admin marks payout `paid` → merchant gets push.
+- Buyer files a return → all involved merchants get push.
+- Stock drops to ≤5 → merchant gets push.
+- Agent's wallet drops below 10% of max_float → agent gets push.
+- New `commission_logs` row → agent / distributor / super-distributor get push.
+- Admin approves or rejects fund request → user gets push.
+- Cron jobs visible in Postgres `cron.job` table; first daily summary fires next 14:00 UTC.
