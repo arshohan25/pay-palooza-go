@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
 
     let sent = 0, failed = 0;
     const payload = JSON.stringify({ title, body: msg ?? "", url: url ?? "/" });
+    const logs: any[] = [];
 
     for (const s of subs ?? []) {
       try {
@@ -80,13 +81,35 @@ Deno.serve(async (req) => {
           payload,
         );
         sent++;
+        logs.push({
+          user_id: s.user_id, endpoint: s.endpoint, title, body: msg ?? "",
+          url: url ?? null, category: category ?? null, status: "sent", status_code: 201,
+        });
       } catch (err: any) {
         failed++;
-        if (err?.statusCode === 410 || err?.statusCode === 404) {
+        const code = err?.statusCode ?? null;
+        logs.push({
+          user_id: s.user_id, endpoint: s.endpoint, title, body: msg ?? "",
+          url: url ?? null, category: category ?? null, status: "failed",
+          status_code: code, error_message: String(err?.message ?? err).slice(0, 500),
+        });
+        if (code === 410 || code === 404) {
           await sb.from("push_subscriptions").delete().eq("endpoint", s.endpoint);
         }
       }
     }
+
+    if (logs.length > 0) {
+      await sb.from("push_delivery_logs").insert(logs);
+    }
+
+    return new Response(JSON.stringify({ sent, failed, total: (subs ?? []).length }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message ?? "Internal error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+});
 
     return new Response(JSON.stringify({ sent, failed, total: (subs ?? []).length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
