@@ -29,16 +29,34 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { user_ids, title, body: msg, url } = body || {};
+    const { user_ids, title, body: msg, url, category } = body || {};
     if (!Array.isArray(user_ids) || user_ids.length === 0 || !title) {
       return new Response(JSON.stringify({ error: "user_ids[] and title required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // If a category is provided, filter out users who have disabled push for that category
+    let allowedUserIds: string[] = user_ids;
+    if (category && typeof category === "string") {
+      const { data: prefs } = await sb
+        .from("notification_preferences")
+        .select("user_id, push_enabled")
+        .in("user_id", user_ids)
+        .eq("category", category);
+      const disabled = new Set(
+        (prefs ?? []).filter((p: any) => p.push_enabled === false).map((p: any) => p.user_id),
+      );
+      allowedUserIds = user_ids.filter((id: string) => !disabled.has(id));
+      if (allowedUserIds.length === 0) {
+        return new Response(JSON.stringify({ sent: 0, failed: 0, total: 0, skipped: user_ids.length }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     const { data: subs } = await sb
       .from("push_subscriptions")
       .select("*")
-      .in("user_id", user_ids);
+      .in("user_id", allowedUserIds);
 
     let sent = 0, failed = 0;
     const payload = JSON.stringify({ title, body: msg ?? "", url: url ?? "/" });
