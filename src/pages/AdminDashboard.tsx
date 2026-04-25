@@ -82,6 +82,7 @@ import AdminWalletSystem from "@/components/admin/AdminWalletSystem";
 import AdminSecurityCenter from "@/components/admin/AdminSecurityCenter";
 import AdminSystemSettings from "@/components/admin/AdminSystemSettings";
 import AdminPlatformThresholds from "@/components/admin/AdminPlatformThresholds";
+import AdminPushDeliveryLogs from "@/components/admin/AdminPushDeliveryLogs";
 
 import AdminLoyaltyPoints from "@/components/admin/AdminLoyaltyPoints";
 import AdminAiFraudDetection from "@/components/admin/AdminAiFraudDetection";
