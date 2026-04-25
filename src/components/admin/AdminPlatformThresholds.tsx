@@ -26,6 +26,7 @@ const DEFAULTS: Record<string, number> = {
 };
 
 export default function AdminPlatformThresholds() {
+  const { isAdmin, loading: adminLoading } = useAdmin();
   const [rows, setRows] = useState<Threshold[]>([]);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -43,8 +44,9 @@ export default function AdminPlatformThresholds() {
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    if (isAdmin) load();
+    else setLoading(false);
+  }, [isAdmin]);
 
   const save = async (row: Threshold) => {
     const raw = edits[row.key];
