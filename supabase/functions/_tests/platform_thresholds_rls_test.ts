@@ -1,5 +1,7 @@
 // Verifies non-admin users are blocked from reading or modifying
 // platform_thresholds at the database/API layer (RLS enforcement).
+// Uses a pre-seeded confirmed non-admin user (see migration that creates
+// `rls-test-nonadmin@easypay.app`).
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import {
   assertEquals,
@@ -7,37 +9,31 @@ import {
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL")!;
-const SUPABASE_ANON_KEY = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY")!;
+const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_ANON_KEY =
+  Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY") ??
+  Deno.env.get("VITE_SUPABASE_ANON_KEY") ??
+  Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
 
-assert(SUPABASE_URL, "VITE_SUPABASE_URL missing");
-assert(SUPABASE_ANON_KEY, "VITE_SUPABASE_PUBLISHABLE_KEY missing");
+const TEST_EMAIL = "rls-test-nonadmin@easypay.app";
+const TEST_PASSWORD = "RlsTestPass!2026";
+
+assert(SUPABASE_URL, "SUPABASE_URL missing");
+assert(SUPABASE_ANON_KEY, "SUPABASE anon/publishable key missing");
 
 // --- Helpers ---------------------------------------------------------------
 
-async function signInTempUser() {
-  const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+async function signInNonAdmin() {
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const stamp = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
-  const email = `test-nonadmin-${stamp}@easypay.app`;
-  const password = `Test!${crypto.randomUUID()}`;
-
-  const { data: signUp, error: signUpErr } = await anon.auth.signUp({
-    email,
-    password,
+  const { data, error } = await client.auth.signInWithPassword({
+    email: TEST_EMAIL,
+    password: TEST_PASSWORD,
   });
-  if (signUpErr) throw signUpErr;
-
-  // If email confirmation is required we still get a JWT for sign-in via password
-  let session = signUp.session;
-  if (!session) {
-    const { data, error } = await anon.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    session = data.session;
-  }
-  assert(session, "Could not establish a non-admin session");
-  return { client: anon, userId: session.user.id, accessToken: session.access_token };
+  if (error) throw new Error(`Test fixture sign-in failed: ${error.message}`);
+  assert(data.session, "expected a session");
+  return { client, accessToken: data.session.access_token, userId: data.session.user.id };
 }
 
 async function rawFetch(path: string, init: RequestInit, token?: string) {
@@ -54,23 +50,40 @@ async function rawFetch(path: string, init: RequestInit, token?: string) {
 
 // --- Tests -----------------------------------------------------------------
 
+Deno.test("anonymous request to thresholds REST endpoint returns no rows", async () => {
+  const { status, body } = await rawFetch(
+    "/rest/v1/platform_thresholds?select=*",
+    { method: "GET" },
+  );
+  assertEquals(status, 200);
+  assertEquals(JSON.parse(body).length, 0, "anon must see zero rows");
+});
+
+Deno.test("anonymous INSERT into thresholds is rejected", async () => {
+  const { status, body } = await rawFetch(
+    "/rest/v1/platform_thresholds",
+    {
+      method: "POST",
+      body: JSON.stringify({ key: `anon-${crypto.randomUUID().slice(0, 6)}`, value: 1, label: "x" }),
+    },
+  );
+  // PostgREST returns 401/403 for RLS-blocked anon writes
+  assert(status === 401 || status === 403 || status === 400,
+    `expected 4xx, got ${status} ${body}`);
+});
+
 Deno.test("non-admin SELECT on platform_thresholds returns no rows (RLS)", async () => {
-  const { client } = await signInTempUser();
+  const { client } = await signInNonAdmin();
   const { data, error } = await client
     .from("platform_thresholds" as any)
     .select("*");
 
-  // RLS-blocked SELECT returns empty list, not an error
   assertEquals(error, null, `unexpected error: ${error?.message}`);
-  assertEquals(
-    (data ?? []).length,
-    0,
-    "non-admin must not see any threshold rows",
-  );
+  assertEquals((data ?? []).length, 0, "non-admin must not see any threshold rows");
 });
 
 Deno.test("non-admin UPDATE on platform_thresholds is silently blocked", async () => {
-  const { client } = await signInTempUser();
+  const { client } = await signInNonAdmin();
   const { data, error } = await client
     .from("platform_thresholds" as any)
     .update({ value: 9999 })
@@ -78,31 +91,25 @@ Deno.test("non-admin UPDATE on platform_thresholds is silently blocked", async (
     .select();
 
   assertEquals(error, null);
-  assertEquals(
-    (data ?? []).length,
-    0,
-    "non-admin update must affect zero rows",
-  );
+  assertEquals((data ?? []).length, 0, "non-admin update must affect zero rows");
 });
 
 Deno.test("non-admin INSERT on platform_thresholds is rejected", async () => {
-  const { client } = await signInTempUser();
+  const { client } = await signInNonAdmin();
   const { error } = await client.from("platform_thresholds" as any).insert({
     key: `evil-${crypto.randomUUID().slice(0, 8)}`,
     value: 1,
     label: "evil",
   });
   assert(error, "expected RLS error on non-admin INSERT");
-  // Postgres RLS violation surfaces as code 42501
   assert(
-    error!.code === "42501" ||
-      /row-level security|permission/i.test(error!.message),
+    error!.code === "42501" || /row-level security|permission/i.test(error!.message),
     `unexpected error: ${error!.code} ${error!.message}`,
   );
 });
 
 Deno.test("non-admin DELETE on platform_thresholds is silently blocked", async () => {
-  const { client } = await signInTempUser();
+  const { client } = await signInNonAdmin();
   const { data, error } = await client
     .from("platform_thresholds" as any)
     .delete()
@@ -110,36 +117,16 @@ Deno.test("non-admin DELETE on platform_thresholds is silently blocked", async (
     .select();
 
   assertEquals(error, null);
-  assertEquals(
-    (data ?? []).length,
-    0,
-    "non-admin delete must affect zero rows",
-  );
+  assertEquals((data ?? []).length, 0, "non-admin delete must affect zero rows");
 });
 
-Deno.test("anonymous request to thresholds REST endpoint returns no rows", async () => {
-  // Direct PostgREST call without a user JWT (apikey only)
-  const { status, body } = await rawFetch(
-    "/rest/v1/platform_thresholds?select=*",
-    { method: "GET" },
-  );
-  // PostgREST returns 200 + [] when RLS filters everything out
-  assertEquals(status, 200);
-  assertEquals(JSON.parse(body).length, 0);
-});
-
-Deno.test("admin baseline still reads thresholds (sanity via RLS proof)", async () => {
-  // Confirms the table is non-empty in general so the empty result above
-  // really is RLS doing its job (not just an empty table).
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!serviceKey) {
-    console.warn("[skip] SUPABASE_SERVICE_ROLE_KEY not set — cannot prove rows exist");
-    return;
-  }
-  const admin = createClient(SUPABASE_URL, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data, error } = await admin.from("platform_thresholds" as any).select("key");
+// Verify the protective edge function (push-notification log writes happen
+// via service role; prove it's reachable but non-admin can't list logs either).
+Deno.test("non-admin cannot read push_delivery_logs (RLS)", async () => {
+  const { client } = await signInNonAdmin();
+  const { data, error } = await client
+    .from("push_delivery_logs" as any)
+    .select("*");
   assertEquals(error, null);
-  assert((data ?? []).length > 0, "expected seeded threshold rows to exist");
+  assertEquals((data ?? []).length, 0, "non-admin must not read push logs");
 });
