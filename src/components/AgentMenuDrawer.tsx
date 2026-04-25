@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Camera, QrCode, ShieldCheck, BarChart3, Settings,
+  X, Camera, QrCode, ShieldCheck, BarChart3, Bell,
   Home, LogOut, ChevronRight, Building2, Upload, Activity,
   Users,
 } from "lucide-react";
@@ -42,6 +42,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [qrOpen, setQrOpen] = useState(false);
   const [avatarSheetOpen, setAvatarSheetOpen] = useState(false);
   const [kycSheetOpen, setKycSheetOpen] = useState(false);
+  const [notifSheetOpen, setNotifSheetOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -104,7 +105,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     { icon: QrCode, label: "Share QR", action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
     { icon: ShieldCheck, label: "Customer KYC", action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
     { icon: BarChart3, label: "Analytics", action: () => { onClose(); navigate("/agent/analytics"); }, toggleKey: "agent_analytics" },
-    { icon: Settings, label: "Settings", action: () => { onClose(); toast.info("Settings coming soon"); }, toggleKey: "agent_settings" },
+    { icon: Bell, label: "Notifications", action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
   ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
 
   const bottomItems = [
