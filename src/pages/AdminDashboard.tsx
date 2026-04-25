@@ -1964,6 +1964,7 @@ export default function AdminDashboard() {
         {/* ═══ SYSTEM SETTINGS ═══ */}
         {activeTab === "sys_settings" && <AdminSystemSettings />}
         {activeTab === "thresholds" && <AdminPlatformThresholds />}
+        {activeTab === "push_logs" && <AdminPushDeliveryLogs />}
 
         {/* ═══ LOYALTY POINTS ═══ */}
         {activeTab === "loyalty" && <AdminLoyaltyPoints />}
