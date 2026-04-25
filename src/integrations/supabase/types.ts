@@ -3394,6 +3394,39 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          category: string
+          created_at: string
+          email_enabled: boolean
+          id: string
+          in_app_enabled: boolean
+          push_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          push_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          push_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_templates: {
         Row: {
           body: string
@@ -6078,6 +6111,10 @@ export type Database = {
         Returns: boolean
       }
       is_phone_registered: { Args: { p_phone: string }; Returns: boolean }
+      is_push_enabled: {
+        Args: { p_category: string; p_user_id: string }
+        Returns: boolean
+      }
       normalize_bd_phone: { Args: { p_raw: string }; Returns: string }
       notify_insurance_expiry: { Args: never; Returns: number }
       place_shop_order: {
