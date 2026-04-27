@@ -518,8 +518,125 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
 
   return (
     <div ref={ref} className="space-y-5">
+      {/* ── API Onboarding Checklist ── */}
+      {(() => {
+        // Step computations
+        const step1Done = requests.length > 0 || keys.length > 0;
+        const step2Done = hasApprovedAccess;
+        const step2Pending = hasPendingRequest && !hasApprovedAccess;
+        const step3Done = keys.length > 0;
+        const step4Done = hasCopiedCreds || Array.from(revealedFields).some(f => /^(apikey|secret|apppw)-/.test(f));
+        const step5Done = keys.some(k => !!k.webhook_url);
+        // step5 warning if any key has webhook URL but its latest session permanently failed
+        const step5Warn = keys.some(k => {
+          if (!k.webhook_url) return false;
+          const last = sessions.find(s => s.api_key_id === k.id);
+          return last && !last.webhook_delivered && (last.metadata as any)?.webhook_permanently_failed;
+        });
+        const step6Done = sessions.some(s => s.status === "completed" && (s.webhook_delivered || (s.metadata as any)?.webhook_status === "delivered"));
+
+        const steps = [
+          { id: 1, title: "Request API access", helper: "Submit your integration request for review.", done: step1Done, blocked: false, action: { label: "Request access", onClick: () => { setShowRequestForm(true); setTimeout(() => document.getElementById("onboarding-request-section")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); } } },
+          { id: 2, title: "Access approved", helper: step2Pending ? "Pending admin review — you'll be notified." : "An admin approves your account for live API use.", done: step2Done, warn: step2Pending, blocked: !step1Done, action: undefined as any },
+          { id: 3, title: "Create your first API key", helper: "Generate live or test credentials.", done: step3Done, blocked: !step2Done, action: { label: "Create key", onClick: () => { document.getElementById("onboarding-request-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); if (activeKeyCount < MAX_ACTIVE_KEYS && !creatingKey) createKey(); } } },
+          { id: 4, title: "Reveal & copy credentials", helper: "Store your API key and secret somewhere safe.", done: step4Done, blocked: !step3Done, action: { label: "Show credentials", onClick: () => { document.getElementById("onboarding-credentials-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); const newest = keys.find(k => k.is_active); if (newest) setRevealedFields(prev => { const n = new Set(prev); n.add(`apikey-${newest.id}`); n.add(`secret-${newest.id}`); return n; }); } } },
+          { id: 5, title: "Register a webhook URL", helper: step5Warn ? "A delivery has failed — verify your endpoint." : "Receive payment events at your callback URL.", done: step5Done, warn: step5Warn, blocked: !step3Done, action: { label: "Add webhook", onClick: () => { const newest = keys.find(k => k.is_active) || keys[0]; if (!newest) return; const el = document.getElementById(`onboarding-webhook-${newest.id}`); el?.scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => (el?.querySelector("input") as HTMLInputElement | null)?.focus(), 350); } } },
+          { id: 6, title: "Successful test transaction", helper: "Complete one payment & receive a delivered webhook.", done: step6Done, blocked: !step5Done, action: { label: "Open docs", onClick: () => setShowDocs(true) } },
+        ];
+
+        const total = steps.length;
+        const completedCount = steps.filter(s => s.done).length;
+        const allDone = completedCount === total;
+        const pct = Math.round((completedCount / total) * 100);
+
+        // Auto-collapse when complete (once)
+        if (allDone && !userTouchedChecklist.current && checklistExpanded) {
+          // schedule outside render
+          queueMicrotask(() => setChecklistExpanded(false));
+        }
+
+        const toggle = () => { userTouchedChecklist.current = true; setChecklistExpanded(v => !v); };
+
+        return (
+          <Card className="p-3 border-border/60 bg-gradient-to-br from-background via-background to-muted/30">
+            <button type="button" onClick={toggle} className="w-full flex items-center gap-3">
+              <div className="relative h-9 w-9 shrink-0 rounded-full bg-muted/50 flex items-center justify-center">
+                <svg viewBox="0 0 36 36" className="absolute inset-0 h-9 w-9 -rotate-90">
+                  <circle cx="18" cy="18" r="15" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                  <circle
+                    cx="18" cy="18" r="15" fill="none"
+                    stroke={allDone ? "hsl(142 71% 45%)" : "hsl(var(--primary))"}
+                    strokeWidth="3" strokeLinecap="round"
+                    strokeDasharray={`${(pct / 100) * 94.25} 94.25`}
+                    className="transition-all duration-500"
+                  />
+                </svg>
+                {allDone
+                  ? <Sparkles size={13} className="text-emerald-600 relative z-10" />
+                  : <span className="text-[10px] font-bold text-foreground relative z-10">{pct}%</span>}
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-bold text-foreground truncate">
+                  {allDone ? "You're live — start accepting payments" : "API Onboarding"}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {completedCount} of {total} complete{!allDone ? ` · next: ${steps.find(s => !s.done)?.title}` : ""}
+                </p>
+              </div>
+              <ChevronDown size={16} className={`text-muted-foreground transition-transform ${checklistExpanded ? "rotate-180" : ""}`} />
+            </button>
+
+            {checklistExpanded && (
+              <div className="mt-3 pt-3 border-t border-border/60 space-y-1.5">
+                {steps.map((s, idx) => {
+                  const isLast = idx === steps.length - 1;
+                  const stateColor = s.done
+                    ? "bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20"
+                    : s.warn
+                      ? "bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/20"
+                      : s.blocked
+                        ? "bg-muted/40 text-muted-foreground/50"
+                        : "bg-primary/10 text-primary ring-1 ring-primary/20";
+                  const Icon = s.done ? CheckCircle2 : s.warn ? AlertCircle : Circle;
+                  return (
+                    <div key={s.id} className="flex items-start gap-2.5 py-1">
+                      <div className="relative flex flex-col items-center">
+                        <div className={`h-6 w-6 rounded-full flex items-center justify-center ${stateColor}`}>
+                          <Icon size={12} />
+                        </div>
+                        {!isLast && <div className={`w-px flex-1 min-h-[14px] mt-1 ${s.done ? "bg-emerald-500/30" : "bg-border"}`} />}
+                      </div>
+                      <div className="flex-1 min-w-0 pt-0.5 pb-1">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <p className={`text-[12px] font-semibold ${s.blocked ? "text-muted-foreground/60" : "text-foreground"}`}>
+                            {s.title}
+                          </p>
+                          {!s.done && !s.blocked && s.action && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-[10px] gap-1 text-primary hover:text-primary"
+                              onClick={s.action.onClick}
+                            >
+                              {s.action.label}<ArrowRight size={10} />
+                            </Button>
+                          )}
+                          {s.done && <span className="text-[9px] font-semibold text-emerald-600 uppercase tracking-wide">Done</span>}
+                          {s.warn && !s.done && <span className="text-[9px] font-semibold text-amber-600 uppercase tracking-wide">Attention</span>}
+                        </div>
+                        <p className={`text-[10px] mt-0.5 ${s.blocked ? "text-muted-foreground/50" : "text-muted-foreground"}`}>{s.helper}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        );
+      })()}
+
       {/* API Access Requests */}
-      <div>
+      <div id="onboarding-request-section" ref={requestSectionRef}>
         <div className="flex items-center justify-between mb-3 gap-2">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2"><Key size={15} className="text-primary" />API Access</h3>
           <div className="flex items-center gap-2">
