@@ -325,21 +325,33 @@ export function AdminUserIntelligenceCenter() {
 }
 
 export function AdminBusinessIntelligence() {
-  const [data, setData] = useState<any>({ txns: [], profiles: [], merchants: [], agents: [], orders: [], fraud: [], kyc: [] });
+  const [data, setData] = useState<any>({ txns: [], profiles: [], merchants: [], agents: [], orders: [], fraud: [], kyc: [], support: [], gateways: [], rechargeLogs: [], allTxnsForUsers: [] });
   const [loading, setLoading] = useState(true);
   useEffect(() => { (async () => {
     setLoading(true);
     const day30 = new Date(Date.now() - 30 * 86400000).toISOString();
-    const [txns, profiles, merchants, agents, orders, fraud, kyc] = await Promise.all([
-      supabase.from("transactions").select("type,amount,fee,commission,status,created_at").gte("created_at", day30).limit(1000),
-      supabase.from("profiles").select("created_at,status,balance").not("phone", "like", "staff-%").limit(1000),
-      supabase.from("merchants").select("status,category,created_at").limit(500),
-      supabase.from("agents").select("status,float_balance,created_at").limit(500),
-      supabase.from("orders").select("total,status,created_at").gte("created_at", day30).limit(500),
+    const day1 = new Date(Date.now() - 1 * 86400000).toISOString();
+    const min15 = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const [txns, profiles, merchants, agents, orders, fraud, kyc, support, gateways, rechargeLogs, retentionTxns] = await Promise.all([
+      supabase.from("transactions").select("type,amount,fee,commission,status,created_at,user_id").gte("created_at", day30).limit(1000),
+      supabase.from("profiles").select("user_id,created_at,status,balance").not("phone", "like", "staff-%").limit(1000),
+      supabase.from("merchants" as any).select("id,user_id,status,category,created_at").limit(500),
+      supabase.from("agents" as any).select("status,float_balance,created_at").limit(500),
+      supabase.from("orders").select("total,status,created_at,merchant_id,user_id").gte("created_at", day30).limit(500),
       supabase.from("fraud_alerts").select("status,severity,created_at").gte("created_at", day30).limit(300),
       supabase.from("kyc_verifications").select("status,created_at").limit(1000),
+      supabase.from("support_complaints" as any).select("id,status").in("status", ["open", "in_progress"]).limit(500),
+      supabase.from("gateway_configs" as any).select("is_active").limit(50),
+      supabase.from("recharge_logs" as any).select("api_processed,created_at").gte("created_at", min15).limit(200),
+      supabase.from("transactions").select("user_id,created_at").gte("created_at", new Date(Date.now() - 60 * 86400000).toISOString()).limit(2000),
     ]);
-    setData({ txns: txns.data ?? [], profiles: profiles.data ?? [], merchants: merchants.data ?? [], agents: agents.data ?? [], orders: orders.data ?? [], fraud: fraud.data ?? [], kyc: kyc.data ?? [] }); setLoading(false);
+    setData({
+      txns: txns.data ?? [], profiles: profiles.data ?? [], merchants: merchants.data ?? [], agents: agents.data ?? [],
+      orders: orders.data ?? [], fraud: fraud.data ?? [], kyc: kyc.data ?? [],
+      support: support.data ?? [], gateways: gateways.data ?? [], rechargeLogs: rechargeLogs.data ?? [],
+      allTxnsForUsers: retentionTxns.data ?? [],
+    });
+    setLoading(false);
   })(); }, []);
   const completed = data.txns.filter((t: AnyRow) => t.status === "completed");
   const volume = completed.reduce((s: number, t: AnyRow) => s + Number(t.amount || 0), 0);
@@ -347,9 +359,108 @@ export function AdminBusinessIntelligence() {
   const daily = useMemo(() => Object.values(completed.reduce((acc: AnyRow, t: AnyRow) => { const d = String(t.created_at).slice(5, 10); acc[d] ||= { date: d, volume: 0, count: 0 }; acc[d].volume += Number(t.amount || 0); acc[d].count += 1; return acc; }, {})), [completed.length]);
   const typeData = useMemo(() => Object.values(completed.reduce((acc: AnyRow, t: AnyRow) => { acc[t.type] ||= { name: t.type, value: 0, revenue: 0 }; acc[t.type].value += Number(t.amount || 0); acc[t.type].revenue += Number(t.fee || 0); return acc; }, {})), [completed.length]);
   const kycApproved = data.kyc.filter((k: AnyRow) => k.status === "verified" || k.status === "approved").length;
-  const funnel = [{ name: "Install", value: data.profiles.length + 120 }, { name: "Signup", value: data.profiles.length }, { name: "OTP", value: Math.round(data.profiles.length * .92) }, { name: "Profile", value: Math.round(data.profiles.length * .84) }, { name: "KYC", value: data.kyc.length }, { name: "Approved", value: kycApproved }, { name: "First Txn", value: new Set(completed.map((t: AnyRow) => t.user_id)).size }];
-  return <Shell title="Business Intelligence Dashboard" description="Executive analytics, cohorts, funnels, attribution, predictions, and real-time operations wall." icon={BarChart3}>{loading ? <p className="py-10 text-center text-muted-foreground">Loading intelligence…</p> : <div className="space-y-4"><div className="grid gap-3 md:grid-cols-4"><MetricCard label="Processed Volume" value={currency(volume)} icon={Wallet} /><MetricCard label="Net Revenue" value={currency(revenue)} icon={BarChart3} /><MetricCard label="New Users" value={data.profiles.length} icon={Users} /><MetricCard label="Fraud Rate" value={`${completed.length ? ((data.fraud.length / completed.length) * 100).toFixed(1) : 0}%`} icon={ShieldAlert} /></div><Tabs defaultValue="executive"><TabsList className="grid h-auto w-full grid-cols-5"><TabsTrigger value="executive">Executive</TabsTrigger><TabsTrigger value="cohort">Cohorts</TabsTrigger><TabsTrigger value="funnel">Funnels</TabsTrigger><TabsTrigger value="predictive">Predictive</TabsTrigger><TabsTrigger value="wall">Ops Wall</TabsTrigger></TabsList><TabsContent value="executive"><div className="grid gap-4 lg:grid-cols-2"><Card><CardHeader><CardTitle className="text-sm">Daily Volume</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><AreaChart data={daily as any[]}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="date" /><YAxis /><RechartsTooltip /><Area dataKey="volume" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / .2)" /></AreaChart></ResponsiveContainer></CardContent></Card><Card><CardHeader><CardTitle className="text-sm">Revenue Attribution</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><PieChart><Pie data={typeData as any[]} dataKey="revenue" nameKey="name" outerRadius={96}>{(typeData as any[]).map((_, i) => <Cell key={i} fill={`hsl(var(--chart-${(i % 5) + 1}))`} />)}</Pie><RechartsTooltip /></PieChart></ResponsiveContainer></CardContent></Card></div></TabsContent><TabsContent value="cohort"><div className="grid gap-3 md:grid-cols-4">{["Day 1 retention", "Day 7 retention", "Day 30 retention", "KYC completion", "First deposit", "Repeat txn", "Merchant activation", "Agent activation"].map((x, i) => <MetricCard key={x} label={x} value={`${Math.max(18, 86 - i * 7)}%`} icon={Activity} />)}</div></TabsContent><TabsContent value="funnel"><Card><CardContent className="h-80 p-4"><ResponsiveContainer><BarChart data={funnel}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="name" /><YAxis /><RechartsTooltip /><Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card></TabsContent><TabsContent value="predictive"><div className="grid gap-3 md:grid-cols-3">{["Users likely to churn", "Merchants likely inactive", "Agents low float", "Support demand", "High-value offers", "Fraud forecast", "Revenue forecast", "KYC backlog"].map((x, i) => <Card key={x}><CardContent className="p-4"><p className="text-sm font-semibold">{x}</p><p className="mt-2 text-2xl font-bold">{[24, 9, 17, 38, 52, 6, 14, 31][i]}</p><p className="text-xs text-muted-foreground">Predictive signal from current operating data</p></CardContent></Card>)}</div></TabsContent><TabsContent value="wall"><div className="grid gap-3 md:grid-cols-3">{["Live transaction volume", "Failed transactions", "Gateway health", "Fraud alerts", "Recharge API", "Support queue", "KYC backlog", "Agent liquidity", "Merchant spikes"].map((x, i) => <Card key={x} className="bg-card/80"><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-sm font-medium">{x}</p><span className="h-2 w-2 rounded-full bg-primary" /></div><p className="mt-3 text-2xl font-bold">{[completed.length, data.txns.length - completed.length, "99.2%", data.fraud.length, "OK", 12, data.kyc.filter((k: AnyRow) => k.status === "pending").length, "Stable", data.orders.length][i]}</p></CardContent></Card>)}</div></TabsContent></Tabs></div>}</Shell>;
+  const kycPending = data.kyc.filter((k: AnyRow) => k.status === "pending").length;
+  const funnel = [
+    { name: "Signup", value: data.profiles.length },
+    { name: "KYC Started", value: data.kyc.length },
+    { name: "KYC Approved", value: kycApproved },
+    { name: "First Txn", value: new Set(completed.map((t: AnyRow) => t.user_id)).size },
+    { name: "Repeat Txn", value: Object.values(completed.reduce((acc: any, t: AnyRow) => { acc[t.user_id] = (acc[t.user_id] || 0) + 1; return acc; }, {})).filter((c: any) => c > 1).length },
+  ];
+
+  // Real cohort metrics from retentionTxns + profiles
+  const cohortMetrics = useMemo(() => {
+    const txnsByUser: Record<string, number[]> = {};
+    for (const t of data.allTxnsForUsers) {
+      if (!t.user_id) continue;
+      (txnsByUser[t.user_id] ||= []).push(new Date(t.created_at).getTime());
+    }
+    const profilesWithCreated = data.profiles.filter((p: AnyRow) => p.created_at && p.user_id);
+    const retainedAfter = (days: number) => {
+      const eligible = profilesWithCreated.filter((p: AnyRow) => Date.now() - new Date(p.created_at).getTime() > days * 86400000);
+      if (!eligible.length) return 0;
+      const retained = eligible.filter((p: AnyRow) => {
+        const created = new Date(p.created_at).getTime();
+        const ts = txnsByUser[p.user_id] || [];
+        return ts.some(t => t >= created + days * 86400000 && t <= created + (days + 1) * 86400000);
+      }).length;
+      return Math.round((retained / eligible.length) * 100);
+    };
+    const usersWithFirstDeposit = new Set(completed.filter((t: AnyRow) => ["addmoney", "cashin", "deposit"].includes(t.type)).map((t: AnyRow) => t.user_id)).size;
+    const repeatTxnUsers = Object.values(completed.reduce((acc: any, t: AnyRow) => { acc[t.user_id] = (acc[t.user_id] || 0) + 1; return acc; }, {})).filter((c: any) => c > 1).length;
+    const activeMerchants = data.orders.length ? new Set(data.orders.map((o: AnyRow) => o.merchant_id).filter(Boolean)).size : 0;
+    const activeAgents = data.agents.filter((a: AnyRow) => a.status === "active").length;
+    return [
+      { label: "Day 1 retention", value: `${retainedAfter(1)}%` },
+      { label: "Day 7 retention", value: `${retainedAfter(7)}%` },
+      { label: "Day 30 retention", value: `${retainedAfter(30)}%` },
+      { label: "KYC completion", value: `${data.profiles.length ? Math.round((kycApproved / data.profiles.length) * 100) : 0}%` },
+      { label: "First deposit", value: usersWithFirstDeposit },
+      { label: "Repeat txn users", value: repeatTxnUsers },
+      { label: "Merchant activation", value: activeMerchants },
+      { label: "Agent activation", value: activeAgents },
+    ];
+  }, [data, completed.length, kycApproved]);
+
+  // Real predictive signals
+  const predictiveMetrics = useMemo(() => {
+    const activeUserIds = new Set(completed.map((t: AnyRow) => t.user_id));
+    const churnCandidates = data.profiles.filter((p: AnyRow) => !activeUserIds.has(p.user_id)).length;
+    const activeMerchantIds = new Set(data.orders.map((o: AnyRow) => o.merchant_id).filter(Boolean));
+    const inactiveMerchants = data.merchants.filter((m: AnyRow) => !activeMerchantIds.has(m.id)).length;
+    const lowFloatAgents = data.agents.filter((a: AnyRow) => Number(a.float_balance || 0) < 5000).length;
+    const supportDemand = data.support.length;
+    const days = Math.max(1, Math.min(30, completed.length ? 30 : 1));
+    const fraudPerDay = (data.fraud.length / days).toFixed(1);
+    const revenuePerDay = Math.round(revenue / days);
+    const userVolume: Record<string, number> = {};
+    for (const t of completed) userVolume[t.user_id] = (userVolume[t.user_id] || 0) + Number(t.amount || 0);
+    const highValueUsers = Object.values(userVolume).filter(v => v >= 50000).length;
+    return [
+      { label: "Users likely to churn", value: churnCandidates, hint: "No txn in last 30 days" },
+      { label: "Merchants likely inactive", value: inactiveMerchants, hint: "No orders in last 30 days" },
+      { label: "Agents low float", value: lowFloatAgents, hint: "Float balance < ৳5K" },
+      { label: "Support demand", value: supportDemand, hint: "Open complaints" },
+      { label: "High-value users", value: highValueUsers, hint: "30-day volume ≥ ৳50K" },
+      { label: "Fraud rate (avg/day)", value: fraudPerDay, hint: "Last 30 days" },
+      { label: "Revenue (avg/day)", value: currency(revenuePerDay), hint: "Last 30 days" },
+      { label: "KYC backlog", value: kycPending, hint: "Pending review" },
+    ];
+  }, [data, completed.length, revenue, kycPending]);
+
+  // Real ops wall metrics
+  const wallMetrics = useMemo(() => {
+    const failed = data.txns.filter((t: AnyRow) => t.status === "failed").length;
+    const last24Volume = completed.filter((t: AnyRow) => new Date(t.created_at).getTime() > Date.now() - 86400000).length;
+    const gatewayActive = data.gateways.filter((g: AnyRow) => g.is_active).length;
+    const gatewayHealth = data.gateways.length ? `${Math.round((gatewayActive / data.gateways.length) * 100)}%` : "—";
+    const rechargeOk = data.rechargeLogs.filter((r: AnyRow) => r.api_processed === true).length;
+    const rechargeStatus = data.rechargeLogs.length ? `${Math.round((rechargeOk / data.rechargeLogs.length) * 100)}% OK` : "Idle";
+    const totalFloat = data.agents.reduce((s: number, a: AnyRow) => s + Number(a.float_balance || 0), 0);
+    const avgFloat = data.agents.length ? Math.round(totalFloat / data.agents.length) : 0;
+    const merchantOrderCounts: Record<string, number> = {};
+    for (const o of data.orders) if (o.merchant_id) merchantOrderCounts[o.merchant_id] = (merchantOrderCounts[o.merchant_id] || 0) + 1;
+    const counts = Object.values(merchantOrderCounts);
+    const mean = counts.length ? counts.reduce((a, b) => a + b, 0) / counts.length : 0;
+    const variance = counts.length ? counts.reduce((s, c) => s + (c - mean) ** 2, 0) / counts.length : 0;
+    const stdev = Math.sqrt(variance);
+    const merchantSpikes = counts.filter(c => c > mean + 2 * stdev).length;
+    return [
+      { label: "Live txn (24h)", value: last24Volume },
+      { label: "Failed transactions", value: failed },
+      { label: "Gateway health", value: gatewayHealth },
+      { label: "Fraud alerts (30d)", value: data.fraud.length },
+      { label: "Recharge API (15m)", value: rechargeStatus },
+      { label: "Support queue", value: data.support.length },
+      { label: "KYC backlog", value: kycPending },
+      { label: "Agent avg float", value: currency(avgFloat) },
+      { label: "Merchant spikes", value: merchantSpikes },
+    ];
+  }, [data, completed.length, kycPending]);
+
+  return <Shell title="Business Intelligence Dashboard" description="Executive analytics, cohorts, funnels, attribution, predictions, and real-time operations wall." icon={BarChart3}>{loading ? <p className="py-10 text-center text-muted-foreground">Loading intelligence…</p> : <div className="space-y-4"><div className="grid gap-3 md:grid-cols-4"><MetricCard label="Processed Volume" value={currency(volume)} icon={Wallet} /><MetricCard label="Net Revenue" value={currency(revenue)} icon={BarChart3} /><MetricCard label="New Users" value={data.profiles.length} icon={Users} /><MetricCard label="Fraud Rate" value={`${completed.length ? ((data.fraud.length / completed.length) * 100).toFixed(1) : 0}%`} icon={ShieldAlert} /></div><Tabs defaultValue="executive"><TabsList className="grid h-auto w-full grid-cols-5"><TabsTrigger value="executive">Executive</TabsTrigger><TabsTrigger value="cohort">Cohorts</TabsTrigger><TabsTrigger value="funnel">Funnels</TabsTrigger><TabsTrigger value="predictive">Predictive</TabsTrigger><TabsTrigger value="wall">Ops Wall</TabsTrigger></TabsList><TabsContent value="executive"><div className="grid gap-4 lg:grid-cols-2"><Card><CardHeader><CardTitle className="text-sm">Daily Volume</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><AreaChart data={daily as any[]}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="date" /><YAxis /><RechartsTooltip /><Area dataKey="volume" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / .2)" /></AreaChart></ResponsiveContainer></CardContent></Card><Card><CardHeader><CardTitle className="text-sm">Revenue Attribution</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><PieChart><Pie data={typeData as any[]} dataKey="revenue" nameKey="name" outerRadius={96}>{(typeData as any[]).map((_, i) => <Cell key={i} fill={`hsl(var(--chart-${(i % 5) + 1}))`} />)}</Pie><RechartsTooltip /></PieChart></ResponsiveContainer></CardContent></Card></div></TabsContent><TabsContent value="cohort"><div className="grid gap-3 md:grid-cols-4">{cohortMetrics.map((m) => <MetricCard key={m.label} label={m.label} value={m.value} icon={Activity} />)}</div></TabsContent><TabsContent value="funnel"><Card><CardContent className="h-80 p-4"><ResponsiveContainer><BarChart data={funnel}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="name" /><YAxis /><RechartsTooltip /><Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card></TabsContent><TabsContent value="predictive"><div className="grid gap-3 md:grid-cols-3">{predictiveMetrics.map((m) => <Card key={m.label}><CardContent className="p-4"><p className="text-sm font-semibold">{m.label}</p><p className="mt-2 text-2xl font-bold">{m.value}</p><p className="text-xs text-muted-foreground">{m.hint}</p></CardContent></Card>)}</div></TabsContent><TabsContent value="wall"><div className="grid gap-3 md:grid-cols-3">{wallMetrics.map((m) => <Card key={m.label} className="bg-card/80"><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-sm font-medium">{m.label}</p><span className="h-2 w-2 rounded-full bg-primary" /></div><p className="mt-3 text-2xl font-bold">{m.value}</p></CardContent></Card>)}</div></TabsContent></Tabs></div>}</Shell>;
 }
+
 
 const segmentTemplates = ["New users with no first transaction", "High-balance dormant users", "Frequent recharge users", "Merchants with declining sales", "Agents with low float", "Users with rejected KYC", "Power users eligible for rewards", "Suspicious users requiring review"];
 const approvalActions = ["Delete user", "Force KYC approval", "Large limit increase", "Gateway config change", "Fee change", "Merchant payout change", "Admin role assignment", "Data export", "Bulk suspension", "Blacklist removal"];
@@ -550,7 +661,7 @@ export function AdminUserSegmentationBuilder() {
     const { error } = await supabase.from("admin_user_segments" as any).upsert({
       name: selected, segment_key: key, description: `Saved template for ${selected}`,
       rules: { template: key, conditions: definition?.rules ?? [] } as any,
-      estimated_count: Math.floor(20 + Math.random() * 180),
+      estimated_count: null,
     } as any, { onConflict: "segment_key" });
     if (error) toast.error("Failed to save segment"); else { toast.success("Segment saved"); load(); }
   };
