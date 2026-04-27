@@ -197,7 +197,8 @@ export default function AdminApiRequests() {
       {/* Sub-tabs */}
       <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5 overflow-x-auto max-w-full">
         {([
-          { key: "requests" as const, label: "Requests" },
+          { key: "requests" as const, label: "Key Requests" },
+          { key: "access" as const, label: "Access Requests" },
           { key: "keys" as const, label: "API Keys" },
           { key: "logs" as const, label: "Logs" },
           { key: "rate-limits" as const, label: "Rate Limits" },
