@@ -330,32 +330,48 @@ export function AdminUserIntelligenceCenter() {
 export function AdminBusinessIntelligence() {
   const [data, setData] = useState<any>({ txns: [], profiles: [], merchants: [], agents: [], orders: [], fraud: [], kyc: [], support: [], gateways: [], rechargeLogs: [], allTxnsForUsers: [] });
   const [loading, setLoading] = useState(true);
-  useEffect(() => { (async () => {
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const loadIntel = async () => {
     setLoading(true);
+    setLoadError(null);
     const day30 = new Date(Date.now() - 30 * 86400000).toISOString();
-    const day1 = new Date(Date.now() - 1 * 86400000).toISOString();
     const min15 = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-    const [txns, profiles, merchants, agents, orders, fraud, kyc, support, gateways, rechargeLogs, retentionTxns] = await Promise.all([
-      supabase.from("transactions").select("type,amount,fee,commission,status,created_at,user_id").gte("created_at", day30).limit(1000),
-      supabase.from("profiles").select("user_id,created_at,status,balance").not("phone", "like", "staff-%").limit(1000),
-      supabase.from("merchants" as any).select("id,user_id,status,category,created_at").limit(500),
-      supabase.from("agents" as any).select("status,float_balance,created_at").limit(500),
-      supabase.from("orders").select("total,status,created_at,merchant_id,user_id").gte("created_at", day30).limit(500),
-      supabase.from("fraud_alerts").select("status,severity,created_at").gte("created_at", day30).limit(300),
-      supabase.from("kyc_verifications").select("status,created_at").limit(1000),
-      supabase.from("support_complaints" as any).select("id,status").in("status", ["open", "in_progress"]).limit(500),
-      supabase.from("gateway_configs" as any).select("is_active").limit(50),
-      supabase.from("recharge_logs" as any).select("api_processed,created_at").gte("created_at", min15).limit(200),
-      supabase.from("transactions").select("user_id,created_at").gte("created_at", new Date(Date.now() - 60 * 86400000).toISOString()).limit(2000),
-    ]);
-    setData({
-      txns: txns.data ?? [], profiles: profiles.data ?? [], merchants: merchants.data ?? [], agents: agents.data ?? [],
-      orders: orders.data ?? [], fraud: fraud.data ?? [], kyc: kyc.data ?? [],
-      support: support.data ?? [], gateways: gateways.data ?? [], rechargeLogs: rechargeLogs.data ?? [],
-      allTxnsForUsers: retentionTxns.data ?? [],
-    });
-    setLoading(false);
-  })(); }, []);
+    try {
+      const [txns, profiles, merchants, agents, orders, fraud, kyc, support, gateways, rechargeLogs, retentionTxns] = await Promise.all([
+        supabase.from("transactions").select("type,amount,fee,commission,status,created_at,user_id").gte("created_at", day30).limit(1000),
+        supabase.from("profiles").select("user_id,created_at,status,balance").not("phone", "like", "staff-%").limit(1000),
+        supabase.from("merchants" as any).select("id,user_id,status,category,created_at").limit(500),
+        supabase.from("agents" as any).select("status,float_balance,created_at").limit(500),
+        supabase.from("orders").select("total,status,created_at,merchant_id,user_id").gte("created_at", day30).limit(500),
+        supabase.from("fraud_alerts").select("status,severity,created_at").gte("created_at", day30).limit(300),
+        supabase.from("kyc_verifications").select("status,created_at").limit(1000),
+        supabase.from("support_complaints" as any).select("id,status").in("status", ["open", "in_progress"]).limit(500),
+        supabase.from("gateway_configs" as any).select("is_active").limit(50),
+        supabase.from("recharge_logs" as any).select("api_processed,created_at").gte("created_at", min15).limit(200),
+        supabase.from("transactions").select("user_id,created_at").gte("created_at", new Date(Date.now() - 60 * 86400000).toISOString()).limit(2000),
+      ]);
+      const errs = [txns, profiles, merchants, agents, orders, fraud, kyc, support, gateways, rechargeLogs, retentionTxns].map(r => r.error).filter(Boolean);
+      if (errs.length) {
+        const msg = errs[0]?.message || "Failed to load intelligence data";
+        setLoadError(msg);
+        toast.error("Couldn't load intelligence data", { description: msg });
+      }
+      setData({
+        txns: txns.data ?? [], profiles: profiles.data ?? [], merchants: merchants.data ?? [], agents: agents.data ?? [],
+        orders: orders.data ?? [], fraud: fraud.data ?? [], kyc: kyc.data ?? [],
+        support: support.data ?? [], gateways: gateways.data ?? [], rechargeLogs: rechargeLogs.data ?? [],
+        allTxnsForUsers: retentionTxns.data ?? [],
+      });
+    } catch (e: any) {
+      const msg = e?.message || "Network error while loading intelligence";
+      setLoadError(msg);
+      toast.error("Couldn't load intelligence data", { description: msg });
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { loadIntel(); }, []);
+
   const completed = data.txns.filter((t: AnyRow) => t.status === "completed");
   const volume = completed.reduce((s: number, t: AnyRow) => s + Number(t.amount || 0), 0);
   const revenue = completed.reduce((s: number, t: AnyRow) => s + Number(t.fee || 0) - Number(t.commission || 0), 0);
