@@ -1,53 +1,56 @@
-# Merchant Approval Template Preview (Admin)
+# SMS Fallback for Merchant Approval Notifications
 
-Add an admin-only preview tab that renders the **email** and **push notification** outputs of `notify-merchant-approval` with a sample merchant name, so reviewers can verify copy and CTAs before any real send.
+Add a Twilio SMS as a third delivery channel in `notify-merchant-approval`, sent **only when both push and email fail or are skipped**, so merchants always learn the decision.
 
-## What the user will see
+## Behavior
 
-A new **"Approval Templates"** sub-section inside the existing Merchant Applications admin area, containing:
+After the existing push (1), in-app (2), and email (3) blocks, evaluate success:
 
-1. **Controls bar** (glass card)
-   - Merchant name input (default: "Karim Electronics")
-   - Reviewer name input (default: "Karim Rahman")
-   - Status toggle: Approved / Rejected
-   - Reason textarea (only enabled when Rejected)
-   - "Use random sample" button (cycles through 5 realistic Bangladeshi business names)
+- `pushOk` = push response had no error/skipped flag and returned `success: true` or `sent > 0`
+- `emailOk` = email returned `success: true` from Resend
 
-2. **Push notification preview** (left column)
-   - Mock phone-style card matching our PWA push look (icon, title, body, "merchant_ops" category chip, "Open Merchant Dashboard →" CTA)
-   - Updates live as inputs change
+If `!pushOk && !emailOk` → send SMS via Twilio. Otherwise mark SMS as `skipped: "primary channels delivered"` (no spend, no duplicate noise).
 
-3. **Email preview** (right column)
-   - Iframe rendering the exact HTML the edge function generates
-   - Header with subject line shown above the iframe
-   - "Open in new tab" button + "Copy HTML" button
+## SMS content (dynamic merchant name + CTA)
 
-No emails or pushes are actually sent — this is a pure render preview.
+Compact ≤320 chars, single segment when possible:
 
-## Technical implementation
+- Approved: `EasyPay: {biz} is approved! Open your Merchant dashboard to add bank details & list products. https://pay-palooza-go.lovable.app/merchant`
+- Rejected: `EasyPay: Action needed for {biz}. Reason: {reason ≤80 chars}. Review & resubmit: https://pay-palooza-go.lovable.app/merchant`
 
-**Shared template module** — extract the title/body/subject/HTML builders from `supabase/functions/notify-merchant-approval/index.ts` into a new client-safe helper `src/lib/merchantApprovalTemplate.ts` exporting:
-- `buildPushPayload({ businessName, status, reason })` → `{ title, body, ctaLabel, ctaUrl }`
-- `buildEmailPayload({ businessName, recipientName, status, reason })` → `{ subject, html }`
+Business name truncated to 30 chars to keep within SMS budget.
 
-Then refactor the edge function to import the same logic via inline duplication (keep the exact same strings — edge functions can't import from `src/`, so we copy the pure functions into the EF and add a comment marking them as the source of truth mirror).
+## Phone resolution & formatting
 
-**New component** `src/components/admin/AdminApprovalTemplatePreview.tsx`
-- React state for `businessName`, `recipientName`, `status`, `reason`
-- Memoised `pushPayload` and `emailPayload` from the shared helper
-- Push card built with Tailwind + design tokens (glass, 19px radii)
-- Email rendered into an `<iframe srcDoc={html} />` sized 560×640 with white background
+- Add `phone` to the existing `profiles` select (next to `email, name`)
+- Reuse the BD formatter from `notify-recipient`: `01...` → `+8801...`, otherwise prepend `+` if missing
+- Skip with `{ skipped: "no phone on profile" }` if absent
 
-**Wiring** — add a tab inside `AdminMerchantApplications.tsx` (segmented control: "Applications" | "Templates") so it lives next to the live approval queue. No new route needed; uses the existing admin tab guard.
+## Twilio integration
 
-## Files to create / edit
+Use the same direct-API pattern already in `supabase/functions/notify-recipient/index.ts` (Basic Auth, `Messages.json`, `application/x-www-form-urlencoded`). Required secrets — already configured for `notify-recipient`:
 
-- `src/lib/merchantApprovalTemplate.ts` (new) — shared title/body/subject/HTML builders
-- `src/components/admin/AdminApprovalTemplatePreview.tsx` (new) — preview UI
-- `src/components/admin/AdminMerchantApplications.tsx` (edit) — add segmented control + render preview
-- `supabase/functions/notify-merchant-approval/index.ts` (edit) — replace inline builders with mirrored pure functions matching `merchantApprovalTemplate.ts` exactly (same strings, same CTAs)
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_PHONE_NUMBER`
+
+If any are missing → `{ skipped: "twilio not configured" }`.
+
+## Result tracking
+
+Append `results.sms` to the JSON response with one of:
+- `{ success: true, sid, fallback: true, reason: { pushOk, emailOk } }`
+- `{ error, fallback: true }`
+- `{ skipped: "primary channels delivered" | "no phone on profile" | "twilio not configured" }`
+
+The 10-minute idempotency guard at the top of the function already prevents repeat SMS for the same merchant+status transition.
+
+## Files to edit
+
+- `supabase/functions/notify-merchant-approval/index.ts` — add `phone` to profile select, add SMS fallback block after the email block, redeploy
 
 ## Out of scope
 
-- No DB changes, no new RLS policies, no new edge function
-- No actual sending from the preview (admin can still trigger real approval from the live queue tab)
+- No DB changes
+- No new secrets (Twilio already configured)
+- No UI changes (admin preview already shows push + email; SMS body mirrors the email subject + CTA so no separate template tab needed)
