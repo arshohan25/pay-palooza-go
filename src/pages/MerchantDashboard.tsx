@@ -859,6 +859,9 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
           ))}
         </motion.div>
 
+        {/* Step-by-step vendor onboarding checklist */}
+        <VendorOnboardingChecklist onApply={() => setKycFlowOpen(true)} />
+
         {/* Benefits grid */}
         <div>
           <h2 className="text-base font-bold text-foreground mb-3 px-1">Why Become a Vendor?</h2>
