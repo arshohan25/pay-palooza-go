@@ -1,59 +1,48 @@
-# Real-time ETA on the "Get Approved" Step
+# Notify merchants on "Get approved" step completion
 
-Show a data-driven ETA on step 3 of the vendor onboarding checklist. Pulled from actual recent admin review durations, with a smart cold-start fallback, refreshed live as approvals happen and as the user's own pending time grows.
+When an admin approves (or rejects) a merchant's business KYC, send a push notification + email to the merchant so they immediately know the onboarding step has completed. Mirrors the existing pattern used for `notify-api-access-decision`.
 
-## Data source — `get_merchant_review_eta()` RPC
+## What gets built
 
-A new SECURITY DEFINER function (callable by any authenticated user) that returns a small JSON snapshot:
+### 1. New edge function: `notify-merchant-approval`
+- Inputs: `{ user_id, merchant_id, status: 'approved' | 'rejected', reason?, business_name? }`
+- Sends push via `send-push-notification` with `category: 'merchant_ops'`, deep-link `url: '/merchant'`.
+- Sends email via the project's existing email path (same approach as `notify-api-access-decision` — Resend through the configured sender). Subject + body differ by status.
+- Inserts a row into `notifications` table (so it also shows in the in-app bell), category `merchant`, link `/merchant`.
+- Idempotent: skip if a notification with the same `(user_id, type='merchant_approval', merchant_id, status)` already exists in the last 10 min.
 
-```json
-{
-  "median_minutes": 720,
-  "p90_minutes": 1800,
-  "sample_size": 14,
-  "is_estimate": false,
-  "computed_at": "2026-04-27T15:30:00Z"
-}
-```
+Approved copy:
+- Title: "You're approved 🎉 — start selling"
+- Body: "Your vendor account is live. Set your bank details and add products to go live on EasyPay Shop."
 
-Logic:
-- Look at `merchants` rows in the last **60 days** where `business_kyc_status = 'approved'` AND `business_kyc_reviewed_at IS NOT NULL`.
-- ETA window = `(business_kyc_reviewed_at - created_at)`.
-- Return median + p90 minutes + sample size.
-- **Cold-start fallback** (sample_size < 3): return `median_minutes = 1440` (24h), `p90_minutes = 2880` (48h), `is_estimate = true` — matches the current "1–2 days" copy.
-- Filter out outliers > 14 days to prevent one stale row from skewing the average.
+Rejected copy:
+- Title: "Vendor application needs changes"
+- Body: reason if provided, else "Please review the feedback in your Merchant dashboard and resubmit."
 
-This is read-only, exposes no PII (no merchant IDs, no user IDs — just aggregate timing), and safe to grant to `authenticated`.
+### 2. Migration: DB trigger on `merchants` + RPC patch
+Add an `AFTER UPDATE` trigger on `public.merchants` that fires when `business_kyc_status` transitions from any value to `approved` or `rejected`. The trigger uses `pg_net.http_post` to invoke `notify-merchant-approval` with the merchant's `user_id`, `id`, new status, `business_kyc_rejection_reason`, and `business_name`.
 
-## Frontend in `VendorOnboardingChecklist`
+This catches both the existing `approve_business_kyc` / `reject_business_kyc` RPC paths and any direct admin updates — no changes needed to the RPCs themselves.
 
-1. **Fetch** the ETA via `supabase.rpc('get_merchant_review_eta')` on mount and cache in component state. Re-fetch every 5 minutes (covers slow drift).
-2. **Format** the ETA for the step row's right-side chip:
-   - `< 60 min` → "~Xm typical"
-   - `< 24 h` → "~Xh typical"
-   - `≥ 24 h` → "~Xd typical"
-   - When `is_estimate=true`: show "1–2 days" (current default) with a subtle "estimated" hint.
-3. **Personalized countdown** when the user's own application is pending:
-   - Compute `elapsed = now() - merchant_application.created_at`.
-   - If `elapsed < median`: show "About {median - elapsed} left" in amber.
-   - If `elapsed < p90`: show "Almost there — usually done by now" in amber.
-   - If `elapsed > p90`: show "Taking longer than usual — we'll notify you soon" in muted tone (no panic).
-   - This countdown ticks every 60 seconds via a local interval.
-4. **Real-time updates** — subscribe to `postgres_changes` on `merchants` (event UPDATE, no filter — global) and re-fetch the RPC when any merchant transitions to `approved`. So the ETA tightens immediately after each new approval ships.
-5. **Tooltip / sub-line** on the chip: "Based on the last {sample_size} approvals" so it's transparent.
+Trigger guard: only fire when `OLD.business_kyc_status IS DISTINCT FROM NEW.business_kyc_status` AND `NEW.business_kyc_status IN ('approved','rejected')`.
+
+### 3. Frontend: zero changes required
+The existing `VendorOnboardingChecklist` already subscribes to `merchants` postgres_changes, so the UI flips to "done" in real time. The push/email is purely additive — it reaches the merchant when the app is closed.
+
+## Push opt-in / preferences
+- Reuses `send-push-notification` which already filters by `notification_preferences` for the given category.
+- Category used: `merchant_ops` (existing category in the push system per memory `features/notifications/push`).
+- If the merchant hasn't subscribed to push, only email + in-app notification deliver — graceful degradation.
 
 ## Files
 
-- **New migration**: `get_merchant_review_eta()` RPC (SECURITY DEFINER, returns JSON, GRANT EXECUTE TO authenticated).
-- **`src/components/VendorOnboardingChecklist.tsx`**:
-  - New `useReviewEta()` inline hook (RPC fetch + 5-min refresh + global merchants subscription).
-  - Update step 3's `eta` and add a personalized countdown line under the title when status = `in_review`.
-  - Add a small "Based on N recent approvals" caption.
+New:
+- `supabase/functions/notify-merchant-approval/index.ts`
+- `supabase/migrations/<ts>_merchant_approval_notify_trigger.sql` — trigger + function using `pg_net` (URL + service-role auth pulled from vault, same pattern as existing notify triggers in this project).
+
+No frontend changes.
 
 ## Out of scope
-
-- Per-category or per-region ETAs (sample size too small).
-- Historical ETA charts.
-- Notifying the user when ETA changes (just visual update).
-
-Approve and I'll implement.
+- No changes to the approve/reject RPCs.
+- No new email template scaffolding — uses existing email sending path already used by `notify-api-access-decision` and `kyc-notify`.
+- Bank-account / push-subscription step completions are not notified (those are self-initiated by the merchant; no need to alert them about their own action).
