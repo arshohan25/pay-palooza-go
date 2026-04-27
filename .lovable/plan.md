@@ -1,35 +1,29 @@
 ## Goal
-Improve the Merchant API access request flow on the gate (`MerchantApiAccessGate`) and the support chat hand-off so merchants get clearer status and a faster start.
+After a merchant submits "Request API access", show a confirmation banner on the Merchant Dashboard that reflects the current request status (pending / approved / denied) and updates live via Supabase realtime — independent of which tab the merchant is on.
 
 ## Changes
 
-### 1. `src/components/MerchantApiAccessGate.tsx`
-- **Disable CTA when a pending request exists.** If `latest.status === "pending"`, render the button as `disabled` with label "Request Pending — Awaiting Review". Approved status already hides the gate; rejected remains enabled ("Request Again via Live Chat").
-- **Show "last submitted" timestamp** prominently next to the CTA (e.g. "Last submitted: 2h ago") using a relative time helper, in addition to the existing absolute timestamp inside the status block.
-- **Add a secondary "Open Live Chat" link** under the disabled CTA so a pending merchant can still continue the conversation in support without creating a new request row.
-- **Build a prefill template** when handing off to chat:
-  ```
-  Hi EasyPay team, I'd like to request API access for my merchant account.
-  Merchant ID: {merchantId ?? "—"}
-  Purpose: [briefly describe how you'll use the API — webhooks, checkout, payouts, etc.]
-  ```
-  Pass this as a query param: `navigate('/account?openChat=1&prefill=<encoded>')`.
+### 1. New component `src/components/MerchantApiAccessStatusBanner.tsx`
+- Loads the merchant's most recent row from `merchant_api_access_requests` for the current `userId`.
+- Subscribes to realtime `postgres_changes` on the same table filtered by `user_id`, so status flips reflect instantly.
+- Renders a status banner with three states:
+  - **Pending** (amber): "API access request submitted — our team is reviewing your request." Includes a "Follow up in Live Chat" link → `/account?openChat=1`. Not dismissable.
+  - **Approved** (emerald): "API access approved — you can now generate API keys from the API tab." Dismissable.
+  - **Denied** (destructive): Shows admin's `reviewer_note` if present, otherwise generic copy. Dismissable.
+- Dismissal persists per `(userId, requestId, status)` in `localStorage` so a new submission re-shows the banner, and an approved banner stays gone after the user closes it.
+- Pending state cannot be dismissed (so the merchant always sees their open request).
 
-### 2. `src/components/SupportChat.tsx`
-- Accept a new optional prop `initialDraft?: string`.
-- On mount, if `initialDraft` is provided and `input` is empty, set `setInput(initialDraft)` and focus the input. The user can edit or delete freely before sending — nothing is auto-sent.
-
-### 3. `src/pages/AccountPage.tsx`
-- In the existing `?openChat=1` effect, also read `prefill` query param, decode it, store in state (`chatDraft`), and strip both params from the URL.
-- Pass `<SupportChat userId={userId} initialDraft={chatDraft} />`.
+### 2. `src/pages/MerchantDashboard.tsx`
+- Import the new banner.
+- Render it at the top of the **overview** tab (line ~519, inside `<div className="px-4 py-4 pb-24">` before `<MerchOverview …/>`).
+- Pass `visible={!isStaff}` so only merchant owners see it (staff never submit/manage API access).
 
 ## Technical Notes
-- Relative time: small inline helper (no new dep) — minutes/hours/days ago, fallback to locale date for >7d.
-- Pending detection already wired via realtime subscription on `merchant_api_access_requests` for that user, so the button will re-enable automatically when admin marks it approved/rejected.
-- No DB schema changes; no RLS changes.
-- No edge function changes.
+- Reuses the existing `merchant_api_access_requests` table and RLS policies — no schema change.
+- Realtime subscription is scoped per user via channel name `api-access-banner-${userId}` to avoid clashing with the gate's own channel.
+- Dismissal is intentionally local (localStorage) — no DB writes, no extra columns. Status keys mean a "denied → re-requested → pending" sequence will re-surface naturally.
+- Banner renders nothing if there is no request row, if `visible === false`, or if the user has dismissed the current terminal state.
 
 ## Files Touched
-- `src/components/MerchantApiAccessGate.tsx`
-- `src/components/SupportChat.tsx`
-- `src/pages/AccountPage.tsx`
+- `src/components/MerchantApiAccessStatusBanner.tsx` (new)
+- `src/pages/MerchantDashboard.tsx`
