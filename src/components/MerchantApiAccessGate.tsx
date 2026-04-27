@@ -109,7 +109,7 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
       toast.success("Request submitted. Opening Live Chat…");
     }
     setSubmitting(false);
-    openChat(true);
+    await openChat(true);
   };
 
   const relativeTime = (iso: string) => {
