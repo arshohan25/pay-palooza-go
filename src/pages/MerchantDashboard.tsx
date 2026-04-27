@@ -24,6 +24,7 @@ import {
   Undo2, Ticket, XCircle, Loader2
 } from "lucide-react";
 import MerchantBusinessKycFlow from "@/components/MerchantBusinessKycFlow";
+import VendorOnboardingChecklist from "@/components/VendorOnboardingChecklist";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
