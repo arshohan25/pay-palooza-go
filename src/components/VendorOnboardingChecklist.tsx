@@ -43,26 +43,22 @@ interface Props {
  *  5 notifications→ push_subscriptions row exists for user
  */
 export default function VendorOnboardingChecklist({ onApply }: Props) {
+  const { status: personalKycStatus, loading: kycLoading } = useKycStatus();
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [kycOpen, setKycOpen] = useState(false);
 
-  const [personalKycStatus, setPersonalKycStatus] = useState<"none" | "pending" | "verified" | "rejected">("none");
   const [appStatus, setAppStatus] = useState<"none" | "pending" | "approved" | "rejected">("none");
   const [businessKycStatus, setBusinessKycStatus] = useState<"none" | "pending" | "approved" | "rejected">("none");
   const [hasBank, setHasBank] = useState(false);
   const [hasPush, setHasPush] = useState(false);
 
   const load = useCallback(async (uid: string) => {
-    const [profileRes, appRes, merchRes, pushRes] = await Promise.all([
-      supabase.from("profiles").select("kyc_status").eq("user_id", uid).maybeSingle(),
+    const [appRes, merchRes, pushRes] = await Promise.all([
       supabase.from("merchant_applications").select("status").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("merchants").select("business_kyc_status, bank_account_number").eq("user_id", uid).maybeSingle(),
       supabase.from("push_subscriptions").select("id").eq("user_id", uid).limit(1),
     ]);
-
-    const ks = (profileRes.data?.kyc_status as any) ?? "none";
-    setPersonalKycStatus(["pending", "verified", "rejected"].includes(ks) ? ks : "none");
 
     const as = (appRes.data?.status as any) ?? "none";
     setAppStatus(["pending", "approved", "rejected"].includes(as) ? as : "none");
