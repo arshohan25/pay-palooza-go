@@ -185,13 +185,15 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
 
       <Button
         size="sm"
-        disabled={submitting || pending}
+        disabled={submitting || pending || inCooldown}
         onClick={requestViaChat}
         className="w-full mt-4 text-xs gap-1.5"
       >
         <MessageCircle className="w-3.5 h-3.5" />
         {pending
           ? "Request Pending — Awaiting Review"
+          : inCooldown
+          ? `Available in ${formatRemaining(cooldownRemainingMs)}`
           : rejected
           ? "Request Again via Live Chat"
           : "Request API Access via Live Chat"}
@@ -209,7 +211,14 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
         </Button>
       )}
 
-      {latest && (
+      {inCooldown && cooldownUnlockAt && (
+        <p className="text-[10px] text-muted-foreground mt-3 text-center">
+          You can submit a new request after <span className="font-semibold text-foreground">{cooldownUnlockAt.toLocaleDateString()}</span>.
+          Need help sooner? <button onClick={() => openChat(false)} className="text-primary hover:underline">Contact support</button>.
+        </p>
+      )}
+
+      {latest && !inCooldown && (
         <p className="text-[10px] text-muted-foreground mt-3 text-center">
           Last submitted: {relativeTime(latest.created_at)}
         </p>
