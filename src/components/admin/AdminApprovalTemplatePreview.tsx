@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Mail, Shuffle, Copy, ExternalLink, CheckCircle2, XCircle, Store, Link2, Unlink } from "lucide-react";
+import { Bell, Mail, Shuffle, Copy, ExternalLink, CheckCircle2, XCircle, Store, Link2, Unlink, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import {
   buildEmailPayload,
@@ -38,6 +38,51 @@ export default function AdminApprovalTemplatePreview({ applications = [] }: Prop
   const [status, setStatus] = useState<MerchantApprovalStatus>("approved");
   const [reason, setReason] = useState("Trade license image is blurry — please re-upload a clearer copy.");
   const [linked, setLinked] = useState(false);
+  const [scenario, setScenario] = useState<string>("none");
+
+  // Test scenarios — try to find an application that already matches the edge case;
+  // otherwise synthesize the fields so reviewers always see a representative preview.
+  const SCENARIOS: Record<string, { label: string; description: string }> = {
+    none: { label: "— No scenario —", description: "" },
+    missing_email: { label: "Missing email", description: "Application has no contact email" },
+    missing_phone: { label: "Missing phone", description: "Application has no contact phone" },
+    rejected_with_reason: { label: "Rejected with reason", description: "Decision is rejected and includes reviewer note" },
+  };
+
+  const findScenarioMatch = (key: string): PreviewApplication | undefined => {
+    if (key === "missing_email") return applications.find(a => !a.contact_email);
+    if (key === "missing_phone") return applications.find(a => !a.applicant_phone && !a.contact_number);
+    if (key === "rejected_with_reason") return applications.find(a => a.status === "rejected" && !!a.admin_notes);
+    return undefined;
+  };
+
+  useEffect(() => {
+    if (scenario === "none") return;
+    const match = findScenarioMatch(scenario);
+    if (match) {
+      setSelectedId(match.id);
+      return;
+    }
+    // No real application matches — synthesize.
+    setSelectedId("manual");
+    setLinked(false);
+    if (scenario === "missing_email") {
+      setBusinessName("Hasan Tea Stall");
+      setRecipientName("Hasan Mia");
+      setStatus("approved");
+      setReason("");
+    } else if (scenario === "missing_phone") {
+      setBusinessName("Nadia Tailors");
+      setRecipientName("Nadia Akter");
+      setStatus("approved");
+      setReason("");
+    } else if (scenario === "rejected_with_reason") {
+      setBusinessName("Rahim Mart");
+      setRecipientName("Rahim Uddin");
+      setStatus("rejected");
+      setReason("Trade license image is blurry — please re-upload a clearer copy.");
+    }
+  }, [scenario, applications]);
 
   // Hydrate fields from the chosen application; "manual" leaves them as-is.
   useEffect(() => {
@@ -129,6 +174,32 @@ export default function AdminApprovalTemplatePreview({ applications = [] }: Prop
               <p className="text-[11px] text-muted-foreground">
                 Recipient email: <span className="text-foreground">{selectedApp.contact_email || "—"}</span>
                 {" · "}Phone: <span className="text-foreground">{selectedApp.applicant_phone || selectedApp.contact_number || "—"}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Test scenarios */}
+          <div className="space-y-1.5">
+            <Label className="text-xs flex items-center gap-1.5">
+              <FlaskConical className="w-3.5 h-3.5 text-muted-foreground" /> Test scenario
+            </Label>
+            <Select value={scenario} onValueChange={setScenario}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pick an edge case to preview…" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(SCENARIOS).map(([key, s]) => (
+                  <SelectItem key={key} value={key}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {scenario !== "none" && (
+              <p className="text-[11px] text-muted-foreground">
+                {SCENARIOS[scenario].description}
+                {" · "}
+                {findScenarioMatch(scenario)
+                  ? <span className="text-emerald-600 dark:text-emerald-400">Matched a real application</span>
+                  : <span className="text-amber-600 dark:text-amber-400">No match — using synthesized sample</span>}
               </p>
             )}
           </div>
