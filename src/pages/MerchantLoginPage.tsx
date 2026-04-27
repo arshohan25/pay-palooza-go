@@ -136,6 +136,14 @@ export default function MerchantLoginPage() {
     e.preventDefault();
     if (loading || isLocked) return;
 
+    // Belt-and-suspenders: re-check persisted lock in case the ticker hasn't
+    // fired yet or another tab just locked us out.
+    const persisted = readPersistedLock();
+    if (persisted) {
+      setLockedUntil(persisted);
+      return;
+    }
+
     const cleanedPhone = phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(cleanedPhone)) {
       toast.error("Enter a valid 11-digit Bangladeshi mobile number");
@@ -152,26 +160,37 @@ export default function MerchantLoginPage() {
         body: { phone: cleanedPhone, pin },
       });
 
-      // FunctionsHttpError surfaces non-2xx — but the body is in `data` for some
-      // versions; normalize by reading either side.
-      const payload: any = data ?? (error as any)?.context?.body ?? null;
+      // FunctionsHttpError surfaces non-2xx — body location varies by client version.
+      const ctx: any = (error as any)?.context;
+      let body: any = data ?? ctx?.body ?? null;
 
-      // Fallback: if invoke threw and we don't have a parsed body, try to parse
-      let body: any = payload;
-      if (!body && error) {
+      // Fallback 1: ctx.json()
+      if (!body && ctx && typeof ctx.json === "function") {
+        try { body = await ctx.json(); } catch {}
+      }
+      // Fallback 2: ctx.text() → JSON.parse
+      if (!body && ctx && typeof ctx.text === "function") {
         try {
-          const ctxRes = (error as any)?.context;
-          if (ctxRes && typeof ctxRes.text === "function") {
-            const txt = await ctxRes.text();
-            body = JSON.parse(txt);
-          }
+          const txt = await ctx.text();
+          body = JSON.parse(txt);
         } catch {}
       }
 
-      if (body?.locked) {
-        applyLockout(body.retry_after_seconds ?? 900);
+      // Fallback 3: Retry-After header if status was 429 but body unreadable
+      const headerRetry = (() => {
+        try {
+          const h = ctx?.headers?.get?.("retry-after");
+          const n = h ? parseInt(h, 10) : NaN;
+          return Number.isFinite(n) && n > 0 ? n : null;
+        } catch { return null; }
+      })();
+      const status: number | undefined = ctx?.status;
+
+      if (body?.locked || status === 429) {
+        const retry = body?.retry_after_seconds ?? headerRetry ?? 900;
+        applyLockout(retry);
         setPin("");
-        toast.error(body.message || "Too many failed attempts");
+        toast.error(body?.message || "Too many failed attempts. Please wait.");
         return;
       }
 
