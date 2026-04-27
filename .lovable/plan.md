@@ -1,38 +1,24 @@
-# Restrict API access status banner to API tab only
+# Register `/account` route
 
 ## Problem
-The API access request status card (the one in your screenshot showing "API access request submitted", the timeline, and "Follow up in Live Chat") is currently rendered on the merchant **Overview** tab. You want it to appear **only** on the **API Integration** tab.
-
-## Root cause
-In `src/pages/MerchantDashboard.tsx`:
-- Line 522 renders `<MerchantApiAccessStatusBanner />` inside the `overview` tab block.
-- Lines 615–621 render the API tab, which already shows `<MerchantApiAccessGate />` when `apiLocked` is true and `<MerchantApiTab />` otherwise.
-
-So the status banner is currently dashboard-wide instead of API-tab-scoped.
+`MerchantApiAccessGate` and `MerchantApiAccessStatusBanner` navigate to `/account?...` (with `openChat`, `prefill`, `contextTitle`, `contextBody`, `merchantId` params) to drop the merchant into the support chat with prefilled context. That URL currently 404s because `AccountPage` is only mounted as a tab inside `Index`, not as its own route.
 
 ## Change
-Single file: `src/pages/MerchantDashboard.tsx`
+Single file: `src/App.tsx`
 
-1. **Remove** the banner from the Overview tab (line 522).
-2. **Add** the banner inside the API tab block (lines 615–621) so it appears above either the gate or the unlocked API tab content. This way:
-   - Locked merchants on the API tab see: status banner (timeline + Follow up in Live Chat) + the gate CTA below.
-   - Approved merchants on the API tab see: status banner (briefly, until dismissed) + the full API tab.
-   - Every other tab (Overview, Products, Orders, etc.) shows nothing related to API access.
+1. Add a lazy import next to the other page imports:
+   ```ts
+   const AccountPage = lazy(() => import("./pages/AccountPage"));
+   ```
+2. Register the route inside the existing `AppLayout` group (so it gets the same chrome as `/shop`, `/orders`, etc.), right after `giftcards`:
+   ```tsx
+   <Route path="account" element={<AccountPage />} />
+   ```
 
-Resulting structure for the API tab:
-```text
-{activeTab === "api" && merchant && (
-  <div className="px-4 py-4 space-y-4">
-    <MerchantApiAccessStatusBanner userId={user!.id} merchantId={merchant.id} visible={!isStaff} />
-    {apiLocked
-      ? <MerchantApiAccessGate userId={user!.id} merchantId={merchant.id} />
-      : <MerchantApiTab merchantId={merchant.id} />}
-  </div>
-)}
-```
+`AccountPage` already reads `useLocation().search` to handle `openChat`, `prefill`, `contextTitle`, `contextBody`, and `merchantId`, so no page-level changes are needed — once the route exists, the deep links from the API gate work end-to-end.
 
 ## Out of scope
-- No changes to the banner component itself, redaction, i18n, prefill, or routing.
-- No database changes.
+- No changes to `AccountPage`, the gate, the banner, or `SupportChat`.
+- No auth guard added (AccountPage handles unauthenticated state internally, consistent with how it renders today as a tab on `/`).
 
 Approve to apply.
