@@ -265,7 +265,7 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
                   {heading}
                 </p>
                 <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
-                  {redactSensitive(note || t("apiAccessNoReasonProvided"))}
+                  {note ? redactSensitive(note) : t("apiAccessNoReasonProvided")}
                 </p>
               </div>
             );
@@ -284,8 +284,12 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
                     openChat: "1",
                     prefill,
                     newApiRequest: "1",
-                    contextTitle: t("apiAccessAdminDenialReason"),
-                    contextBody: redactSensitive(note || t("apiAccessNoReasonProvided")),
+                    ...(note
+                      ? {
+                          contextTitle: t("apiAccessAdminDenialReason"),
+                          contextBody: redactSensitive(note),
+                        }
+                      : {}),
                     ...(merchantId ? { merchantId } : {}),
                   });
                   navigate(`/account?${params.toString()}`);

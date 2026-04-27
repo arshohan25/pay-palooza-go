@@ -330,7 +330,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
       </div>
 
       {/* Collapsible context panel (e.g. admin's rejection note for a resubmission) */}
-      {initialContext && (
+      {initialContext && initialContext.body.trim().length > 0 && (
         <div className="border-b border-border/40 bg-amber-500/5">
           <button
             type="button"
