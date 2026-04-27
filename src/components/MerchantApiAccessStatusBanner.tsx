@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, CheckCircle2, XCircle, X, MessageCircle, FileText, Loader2, Circle } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, X, MessageCircle, FileText, Loader2, Circle, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
@@ -27,39 +27,146 @@ const DISMISS_KEY = (userId: string, id: string, status: string) =>
  * in real time and can be dismissed once the merchant has acknowledged a
  * terminal state. Pending state is non-dismissable so the open request stays visible.
  */
+type RtStatus = "connecting" | "live" | "retrying" | "offline";
+
 export default function MerchantApiAccessStatusBanner({ userId, visible = true }: Props) {
   const navigate = useNavigate();
   const [latest, setLatest] = useState<AccessRequest | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [rtStatus, setRtStatus] = useState<RtStatus>("connecting");
+  const [rtError, setRtError] = useState<string | null>(null);
+  const [retryAttempt, setRetryAttempt] = useState(0);
 
-  const load = async () => {
-    const { data } = await (supabase as any)
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const retryTimerRef = useRef<number | null>(null);
+  const pollTimerRef = useRef<number | null>(null);
+  const attemptRef = useRef(0);
+  const mountedRef = useRef(true);
+
+  const load = useCallback(async () => {
+    const { data, error } = await (supabase as any)
       .from("merchant_api_access_requests")
       .select("id, status, reviewer_note, reviewed_at, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1);
+    if (error) return;
     const row: AccessRequest | null = data?.[0] ?? null;
+    if (!mountedRef.current) return;
     setLatest(row);
     if (row && row.status !== "pending") {
       setDismissed(localStorage.getItem(DISMISS_KEY(userId, row.id, row.status)) === "1");
     } else {
       setDismissed(false);
     }
-  };
+  }, [userId]);
 
-  useEffect(() => {
-    if (!visible || !userId) return;
-    load();
+  const cleanupChannel = useCallback(() => {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+  }, []);
+
+  const scheduleRetry = useCallback((reason: string) => {
+    if (!mountedRef.current) return;
+    attemptRef.current += 1;
+    const attempt = attemptRef.current;
+    setRetryAttempt(attempt);
+    setRtStatus("retrying");
+    setRtError(reason);
+    // Exponential backoff capped at 30s: 1s, 2s, 4s, 8s, 16s, 30s...
+    const delay = Math.min(30000, 1000 * 2 ** Math.min(attempt - 1, 5));
+    if (retryTimerRef.current) window.clearTimeout(retryTimerRef.current);
+    retryTimerRef.current = window.setTimeout(() => {
+      if (!mountedRef.current) return;
+      // Refresh data on each retry so user still sees up-to-date info.
+      load();
+      connect();
+    }, delay);
+  }, [load]);
+
+  const connect = useCallback(() => {
+    if (!mountedRef.current) return;
+    cleanupChannel();
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setRtStatus("offline");
+      setRtError("You appear to be offline. We'll reconnect automatically.");
+      return;
+    }
+    setRtStatus("connecting");
+    setRtError(null);
     const ch = supabase
-      .channel(`api-access-banner-${userId}`)
+      .channel(`api-access-banner-${userId}-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "merchant_api_access_requests", filter: `user_id=eq.${userId}` },
         () => load()
       )
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .subscribe((status, err) => {
+        if (!mountedRef.current) return;
+        if (status === "SUBSCRIBED") {
+          attemptRef.current = 0;
+          setRetryAttempt(0);
+          setRtStatus("live");
+          setRtError(null);
+          // Refresh once on reconnect to catch any missed events.
+          load();
+        } else if (status === "CHANNEL_ERROR") {
+          scheduleRetry(err?.message || "Realtime channel error. Retrying…");
+        } else if (status === "TIMED_OUT") {
+          scheduleRetry("Connection timed out. Retrying…");
+        } else if (status === "CLOSED") {
+          // Closed unexpectedly while we still want to listen → retry.
+          if (mountedRef.current && visible && userId) {
+            scheduleRetry("Connection closed. Reconnecting…");
+          }
+        }
+      });
+    channelRef.current = ch;
+  }, [userId, visible, load, cleanupChannel, scheduleRetry]);
+
+  const manualRetry = useCallback(() => {
+    if (retryTimerRef.current) window.clearTimeout(retryTimerRef.current);
+    attemptRef.current = 0;
+    setRetryAttempt(0);
+    load();
+    connect();
+  }, [load, connect]);
+
+  useEffect(() => {
+    if (!visible || !userId) return;
+    mountedRef.current = true;
+    load();
+    connect();
+
+    // Periodic safety-net poll every 30s — keeps banner fresh even if
+    // realtime is silently broken (e.g. proxy buffering).
+    pollTimerRef.current = window.setInterval(() => {
+      load();
+    }, 30000);
+
+    const onOnline = () => { manualRetry(); };
+    const onOffline = () => {
+      setRtStatus("offline");
+      setRtError("You're offline. We'll reconnect automatically when your connection returns.");
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && rtStatus !== "live") manualRetry();
+    };
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      mountedRef.current = false;
+      cleanupChannel();
+      if (retryTimerRef.current) window.clearTimeout(retryTimerRef.current);
+      if (pollTimerRef.current) window.clearInterval(pollTimerRef.current);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, visible]);
 
@@ -104,9 +211,31 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
       >
         <palette.Icon className={`w-4 h-4 mt-0.5 shrink-0 ${palette.icon}`} />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-foreground">{title}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs font-bold text-foreground">{title}</p>
+            <ConnectionPill status={rtStatus} attempt={retryAttempt} onRetry={manualRetry} />
+          </div>
           <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{body}</p>
 
+          {(rtStatus === "retrying" || rtStatus === "offline") && (
+            <div className="mt-2 rounded-lg border border-amber-500/25 bg-amber-500/5 p-2 flex items-start gap-2">
+              <WifiOff className="w-3 h-3 mt-0.5 text-amber-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-500">
+                  Live updates interrupted
+                </p>
+                <p className="text-[11px] text-foreground/80 mt-0.5 leading-relaxed">
+                  {rtError || "We lost the realtime connection."} The status above is being refreshed every 30 seconds in the meantime.
+                </p>
+                <button
+                  onClick={manualRetry}
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-500 hover:underline"
+                >
+                  <RefreshCw className="w-3 h-3" /> Retry now
+                </button>
+              </div>
+            </div>
+          )}
           {status !== "pending" && (() => {
             const note = latest.reviewer_note?.trim();
             const isApproved = status === "approved";
@@ -151,6 +280,60 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
         )}
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+/* ─────────── Connection Pill ─────────── */
+
+function ConnectionPill({
+  status,
+  attempt,
+  onRetry,
+}: {
+  status: RtStatus;
+  attempt: number;
+  onRetry: () => void;
+}) {
+  if (status === "live") {
+    return (
+      <span
+        title="Live updates connected"
+        className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-500"
+      >
+        <Wifi className="w-2.5 h-2.5" />
+        Live
+      </span>
+    );
+  }
+  if (status === "connecting") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+        Connecting
+      </span>
+    );
+  }
+  if (status === "offline") {
+    return (
+      <button
+        onClick={onRetry}
+        title="You're offline. Tap to retry."
+        className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-500 hover:bg-amber-500/20"
+      >
+        <WifiOff className="w-2.5 h-2.5" />
+        Offline
+      </button>
+    );
+  }
+  return (
+    <button
+      onClick={onRetry}
+      title="Reconnecting to live updates. Tap to retry now."
+      className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-500 hover:bg-amber-500/20"
+    >
+      <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+      Reconnecting{attempt > 1 ? ` · ${attempt}` : ""}
+    </button>
   );
 }
 
