@@ -41,6 +41,7 @@ import DailyLimitBadge from "@/components/DailyLimitBadge";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import MerchantApiTab from "@/components/MerchantApiTab";
 import MerchantApiAccessGate from "@/components/MerchantApiAccessGate";
+import MerchantApiAccessStatusBanner from "@/components/MerchantApiAccessStatusBanner";
 import MerchantAnalyticsTab from "@/components/MerchantAnalyticsTab";
 import MerchantProductsTab from "@/components/MerchantProductsTab";
 import MerchantOrdersTab from "@/components/MerchantOrdersTab";
@@ -518,6 +519,7 @@ const MerchantDashboard = () => {
       {/* ── Overview Content ── */}
       {activeTab === "overview" && (
         <div className="px-4 py-4 pb-24">
+          {user && <MerchantApiAccessStatusBanner userId={user.id} visible={!isStaff} />}
           <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} allTxns={txns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} />
         </div>
       )}
