@@ -285,7 +285,7 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
                     prefill,
                     newApiRequest: "1",
                     contextTitle: t("apiAccessAdminDenialReason"),
-                    contextBody: note || t("apiAccessNoReasonProvided"),
+                    contextBody: redactSensitive(note || t("apiAccessNoReasonProvided")),
                     ...(merchantId ? { merchantId } : {}),
                   });
                   navigate(`/account?${params.toString()}`);
