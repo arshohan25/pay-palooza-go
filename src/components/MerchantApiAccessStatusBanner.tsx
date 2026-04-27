@@ -59,9 +59,11 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
     const row: AccessRequest | null = data?.[0] ?? null;
     if (!mountedRef.current) return;
     setLatest(row);
-    if (row && row.status !== "pending") {
-      setDismissed(localStorage.getItem(DISMISS_KEY(userId, row.id, row.status)) === "1");
+    if (row && row.status === "pending") {
+      // Pending: respect a session-only dismissal so the banner reappears on refresh.
+      setDismissed(sessionStorage.getItem(PENDING_DISMISS_KEY(userId, row.id)) === "1");
     } else {
+      // Approved/denied: never dismissed — stays visible until a new request or refresh.
       setDismissed(false);
     }
   }, [userId]);
