@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.mfs-incoming-webhook]
 verify_jwt = false
+
+[functions.notify-api-access-decision]
+verify_jwt = false

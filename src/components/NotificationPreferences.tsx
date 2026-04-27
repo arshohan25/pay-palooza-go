@@ -21,6 +21,7 @@ const MERCHANT_CATEGORIES: Category[] = [
   { key: "merchant_refund", label: "Refunds & returns", description: "Refund requests and return updates." },
   { key: "merchant_low_stock", label: "Low stock alerts", description: "When inventory drops below threshold." },
   { key: "merchant_inquiry", label: "Customer inquiries", description: "Buyer chat messages on your products." },
+  { key: "merchant_api", label: "API access updates", description: "When your API access request is approved or denied." },
 ];
 
 const AGENT_CATEGORIES: Category[] = [
