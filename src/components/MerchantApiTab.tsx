@@ -162,6 +162,17 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
   const [actionPending, setActionPending] = useState(false);
   const [justCreatedId, setJustCreatedId] = useState<string | null>(null);
 
+  // Onboarding checklist
+  const COPIED_FLAG_KEY = `ezp_api_onboarding_copied_${merchantId}`;
+  const [hasCopiedCreds, setHasCopiedCreds] = useState<boolean>(() => {
+    try { return typeof window !== "undefined" && localStorage.getItem(COPIED_FLAG_KEY) === "1"; } catch { return false; }
+  });
+  const [checklistExpanded, setChecklistExpanded] = useState(true);
+  const userTouchedChecklist = useRef(false);
+  const requestSectionRef = useRef<HTMLDivElement | null>(null);
+  const credentialsSectionRef = useRef<HTMLDivElement | null>(null);
+  const webhookSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
   const loadData = useCallback(async () => {
     setLoading(true);
     const rangeCutoff = analyticsRange === "24h" ? 1 : analyticsRange === "7d" ? 7 : 30;
