@@ -180,10 +180,13 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
   if (!visible || !latest || dismissed) return null;
 
   const status = latest.status;
-  const dismissable = status !== "pending";
+  // Only the pending banner can be dismissed (session-only).
+  // Approved/denied banners stay until a new request is submitted or the page is refreshed.
+  const dismissable = status === "pending";
 
   const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY(userId, latest.id, status), "1");
+    if (status !== "pending") return;
+    sessionStorage.setItem(PENDING_DISMISS_KEY(userId, latest.id), "1");
     setDismissed(true);
   };
 
