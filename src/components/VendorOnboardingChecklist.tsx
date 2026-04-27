@@ -84,11 +84,11 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
   }, [load]);
 
   // Realtime subscriptions on the source-of-truth tables
+  // (personal KYC realtime is handled inside useKycStatus)
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
       .channel(`vendor-onboarding-${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles", filter: `user_id=eq.${userId}` }, () => load(userId))
       .on("postgres_changes", { event: "*", schema: "public", table: "merchant_applications", filter: `user_id=eq.${userId}` }, () => load(userId))
       .on("postgres_changes", { event: "*", schema: "public", table: "merchants", filter: `user_id=eq.${userId}` }, () => load(userId))
       .on("postgres_changes", { event: "*", schema: "public", table: "push_subscriptions", filter: `user_id=eq.${userId}` }, () => load(userId))
