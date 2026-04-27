@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, RefreshCw, Database, Loader2 } from "lucide-react";
+import { CalendarIcon, RefreshCw, Database, Loader2, CheckCircle2, AlertCircle, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 type SnapshotRow = {
@@ -44,6 +46,14 @@ export function AdminMetricsSnapshots() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"snapshot" | "backfill" | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [backfillTarget, setBackfillTarget] = useState(0);
+  const [backfillStart, setBackfillStart] = useState(0);
+  const [backfillDone, setBackfillDone] = useState(0);
+  const [statusLog, setStatusLog] = useState<{ ts: number; tone: "info" | "success" | "error"; text: string }[]>([]);
+  const pollRef = useRef<number | null>(null);
+
+  const log = (text: string, tone: "info" | "success" | "error" = "info") =>
+    setStatusLog((l) => [{ ts: Date.now(), tone, text }, ...l].slice(0, 40));
 
   async function load() {
     setLoading(true);
@@ -65,11 +75,13 @@ export function AdminMetricsSnapshots() {
   useEffect(() => {
     if (loading) return;
     if (rows.length === 0) {
-      // fire and forget; user sees the result after refresh
       runBackfill(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
+
+  // Cleanup poller on unmount
+  useEffect(() => () => { if (pollRef.current) window.clearInterval(pollRef.current); }, []);
 
   async function callFn(body: any) {
     const { data: { session } } = await supabase.auth.getSession();
@@ -86,14 +98,23 @@ export function AdminMetricsSnapshots() {
     return json;
   }
 
+  async function getStoredCount(): Promise<number> {
+    const { count } = await (supabase.from("admin_daily_metrics_snapshots" as any) as any)
+      .select("id", { count: "exact", head: true });
+    return count ?? 0;
+  }
+
   async function runSnapshot() {
     setBusy("snapshot");
+    const date = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
+    log(`Capturing snapshot for ${date}…`);
     try {
-      const date = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
       await callFn({ action: "snapshot", date });
+      log(`Snapshot saved for ${date}`, "success");
       toast.success(`Snapshot saved for ${date}`);
       await load();
     } catch (e: any) {
+      log(`Snapshot failed: ${e.message}`, "error");
       toast.error(e.message);
     } finally {
       setBusy(null);
@@ -102,13 +123,38 @@ export function AdminMetricsSnapshots() {
 
   async function runBackfill(silent = false) {
     setBusy("backfill");
+    const days = 30;
+    const startCount = await getStoredCount();
+    setBackfillStart(startCount);
+    setBackfillDone(0);
+    setBackfillTarget(days);
+    log(`Starting 30-day backfill (currently ${startCount} stored)…`);
+
+    // Poll stored count while the edge function processes day-by-day
+    if (pollRef.current) window.clearInterval(pollRef.current);
+    pollRef.current = window.setInterval(async () => {
+      try {
+        const c = await getStoredCount();
+        const added = Math.max(0, c - startCount);
+        setBackfillDone((prev) => {
+          if (added > prev) log(`Stored ${c} snapshots (+${added}/${days})`);
+          return Math.min(days, added);
+        });
+      } catch {/* ignore poll errors */}
+    }, 1500) as unknown as number;
+
     try {
-      await callFn({ action: "backfill", days: 30 });
-      if (!silent) toast.success("30-day backfill complete");
+      const json = await callFn({ action: "backfill", days });
+      const completed = Number(json?.completed ?? days);
+      setBackfillDone(completed);
+      log(`Backfill complete — ${completed} snapshot(s) processed`, "success");
+      if (!silent) toast.success(`30-day backfill complete (${completed} day${completed === 1 ? "" : "s"})`);
       await load();
     } catch (e: any) {
+      log(`Backfill failed: ${e.message}`, "error");
       if (!silent) toast.error(e.message);
     } finally {
+      if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
       setBusy(null);
     }
   }
@@ -168,6 +214,59 @@ export function AdminMetricsSnapshots() {
           </div>
         </CardContent>
       </Card>
+
+      {(busy === "backfill" || statusLog.length > 0) && (
+        <Card className="border-border/60">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" />
+              {busy === "backfill" ? "Backfill in progress" : "Activity log"}
+            </CardTitle>
+            {busy === "backfill" && (
+              <Badge variant="outline" className="gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {backfillDone}/{backfillTarget} days
+              </Badge>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {busy === "backfill" && (
+              <div className="space-y-1.5">
+                <Progress value={backfillTarget ? (backfillDone / backfillTarget) * 100 : 0} />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Started with {backfillStart} stored</span>
+                  <span>{backfillTarget ? Math.round((backfillDone / backfillTarget) * 100) : 0}% complete</span>
+                </div>
+              </div>
+            )}
+            <ScrollArea className="h-40 rounded-md border border-border/40 bg-muted/30 p-2">
+              <div className="space-y-1 font-mono text-[11px]">
+                {statusLog.length === 0 ? (
+                  <p className="text-muted-foreground">No activity yet.</p>
+                ) : (
+                  statusLog.map((entry) => (
+                    <div key={entry.ts} className="flex items-start gap-2">
+                      {entry.tone === "success" ? (
+                        <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />
+                      ) : entry.tone === "error" ? (
+                        <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />
+                      ) : (
+                        <Loader2 className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                      )}
+                      <span className="text-muted-foreground">[{format(new Date(entry.ts), "HH:mm:ss")}]</span>
+                      <span className={cn(
+                        entry.tone === "error" && "text-destructive",
+                        entry.tone === "success" && "text-emerald-600 dark:text-emerald-400",
+                        entry.tone === "info" && "text-foreground",
+                      )}>{entry.text}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <p className="py-10 text-center text-muted-foreground">Loading snapshots…</p>
