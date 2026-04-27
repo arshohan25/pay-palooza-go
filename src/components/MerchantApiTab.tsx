@@ -404,6 +404,10 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
   const copyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(label);
+    if (/^(apikey|secret-copy|apppw-copy)-/.test(label)) {
+      try { localStorage.setItem(COPIED_FLAG_KEY, "1"); } catch {}
+      setHasCopiedCreds(true);
+    }
     setTimeout(() => setCopiedField(null), 2000);
   };
 
