@@ -283,6 +283,60 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
   );
 }
 
+/* ─────────── Connection Pill ─────────── */
+
+function ConnectionPill({
+  status,
+  attempt,
+  onRetry,
+}: {
+  status: RtStatus;
+  attempt: number;
+  onRetry: () => void;
+}) {
+  if (status === "live") {
+    return (
+      <span
+        title="Live updates connected"
+        className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-500"
+      >
+        <Wifi className="w-2.5 h-2.5" />
+        Live
+      </span>
+    );
+  }
+  if (status === "connecting") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+        Connecting
+      </span>
+    );
+  }
+  if (status === "offline") {
+    return (
+      <button
+        onClick={onRetry}
+        title="You're offline. Tap to retry."
+        className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-500 hover:bg-amber-500/20"
+      >
+        <WifiOff className="w-2.5 h-2.5" />
+        Offline
+      </button>
+    );
+  }
+  return (
+    <button
+      onClick={onRetry}
+      title="Reconnecting to live updates. Tap to retry now."
+      className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-500 hover:bg-amber-500/20"
+    >
+      <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+      Reconnecting{attempt > 1 ? ` · ${attempt}` : ""}
+    </button>
+  );
+}
+
 /* ─────────── Lifecycle Timeline ─────────── */
 
 interface TimelineProps {
