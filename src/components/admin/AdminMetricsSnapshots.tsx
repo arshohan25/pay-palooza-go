@@ -106,6 +106,21 @@ export function AdminMetricsSnapshots() {
     return count ?? 0;
   }
 
+  async function getLatestStoredDate(): Promise<string | null> {
+    const { data } = await (supabase.from("admin_daily_metrics_snapshots" as any) as any)
+      .select("snapshot_date")
+      .order("snapshot_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return (data as any)?.snapshot_date ?? null;
+  }
+
+  function nextDayAfter(dateStr: string | null): string {
+    const base = dateStr ? new Date(`${dateStr}T12:00:00Z`) : new Date();
+    if (dateStr) base.setUTCDate(base.getUTCDate() + 1);
+    return format(base, "yyyy-MM-dd");
+  }
+
   async function runSnapshot() {
     setBusy("snapshot");
     const date = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
