@@ -83,7 +83,7 @@ export function AdminMetricsSnapshots() {
   }, [loading]);
 
   // Cleanup poller on unmount
-  useEffect(() => () => { if (pollRef.current) window.clearInterval(pollRef.current); }, []);
+  useEffect(() => () => { if (pollRef.current) window.clearTimeout(pollRef.current); }, []);
 
   async function callFn(body: any) {
     const { data: { session } } = await supabase.auth.getSession();
