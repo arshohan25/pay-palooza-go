@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     // 3. Email via Resend (matches existing notify-api-access-decision pattern)
     const { data: profile } = await sb
       .from("profiles")
-      .select("email, name")
+      .select("email, name, phone")
       .eq("user_id", user_id)
       .maybeSingle();
 
@@ -186,6 +186,69 @@ Deno.serve(async (req) => {
       }
     } else {
       results.email = { skipped: "no email on profile" };
+    }
+
+    // 4. SMS fallback via Twilio — only when both push & email did NOT succeed.
+    const pushOk =
+      results.push &&
+      !results.push.error &&
+      !results.push.skipped &&
+      (results.push.success === true ||
+        (typeof results.push.sent === "number" && results.push.sent > 0));
+    const emailOk =
+      results.email && results.email.success === true && !results.email.error;
+
+    if (!pushOk && !emailOk) {
+      const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
+      const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
+      const TWILIO_FROM = Deno.env.get("TWILIO_PHONE_NUMBER");
+      const rawPhone = profile?.phone?.toString().trim();
+
+      if (!rawPhone) {
+        results.sms = { skipped: "no phone on profile" };
+      } else if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM) {
+        results.sms = { skipped: "twilio not configured" };
+      } else {
+        // Format BD phone (mirrors notify-recipient pattern)
+        let phone = rawPhone;
+        if (phone.startsWith("01")) phone = "+88" + phone;
+        else if (!phone.startsWith("+")) phone = "+" + phone;
+
+        const shortBiz = biz.length > 30 ? biz.slice(0, 27) + "..." : biz;
+        const smsBody = isApproved
+          ? `EasyPay: ${shortBiz} is approved! Open your Merchant dashboard to add bank details & list products. ${ctaUrl}`
+          : `EasyPay: Action needed for ${shortBiz}.${reason?.trim() ? ` Reason: ${reason.trim().slice(0, 80)}.` : ""} Review & resubmit: ${ctaUrl}`;
+
+        try {
+          const formData = new URLSearchParams();
+          formData.append("To", phone);
+          formData.append("From", TWILIO_FROM);
+          formData.append("Body", smsBody);
+
+          const smsRes = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: "Basic " + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`),
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: formData.toString(),
+            },
+          );
+          const smsData = await smsRes.json();
+          results.sms = smsRes.ok
+            ? { success: true, sid: smsData?.sid, fallback: true, reason: { pushOk, emailOk } }
+            : { error: smsData, fallback: true };
+        } catch (e) {
+          results.sms = {
+            error: e instanceof Error ? e.message : "sms failed",
+            fallback: true,
+          };
+        }
+      }
+    } else {
+      results.sms = { skipped: "primary channels delivered", pushOk, emailOk };
     }
 
     return new Response(JSON.stringify({ success: true, results }), {
