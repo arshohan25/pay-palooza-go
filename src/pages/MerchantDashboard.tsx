@@ -424,7 +424,7 @@ const MerchantDashboard = () => {
               </button>
               <motion.button
                 whileTap={{ scale: 0.92 }}
-                onClick={handleLogout}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="tap-target h-10 px-3 rounded-xl glass-hero flex items-center gap-1.5 text-[12px] font-semibold"
                 aria-label="Logout"
               >
