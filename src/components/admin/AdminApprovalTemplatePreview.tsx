@@ -178,6 +178,32 @@ export default function AdminApprovalTemplatePreview({ applications = [] }: Prop
             )}
           </div>
 
+          {/* Test scenarios */}
+          <div className="space-y-1.5">
+            <Label className="text-xs flex items-center gap-1.5">
+              <FlaskConical className="w-3.5 h-3.5 text-muted-foreground" /> Test scenario
+            </Label>
+            <Select value={scenario} onValueChange={setScenario}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pick an edge case to preview…" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(SCENARIOS).map(([key, s]) => (
+                  <SelectItem key={key} value={key}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {scenario !== "none" && (
+              <p className="text-[11px] text-muted-foreground">
+                {SCENARIOS[scenario].description}
+                {" · "}
+                {findScenarioMatch(scenario)
+                  ? <span className="text-emerald-600 dark:text-emerald-400">Matched a real application</span>
+                  : <span className="text-amber-600 dark:text-amber-400">No match — using synthesized sample</span>}
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Merchant business name</Label>
