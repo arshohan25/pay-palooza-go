@@ -75,10 +75,9 @@ export default function AdminLiquidityPrediction() {
       const pred: { date: string; predicted: number }[] = [];
       for (let i = 1; i <= days; i++) {
         const d = new Date(Date.now() + i * 24 * 60 * 60 * 1000);
-        const variance = (Math.random() - 0.5) * Math.abs(avgNet) * 0.3;
         pred.push({
           date: d.toISOString().slice(5, 10),
-          predicted: Math.round(currentBalance + avgNet * i + variance),
+          predicted: Math.round(currentBalance + avgNet * i),
         });
       }
       setPrediction(pred);
