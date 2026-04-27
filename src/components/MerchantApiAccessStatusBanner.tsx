@@ -385,10 +385,44 @@ interface TimelineProps {
   reviewedAt: string | null;
 }
 
-const fmt = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, {
-    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+// User's resolved IANA timezone, e.g. "Asia/Dhaka" or "America/Los_Angeles".
+const userTimeZone =
+  (typeof Intl !== "undefined" && Intl.DateTimeFormat().resolvedOptions().timeZone) || undefined;
+
+// Returns a short timezone abbreviation for the given date in the user's locale.
+// Falls back to a GMT±HH:MM offset if the runtime can't produce a name (e.g. "GMT+6").
+const tzAbbr = (d: Date) => {
+  try {
+    const parts = new Intl.DateTimeFormat(undefined, {
+      timeZone: userTimeZone,
+      timeZoneName: "short",
+    }).formatToParts(d);
+    const tz = parts.find((p) => p.type === "timeZoneName")?.value;
+    if (tz) return tz;
+  } catch {
+    /* ignore — fall through to offset */
+  }
+  const offsetMin = -d.getTimezoneOffset();
+  const sign = offsetMin >= 0 ? "+" : "-";
+  const abs = Math.abs(offsetMin);
+  const hh = String(Math.floor(abs / 60)).padStart(2, "0");
+  const mm = String(abs % 60).padStart(2, "0");
+  return `GMT${sign}${hh}:${mm}`;
+};
+
+// Renders the timestamp in the user's local timezone with the abbreviation appended,
+// e.g. "Apr 27, 02:30 PM BST".
+const fmt = (iso: string) => {
+  const d = new Date(iso);
+  const time = d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: userTimeZone,
   });
+  return `${time} ${tzAbbr(d)}`;
+};
 
 function Timeline({ status, createdAt, reviewedAt }: TimelineProps) {
   const decided = status !== "pending";
