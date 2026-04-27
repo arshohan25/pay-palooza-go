@@ -40,6 +40,7 @@ import { haptics } from "@/lib/haptics";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import MerchantApiTab from "@/components/MerchantApiTab";
+import MerchantApiAccessGate from "@/components/MerchantApiAccessGate";
 import MerchantAnalyticsTab from "@/components/MerchantAnalyticsTab";
 import MerchantProductsTab from "@/components/MerchantProductsTab";
 import MerchantOrdersTab from "@/components/MerchantOrdersTab";
