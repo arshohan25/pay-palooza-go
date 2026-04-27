@@ -184,7 +184,7 @@ export default function AdminMerchantApplications() {
       </div>
 
       {view === "templates" ? (
-        <AdminApprovalTemplatePreview />
+        <AdminApprovalTemplatePreview applications={apps} />
       ) : (
         <>
       {/* Summary */}
