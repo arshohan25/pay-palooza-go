@@ -166,6 +166,21 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [myRewards, setMyRewards] = useState<{ id: string; reward_type: string; reward_value: any; reason: string | null; status: string }[]>([]);
 
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Auto-open Live Chat when navigated here with ?openChat=1 (e.g. from the Merchant API access gate)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("openChat") === "1") {
+      setShowSupport(true);
+      // Strip the query param so it doesn't re-trigger on back/forward navigation
+      params.delete("openChat");
+      const next = params.toString();
+      navigate(`${location.pathname}${next ? `?${next}` : ""}`, { replace: true });
+    }
+  }, [location.search, location.pathname, navigate]);
+
   const { roles } = useUserRoles();
   const { displayName, avatar_url } = useProfile();
   const { isDisabled } = useGlobalToggles();
