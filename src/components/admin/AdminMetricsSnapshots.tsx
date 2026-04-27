@@ -52,6 +52,8 @@ export function AdminMetricsSnapshots() {
   const [currentDay, setCurrentDay] = useState<string | null>(null);
   const [latestStoredDate, setLatestStoredDate] = useState<string | null>(null);
   const [statusLog, setStatusLog] = useState<{ ts: number; tone: "info" | "success" | "error"; text: string }[]>([]);
+  const [pollDelay, setPollDelay] = useState(1500);
+  const [throttled, setThrottled] = useState(false);
   const pollRef = useRef<number | null>(null);
 
   const log = (text: string, tone: "info" | "success" | "error" = "info") =>
