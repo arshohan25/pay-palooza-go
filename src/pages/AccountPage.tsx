@@ -165,6 +165,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [showMerchantApp, setShowMerchantApp] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [myRewards, setMyRewards] = useState<{ id: string; reward_type: string; reward_value: any; reason: string | null; status: string }[]>([]);
+  const [chatDraft, setChatDraft] = useState<string | undefined>(undefined);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -173,9 +174,14 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("openChat") === "1") {
+      const prefill = params.get("prefill");
+      if (prefill) {
+        try { setChatDraft(decodeURIComponent(prefill)); } catch { setChatDraft(prefill); }
+      }
       setShowSupport(true);
-      // Strip the query param so it doesn't re-trigger on back/forward navigation
+      // Strip query params so they don't re-trigger on back/forward navigation
       params.delete("openChat");
+      params.delete("prefill");
       const next = params.toString();
       navigate(`${location.pathname}${next ? `?${next}` : ""}`, { replace: true });
     }
