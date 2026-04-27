@@ -328,6 +328,40 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
         </div>
       </div>
 
+      {/* Collapsible context panel (e.g. admin's rejection note for a resubmission) */}
+      {initialContext && (
+        <div className="border-b border-border/40 bg-amber-500/5">
+          <button
+            type="button"
+            onClick={() => setContextOpen((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-amber-500/10 transition-colors"
+            aria-expanded={contextOpen}
+          >
+            <span className="flex items-center gap-1.5 min-w-0">
+              <Info size={12} className="text-amber-600 shrink-0" />
+              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wide truncate">
+                Context · {initialContext.title}
+              </span>
+            </span>
+            {contextOpen ? (
+              <ChevronUp size={12} className="text-amber-600 shrink-0" />
+            ) : (
+              <ChevronDown size={12} className="text-amber-600 shrink-0" />
+            )}
+          </button>
+          {contextOpen && (
+            <div className="px-3 pb-2.5 -mt-0.5">
+              <p className="text-[11px] leading-relaxed text-foreground whitespace-pre-wrap break-words rounded-lg bg-background/60 border border-amber-500/20 p-2">
+                {initialContext.body}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Address the points above in your message before resubmitting.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Messages area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2 pr-1 pb-2 pt-2">
         {/* Welcome message */}
