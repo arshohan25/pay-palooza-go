@@ -1,50 +1,59 @@
-# Vendor Onboarding Checklist on `MerchantBenefitsPage`
+# Real-time ETA on the "Get Approved" Step
 
-A premium 5-step checklist that drives the user from first visit to live vendor — with a glass progress ring, animated step rows, and per-step deep-link CTAs. Completion is derived from the existing database tables (no shadow state to drift).
+Show a data-driven ETA on step 3 of the vendor onboarding checklist. Pulled from actual recent admin review durations, with a smart cold-start fallback, refreshed live as approvals happen and as the user's own pending time grows.
 
-## The 5 steps
+## Data source — `get_merchant_review_eta()` RPC
 
-| # | Step | Source of truth | CTA when incomplete |
-|---|---|---|---|
-| 1 | Verify your identity (personal KYC) | `profiles.kyc_status = 'verified'` | "Complete KYC" → opens KYC flow |
-| 2 | Submit business application | `merchant_applications` row exists for user | "Apply as Vendor" → opens `MerchantBusinessKycFlow` |
-| 3 | Application approved by admin | `merchants.business_kyc_status = 'approved'` | "Awaiting review" (disabled) / shows rejection reason if rejected |
-| 4 | Add your first product | `products` count for merchant > 0 | "Add product" → reload into dashboard, navigate to Products tab |
-| 5 | Configure store & go live | `merchants.store_active = true` (or equivalent) | "Open store settings" |
+A new SECURITY DEFINER function (callable by any authenticated user) that returns a small JSON snapshot:
 
-Steps 4–5 only become reachable after step 3 completes (the page itself unmounts and the dashboard takes over via the auto-refresh we just added). So the checklist visually shows steps 4–5 as "unlocks after approval" with a soft lock icon — they reassure the user about what's coming next without being actionable yet.
+```json
+{
+  "median_minutes": 720,
+  "p90_minutes": 1800,
+  "sample_size": 14,
+  "is_estimate": false,
+  "computed_at": "2026-04-27T15:30:00Z"
+}
+```
 
-## Why no new "checklist" table
+Logic:
+- Look at `merchants` rows in the last **60 days** where `business_kyc_status = 'approved'` AND `business_kyc_reviewed_at IS NOT NULL`.
+- ETA window = `(business_kyc_reviewed_at - created_at)`.
+- Return median + p90 minutes + sample size.
+- **Cold-start fallback** (sample_size < 3): return `median_minutes = 1440` (24h), `p90_minutes = 2880` (48h), `is_estimate = true` — matches the current "1–2 days" copy.
+- Filter out outliers > 14 days to prevent one stale row from skewing the average.
 
-Every step is already a deterministic function of existing DB rows. A separate `onboarding_checklist` table would either:
-- duplicate the same data (drift risk), or
-- store user-dismissed flags only — which the user didn't ask for.
+This is read-only, exposes no PII (no merchant IDs, no user IDs — just aggregate timing), and safe to grant to `authenticated`.
 
-The "saved to database" requirement is met because **completion state lives in the database** (KYC, application, merchants, products) and is read in real time. If you actually want a per-step "user marked done" override (e.g., dismiss step 5), we can add a thin `merchant_onboarding_progress` table later — flag if needed.
+## Frontend in `VendorOnboardingChecklist`
 
-## Real-time
+1. **Fetch** the ETA via `supabase.rpc('get_merchant_review_eta')` on mount and cache in component state. Re-fetch every 5 minutes (covers slow drift).
+2. **Format** the ETA for the step row's right-side chip:
+   - `< 60 min` → "~Xm typical"
+   - `< 24 h` → "~Xh typical"
+   - `≥ 24 h` → "~Xd typical"
+   - When `is_estimate=true`: show "1–2 days" (current default) with a subtle "estimated" hint.
+3. **Personalized countdown** when the user's own application is pending:
+   - Compute `elapsed = now() - merchant_application.created_at`.
+   - If `elapsed < median`: show "About {median - elapsed} left" in amber.
+   - If `elapsed < p90`: show "Almost there — usually done by now" in amber.
+   - If `elapsed > p90`: show "Taking longer than usual — we'll notify you soon" in muted tone (no panic).
+   - This countdown ticks every 60 seconds via a local interval.
+4. **Real-time updates** — subscribe to `postgres_changes` on `merchants` (event UPDATE, no filter — global) and re-fetch the RPC when any merchant transitions to `approved`. So the ETA tightens immediately after each new approval ships.
+5. **Tooltip / sub-line** on the chip: "Based on the last {sample_size} approvals" so it's transparent.
 
-Subscribe to `postgres_changes` on `profiles` (kyc_status), `merchant_applications` (status), and `merchants` (business_kyc_status) for the current user. Each step row animates from grey → amber (in progress) → emerald (done) the moment the underlying row changes. Matches the project's zero-refresh policy.
+## Files
 
-## Visual design
+- **New migration**: `get_merchant_review_eta()` RPC (SECURITY DEFINER, returns JSON, GRANT EXECUTE TO authenticated).
+- **`src/components/VendorOnboardingChecklist.tsx`**:
+  - New `useReviewEta()` inline hook (RPC fetch + 5-min refresh + global merchants subscription).
+  - Update step 3's `eta` and add a personalized countdown line under the title when status = `in_review`.
+  - Add a small "Based on N recent approvals" caption.
 
-- Top: circular progress ring (e.g., "2 / 5 complete") with gradient stroke matching the page hero (`hsl(24 90% 50%) → hsl(350 65% 35%)`).
-- Step rows: glass card, 19px radius, with a numbered status pill (✓ done / ⏳ in progress / 🔒 locked / number when pending).
-- Each row: title, one-line description, inline CTA button (only on the active actionable step).
-- Estimated time chip per step ("~2 min").
-- A subtle "Next: …" hint below the ring pointing at the active step.
-- Animated entrance with `framer-motion` stagger — same `stagger.container/item` pattern already used on the page.
-- Placed **above** the "Why Become a Vendor?" benefits grid (high above the fold) and **below** the stats strip.
+## Out of scope
 
-## Files to change
-
-- `src/pages/MerchantDashboard.tsx` — add a `<VendorOnboardingChecklist />` component (defined in the same file, sibling to `MerchantBenefitsPage`); render it inside `MerchantBenefitsPage`'s content column. Wire its CTA for step 2 to the existing `setKycFlowOpen(true)`. Step 1 CTA opens the existing personal KYC flow (re-use `KycVerificationFlow` if imported elsewhere; otherwise navigate to `/account` where KYC is initiated).
-- No DB migration needed.
-
-## Out of scope (will not do unless asked)
-
-- A "dismiss step" feature.
-- Persisting checklist progress separately from source-of-truth tables.
-- Adding the checklist to the post-approval dashboard (it auto-unlocks; steps 4–5 belong inside the live dashboard if you want, but you asked for it on `MerchantBenefitsPage`).
+- Per-category or per-region ETAs (sample size too small).
+- Historical ETA charts.
+- Notifying the user when ETA changes (just visual update).
 
 Approve and I'll implement.
