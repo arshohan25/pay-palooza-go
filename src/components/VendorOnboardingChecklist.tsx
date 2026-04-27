@@ -53,10 +53,12 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
   const [hasBank, setHasBank] = useState(false);
   const [hasPush, setHasPush] = useState(false);
 
+  const [pendingSince, setPendingSince] = useState<string | null>(null); // merchant.created_at when business_kyc_status='pending'
+
   const load = useCallback(async (uid: string) => {
     const [appRes, merchRes, pushRes] = await Promise.all([
       supabase.from("merchant_applications").select("status").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("merchants").select("business_kyc_status, bank_account_number").eq("user_id", uid).maybeSingle(),
+      supabase.from("merchants").select("business_kyc_status, bank_account_number, created_at").eq("user_id", uid).maybeSingle(),
       supabase.from("push_subscriptions").select("id").eq("user_id", uid).limit(1),
     ]);
 
@@ -66,6 +68,7 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
     const bs = (merchRes.data?.business_kyc_status as any) ?? "none";
     setBusinessKycStatus(["pending", "approved", "rejected"].includes(bs) ? bs : "none");
     setHasBank(!!merchRes.data?.bank_account_number);
+    setPendingSince(bs === "pending" ? (merchRes.data?.created_at as string | null) ?? null : null);
 
     setHasPush((pushRes.data?.length ?? 0) > 0);
     setLoading(false);
