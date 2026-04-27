@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 import { Check, Lock, Loader2, ChevronRight, ShieldCheck, FileText, BadgeCheck, Bell, Landmark, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useKycStatus } from "@/hooks/use-kyc-status";
 import KycFlow from "@/components/KycFlow";
 
 type StepStatus = "done" | "active" | "pending" | "in_review" | "locked" | "rejected";
@@ -13,7 +15,7 @@ interface StepDef {
   title: string;
   desc: string;
   eta: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   cta: string;
 }
 
