@@ -182,11 +182,14 @@ const MerchantDashboard = () => {
   }, [staffAllowedTabs, isDisabled]);
 
   const visibleMenuItems = useMemo(() => {
-    // The "api" item is intentionally always shown — when locked, it renders an access-request gate.
-    let items = menuItems.filter(item => item.id === "api" || !item.toggleKey || !isDisabled(item.toggleKey));
+    // The "api" item is owner-only and always shown to owners. When locked, it renders an access-request gate.
+    // Staff (Manager/Cashier/Viewer) never see the API tab regardless of access.
+    let items = menuItems.filter(item =>
+      (item.id === "api" && !isStaff) || !item.toggleKey || !isDisabled(item.toggleKey)
+    );
     if (staffAllowedTabs) items = items.filter(item => staffAllowedTabs.has(item.id));
     return items;
-  }, [isDisabled, staffAllowedTabs]);
+  }, [isDisabled, staffAllowedTabs, isStaff]);
 
   const apiLocked = isDisabled("merchant_api");
 
