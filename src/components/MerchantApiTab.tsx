@@ -990,6 +990,7 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
                       </div>
                     );
                   })()}
+                  </div>
 
                   {/* Lifecycle actions */}
                   <div className="flex items-center gap-2 pt-2 border-t border-border/50">
