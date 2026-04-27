@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signIn } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,9 +20,16 @@ import {
   BarChart3,
   Eye,
   EyeOff,
+  AlertTriangle,
 } from "lucide-react";
 
-const MERCHANT_ROLES = ["merchant", "admin"] as const;
+const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
+
+function formatCountdown(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 export default function MerchantLoginPage() {
   const navigate = useNavigate();
@@ -31,15 +37,73 @@ export default function MerchantLoginPage() {
   const [pin, setPin] = useState("");
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
+  const tickerRef = useRef<number | null>(null);
 
+  // Restore device-bound phone + persisted lockout
   useEffect(() => {
     const bound = typeof window !== "undefined" ? localStorage.getItem("mfs_device_phone") : null;
     if (bound) setPhone(bound.replace(/^88/, ""));
+
+    try {
+      const raw = localStorage.getItem(LS_LOCKED_UNTIL);
+      if (raw) {
+        const ts = parseInt(raw, 10);
+        if (Number.isFinite(ts) && ts > Date.now()) {
+          setLockedUntil(ts);
+        } else {
+          localStorage.removeItem(LS_LOCKED_UNTIL);
+        }
+      }
+    } catch {}
   }, []);
+
+  // Live countdown ticker while locked
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const tick = () => {
+      const t = Date.now();
+      setNow(t);
+      if (t >= lockedUntil) {
+        setLockedUntil(null);
+        setAttemptsRemaining(null);
+        try {
+          localStorage.removeItem(LS_LOCKED_UNTIL);
+        } catch {}
+      }
+    };
+    tick();
+    tickerRef.current = window.setInterval(tick, 1000);
+    return () => {
+      if (tickerRef.current) window.clearInterval(tickerRef.current);
+    };
+  }, [lockedUntil]);
+
+  const isLocked = lockedUntil !== null && now < lockedUntil;
+  const remainingSeconds = isLocked ? Math.max(0, Math.ceil((lockedUntil! - now) / 1000)) : 0;
+
+  const applyLockout = (retryAfterSeconds: number) => {
+    const ts = Date.now() + Math.max(1, retryAfterSeconds) * 1000;
+    setLockedUntil(ts);
+    setAttemptsRemaining(0);
+    try {
+      localStorage.setItem(LS_LOCKED_UNTIL, String(ts));
+    } catch {}
+  };
+
+  const clearLockout = () => {
+    setLockedUntil(null);
+    setAttemptsRemaining(null);
+    try {
+      localStorage.removeItem(LS_LOCKED_UNTIL);
+    } catch {}
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || isLocked) return;
 
     const cleanedPhone = phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(cleanedPhone)) {
@@ -53,29 +117,58 @@ export default function MerchantLoginPage() {
 
     setLoading(true);
     try {
-      await signIn(cleanedPhone, pin);
+      const { data, error } = await supabase.functions.invoke("merchant-login", {
+        body: { phone: cleanedPhone, pin },
+      });
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // FunctionsHttpError surfaces non-2xx — but the body is in `data` for some
+      // versions; normalize by reading either side.
+      const payload: any = data ?? (error as any)?.context?.body ?? null;
 
-      if (!user) throw new Error("Sign-in failed");
+      // Fallback: if invoke threw and we don't have a parsed body, try to parse
+      let body: any = payload;
+      if (!body && error) {
+        try {
+          const ctxRes = (error as any)?.context;
+          if (ctxRes && typeof ctxRes.text === "function") {
+            const txt = await ctxRes.text();
+            body = JSON.parse(txt);
+          }
+        } catch {}
+      }
 
-      const { data: rolesData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      const roles = (rolesData ?? []).map((r: any) => r.role);
-      const isMerchant = roles.some((r) => (MERCHANT_ROLES as readonly string[]).includes(r));
-
-      if (!isMerchant) {
-        await supabase.auth.signOut();
-        toast.error("This account isn't a merchant account", {
-          description: "Apply to become a merchant or use customer login.",
-        });
+      if (body?.locked) {
+        applyLockout(body.retry_after_seconds ?? 900);
+        setPin("");
+        toast.error(body.message || "Too many failed attempts");
         return;
       }
+
+      if (body?.ok === false) {
+        if (typeof body.attempts_remaining === "number") {
+          setAttemptsRemaining(body.attempts_remaining);
+        }
+        const msg =
+          body.attempts_remaining != null && body.message === "Wrong phone or PIN"
+            ? `Wrong phone or PIN — ${body.attempts_remaining} attempt${body.attempts_remaining === 1 ? "" : "s"} left`
+            : body.message || "Sign-in failed";
+        toast.error(msg);
+        setPin("");
+        return;
+      }
+
+      if (!body?.ok || !body?.session) {
+        throw new Error(error?.message || "Sign-in failed");
+      }
+
+      // Establish the session client-side
+      const { error: setErr } = await supabase.auth.setSession({
+        access_token: body.session.access_token,
+        refresh_token: body.session.refresh_token,
+      });
+      if (setErr) throw setErr;
+
+      clearLockout();
 
       try {
         localStorage.setItem("mfs_device_phone", cleanedPhone);
@@ -85,8 +178,7 @@ export default function MerchantLoginPage() {
       toast.success("Welcome back, merchant!");
       navigate("/merchant", { replace: true });
     } catch (err: any) {
-      const msg = err?.message || "Sign-in failed";
-      toast.error(msg.includes("Invalid login credentials") ? "Wrong phone or PIN" : msg);
+      toast.error(err?.message || "Sign-in failed");
     } finally {
       setLoading(false);
     }
@@ -146,6 +238,39 @@ export default function MerchantLoginPage() {
             onSubmit={handleSignIn}
             className="rounded-[19px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:p-7"
           >
+            {/* Lockout banner */}
+            {isLocked && (
+              <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-rose-100">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold uppercase tracking-wider">
+                    Account temporarily locked
+                  </p>
+                  <p className="text-[13px] leading-snug text-rose-100/85">
+                    Too many failed sign-in attempts. Try again in{" "}
+                    <span className="font-semibold tabular-nums">
+                      {formatCountdown(remainingSeconds)}
+                    </span>
+                    .
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Attempts warning (when not locked but some attempts used) */}
+            {!isLocked &&
+              attemptsRemaining !== null &&
+              attemptsRemaining > 0 &&
+              attemptsRemaining <= 3 && (
+                <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-amber-100">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                  <p className="text-[13px] leading-snug">
+                    {attemptsRemaining} attempt{attemptsRemaining === 1 ? "" : "s"} remaining
+                    before this account is temporarily locked.
+                  </p>
+                </div>
+              )}
+
             {/* Phone */}
             <div className="space-y-2">
               <Label htmlFor="merchant-phone" className="text-xs font-medium uppercase tracking-wider text-white/60">
@@ -163,8 +288,9 @@ export default function MerchantLoginPage() {
                   autoComplete="tel"
                   placeholder="1XXXXXXXXX"
                   value={phone}
+                  disabled={isLocked}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                  className="h-10 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="h-10 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60"
                 />
               </div>
             </div>
@@ -189,6 +315,7 @@ export default function MerchantLoginPage() {
                   maxLength={4}
                   value={pin}
                   onChange={setPin}
+                  disabled={isLocked}
                   containerClassName="justify-center"
                 >
                   <InputOTPGroup className="gap-2">
@@ -213,10 +340,15 @@ export default function MerchantLoginPage() {
             {/* Submit */}
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || isLocked}
               className="mt-6 h-12 w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(16,185,129,0.7)] transition-transform hover:scale-[1.01] hover:from-emerald-400 hover:to-teal-400 disabled:opacity-70"
             >
-              {loading ? (
+              {isLocked ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  Locked — try again in {formatCountdown(remainingSeconds)}
+                </>
+              ) : loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Signing in...
