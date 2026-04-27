@@ -253,6 +253,24 @@ const MerchantDashboard = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Realtime: auto-promote to merchant dashboard the moment the role is granted
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`merchant-role-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'user_roles', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if ((payload.new as any)?.role === 'merchant') {
+            loadData();
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, loadData]);
+
   // Sound alert for incoming payments
   const playPaymentSound = useCallback(() => {
     try {
