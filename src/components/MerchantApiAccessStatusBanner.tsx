@@ -118,12 +118,9 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
             </div>
           )}
 
-          <p className="text-[10px] text-muted-foreground/70 mt-2">
-            Submitted {new Date(latest.created_at).toLocaleString()}
-            {latest.reviewed_at && status !== "pending" && (
-              <> · Reviewed {new Date(latest.reviewed_at).toLocaleString()}</>
-            )}
-          </p>
+          {/* Lifecycle timeline */}
+          <Timeline status={status} createdAt={latest.created_at} reviewedAt={latest.reviewed_at} />
+
           {status === "pending" && (
             <button
               onClick={() => navigate("/account?openChat=1")}
