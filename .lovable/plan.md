@@ -1,48 +1,43 @@
-# Notify merchants on "Get approved" step completion
+# ETA confidence indicator on Step 3
 
-When an admin approves (or rejects) a merchant's business KYC, send a push notification + email to the merchant so they immediately know the onboarding step has completed. Mirrors the existing pattern used for `notify-api-access-decision`.
+Add a color-coded confidence indicator to the "Get approved" step's ETA chip in `VendorOnboardingChecklist.tsx`, driven by `sample_size` returned by the existing `get_merchant_review_eta` RPC.
 
-## What gets built
+## Confidence tiers
 
-### 1. New edge function: `notify-merchant-approval`
-- Inputs: `{ user_id, merchant_id, status: 'approved' | 'rejected', reason?, business_name? }`
-- Sends push via `send-push-notification` with `category: 'merchant_ops'`, deep-link `url: '/merchant'`.
-- Sends email via the project's existing email path (same approach as `notify-api-access-decision` — Resend through the configured sender). Subject + body differ by status.
-- Inserts a row into `notifications` table (so it also shows in the in-app bell), category `merchant`, link `/merchant`.
-- Idempotent: skip if a notification with the same `(user_id, type='merchant_approval', merchant_id, status)` already exists in the last 10 min.
+| Tier | Sample size | Color | Label |
+|---|---|---|---|
+| Estimate | `is_estimate=true` or `< 3` | Muted gray | "Estimated" |
+| Low | 3–9 | Rose / red | "Low confidence" |
+| Medium | 10–29 | Amber | "Medium confidence" |
+| High | ≥ 30 | Emerald | "High confidence" |
 
-Approved copy:
-- Title: "You're approved 🎉 — start selling"
-- Body: "Your vendor account is live. Set your bank details and add products to go live on EasyPay Shop."
+Boundaries are easy to tweak later in one place.
 
-Rejected copy:
-- Title: "Vendor application needs changes"
-- Body: reason if provided, else "Please review the feedback in your Merchant dashboard and resubmit."
+## Visual design (Step 3 only)
 
-### 2. Migration: DB trigger on `merchants` + RPC patch
-Add an `AFTER UPDATE` trigger on `public.merchants` that fires when `business_kyc_status` transitions from any value to `approved` or `rejected`. The trigger uses `pg_net.http_post` to invoke `notify-merchant-approval` with the merchant's `user_id`, `id`, new status, `business_kyc_rejection_reason`, and `business_name`.
+The existing ETA pill (`~4h typical` / `1–2 days est.`) gets:
 
-This catches both the existing `approve_business_kyc` / `reject_business_kyc` RPC paths and any direct admin updates — no changes needed to the RPCs themselves.
+1. A small **2px solid dot** on the left of the chip text, colored per tier (rose / amber / emerald / muted).
+2. The pill's **background, text, and border** colors switch to match the tier (instead of the current generic muted style). Keeps glassmorphism feel — uses `/10` bg, `/30` border, `-700` text in the project's existing semantic Tailwind palette.
+3. The existing tooltip (`title=`) is replaced with a tier-specific message:
+   - Estimate: "Estimated — not enough recent approvals to compute a real ETA yet."
+   - Low/Medium/High: "{Tier} confidence — based on {n} recent approvals."
+4. A tiny one-line caption directly under the step (replaces the current `Based on last N approvals` line):
+   `<dot> Low confidence • 4 approvals` etc. Hidden when status is `done` or `locked`.
 
-Trigger guard: only fire when `OLD.business_kyc_status IS DISTINCT FROM NEW.business_kyc_status` AND `NEW.business_kyc_status IN ('approved','rejected')`.
+Animation: dot uses a soft `animate-pulse` only for the **Estimate** tier so users notice the data is provisional. Other tiers are static.
 
-### 3. Frontend: zero changes required
-The existing `VendorOnboardingChecklist` already subscribes to `merchants` postgres_changes, so the UI flips to "done" in real time. The push/email is purely additive — it reaches the merchant when the app is closed.
+Behavior is fully reactive — `eta` already updates via the 5-min poll + `merchants` postgres_changes subscription, so confidence flips tiers in real time as new approvals come in.
 
-## Push opt-in / preferences
-- Reuses `send-push-notification` which already filters by `notification_preferences` for the given category.
-- Category used: `merchant_ops` (existing category in the push system per memory `features/notifications/push`).
-- If the merchant hasn't subscribed to push, only email + in-app notification deliver — graceful degradation.
+## Implementation
+
+Single file: `src/components/VendorOnboardingChecklist.tsx`
+
+1. After the `etaChipText` memo, add a `confidence` object derived from `eta` with `{ tier, label, dotClass, chipClass, tip }`.
+2. In the step render loop, when `idx === 2`, replace the chip's static class string and `title` with `confidence.chipClass` and `confidence.tip`. Prepend a `<span class="w-1.5 h-1.5 rounded-full {confidence.dotClass}" />` inside the chip.
+3. Replace the existing `Based on last {sample} approvals` line with the new caption that uses `confidence.label` + sample count, shown for all non-done/locked states (including `in_review`).
+
+No new dependencies, no DB changes, no RPC changes.
 
 ## Files
-
-New:
-- `supabase/functions/notify-merchant-approval/index.ts`
-- `supabase/migrations/<ts>_merchant_approval_notify_trigger.sql` — trigger + function using `pg_net` (URL + service-role auth pulled from vault, same pattern as existing notify triggers in this project).
-
-No frontend changes.
-
-## Out of scope
-- No changes to the approve/reject RPCs.
-- No new email template scaffolding — uses existing email sending path already used by `notify-api-access-decision` and `kyc-notify`.
-- Bank-account / push-subscription step completions are not notified (those are self-initiated by the merchant; no need to alert them about their own action).
+- `src/components/VendorOnboardingChecklist.tsx` (edit only)
