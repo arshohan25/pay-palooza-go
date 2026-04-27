@@ -46,6 +46,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { AdminMetricsSnapshots } from "./AdminMetricsSnapshots";
 
 type AnyRow = Record<string, any>;
 type UserIntelligenceTab = "timeline" | "risk" | "records" | "notes" | "actions";
