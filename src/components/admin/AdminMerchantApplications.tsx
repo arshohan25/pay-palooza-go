@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Clock, CheckCircle, XCircle, Search, Store, Loader2, User, FileText, RefreshCw,
+  Clock, CheckCircle, XCircle, Search, Store, Loader2, User, FileText, RefreshCw, Eye,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useMerchantCategories } from "@/hooks/use-merchant-categories";
+import AdminApprovalTemplatePreview from "@/components/admin/AdminApprovalTemplatePreview";
 
 interface Application {
   id: string;
