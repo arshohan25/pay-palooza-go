@@ -28,6 +28,7 @@ interface Props {
  */
 export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [latest, setLatest] = useState<AccessRequest | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
