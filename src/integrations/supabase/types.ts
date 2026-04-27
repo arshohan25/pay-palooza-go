@@ -6295,6 +6295,7 @@ export type Database = {
         Args: { p_note?: string; p_request_id?: string; p_user_id: string }
         Returns: Json
       }
+      has_merchant_api_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
