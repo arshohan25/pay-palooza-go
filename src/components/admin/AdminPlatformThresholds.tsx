@@ -145,6 +145,7 @@ export default function AdminPlatformThresholds() {
     });
     load();
     loadAudit();
+  };
 
   const reset = async (row: Threshold) => {
     const def = DEFAULTS[row.key];
@@ -161,6 +162,7 @@ export default function AdminPlatformThresholds() {
     }
     toast.success(`Reset to default (${def}${row.unit ?? ""})`);
     load();
+    loadAudit();
   };
 
   if (adminLoading) {
