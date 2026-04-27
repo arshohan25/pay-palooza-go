@@ -100,19 +100,24 @@ export function AdminMetricsSnapshots() {
     return json;
   }
 
+  // Single combined query: fetch latest snapshot_date + total count in one round-trip.
+  // Uses head:false with a 1-row select + exact count to minimize payload (~30 bytes back).
+  async function getProgressSnapshot(): Promise<{ count: number; latest: string | null }> {
+    const { data, count } = await (supabase.from("admin_daily_metrics_snapshots" as any) as any)
+      .select("snapshot_date", { count: "exact" })
+      .order("snapshot_date", { ascending: false })
+      .limit(1);
+    return {
+      count: count ?? 0,
+      latest: (data as any)?.[0]?.snapshot_date ?? null,
+    };
+  }
+
+  // Kept for initial reads (count-only, head request — no rows transferred)
   async function getStoredCount(): Promise<number> {
     const { count } = await (supabase.from("admin_daily_metrics_snapshots" as any) as any)
       .select("id", { count: "exact", head: true });
     return count ?? 0;
-  }
-
-  async function getLatestStoredDate(): Promise<string | null> {
-    const { data } = await (supabase.from("admin_daily_metrics_snapshots" as any) as any)
-      .select("snapshot_date")
-      .order("snapshot_date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    return (data as any)?.snapshot_date ?? null;
   }
 
   function nextDayAfter(dateStr: string | null): string {
