@@ -1,72 +1,46 @@
-# Remove mock data from the admin panel and wire to real DB
+## Goal
+Hide the **API Integration** tab from merchants by default. Merchants must request access through **Live Chat** with admin/support. Once admin enables it (per merchant), the tab appears in the dashboard, and only then can the merchant request actual API keys (the existing flow shown in the screenshot).
 
-## Scope of "mock data" found
+## How it works (two-stage unlock)
 
-After scanning all `src/components/admin/*` and `AdminDashboard.tsx`, the vast majority of admin screens already pull live data from Supabase. The actual mock/fabricated values are concentrated in **two files** plus one stale field write. Other apparent matches (PIN/code/file-name `Math.random()`, JSON request templates in the API Sandbox, the "phone mockup" frame in Festival Themes) are legitimate and **will not** be touched.
+**Stage 1 — Tab visibility (NEW)**: per-merchant access flag controlled by admin
+**Stage 2 — API key issuance (already exists)**: `merchant_api_requests` → admin approves → keys generated
 
-### 1. `src/components/admin/AdminCommandIntelligence.tsx` — multiple fabricated panels
+## Changes
 
-The "Business Intelligence Dashboard" Tabs section currently mixes real metrics with hardcoded numbers:
+### 1. Database migration
+- New table `merchant_api_access` (or reuse `user_feature_overrides` with feature_key = `merchant_api`):
+  - Use existing `user_feature_overrides` system — set `visibility = 'visible'` per merchant user_id to unlock; absent row = locked.
+- Update the global toggle default for `merchant_api` so it's **disabled by default** for everyone, then per-user overrides flip it on.
+- RLS: merchants can read their own row; only admins can insert/update.
 
-- **Cohorts tab**: every retention/activation tile uses `Math.max(18, 86 - i*7)%` — pure formula, no DB.
-- **Predictive tab**: 8 cards use a hardcoded array `[24, 9, 17, 38, 52, 6, 14, 31]`.
-- **Ops Wall tab**: tiles like `"99.2%"`, `"OK"`, `12`, `"Stable"` are string literals.
-- **Segment save (`save()`)**: writes `estimated_count: Math.floor(20 + Math.random() * 180)` to `admin_user_segments` — fabricated count persisted to DB.
+### 2. Merchant Dashboard (`src/pages/MerchantDashboard.tsx`)
+- The existing `isDisabled('merchant_api')` filter (line 184) already removes the tab when the toggle is off. With the global default flipped to OFF, the tab disappears for everyone unless an override is present.
+- Confirm `useGlobalToggles` merges per-user overrides correctly (it already queries `user_feature_overrides`).
 
-**Fix:**
-- **Cohorts** → derive from existing `data.profiles` + `data.txns` + `data.kyc` already loaded in the page:
-  - Day 1/7/30 retention = `% of profiles whose first txn date + N days had another txn` (computed from `transactions.created_at` grouped by `user_id`).
-  - KYC completion = `kyc.filter(k => k.status==='verified').length / profiles.length`.
-  - First deposit / Repeat txn / Merchant activation / Agent activation = real counts from already-loaded slices (`txns` filtered by type, `data.merchants`, `data.agents`).
-- **Predictive** → replace the hardcoded array with computed signals:
-  - Users likely to churn = profiles with no txn in last 30 days.
-  - Merchants likely inactive = merchants with no order in 30 days.
-  - Agents low float = agents whose latest balance is below `get_threshold('agent_float_low')`.
-  - Support demand = open `support_complaints` count (already queryable).
-  - Fraud forecast = 7-day rolling avg of `fraud_alerts`.
-  - Revenue forecast = 7-day rolling avg of completed-txn fees.
-  - KYC backlog = pending KYC count.
-  - High-value offers = users with last-30d volume ≥ threshold (loaded from `platform_thresholds`).
-  - All values come from data the component already fetches in `loadAll()` — no extra round-trips needed for most.
-- **Ops Wall** → replace string literals with real values:
-  - Gateway health → `gateway_configs` `is_active=true / total` ratio (or call `check-api-status` cached).
-  - Recharge API → `recharge_logs` last-15-min success ratio.
-  - Support queue → `support_complaints` open count.
-  - Agent liquidity → average agent balance vs threshold.
-  - Merchant spikes → merchants with > 3σ volume vs their 7-day mean.
-  - Add a small `loadOpsWall()` helper that issues 3-4 light parallel queries and feeds these tiles.
-- **`estimated_count` write** → replace `Math.floor(...)` with a real count: run a server-side count query that mirrors the segment's `conditions` (or, conservatively, simply write `null` and have the UI compute live counts on-render). Plan: write `null` and compute estimated_count at render time from the same query the "sample" preview already uses (paginated count via `head: true, count: 'exact'` against the matched table). Display `—` if unknown rather than persisting fake numbers.
+### 3. New "Request API Access" entry point
+Since the tab itself is hidden, merchants need a discoverable path to ask. Add a small **"API Integration — Locked"** card in the **menu drawer / More section** (always visible to merchants) that:
+- Shows a 🔒 badge + short description.
+- CTA button **"Request via Live Chat"** → opens the existing SupportChat with a pre-filled message: *"I'd like to request API Integration access for my merchant account."*
+- If a request is already in flight (track via a new `merchant_api_access_requests` row OR a flag on the chat message), show **"Request pending review"**.
+- Once admin grants access → card disappears, real **API Integration** tab appears (real-time via existing `user_feature_overrides` postgres_changes subscription).
 
-### 2. `src/components/admin/AdminLiquidityPrediction.tsx` — synthetic forecast jitter
+### 4. Admin side
+- In **Live Chat (AdminChatMonitor)**, add a quick action button on merchant conversations: **"Grant API Access"** → inserts/updates `user_feature_overrides` row with `feature_key='merchant_api'`, `visibility='visible'` for that merchant's user_id, and replies in chat with confirmation.
+- Also surface in **AdminUserFeatureAccess** (already supports it generically — no change needed beyond ensuring `merchant_api` appears in the feature key list).
 
-Line 78 adds `(Math.random() - 0.5) * Math.abs(avgNet) * 0.3` to every predicted day. This makes the forecast look noisy/stochastic but is purely cosmetic randomness that changes on each re-render.
-
-**Fix:** Remove the `variance` term entirely so the prediction is a deterministic linear projection: `predicted = currentBalance + avgNet * i`. The UI already labels the chart "AI-Powered" — we'll keep the label but the math will be honest.
-
-### 3. Sanity sweep — verify nothing else slips through
-
-After the two fixes above, re-run:
-```
-rg -nP "Math\.random|hardcoded|mock|fake|dummy" src/components/admin/ src/pages/AdminDashboard.tsx
-```
-and confirm the only remaining hits are the legitimate ones (PIN gen, coupon/referral code gen, storage filename salts, API sandbox request templates the admin edits).
+### 5. Existing API request/key flow (no change)
+The screenshot's *"YOUR REQUESTS / YOUR API CREDENTIALS"* UI in `MerchantApiTab.tsx` stays exactly as-is. It only becomes reachable after Stage 1 unlock.
 
 ## Files touched
+- `supabase/migrations/<new>.sql` — flip default for `merchant_api` global toggle to disabled; ensure RLS on overrides.
+- `src/pages/MerchantDashboard.tsx` — add the always-visible "Locked" card when `merchant_api` is disabled for the user.
+- `src/components/SupportChat.tsx` — accept optional `prefilledMessage` prop.
+- `src/components/admin/AdminChatMonitor.tsx` — add "Grant API Access" quick action.
+- (Optional) small `useMerchantApiAccess` hook wrapping the existing toggles read for clarity.
 
-- `src/components/admin/AdminCommandIntelligence.tsx` — replace hardcoded Cohorts / Predictive / Ops Wall panels with computed values; replace `estimated_count: Math.random()` with `null` plus a live count helper.
-- `src/components/admin/AdminLiquidityPrediction.tsx` — drop `variance` term in the forecast loop.
-
-No DB schema changes are needed; all required tables (`profiles`, `transactions`, `kyc_documents`, `support_complaints`, `fraud_alerts`, `merchant_products`, `orders`, `gateway_configs`, `platform_treasury`, `treasury_ledger`, `recharge_logs`, `platform_thresholds`) already exist and are already queried elsewhere in the admin panel.
-
-## Out of scope (intentionally not changed)
-
-- `AdminApiSandbox.tsx` `sample` payloads — these are starter request bodies the admin edits, not displayed analytics.
-- `AdminFestivalThemes.tsx` "Phone mockup" — that's a UI frame label, not data.
-- Random PINs/coupon codes/storage filenames — those are correct uses of `Math.random()`.
-
-## Verification after implementation
-
-1. Open `/admin` → Business Intelligence dashboard → confirm Cohorts/Predictive/Ops Wall numbers change between two browser sessions only when underlying data changes (not on every render).
-2. Open Liquidity Prediction → reload twice → forecast line should be identical both times.
-3. Save a new user segment → DB row's `estimated_count` is `null` (or a real count), never a random integer.
-4. `rg "Math.random"` against admin folder shows only legitimate generators.
+## Result
+- Merchants see no API tab by default.
+- They request access through Live Chat (one click from a locked card).
+- Admin grants from chat or User Feature Access panel.
+- Tab appears in real-time, and merchant can then request API keys as before.
