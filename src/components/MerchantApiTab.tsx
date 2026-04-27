@@ -581,6 +581,39 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
                       </div>
                     )}
                   </div>
+
+                  {/* Lifecycle actions */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                    {k.is_active ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px] gap-1 flex-1"
+                          onClick={() => setConfirmAction({ kind: "rotate", keyId: k.id })}
+                        >
+                          <RefreshCw size={11} />Rotate
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px] gap-1 flex-1 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setConfirmAction({ kind: "revoke", keyId: k.id })}
+                        >
+                          <XCircle size={11} />Revoke
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-[10px] gap-1 flex-1 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setConfirmAction({ kind: "delete", keyId: k.id })}
+                      >
+                        <Trash2 size={11} />Delete permanently
+                      </Button>
+                    )}
+                  </div>
                 </Card>
               );
             })}
