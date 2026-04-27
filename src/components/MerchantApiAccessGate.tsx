@@ -157,17 +157,40 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
 
       <Button
         size="sm"
-        disabled={submitting}
+        disabled={submitting || pending}
         onClick={requestViaChat}
         className="w-full mt-4 text-xs gap-1.5"
       >
         <MessageCircle className="w-3.5 h-3.5" />
-        {pending ? "Continue in Live Chat" : rejected ? "Request Again via Live Chat" : "Request API Access via Live Chat"}
+        {pending
+          ? "Request Pending — Awaiting Review"
+          : rejected
+          ? "Request Again via Live Chat"
+          : "Request API Access via Live Chat"}
       </Button>
 
-      <p className="text-[10px] text-muted-foreground mt-3 text-center">
-        You’ll be taken to support chat to describe your integration needs.
-      </p>
+      {pending && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => openChat(false)}
+          className="w-full mt-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          Open Live Chat to follow up
+        </Button>
+      )}
+
+      {latest && (
+        <p className="text-[10px] text-muted-foreground mt-3 text-center">
+          Last submitted: {relativeTime(latest.created_at)}
+        </p>
+      )}
+      {!latest && !loading && (
+        <p className="text-[10px] text-muted-foreground mt-3 text-center">
+          You'll be taken to support chat with a prefilled template you can edit.
+        </p>
+      )}
     </motion.div>
   );
 }
