@@ -1042,6 +1042,40 @@ app.post('/webhook', (req, res) => {
           </div>
         )}
       </div>
+
+      {/* Confirm rotate / revoke / delete */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => { if (!open && !actionPending) setConfirmAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.kind === "rotate" && "Rotate this credential?"}
+              {confirmAction?.kind === "revoke" && "Revoke this API key?"}
+              {confirmAction?.kind === "delete" && "Delete this key permanently?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.kind === "rotate" && "A fresh API key, secret and app password will be generated. The previous credentials will stop working immediately — make sure to update any integrations that use them."}
+              {confirmAction?.kind === "revoke" && "API calls using this key will be rejected immediately. The key stays visible in your history so logs and past sessions remain readable. You can delete it permanently afterwards."}
+              {confirmAction?.kind === "delete" && "This permanently removes the key and any audit logs that reference it. This cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={actionPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!confirmAction) return;
+                if (confirmAction.kind === "rotate") rotateKey(confirmAction.keyId);
+                else if (confirmAction.kind === "revoke") revokeKey(confirmAction.keyId);
+                else deleteKeyPermanently(confirmAction.keyId);
+              }}
+              className={confirmAction?.kind === "rotate" ? "" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+            >
+              {actionPending ? <Loader2 size={14} className="animate-spin" /> : (confirmAction?.kind === "rotate" ? "Rotate now" : confirmAction?.kind === "revoke" ? "Revoke key" : "Delete forever")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });
