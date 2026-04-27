@@ -46,6 +46,14 @@ export function AdminMetricsSnapshots() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"snapshot" | "backfill" | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [backfillTarget, setBackfillTarget] = useState(0);
+  const [backfillStart, setBackfillStart] = useState(0);
+  const [backfillDone, setBackfillDone] = useState(0);
+  const [statusLog, setStatusLog] = useState<{ ts: number; tone: "info" | "success" | "error"; text: string }[]>([]);
+  const pollRef = useRef<number | null>(null);
+
+  const log = (text: string, tone: "info" | "success" | "error" = "info") =>
+    setStatusLog((l) => [{ ts: Date.now(), tone, text }, ...l].slice(0, 40));
 
   async function load() {
     setLoading(true);
@@ -67,11 +75,13 @@ export function AdminMetricsSnapshots() {
   useEffect(() => {
     if (loading) return;
     if (rows.length === 0) {
-      // fire and forget; user sees the result after refresh
       runBackfill(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
+
+  // Cleanup poller on unmount
+  useEffect(() => () => { if (pollRef.current) window.clearInterval(pollRef.current); }, []);
 
   async function callFn(body: any) {
     const { data: { session } } = await supabase.auth.getSession();
@@ -88,14 +98,23 @@ export function AdminMetricsSnapshots() {
     return json;
   }
 
+  async function getStoredCount(): Promise<number> {
+    const { count } = await (supabase.from("admin_daily_metrics_snapshots" as any) as any)
+      .select("id", { count: "exact", head: true });
+    return count ?? 0;
+  }
+
   async function runSnapshot() {
     setBusy("snapshot");
+    const date = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
+    log(`Capturing snapshot for ${date}…`);
     try {
-      const date = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
       await callFn({ action: "snapshot", date });
+      log(`Snapshot saved for ${date}`, "success");
       toast.success(`Snapshot saved for ${date}`);
       await load();
     } catch (e: any) {
+      log(`Snapshot failed: ${e.message}`, "error");
       toast.error(e.message);
     } finally {
       setBusy(null);
@@ -104,13 +123,38 @@ export function AdminMetricsSnapshots() {
 
   async function runBackfill(silent = false) {
     setBusy("backfill");
+    const days = 30;
+    const startCount = await getStoredCount();
+    setBackfillStart(startCount);
+    setBackfillDone(0);
+    setBackfillTarget(days);
+    log(`Starting 30-day backfill (currently ${startCount} stored)…`);
+
+    // Poll stored count while the edge function processes day-by-day
+    if (pollRef.current) window.clearInterval(pollRef.current);
+    pollRef.current = window.setInterval(async () => {
+      try {
+        const c = await getStoredCount();
+        const added = Math.max(0, c - startCount);
+        setBackfillDone((prev) => {
+          if (added > prev) log(`Stored ${c} snapshots (+${added}/${days})`);
+          return Math.min(days, added);
+        });
+      } catch {/* ignore poll errors */}
+    }, 1500) as unknown as number;
+
     try {
-      await callFn({ action: "backfill", days: 30 });
-      if (!silent) toast.success("30-day backfill complete");
+      const json = await callFn({ action: "backfill", days });
+      const completed = Number(json?.completed ?? days);
+      setBackfillDone(completed);
+      log(`Backfill complete — ${completed} snapshot(s) processed`, "success");
+      if (!silent) toast.success(`30-day backfill complete (${completed} day${completed === 1 ? "" : "s"})`);
       await load();
     } catch (e: any) {
+      log(`Backfill failed: ${e.message}`, "error");
       if (!silent) toast.error(e.message);
     } finally {
+      if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
       setBusy(null);
     }
   }
