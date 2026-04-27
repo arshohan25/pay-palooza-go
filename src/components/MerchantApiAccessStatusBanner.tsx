@@ -211,9 +211,31 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
       >
         <palette.Icon className={`w-4 h-4 mt-0.5 shrink-0 ${palette.icon}`} />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-foreground">{title}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs font-bold text-foreground">{title}</p>
+            <ConnectionPill status={rtStatus} attempt={retryAttempt} onRetry={manualRetry} />
+          </div>
           <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{body}</p>
 
+          {(rtStatus === "retrying" || rtStatus === "offline") && (
+            <div className="mt-2 rounded-lg border border-amber-500/25 bg-amber-500/5 p-2 flex items-start gap-2">
+              <WifiOff className="w-3 h-3 mt-0.5 text-amber-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-500">
+                  Live updates interrupted
+                </p>
+                <p className="text-[11px] text-foreground/80 mt-0.5 leading-relaxed">
+                  {rtError || "We lost the realtime connection."} The status above is being refreshed every 30 seconds in the meantime.
+                </p>
+                <button
+                  onClick={manualRetry}
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-500 hover:underline"
+                >
+                  <RefreshCw className="w-3 h-3" /> Retry now
+                </button>
+              </div>
+            </div>
+          )}
           {status !== "pending" && (() => {
             const note = latest.reviewer_note?.trim();
             const isApproved = status === "approved";
