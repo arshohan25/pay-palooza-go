@@ -20,14 +20,17 @@ interface Props {
   visible?: boolean;
 }
 
-const DISMISS_KEY = (userId: string, id: string, status: string) =>
-  `mfs_api_access_banner_dismissed:${userId}:${id}:${status}`;
+// Pending banner dismissals are session-only (sessionStorage), so they reappear on refresh.
+// Approved/denied banners are NOT dismissable — they stay until the merchant submits a new
+// request (which moves the latest row back to "pending") or refreshes the page.
+const PENDING_DISMISS_KEY = (userId: string, id: string) =>
+  `mfs_api_access_banner_dismissed_pending:${userId}:${id}`;
 
 /**
  * Persistent confirmation banner shown to merchant owners after they submit an
  * API access request. Reflects the latest status (pending / approved / rejected)
- * in real time and can be dismissed once the merchant has acknowledged a
- * terminal state. Pending state is non-dismissable so the open request stays visible.
+ * in real time. Pending banners can be dismissed for the current session;
+ * approved/denied banners stay visible until a new request is submitted.
  */
 type RtStatus = "connecting" | "live" | "retrying" | "offline";
 
