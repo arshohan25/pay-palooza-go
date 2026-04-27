@@ -103,6 +103,18 @@ export default function MerchantLoginPage() {
   const isLocked = lockedUntil !== null && now < lockedUntil;
   const remainingSeconds = isLocked ? Math.max(0, Math.ceil((lockedUntil! - now) / 1000)) : 0;
 
+  // Read freshest lock from storage (in case ticker hasn't fired yet)
+  const readPersistedLock = (): number | null => {
+    try {
+      const raw = localStorage.getItem(LS_LOCKED_UNTIL);
+      if (!raw) return null;
+      const ts = parseInt(raw, 10);
+      return Number.isFinite(ts) && ts > Date.now() ? ts : null;
+    } catch {
+      return null;
+    }
+  };
+
   const applyLockout = (retryAfterSeconds: number) => {
     const ts = Date.now() + Math.max(1, retryAfterSeconds) * 1000;
     setLockedUntil(ts);
