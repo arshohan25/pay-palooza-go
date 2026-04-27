@@ -142,9 +142,13 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
   const [requestReason, setRequestReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Webhook editing
-  const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState("");
+  // Webhook setup (per-key drafts, validation, payload preview)
+  const [webhookDrafts, setWebhookDrafts] = useState<Record<string, string>>({});
+  const [webhookErrors, setWebhookErrors] = useState<Record<string, string>>({});
+  const [savingWebhookId, setSavingWebhookId] = useState<string | null>(null);
+  const [testingWebhookId, setTestingWebhookId] = useState<string | null>(null);
+  const [openPayloadId, setOpenPayloadId] = useState<string | null>(null);
+  const [payloadSignatures, setPayloadSignatures] = useState<Record<string, string>>({});
 
   // Credential manager
   const [creatingKey, setCreatingKey] = useState(false);
