@@ -494,13 +494,31 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
               const maskValue = (val: string, field: string) => revealedFields.has(field) ? val : val.slice(0, 4) + "••••••••" + val.slice(-4);
 
               return (
-                <Card key={k.id} className="p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Badge className={k.is_active ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-muted text-muted-foreground"}>
-                      {k.is_active ? "Active" : "Revoked"}
-                    </Badge>
+                <Card key={k.id} className={`p-3 space-y-2 ${!k.is_active ? "opacity-70" : ""} ${justCreatedId === k.id ? "ring-2 ring-primary/40" : ""}`}>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge className={k.is_active ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-muted text-muted-foreground"}>
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${k.is_active ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+                        {k.is_active ? "Active" : "Revoked"}
+                      </Badge>
+                      <Badge variant="outline" className="text-[9px] uppercase">{k.environment || "live"}</Badge>
+                      {isRotating(k) && (
+                        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[9px] gap-1">
+                          <RefreshCw size={9} />Rotated
+                        </Badge>
+                      )}
+                    </div>
                     <span className="text-[10px] text-muted-foreground">{new Date(k.created_at).toLocaleDateString()}</span>
                   </div>
+                  {!k.is_active && (
+                    <p className="text-[10px] text-destructive flex items-center gap-1"><AlertTriangle size={10} />Revoked — API calls with these credentials will be rejected.</p>
+                  )}
+                  {justCreatedId === k.id && k.is_active && (
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 text-[10px] text-foreground flex items-start gap-2">
+                      <ShieldCheck size={12} className="text-primary mt-0.5 shrink-0" />
+                      <span>Copy your secret key and app password now. You can re-reveal them later, but rotate immediately if exposed.</span>
+                    </div>
+                  )}
 
                   {/* API Key */}
                   <div>
