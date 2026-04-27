@@ -206,7 +206,7 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
               </div>
               <h3 className="text-base font-black text-foreground leading-tight mb-1">Become a Vendor in 5 steps</h3>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Next: <span className="font-semibold text-foreground">{loading ? "Loading…" : nextLabel}</span>
+                Next: <span className="font-semibold text-foreground">{(loading || kycLoading) ? "Loading…" : nextLabel}</span>
               </p>
             </div>
           </div>
