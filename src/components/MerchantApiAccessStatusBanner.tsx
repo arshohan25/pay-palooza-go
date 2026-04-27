@@ -278,10 +278,13 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
               <button
                 onClick={async () => {
                   const prefill = await buildMerchantApiAccessPrefill(userId, { merchantId });
+                  const note = latest.reviewer_note?.trim();
                   const params = new URLSearchParams({
                     openChat: "1",
                     prefill,
                     newApiRequest: "1",
+                    contextTitle: t("apiAccessAdminDenialReason"),
+                    contextBody: note || t("apiAccessNoReasonProvided"),
                     ...(merchantId ? { merchantId } : {}),
                   });
                   navigate(`/account?${params.toString()}`);
