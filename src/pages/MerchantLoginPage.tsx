@@ -286,11 +286,17 @@ export default function MerchantLoginPage() {
           {/* Glass card */}
           <form
             onSubmit={handleSignIn}
+            aria-disabled={isLocked}
             className="rounded-[19px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:p-7"
           >
+            <fieldset disabled={isLocked} className="m-0 border-0 p-0 disabled:opacity-100">
             {/* Lockout banner */}
             {isLocked && (
-              <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-rose-100">
+              <div
+                role="alert"
+                aria-live="polite"
+                className="mb-5 flex items-start gap-2.5 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-rose-100"
+              >
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <div className="space-y-0.5">
                   <p className="text-xs font-semibold uppercase tracking-wider">
