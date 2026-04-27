@@ -171,10 +171,10 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
             {rejected && (
               <div className="mt-2 rounded-lg border border-destructive/20 bg-background/60 p-2">
                 <p className="text-[10px] font-bold uppercase tracking-wide text-destructive">
-                  Admin's reason
+                  {t("apiAccessAdminReason")}
                 </p>
                 <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
-                  {latest.reviewer_note?.trim() || "No reason was provided. Please contact support for details."}
+                  {latest.reviewer_note?.trim() || t("apiAccessNoReasonProvided")}
                 </p>
                 <Button
                   size="sm"
