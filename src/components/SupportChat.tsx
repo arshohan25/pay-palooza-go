@@ -11,6 +11,7 @@ import {
   startScreenshotDetection,
   isMessageExpired,
 } from "@/lib/chatCrypto";
+import { redactSensitive } from "@/lib/redactSensitive";
 import { toast } from "sonner";
 
 interface Message {
