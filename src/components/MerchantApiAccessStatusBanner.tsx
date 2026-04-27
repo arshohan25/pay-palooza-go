@@ -14,6 +14,8 @@ interface AccessRequest {
 
 interface Props {
   userId: string;
+  /** Used to prefill the new request draft when the merchant submits again. */
+  merchantId?: string | null;
   /** Pass false for staff or non-owners — banner won't render. */
   visible?: boolean;
 }
@@ -29,7 +31,7 @@ const DISMISS_KEY = (userId: string, id: string, status: string) =>
  */
 type RtStatus = "connecting" | "live" | "retrying" | "offline";
 
-export default function MerchantApiAccessStatusBanner({ userId, visible = true }: Props) {
+export default function MerchantApiAccessStatusBanner({ userId, merchantId, visible = true }: Props) {
   const navigate = useNavigate();
   const [latest, setLatest] = useState<AccessRequest | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -259,6 +261,36 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
 
           {/* Lifecycle timeline */}
           <Timeline status={status} createdAt={latest.created_at} reviewedAt={latest.reviewed_at} />
+
+          {status === "rejected" && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => {
+                  const prefill = [
+                    "Hi EasyPay team, I'd like to submit a new API access request for my merchant account.",
+                    `Merchant ID: ${merchantId ?? "—"}`,
+                    "Purpose: [briefly describe how you'll use the API — webhooks, checkout, payouts, etc.]",
+                  ].join("\n");
+                  const params = new URLSearchParams({
+                    openChat: "1",
+                    prefill,
+                    newApiRequest: "1",
+                    ...(merchantId ? { merchantId } : {}),
+                  });
+                  navigate(`/account?${params.toString()}`);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-[11px] font-bold text-primary-foreground shadow-sm hover:opacity-90"
+              >
+                <RefreshCw className="w-3 h-3" /> Submit new API request
+              </button>
+              <button
+                onClick={() => navigate("/account?openChat=1")}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+              >
+                <MessageCircle className="w-3 h-3" /> Contact support
+              </button>
+            </div>
+          )}
 
           {status === "pending" && (
             <button
