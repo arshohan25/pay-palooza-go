@@ -21,7 +21,7 @@ import {
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
   ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine,
   Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package, MessageCircle, Search,
-  Undo2, Ticket, XCircle, Loader2
+  Undo2, Ticket, XCircle, Loader2, LogOut
 } from "lucide-react";
 import MerchantBusinessKycFlow from "@/components/MerchantBusinessKycFlow";
 import VendorOnboardingChecklist from "@/components/VendorOnboardingChecklist";
