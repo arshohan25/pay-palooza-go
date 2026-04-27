@@ -215,11 +215,79 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
     loadData();
   };
 
-  const updateWebhook = async (keyId: string) => {
-    await supabase.from("merchant_api_keys").update({ webhook_url: webhookUrl || null, updated_at: new Date().toISOString() }).eq("id", keyId);
-    toast({ title: "Webhook URL Updated" });
-    setEditingKeyId(null);
-    loadData();
+  const saveWebhookUrl = async (keyId: string, raw: string) => {
+    const trimmed = raw.trim();
+    const err = validateWebhookUrl(trimmed);
+    if (err) {
+      setWebhookErrors(prev => ({ ...prev, [keyId]: err }));
+      return;
+    }
+    setWebhookErrors(prev => { const next = { ...prev }; delete next[keyId]; return next; });
+    setSavingWebhookId(keyId);
+    const { error } = await supabase
+      .from("merchant_api_keys")
+      .update({ webhook_url: trimmed || null, updated_at: new Date().toISOString() })
+      .eq("id", keyId);
+    setSavingWebhookId(null);
+    if (error) {
+      toast({ title: "Could not save webhook", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: trimmed ? "Webhook URL saved" : "Webhook removed" });
+    setWebhookDrafts(prev => { const next = { ...prev }; delete next[keyId]; return next; });
+    await loadData();
+  };
+
+  const sendTestWebhook = async (keyId: string) => {
+    const lastCompleted = sessions.find(s => s.api_key_id === keyId && s.status === "completed");
+    if (!lastCompleted) {
+      toast({ title: "No completed payment yet", description: "Complete at least one test payment to send a real signed event.", variant: "destructive" });
+      return;
+    }
+    setTestingWebhookId(keyId);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/merchant-payment-webhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: lastCompleted.id }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body?.delivered) {
+        toast({ title: "Test event delivered", description: `HTTP ${body?.attempts ? `· attempts: ${body.attempts}` : ""}` });
+      } else {
+        toast({
+          title: "Delivery failed",
+          description: body?.next_retry_at ? `Next auto-retry at ${new Date(body.next_retry_at).toLocaleString()}` : "Check your endpoint logs.",
+          variant: "destructive",
+        });
+      }
+      await loadData();
+    } catch (e: any) {
+      toast({ title: "Network error", description: String(e?.message || e), variant: "destructive" });
+    } finally {
+      setTestingWebhookId(null);
+    }
+  };
+
+  const togglePayloadPreview = async (k: ApiKey) => {
+    if (openPayloadId === k.id) { setOpenPayloadId(null); return; }
+    setOpenPayloadId(k.id);
+    const last = sessions.find(s => s.api_key_id === k.id && s.status === "completed");
+    if (!last) return;
+    const payload = JSON.stringify({
+      event: last.status === "completed" ? "payment.completed" : "payment.failed",
+      session_id: last.id,
+      amount: last.amount,
+      currency: last.currency,
+      reference: last.reference,
+      status: last.status,
+      customer_phone: last.customer_phone,
+      completed_at: last.completed_at,
+      timestamp: new Date().toISOString(),
+    }, null, 2);
+    const sig = await previewSignature(k.secret_key, payload);
+    setPayloadSignatures(prev => ({ ...prev, [k.id]: sig }));
   };
 
   // ─── Credential lifecycle ───
