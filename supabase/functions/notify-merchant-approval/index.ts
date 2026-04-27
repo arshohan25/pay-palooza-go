@@ -25,14 +25,21 @@ Deno.serve(async (req) => {
     }
 
     const isApproved = status === "approved";
+    const biz = (business_name && String(business_name).trim()) || "your business";
+    const nextStep = isApproved
+      ? "Next: add your bank details & list your first product"
+      : "Next: review the feedback and resubmit your application";
+    const ctaLabel = isApproved ? "Start Selling" : "Review & Resubmit";
+    const ctaUrl = "https://pay-palooza-go.lovable.app/merchant";
+
     const title = isApproved
-      ? "You're approved 🎉 — start selling"
-      : "Vendor application needs changes";
+      ? `🎉 ${biz} is approved on EasyPay`
+      : `Action needed for ${biz}`;
     const body = isApproved
-      ? "Your vendor account is live. Set your bank details and add products to go live on EasyPay Shop."
+      ? `Your vendor account is live. ${nextStep}.`
       : (reason?.trim()
-          ? `Reason: ${reason.trim()}`
-          : "Please review the feedback in your Merchant dashboard and resubmit.");
+          ? `Reason: ${reason.trim()}. ${nextStep}.`
+          : `${nextStep} in your Merchant dashboard.`);
 
     const results: Record<string, any> = {};
 
@@ -64,6 +71,14 @@ Deno.serve(async (req) => {
             body,
             url: "/merchant",
             category: "merchant_ops",
+            data: {
+              type: "merchant_approval",
+              status,
+              merchant_id: merchant_id ?? null,
+              business_name: biz,
+              cta_label: ctaLabel,
+              cta_url: "/merchant",
+            },
           },
         },
       );
@@ -103,24 +118,48 @@ Deno.serve(async (req) => {
       if (RESEND_API_KEY) {
         try {
           const accent = isApproved ? "#16a34a" : "#dc2626";
-          const biz = business_name || "your business";
-          const cta = isApproved
-            ? `<p style="margin:24px 0;"><a href="https://pay-palooza-go.lovable.app/merchant" style="background:#0f172a;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Open Merchant Dashboard</a></p>`
-            : `<p style="margin:24px 0;"><a href="https://pay-palooza-go.lovable.app/merchant" style="background:#0f172a;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Review & Resubmit</a></p>`;
+          const accentSoft = isApproved ? "#ecfdf5" : "#fef2f2";
+          const accentBorder = isApproved ? "#a7f3d0" : "#fecaca";
+          const safeBiz = String(biz).replace(/</g, "&lt;");
+          const safeName = String(profile.name || "Merchant").replace(/</g, "&lt;");
+          const safeReason = reason ? String(reason).replace(/</g, "&lt;") : "";
+          const heading = isApproved
+            ? `✅ ${safeBiz} is approved`
+            : `❌ ${safeBiz} needs changes`;
+          const intro = isApproved
+            ? `Great news, ${safeName} — <strong>${safeBiz}</strong> has been approved on EasyPay Shop and is ready to go live.`
+            : `Hi ${safeName}, your application for <strong>${safeBiz}</strong> needs a few changes before we can approve it.`;
+          const stepsBlock = isApproved
+            ? `<div style="background:${accentSoft};border:1px solid ${accentBorder};border-radius:10px;padding:14px 16px;margin:18px 0;">
+                 <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:${accent};letter-spacing:.3px;text-transform:uppercase;">Next steps</p>
+                 <ol style="margin:0;padding-left:20px;font-size:14px;color:#334155;line-height:1.6;">
+                   <li>Add your bank account so we can settle payouts</li>
+                   <li>List your first products in the Merchant dashboard</li>
+                   <li>Enable order notifications to never miss a sale</li>
+                 </ol>
+               </div>`
+            : `<div style="background:${accentSoft};border:1px solid ${accentBorder};border-radius:10px;padding:14px 16px;margin:18px 0;">
+                 <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:${accent};letter-spacing:.3px;text-transform:uppercase;">What to do next</p>
+                 <ol style="margin:0;padding-left:20px;font-size:14px;color:#334155;line-height:1.6;">
+                   <li>Open the Merchant dashboard</li>
+                   <li>Review the reviewer's note${safeReason ? "" : " on your application"}</li>
+                   <li>Update your details and resubmit for review</li>
+                 </ol>
+               </div>`;
+          const ctaBlock = `
+            <div style="text-align:center;margin:28px 0 8px;">
+              <a href="${ctaUrl}" style="background:${accent};color:#ffffff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block;">${ctaLabel} →</a>
+              <p style="margin:10px 0 0;color:#64748b;font-size:12px;">${nextStep}</p>
+            </div>`;
           const html = `
-            <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#ffffff;">
-              <h2 style="color:${accent};margin:0 0 12px;">${isApproved ? "✅ Vendor Application Approved" : "❌ Vendor Application Needs Changes"}</h2>
-              <p style="font-size:14px;color:#0f172a;">Dear ${profile.name || "Merchant"},</p>
-              <p style="font-size:14px;color:#334155;line-height:1.55;">
-                ${isApproved
-                  ? `Great news — <strong>${biz}</strong> has been approved on EasyPay Shop. ${body}`
-                  : `Your application for <strong>${biz}</strong> needs a few changes before we can approve it.`}
-              </p>
-              ${!isApproved && reason ? `<p style="background:#fef2f2;border:1px solid #fecaca;padding:10px 12px;border-radius:8px;color:#991b1b;font-size:13px;"><strong>Reviewer's note:</strong> ${reason}</p>` : ""}
-              ${isApproved ? `<ul style="font-size:14px;color:#334155;line-height:1.6;padding-left:18px;"><li>Add your bank account for payouts</li><li>Enable order notifications</li><li>List your first products</li></ul>` : ""}
-              ${cta}
-              <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
-              <p style="color:#999;font-size:12px;">EasyPay — Secure Digital Wallet</p>
+            <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;background:#ffffff;">
+              <h2 style="color:${accent};margin:0 0 16px;font-size:20px;">${heading}</h2>
+              <p style="font-size:14px;color:#334155;line-height:1.55;margin:0 0 12px;">${intro}</p>
+              ${!isApproved && safeReason ? `<p style="background:${accentSoft};border:1px solid ${accentBorder};padding:10px 12px;border-radius:8px;color:#991b1b;font-size:13px;margin:12px 0;"><strong>Reviewer's note:</strong> ${safeReason}</p>` : ""}
+              ${stepsBlock}
+              ${ctaBlock}
+              <hr style="border:none;border-top:1px solid #eee;margin:28px 0 16px;">
+              <p style="color:#94a3b8;font-size:12px;margin:0;">EasyPay — Secure Digital Wallet · This is an automated message about <strong>${safeBiz}</strong>.</p>
             </div>`;
           const emailRes = await fetch("https://api.resend.com/emails", {
             method: "POST",
@@ -132,8 +171,8 @@ Deno.serve(async (req) => {
               from: "EasyPay <noreply@resend.dev>",
               to: [profile.email],
               subject: isApproved
-                ? "Your EasyPay vendor application is approved"
-                : "Action needed on your EasyPay vendor application",
+                ? `🎉 ${biz} is approved on EasyPay — start selling`
+                : `Action needed: ${biz} vendor application`,
               html,
             }),
           });
