@@ -69,16 +69,33 @@ async function callFn(
 
 // --- Tests ---------------------------------------------------------------
 
+function assertStandardErrorBody(body: string, expectedCode: string) {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    throw new Error(`response body is not JSON: ${body}`);
+  }
+  const err = (parsed as { error?: { code?: string; message?: string } }).error;
+  assert(
+    err && typeof err === "object",
+    `expected { error: { code, message } }, got ${body}`,
+  );
+  assertEquals(err!.code, expectedCode, `unexpected error.code in ${body}`);
+  assert(
+    typeof err!.message === "string" && err!.message.length > 0,
+    `expected non-empty error.message, got ${body}`,
+  );
+}
+
 for (const fn of ADMIN_GATED_FUNCTIONS) {
-  Deno.test(`anonymous call to ${fn.name} is rejected (401)`, async () => {
+  Deno.test(`anonymous call to ${fn.name} returns 401 with standardized body`, async () => {
     const { status, body } = await callFn(fn);
-    assert(
-      status === 401 || status === 403,
-      `expected 401/403, got ${status} ${body}`,
-    );
+    assertEquals(status, 401, `expected 401, got ${status} ${body}`);
+    assertStandardErrorBody(body, "UNAUTHORIZED");
   });
 
-  Deno.test(`non-admin call to ${fn.name} is rejected (403)`, async () => {
+  Deno.test(`non-admin call to ${fn.name} returns 403 with standardized body`, async () => {
     const token = await signInNonAdmin();
     const { status, body } = await callFn(fn, token);
     assertEquals(
@@ -86,10 +103,7 @@ for (const fn of ADMIN_GATED_FUNCTIONS) {
       403,
       `expected 403 Forbidden for non-admin, got ${status} ${body}`,
     );
-    assert(
-      /forbidden|admin/i.test(body),
-      `expected admin-required error message, got ${body}`,
-    );
+    assertStandardErrorBody(body, "FORBIDDEN_ADMIN_REQUIRED");
   });
 }
 
