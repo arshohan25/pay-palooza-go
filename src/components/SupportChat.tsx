@@ -50,6 +50,15 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft }: S
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 60);
   }, []);
 
+  // Seed the composer with a prefilled draft (e.g. from the Merchant API access gate)
+  const draftSeededRef = useRef(false);
+  useEffect(() => {
+    if (!initialDraft || draftSeededRef.current) return;
+    draftSeededRef.current = true;
+    setInput(prev => (prev.trim() ? prev : initialDraft));
+    setTimeout(() => inputRef.current?.focus(), 80);
+  }, [initialDraft]);
+
   // Decrypt a message and cache the result
   const decryptAndCache = useCallback(async (msg: Message) => {
     if (msg.is_deleted) return "🗑️ This message was deleted";
