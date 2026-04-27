@@ -124,6 +124,18 @@ const THRESHOLD_TABLES = [
   "transfer_rate_limits",
 ] as const;
 
+// Edge functions that legitimately reference a threshold table only to
+// cascade-delete a single user's own rows during account deletion / purge.
+// These are NOT admin-config flows and intentionally do not return 401/403,
+// so they must be explicitly allowlisted (not added to ADMIN_GATED_FUNCTIONS).
+// Each entry must justify why the access is safe.
+const USER_SCOPED_CASCADE_ALLOWLIST: Record<string, string> = {
+  "delete-user":
+    "Deletes the requesting user's own rows in transfer_rate_limits as part of GDPR-style account deletion.",
+  "auto-purge-deactivated":
+    "Service-role scheduled job that purges rate-limit rows for already-deactivated users.",
+};
+
 type Hit = { kind: string; match: string };
 
 function scanThresholdSurface(source: string): Hit[] {
