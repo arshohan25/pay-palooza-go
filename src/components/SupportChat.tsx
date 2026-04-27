@@ -29,9 +29,12 @@ interface SupportChatProps {
   userId: string;
   conversationId?: string;
   initialDraft?: string;
+  /** Optional collapsible "Context" panel shown above the messages
+   *  (e.g. an admin's rejection note carried into a resubmission flow). */
+  initialContext?: { title: string; body: string } | null;
 }
 
-const SupportChat = ({ userId, conversationId: externalConvId, initialDraft }: SupportChatProps) => {
+const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, initialContext }: SupportChatProps) => {
   const [conversationId, setConversationId] = useState<string | null>(externalConvId ?? null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [decryptedCache, setDecryptedCache] = useState<Record<string, string>>({});
