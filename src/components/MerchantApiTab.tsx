@@ -314,6 +314,8 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
 
   const hasPendingRequest = requests.some(r => r.status === "pending");
   const hasActiveKey = keys.some(k => k.is_active);
+  const hasApprovedAccess = requests.some(r => r.status === "approved") || hasActiveKey;
+  const isRotating = (k: ApiKey) => !!k.rotation_expires_at && new Date(k.rotation_expires_at).getTime() > Date.now();
 
   // ─── Analytics computation ───
   const analytics = useMemo(() => {
