@@ -213,6 +213,8 @@ const MerchantDashboard = () => {
   const [isMerchant, setIsMerchant] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const balanceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleBalance = () => {
