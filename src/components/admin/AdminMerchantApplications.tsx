@@ -322,6 +322,8 @@ export default function AdminMerchantApplications() {
           </div>
         </ScrollArea>
       )}
+        </>
+      )}
     </div>
   );
 }
