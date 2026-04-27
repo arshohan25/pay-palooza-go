@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Lock, MessageCircle, CheckCircle2, Clock, XCircle, Globe } from "lucide-react";
+import { Lock, MessageCircle, CheckCircle2, Clock, XCircle, Globe, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
