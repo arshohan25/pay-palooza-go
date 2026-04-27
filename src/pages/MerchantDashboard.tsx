@@ -613,7 +613,8 @@ const MerchantDashboard = () => {
               {activeTab === "settlements"  && <div className="px-4 py-4"><SettlementTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
               {activeTab === "mdr"          && <div className="px-4 py-4"><MDRTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
               {activeTab === "api"          && merchant && (
-                <div className="px-4 py-4">
+                <div className="px-4 py-4 space-y-4">
+                  {user && <MerchantApiAccessStatusBanner userId={user.id} merchantId={merchant.id} visible={!isStaff} />}
                   {apiLocked
                     ? <MerchantApiAccessGate userId={user!.id} merchantId={merchant.id} />
                     : <MerchantApiTab merchantId={merchant.id} />}
