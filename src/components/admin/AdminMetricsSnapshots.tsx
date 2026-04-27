@@ -158,14 +158,18 @@ export function AdminMetricsSnapshots() {
     setCurrentDay(nextDayAfter(startLatest));
     log(`Starting 30-day backfill (currently ${startCount} stored, latest: ${startLatest ?? "none"})…`);
 
-    // Adaptive poll: fast (1.5s) while progressing, back off up to 8s when stalled.
+    // Adaptive poll: fast (1.5s) while progressing. Require 3 consecutive
+    // unchanged counts before throttling, then back off up to 8s.
     if (pollRef.current) window.clearTimeout(pollRef.current);
     const MIN_DELAY = 1500;
     const MAX_DELAY = 8000;
+    const STALL_THRESHOLD = 3; // consecutive unchanged ticks before backing off
     let delay = MIN_DELAY;
     let stallCount = 0;
     let lastAdded = 0;
     let stopped = false;
+    setPollDelay(MIN_DELAY);
+    setThrottled(false);
 
     const tick = async () => {
       if (stopped) return;
@@ -175,13 +179,23 @@ export function AdminMetricsSnapshots() {
         if (added > lastAdded) {
           log(`Stored ${c} snapshots (+${added}/${days}) — last completed: ${latest ?? "—"}`, "success");
           lastAdded = added;
+          if (stallCount >= STALL_THRESHOLD) {
+            log(`Progress resumed — restoring fast polling (${MIN_DELAY}ms)`, "info");
+          }
           stallCount = 0;
-          delay = MIN_DELAY; // progress detected → reset to fast polling
+          delay = MIN_DELAY;
+          setThrottled(false);
         } else {
           stallCount += 1;
-          // Exponential backoff after 2 stalled ticks: 1.5s → 3s → 6s → 8s
-          if (stallCount >= 2) delay = Math.min(MAX_DELAY, Math.round(delay * 2));
+          if (stallCount === STALL_THRESHOLD) {
+            log(`No progress for ${STALL_THRESHOLD} ticks — throttling poll rate`, "info");
+            setThrottled(true);
+          }
+          if (stallCount >= STALL_THRESHOLD) {
+            delay = Math.min(MAX_DELAY, Math.round(delay * 2));
+          }
         }
+        setPollDelay(delay);
         setBackfillDone(Math.min(days, added));
         setLatestStoredDate(latest);
         if (added < days) setCurrentDay(nextDayAfter(latest));
@@ -206,6 +220,7 @@ export function AdminMetricsSnapshots() {
     } finally {
       stopped = true;
       if (pollRef.current) { window.clearTimeout(pollRef.current); pollRef.current = null; }
+      setThrottled(false);
       setBusy(null);
     }
   }
