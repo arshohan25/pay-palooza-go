@@ -60,6 +60,25 @@ export default function MerchantLoginPage() {
     } catch {}
   }, []);
 
+  // Cross-tab sync: react to lockout set/clear in any other tab
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== LS_LOCKED_UNTIL) return;
+      if (!e.newValue) {
+        setLockedUntil(null);
+        return;
+      }
+      const ts = parseInt(e.newValue, 10);
+      if (Number.isFinite(ts) && ts > Date.now()) {
+        setLockedUntil(ts);
+      } else {
+        setLockedUntil(null);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   // Live countdown ticker while locked
   useEffect(() => {
     if (!lockedUntil) return;

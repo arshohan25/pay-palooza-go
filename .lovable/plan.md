@@ -1,69 +1,33 @@
-## Server-Side PIN Attempt Rate Limiting for Merchant Login
+## Goal
+Make the client strictly honor the server's lockout response so a locked merchant cannot re-submit the PIN form until the cooldown ends — across tabs, across reloads, and across the Enter key / programmatic submits.
 
-### Caveat
-The backend has no official rate-limiting primitives yet. This is an ad-hoc implementation (custom edge function + DB table) per your direction. It may need to be replaced when proper infra ships.
+## Current state (already implemented)
+- `mfs_merchant_login_locked_until` persisted in `localStorage`; restored on mount.
+- 1-second ticker computes `isLocked` / `remainingSeconds`; auto-clears at expiry.
+- `applyLockout(retry_after_seconds)` set on every 429 response from `merchant-login`.
+- `handleSignIn` returns early if `loading || isLocked`.
+- Submit button, PIN `InputOTP`, and phone `Input` are `disabled={isLocked}`.
+- Lockout banner + countdown label render while locked.
 
-### Goal
-Track failed merchant-login PIN attempts server-side, block further sign-in attempts after a threshold, and return a consistent lockout response the merchant login page can render.
+## Gaps to close
+1. **Cross-tab sync** — opening the login page in a second tab right now starts with no lock state until the next failed attempt. Listen to `storage` events on `mfs_merchant_login_locked_until` so a lockout in tab A immediately freezes tab B.
+2. **Form-level Enter / autofill submit** — `handleSignIn` guards against locked, but the `<form onSubmit>` should also be no-op'd defensively, and the form itself can carry `aria-disabled` for AT users.
+3. **Edge function `error.context` 429 parsing** — `supabase.functions.invoke` throws `FunctionsHttpError` on non-2xx. Today we read `error.context.body` then fall back to `error.context.text()`. Add one more fallback path: `(error as any)?.context?.json?.()` (newer client) and also read the `Retry-After` header if `retry_after_seconds` is missing in the body, so the cooldown is always populated.
+4. **Trust the server clock** — currently we compute `lockedUntil = Date.now() + retry_after_seconds*1000`. If the user's clock is skewed, lock can expire too early/late on the client but the server will still 429. On the next 429, just re-call `applyLockout` with the fresh `retry_after_seconds` so the countdown self-corrects (already happens) — also, when `isLocked` flips false, do NOT auto-clear `attemptsRemaining` until the next response (keeps "X attempts left" meaningful right after cooldown).
+5. **A11y / UX polish** — set `aria-live="polite"` on the lockout banner, and `inert` (or `pointer-events-none`) on the form body while locked so password managers can't re-trigger submit.
 
-### Behavior
-- **Identifier**: keyed on normalized phone number (`01XXXXXXXXX`) plus best-effort client IP from request headers.
-- **Threshold**: 5 failed attempts within a 15-minute rolling window → 15-minute lockout.
-- **Successful login**: clears the phone's attempt log.
-- **Stale rows**: expired rows ignored at read time; a DB function purges anything older than 24 h.
+## Changes (single file)
+**`src/pages/MerchantLoginPage.tsx`**
+- Add a `window.addEventListener("storage", ...)` effect that re-reads `LS_LOCKED_UNTIL` and calls `setLockedUntil` accordingly (handles both lock-set and lock-clear events).
+- In `handleSignIn`, after the existing `if (loading || isLocked) return;`, also check the freshest localStorage value (in case the ticker hasn't fired yet) and bail.
+- Wrap the form contents in a `<fieldset disabled={isLocked}>` so every interactive control — including any future ones — is disabled in one place; keep the explicit `disabled` props as belt-and-suspenders.
+- Improve the 429 body extraction: try `error?.context?.json?.()` and `error?.context?.headers?.get?.("retry-after")` before falling back to 900s.
+- Add `aria-live="polite"` to the lockout banner div.
 
-### Database (migration)
-New table `merchant_login_attempts`:
-- `id uuid pk default gen_random_uuid()`
-- `phone text not null` (indexed)
-- `ip text` (nullable)
-- `success boolean not null default false`
-- `created_at timestamptz not null default now()` (indexed)
+## Out of scope
+- No backend or migration changes — server-side `merchant-login` + `check_merchant_login_lockout` already returns the canonical `retry_after_seconds` and `Retry-After` header.
+- No new recovery / "forgot PIN" UI here.
+- Visual identity unchanged (same glass card, 19px radii, emerald accents).
 
-RLS: enabled, **no policies** (only the edge function with service role can read/write).
-
-Helper SQL function `check_merchant_login_lockout(p_phone text)` returning `{ locked boolean, attempts_remaining int, retry_after_seconds int }`. Counts failed rows in the last 15 min.
-
-### Edge function: `merchant-login`
-`supabase/functions/merchant-login/index.ts` (verify_jwt = false; this is a pre-auth endpoint).
-
-Request body (validated with Zod):
-```ts
-{ phone: string, pin: string }
-```
-
-Flow:
-1. CORS preflight handling.
-2. Validate body; reject 400 on bad shape.
-3. Normalize phone (`replace(/\D/g, "").replace(/^88/, "")`); validate against BD regex.
-4. Call `check_merchant_login_lockout(phone)`. If locked → return **HTTP 429** with body `{ locked: true, retry_after_seconds, attempts_remaining: 0, message }`.
-5. Build synthetic email (`{phone}@easypay.app`) and password (`pin + "EP"`); call `supabase.auth.signInWithPassword` using a service-role client (it still validates credentials normally — service role only for DB ops).
-6. **On auth failure**:
-   - Insert `{ phone, ip, success: false }` row.
-   - Recompute lockout. If now locked → return **429** with lockout payload. Otherwise return **401** with `{ ok: false, attempts_remaining, message: "Wrong phone or PIN" }`.
-7. **On auth success**:
-   - Verify the user has `merchant` or `admin` role. If not → return **403** `{ ok: false, message: "Not a merchant account" }` (no attempt insert; treat as policy block, not credential failure).
-   - Insert `{ phone, ip, success: true }`.
-   - Delete prior failed rows for this phone (clean slate).
-   - Return **200** `{ ok: true, session: <auth-session>, user: <user> }`. Client uses `supabase.auth.setSession()` with the returned tokens.
-
-IP extracted from `x-forwarded-for` (first hop) or `cf-connecting-ip` headers; fall back to `null`.
-
-### Client wiring (`src/pages/MerchantLoginPage.tsx`)
-- Replace direct `signIn(phone, pin)` call with `supabase.functions.invoke("merchant-login", { body: { phone, pin } })`.
-- Handle response:
-  - `200` + `session`: call `supabase.auth.setSession({ access_token, refresh_token })`, then continue with the existing post-login navigation/role checks (kept as defense-in-depth).
-  - `429`: persist `retry_after_seconds` to `localStorage` and render the cooldown UI added in the prior plan (live countdown, disabled inputs, destructive banner). Toast: "Too many failed attempts. Locked for X minutes."
-  - `401`: show "Wrong phone or PIN — N attempts left" toast using `attempts_remaining`.
-  - `403`: show existing "This account isn't a merchant account" message; no lockout state.
-- Keep client-side optimistic counter as a UX hint, but treat the server response as authoritative.
-
-### Files
-- New: `supabase/migrations/<ts>_merchant_login_attempts.sql`
-- New: `supabase/functions/merchant-login/index.ts`
-- Edited: `src/pages/MerchantLoginPage.tsx`
-
-### Out of scope
-- Per-IP global limits (would need a different identifier strategy).
-- CAPTCHA after lockout (can be layered later).
-- Distributed rate limiting across regions — single-table approach is sufficient here.
+## Files touched
+- `src/pages/MerchantLoginPage.tsx` (only)
