@@ -33,6 +33,7 @@ const DynamicQrPage = lazy(() => import("./pages/DynamicQrPage"));
 const PayPage = lazy(() => import("./pages/PayPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const TeamLoginPage = lazy(() => import("./pages/TeamLoginPage"));
+const MerchantLoginPage = lazy(() => import("./pages/MerchantLoginPage"));
 const RoleInstallPage = lazy(() => import("./pages/RoleInstallPage"));
 const ShopPage = lazy(() => import("./pages/ShopPage"));
 const ShopCheckoutPage = lazy(() => import("./pages/ShopCheckoutPage"));
@@ -128,6 +129,7 @@ const App = () => (
                   <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff><MerchantDashboard /></RoleGuard>} />
 
                   <Route path="/team-login" element={<TeamLoginPage />} />
+                  <Route path="/merchant-login" element={<MerchantLoginPage />} />
                   <Route path="/install" element={<RoleInstallPage />} />
                   <Route path="/install/:role" element={<RoleInstallPage />} />
                   <Route path="/developers" element={<DeveloperPortal />} />
