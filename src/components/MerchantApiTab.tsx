@@ -800,6 +800,7 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
                   </div>
 
                   {/* ── Webhook setup ── */}
+                  <div id={`onboarding-webhook-${k.id}`} className="scroll-mt-20">
                   {(() => {
                     const draft = webhookDrafts[k.id] ?? k.webhook_url ?? "";
                     const dirty = (draft.trim()) !== (k.webhook_url ?? "");
