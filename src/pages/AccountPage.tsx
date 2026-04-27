@@ -166,6 +166,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [myRewards, setMyRewards] = useState<{ id: string; reward_type: string; reward_value: any; reason: string | null; status: string }[]>([]);
   const [chatDraft, setChatDraft] = useState<string | undefined>(undefined);
+  const [chatContext, setChatContext] = useState<{ title: string; body: string } | null>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
