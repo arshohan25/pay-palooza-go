@@ -126,7 +126,7 @@ const App = () => (
                     <Route path="create-distributor" element={<SuperDistributorCreateDistributor />} />
                   </Route>
 
-                  <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant-login" unauthorizedRedirect="/merchant-login"><MerchantDashboard /></RoleGuard>} />
+                  <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant-login"><MerchantDashboard /></RoleGuard>} />
 
                   <Route path="/team-login" element={<TeamLoginPage />} />
                   <Route path="/merchant-login" element={<MerchantLoginPage />} />
