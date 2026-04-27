@@ -14,6 +14,8 @@ interface AccessRequest {
 
 interface Props {
   userId: string;
+  /** Used to prefill the new request draft when the merchant submits again. */
+  merchantId?: string | null;
   /** Pass false for staff or non-owners — banner won't render. */
   visible?: boolean;
 }
