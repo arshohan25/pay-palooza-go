@@ -4,6 +4,7 @@ import { Clock, CheckCircle2, XCircle, X, MessageCircle, FileText, Loader2, Circ
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
+import { buildMerchantApiAccessPrefill } from "@/lib/buildMerchantApiAccessPrefill";
 
 interface AccessRequest {
   id: string;
@@ -275,12 +276,8 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
           {status === "rejected" && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
-                onClick={() => {
-                  const prefill = [
-                    "Hi EasyPay team, I'd like to submit a new API access request for my merchant account.",
-                    `Merchant ID: ${merchantId ?? "—"}`,
-                    "Purpose: [briefly describe how you'll use the API — webhooks, checkout, payouts, etc.]",
-                  ].join("\n");
+                onClick={async () => {
+                  const prefill = await buildMerchantApiAccessPrefill(userId, { merchantId });
                   const params = new URLSearchParams({
                     openChat: "1",
                     prefill,
