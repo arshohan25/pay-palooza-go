@@ -11,6 +11,7 @@ import {
   startScreenshotDetection,
   isMessageExpired,
 } from "@/lib/chatCrypto";
+import { redactSensitive } from "@/lib/redactSensitive";
 import { toast } from "sonner";
 
 interface Message {
@@ -352,7 +353,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
           {contextOpen && (
             <div className="px-3 pb-2.5 -mt-0.5">
               <p className="text-[11px] leading-relaxed text-foreground whitespace-pre-wrap break-words rounded-lg bg-background/60 border border-amber-500/20 p-2">
-                {initialContext.body}
+                {redactSensitive(initialContext.body)}
               </p>
               <p className="text-[10px] text-muted-foreground mt-1.5">
                 Address the points above in your message before resubmitting.

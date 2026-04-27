@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { buildMerchantApiAccessPrefill } from "@/lib/buildMerchantApiAccessPrefill";
+import { redactSensitive } from "@/lib/redactSensitive";
 
 interface AccessRequest {
   id: string;
@@ -68,7 +69,7 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
       if (latest?.status === "rejected") {
         const note = latest.reviewer_note?.trim();
         params.set("contextTitle", t("apiAccessAdminDenialReason"));
-        params.set("contextBody", note || t("apiAccessNoReasonProvided"));
+        params.set("contextBody", redactSensitive(note || t("apiAccessNoReasonProvided")));
       }
     }
     if (merchantId) params.set("merchantId", merchantId);
@@ -178,7 +179,7 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
                   {t("apiAccessAdminReason")}
                 </p>
                 <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
-                  {latest.reviewer_note?.trim() || t("apiAccessNoReasonProvided")}
+                  {redactSensitive(latest.reviewer_note?.trim() || t("apiAccessNoReasonProvided"))}
                 </p>
                 <Button
                   size="sm"

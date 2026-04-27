@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { buildMerchantApiAccessPrefill } from "@/lib/buildMerchantApiAccessPrefill";
+import { redactSensitive } from "@/lib/redactSensitive";
 
 interface AccessRequest {
   id: string;
@@ -264,7 +265,7 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
                   {heading}
                 </p>
                 <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
-                  {note || t("apiAccessNoReasonProvided")}
+                  {redactSensitive(note || t("apiAccessNoReasonProvided"))}
                 </p>
               </div>
             );
@@ -284,7 +285,7 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
                     prefill,
                     newApiRequest: "1",
                     contextTitle: t("apiAccessAdminDenialReason"),
-                    contextBody: note || t("apiAccessNoReasonProvided"),
+                    contextBody: redactSensitive(note || t("apiAccessNoReasonProvided")),
                     ...(merchantId ? { merchantId } : {}),
                   });
                   navigate(`/account?${params.toString()}`);
