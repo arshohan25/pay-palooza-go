@@ -60,6 +60,25 @@ export default function MerchantLoginPage() {
     } catch {}
   }, []);
 
+  // Cross-tab sync: react to lockout set/clear in any other tab
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== LS_LOCKED_UNTIL) return;
+      if (!e.newValue) {
+        setLockedUntil(null);
+        return;
+      }
+      const ts = parseInt(e.newValue, 10);
+      if (Number.isFinite(ts) && ts > Date.now()) {
+        setLockedUntil(ts);
+      } else {
+        setLockedUntil(null);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   // Live countdown ticker while locked
   useEffect(() => {
     if (!lockedUntil) return;
@@ -84,6 +103,18 @@ export default function MerchantLoginPage() {
   const isLocked = lockedUntil !== null && now < lockedUntil;
   const remainingSeconds = isLocked ? Math.max(0, Math.ceil((lockedUntil! - now) / 1000)) : 0;
 
+  // Read freshest lock from storage (in case ticker hasn't fired yet)
+  const readPersistedLock = (): number | null => {
+    try {
+      const raw = localStorage.getItem(LS_LOCKED_UNTIL);
+      if (!raw) return null;
+      const ts = parseInt(raw, 10);
+      return Number.isFinite(ts) && ts > Date.now() ? ts : null;
+    } catch {
+      return null;
+    }
+  };
+
   const applyLockout = (retryAfterSeconds: number) => {
     const ts = Date.now() + Math.max(1, retryAfterSeconds) * 1000;
     setLockedUntil(ts);
@@ -105,6 +136,14 @@ export default function MerchantLoginPage() {
     e.preventDefault();
     if (loading || isLocked) return;
 
+    // Belt-and-suspenders: re-check persisted lock in case the ticker hasn't
+    // fired yet or another tab just locked us out.
+    const persisted = readPersistedLock();
+    if (persisted) {
+      setLockedUntil(persisted);
+      return;
+    }
+
     const cleanedPhone = phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(cleanedPhone)) {
       toast.error("Enter a valid 11-digit Bangladeshi mobile number");
@@ -121,26 +160,37 @@ export default function MerchantLoginPage() {
         body: { phone: cleanedPhone, pin },
       });
 
-      // FunctionsHttpError surfaces non-2xx — but the body is in `data` for some
-      // versions; normalize by reading either side.
-      const payload: any = data ?? (error as any)?.context?.body ?? null;
+      // FunctionsHttpError surfaces non-2xx — body location varies by client version.
+      const ctx: any = (error as any)?.context;
+      let body: any = data ?? ctx?.body ?? null;
 
-      // Fallback: if invoke threw and we don't have a parsed body, try to parse
-      let body: any = payload;
-      if (!body && error) {
+      // Fallback 1: ctx.json()
+      if (!body && ctx && typeof ctx.json === "function") {
+        try { body = await ctx.json(); } catch {}
+      }
+      // Fallback 2: ctx.text() → JSON.parse
+      if (!body && ctx && typeof ctx.text === "function") {
         try {
-          const ctxRes = (error as any)?.context;
-          if (ctxRes && typeof ctxRes.text === "function") {
-            const txt = await ctxRes.text();
-            body = JSON.parse(txt);
-          }
+          const txt = await ctx.text();
+          body = JSON.parse(txt);
         } catch {}
       }
 
-      if (body?.locked) {
-        applyLockout(body.retry_after_seconds ?? 900);
+      // Fallback 3: Retry-After header if status was 429 but body unreadable
+      const headerRetry = (() => {
+        try {
+          const h = ctx?.headers?.get?.("retry-after");
+          const n = h ? parseInt(h, 10) : NaN;
+          return Number.isFinite(n) && n > 0 ? n : null;
+        } catch { return null; }
+      })();
+      const status: number | undefined = ctx?.status;
+
+      if (body?.locked || status === 429) {
+        const retry = body?.retry_after_seconds ?? headerRetry ?? 900;
+        applyLockout(retry);
         setPin("");
-        toast.error(body.message || "Too many failed attempts");
+        toast.error(body?.message || "Too many failed attempts. Please wait.");
         return;
       }
 
@@ -236,11 +286,17 @@ export default function MerchantLoginPage() {
           {/* Glass card */}
           <form
             onSubmit={handleSignIn}
+            aria-disabled={isLocked}
             className="rounded-[19px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:p-7"
           >
+            <fieldset disabled={isLocked} className="m-0 border-0 p-0 disabled:opacity-100">
             {/* Lockout banner */}
             {isLocked && (
-              <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-rose-100">
+              <div
+                role="alert"
+                aria-live="polite"
+                className="mb-5 flex items-start gap-2.5 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-rose-100"
+              >
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <div className="space-y-0.5">
                   <p className="text-xs font-semibold uppercase tracking-wider">
@@ -392,6 +448,7 @@ export default function MerchantLoginPage() {
                 </div>
               ))}
             </div>
+            </fieldset>
           </form>
 
           {/* Footer links */}
