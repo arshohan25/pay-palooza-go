@@ -179,7 +179,9 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
                   {t("apiAccessAdminReason")}
                 </p>
                 <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
-                  {redactSensitive(latest.reviewer_note?.trim() || t("apiAccessNoReasonProvided"))}
+                  {latest.reviewer_note?.trim()
+                    ? redactSensitive(latest.reviewer_note.trim())
+                    : t("apiAccessNoReasonProvided")}
                 </p>
                 <Button
                   size="sm"
