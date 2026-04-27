@@ -322,11 +322,25 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
                           st === "done" ? "bg-emerald-500/10 text-emerald-700"
                           : st === "in_review" ? "bg-amber-500/10 text-amber-700"
                           : "bg-muted text-muted-foreground"
-                        }`}>
-                          {st === "done" ? "Done" : st === "in_review" ? "In review" : st === "rejected" ? "Action needed" : step.eta}
+                        }`}
+                          title={idx === 2 && eta ? (eta.isEstimate ? "Estimated — not enough recent data yet" : `Based on the last ${eta.sample} approvals`) : undefined}
+                        >
+                          {st === "done" ? "Done"
+                            : st === "in_review" ? "In review"
+                            : st === "rejected" ? "Action needed"
+                            : idx === 2 ? etaChipText
+                            : step.eta}
                         </span>
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">{step.desc}</p>
+                      {idx === 2 && st === "in_review" && personalLine && (
+                        <p className={`text-[10.5px] font-semibold mt-1 leading-tight ${personalLine.tone === "amber" ? "text-amber-700" : "text-muted-foreground"}`}>
+                          {personalLine.text}
+                        </p>
+                      )}
+                      {idx === 2 && eta && !eta.isEstimate && (
+                        <p className="text-[9.5px] text-muted-foreground/70 mt-0.5">Based on last {eta.sample} approvals</p>
+                      )}
                     </div>
 
                     {showCta && (
