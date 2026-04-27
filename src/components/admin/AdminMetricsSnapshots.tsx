@@ -49,6 +49,8 @@ export function AdminMetricsSnapshots() {
   const [backfillTarget, setBackfillTarget] = useState(0);
   const [backfillStart, setBackfillStart] = useState(0);
   const [backfillDone, setBackfillDone] = useState(0);
+  const [currentDay, setCurrentDay] = useState<string | null>(null);
+  const [latestStoredDate, setLatestStoredDate] = useState<string | null>(null);
   const [statusLog, setStatusLog] = useState<{ ts: number; tone: "info" | "success" | "error"; text: string }[]>([]);
   const pollRef = useRef<number | null>(null);
 
@@ -104,6 +106,21 @@ export function AdminMetricsSnapshots() {
     return count ?? 0;
   }
 
+  async function getLatestStoredDate(): Promise<string | null> {
+    const { data } = await (supabase.from("admin_daily_metrics_snapshots" as any) as any)
+      .select("snapshot_date")
+      .order("snapshot_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return (data as any)?.snapshot_date ?? null;
+  }
+
+  function nextDayAfter(dateStr: string | null): string {
+    const base = dateStr ? new Date(`${dateStr}T12:00:00Z`) : new Date();
+    if (dateStr) base.setUTCDate(base.getUTCDate() + 1);
+    return format(base, "yyyy-MM-dd");
+  }
+
   async function runSnapshot() {
     setBusy("snapshot");
     const date = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
@@ -125,21 +142,28 @@ export function AdminMetricsSnapshots() {
     setBusy("backfill");
     const days = 30;
     const startCount = await getStoredCount();
+    const startLatest = await getLatestStoredDate();
     setBackfillStart(startCount);
     setBackfillDone(0);
     setBackfillTarget(days);
-    log(`Starting 30-day backfill (currently ${startCount} stored)…`);
+    setLatestStoredDate(startLatest);
+    // First day to be processed = day after latest, or today if none
+    setCurrentDay(nextDayAfter(startLatest));
+    log(`Starting 30-day backfill (currently ${startCount} stored, latest: ${startLatest ?? "none"})…`);
 
-    // Poll stored count while the edge function processes day-by-day
+    // Poll stored count + latest date while the edge function processes day-by-day
     if (pollRef.current) window.clearInterval(pollRef.current);
     pollRef.current = window.setInterval(async () => {
       try {
-        const c = await getStoredCount();
+        const [c, latest] = await Promise.all([getStoredCount(), getLatestStoredDate()]);
         const added = Math.max(0, c - startCount);
         setBackfillDone((prev) => {
-          if (added > prev) log(`Stored ${c} snapshots (+${added}/${days})`);
+          if (added > prev) log(`Stored ${c} snapshots (+${added}/${days}) — last completed: ${latest ?? "—"}`, "success");
           return Math.min(days, added);
         });
+        setLatestStoredDate(latest);
+        // Currently processing = day immediately after the latest stored
+        if (added < days) setCurrentDay(nextDayAfter(latest));
       } catch {/* ignore poll errors */}
     }, 1500) as unknown as number;
 
@@ -147,6 +171,9 @@ export function AdminMetricsSnapshots() {
       const json = await callFn({ action: "backfill", days });
       const completed = Number(json?.completed ?? days);
       setBackfillDone(completed);
+      setCurrentDay(null);
+      const finalLatest = await getLatestStoredDate();
+      setLatestStoredDate(finalLatest);
       log(`Backfill complete — ${completed} snapshot(s) processed`, "success");
       if (!silent) toast.success(`30-day backfill complete (${completed} day${completed === 1 ? "" : "s"})`);
       await load();
@@ -231,11 +258,19 @@ export function AdminMetricsSnapshots() {
           </CardHeader>
           <CardContent className="space-y-3">
             {busy === "backfill" && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Progress value={backfillTarget ? (backfillDone / backfillTarget) * 100 : 0} />
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Started with {backfillStart} stored</span>
                   <span>{backfillTarget ? Math.round((backfillDone / backfillTarget) * 100) : 0}% complete</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 rounded-md border border-border/40 bg-muted/30 p-2 text-xs">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  <span className="font-medium text-foreground">Processing:</span>
+                  <Badge variant="secondary" className="font-mono">{currentDay ?? "—"}</Badge>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="text-muted-foreground">Last completed:</span>
+                  <Badge variant="outline" className="font-mono">{latestStoredDate ?? "none"}</Badge>
                 </div>
               </div>
             )}
