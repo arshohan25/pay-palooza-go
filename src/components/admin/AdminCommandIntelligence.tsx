@@ -661,7 +661,7 @@ export function AdminUserSegmentationBuilder() {
     const { error } = await supabase.from("admin_user_segments" as any).upsert({
       name: selected, segment_key: key, description: `Saved template for ${selected}`,
       rules: { template: key, conditions: definition?.rules ?? [] } as any,
-      estimated_count: Math.floor(20 + Math.random() * 180),
+      estimated_count: null,
     } as any, { onConflict: "segment_key" });
     if (error) toast.error("Failed to save segment"); else { toast.success("Segment saved"); load(); }
   };
