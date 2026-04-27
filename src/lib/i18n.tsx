@@ -735,6 +735,15 @@ const translations = {
   submitted: { en: "Submitted", bn: "জমা দেওয়া হয়েছে" },
   frontBackCaptured: { en: "Front & back captured via camera", bn: "সামনে ও পিছনে ক্যামেরায় ক্যাপচার করা হয়েছে" },
   notExtracted: { en: "Not extracted", bn: "বের করা হয়নি" },
+
+  // ─── Merchant API access — admin note labels ───
+  apiAccessAdminApprovalNote: { en: "Admin's approval note", bn: "অ্যাডমিনের অনুমোদন নোট" },
+  apiAccessAdminDenialReason: { en: "Admin's reason for denial", bn: "অ্যাডমিনের প্রত্যাখ্যানের কারণ" },
+  apiAccessAdminReason: { en: "Admin's reason", bn: "অ্যাডমিনের কারণ" },
+  apiAccessNoReasonProvided: {
+    en: "No reason was provided. Please contact support for details.",
+    bn: "কোনো কারণ দেওয়া হয়নি। বিস্তারিত জানতে সাপোর্টে যোগাযোগ করুন।",
+  },
 } as const;
 
 type TranslationKey = keyof typeof translations;

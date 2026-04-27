@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Clock, CheckCircle2, XCircle, X, MessageCircle, FileText, Loader2, Circle, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useI18n } from "@/lib/i18n";
 
 interface AccessRequest {
   id: string;
@@ -36,6 +37,7 @@ type RtStatus = "connecting" | "live" | "retrying" | "offline";
 
 export default function MerchantApiAccessStatusBanner({ userId, merchantId, visible = true }: Props) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [latest, setLatest] = useState<AccessRequest | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [rtStatus, setRtStatus] = useState<RtStatus>("connecting");
@@ -254,14 +256,14 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
             if (isApproved && !note) return null;
             const labelColor = isApproved ? "text-emerald-700 dark:text-emerald-500" : "text-destructive";
             const ringColor = isApproved ? "border-emerald-500/20" : "border-destructive/20";
-            const heading = isApproved ? "Admin's approval note" : "Admin's reason for denial";
+            const heading = isApproved ? t("apiAccessAdminApprovalNote") : t("apiAccessAdminDenialReason");
             return (
               <div className={`mt-2 rounded-lg border ${ringColor} bg-background/60 p-2`}>
                 <p className={`text-[10px] font-bold uppercase tracking-wide ${labelColor}`}>
                   {heading}
                 </p>
                 <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
-                  {note || "No reason was provided. Please contact support for details."}
+                  {note || t("apiAccessNoReasonProvided")}
                 </p>
               </div>
             );
