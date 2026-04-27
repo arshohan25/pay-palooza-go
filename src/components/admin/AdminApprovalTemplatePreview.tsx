@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Mail, Shuffle, Copy, ExternalLink, CheckCircle2, XCircle, Store } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Bell, Mail, Shuffle, Copy, ExternalLink, CheckCircle2, XCircle, Store, Link2, Unlink } from "lucide-react";
 import { toast } from "sonner";
 import {
   buildEmailPayload,
@@ -14,11 +15,47 @@ import {
   type MerchantApprovalStatus,
 } from "@/lib/merchantApprovalTemplate";
 
-export default function AdminApprovalTemplatePreview() {
+export interface PreviewApplication {
+  id: string;
+  business_name: string;
+  status: string;
+  admin_notes?: string | null;
+  applicant_name?: string;
+  owner_name?: string | null;
+  contact_email?: string | null;
+  applicant_phone?: string;
+  contact_number?: string | null;
+}
+
+interface Props {
+  applications?: PreviewApplication[];
+}
+
+export default function AdminApprovalTemplatePreview({ applications = [] }: Props) {
+  const [selectedId, setSelectedId] = useState<string>("manual");
   const [businessName, setBusinessName] = useState("Karim Electronics");
   const [recipientName, setRecipientName] = useState("Karim Rahman");
   const [status, setStatus] = useState<MerchantApprovalStatus>("approved");
   const [reason, setReason] = useState("Trade license image is blurry — please re-upload a clearer copy.");
+  const [linked, setLinked] = useState(false);
+
+  // Hydrate fields from the chosen application; "manual" leaves them as-is.
+  useEffect(() => {
+    if (selectedId === "manual") { setLinked(false); return; }
+    const app = applications.find(a => a.id === selectedId);
+    if (!app) return;
+    setLinked(true);
+    setBusinessName(app.business_name || "");
+    setRecipientName(app.applicant_name || app.owner_name || "Merchant");
+    if (app.status === "approved" || app.status === "rejected") {
+      setStatus(app.status as MerchantApprovalStatus);
+    } else {
+      setStatus("approved");
+    }
+    setReason(app.admin_notes || "");
+  }, [selectedId, applications]);
+
+  const selectedApp = applications.find(a => a.id === selectedId);
 
   const push = useMemo(
     () => buildPushPayload({ businessName, status, reason: status === "rejected" ? reason : null }),
