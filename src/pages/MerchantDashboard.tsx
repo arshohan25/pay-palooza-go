@@ -221,6 +221,16 @@ const MerchantDashboard = () => {
     return () => { if (balanceTimerRef.current) clearTimeout(balanceTimerRef.current); };
   }, []);
 
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOut();
+    } catch (err) {
+      // ignore — still redirect to login
+    } finally {
+      navigate("/merchant-login", { replace: true });
+    }
+  }, [signOut, navigate]);
+
   const loadData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
