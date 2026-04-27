@@ -2581,6 +2581,45 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_api_access_requests: {
+        Row: {
+          created_at: string
+          id: string
+          merchant_id: string | null
+          message: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_note: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          merchant_id?: string | null
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          merchant_id?: string | null
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       merchant_api_keys: {
         Row: {
           api_key: string
@@ -6252,6 +6291,10 @@ export type Database = {
         }[]
       }
       get_user_usage_badge: { Args: { p_user_id: string }; Returns: string }
+      grant_merchant_api_access: {
+        Args: { p_note?: string; p_request_id?: string; p_user_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -6365,6 +6408,7 @@ export type Database = {
         Args: { p_flow: string; p_identifier: string }
         Returns: Json
       }
+      revoke_merchant_api_access: { Args: { p_user_id: string }; Returns: Json }
       savings_deposit: {
         Args: { p_amount: number; p_goal_id: string; p_source?: string }
         Returns: Json
