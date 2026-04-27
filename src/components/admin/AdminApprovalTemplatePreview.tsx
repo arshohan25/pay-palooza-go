@@ -38,6 +38,51 @@ export default function AdminApprovalTemplatePreview({ applications = [] }: Prop
   const [status, setStatus] = useState<MerchantApprovalStatus>("approved");
   const [reason, setReason] = useState("Trade license image is blurry — please re-upload a clearer copy.");
   const [linked, setLinked] = useState(false);
+  const [scenario, setScenario] = useState<string>("none");
+
+  // Test scenarios — try to find an application that already matches the edge case;
+  // otherwise synthesize the fields so reviewers always see a representative preview.
+  const SCENARIOS: Record<string, { label: string; description: string }> = {
+    none: { label: "— No scenario —", description: "" },
+    missing_email: { label: "Missing email", description: "Application has no contact email" },
+    missing_phone: { label: "Missing phone", description: "Application has no contact phone" },
+    rejected_with_reason: { label: "Rejected with reason", description: "Decision is rejected and includes reviewer note" },
+  };
+
+  const findScenarioMatch = (key: string): PreviewApplication | undefined => {
+    if (key === "missing_email") return applications.find(a => !a.contact_email);
+    if (key === "missing_phone") return applications.find(a => !a.applicant_phone && !a.contact_number);
+    if (key === "rejected_with_reason") return applications.find(a => a.status === "rejected" && !!a.admin_notes);
+    return undefined;
+  };
+
+  useEffect(() => {
+    if (scenario === "none") return;
+    const match = findScenarioMatch(scenario);
+    if (match) {
+      setSelectedId(match.id);
+      return;
+    }
+    // No real application matches — synthesize.
+    setSelectedId("manual");
+    setLinked(false);
+    if (scenario === "missing_email") {
+      setBusinessName("Hasan Tea Stall");
+      setRecipientName("Hasan Mia");
+      setStatus("approved");
+      setReason("");
+    } else if (scenario === "missing_phone") {
+      setBusinessName("Nadia Tailors");
+      setRecipientName("Nadia Akter");
+      setStatus("approved");
+      setReason("");
+    } else if (scenario === "rejected_with_reason") {
+      setBusinessName("Rahim Mart");
+      setRecipientName("Rahim Uddin");
+      setStatus("rejected");
+      setReason("Trade license image is blurry — please re-upload a clearer copy.");
+    }
+  }, [scenario, applications]);
 
   // Hydrate fields from the chosen application; "manual" leaves them as-is.
   useEffect(() => {
