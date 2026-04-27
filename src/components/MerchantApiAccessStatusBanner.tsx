@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Clock, CheckCircle2, XCircle, X, MessageCircle, FileText, Loader2, Circle, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useI18n } from "@/lib/i18n";
 
 interface AccessRequest {
   id: string;
