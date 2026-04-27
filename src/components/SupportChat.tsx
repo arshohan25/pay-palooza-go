@@ -44,6 +44,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
   const [remoteTyping, setRemoteTyping] = useState(false);
   
   const [screenshotAlert, setScreenshotAlert] = useState(false);
+  const [contextOpen, setContextOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
