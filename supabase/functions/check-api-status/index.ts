@@ -6,6 +6,19 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * Standardized admin-authz error contract shared across threshold-related
+ * Edge Functions. Always returns:
+ *   { error: { code, message } }
+ * with stable HTTP status (401 UNAUTHORIZED, 403 FORBIDDEN_ADMIN_REQUIRED).
+ */
+function jsonError(status: number, code: string, message: string): Response {
+  return new Response(JSON.stringify({ error: { code, message } }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
