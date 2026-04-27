@@ -2983,6 +2983,30 @@ export type Database = {
           },
         ]
       }
+      merchant_login_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          ip: string | null
+          phone: string
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip?: string | null
+          phone: string
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip?: string | null
+          phone?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       merchant_payment_sessions: {
         Row: {
           amount: number
@@ -6118,6 +6142,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      check_merchant_login_lockout: { Args: { p_phone: string }; Returns: Json }
       check_referral_milestones: {
         Args: { p_referee_id: string }
         Returns: undefined
@@ -6350,6 +6375,7 @@ export type Database = {
         Args: { p_action: string; p_admin_note?: string; p_refund_id: string }
         Returns: Json
       }
+      purge_old_merchant_login_attempts: { Args: never; Returns: undefined }
       record_coupon_redemption: {
         Args: {
           p_code: string

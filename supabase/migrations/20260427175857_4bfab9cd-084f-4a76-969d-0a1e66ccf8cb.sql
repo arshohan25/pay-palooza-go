@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.check_merchant_login_lockout(text) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.purge_old_merchant_login_attempts() FROM PUBLIC, anon, authenticated;
