@@ -146,6 +146,39 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
     ? eta.isEstimate ? "1–2 days est." : `~${fmtMinutes(eta.medianMin)} typical`
     : "1–2 days";
 
+  // Confidence tier driven by sample size from the RPC.
+  // Drives chip color, dot color, and the caption shown below Step 3.
+  type ConfTier = "estimate" | "low" | "medium" | "high";
+  const confidence: { tier: ConfTier; label: string; dotClass: string; chipClass: string; tip: string } = (() => {
+    if (!eta || eta.isEstimate || eta.sample < 3) {
+      return {
+        tier: "estimate",
+        label: "Estimated",
+        dotClass: "bg-muted-foreground/60 animate-pulse",
+        chipClass: "bg-muted text-muted-foreground border border-border/60",
+        tip: "Estimated — not enough recent approvals to compute a real ETA yet.",
+      };
+    }
+    if (eta.sample < 10) return {
+      tier: "low", label: "Low confidence",
+      dotClass: "bg-rose-500",
+      chipClass: "bg-rose-500/10 text-rose-700 border border-rose-500/30",
+      tip: `Low confidence — based on only ${eta.sample} recent approvals.`,
+    };
+    if (eta.sample < 30) return {
+      tier: "medium", label: "Medium confidence",
+      dotClass: "bg-amber-500",
+      chipClass: "bg-amber-500/10 text-amber-700 border border-amber-500/30",
+      tip: `Medium confidence — based on ${eta.sample} recent approvals.`,
+    };
+    return {
+      tier: "high", label: "High confidence",
+      dotClass: "bg-emerald-500",
+      chipClass: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/30",
+      tip: `High confidence — based on ${eta.sample} recent approvals.`,
+    };
+  })();
+
   // Personalized countdown for the current pending application
   const elapsedMin = pendingSince ? Math.max(0, (now - new Date(pendingSince).getTime()) / 60000) : 0;
   const personalLine: { text: string; tone: "amber" | "muted" } | null = (() => {
