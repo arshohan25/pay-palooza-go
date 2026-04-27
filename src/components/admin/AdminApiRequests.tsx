@@ -48,7 +48,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "destruc
 };
 
 export default function AdminApiRequests() {
-  const [activeTab, setActiveTab] = useState<"requests" | "keys" | "logs" | "rate-limits" | "ip-whitelist" | "webhooks" | "sandbox" | "usage">("requests");
+  const [activeTab, setActiveTab] = useState<"requests" | "access" | "keys" | "logs" | "rate-limits" | "ip-whitelist" | "webhooks" | "sandbox" | "usage">("requests");
   const openGenerateKeyRef = React.useRef<(() => void) | null>(null);
   const [requests, setRequests] = useState<ApiRequest[]>([]);
   const [loading, setLoading] = useState(true);
