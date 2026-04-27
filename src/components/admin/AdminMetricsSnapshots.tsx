@@ -258,11 +258,19 @@ export function AdminMetricsSnapshots() {
           </CardHeader>
           <CardContent className="space-y-3">
             {busy === "backfill" && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Progress value={backfillTarget ? (backfillDone / backfillTarget) * 100 : 0} />
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Started with {backfillStart} stored</span>
                   <span>{backfillTarget ? Math.round((backfillDone / backfillTarget) * 100) : 0}% complete</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 rounded-md border border-border/40 bg-muted/30 p-2 text-xs">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  <span className="font-medium text-foreground">Processing:</span>
+                  <Badge variant="secondary" className="font-mono">{currentDay ?? "—"}</Badge>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="text-muted-foreground">Last completed:</span>
+                  <Badge variant="outline" className="font-mono">{latestStoredDate ?? "none"}</Badge>
                 </div>
               </div>
             )}
