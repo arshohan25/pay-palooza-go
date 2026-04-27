@@ -519,7 +519,7 @@ const MerchantDashboard = () => {
       {/* ── Overview Content ── */}
       {activeTab === "overview" && (
         <div className="px-4 py-4 pb-24">
-          {user && <MerchantApiAccessStatusBanner userId={user.id} merchantId={merchant?.id ?? null} visible={!isStaff} />}
+          
           <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} allTxns={txns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} />
         </div>
       )}
@@ -613,7 +613,8 @@ const MerchantDashboard = () => {
               {activeTab === "settlements"  && <div className="px-4 py-4"><SettlementTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
               {activeTab === "mdr"          && <div className="px-4 py-4"><MDRTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
               {activeTab === "api"          && merchant && (
-                <div className="px-4 py-4">
+                <div className="px-4 py-4 space-y-4">
+                  {user && <MerchantApiAccessStatusBanner userId={user.id} merchantId={merchant.id} visible={!isStaff} />}
                   {apiLocked
                     ? <MerchantApiAccessGate userId={user!.id} merchantId={merchant.id} />
                     : <MerchantApiTab merchantId={merchant.id} />}
