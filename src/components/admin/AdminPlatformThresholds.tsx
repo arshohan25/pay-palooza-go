@@ -144,7 +144,7 @@ export default function AdminPlatformThresholds() {
       return n;
     });
     load();
-  };
+    loadAudit();
 
   const reset = async (row: Threshold) => {
     const def = DEFAULTS[row.key];
