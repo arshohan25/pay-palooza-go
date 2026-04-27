@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, Check, CheckCheck, Lock, Trash2, Timer, Shield, ShieldAlert } from "lucide-react";
+import { Send, Bot, User, Loader2, Check, CheckCheck, Lock, Trash2, Timer, Shield, ShieldAlert, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,9 +29,12 @@ interface SupportChatProps {
   userId: string;
   conversationId?: string;
   initialDraft?: string;
+  /** Optional collapsible "Context" panel shown above the messages
+   *  (e.g. an admin's rejection note carried into a resubmission flow). */
+  initialContext?: { title: string; body: string } | null;
 }
 
-const SupportChat = ({ userId, conversationId: externalConvId, initialDraft }: SupportChatProps) => {
+const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, initialContext }: SupportChatProps) => {
   const [conversationId, setConversationId] = useState<string | null>(externalConvId ?? null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [decryptedCache, setDecryptedCache] = useState<Record<string, string>>({});
@@ -41,6 +44,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft }: S
   const [remoteTyping, setRemoteTyping] = useState(false);
   
   const [screenshotAlert, setScreenshotAlert] = useState(false);
+  const [contextOpen, setContextOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -323,6 +327,40 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft }: S
           </span>
         </div>
       </div>
+
+      {/* Collapsible context panel (e.g. admin's rejection note for a resubmission) */}
+      {initialContext && (
+        <div className="border-b border-border/40 bg-amber-500/5">
+          <button
+            type="button"
+            onClick={() => setContextOpen((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-amber-500/10 transition-colors"
+            aria-expanded={contextOpen}
+          >
+            <span className="flex items-center gap-1.5 min-w-0">
+              <Info size={12} className="text-amber-600 shrink-0" />
+              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wide truncate">
+                Context · {initialContext.title}
+              </span>
+            </span>
+            {contextOpen ? (
+              <ChevronUp size={12} className="text-amber-600 shrink-0" />
+            ) : (
+              <ChevronDown size={12} className="text-amber-600 shrink-0" />
+            )}
+          </button>
+          {contextOpen && (
+            <div className="px-3 pb-2.5 -mt-0.5">
+              <p className="text-[11px] leading-relaxed text-foreground whitespace-pre-wrap break-words rounded-lg bg-background/60 border border-amber-500/20 p-2">
+                {initialContext.body}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Address the points above in your message before resubmitting.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2 pr-1 pb-2 pt-2">

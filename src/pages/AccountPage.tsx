@@ -166,6 +166,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [myRewards, setMyRewards] = useState<{ id: string; reward_type: string; reward_value: any; reason: string | null; status: string }[]>([]);
   const [chatDraft, setChatDraft] = useState<string | undefined>(undefined);
+  const [chatContext, setChatContext] = useState<{ title: string; body: string } | null>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -178,10 +179,21 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
       if (prefill) {
         try { setChatDraft(decodeURIComponent(prefill)); } catch { setChatDraft(prefill); }
       }
+      const ctxTitle = params.get("contextTitle");
+      const ctxBody = params.get("contextBody");
+      if (ctxTitle && ctxBody) {
+        try {
+          setChatContext({ title: decodeURIComponent(ctxTitle), body: decodeURIComponent(ctxBody) });
+        } catch {
+          setChatContext({ title: ctxTitle, body: ctxBody });
+        }
+      }
       setShowSupport(true);
       // Strip query params so they don't re-trigger on back/forward navigation
       params.delete("openChat");
       params.delete("prefill");
+      params.delete("contextTitle");
+      params.delete("contextBody");
       const next = params.toString();
       navigate(`${location.pathname}${next ? `?${next}` : ""}`, { replace: true });
     }
@@ -515,7 +527,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           </SheetHeader>
           <div className="flex-1 overflow-hidden">
             {userId ? (
-              <SupportChat userId={userId} initialDraft={chatDraft} />
+              <SupportChat userId={userId} initialDraft={chatDraft} initialContext={chatContext} />
             ) : (
               <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
                 {t("signInToContact")}
