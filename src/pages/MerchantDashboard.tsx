@@ -182,10 +182,13 @@ const MerchantDashboard = () => {
   }, [staffAllowedTabs, isDisabled]);
 
   const visibleMenuItems = useMemo(() => {
-    let items = menuItems.filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
+    // The "api" item is intentionally always shown — when locked, it renders an access-request gate.
+    let items = menuItems.filter(item => item.id === "api" || !item.toggleKey || !isDisabled(item.toggleKey));
     if (staffAllowedTabs) items = items.filter(item => staffAllowedTabs.has(item.id));
     return items;
   }, [isDisabled, staffAllowedTabs]);
+
+  const apiLocked = isDisabled("merchant_api");
 
   const [activeTab, setActiveTab] = useState<MerchTab>("overview");
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
