@@ -265,7 +265,7 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
                   {heading}
                 </p>
                 <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
-                  {note || t("apiAccessNoReasonProvided")}
+                  {redactSensitive(note || t("apiAccessNoReasonProvided"))}
                 </p>
               </div>
             );
