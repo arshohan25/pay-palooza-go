@@ -164,7 +164,7 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
             <p className="text-[11px] text-muted-foreground mt-0.5">
               {pending && "Our team is reviewing your request. You’ll see the API tab as soon as it’s approved. You can chat with support for updates."}
               {status === "approved" && "Access granted — refresh if the tab hasn’t appeared yet."}
-              {rejected && "Your previous request was rejected. Review the admin's note below, then submit a new one or contact support."}
+              {rejected && "Your previous request was rejected. Review the admin's note below, then use the button to submit a new one with your merchant ID prefilled."}
             </p>
             {rejected && (
               <div className="mt-2 rounded-lg border border-destructive/20 bg-background/60 p-2">
