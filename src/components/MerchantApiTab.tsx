@@ -13,6 +13,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 
+// ─── Credential generators (client-side, crypto.getRandomValues) ───
+const toHex = (bytes: Uint8Array) =>
+  Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+const genApiKey = (env: "live" | "test") =>
+  `${env}_pk_${toHex(crypto.getRandomValues(new Uint8Array(24)))}`;
+const genSecretKey = (env: "live" | "test") =>
+  `${env}_sk_${toHex(crypto.getRandomValues(new Uint8Array(32)))}`;
+const genAppPassword = () => {
+  const bytes = crypto.getRandomValues(new Uint8Array(18));
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/[+/=]/g, "").slice(0, 24);
+};
+
+const MAX_ACTIVE_KEYS = 5;
+
 interface ApiKey {
   id: string;
   api_key: string;
@@ -20,6 +36,8 @@ interface ApiKey {
   app_password: string | null;
   webhook_url: string | null;
   is_active: boolean;
+  environment: string;
+  rotation_expires_at: string | null;
   created_at: string;
 }
 
