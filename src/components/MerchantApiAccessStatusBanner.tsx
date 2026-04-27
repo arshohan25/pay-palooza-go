@@ -92,7 +92,7 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
       ? "Our team is reviewing your request. You'll be notified once a decision is made."
       : status === "approved"
       ? "You can now generate API keys and configure webhooks from the API tab."
-      : (latest.reviewer_note || "Your request was denied. You can submit a new request or contact support.");
+      : "Your request was denied. You can review the admin's note below, then submit a new request or contact support.";
 
   return (
     <AnimatePresence>
@@ -106,7 +106,19 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-foreground">{title}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{body}</p>
-          <p className="text-[10px] text-muted-foreground/70 mt-1">
+
+          {status === "rejected" && (
+            <div className="mt-2 rounded-lg border border-destructive/20 bg-background/60 p-2">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-destructive">
+                Admin's reason
+              </p>
+              <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
+                {latest.reviewer_note?.trim() || "No reason was provided. Please contact support for details."}
+              </p>
+            </div>
+          )}
+
+          <p className="text-[10px] text-muted-foreground/70 mt-2">
             Submitted {new Date(latest.created_at).toLocaleString()}
             {latest.reviewed_at && status !== "pending" && (
               <> · Reviewed {new Date(latest.reviewed_at).toLocaleString()}</>
