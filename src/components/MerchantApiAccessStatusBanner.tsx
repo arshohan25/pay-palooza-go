@@ -107,16 +107,26 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
           <p className="text-xs font-bold text-foreground">{title}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{body}</p>
 
-          {status === "rejected" && (
-            <div className="mt-2 rounded-lg border border-destructive/20 bg-background/60 p-2">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-destructive">
-                Admin's reason
-              </p>
-              <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
-                {latest.reviewer_note?.trim() || "No reason was provided. Please contact support for details."}
-              </p>
-            </div>
-          )}
+          {status !== "pending" && (() => {
+            const note = latest.reviewer_note?.trim();
+            const isApproved = status === "approved";
+            // For approved: only show if admin actually wrote a note (optional).
+            // For denied: always show the block, with a fallback message.
+            if (isApproved && !note) return null;
+            const labelColor = isApproved ? "text-emerald-700 dark:text-emerald-500" : "text-destructive";
+            const ringColor = isApproved ? "border-emerald-500/20" : "border-destructive/20";
+            const heading = isApproved ? "Admin's approval note" : "Admin's reason for denial";
+            return (
+              <div className={`mt-2 rounded-lg border ${ringColor} bg-background/60 p-2`}>
+                <p className={`text-[10px] font-bold uppercase tracking-wide ${labelColor}`}>
+                  {heading}
+                </p>
+                <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
+                  {note || "No reason was provided. Please contact support for details."}
+                </p>
+              </div>
+            );
+          })()}
 
           {/* Lifecycle timeline */}
           <Timeline status={status} createdAt={latest.created_at} reviewedAt={latest.reviewed_at} />
