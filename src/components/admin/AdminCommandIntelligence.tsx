@@ -4,6 +4,8 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  Loader2,
+  Inbox,
   Bell,
   CalendarClock,
   CheckCircle2,
@@ -328,32 +330,48 @@ export function AdminUserIntelligenceCenter() {
 export function AdminBusinessIntelligence() {
   const [data, setData] = useState<any>({ txns: [], profiles: [], merchants: [], agents: [], orders: [], fraud: [], kyc: [], support: [], gateways: [], rechargeLogs: [], allTxnsForUsers: [] });
   const [loading, setLoading] = useState(true);
-  useEffect(() => { (async () => {
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const loadIntel = async () => {
     setLoading(true);
+    setLoadError(null);
     const day30 = new Date(Date.now() - 30 * 86400000).toISOString();
-    const day1 = new Date(Date.now() - 1 * 86400000).toISOString();
     const min15 = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-    const [txns, profiles, merchants, agents, orders, fraud, kyc, support, gateways, rechargeLogs, retentionTxns] = await Promise.all([
-      supabase.from("transactions").select("type,amount,fee,commission,status,created_at,user_id").gte("created_at", day30).limit(1000),
-      supabase.from("profiles").select("user_id,created_at,status,balance").not("phone", "like", "staff-%").limit(1000),
-      supabase.from("merchants" as any).select("id,user_id,status,category,created_at").limit(500),
-      supabase.from("agents" as any).select("status,float_balance,created_at").limit(500),
-      supabase.from("orders").select("total,status,created_at,merchant_id,user_id").gte("created_at", day30).limit(500),
-      supabase.from("fraud_alerts").select("status,severity,created_at").gte("created_at", day30).limit(300),
-      supabase.from("kyc_verifications").select("status,created_at").limit(1000),
-      supabase.from("support_complaints" as any).select("id,status").in("status", ["open", "in_progress"]).limit(500),
-      supabase.from("gateway_configs" as any).select("is_active").limit(50),
-      supabase.from("recharge_logs" as any).select("api_processed,created_at").gte("created_at", min15).limit(200),
-      supabase.from("transactions").select("user_id,created_at").gte("created_at", new Date(Date.now() - 60 * 86400000).toISOString()).limit(2000),
-    ]);
-    setData({
-      txns: txns.data ?? [], profiles: profiles.data ?? [], merchants: merchants.data ?? [], agents: agents.data ?? [],
-      orders: orders.data ?? [], fraud: fraud.data ?? [], kyc: kyc.data ?? [],
-      support: support.data ?? [], gateways: gateways.data ?? [], rechargeLogs: rechargeLogs.data ?? [],
-      allTxnsForUsers: retentionTxns.data ?? [],
-    });
-    setLoading(false);
-  })(); }, []);
+    try {
+      const [txns, profiles, merchants, agents, orders, fraud, kyc, support, gateways, rechargeLogs, retentionTxns] = await Promise.all([
+        supabase.from("transactions").select("type,amount,fee,commission,status,created_at,user_id").gte("created_at", day30).limit(1000),
+        supabase.from("profiles").select("user_id,created_at,status,balance").not("phone", "like", "staff-%").limit(1000),
+        supabase.from("merchants" as any).select("id,user_id,status,category,created_at").limit(500),
+        supabase.from("agents" as any).select("status,float_balance,created_at").limit(500),
+        supabase.from("orders").select("total,status,created_at,merchant_id,user_id").gte("created_at", day30).limit(500),
+        supabase.from("fraud_alerts").select("status,severity,created_at").gte("created_at", day30).limit(300),
+        supabase.from("kyc_verifications").select("status,created_at").limit(1000),
+        supabase.from("support_complaints" as any).select("id,status").in("status", ["open", "in_progress"]).limit(500),
+        supabase.from("gateway_configs" as any).select("is_active").limit(50),
+        supabase.from("recharge_logs" as any).select("api_processed,created_at").gte("created_at", min15).limit(200),
+        supabase.from("transactions").select("user_id,created_at").gte("created_at", new Date(Date.now() - 60 * 86400000).toISOString()).limit(2000),
+      ]);
+      const errs = [txns, profiles, merchants, agents, orders, fraud, kyc, support, gateways, rechargeLogs, retentionTxns].map(r => r.error).filter(Boolean);
+      if (errs.length) {
+        const msg = errs[0]?.message || "Failed to load intelligence data";
+        setLoadError(msg);
+        toast.error("Couldn't load intelligence data", { description: msg });
+      }
+      setData({
+        txns: txns.data ?? [], profiles: profiles.data ?? [], merchants: merchants.data ?? [], agents: agents.data ?? [],
+        orders: orders.data ?? [], fraud: fraud.data ?? [], kyc: kyc.data ?? [],
+        support: support.data ?? [], gateways: gateways.data ?? [], rechargeLogs: rechargeLogs.data ?? [],
+        allTxnsForUsers: retentionTxns.data ?? [],
+      });
+    } catch (e: any) {
+      const msg = e?.message || "Network error while loading intelligence";
+      setLoadError(msg);
+      toast.error("Couldn't load intelligence data", { description: msg });
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { loadIntel(); }, []);
+
   const completed = data.txns.filter((t: AnyRow) => t.status === "completed");
   const volume = completed.reduce((s: number, t: AnyRow) => s + Number(t.amount || 0), 0);
   const revenue = completed.reduce((s: number, t: AnyRow) => s + Number(t.fee || 0) - Number(t.commission || 0), 0);
@@ -459,7 +477,32 @@ export function AdminBusinessIntelligence() {
     ];
   }, [data, completed.length, kycPending]);
 
-  return <Shell title="Business Intelligence Dashboard" description="Executive analytics, cohorts, funnels, attribution, predictions, and real-time operations wall." icon={BarChart3}>{loading ? <p className="py-10 text-center text-muted-foreground">Loading intelligence…</p> : <div className="space-y-4"><div className="grid gap-3 md:grid-cols-4"><MetricCard label="Processed Volume" value={currency(volume)} icon={Wallet} /><MetricCard label="Net Revenue" value={currency(revenue)} icon={BarChart3} /><MetricCard label="New Users" value={data.profiles.length} icon={Users} /><MetricCard label="Fraud Rate" value={`${completed.length ? ((data.fraud.length / completed.length) * 100).toFixed(1) : 0}%`} icon={ShieldAlert} /></div><Tabs defaultValue="executive"><TabsList className="grid h-auto w-full grid-cols-6"><TabsTrigger value="executive">Executive</TabsTrigger><TabsTrigger value="cohort">Cohorts</TabsTrigger><TabsTrigger value="funnel">Funnels</TabsTrigger><TabsTrigger value="predictive">Predictive</TabsTrigger><TabsTrigger value="wall">Ops Wall</TabsTrigger><TabsTrigger value="snapshots">Snapshots</TabsTrigger></TabsList><TabsContent value="executive"><div className="grid gap-4 lg:grid-cols-2"><Card><CardHeader><CardTitle className="text-sm">Daily Volume</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><AreaChart data={daily as any[]}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="date" /><YAxis /><RechartsTooltip /><Area dataKey="volume" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / .2)" /></AreaChart></ResponsiveContainer></CardContent></Card><Card><CardHeader><CardTitle className="text-sm">Revenue Attribution</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><PieChart><Pie data={typeData as any[]} dataKey="revenue" nameKey="name" outerRadius={96}>{(typeData as any[]).map((_, i) => <Cell key={i} fill={`hsl(var(--chart-${(i % 5) + 1}))`} />)}</Pie><RechartsTooltip /></PieChart></ResponsiveContainer></CardContent></Card></div></TabsContent><TabsContent value="cohort"><div className="grid gap-3 md:grid-cols-4">{cohortMetrics.map((m) => <MetricCard key={m.label} label={m.label} value={m.value} icon={Activity} />)}</div></TabsContent><TabsContent value="funnel"><Card><CardContent className="h-80 p-4"><ResponsiveContainer><BarChart data={funnel}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="name" /><YAxis /><RechartsTooltip /><Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card></TabsContent><TabsContent value="predictive"><div className="grid gap-3 md:grid-cols-3">{predictiveMetrics.map((m) => <Card key={m.label}><CardContent className="p-4"><p className="text-sm font-semibold">{m.label}</p><p className="mt-2 text-2xl font-bold">{m.value}</p><p className="text-xs text-muted-foreground">{m.hint}</p></CardContent></Card>)}</div></TabsContent><TabsContent value="wall"><div className="grid gap-3 md:grid-cols-3">{wallMetrics.map((m) => <Card key={m.label} className="bg-card/80"><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-sm font-medium">{m.label}</p><span className="h-2 w-2 rounded-full bg-primary" /></div><p className="mt-3 text-2xl font-bold">{m.value}</p></CardContent></Card>)}</div></TabsContent><TabsContent value="snapshots"><AdminMetricsSnapshots /></TabsContent></Tabs></div>}</Shell>;
+  const cohortHasData = cohortMetrics.some((m) => {
+    const v = String(m.value);
+    return v !== "0" && v !== "0%" && v !== "—";
+  });
+  const predictiveHasData = predictiveMetrics.some((m) => {
+    const v = String(m.value);
+    return v !== "0" && v !== "0%" && v !== "৳0" && v !== "—" && v !== "0.0";
+  });
+  const wallHasData = wallMetrics.some((m) => {
+    const v = String(m.value);
+    return v !== "0" && v !== "—" && v !== "Idle" && v !== "৳0";
+  });
+
+  const TabState = ({ kind, message, onRetry }: { kind: "loading" | "error" | "empty"; message: string; onRetry?: () => void }) => (
+    <Card className="border-dashed">
+      <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+        {kind === "loading" && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+        {kind === "error" && <AlertTriangle className="h-6 w-6 text-destructive" />}
+        {kind === "empty" && <Inbox className="h-6 w-6 text-muted-foreground" />}
+        <p className={`text-sm ${kind === "error" ? "text-destructive" : "text-muted-foreground"}`}>{message}</p>
+        {onRetry && <Button variant="outline" size="sm" onClick={onRetry}><RefreshCw className="mr-2 h-3.5 w-3.5" />Retry</Button>}
+      </CardContent>
+    </Card>
+  );
+
+  return <Shell title="Business Intelligence Dashboard" description="Executive analytics, cohorts, funnels, attribution, predictions, and real-time operations wall." icon={BarChart3} action={<Button variant="outline" size="sm" onClick={loadIntel} disabled={loading}><RefreshCw className={`mr-2 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />Refresh</Button>}>{loading ? <div className="flex flex-col items-center justify-center gap-3 py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="text-sm text-muted-foreground">Loading intelligence…</p></div> : <div className="space-y-4"><div className="grid gap-3 md:grid-cols-4"><MetricCard label="Processed Volume" value={currency(volume)} icon={Wallet} /><MetricCard label="Net Revenue" value={currency(revenue)} icon={BarChart3} /><MetricCard label="New Users" value={data.profiles.length} icon={Users} /><MetricCard label="Fraud Rate" value={`${completed.length ? ((data.fraud.length / completed.length) * 100).toFixed(1) : 0}%`} icon={ShieldAlert} /></div><Tabs defaultValue="executive"><TabsList className="grid h-auto w-full grid-cols-6"><TabsTrigger value="executive">Executive</TabsTrigger><TabsTrigger value="cohort">Cohorts</TabsTrigger><TabsTrigger value="funnel">Funnels</TabsTrigger><TabsTrigger value="predictive">Predictive</TabsTrigger><TabsTrigger value="wall">Ops Wall</TabsTrigger><TabsTrigger value="snapshots">Snapshots</TabsTrigger></TabsList><TabsContent value="executive"><div className="grid gap-4 lg:grid-cols-2"><Card><CardHeader><CardTitle className="text-sm">Daily Volume</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><AreaChart data={daily as any[]}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="date" /><YAxis /><RechartsTooltip /><Area dataKey="volume" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / .2)" /></AreaChart></ResponsiveContainer></CardContent></Card><Card><CardHeader><CardTitle className="text-sm">Revenue Attribution</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer><PieChart><Pie data={typeData as any[]} dataKey="revenue" nameKey="name" outerRadius={96}>{(typeData as any[]).map((_, i) => <Cell key={i} fill={`hsl(var(--chart-${(i % 5) + 1}))`} />)}</Pie><RechartsTooltip /></PieChart></ResponsiveContainer></CardContent></Card></div></TabsContent><TabsContent value="cohort">{loadError ? <TabState kind="error" message={`Couldn't load cohort data: ${loadError}`} onRetry={loadIntel} /> : !cohortHasData ? <TabState kind="empty" message="No cohort activity yet. Metrics will appear once users start transacting." /> : <div className="grid gap-3 md:grid-cols-4">{cohortMetrics.map((m) => <MetricCard key={m.label} label={m.label} value={m.value} icon={Activity} />)}</div>}</TabsContent><TabsContent value="funnel"><Card><CardContent className="h-80 p-4"><ResponsiveContainer><BarChart data={funnel}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="name" /><YAxis /><RechartsTooltip /><Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></CardContent></Card></TabsContent><TabsContent value="predictive">{loadError ? <TabState kind="error" message={`Couldn't load predictive signals: ${loadError}`} onRetry={loadIntel} /> : !predictiveHasData ? <TabState kind="empty" message="No predictive signals yet. Need more transactions and users to surface insights." /> : <div className="grid gap-3 md:grid-cols-3">{predictiveMetrics.map((m) => <Card key={m.label}><CardContent className="p-4"><p className="text-sm font-semibold">{m.label}</p><p className="mt-2 text-2xl font-bold">{m.value}</p><p className="text-xs text-muted-foreground">{m.hint}</p></CardContent></Card>)}</div>}</TabsContent><TabsContent value="wall">{loadError ? <TabState kind="error" message={`Couldn't load ops wall: ${loadError}`} onRetry={loadIntel} /> : !wallHasData ? <TabState kind="empty" message="Ops wall is quiet — no live activity in the current window." /> : <div className="grid gap-3 md:grid-cols-3">{wallMetrics.map((m) => <Card key={m.label} className="bg-card/80"><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-sm font-medium">{m.label}</p><span className="h-2 w-2 rounded-full bg-primary" /></div><p className="mt-3 text-2xl font-bold">{m.value}</p></CardContent></Card>)}</div>}</TabsContent><TabsContent value="snapshots"><AdminMetricsSnapshots /></TabsContent></Tabs></div>}</Shell>;
 }
 
 
