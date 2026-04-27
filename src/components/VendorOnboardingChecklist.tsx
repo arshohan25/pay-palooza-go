@@ -53,10 +53,12 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
   const [hasBank, setHasBank] = useState(false);
   const [hasPush, setHasPush] = useState(false);
 
+  const [pendingSince, setPendingSince] = useState<string | null>(null); // merchant.created_at when business_kyc_status='pending'
+
   const load = useCallback(async (uid: string) => {
     const [appRes, merchRes, pushRes] = await Promise.all([
       supabase.from("merchant_applications").select("status").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("merchants").select("business_kyc_status, bank_account_number").eq("user_id", uid).maybeSingle(),
+      supabase.from("merchants").select("business_kyc_status, bank_account_number, created_at").eq("user_id", uid).maybeSingle(),
       supabase.from("push_subscriptions").select("id").eq("user_id", uid).limit(1),
     ]);
 
@@ -66,6 +68,7 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
     const bs = (merchRes.data?.business_kyc_status as any) ?? "none";
     setBusinessKycStatus(["pending", "approved", "rejected"].includes(bs) ? bs : "none");
     setHasBank(!!merchRes.data?.bank_account_number);
+    setPendingSince(bs === "pending" ? (merchRes.data?.created_at as string | null) ?? null : null);
 
     setHasPush((pushRes.data?.length ?? 0) > 0);
     setLoading(false);
@@ -95,6 +98,68 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [userId, load]);
+
+  // ── Real-time review-time ETA ─────────────────────────────────────────
+  const [eta, setEta] = useState<{ medianMin: number; p90Min: number; sample: number; isEstimate: boolean } | null>(null);
+  const fetchEta = useCallback(async () => {
+    const { data, error } = await supabase.rpc("get_merchant_review_eta");
+    if (error || !data) return;
+    const d = data as any;
+    setEta({
+      medianMin: Number(d.median_minutes) || 1440,
+      p90Min: Number(d.p90_minutes) || 2880,
+      sample: Number(d.sample_size) || 0,
+      isEstimate: !!d.is_estimate,
+    });
+  }, []);
+
+  useEffect(() => { fetchEta(); }, [fetchEta]);
+
+  // Re-fetch every 5 minutes; also re-fetch whenever any merchant transitions to approved.
+  useEffect(() => {
+    const intv = setInterval(fetchEta, 5 * 60 * 1000);
+    const channel = supabase
+      .channel("vendor-onboarding-eta")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "merchants" }, (payload) => {
+        const oldS = (payload.old as any)?.business_kyc_status;
+        const newS = (payload.new as any)?.business_kyc_status;
+        if (oldS !== "approved" && newS === "approved") fetchEta();
+      })
+      .subscribe();
+    return () => { clearInterval(intv); supabase.removeChannel(channel); };
+  }, [fetchEta]);
+
+  // Tick every minute so the personalized countdown stays fresh
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const i = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(i);
+  }, []);
+
+  // Format minutes as a friendly duration
+  const fmtMinutes = (m: number) => {
+    if (m < 60) return `${Math.max(1, Math.round(m))}m`;
+    if (m < 60 * 24) return `${Math.round(m / 60)}h`;
+    return `${Math.round(m / (60 * 24))}d`;
+  };
+  const etaChipText = eta
+    ? eta.isEstimate ? "1–2 days est." : `~${fmtMinutes(eta.medianMin)} typical`
+    : "1–2 days";
+
+  // Personalized countdown for the current pending application
+  const elapsedMin = pendingSince ? Math.max(0, (now - new Date(pendingSince).getTime()) / 60000) : 0;
+  const personalLine: { text: string; tone: "amber" | "muted" } | null = (() => {
+    if (!eta || !pendingSince || businessKycStatus !== "pending") return null;
+    if (elapsedMin < eta.medianMin) {
+      const remaining = eta.medianMin - elapsedMin;
+      return { text: `About ${fmtMinutes(remaining)} left on average`, tone: "amber" };
+    }
+    if (elapsedMin < eta.p90Min) {
+      return { text: "Almost there — usually done by now", tone: "amber" };
+    }
+    return { text: "Taking longer than usual — we'll notify you the moment it's done", tone: "muted" };
+  })();
+
 
   const enableNotifications = async () => {
     if (!("Notification" in window)) return;
@@ -257,11 +322,25 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
                           st === "done" ? "bg-emerald-500/10 text-emerald-700"
                           : st === "in_review" ? "bg-amber-500/10 text-amber-700"
                           : "bg-muted text-muted-foreground"
-                        }`}>
-                          {st === "done" ? "Done" : st === "in_review" ? "In review" : st === "rejected" ? "Action needed" : step.eta}
+                        }`}
+                          title={idx === 2 && eta ? (eta.isEstimate ? "Estimated — not enough recent data yet" : `Based on the last ${eta.sample} approvals`) : undefined}
+                        >
+                          {st === "done" ? "Done"
+                            : st === "in_review" ? "In review"
+                            : st === "rejected" ? "Action needed"
+                            : idx === 2 ? etaChipText
+                            : step.eta}
                         </span>
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">{step.desc}</p>
+                      {idx === 2 && st === "in_review" && personalLine && (
+                        <p className={`text-[10.5px] font-semibold mt-1 leading-tight ${personalLine.tone === "amber" ? "text-amber-700" : "text-muted-foreground"}`}>
+                          {personalLine.text}
+                        </p>
+                      )}
+                      {idx === 2 && eta && !eta.isEstimate && (
+                        <p className="text-[9.5px] text-muted-foreground/70 mt-0.5">Based on last {eta.sample} approvals</p>
+                      )}
                     </div>
 
                     {showCta && (
