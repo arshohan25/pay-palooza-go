@@ -129,6 +129,7 @@ const App = () => (
                   <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff><MerchantDashboard /></RoleGuard>} />
 
                   <Route path="/team-login" element={<TeamLoginPage />} />
+                  <Route path="/merchant-login" element={<MerchantLoginPage />} />
                   <Route path="/install" element={<RoleInstallPage />} />
                   <Route path="/install/:role" element={<RoleInstallPage />} />
                   <Route path="/developers" element={<DeveloperPortal />} />
