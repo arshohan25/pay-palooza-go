@@ -68,8 +68,10 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
       // Carry the admin's previous rejection note into the chat as a collapsible "Context" panel
       if (latest?.status === "rejected") {
         const note = latest.reviewer_note?.trim();
-        params.set("contextTitle", t("apiAccessAdminDenialReason"));
-        params.set("contextBody", redactSensitive(note || t("apiAccessNoReasonProvided")));
+        if (note) {
+          params.set("contextTitle", t("apiAccessAdminDenialReason"));
+          params.set("contextBody", redactSensitive(note));
+        }
       }
     }
     if (merchantId) params.set("merchantId", merchantId);
