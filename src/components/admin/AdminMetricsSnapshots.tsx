@@ -142,21 +142,28 @@ export function AdminMetricsSnapshots() {
     setBusy("backfill");
     const days = 30;
     const startCount = await getStoredCount();
+    const startLatest = await getLatestStoredDate();
     setBackfillStart(startCount);
     setBackfillDone(0);
     setBackfillTarget(days);
-    log(`Starting 30-day backfill (currently ${startCount} stored)…`);
+    setLatestStoredDate(startLatest);
+    // First day to be processed = day after latest, or today if none
+    setCurrentDay(nextDayAfter(startLatest));
+    log(`Starting 30-day backfill (currently ${startCount} stored, latest: ${startLatest ?? "none"})…`);
 
-    // Poll stored count while the edge function processes day-by-day
+    // Poll stored count + latest date while the edge function processes day-by-day
     if (pollRef.current) window.clearInterval(pollRef.current);
     pollRef.current = window.setInterval(async () => {
       try {
-        const c = await getStoredCount();
+        const [c, latest] = await Promise.all([getStoredCount(), getLatestStoredDate()]);
         const added = Math.max(0, c - startCount);
         setBackfillDone((prev) => {
-          if (added > prev) log(`Stored ${c} snapshots (+${added}/${days})`);
+          if (added > prev) log(`Stored ${c} snapshots (+${added}/${days}) — last completed: ${latest ?? "—"}`, "success");
           return Math.min(days, added);
         });
+        setLatestStoredDate(latest);
+        // Currently processing = day immediately after the latest stored
+        if (added < days) setCurrentDay(nextDayAfter(latest));
       } catch {/* ignore poll errors */}
     }, 1500) as unknown as number;
 
@@ -164,6 +171,9 @@ export function AdminMetricsSnapshots() {
       const json = await callFn({ action: "backfill", days });
       const completed = Number(json?.completed ?? days);
       setBackfillDone(completed);
+      setCurrentDay(null);
+      const finalLatest = await getLatestStoredDate();
+      setLatestStoredDate(finalLatest);
       log(`Backfill complete — ${completed} snapshot(s) processed`, "success");
       if (!silent) toast.success(`30-day backfill complete (${completed} day${completed === 1 ? "" : "s"})`);
       await load();
