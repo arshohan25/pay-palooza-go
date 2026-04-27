@@ -49,6 +49,8 @@ export function AdminMetricsSnapshots() {
   const [backfillTarget, setBackfillTarget] = useState(0);
   const [backfillStart, setBackfillStart] = useState(0);
   const [backfillDone, setBackfillDone] = useState(0);
+  const [currentDay, setCurrentDay] = useState<string | null>(null);
+  const [latestStoredDate, setLatestStoredDate] = useState<string | null>(null);
   const [statusLog, setStatusLog] = useState<{ ts: number; tone: "info" | "success" | "error"; text: string }[]>([]);
   const pollRef = useRef<number | null>(null);
 
