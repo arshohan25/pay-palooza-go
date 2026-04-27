@@ -28,9 +28,10 @@ interface Message {
 interface SupportChatProps {
   userId: string;
   conversationId?: string;
+  initialDraft?: string;
 }
 
-const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProps) => {
+const SupportChat = ({ userId, conversationId: externalConvId, initialDraft }: SupportChatProps) => {
   const [conversationId, setConversationId] = useState<string | null>(externalConvId ?? null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [decryptedCache, setDecryptedCache] = useState<Record<string, string>>({});
