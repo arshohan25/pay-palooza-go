@@ -217,7 +217,9 @@ export default function AdminApiRequests() {
         ))}
       </div>
 
-      {activeTab === "keys" ? (
+      {activeTab === "access" ? (
+        <AdminApiAccessRequests search={search} />
+      ) : activeTab === "keys" ? (
         <AdminApiKeys search={search} onGenerateRef={(fn) => { openGenerateKeyRef.current = fn; }} />
       ) : activeTab === "logs" ? (
         <AdminApiLogs search={search} />
