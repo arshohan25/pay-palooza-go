@@ -861,7 +861,7 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
 
         {/* Benefits grid */}
         <div>
-          <h2 className="text-base font-bold text-foreground mb-3 px-1">Why Become a Merchant?</h2>
+          <h2 className="text-base font-bold text-foreground mb-3 px-1">Why Become a Vendor?</h2>
           <motion.div
             variants={stagger.container} initial="hidden" animate="show"
             className="grid grid-cols-2 gap-3"
