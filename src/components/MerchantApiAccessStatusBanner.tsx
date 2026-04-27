@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, CheckCircle2, XCircle, X, MessageCircle } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, X, MessageCircle, FileText, Loader2, Circle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
@@ -118,12 +118,9 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
             </div>
           )}
 
-          <p className="text-[10px] text-muted-foreground/70 mt-2">
-            Submitted {new Date(latest.created_at).toLocaleString()}
-            {latest.reviewed_at && status !== "pending" && (
-              <> · Reviewed {new Date(latest.reviewed_at).toLocaleString()}</>
-            )}
-          </p>
+          {/* Lifecycle timeline */}
+          <Timeline status={status} createdAt={latest.created_at} reviewedAt={latest.reviewed_at} />
+
           {status === "pending" && (
             <button
               onClick={() => navigate("/account?openChat=1")}
@@ -144,5 +141,86 @@ export default function MerchantApiAccessStatusBanner({ userId, visible = true }
         )}
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+/* ─────────── Lifecycle Timeline ─────────── */
+
+interface TimelineProps {
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+const fmt = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, {
+    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+
+function Timeline({ status, createdAt, reviewedAt }: TimelineProps) {
+  const decided = status !== "pending";
+  const decisionTs = reviewedAt ?? (decided ? createdAt : null);
+
+  const steps = [
+    {
+      key: "submitted",
+      label: "Submitted",
+      sub: fmt(createdAt),
+      state: "done" as const,
+      Icon: FileText,
+    },
+    {
+      key: "processing",
+      label: decided ? "Processed by admin" : "Processing review",
+      sub: decided && decisionTs ? `until ${fmt(decisionTs)}` : "In review by our team",
+      state: decided ? ("done" as const) : ("active" as const),
+      Icon: decided ? CheckCircle2 : Loader2,
+    },
+    {
+      key: "decision",
+      label: status === "approved" ? "Approved" : status === "rejected" ? "Denied" : "Decision pending",
+      sub: decided && decisionTs ? fmt(decisionTs) : "Awaiting decision",
+      state: status === "approved" ? ("done" as const)
+           : status === "rejected" ? ("denied" as const)
+           : ("upcoming" as const),
+      Icon: status === "approved" ? CheckCircle2
+          : status === "rejected" ? XCircle
+          : Circle,
+    },
+  ];
+
+  return (
+    <ol className="mt-3 space-y-2.5">
+      {steps.map((s, i) => {
+        const isLast = i === steps.length - 1;
+        const dotColor =
+          s.state === "done" ? "bg-emerald-500/15 text-emerald-600 ring-emerald-500/30"
+          : s.state === "active" ? "bg-amber-500/15 text-amber-600 ring-amber-500/30"
+          : s.state === "denied" ? "bg-destructive/15 text-destructive ring-destructive/30"
+          : "bg-muted text-muted-foreground ring-border";
+        const lineColor =
+          s.state === "done" ? "bg-emerald-500/40"
+          : s.state === "active" ? "bg-amber-500/40"
+          : "bg-border";
+        return (
+          <li key={s.key} className="relative flex items-start gap-2.5">
+            <div className="relative flex flex-col items-center">
+              <div className={`w-5 h-5 rounded-full ring-1 flex items-center justify-center ${dotColor}`}>
+                <s.Icon className={`w-2.5 h-2.5 ${s.state === "active" ? "animate-spin" : ""}`} />
+              </div>
+              {!isLast && <div className={`w-px flex-1 mt-1 ${lineColor}`} style={{ minHeight: 14 }} />}
+            </div>
+            <div className="flex-1 min-w-0 -mt-0.5 pb-1">
+              <p className={`text-[11px] font-semibold ${
+                s.state === "upcoming" ? "text-muted-foreground" : "text-foreground"
+              }`}>
+                {s.label}
+              </p>
+              <p className="text-[10px] text-muted-foreground/80 mt-0.5">{s.sub}</p>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
