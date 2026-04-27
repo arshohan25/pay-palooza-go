@@ -179,10 +179,21 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
       if (prefill) {
         try { setChatDraft(decodeURIComponent(prefill)); } catch { setChatDraft(prefill); }
       }
+      const ctxTitle = params.get("contextTitle");
+      const ctxBody = params.get("contextBody");
+      if (ctxTitle && ctxBody) {
+        try {
+          setChatContext({ title: decodeURIComponent(ctxTitle), body: decodeURIComponent(ctxBody) });
+        } catch {
+          setChatContext({ title: ctxTitle, body: ctxBody });
+        }
+      }
       setShowSupport(true);
       // Strip query params so they don't re-trigger on back/forward navigation
       params.delete("openChat");
       params.delete("prefill");
+      params.delete("contextTitle");
+      params.delete("contextBody");
       const next = params.toString();
       navigate(`${location.pathname}${next ? `?${next}` : ""}`, { replace: true });
     }
