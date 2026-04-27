@@ -187,6 +187,106 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
     loadData();
   };
 
+  // ─── Credential lifecycle ───
+  const activeKeyCount = keys.filter(k => k.is_active).length;
+
+  const createKey = async () => {
+    if (activeKeyCount >= MAX_ACTIVE_KEYS) {
+      toast({ title: "Limit reached", description: `You can have at most ${MAX_ACTIVE_KEYS} active keys. Revoke one first.`, variant: "destructive" });
+      return;
+    }
+    setCreatingKey(true);
+    const { data, error } = await supabase
+      .from("merchant_api_keys")
+      .insert({
+        merchant_id: merchantId,
+        api_key: genApiKey(newKeyEnv),
+        secret_key: genSecretKey(newKeyEnv),
+        app_password: genAppPassword(),
+        environment: newKeyEnv,
+        is_active: true,
+      } as any)
+      .select("id")
+      .single();
+    setCreatingKey(false);
+    if (error) {
+      toast({ title: "Could not create key", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "API key created", description: "Copy your secret and app password now — they won't be shown again automatically." });
+    setJustCreatedId(data?.id ?? null);
+    if (data?.id) {
+      setRevealedFields(prev => {
+        const next = new Set(prev);
+        next.add(`secret-${data.id}`);
+        next.add(`apppw-${data.id}`);
+        return next;
+      });
+    }
+    await loadData();
+  };
+
+  const rotateKey = async (keyId: string) => {
+    const existing = keys.find(k => k.id === keyId);
+    if (!existing) return;
+    const env = (existing.environment === "test" ? "test" : "live") as "live" | "test";
+    setActionPending(true);
+    const { error } = await supabase
+      .from("merchant_api_keys")
+      .update({
+        api_key: genApiKey(env),
+        secret_key: genSecretKey(env),
+        app_password: genAppPassword(),
+        rotation_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any)
+      .eq("id", keyId);
+    setActionPending(false);
+    setConfirmAction(null);
+    if (error) {
+      toast({ title: "Rotation failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Credentials rotated", description: "The previous key, secret and app password are no longer valid." });
+    setRevealedFields(prev => {
+      const next = new Set(prev);
+      next.add(`secret-${keyId}`);
+      next.add(`apppw-${keyId}`);
+      return next;
+    });
+    setJustCreatedId(keyId);
+    await loadData();
+  };
+
+  const revokeKey = async (keyId: string) => {
+    setActionPending(true);
+    const { error } = await supabase
+      .from("merchant_api_keys")
+      .update({ is_active: false, updated_at: new Date().toISOString() } as any)
+      .eq("id", keyId);
+    setActionPending(false);
+    setConfirmAction(null);
+    if (error) {
+      toast({ title: "Revoke failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Key revoked", description: "API calls using this key will be rejected." });
+    await loadData();
+  };
+
+  const deleteKeyPermanently = async (keyId: string) => {
+    setActionPending(true);
+    const { error } = await supabase.from("merchant_api_keys").delete().eq("id", keyId);
+    setActionPending(false);
+    setConfirmAction(null);
+    if (error) {
+      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Key deleted permanently" });
+    await loadData();
+  };
+
   const copyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(label);
