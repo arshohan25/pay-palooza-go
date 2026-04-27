@@ -679,15 +679,16 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!isAdmin) return;
     const fetchBadgeCounts = async () => {
-      const [complaints, merchantApps, apiReqs, orders] = await Promise.all([
+      const [complaints, merchantApps, apiReqs, apiAccessReqs, orders] = await Promise.all([
         supabase.from("support_complaints").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
         supabase.from("merchant_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("merchant_api_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        (supabase as any).from("merchant_api_access_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
       ]);
       setPendingComplaintsCount(complaints.count ?? 0);
       setPendingMerchantAppsCount(merchantApps.count ?? 0);
-      setPendingApiRequestsCount(apiReqs.count ?? 0);
+      setPendingApiRequestsCount((apiReqs.count ?? 0) + (apiAccessReqs.count ?? 0));
       setPendingOrdersCount(orders.count ?? 0);
     };
     fetchBadgeCounts();
@@ -695,6 +696,7 @@ export default function AdminDashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "support_complaints" }, () => fetchBadgeCounts())
       .on("postgres_changes", { event: "*", schema: "public", table: "merchant_applications" }, () => fetchBadgeCounts())
       .on("postgres_changes", { event: "*", schema: "public", table: "merchant_api_requests" }, () => fetchBadgeCounts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_api_access_requests" }, () => fetchBadgeCounts())
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => fetchBadgeCounts())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
