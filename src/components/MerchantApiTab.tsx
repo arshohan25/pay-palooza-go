@@ -718,7 +718,7 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
 
         {/* Active API Keys (read-only) */}
         {keys.length > 0 && (
-          <div className="space-y-2">
+          <div id="onboarding-credentials-section" ref={credentialsSectionRef} className="space-y-2 scroll-mt-20">
             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Your API Credentials</p>
             {keys.map(k => {
               const toggleReveal = (field: string) => setRevealedFields(prev => {
