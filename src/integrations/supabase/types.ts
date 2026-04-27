@@ -4083,6 +4083,36 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_thresholds_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after_value: Json | null
+          before_value: Json | null
+          changed_at: string
+          id: string
+          threshold_key: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
+          changed_at?: string
+          id?: string
+          threshold_key: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
+          changed_at?: string
+          id?: string
+          threshold_key?: string
+        }
+        Relationships: []
+      }
       platform_treasury: {
         Row: {
           balance: number
