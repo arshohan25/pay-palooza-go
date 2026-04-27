@@ -52,6 +52,8 @@ export default function AdminPlatformThresholds() {
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -64,9 +66,49 @@ export default function AdminPlatformThresholds() {
     setLoading(false);
   };
 
+  const loadAudit = async () => {
+    setAuditLoading(true);
+    const { data, error } = await (supabase as any)
+      .from("platform_thresholds_audit")
+      .select("id, threshold_key, action, actor_id, before_value, after_value, changed_at")
+      .order("changed_at", { ascending: false })
+      .limit(100);
+    if (error) {
+      toast.error(error.message);
+      setAuditLoading(false);
+      return;
+    }
+    const entries = (data ?? []) as AuditEntry[];
+    // Resolve actor names from profiles in one round-trip.
+    const actorIds = Array.from(
+      new Set(entries.map((e) => e.actor_id).filter((v): v is string => !!v))
+    );
+    let nameMap = new Map<string, string>();
+    if (actorIds.length) {
+      const { data: profs } = await (supabase as any)
+        .from("profiles")
+        .select("id, name, phone")
+        .in("id", actorIds);
+      for (const p of (profs ?? []) as Array<{ id: string; name: string | null; phone: string | null }>) {
+        nameMap.set(p.id, p.name || p.phone || p.id.slice(0, 8));
+      }
+    }
+    setAudit(
+      entries.map((e) => ({
+        ...e,
+        actor_name: e.actor_id ? nameMap.get(e.actor_id) ?? e.actor_id.slice(0, 8) : "system",
+      }))
+    );
+    setAuditLoading(false);
+  };
+
   useEffect(() => {
-    if (isAdmin) load();
-    else setLoading(false);
+    if (isAdmin) {
+      load();
+      loadAudit();
+    } else {
+      setLoading(false);
+    }
   }, [isAdmin]);
 
   const save = async (row: Threshold) => {
