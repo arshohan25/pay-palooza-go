@@ -59,16 +59,13 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const buildPrefill = () =>
-    [
-      "Hi EasyPay team, I'd like to request API access for my merchant account.",
-      `Merchant ID: ${merchantId ?? "—"}`,
-      "Purpose: [briefly describe how you'll use the API — webhooks, checkout, payouts, etc.]",
-    ].join("\n");
-
-  const openChat = (withDraft: boolean) => {
+  const openChat = async (withDraft: boolean) => {
     const params = new URLSearchParams({ openChat: "1" });
-    if (withDraft) params.set("prefill", buildPrefill());
+    if (withDraft) {
+      const prefill = await buildMerchantApiAccessPrefill(userId, { merchantId });
+      params.set("prefill", prefill);
+    }
+    if (merchantId) params.set("merchantId", merchantId);
     navigate(`/account?${params.toString()}`);
   };
 
