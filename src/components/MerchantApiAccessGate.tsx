@@ -56,11 +56,23 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
+  const buildPrefill = () =>
+    [
+      "Hi EasyPay team, I'd like to request API access for my merchant account.",
+      `Merchant ID: ${merchantId ?? "—"}`,
+      "Purpose: [briefly describe how you'll use the API — webhooks, checkout, payouts, etc.]",
+    ].join("\n");
+
+  const openChat = (withDraft: boolean) => {
+    const params = new URLSearchParams({ openChat: "1" });
+    if (withDraft) params.set("prefill", buildPrefill());
+    navigate(`/account?${params.toString()}`);
+  };
+
   const requestViaChat = async () => {
     setSubmitting(true);
-    // If no pending request exists, create one so admin sees it in the queue.
-    const pending = latest?.status === "pending";
-    if (!pending) {
+    const isPending = latest?.status === "pending";
+    if (!isPending) {
       const { error } = await (supabase as any).from("merchant_api_access_requests").insert({
         user_id: userId,
         merchant_id: merchantId ?? null,
@@ -75,12 +87,24 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
       toast.success("Request submitted. Opening Live Chat…");
     }
     setSubmitting(false);
-    navigate("/account?openChat=1");
+    openChat(true);
   };
 
   const status = latest?.status;
   const pending = status === "pending";
   const rejected = status === "rejected";
+
+  const relativeTime = (iso: string) => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return "just now";
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    if (d <= 7) return `${d}d ago`;
+    return new Date(iso).toLocaleDateString();
+  };
 
   return (
     <motion.div
@@ -133,17 +157,40 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
 
       <Button
         size="sm"
-        disabled={submitting}
+        disabled={submitting || pending}
         onClick={requestViaChat}
         className="w-full mt-4 text-xs gap-1.5"
       >
         <MessageCircle className="w-3.5 h-3.5" />
-        {pending ? "Continue in Live Chat" : rejected ? "Request Again via Live Chat" : "Request API Access via Live Chat"}
+        {pending
+          ? "Request Pending — Awaiting Review"
+          : rejected
+          ? "Request Again via Live Chat"
+          : "Request API Access via Live Chat"}
       </Button>
 
-      <p className="text-[10px] text-muted-foreground mt-3 text-center">
-        You’ll be taken to support chat to describe your integration needs.
-      </p>
+      {pending && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => openChat(false)}
+          className="w-full mt-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          Open Live Chat to follow up
+        </Button>
+      )}
+
+      {latest && (
+        <p className="text-[10px] text-muted-foreground mt-3 text-center">
+          Last submitted: {relativeTime(latest.created_at)}
+        </p>
+      )}
+      {!latest && !loading && (
+        <p className="text-[10px] text-muted-foreground mt-3 text-center">
+          You'll be taken to support chat with a prefilled template you can edit.
+        </p>
+      )}
     </motion.div>
   );
 }
