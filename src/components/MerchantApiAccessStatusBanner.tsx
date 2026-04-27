@@ -20,14 +20,17 @@ interface Props {
   visible?: boolean;
 }
 
-const DISMISS_KEY = (userId: string, id: string, status: string) =>
-  `mfs_api_access_banner_dismissed:${userId}:${id}:${status}`;
+// Pending banner dismissals are session-only (sessionStorage), so they reappear on refresh.
+// Approved/denied banners are NOT dismissable — they stay until the merchant submits a new
+// request (which moves the latest row back to "pending") or refreshes the page.
+const PENDING_DISMISS_KEY = (userId: string, id: string) =>
+  `mfs_api_access_banner_dismissed_pending:${userId}:${id}`;
 
 /**
  * Persistent confirmation banner shown to merchant owners after they submit an
  * API access request. Reflects the latest status (pending / approved / rejected)
- * in real time and can be dismissed once the merchant has acknowledged a
- * terminal state. Pending state is non-dismissable so the open request stays visible.
+ * in real time. Pending banners can be dismissed for the current session;
+ * approved/denied banners stay visible until a new request is submitted.
  */
 type RtStatus = "connecting" | "live" | "retrying" | "offline";
 
@@ -56,9 +59,11 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
     const row: AccessRequest | null = data?.[0] ?? null;
     if (!mountedRef.current) return;
     setLatest(row);
-    if (row && row.status !== "pending") {
-      setDismissed(localStorage.getItem(DISMISS_KEY(userId, row.id, row.status)) === "1");
+    if (row && row.status === "pending") {
+      // Pending: respect a session-only dismissal so the banner reappears on refresh.
+      setDismissed(sessionStorage.getItem(PENDING_DISMISS_KEY(userId, row.id)) === "1");
     } else {
+      // Approved/denied: never dismissed — stays visible until a new request or refresh.
       setDismissed(false);
     }
   }, [userId]);
@@ -175,10 +180,13 @@ export default function MerchantApiAccessStatusBanner({ userId, merchantId, visi
   if (!visible || !latest || dismissed) return null;
 
   const status = latest.status;
-  const dismissable = status !== "pending";
+  // Only the pending banner can be dismissed (session-only).
+  // Approved/denied banners stay until a new request is submitted or the page is refreshed.
+  const dismissable = status === "pending";
 
   const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY(userId, latest.id, status), "1");
+    if (status !== "pending") return;
+    sessionStorage.setItem(PENDING_DISMISS_KEY(userId, latest.id), "1");
     setDismissed(true);
   };
 
