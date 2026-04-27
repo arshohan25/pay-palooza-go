@@ -351,13 +351,19 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
                         <p className={`text-[13px] font-bold leading-tight ${st === "locked" ? "text-muted-foreground" : "text-foreground"}`}>
                           {step.title}
                         </p>
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${
-                          st === "done" ? "bg-emerald-500/10 text-emerald-700"
-                          : st === "in_review" ? "bg-amber-500/10 text-amber-700"
-                          : "bg-muted text-muted-foreground"
-                        }`}
-                          title={idx === 2 && eta ? (eta.isEstimate ? "Estimated — not enough recent data yet" : `Based on the last ${eta.sample} approvals`) : undefined}
+                        <span
+                          className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold inline-flex items-center gap-1 ${
+                            idx === 2 && st !== "done" && st !== "locked"
+                              ? confidence.chipClass
+                              : st === "done" ? "bg-emerald-500/10 text-emerald-700"
+                              : st === "in_review" ? "bg-amber-500/10 text-amber-700"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                          title={idx === 2 && st !== "done" && st !== "locked" ? confidence.tip : undefined}
                         >
+                          {idx === 2 && st !== "done" && st !== "locked" && (
+                            <span className={`inline-block w-1.5 h-1.5 rounded-full ${confidence.dotClass}`} />
+                          )}
                           {st === "done" ? "Done"
                             : st === "in_review" ? "In review"
                             : st === "rejected" ? "Action needed"
@@ -371,8 +377,13 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
                           {personalLine.text}
                         </p>
                       )}
-                      {idx === 2 && eta && !eta.isEstimate && (
-                        <p className="text-[9.5px] text-muted-foreground/70 mt-0.5">Based on last {eta.sample} approvals</p>
+                      {idx === 2 && eta && st !== "done" && st !== "locked" && (
+                        <p className="text-[9.5px] text-muted-foreground/80 mt-0.5 inline-flex items-center gap-1">
+                          <span className={`inline-block w-1.5 h-1.5 rounded-full ${confidence.dotClass}`} />
+                          <span className="font-semibold">{confidence.label}</span>
+                          <span aria-hidden>•</span>
+                          <span>{eta.sample} {eta.sample === 1 ? "approval" : "approvals"}</span>
+                        </p>
                       )}
                     </div>
 
