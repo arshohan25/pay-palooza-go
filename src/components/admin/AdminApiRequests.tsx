@@ -16,6 +16,7 @@ import AdminApiIpWhitelist from "./AdminApiIpWhitelist";
 import AdminApiWebhooks from "./AdminApiWebhooks";
 import AdminApiSandbox from "./AdminApiSandbox";
 import AdminApiUsageAnalytics from "./AdminApiUsageAnalytics";
+import AdminApiAccessRequests from "./AdminApiAccessRequests";
 
 async function auditLog(action: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
