@@ -107,11 +107,71 @@ for (const fn of ADMIN_GATED_FUNCTIONS) {
   });
 }
 
-// Guard: ensure no Edge Function silently introduces platform_thresholds
-// access without being added to the admin-authz coverage above.
-Deno.test("no edge function reads/writes platform_thresholds outside coverage", async () => {
+// Guard: ensure no Edge Function silently introduces threshold-related
+// access (direct table I/O, indirect helpers, or audit/log writes into
+// threshold tables) without being added to the admin-authz coverage above.
+//
+// Threshold surface area covered:
+//   - Tables: platform_thresholds, transaction_limits,
+//     user_limit_overrides, transfer_rate_limits
+//   - Helper RPC: get_threshold(...)  (also matches supabase.rpc("get_threshold", ...))
+//   - Any write path (insert/update/upsert/delete) into the tables above,
+//     including audit/log inserts that target a threshold table by name.
+const THRESHOLD_TABLES = [
+  "platform_thresholds",
+  "transaction_limits",
+  "user_limit_overrides",
+  "transfer_rate_limits",
+] as const;
+
+// Edge functions that legitimately reference a threshold table only to
+// cascade-delete a single user's own rows during account deletion / purge.
+// These are NOT admin-config flows and intentionally do not return 401/403,
+// so they must be explicitly allowlisted (not added to ADMIN_GATED_FUNCTIONS).
+// Each entry must justify why the access is safe.
+const USER_SCOPED_CASCADE_ALLOWLIST: Record<string, string> = {
+  "delete-user":
+    "Deletes the requesting user's own rows in transfer_rate_limits as part of GDPR-style account deletion.",
+  "auto-purge-deactivated":
+    "Service-role scheduled job that purges rate-limit rows for already-deactivated users.",
+};
+
+type Hit = { kind: string; match: string };
+
+function scanThresholdSurface(source: string): Hit[] {
+  const hits: Hit[] = [];
+
+  // 1. Direct table name references (SQL-style or string literal in .from()).
+  for (const table of THRESHOLD_TABLES) {
+    const tableRe = new RegExp(`\\b${table}\\b`);
+    if (tableRe.test(source)) hits.push({ kind: "table-ref", match: table });
+
+    // 2. Write paths: .from("<table>")...(insert|update|upsert|delete)
+    //    Catches log/audit writes into threshold tables specifically.
+    const writeRe = new RegExp(
+      `\\.from\\(\\s*["'\`]${table}["'\`]\\s*\\)[\\s\\S]{0,200}?\\.(insert|update|upsert|delete)\\s*\\(`,
+    );
+    const writeMatch = source.match(writeRe);
+    if (writeMatch) {
+      hits.push({ kind: `table-write:${writeMatch[1]}`, match: table });
+    }
+  }
+
+  // 3. Indirect helper: get_threshold(...) — both SQL call sites and
+  //    supabase.rpc("get_threshold", ...) invocations.
+  if (/\bget_threshold\s*\(/.test(source)) {
+    hits.push({ kind: "helper-call", match: "get_threshold(" });
+  }
+  if (/\.rpc\(\s*["'`]get_threshold["'`]/.test(source)) {
+    hits.push({ kind: "rpc-call", match: 'rpc("get_threshold")' });
+  }
+
+  return hits;
+}
+
+Deno.test("no edge function touches threshold surface outside admin-authz coverage", async () => {
   const fnDir = new URL("../", import.meta.url).pathname;
-  const offenders: string[] = [];
+  const offenders: Array<{ name: string; hits: Hit[] }> = [];
 
   for await (const entry of Deno.readDir(fnDir)) {
     if (!entry.isDirectory) continue;
@@ -125,15 +185,35 @@ Deno.test("no edge function reads/writes platform_thresholds outside coverage", 
       continue;
     }
 
-    if (/platform_thresholds|get_threshold\s*\(/.test(source)) {
-      const covered = ADMIN_GATED_FUNCTIONS.some((f) => f.name === entry.name);
-      if (!covered) offenders.push(entry.name);
-    }
+    const hits = scanThresholdSurface(source);
+    if (hits.length === 0) continue;
+
+    const covered = ADMIN_GATED_FUNCTIONS.some((f) => f.name === entry.name);
+    if (covered) continue;
+
+    // Allowlist exception: user-scoped cascade deletes. Only permitted when
+    // every hit is either a bare table reference or a delete write — never
+    // reads, updates, upserts, inserts (logs), or helper/RPC calls.
+    const allowlisted = entry.name in USER_SCOPED_CASCADE_ALLOWLIST;
+    const onlyCascadeDelete = hits.every(
+      (h) => h.kind === "table-ref" || h.kind === "table-write:delete",
+    );
+    if (allowlisted && onlyCascadeDelete) continue;
+
+    offenders.push({ name: entry.name, hits });
   }
 
-  assertEquals(
-    offenders,
-    [],
-    `Edge functions touching platform_thresholds must be added to ADMIN_GATED_FUNCTIONS: ${offenders.join(", ")}`,
-  );
+  if (offenders.length > 0) {
+    const detail = offenders
+      .map((o) =>
+        `  - ${o.name}: ${o.hits.map((h) => `${h.kind}=${h.match}`).join(", ")}`,
+      )
+      .join("\n");
+    throw new Error(
+      `Edge functions touching threshold tables/helpers must be added to ` +
+        `ADMIN_GATED_FUNCTIONS and verified to enforce 401/403:\n${detail}`,
+    );
+  }
+
+  assertEquals(offenders.length, 0);
 });
