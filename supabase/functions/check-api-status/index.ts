@@ -14,10 +14,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonError(401, "UNAUTHORIZED", "Unauthorized");
     }
 
     const supabaseUser = createClient(
@@ -29,10 +26,7 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userErr } = await supabaseUser.auth.getUser(token);
     if (userErr || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonError(401, "UNAUTHORIZED", "Unauthorized");
     }
 
     const userId = user.id;
@@ -50,10 +44,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!roleData) {
-      return new Response(JSON.stringify({ error: "Forbidden: admin role required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonError(403, "FORBIDDEN_ADMIN_REQUIRED", "Forbidden: admin role required");
     }
 
     // Check which secrets are configured (boolean only, no values exposed)
