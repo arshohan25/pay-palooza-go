@@ -54,6 +54,7 @@ interface ApiRequest {
 
 interface PaymentSession {
   id: string;
+  api_key_id: string | null;
   amount: number;
   currency: string;
   reference: string | null;
@@ -65,6 +66,35 @@ interface PaymentSession {
   completed_at: string | null;
   expires_at: string;
   created_at: string;
+  metadata: Record<string, any> | null;
+}
+
+// Web Crypto HMAC-SHA256 mirror of the edge-function signer
+async function previewSignature(secret: string, payload: string) {
+  if (!secret) return "sha256=<hidden — reveal secret to compute>";
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+  return "sha256=" + Array.from(new Uint8Array(sig), b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// HTTPS, length, no creds, no localhost / private IP
+function validateWebhookUrl(raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null; // empty = unset (allowed)
+  if (v.length > 2048) return "URL must be under 2048 characters.";
+  let url: URL;
+  try { url = new URL(v); } catch { return "Enter a valid URL."; }
+  if (url.protocol !== "https:") return "Webhook URL must use https://";
+  if (url.username || url.password) return "Remove embedded credentials from the URL.";
+  const host = url.hostname.toLowerCase();
+  if (host === "localhost" || host.endsWith(".local")) return "localhost URLs are not reachable from our servers.";
+  if (/^10\./.test(host) || /^192\.168\./.test(host) || /^127\./.test(host) || /^169\.254\./.test(host)) return "Private IP addresses are not reachable.";
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return "Private IP addresses are not reachable.";
+  return null;
 }
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
@@ -112,9 +142,13 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
   const [requestReason, setRequestReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Webhook editing
-  const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState("");
+  // Webhook setup (per-key drafts, validation, payload preview)
+  const [webhookDrafts, setWebhookDrafts] = useState<Record<string, string>>({});
+  const [webhookErrors, setWebhookErrors] = useState<Record<string, string>>({});
+  const [savingWebhookId, setSavingWebhookId] = useState<string | null>(null);
+  const [testingWebhookId, setTestingWebhookId] = useState<string | null>(null);
+  const [openPayloadId, setOpenPayloadId] = useState<string | null>(null);
+  const [payloadSignatures, setPayloadSignatures] = useState<Record<string, string>>({});
 
   // Credential manager
   const [creatingKey, setCreatingKey] = useState(false);
@@ -136,7 +170,7 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
     const [keysRes, reqRes, sessRes, logsRes, ipRes] = await Promise.all([
       supabase.from("merchant_api_keys").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
       (supabase as any).from("merchant_api_requests").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
-      supabase.from("merchant_payment_sessions").select("id, amount, currency, reference, status, customer_phone, webhook_delivered, webhook_attempts, webhook_next_retry_at, completed_at, expires_at, created_at")
+      supabase.from("merchant_payment_sessions").select("id, api_key_id, amount, currency, reference, status, customer_phone, webhook_delivered, webhook_attempts, webhook_next_retry_at, completed_at, expires_at, created_at, metadata")
         .eq("merchant_id", merchantId).order("created_at", { ascending: false }).limit(50),
       (supabase as any).from("merchant_api_logs").select("action, status_code, response_time_ms, ip_address, created_at, error_message")
         .eq("merchant_id", merchantId).gte("created_at", cutoffDate).order("created_at", { ascending: false }).limit(1000),
@@ -181,11 +215,79 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
     loadData();
   };
 
-  const updateWebhook = async (keyId: string) => {
-    await supabase.from("merchant_api_keys").update({ webhook_url: webhookUrl || null, updated_at: new Date().toISOString() }).eq("id", keyId);
-    toast({ title: "Webhook URL Updated" });
-    setEditingKeyId(null);
-    loadData();
+  const saveWebhookUrl = async (keyId: string, raw: string) => {
+    const trimmed = raw.trim();
+    const err = validateWebhookUrl(trimmed);
+    if (err) {
+      setWebhookErrors(prev => ({ ...prev, [keyId]: err }));
+      return;
+    }
+    setWebhookErrors(prev => { const next = { ...prev }; delete next[keyId]; return next; });
+    setSavingWebhookId(keyId);
+    const { error } = await supabase
+      .from("merchant_api_keys")
+      .update({ webhook_url: trimmed || null, updated_at: new Date().toISOString() })
+      .eq("id", keyId);
+    setSavingWebhookId(null);
+    if (error) {
+      toast({ title: "Could not save webhook", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: trimmed ? "Webhook URL saved" : "Webhook removed" });
+    setWebhookDrafts(prev => { const next = { ...prev }; delete next[keyId]; return next; });
+    await loadData();
+  };
+
+  const sendTestWebhook = async (keyId: string) => {
+    const lastCompleted = sessions.find(s => s.api_key_id === keyId && s.status === "completed");
+    if (!lastCompleted) {
+      toast({ title: "No completed payment yet", description: "Complete at least one test payment to send a real signed event.", variant: "destructive" });
+      return;
+    }
+    setTestingWebhookId(keyId);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/merchant-payment-webhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: lastCompleted.id }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body?.delivered) {
+        toast({ title: "Test event delivered", description: `HTTP ${body?.attempts ? `· attempts: ${body.attempts}` : ""}` });
+      } else {
+        toast({
+          title: "Delivery failed",
+          description: body?.next_retry_at ? `Next auto-retry at ${new Date(body.next_retry_at).toLocaleString()}` : "Check your endpoint logs.",
+          variant: "destructive",
+        });
+      }
+      await loadData();
+    } catch (e: any) {
+      toast({ title: "Network error", description: String(e?.message || e), variant: "destructive" });
+    } finally {
+      setTestingWebhookId(null);
+    }
+  };
+
+  const togglePayloadPreview = async (k: ApiKey) => {
+    if (openPayloadId === k.id) { setOpenPayloadId(null); return; }
+    setOpenPayloadId(k.id);
+    const last = sessions.find(s => s.api_key_id === k.id && s.status === "completed");
+    if (!last) return;
+    const payload = JSON.stringify({
+      event: last.status === "completed" ? "payment.completed" : "payment.failed",
+      session_id: last.id,
+      amount: last.amount,
+      currency: last.currency,
+      reference: last.reference,
+      status: last.status,
+      customer_phone: last.customer_phone,
+      completed_at: last.completed_at,
+      timestamp: new Date().toISOString(),
+    }, null, 2);
+    const sig = await previewSignature(k.secret_key, payload);
+    setPayloadSignatures(prev => ({ ...prev, [k.id]: sig }));
   };
 
   // ─── Credential lifecycle ───
@@ -565,23 +667,196 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
                     </div>
                   </div>
 
-                  {/* Webhook URL */}
-                  <div className="flex items-center gap-2">
-                    <Globe size={12} className="text-muted-foreground shrink-0" />
-                    {editingKeyId === k.id ? (
-                      <div className="flex items-center gap-1 flex-1">
-                        <Input className="h-7 text-[10px]" placeholder="https://yoursite.com/webhook" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} />
-                        <Button size="sm" className="h-7 text-[10px]" onClick={() => updateWebhook(k.id)}>Save</Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 flex-1 min-w-0">
-                        <span className="text-[10px] text-muted-foreground truncate">{k.webhook_url || "No webhook configured"}</span>
-                        {k.is_active && (
-                          <button onClick={() => { setEditingKeyId(k.id); setWebhookUrl(k.webhook_url || ""); }} className="text-[10px] text-primary font-medium shrink-0">Edit</button>
+                  {/* ── Webhook setup ── */}
+                  {(() => {
+                    const draft = webhookDrafts[k.id] ?? k.webhook_url ?? "";
+                    const dirty = (draft.trim()) !== (k.webhook_url ?? "");
+                    const err = webhookErrors[k.id];
+                    const keySessions = sessions.filter(s => s.api_key_id === k.id);
+                    const lastSession = keySessions[0];
+                    const recent5 = keySessions.slice(0, 5);
+                    const delivered = keySessions.filter(s => s.webhook_delivered).length;
+                    const pendingRetry = keySessions.filter(s => !s.webhook_delivered && s.webhook_next_retry_at && new Date(s.webhook_next_retry_at).getTime() > Date.now()).length;
+                    const permFailed = keySessions.filter(s => (s.metadata as any)?.webhook_permanently_failed).length;
+
+                    let statusKind: "delivered" | "retry" | "failed" | "none" = "none";
+                    let statusLabel = "No deliveries yet";
+                    let statusTime = "";
+                    if (lastSession) {
+                      if (lastSession.webhook_delivered) {
+                        statusKind = "delivered"; statusLabel = "Delivered";
+                        const at = (lastSession.metadata as any)?.webhook_delivered_at;
+                        statusTime = at ? new Date(at).toLocaleString() : new Date(lastSession.created_at).toLocaleString();
+                      } else if (lastSession.webhook_next_retry_at && new Date(lastSession.webhook_next_retry_at).getTime() > Date.now()) {
+                        statusKind = "retry"; statusLabel = "Pending retry";
+                        statusTime = `next: ${new Date(lastSession.webhook_next_retry_at).toLocaleString()}`;
+                      } else if ((lastSession.metadata as any)?.webhook_error || (lastSession.metadata as any)?.webhook_permanently_failed) {
+                        statusKind = "failed"; statusLabel = "Failed";
+                        const at = (lastSession.metadata as any)?.webhook_attempted_at;
+                        statusTime = at ? new Date(at).toLocaleString() : "";
+                      }
+                    }
+                    const pillClass =
+                      statusKind === "delivered" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
+                      statusKind === "retry" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
+                      statusKind === "failed" ? "bg-destructive/10 text-destructive border-destructive/20" :
+                      "bg-muted text-muted-foreground border-border";
+                    const dotClass =
+                      statusKind === "delivered" ? "bg-emerald-500" :
+                      statusKind === "retry" ? "bg-amber-500" :
+                      statusKind === "failed" ? "bg-destructive" :
+                      "bg-muted-foreground";
+
+                    const lastCompleted = sessions.find(s => s.api_key_id === k.id && s.status === "completed");
+                    const previewPayload = lastCompleted ? JSON.stringify({
+                      event: "payment.completed",
+                      session_id: lastCompleted.id,
+                      amount: lastCompleted.amount,
+                      currency: lastCompleted.currency,
+                      reference: lastCompleted.reference,
+                      status: lastCompleted.status,
+                      customer_phone: lastCompleted.customer_phone,
+                      completed_at: lastCompleted.completed_at,
+                      timestamp: "<sent at delivery time>",
+                    }, null, 2) : "";
+
+                    return (
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          <Webhook size={12} className="text-primary shrink-0" />
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-foreground">Webhook endpoint</p>
+                          {k.webhook_url && (
+                            <Badge className={`${pillClass} text-[9px] gap-1 ml-auto`}>
+                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
+                              {statusLabel}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* URL editor */}
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <Input
+                              className={`h-8 text-[11px] font-mono ${err ? "border-destructive" : ""}`}
+                              placeholder="https://yoursite.com/webhook"
+                              value={draft}
+                              disabled={!k.is_active}
+                              onChange={e => setWebhookDrafts(prev => ({ ...prev, [k.id]: e.target.value }))}
+                            />
+                            <Button
+                              size="sm"
+                              className="h-8 text-[11px] gap-1"
+                              disabled={!k.is_active || !dirty || savingWebhookId === k.id}
+                              onClick={() => saveWebhookUrl(k.id, draft)}
+                            >
+                              {savingWebhookId === k.id ? <Loader2 size={11} className="animate-spin" /> : null}
+                              Save
+                            </Button>
+                          </div>
+                          {err && <p className="text-[10px] text-destructive mt-1 flex items-center gap-1"><AlertTriangle size={10} />{err}</p>}
+                          {!err && !k.webhook_url && (
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              Add an HTTPS URL to receive signed payment events. We retry up to 5 times with exponential backoff.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Counters + actions when configured */}
+                        {k.webhook_url && (
+                          <>
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                              <span>
+                                <span className="text-foreground font-semibold">{delivered}</span> / {keySessions.length} delivered
+                                {pendingRetry > 0 && <> · <span className="text-amber-600 font-semibold">{pendingRetry}</span> pending retry</>}
+                                {permFailed > 0 && <> · <span className="text-destructive font-semibold">{permFailed}</span> failed</>}
+                              </span>
+                              {statusTime && <span className="truncate ml-2">{statusTime}</span>}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-[10px] gap-1 flex-1"
+                                disabled={!k.is_active || !lastCompleted || testingWebhookId === k.id}
+                                onClick={() => sendTestWebhook(k.id)}
+                                title={!lastCompleted ? "Complete at least one test payment to send a real signed event." : undefined}
+                              >
+                                {testingWebhookId === k.id ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                                Send test event
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-[10px] gap-1"
+                                disabled={!lastCompleted}
+                                onClick={() => togglePayloadPreview(k)}
+                              >
+                                {openPayloadId === k.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                                {openPayloadId === k.id ? "Hide" : "View last payload"}
+                              </Button>
+                            </div>
+
+                            {/* Payload preview */}
+                            {openPayloadId === k.id && lastCompleted && (
+                              <div className="space-y-2">
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <p className="text-[9px] uppercase font-semibold text-muted-foreground">POST body</p>
+                                    <button onClick={() => copyText(previewPayload, `wh-body-${k.id}`)} className="text-[10px] text-primary flex items-center gap-1">
+                                      {copiedField === `wh-body-${k.id}` ? <CheckCircle2 size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                                      Copy
+                                    </button>
+                                  </div>
+                                  <pre className="bg-background/80 border border-border/50 rounded-lg p-2 text-[9px] font-mono overflow-x-auto whitespace-pre">{previewPayload}</pre>
+                                </div>
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <p className="text-[9px] uppercase font-semibold text-muted-foreground">Headers</p>
+                                    <button onClick={() => copyText(`X-EasyPay-Signature: ${payloadSignatures[k.id] ?? "<computing…>"}\nContent-Type: application/json`, `wh-hdr-${k.id}`)} className="text-[10px] text-primary flex items-center gap-1">
+                                      {copiedField === `wh-hdr-${k.id}` ? <CheckCircle2 size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                                      Copy
+                                    </button>
+                                  </div>
+                                  <pre className="bg-background/80 border border-border/50 rounded-lg p-2 text-[9px] font-mono overflow-x-auto whitespace-pre">{`X-EasyPay-Signature: ${payloadSignatures[k.id] ?? "<computing…>"}\nContent-Type: application/json`}</pre>
+                                  <p className="text-[9px] text-muted-foreground mt-1">Verify the signature with HMAC-SHA256 using your secret key.</p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Recent deliveries */}
+                            {recent5.length > 0 && (
+                              <div className="space-y-1 pt-1 border-t border-border/40">
+                                <p className="text-[9px] uppercase font-semibold text-muted-foreground">Recent deliveries</p>
+                                {recent5.map(s => {
+                                  const meta = (s.metadata as any) || {};
+                                  const ok = s.webhook_delivered;
+                                  const retry = !ok && s.webhook_next_retry_at && new Date(s.webhook_next_retry_at).getTime() > Date.now();
+                                  const httpStatus = meta.webhook_status;
+                                  const errMsg = meta.webhook_error;
+                                  return (
+                                    <div key={s.id} className="flex items-center gap-2 text-[10px]">
+                                      <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${ok ? "bg-emerald-500" : retry ? "bg-amber-500" : "bg-destructive"}`} />
+                                      <span className="font-mono text-muted-foreground shrink-0">৳{fmt(Number(s.amount))}</span>
+                                      <span className="truncate text-muted-foreground flex-1">{s.reference || s.id.slice(0, 8)}</span>
+                                      <span className="text-muted-foreground shrink-0">
+                                        {ok ? `delivered${httpStatus ? ` ${httpStatus}` : ""}` : retry ? "retrying" : (errMsg || (httpStatus ? `HTTP ${httpStatus}` : "failed"))}
+                                      </span>
+                                      <button
+                                        onClick={() => retryWebhook(s.id)}
+                                        className="text-primary font-medium shrink-0 hover:underline"
+                                        title="Resend webhook"
+                                      >Resend</button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()}
 
                   {/* Lifecycle actions */}
                   <div className="flex items-center gap-2 pt-2 border-t border-border/50">

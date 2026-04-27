@@ -1,70 +1,82 @@
-# Credential manager: create / rotate / revoke API keys
+# Webhook setup UI: register, monitor, preview
 
 ## Current state
-The API tab (`src/components/MerchantApiTab.tsx`) already shows existing credentials with masking, copy buttons, status badges, and webhook editing. What's missing is merchant-side **lifecycle controls**: a merchant cannot create a new key pair, rotate an existing pair, or revoke one — keys today only appear after admin processes a request.
-
-RLS on `merchant_api_keys` already permits approved merchants to INSERT / UPDATE / DELETE their own rows (`has_merchant_api_access(auth.uid())` + ownership check). So this can be done **entirely client-side** — no edge function, no migration.
+- `merchant_api_keys.webhook_url` already stores a per-key callback URL; the API tab has a tiny inline "Edit" affordance but no validation, no test, no delivery summary.
+- `merchant-payment-webhook` edge function records delivery metadata into `merchant_payment_sessions` (`webhook_delivered`, `webhook_attempts`, `webhook_next_retry_at`) plus `metadata.webhook_status / webhook_delivered_at / webhook_error / webhook_attempted_at / webhook_permanently_failed`. The signed JSON payload it sends is fully reproducible client-side.
+- No payload column exists, and adding per-delivery storage isn't necessary — the recent sessions table already has everything we need to render the last delivery + a faithful payload preview.
 
 ## Build
-Single file: `src/components/MerchantApiTab.tsx`
 
-Add a new **Credential Manager** section that renders only when the merchant has API access (i.e. when `requests` has an `approved` row, matching the existing access gate). It sits above the existing "Your API Credentials" list and offers three actions per key plus a "Create new key" CTA.
-
-### 1. Generation helpers (top of file)
-
-```ts
-const genKey = (prefix: "live" | "test") => {
-  const bytes = crypto.getRandomValues(new Uint8Array(24));
-  const hex = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
-  return `${prefix}_pk_${hex}`;        // public/api key
-};
-const genSecret = (prefix: "live" | "test") => {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  const hex = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
-  return `${prefix}_sk_${hex}`;        // secret key
-};
-const genAppPassword = () => {
-  const bytes = crypto.getRandomValues(new Uint8Array(18));
-  return btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, "").slice(0, 24);
-};
-```
-
-### 2. Actions
-
-- **Create** — inserts a new row with `merchant_id`, `api_key`, `secret_key`, `app_password`, `environment` (default `live`, with a Test/Live toggle), `is_active: true`, and the default permissions. Block creation when access not approved; cap at e.g. 5 active keys per merchant with a friendly toast.
-- **Rotate** — generates a fresh `api_key` + `secret_key` + `app_password` and `UPDATE`s the existing row in place, plus sets `rotation_expires_at = now() + 24h` so dependent code sees the rotation event. Show a confirmation dialog warning that the old credentials stop working immediately.
-- **Revoke** — `UPDATE { is_active: false }`. Show a confirmation; revoked keys remain visible (greyed out, badge "Revoked") so logs and historical sessions still link correctly. Provide a separate "Delete permanently" action only for already-revoked keys (DELETE row).
-
-All three actions:
-- run optimistically + `await loadData()` for re-sync
-- fire toasts on success/failure (reuse `useToast`)
-- the realtime subscription already on `merchant_api_keys` will mirror the change in other open tabs
-
-### 3. UI layout (per key card additions)
-
-Below the existing webhook row in each key card, add a control strip:
+### 1) Promote webhook setup to its own card on the API tab
+Single file: `src/components/MerchantApiTab.tsx`. Replace the cramped inline "Webhook URL" row inside each key card with a dedicated "Webhooks" sub-section per key:
 
 ```text
-[ Active ] live   created 27 Apr   rotates in 23h
-─────────────────────────────────────────────────
-[ Rotate ]  [ Revoke ]      (or [ Delete ] when revoked)
+┌─ Webhook endpoint ───────────────────────────────┐
+│  [ https://yoursite.com/webhook            ]  Save │
+│  Status: ● Delivered  ·  Last attempt 14:02       │
+│  18 / 20 delivered (last 50)  ·  2 pending retry  │
+│  [ Send test event ]   [ View last payload ▾ ]    │
+└──────────────────────────────────────────────────┘
 ```
 
-Status indicators on the card header:
-- `Active` — emerald dot + "Active"
-- `Revoked` — muted dot + "Revoked" + warning text "Cannot make API calls"
-- `Rotating` — amber dot + "Rotation pending" when `rotation_expires_at` is in the future
+- Inline URL editor with Zod validation (must be `https://`, max 2048 chars, no embedded credentials, no `localhost`/private-IP prefixes). Show a small inline error under the input on validation failure; only enable Save when the value differs from the saved one.
+- Visual status pill: green "Delivered" / amber "Pending retry" / red "Failed" / muted "No deliveries yet" — derived from the most recent session belonging to this key (`api_key_id`).
+- Aggregate counters from the already-loaded `sessions` array filtered by `api_key_id`: delivered, pending retry (`webhook_next_retry_at` in future), permanently failed (from `metadata.webhook_permanently_failed`).
+- "Send test event" button — calls the existing `merchant-payment-webhook` edge function with a synthetic-but-real `session_id` chosen as the most recent completed session for this key. If none exists, the button is disabled with tooltip "Complete at least one test payment to send a real signed event." (The function refuses to forge sessions, so we don't introduce a new code path; this just re-fires delivery for the latest completed session.)
+- "View last payload" — collapsible disclosure that reconstructs the exact JSON that the edge function would send for the most recent completed session belonging to this key:
+  ```json
+  {
+    "event": "payment.completed",
+    "session_id": "...",
+    "amount": 500,
+    "currency": "BDT",
+    "reference": "ORDER-123",
+    "status": "completed",
+    "customer_phone": "017...",
+    "completed_at": "2026-04-27T...",
+    "timestamp": "<rendered at preview time>"
+  }
+  ```
+  Plus the request headers Lovable Cloud actually sends:
+  ```text
+  X-EasyPay-Signature: sha256=<computed live from secret_key + payload>
+  Content-Type: application/json
+  ```
+  Both blocks reuse the existing `copyText` helper for one-click copy.
 
-Section header gets a primary-styled **+ Create new key** button (disabled with tooltip when no approved request or when at the cap).
+### 2) "Recent deliveries" mini-table per key
+Below the status pill, render the last 5 sessions for the key as a compact list:
+```
+COMPLETED  ৳500  ORDER-123   ● delivered  14:02   [ Resend ]
+COMPLETED  ৳120  -           ● failed (HTTP 500) [ Resend ]
+```
+- "● failed (HTTP X)" shows `metadata.webhook_status` or `metadata.webhook_error`.
+- Resend reuses the existing `retryWebhook(sessionId)` helper.
 
-### 4. Copy-to-clipboard
+### 3) Empty state
+When the key has `webhook_url = null`, hide the deliveries panel and show a primer:
+```
+You haven't registered a webhook yet. Add an HTTPS URL above to
+receive signed payment events. We'll retry up to 5 times with
+exponential backoff.
+```
 
-The existing `copyText` helper already provides per-field copy with a 2s checkmark confirmation; the new Create flow reuses it. After creating a key, auto-open the new card and reveal the secret + app password once with a one-time banner: "Copy these now — you can re-reveal later but rotate immediately if exposed."
+### 4) Signature helper (client-side)
+Implement HMAC-SHA256 with the Web Crypto API to render the exact signature value in the preview, mirroring the edge function's `hmacSign`:
+```ts
+async function previewSignature(secret: string, payload: string) {
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  return "sha256=" + Array.from(new Uint8Array(sig), b => b.toString(16).padStart(2, "0")).join("");
+}
+```
 
 ## Out of scope
-- No DB migration: schema and RLS already support all three actions.
-- No edge function: writes go straight from the merchant client under existing RLS.
-- No changes to admin-side request flow, the access gate, or analytics.
-- No multi-environment dashboard (test vs live separation beyond the existing `environment` field on each key).
+- No DB migration. No new columns. No edge-function changes.
+- No per-delivery payload archival (would require a new table and storage growth).
+- No webhook subscription model (event-type filtering) — current platform only emits `payment.completed` / `payment.failed`.
 
 Approve to apply.
