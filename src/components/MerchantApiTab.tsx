@@ -54,6 +54,7 @@ interface ApiRequest {
 
 interface PaymentSession {
   id: string;
+  api_key_id: string | null;
   amount: number;
   currency: string;
   reference: string | null;
@@ -65,6 +66,35 @@ interface PaymentSession {
   completed_at: string | null;
   expires_at: string;
   created_at: string;
+  metadata: Record<string, any> | null;
+}
+
+// Web Crypto HMAC-SHA256 mirror of the edge-function signer
+async function previewSignature(secret: string, payload: string) {
+  if (!secret) return "sha256=<hidden — reveal secret to compute>";
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+  return "sha256=" + Array.from(new Uint8Array(sig), b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// HTTPS, length, no creds, no localhost / private IP
+function validateWebhookUrl(raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null; // empty = unset (allowed)
+  if (v.length > 2048) return "URL must be under 2048 characters.";
+  let url: URL;
+  try { url = new URL(v); } catch { return "Enter a valid URL."; }
+  if (url.protocol !== "https:") return "Webhook URL must use https://";
+  if (url.username || url.password) return "Remove embedded credentials from the URL.";
+  const host = url.hostname.toLowerCase();
+  if (host === "localhost" || host.endsWith(".local")) return "localhost URLs are not reachable from our servers.";
+  if (/^10\./.test(host) || /^192\.168\./.test(host) || /^127\./.test(host) || /^169\.254\./.test(host)) return "Private IP addresses are not reachable.";
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return "Private IP addresses are not reachable.";
+  return null;
 }
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
@@ -136,7 +166,7 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
     const [keysRes, reqRes, sessRes, logsRes, ipRes] = await Promise.all([
       supabase.from("merchant_api_keys").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
       (supabase as any).from("merchant_api_requests").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
-      supabase.from("merchant_payment_sessions").select("id, amount, currency, reference, status, customer_phone, webhook_delivered, webhook_attempts, webhook_next_retry_at, completed_at, expires_at, created_at")
+      supabase.from("merchant_payment_sessions").select("id, api_key_id, amount, currency, reference, status, customer_phone, webhook_delivered, webhook_attempts, webhook_next_retry_at, completed_at, expires_at, created_at, metadata")
         .eq("merchant_id", merchantId).order("created_at", { ascending: false }).limit(50),
       (supabase as any).from("merchant_api_logs").select("action, status_code, response_time_ms, ip_address, created_at, error_message")
         .eq("merchant_id", merchantId).gte("created_at", cutoffDate).order("created_at", { ascending: false }).limit(1000),
