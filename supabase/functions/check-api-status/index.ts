@@ -84,9 +84,6 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("check-api-status error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonError(500, "INTERNAL_ERROR", "Internal server error");
   }
 });
