@@ -234,11 +234,14 @@ const MerchantDashboard = () => {
   }, []);
 
   const handleLogout = useCallback(async () => {
+    setLoggingOut(true);
     try {
       await signOut();
     } catch (err) {
       // ignore — still redirect to login
     } finally {
+      setLoggingOut(false);
+      setShowLogoutConfirm(false);
       navigate("/merchant-login", { replace: true });
     }
   }, [signOut, navigate]);
