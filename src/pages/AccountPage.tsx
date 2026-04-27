@@ -527,7 +527,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           </SheetHeader>
           <div className="flex-1 overflow-hidden">
             {userId ? (
-              <SupportChat userId={userId} initialDraft={chatDraft} />
+              <SupportChat userId={userId} initialDraft={chatDraft} initialContext={chatContext} />
             ) : (
               <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
                 {t("signInToContact")}
