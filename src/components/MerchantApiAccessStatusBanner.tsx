@@ -37,6 +37,7 @@ type RtStatus = "connecting" | "live" | "retrying" | "offline";
 
 export default function MerchantApiAccessStatusBanner({ userId, merchantId, visible = true }: Props) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [latest, setLatest] = useState<AccessRequest | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [rtStatus, setRtStatus] = useState<RtStatus>("connecting");
