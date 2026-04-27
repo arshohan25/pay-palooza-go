@@ -174,6 +174,18 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
                 <p className="text-[11px] text-foreground mt-1 whitespace-pre-wrap break-words">
                   {latest.reviewer_note?.trim() || "No reason was provided. Please contact support for details."}
                 </p>
+                <Button
+                  size="sm"
+                  variant="default"
+                  disabled={submitting || inCooldown}
+                  onClick={requestViaChat}
+                  className="mt-2 h-7 text-[11px] gap-1.5"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  {inCooldown
+                    ? `Submit new request in ${formatRemaining(cooldownRemainingMs)}`
+                    : "Submit new API request"}
+                </Button>
               </div>
             )}
             <p className="text-[10px] text-muted-foreground/70 mt-1">
