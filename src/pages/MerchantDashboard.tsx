@@ -31,6 +31,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
@@ -203,6 +213,8 @@ const MerchantDashboard = () => {
   const [isMerchant, setIsMerchant] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const balanceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleBalance = () => {
@@ -222,11 +234,14 @@ const MerchantDashboard = () => {
   }, []);
 
   const handleLogout = useCallback(async () => {
+    setLoggingOut(true);
     try {
       await signOut();
     } catch (err) {
       // ignore — still redirect to login
     } finally {
+      setLoggingOut(false);
+      setShowLogoutConfirm(false);
       navigate("/merchant-login", { replace: true });
     }
   }, [signOut, navigate]);
@@ -409,7 +424,7 @@ const MerchantDashboard = () => {
               </button>
               <motion.button
                 whileTap={{ scale: 0.92 }}
-                onClick={handleLogout}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="tap-target h-10 px-3 rounded-xl glass-hero flex items-center gap-1.5 text-[12px] font-semibold"
                 aria-label="Logout"
               >
@@ -728,6 +743,41 @@ const MerchantDashboard = () => {
       {activeTab !== "inbox" && (
         <MerchantChatFAB userId={user?.id ?? null} onOpenInbox={() => setActiveTab("inbox")} />
       )}
+
+      {/* ── Logout confirmation ── */}
+      <AlertDialog open={showLogoutConfirm} onOpenChange={(open) => !loggingOut && setShowLogoutConfirm(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out of merchant dashboard?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You'll be returned to the merchant login screen. Any unsaved changes may be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loggingOut}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleLogout();
+              }}
+              disabled={loggingOut}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {loggingOut ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  Signing out...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <LogOut size={14} />
+                  Sign out
+                </span>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
