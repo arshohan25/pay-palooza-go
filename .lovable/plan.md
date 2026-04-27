@@ -1,82 +1,58 @@
-# Webhook setup UI: register, monitor, preview
+# API Onboarding Checklist
 
-## Current state
-- `merchant_api_keys.webhook_url` already stores a per-key callback URL; the API tab has a tiny inline "Edit" affordance but no validation, no test, no delivery summary.
-- `merchant-payment-webhook` edge function records delivery metadata into `merchant_payment_sessions` (`webhook_delivered`, `webhook_attempts`, `webhook_next_retry_at`) plus `metadata.webhook_status / webhook_delivered_at / webhook_error / webhook_attempted_at / webhook_permanently_failed`. The signed JSON payload it sends is fully reproducible client-side.
-- No payload column exists, and adding per-delivery storage isn't necessary — the recent sessions table already has everything we need to render the last delivery + a faithful payload preview.
+Add a compact, real-time checklist at the top of the merchant **API** tab so merchants can see exactly where they are in the integration journey. Each step lights up automatically as they complete it — no manual ticking.
 
-## Build
+## What the merchant sees
 
-### 1) Promote webhook setup to its own card on the API tab
-Single file: `src/components/MerchantApiTab.tsx`. Replace the cramped inline "Webhook URL" row inside each key card with a dedicated "Webhooks" sub-section per key:
+A premium card titled **"API Onboarding"** placed above the existing *API Access* section, showing:
 
-```text
-┌─ Webhook endpoint ───────────────────────────────┐
-│  [ https://yoursite.com/webhook            ]  Save │
-│  Status: ● Delivered  ·  Last attempt 14:02       │
-│  18 / 20 delivered (last 50)  ·  2 pending retry  │
-│  [ Send test event ]   [ View last payload ▾ ]    │
-└──────────────────────────────────────────────────┘
-```
+- A progress ring / bar (e.g. *3 of 6 complete*) with percentage.
+- A vertical list of steps, each with:
+  - State icon (✓ done / ● in-progress / ○ todo / ⚠ attention).
+  - Title + one-line helper text.
+  - A small inline action button that scrolls/jumps to the relevant section (e.g. *"Request access"*, *"Create key"*, *"Add webhook"*).
+- A celebratory state when all steps are complete ("You're live — start accepting payments").
+- Collapsible: once 100% complete the card auto-collapses to a single "Integration complete" pill that can be re-expanded.
 
-- Inline URL editor with Zod validation (must be `https://`, max 2048 chars, no embedded credentials, no `localhost`/private-IP prefixes). Show a small inline error under the input on validation failure; only enable Save when the value differs from the saved one.
-- Visual status pill: green "Delivered" / amber "Pending retry" / red "Failed" / muted "No deliveries yet" — derived from the most recent session belonging to this key (`api_key_id`).
-- Aggregate counters from the already-loaded `sessions` array filtered by `api_key_id`: delivered, pending retry (`webhook_next_retry_at` in future), permanently failed (from `metadata.webhook_permanently_failed`).
-- "Send test event" button — calls the existing `merchant-payment-webhook` edge function with a synthetic-but-real `session_id` chosen as the most recent completed session for this key. If none exists, the button is disabled with tooltip "Complete at least one test payment to send a real signed event." (The function refuses to forge sessions, so we don't introduce a new code path; this just re-fires delivery for the latest completed session.)
-- "View last payload" — collapsible disclosure that reconstructs the exact JSON that the edge function would send for the most recent completed session belonging to this key:
-  ```json
-  {
-    "event": "payment.completed",
-    "session_id": "...",
-    "amount": 500,
-    "currency": "BDT",
-    "reference": "ORDER-123",
-    "status": "completed",
-    "customer_phone": "017...",
-    "completed_at": "2026-04-27T...",
-    "timestamp": "<rendered at preview time>"
-  }
-  ```
-  Plus the request headers Lovable Cloud actually sends:
-  ```text
-  X-EasyPay-Signature: sha256=<computed live from secret_key + payload>
-  Content-Type: application/json
-  ```
-  Both blocks reuse the existing `copyText` helper for one-click copy.
+## Steps & completion logic
 
-### 2) "Recent deliveries" mini-table per key
-Below the status pill, render the last 5 sessions for the key as a compact list:
-```
-COMPLETED  ৳500  ORDER-123   ● delivered  14:02   [ Resend ]
-COMPLETED  ৳120  -           ● failed (HTTP 500) [ Resend ]
-```
-- "● failed (HTTP X)" shows `metadata.webhook_status` or `metadata.webhook_error`.
-- Resend reuses the existing `retryWebhook(sessionId)` helper.
+All derived from data already loaded in `MerchantApiTab.tsx` — no new queries.
 
-### 3) Empty state
-When the key has `webhook_url = null`, hide the deliveries panel and show a primer:
-```
-You haven't registered a webhook yet. Add an HTTPS URL above to
-receive signed payment events. We'll retry up to 5 times with
-exponential backoff.
-```
+| # | Step | Done when |
+|---|------|-----------|
+| 1 | Request API access | `requests.length > 0` |
+| 2 | Access approved | `hasApprovedAccess === true` |
+| 3 | Create your first API key | `keys.length > 0` |
+| 4 | Reveal & copy credentials | at least one key id is in `revealedFields` **or** persisted flag `ezp_api_onboarding_copied_<merchantId>` in `localStorage` (set on first copy of `api_key`/`secret_key`) |
+| 5 | Register a webhook URL | any `k.webhook_url` is non-empty |
+| 6 | Successful test transaction | any session in `sessions` has `status === "completed"` and (`webhook_delivered === true` or `metadata.webhook_status === "delivered"`) |
 
-### 4) Signature helper (client-side)
-Implement HMAC-SHA256 with the Web Crypto API to render the exact signature value in the preview, mirroring the edge function's `hmacSign`:
-```ts
-async function previewSignature(secret: string, payload: string) {
-  const key = await crypto.subtle.importKey(
-    "raw", new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
-  return "sha256=" + Array.from(new Uint8Array(sig), b => b.toString(16).padStart(2, "0")).join("");
-}
-```
+Special states:
+- Step 2 shows ⚠ amber "Pending review" when there is a request but `!hasApprovedAccess`.
+- Step 5 shows ⚠ when a webhook URL exists but the latest delivery for that key is `failed` (uses the same logic already computed for the webhook card).
+- Steps after an unmet prerequisite render disabled (muted, no action button).
+
+## Inline actions
+
+Each step's action scrolls to and focuses the relevant block via existing DOM (use `id` anchors added to the existing sections):
+- Step 1 → opens the existing *Request API Access* form (`setShowRequestForm(true)`).
+- Step 3 → triggers `createKey()` (respecting the existing 5-key cap & disabled state).
+- Step 4 → scrolls to the credentials card and toggles reveal on the newest active key.
+- Step 5 → scrolls to the webhook card and focuses the URL input for the newest active key.
+- Step 6 → opens a small popover linking to the Developer Portal "Send test payment" guide and exposes the existing *Send test event* button.
+
+## Technical details
+
+- **File:** `src/components/MerchantApiTab.tsx` only. No DB migration, no edge function, no new dependency.
+- **New component (inline in same file):** `OnboardingChecklist` — a pure function component that takes the already-computed values (`requests`, `hasApprovedAccess`, `keys`, `sessions`, `revealedFields`, helpers) and renders the card.
+- **Persistent "copied" flag:** wrap the existing `copyText` calls for `api_key` / `secret_key` to also set `localStorage.setItem('ezp_api_onboarding_copied_' + merchantId, '1')`. Read on mount into a `hasCopiedCreds` state.
+- **Anchors / refs:** add `useRef`s for `requestSectionRef`, `credentialsSectionRef`, `webhookSectionRef` and call `scrollIntoView({ behavior: 'smooth', block: 'start' })` from the step actions.
+- **Auto-collapse:** local state `checklistExpanded`, defaults to `true`; flips to `false` once `completedCount === total` and the user hasn't manually toggled it (tracked via a `userTouchedChecklist` ref).
+- **Styling:** matches the existing premium glass aesthetic — `Card` with subtle border, emerald for done, primary for in-progress, muted for todo, amber for warnings. Uses `lucide-react` icons already imported (`CheckCircle2`, `Circle`, `AlertCircle`, `ChevronDown`, `Sparkles`) — add any missing to the existing import line.
+- **No flicker:** computed via `useMemo` from the same data that drives the rest of the tab, so it stays in sync with the existing realtime refresh loop.
 
 ## Out of scope
-- No DB migration. No new columns. No edge-function changes.
-- No per-delivery payload archival (would require a new table and storage growth).
-- No webhook subscription model (event-type filtering) — current platform only emits `payment.completed` / `payment.failed`.
 
-Approve to apply.
+- No new database columns or tracking table — completion is derived, which keeps it accurate even after key rotation/revocation.
+- No changes to admin-side API hub.
+- No analytics events (can be added later if needed).
