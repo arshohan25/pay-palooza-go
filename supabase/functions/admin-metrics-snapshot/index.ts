@@ -184,9 +184,13 @@ Deno.serve(async (req) => {
     const cronHeader = req.headers.get("x-cron-secret") ?? "";
     const isCron = CRON_SECRET && cronHeader === CRON_SECRET;
 
+    // Service-role bearer also counts as a trusted system caller (used by pg_cron)
+    const authHeader = req.headers.get("authorization") ?? "";
+    const isServiceRole = authHeader === `Bearer ${SERVICE_ROLE}`;
+
     let actorId: string | undefined;
-    if (!isCron) {
-      const authz = await isAuthorizedAdmin(req.headers.get("authorization") ?? "");
+    if (!isCron && !isServiceRole) {
+      const authz = await isAuthorizedAdmin(authHeader);
       if (!authz.ok) {
         return json(403, { error: "Forbidden", code: "ADMIN_REQUIRED" });
       }
