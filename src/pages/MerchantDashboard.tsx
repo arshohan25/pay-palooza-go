@@ -21,7 +21,7 @@ import {
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
   ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine,
   Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package, MessageCircle, Search,
-  Undo2, Ticket, XCircle, Loader2
+  Undo2, Ticket, XCircle, Loader2, LogOut
 } from "lucide-react";
 import MerchantBusinessKycFlow from "@/components/MerchantBusinessKycFlow";
 import VendorOnboardingChecklist from "@/components/VendorOnboardingChecklist";
@@ -157,7 +157,7 @@ const stagger = {
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const MerchantDashboard = () => {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, signOut } = useAuth();
   const { isStaff, staffRole, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading } = useStaffAccess();
   const navigate = useNavigate();
   useUserSessionTimeout("merchant");
@@ -220,6 +220,16 @@ const MerchantDashboard = () => {
   useEffect(() => {
     return () => { if (balanceTimerRef.current) clearTimeout(balanceTimerRef.current); };
   }, []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOut();
+    } catch (err) {
+      // ignore — still redirect to login
+    } finally {
+      navigate("/merchant-login", { replace: true });
+    }
+  }, [signOut, navigate]);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -397,6 +407,15 @@ const MerchantDashboard = () => {
               <button onClick={() => setShowMenu(true)} className="tap-target w-10 h-10 rounded-xl glass-hero flex items-center justify-center">
                 <Menu size={16} />
               </button>
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={handleLogout}
+                className="tap-target h-10 px-3 rounded-xl glass-hero flex items-center gap-1.5 text-[12px] font-semibold"
+                aria-label="Logout"
+              >
+                <LogOut size={15} />
+                <span>Logout</span>
+              </motion.button>
             </div>
           </div>
 
