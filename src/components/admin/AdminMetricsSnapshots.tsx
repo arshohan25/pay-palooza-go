@@ -289,10 +289,18 @@ export function AdminMetricsSnapshots() {
               {busy === "backfill" ? "Backfill in progress" : "Activity log"}
             </CardTitle>
             {busy === "backfill" && (
-              <Badge variant="outline" className="gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                {backfillDone}/{backfillTarget} days
-              </Badge>
+              <div className="flex items-center gap-2">
+                {throttled && (
+                  <Badge variant="secondary" className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                    <AlertCircle className="h-3 w-3" />
+                    Polling throttled (stall detected) · {(pollDelay / 1000).toFixed(1)}s
+                  </Badge>
+                )}
+                <Badge variant="outline" className="gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  {backfillDone}/{backfillTarget} days
+                </Badge>
+              </div>
             )}
           </CardHeader>
           <CardContent className="space-y-3">
