@@ -167,6 +167,45 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_daily_metrics_snapshots: {
+        Row: {
+          cohorts: Json
+          created_at: string
+          generated_at: string
+          generated_by: string | null
+          id: string
+          ops_wall: Json
+          predictive: Json
+          snapshot_date: string
+          totals: Json
+          updated_at: string
+        }
+        Insert: {
+          cohorts?: Json
+          created_at?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          ops_wall?: Json
+          predictive?: Json
+          snapshot_date: string
+          totals?: Json
+          updated_at?: string
+        }
+        Update: {
+          cohorts?: Json
+          created_at?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          ops_wall?: Json
+          predictive?: Json
+          snapshot_date?: string
+          totals?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_dashboard_layouts: {
         Row: {
           created_at: string
