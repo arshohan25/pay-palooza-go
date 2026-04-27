@@ -448,6 +448,7 @@ export default function MerchantLoginPage() {
                 </div>
               ))}
             </div>
+            </fieldset>
           </form>
 
           {/* Footer links */}
