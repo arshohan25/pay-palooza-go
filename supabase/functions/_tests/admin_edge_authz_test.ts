@@ -189,7 +189,18 @@ Deno.test("no edge function touches threshold surface outside admin-authz covera
     if (hits.length === 0) continue;
 
     const covered = ADMIN_GATED_FUNCTIONS.some((f) => f.name === entry.name);
-    if (!covered) offenders.push({ name: entry.name, hits });
+    if (covered) continue;
+
+    // Allowlist exception: user-scoped cascade deletes. Only permitted when
+    // every hit is either a bare table reference or a delete write — never
+    // reads, updates, upserts, inserts (logs), or helper/RPC calls.
+    const allowlisted = entry.name in USER_SCOPED_CASCADE_ALLOWLIST;
+    const onlyCascadeDelete = hits.every(
+      (h) => h.kind === "table-ref" || h.kind === "table-write:delete",
+    );
+    if (allowlisted && onlyCascadeDelete) continue;
+
+    offenders.push({ name: entry.name, hits });
   }
 
   if (offenders.length > 0) {
