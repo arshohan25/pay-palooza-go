@@ -1,11 +1,21 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Save, RotateCcw, Sliders, Bell, ShieldAlert } from "lucide-react";
+import {
+  Loader2,
+  Save,
+  RotateCcw,
+  Sliders,
+  Bell,
+  ShieldAlert,
+  History,
+  ArrowRight,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAdmin } from "@/hooks/use-admin";
 
@@ -18,6 +28,17 @@ interface Threshold {
   min_value: number | null;
   max_value: number | null;
   updated_at: string;
+}
+
+interface AuditEntry {
+  id: string;
+  threshold_key: string;
+  action: "insert" | "update" | "delete";
+  actor_id: string | null;
+  actor_name: string | null;
+  before_value: { value?: number | null } | null;
+  after_value: { value?: number | null } | null;
+  changed_at: string;
 }
 
 const DEFAULTS: Record<string, number> = {
