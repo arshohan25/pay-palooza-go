@@ -12,6 +12,23 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, PieChart, Pie, Cell } from "recharts";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
+// ─── Credential generators (client-side, crypto.getRandomValues) ───
+const toHex = (bytes: Uint8Array) =>
+  Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+const genApiKey = (env: "live" | "test") =>
+  `${env}_pk_${toHex(crypto.getRandomValues(new Uint8Array(24)))}`;
+const genSecretKey = (env: "live" | "test") =>
+  `${env}_sk_${toHex(crypto.getRandomValues(new Uint8Array(32)))}`;
+const genAppPassword = () => {
+  const bytes = crypto.getRandomValues(new Uint8Array(18));
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/[+/=]/g, "").slice(0, 24);
+};
+
+const MAX_ACTIVE_KEYS = 5;
 
 interface ApiKey {
   id: string;
@@ -20,6 +37,8 @@ interface ApiKey {
   app_password: string | null;
   webhook_url: string | null;
   is_active: boolean;
+  environment: string;
+  rotation_expires_at: string | null;
   created_at: string;
 }
 
@@ -97,6 +116,18 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState("");
 
+  // Credential manager
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [newKeyEnv, setNewKeyEnv] = useState<"live" | "test">("live");
+  const [confirmAction, setConfirmAction] = useState<
+    | { kind: "rotate"; keyId: string }
+    | { kind: "revoke"; keyId: string }
+    | { kind: "delete"; keyId: string }
+    | null
+  >(null);
+  const [actionPending, setActionPending] = useState(false);
+  const [justCreatedId, setJustCreatedId] = useState<string | null>(null);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     const rangeCutoff = analyticsRange === "24h" ? 1 : analyticsRange === "7d" ? 7 : 30;
@@ -157,6 +188,106 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
     loadData();
   };
 
+  // ─── Credential lifecycle ───
+  const activeKeyCount = keys.filter(k => k.is_active).length;
+
+  const createKey = async () => {
+    if (activeKeyCount >= MAX_ACTIVE_KEYS) {
+      toast({ title: "Limit reached", description: `You can have at most ${MAX_ACTIVE_KEYS} active keys. Revoke one first.`, variant: "destructive" });
+      return;
+    }
+    setCreatingKey(true);
+    const { data, error } = await supabase
+      .from("merchant_api_keys")
+      .insert({
+        merchant_id: merchantId,
+        api_key: genApiKey(newKeyEnv),
+        secret_key: genSecretKey(newKeyEnv),
+        app_password: genAppPassword(),
+        environment: newKeyEnv,
+        is_active: true,
+      } as any)
+      .select("id")
+      .single();
+    setCreatingKey(false);
+    if (error) {
+      toast({ title: "Could not create key", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "API key created", description: "Copy your secret and app password now — they won't be shown again automatically." });
+    setJustCreatedId(data?.id ?? null);
+    if (data?.id) {
+      setRevealedFields(prev => {
+        const next = new Set(prev);
+        next.add(`secret-${data.id}`);
+        next.add(`apppw-${data.id}`);
+        return next;
+      });
+    }
+    await loadData();
+  };
+
+  const rotateKey = async (keyId: string) => {
+    const existing = keys.find(k => k.id === keyId);
+    if (!existing) return;
+    const env = (existing.environment === "test" ? "test" : "live") as "live" | "test";
+    setActionPending(true);
+    const { error } = await supabase
+      .from("merchant_api_keys")
+      .update({
+        api_key: genApiKey(env),
+        secret_key: genSecretKey(env),
+        app_password: genAppPassword(),
+        rotation_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any)
+      .eq("id", keyId);
+    setActionPending(false);
+    setConfirmAction(null);
+    if (error) {
+      toast({ title: "Rotation failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Credentials rotated", description: "The previous key, secret and app password are no longer valid." });
+    setRevealedFields(prev => {
+      const next = new Set(prev);
+      next.add(`secret-${keyId}`);
+      next.add(`apppw-${keyId}`);
+      return next;
+    });
+    setJustCreatedId(keyId);
+    await loadData();
+  };
+
+  const revokeKey = async (keyId: string) => {
+    setActionPending(true);
+    const { error } = await supabase
+      .from("merchant_api_keys")
+      .update({ is_active: false, updated_at: new Date().toISOString() } as any)
+      .eq("id", keyId);
+    setActionPending(false);
+    setConfirmAction(null);
+    if (error) {
+      toast({ title: "Revoke failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Key revoked", description: "API calls using this key will be rejected." });
+    await loadData();
+  };
+
+  const deleteKeyPermanently = async (keyId: string) => {
+    setActionPending(true);
+    const { error } = await supabase.from("merchant_api_keys").delete().eq("id", keyId);
+    setActionPending(false);
+    setConfirmAction(null);
+    if (error) {
+      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Key deleted permanently" });
+    await loadData();
+  };
+
   const copyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(label);
@@ -184,6 +315,8 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
 
   const hasPendingRequest = requests.some(r => r.status === "pending");
   const hasActiveKey = keys.some(k => k.is_active);
+  const hasApprovedAccess = requests.some(r => r.status === "approved") || hasActiveKey;
+  const isRotating = (k: ApiKey) => !!k.rotation_expires_at && new Date(k.rotation_expires_at).getTime() > Date.now();
 
   // ─── Analytics computation ───
   const analytics = useMemo(() => {
@@ -270,11 +403,39 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
     <div ref={ref} className="space-y-5">
       {/* API Access Requests */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 gap-2">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2"><Key size={15} className="text-primary" />API Access</h3>
-          {!hasPendingRequest && !hasActiveKey && (
-            <Button size="sm" onClick={() => setShowRequestForm(true)} className="h-8 text-xs gap-1"><Send size={12} />Request API Access</Button>
-          )}
+          <div className="flex items-center gap-2">
+            {hasApprovedAccess && (
+              <>
+                <div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5 text-[10px] font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setNewKeyEnv("live")}
+                    className={`px-2 py-1 rounded-md transition-colors ${newKeyEnv === "live" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+                  >Live</button>
+                  <button
+                    type="button"
+                    onClick={() => setNewKeyEnv("test")}
+                    className={`px-2 py-1 rounded-md transition-colors ${newKeyEnv === "test" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+                  >Test</button>
+                </div>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs gap-1"
+                  onClick={createKey}
+                  disabled={creatingKey || activeKeyCount >= MAX_ACTIVE_KEYS}
+                  title={activeKeyCount >= MAX_ACTIVE_KEYS ? `Limit of ${MAX_ACTIVE_KEYS} active keys reached` : undefined}
+                >
+                  {creatingKey ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                  New Key
+                </Button>
+              </>
+            )}
+            {!hasPendingRequest && !hasActiveKey && !hasApprovedAccess && (
+              <Button size="sm" onClick={() => setShowRequestForm(true)} className="h-8 text-xs gap-1"><Send size={12} />Request API Access</Button>
+            )}
+          </div>
         </div>
 
         {/* Request form */}
@@ -334,13 +495,31 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
               const maskValue = (val: string, field: string) => revealedFields.has(field) ? val : val.slice(0, 4) + "••••••••" + val.slice(-4);
 
               return (
-                <Card key={k.id} className="p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Badge className={k.is_active ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-muted text-muted-foreground"}>
-                      {k.is_active ? "Active" : "Revoked"}
-                    </Badge>
+                <Card key={k.id} className={`p-3 space-y-2 ${!k.is_active ? "opacity-70" : ""} ${justCreatedId === k.id ? "ring-2 ring-primary/40" : ""}`}>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge className={k.is_active ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-muted text-muted-foreground"}>
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${k.is_active ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+                        {k.is_active ? "Active" : "Revoked"}
+                      </Badge>
+                      <Badge variant="outline" className="text-[9px] uppercase">{k.environment || "live"}</Badge>
+                      {isRotating(k) && (
+                        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[9px] gap-1">
+                          <RefreshCw size={9} />Rotated
+                        </Badge>
+                      )}
+                    </div>
                     <span className="text-[10px] text-muted-foreground">{new Date(k.created_at).toLocaleDateString()}</span>
                   </div>
+                  {!k.is_active && (
+                    <p className="text-[10px] text-destructive flex items-center gap-1"><AlertTriangle size={10} />Revoked — API calls with these credentials will be rejected.</p>
+                  )}
+                  {justCreatedId === k.id && k.is_active && (
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 text-[10px] text-foreground flex items-start gap-2">
+                      <ShieldCheck size={12} className="text-primary mt-0.5 shrink-0" />
+                      <span>Copy your secret key and app password now. You can re-reveal them later, but rotate immediately if exposed.</span>
+                    </div>
+                  )}
 
                   {/* API Key */}
                   <div>
@@ -401,6 +580,39 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
                           <button onClick={() => { setEditingKeyId(k.id); setWebhookUrl(k.webhook_url || ""); }} className="text-[10px] text-primary font-medium shrink-0">Edit</button>
                         )}
                       </div>
+                    )}
+                  </div>
+
+                  {/* Lifecycle actions */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                    {k.is_active ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px] gap-1 flex-1"
+                          onClick={() => setConfirmAction({ kind: "rotate", keyId: k.id })}
+                        >
+                          <RefreshCw size={11} />Rotate
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px] gap-1 flex-1 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setConfirmAction({ kind: "revoke", keyId: k.id })}
+                        >
+                          <XCircle size={11} />Revoke
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-[10px] gap-1 flex-1 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setConfirmAction({ kind: "delete", keyId: k.id })}
+                      >
+                        <Trash2 size={11} />Delete permanently
+                      </Button>
                     )}
                   </div>
                 </Card>
@@ -830,6 +1042,40 @@ app.post('/webhook', (req, res) => {
           </div>
         )}
       </div>
+
+      {/* Confirm rotate / revoke / delete */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => { if (!open && !actionPending) setConfirmAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.kind === "rotate" && "Rotate this credential?"}
+              {confirmAction?.kind === "revoke" && "Revoke this API key?"}
+              {confirmAction?.kind === "delete" && "Delete this key permanently?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.kind === "rotate" && "A fresh API key, secret and app password will be generated. The previous credentials will stop working immediately — make sure to update any integrations that use them."}
+              {confirmAction?.kind === "revoke" && "API calls using this key will be rejected immediately. The key stays visible in your history so logs and past sessions remain readable. You can delete it permanently afterwards."}
+              {confirmAction?.kind === "delete" && "This permanently removes the key and any audit logs that reference it. This cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={actionPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!confirmAction) return;
+                if (confirmAction.kind === "rotate") rotateKey(confirmAction.keyId);
+                else if (confirmAction.kind === "revoke") revokeKey(confirmAction.keyId);
+                else deleteKeyPermanently(confirmAction.keyId);
+              }}
+              className={confirmAction?.kind === "rotate" ? "" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+            >
+              {actionPending ? <Loader2 size={14} className="animate-spin" /> : (confirmAction?.kind === "rotate" ? "Rotate now" : confirmAction?.kind === "revoke" ? "Revoke key" : "Delete forever")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });
