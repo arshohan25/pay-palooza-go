@@ -4,6 +4,8 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  Loader2,
+  Inbox,
   Bell,
   CalendarClock,
   CheckCircle2,
