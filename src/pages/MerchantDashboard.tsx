@@ -40,6 +40,7 @@ import { haptics } from "@/lib/haptics";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import MerchantApiTab from "@/components/MerchantApiTab";
+import MerchantApiAccessGate from "@/components/MerchantApiAccessGate";
 import MerchantAnalyticsTab from "@/components/MerchantAnalyticsTab";
 import MerchantProductsTab from "@/components/MerchantProductsTab";
 import MerchantOrdersTab from "@/components/MerchantOrdersTab";
@@ -181,10 +182,13 @@ const MerchantDashboard = () => {
   }, [staffAllowedTabs, isDisabled]);
 
   const visibleMenuItems = useMemo(() => {
-    let items = menuItems.filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
+    // The "api" item is intentionally always shown — when locked, it renders an access-request gate.
+    let items = menuItems.filter(item => item.id === "api" || !item.toggleKey || !isDisabled(item.toggleKey));
     if (staffAllowedTabs) items = items.filter(item => staffAllowedTabs.has(item.id));
     return items;
   }, [isDisabled, staffAllowedTabs]);
+
+  const apiLocked = isDisabled("merchant_api");
 
   const [activeTab, setActiveTab] = useState<MerchTab>("overview");
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
@@ -603,7 +607,13 @@ const MerchantDashboard = () => {
               {activeTab === "transactions" && <div className="px-4 py-4"><TxnTab txns={txns} merchant={merchant} /></div>}
               {activeTab === "settlements"  && <div className="px-4 py-4"><SettlementTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
               {activeTab === "mdr"          && <div className="px-4 py-4"><MDRTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
-              {activeTab === "api"          && merchant && <div className="px-4 py-4"><MerchantApiTab merchantId={merchant.id} /></div>}
+              {activeTab === "api"          && merchant && (
+                <div className="px-4 py-4">
+                  {apiLocked
+                    ? <MerchantApiAccessGate userId={user!.id} merchantId={merchant.id} />
+                    : <MerchantApiTab merchantId={merchant.id} />}
+                </div>
+              )}
               {activeTab === "refunds"      && merchant && <div className="px-4 py-4"><MerchantRefundsTab merchantId={merchant.id} /></div>}
               {activeTab === "staff"        && merchant && <div className="px-4 py-4"><MerchantStaffTab merchantId={merchant.id} /></div>}
               {activeTab === "customers"    && merchant && <div className="px-4 py-4"><MerchantCustomersTab merchantId={merchant.id} /></div>}

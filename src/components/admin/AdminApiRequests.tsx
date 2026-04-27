@@ -16,6 +16,7 @@ import AdminApiIpWhitelist from "./AdminApiIpWhitelist";
 import AdminApiWebhooks from "./AdminApiWebhooks";
 import AdminApiSandbox from "./AdminApiSandbox";
 import AdminApiUsageAnalytics from "./AdminApiUsageAnalytics";
+import AdminApiAccessRequests from "./AdminApiAccessRequests";
 
 async function auditLog(action: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -47,7 +48,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "destruc
 };
 
 export default function AdminApiRequests() {
-  const [activeTab, setActiveTab] = useState<"requests" | "keys" | "logs" | "rate-limits" | "ip-whitelist" | "webhooks" | "sandbox" | "usage">("requests");
+  const [activeTab, setActiveTab] = useState<"requests" | "access" | "keys" | "logs" | "rate-limits" | "ip-whitelist" | "webhooks" | "sandbox" | "usage">("requests");
   const openGenerateKeyRef = React.useRef<(() => void) | null>(null);
   const [requests, setRequests] = useState<ApiRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,7 +197,8 @@ export default function AdminApiRequests() {
       {/* Sub-tabs */}
       <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5 overflow-x-auto max-w-full">
         {([
-          { key: "requests" as const, label: "Requests" },
+          { key: "requests" as const, label: "Key Requests" },
+          { key: "access" as const, label: "Access Requests" },
           { key: "keys" as const, label: "API Keys" },
           { key: "logs" as const, label: "Logs" },
           { key: "rate-limits" as const, label: "Rate Limits" },
@@ -215,7 +217,9 @@ export default function AdminApiRequests() {
         ))}
       </div>
 
-      {activeTab === "keys" ? (
+      {activeTab === "access" ? (
+        <AdminApiAccessRequests search={search} />
+      ) : activeTab === "keys" ? (
         <AdminApiKeys search={search} onGenerateRef={(fn) => { openGenerateKeyRef.current = fn; }} />
       ) : activeTab === "logs" ? (
         <AdminApiLogs search={search} />
