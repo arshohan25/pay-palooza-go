@@ -42,6 +42,7 @@ interface Application {
 
 export default function AdminMerchantApplications() {
   const { getLabelForName } = useMerchantCategories();
+  const [view, setView] = useState<"applications" | "templates">("applications");
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending");
@@ -162,6 +163,30 @@ export default function AdminMerchantApplications() {
 
   return (
     <div className="space-y-4">
+      {/* Sub-tabs */}
+      <div className="inline-flex p-1 rounded-xl bg-muted">
+        <button
+          onClick={() => setView("applications")}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition ${
+            view === "applications" ? "bg-background text-foreground shadow" : "text-muted-foreground"
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" /> Applications
+        </button>
+        <button
+          onClick={() => setView("templates")}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition ${
+            view === "templates" ? "bg-background text-foreground shadow" : "text-muted-foreground"
+          }`}
+        >
+          <Eye className="w-3.5 h-3.5" /> Templates
+        </button>
+      </div>
+
+      {view === "templates" ? (
+        <AdminApprovalTemplatePreview />
+      ) : (
+        <>
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="border-0 shadow-[var(--shadow-card)]">
