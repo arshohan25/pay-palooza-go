@@ -115,6 +115,18 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState("");
 
+  // Credential manager
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [newKeyEnv, setNewKeyEnv] = useState<"live" | "test">("live");
+  const [confirmAction, setConfirmAction] = useState<
+    | { kind: "rotate"; keyId: string }
+    | { kind: "revoke"; keyId: string }
+    | { kind: "delete"; keyId: string }
+    | null
+  >(null);
+  const [actionPending, setActionPending] = useState(false);
+  const [justCreatedId, setJustCreatedId] = useState<string | null>(null);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     const rangeCutoff = analyticsRange === "24h" ? 1 : analyticsRange === "7d" ? 7 : 30;
