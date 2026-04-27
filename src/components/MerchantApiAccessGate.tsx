@@ -69,10 +69,32 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
     navigate(`/account?${params.toString()}`);
   };
 
+  const status = latest?.status;
+  const pending = status === "pending";
+  const rejected = status === "rejected";
+
+  // 7-day cooldown after rejection: re-enable only after the cooldown elapses.
+  const COOLDOWN_DAYS = 7;
+  const COOLDOWN_MS = COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+  const rejectedAt = rejected ? new Date(latest!.reviewed_at ?? latest!.created_at).getTime() : 0;
+  const cooldownRemainingMs = rejected ? Math.max(0, rejectedAt + COOLDOWN_MS - Date.now()) : 0;
+  const inCooldown = rejected && cooldownRemainingMs > 0;
+  const cooldownUnlockAt = rejected ? new Date(rejectedAt + COOLDOWN_MS) : null;
+
+  const formatRemaining = (ms: number) => {
+    const totalHours = Math.ceil(ms / (60 * 60 * 1000));
+    if (totalHours <= 24) return `${totalHours}h`;
+    const days = Math.ceil(totalHours / 24);
+    return `${days}d`;
+  };
+
   const requestViaChat = async () => {
+    if (inCooldown) {
+      toast.error(`You can submit a new request after ${cooldownUnlockAt!.toLocaleDateString()} (${formatRemaining(cooldownRemainingMs)} remaining).`);
+      return;
+    }
     setSubmitting(true);
-    const isPending = latest?.status === "pending";
-    if (!isPending) {
+    if (!pending) {
       const { error } = await (supabase as any).from("merchant_api_access_requests").insert({
         user_id: userId,
         merchant_id: merchantId ?? null,
@@ -89,10 +111,6 @@ export default function MerchantApiAccessGate({ userId, merchantId }: Props) {
     setSubmitting(false);
     openChat(true);
   };
-
-  const status = latest?.status;
-  const pending = status === "pending";
-  const rejected = status === "rejected";
 
   const relativeTime = (iso: string) => {
     const diff = Date.now() - new Date(iso).getTime();
