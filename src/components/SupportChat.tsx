@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, Check, CheckCheck, Lock, Trash2, Timer, Shield, ShieldAlert } from "lucide-react";
+import { Send, Bot, User, Loader2, Check, CheckCheck, Lock, Trash2, Timer, Shield, ShieldAlert, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
