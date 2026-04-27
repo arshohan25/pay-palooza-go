@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { buildMerchantApiAccessPrefill } from "@/lib/buildMerchantApiAccessPrefill";
+import { redactSensitive } from "@/lib/redactSensitive";
 
 interface AccessRequest {
   id: string;
