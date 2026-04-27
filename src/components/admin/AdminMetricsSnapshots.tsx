@@ -215,6 +215,59 @@ export function AdminMetricsSnapshots() {
         </CardContent>
       </Card>
 
+      {(busy === "backfill" || statusLog.length > 0) && (
+        <Card className="border-border/60">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" />
+              {busy === "backfill" ? "Backfill in progress" : "Activity log"}
+            </CardTitle>
+            {busy === "backfill" && (
+              <Badge variant="outline" className="gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {backfillDone}/{backfillTarget} days
+              </Badge>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {busy === "backfill" && (
+              <div className="space-y-1.5">
+                <Progress value={backfillTarget ? (backfillDone / backfillTarget) * 100 : 0} />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Started with {backfillStart} stored</span>
+                  <span>{backfillTarget ? Math.round((backfillDone / backfillTarget) * 100) : 0}% complete</span>
+                </div>
+              </div>
+            )}
+            <ScrollArea className="h-40 rounded-md border border-border/40 bg-muted/30 p-2">
+              <div className="space-y-1 font-mono text-[11px]">
+                {statusLog.length === 0 ? (
+                  <p className="text-muted-foreground">No activity yet.</p>
+                ) : (
+                  statusLog.map((entry) => (
+                    <div key={entry.ts} className="flex items-start gap-2">
+                      {entry.tone === "success" ? (
+                        <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />
+                      ) : entry.tone === "error" ? (
+                        <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />
+                      ) : (
+                        <Loader2 className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                      )}
+                      <span className="text-muted-foreground">[{format(new Date(entry.ts), "HH:mm:ss")}]</span>
+                      <span className={cn(
+                        entry.tone === "error" && "text-destructive",
+                        entry.tone === "success" && "text-emerald-600 dark:text-emerald-400",
+                        entry.tone === "info" && "text-foreground",
+                      )}>{entry.text}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+
       {loading ? (
         <p className="py-10 text-center text-muted-foreground">Loading snapshots…</p>
       ) : !snapshot ? (
