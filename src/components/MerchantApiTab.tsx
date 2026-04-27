@@ -402,11 +402,39 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
     <div ref={ref} className="space-y-5">
       {/* API Access Requests */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 gap-2">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2"><Key size={15} className="text-primary" />API Access</h3>
-          {!hasPendingRequest && !hasActiveKey && (
-            <Button size="sm" onClick={() => setShowRequestForm(true)} className="h-8 text-xs gap-1"><Send size={12} />Request API Access</Button>
-          )}
+          <div className="flex items-center gap-2">
+            {hasApprovedAccess && (
+              <>
+                <div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5 text-[10px] font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setNewKeyEnv("live")}
+                    className={`px-2 py-1 rounded-md transition-colors ${newKeyEnv === "live" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+                  >Live</button>
+                  <button
+                    type="button"
+                    onClick={() => setNewKeyEnv("test")}
+                    className={`px-2 py-1 rounded-md transition-colors ${newKeyEnv === "test" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+                  >Test</button>
+                </div>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs gap-1"
+                  onClick={createKey}
+                  disabled={creatingKey || activeKeyCount >= MAX_ACTIVE_KEYS}
+                  title={activeKeyCount >= MAX_ACTIVE_KEYS ? `Limit of ${MAX_ACTIVE_KEYS} active keys reached` : undefined}
+                >
+                  {creatingKey ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                  New Key
+                </Button>
+              </>
+            )}
+            {!hasPendingRequest && !hasActiveKey && !hasApprovedAccess && (
+              <Button size="sm" onClick={() => setShowRequestForm(true)} className="h-8 text-xs gap-1"><Send size={12} />Request API Access</Button>
+            )}
+          </div>
         </div>
 
         {/* Request form */}
