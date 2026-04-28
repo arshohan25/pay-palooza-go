@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,14 @@ function formatCountdown(seconds: number) {
 
 export default function MerchantLoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTarget = useMemo(() => {
+    const raw = searchParams.get("redirect");
+    if (raw && raw.startsWith("/merchant") && !raw.startsWith("/merchant-login")) {
+      return raw;
+    }
+    return "/merchant";
+  }, [searchParams]);
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [showPin, setShowPin] = useState(false);
@@ -226,7 +234,7 @@ export default function MerchantLoginPage() {
       } catch {}
 
       toast.success("Welcome back, merchant!");
-      navigate("/merchant", { replace: true });
+      navigate(redirectTarget, { replace: true });
     } catch (err: any) {
       toast.error(err?.message || "Sign-in failed");
     } finally {
