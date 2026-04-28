@@ -29,7 +29,8 @@ export function useMerchantSessionWatchdog() {
 
   const onMerchantRoute =
     location.pathname.startsWith("/merchant") &&
-    location.pathname !== "/merchant-login";
+    location.pathname !== "/merchant-login" &&
+    location.pathname !== "/merchant-manager-login";
 
   useEffect(() => {
     if (!onMerchantRoute) {
