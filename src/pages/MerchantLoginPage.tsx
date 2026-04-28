@@ -183,6 +183,7 @@ export default function MerchantLoginPage() {
         phone: cleanedPhone,
         pin: pinValue,
         device_fp,
+        mode: loginMode,
         ...extras,
       },
     });
