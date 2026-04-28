@@ -5604,6 +5604,36 @@ export type Database = {
         }
         Relationships: []
       }
+      trusted_devices: {
+        Row: {
+          created_at: string
+          device_fp: string
+          id: string
+          last_seen_at: string
+          phone: string
+          portal: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_fp: string
+          id?: string
+          last_seen_at?: string
+          phone: string
+          portal: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_fp?: string
+          id?: string
+          last_seen_at?: string
+          phone?: string
+          portal?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_feature_overrides: {
         Row: {
           created_at: string

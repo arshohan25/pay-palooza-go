@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, AlertCircle, Eye, EyeOff, ArrowRight, RefreshCw,
@@ -13,6 +13,9 @@ import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
 const logo = "/icons/easypay-logo.webp";
 import KycFlow from "@/components/KycFlow";
+import { useDeviceOtpVerification, type DeviceOtpPortal } from "@/hooks/use-device-otp-verification";
+import DeviceOtpStep from "@/components/DeviceOtpStep";
+import DeviceVerifiedConfirm from "@/components/DeviceVerifiedConfirm";
 
 // ─── Storage keys (only for UX preferences, NOT auth) ─────────────────────────
 const LANG_KEY       = "mfs_ui_lang";
@@ -398,6 +401,14 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [forgotOtpSending, setForgotOtpSending] = useState(false);
   const [serverOtp, setServerOtp] = useState(""); // DEV: stores OTP returned from server
 
+  // ── Device-bound first-login OTP ────────────────────────────────────────────
+  // Phase: 'none' | 'otp' | 'confirm' — overlays the auth flow after PIN success.
+  const [devicePhase, setDevicePhase] = useState<"none" | "otp" | "confirm">("none");
+  const [devicePortal, setDevicePortal] = useState<DeviceOtpPortal>("user");
+  const [devicePhone, setDevicePhone] = useState<string>("");
+  const [deviceConfirmLoading, setDeviceConfirmLoading] = useState(false);
+  const deviceOtp = useDeviceOtpVerification(devicePortal);
+
   // Check if returning user (has phone stored locally for UX only)
   const returningPhone = localStorage.getItem(DEVICE_KEY) ?? "";
   const isNewUser = !returningPhone;
@@ -561,8 +572,44 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       localStorage.setItem(DEVICE_KEY, loginPhone);
       localStorage.setItem("mfs_registered_phone", loginPhone);
       haptics.success();
-      goTo("success");
-      setTimeout(onAuthenticated, 1500);
+
+      // ── Device-bound first-login OTP gate ──────────────────────────────
+      // Resolve user's primary role to pick the correct portal.
+      let portal: DeviceOtpPortal = "user";
+      try {
+        if (user) {
+          const { data: rolesData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id);
+          const roles = (rolesData ?? []).map((r: any) => r.role);
+          if (roles.includes("super_distributor")) portal = "super_distributor";
+          else if (roles.includes("distributor")) portal = "distributor";
+          else if (roles.includes("agent")) portal = "agent";
+          else if (roles.includes("merchant")) portal = "merchant";
+          else portal = "user";
+        }
+      } catch {}
+      setDevicePortal(portal);
+      setDevicePhone(loginPhone);
+
+      // Check if device is already trusted for this user/portal.
+      const trusted = await deviceOtp.checkTrusted(loginPhone);
+      if (trusted) {
+        setDevicePhase("confirm");
+        setIsSubmitting(false);
+        return;
+      }
+
+      try {
+        await deviceOtp.sendOtp(loginPhone);
+        setDevicePhase("otp");
+      } catch {
+        // If OTP can't be sent (e.g., rate-limited), fall through to success
+        // rather than blocking the user — security is still gated by PIN.
+        goTo("success");
+        setTimeout(onAuthenticated, 1500);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("Invalid login credentials")) {
@@ -587,7 +634,41 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [phone, returningPhone, goTo, onAuthenticated, t]);
+  }, [phone, returningPhone, goTo, onAuthenticated, t, deviceOtp]);
+
+  // ── Device OTP handlers ──────────────────────────────────────────────────
+  const handleDeviceVerify = useCallback(async (code: string) => {
+    if (!devicePhone) return;
+    const ok = await deviceOtp.verifyOtp(devicePhone, code);
+    if (ok) setDevicePhase("confirm");
+  }, [devicePhone, deviceOtp]);
+
+  const handleDeviceResend = useCallback(async () => {
+    if (!devicePhone) return;
+    try { await deviceOtp.sendOtp(devicePhone); } catch {}
+  }, [devicePhone, deviceOtp]);
+
+  const handleDeviceContinue = useCallback(async () => {
+    if (!devicePhone) return;
+    setDeviceConfirmLoading(true);
+    try {
+      await deviceOtp.markTrusted(devicePhone);
+      goTo("success");
+      setTimeout(onAuthenticated, 1200);
+    } finally {
+      setDeviceConfirmLoading(false);
+    }
+  }, [devicePhone, deviceOtp, goTo, onAuthenticated]);
+
+  const portalLabel = useMemo(() => {
+    switch (devicePortal) {
+      case "merchant": return "Merchant";
+      case "agent": return "Agent";
+      case "distributor": return "Distributor";
+      case "super_distributor": return "Super Distributor";
+      default: return "Customer";
+    }
+  }, [devicePortal]);
 
   // ── Forgot PIN: send OTP → verify OTP → new PIN → server reset ─────────
   const handleForgotSendOtp = useCallback(async () => {
@@ -681,6 +762,46 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const registerStep = { register_phone: 0, register_otp: 1, register_pin: 2 }[mode as string] ?? -1;
   const loginStep    = { login_phone: 0, login_pin: 1 }[mode as string] ?? -1;
   const showBack     = mode !== "landing" && mode !== "success";
+
+  // Device-bound first-login OTP overlay — takes over the screen when active.
+  if (devicePhase !== "none") {
+    return (
+      <div className="fixed inset-0 z-[110] flex flex-col bg-gradient-to-br from-slate-950 via-indigo-950 to-emerald-950 text-white overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-32 -left-24 h-[420px] w-[420px] rounded-full bg-emerald-500/30 blur-[120px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-40 -right-24 h-[460px] w-[460px] rounded-full bg-indigo-500/30 blur-[140px]"
+        />
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
+          <div className="w-full max-w-md">
+            {devicePhase === "otp" && (
+              <DeviceOtpStep
+                phone={devicePhone}
+                portalLabel={portalLabel}
+                resendIn={deviceOtp.resendIn}
+                loading={deviceOtp.status === "verifying" || deviceOtp.status === "sending"}
+                error={deviceOtp.error}
+                devOtp={deviceOtp.devOtp}
+                onVerify={handleDeviceVerify}
+                onResend={handleDeviceResend}
+              />
+            )}
+            {devicePhase === "confirm" && (
+              <DeviceVerifiedConfirm
+                phone={devicePhone}
+                portalLabel={portalLabel}
+                loading={deviceConfirmLoading}
+                onContinue={handleDeviceContinue}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-background overflow-hidden">
