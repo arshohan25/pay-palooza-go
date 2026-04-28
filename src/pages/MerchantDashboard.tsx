@@ -215,6 +215,7 @@ const MerchantDashboard = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const logoutTriggerRef = useRef<HTMLButtonElement>(null);
   const balanceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleBalance = () => {
