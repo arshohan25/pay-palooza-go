@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, AlertCircle, Eye, EyeOff, ArrowRight, RefreshCw,
