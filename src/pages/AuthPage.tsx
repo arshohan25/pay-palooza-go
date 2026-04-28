@@ -13,6 +13,9 @@ import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
 const logo = "/icons/easypay-logo.webp";
 import KycFlow from "@/components/KycFlow";
+import { useDeviceOtpVerification, type DeviceOtpPortal } from "@/hooks/use-device-otp-verification";
+import DeviceOtpStep from "@/components/DeviceOtpStep";
+import DeviceVerifiedConfirm from "@/components/DeviceVerifiedConfirm";
 
 // ─── Storage keys (only for UX preferences, NOT auth) ─────────────────────────
 const LANG_KEY       = "mfs_ui_lang";
