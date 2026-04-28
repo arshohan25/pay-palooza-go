@@ -441,15 +441,6 @@ export default function MerchantLoginPage() {
             />
           )}
 
-          {step === "confirm" && (
-            <DeviceVerifiedConfirm
-              phone={pendingSessionRef.current?.cleanedPhone || ""}
-              portalLabel="Merchant"
-              loading={confirmLoading}
-              onContinue={handleConfirmContinue}
-            />
-          )}
-
           {step === "signin" && (
           /* Glass card */
           <form
