@@ -432,13 +432,30 @@ export default function MerchantStaffTab({ merchantId }: Props) {
 
       <Card className="border-0 shadow-elevated">
         <CardContent className="p-4 space-y-1">
-          <div className="flex items-center gap-2"><Shield size={14} className="text-primary" /><p className="text-xs font-semibold text-foreground">Role Presets</p></div>
-          <p className="text-[10px] text-muted-foreground">Pick a role to pre-fill defaults, then fine-tune feature access for each person.</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2"><Shield size={14} className="text-primary" /><p className="text-xs font-semibold text-foreground">Role Presets</p></div>
+            {customPresets.length > 0 && (
+              <Badge variant="outline" className="text-[9px]"><Bookmark size={9} className="mr-0.5" />{customPresets.length} custom</Badge>
+            )}
+          </div>
+          <p className="text-[10px] text-muted-foreground">Pick a role to pre-fill defaults, then fine-tune feature access — or save your own presets.</p>
           <div className="grid grid-cols-3 gap-2 text-[10px] text-muted-foreground pt-1">
             <div><p className="font-semibold text-foreground">Manager</p><p>{ROLE_DEFAULTS.Manager.length} features</p></div>
             <div><p className="font-semibold text-foreground">Cashier</p><p>{ROLE_DEFAULTS.Cashier.length} features</p></div>
             <div><p className="font-semibold text-foreground">Viewer</p><p>{ROLE_DEFAULTS.Viewer.length} features</p></div>
           </div>
+          {customPresets.length > 0 && (
+            <div className="pt-2 border-t border-border/40 mt-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">My presets</p>
+              <div className="flex flex-wrap gap-1.5">
+                {customPresets.map(p => (
+                  <Badge key={p.id} variant="outline" className="text-[10px] font-medium">
+                    {p.name} · {countActive(p.permissions)}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
