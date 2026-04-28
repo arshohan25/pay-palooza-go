@@ -39,13 +39,25 @@ function PermissionPicker({
   value,
   onChange,
   role,
+  customPresets,
+  onSavePreset,
+  onRenamePreset,
+  onDeletePreset,
 }: {
   value: Record<string, boolean>;
   onChange: (next: Record<string, boolean>) => void;
   role: StaffRole;
+  customPresets: CustomPreset[];
+  onSavePreset: (name: string, perms: Record<string, boolean>) => Promise<void>;
+  onRenamePreset: (id: string, name: string) => Promise<void>;
+  onDeletePreset: (id: string) => Promise<void>;
 }) {
   const active = countActive(value);
   const total = PERMISSION_KEYS.length;
+  const [savingPreset, setSavingPreset] = useState(false);
+  const [presetName, setPresetName] = useState("");
+  const [showSave, setShowSave] = useState(false);
+  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
 
   const toggle = (key: string, checked: boolean) => {
     const set = new Set(Object.entries(value).filter(([, v]) => v).map(([k]) => k));
@@ -57,20 +69,159 @@ function PermissionPicker({
     onChange(next);
   };
 
-  const applyPreset = () => {
-    onChange(defaultPermissionsFor(role));
-    toast.success(`Applied ${role} preset`);
+  const applyChoice = (val: string) => {
+    if (val === `__role_${role}__`) {
+      onChange(defaultPermissionsFor(role));
+      toast.success(`Applied ${role} preset`);
+      return;
+    }
+    if (val.startsWith("__role_")) {
+      const r = val.replace("__role_", "").replace("__", "") as StaffRole;
+      onChange(defaultPermissionsFor(r));
+      toast.success(`Applied ${r} preset`);
+      return;
+    }
+    if (val === "__save_current__") {
+      setShowSave(true);
+      return;
+    }
+    const preset = customPresets.find(p => p.id === val);
+    if (preset) {
+      onChange(applyPermissionSet(preset.permissions));
+      toast.success(`Applied "${preset.name}"`);
+    }
+  };
+
+  const doSave = async () => {
+    const name = presetName.trim();
+    if (!name) { toast.error("Name required"); return; }
+    if (active === 0) { toast.error("Select at least one feature first"); return; }
+    setSavingPreset(true);
+    try {
+      await onSavePreset(name, value);
+      setPresetName("");
+      setShowSave(false);
+    } finally {
+      setSavingPreset(false);
+    }
+  };
+
+  const doRename = async () => {
+    if (!renaming) return;
+    const name = renaming.name.trim();
+    if (!name) { toast.error("Name required"); return; }
+    await onRenamePreset(renaming.id, name);
+    setRenaming(null);
   };
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2">
-        <div className="text-[11px] text-muted-foreground">
-          <span className="font-semibold text-foreground">{active}</span> of {total} features granted
+      <div className="rounded-xl bg-muted/40 px-3 py-2 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="text-[11px] text-muted-foreground">
+            <span className="font-semibold text-foreground">{active}</span> of {total} features granted
+          </div>
         </div>
-        <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={applyPreset}>
-          <RefreshCw size={12} className="mr-1" /> Reset to {role} preset
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select onValueChange={applyChoice}>
+            <SelectTrigger className="h-8 text-[11px] flex-1">
+              <SelectValue placeholder="Apply preset…" />
+            </SelectTrigger>
+            <SelectContent className="z-[120]">
+              <SelectGroup>
+                <SelectLabel className="text-[10px]">Built-in</SelectLabel>
+                <SelectItem value="__role_Manager__" className="text-xs">Manager · {ROLE_DEFAULTS.Manager.length}</SelectItem>
+                <SelectItem value="__role_Cashier__" className="text-xs">Cashier · {ROLE_DEFAULTS.Cashier.length}</SelectItem>
+                <SelectItem value="__role_Viewer__" className="text-xs">Viewer · {ROLE_DEFAULTS.Viewer.length}</SelectItem>
+              </SelectGroup>
+              {customPresets.length > 0 && (
+                <>
+                  <SelectSeparator />
+                  <SelectGroup>
+                    <SelectLabel className="text-[10px]">My presets</SelectLabel>
+                    {customPresets.map(p => (
+                      <SelectItem key={p.id} value={p.id} className="text-xs">
+                        {p.name} · {countActive(p.permissions)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </>
+              )}
+              <SelectSeparator />
+              <SelectItem value="__save_current__" className="text-xs text-primary">
+                + Save current as preset…
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="outline" className="h-8 px-2" title="Save current as preset" onClick={() => setShowSave(s => !s)}>
+            <Bookmark size={13} />
+          </Button>
+        </div>
+
+        {showSave && (
+          <div className="flex items-center gap-1.5 pt-1">
+            <Input
+              autoFocus
+              value={presetName}
+              onChange={e => setPresetName(e.target.value)}
+              placeholder="e.g. Night Cashier"
+              className="h-8 text-xs"
+              maxLength={40}
+              onKeyDown={(e) => { if (e.key === "Enter") doSave(); }}
+            />
+            <Button size="sm" className="h-8 px-3 text-[11px]" disabled={savingPreset} onClick={doSave}>
+              {savingPreset ? "Saving…" : "Save"}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => { setShowSave(false); setPresetName(""); }}>
+              <X size={13} />
+            </Button>
+          </div>
+        )}
+
+        {customPresets.length > 0 && (
+          <div className="pt-1 space-y-1">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Manage custom</p>
+            <div className="flex flex-wrap gap-1.5">
+              {customPresets.map(p => (
+                <div key={p.id} className="flex items-center gap-1 rounded-lg border border-border/50 bg-background px-2 py-1">
+                  {renaming?.id === p.id ? (
+                    <>
+                      <Input
+                        autoFocus
+                        value={renaming.name}
+                        onChange={e => setRenaming({ id: p.id, name: e.target.value })}
+                        className="h-6 text-[11px] w-28"
+                        maxLength={40}
+                        onKeyDown={(e) => { if (e.key === "Enter") doRename(); if (e.key === "Escape") setRenaming(null); }}
+                      />
+                      <button onClick={doRename} className="text-emerald-600"><Check size={12} /></button>
+                      <button onClick={() => setRenaming(null)} className="text-muted-foreground"><X size={12} /></button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[11px] font-medium text-foreground">{p.name}</span>
+                      <span className="text-[10px] text-muted-foreground">·{countActive(p.permissions)}</span>
+                      <button
+                        className="text-muted-foreground hover:text-foreground ml-0.5"
+                        title="Rename"
+                        onClick={() => setRenaming({ id: p.id, name: p.name })}
+                      >
+                        <Pencil size={11} />
+                      </button>
+                      <button
+                        className="text-destructive/70 hover:text-destructive"
+                        title="Delete"
+                        onClick={() => onDeletePreset(p.id)}
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3 max-h-[42vh] overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
