@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle, Send, SlidersHorizontal, RefreshCw } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
+import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle, Send, SlidersHorizontal, Bookmark, Pencil, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import {
@@ -18,9 +19,11 @@ import {
   ROLE_DEFAULTS,
   defaultPermissionsFor,
   expandImplies,
+  applyPermissionSet,
   countActive,
   type StaffRole,
 } from "@/lib/staffPermissions";
+import { usePermissionPresets, type CustomPreset } from "@/hooks/use-permission-presets";
 
 const roleColors: Record<string, string> = {
   Manager: "bg-primary/10 text-primary border-primary/20",
