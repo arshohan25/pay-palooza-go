@@ -745,7 +745,19 @@ const MerchantDashboard = () => {
 
       {/* ── Logout confirmation ── */}
       <AlertDialog open={showLogoutConfirm} onOpenChange={(open) => !loggingOut && setShowLogoutConfirm(open)}>
-        <AlertDialogContent className="max-w-[340px] rounded-[22px] border border-white/10 bg-gradient-to-br from-slate-950/95 via-slate-900/95 to-indigo-950/95 backdrop-blur-2xl p-0 overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)]">
+        <AlertDialogContent
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            logoutTriggerRef.current?.focus();
+          }}
+          onEscapeKeyDown={(e) => {
+            if (loggingOut) e.preventDefault();
+          }}
+          onPointerDownOutside={(e) => {
+            if (loggingOut) e.preventDefault();
+          }}
+          className="max-w-[340px] rounded-[22px] border border-white/10 bg-gradient-to-br from-slate-950/95 via-slate-900/95 to-indigo-950/95 backdrop-blur-2xl p-0 overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] data-[state=open]:duration-200 data-[state=closed]:duration-200 data-[state=open]:ease-out data-[state=closed]:ease-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95"
+        >
           <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-rose-500/20 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-indigo-500/20 blur-3xl" />
 
@@ -767,9 +779,9 @@ const MerchantDashboard = () => {
             <div className="mt-5 flex items-center justify-center gap-2.5">
               <AlertDialogCancel
                 disabled={loggingOut}
-                className="m-0 h-10 min-w-[88px] rounded-full border border-white/15 bg-white/5 px-5 text-[13px] font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all"
+                className="m-0 h-10 min-w-[88px] rounded-full border border-white/15 bg-white/5 px-5 text-[13px] font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
               >
-                No
+                {loggingOut ? <span className="text-white/50">Please wait</span> : "No"}
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={(e) => {
@@ -777,7 +789,7 @@ const MerchantDashboard = () => {
                   handleLogout();
                 }}
                 disabled={loggingOut}
-                className="m-0 h-10 min-w-[88px] rounded-full border border-rose-400/40 bg-gradient-to-r from-rose-500 to-rose-600 px-5 text-[13px] font-semibold text-white shadow-[0_8px_22px_-6px_rgba(244,63,94,0.6)] hover:from-rose-400 hover:to-rose-500 hover:shadow-[0_10px_28px_-6px_rgba(244,63,94,0.75)] transition-all"
+                className="m-0 h-10 min-w-[88px] rounded-full border border-rose-400/40 bg-gradient-to-r from-rose-500 to-rose-600 px-5 text-[13px] font-semibold text-white shadow-[0_8px_22px_-6px_rgba(244,63,94,0.6)] hover:from-rose-400 hover:to-rose-500 hover:shadow-[0_10px_28px_-6px_rgba(244,63,94,0.75)] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none"
               >
                 {loggingOut ? (
                   <span className="flex items-center gap-1.5">
