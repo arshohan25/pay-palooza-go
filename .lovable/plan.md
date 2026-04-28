@@ -1,44 +1,58 @@
-# Dedicated Manager Login Screen
+# Why your manager is seeing the wrong page
 
-The current `/merchant-login` page can toggle into a "manager" mode via a small footer button — easy to miss and confusingly worded. We'll give Managers a real, dedicated entry point with messaging that explains they must use **their own phone number and PIN** (the one tied to their personal EasyPay account), not the owner's.
+## Root cause
 
-## Goals
-- A standalone Manager login route with clear, friendly explainer copy.
-- Cross-links between Owner and Manager login screens (no more easy-to-miss toggle).
-- No backend changes — the existing `merchant-login` edge function already handles `mode: "manager"` and the staff role check.
+When a Manager (e.g. `AR / 01680693484`) signs in via `/merchant-manager-login` and lands on `/merchant`, two things have to be resolved in parallel:
 
-## What gets built
+1. **`useStaffAccess`** — calls the `get_staff_merchant_access` RPC to check if this user is staff for any merchant.
+2. **`MerchantDashboard.loadData`** — checks the `user_roles` table for the `merchant` role.
 
-### 1. New route: `/merchant-manager-login`
-A new page `src/pages/MerchantManagerLoginPage.tsx` that:
-- Reuses the same glass UI, lockout, OTP/device-trust flow as `MerchantLoginPage` but hard-locks `loginMode = "manager"`.
-- Shows a prominent **info card** above the form:
-  > **Use your own phone & PIN** — Sign in with the personal EasyPay account that the store owner invited. Don't use the owner's number. New to EasyPay? Sign up first, then ask the owner to add you.
-- Header eyebrow: "Store Manager Access", title "Manager sign-in".
-- Submit button: "Sign in as Manager".
-- Footer link: "Are you the store owner? → Owner login" → navigates to `/merchant-login`.
-- Removes the "Apply as a merchant" CTA (irrelevant for managers); replaces with "Don't have an EasyPay account? Sign up" → `/auth`.
-- On success, navigates to `redirect` param (default `/merchant`), same as owner flow.
+The dashboard logic at `src/pages/MerchantDashboard.tsx` is:
 
-### 2. Update `/merchant-login` (Owner)
-- Remove the bottom mode-toggle button (`Sign in as Manager instead`).
-- Replace with a clean link: **"Manage a store as staff? → Manager login"** → `/merchant-manager-login`.
-- Strip out all `loginMode === "manager"` conditionals to simplify (page is owner-only now).
+```text
+if (isStaff && staffMerchantId)  → render dashboard as staff   ✓
+else                             → query user_roles
+   if has 'merchant' role        → render dashboard as owner   ✓
+   else                          → render MerchantBenefitsPage ✗  ← THIS IS WHAT YOU'RE SEEING
+```
 
-### 3. Routing
-- Add `<Route path="/merchant-manager-login" element={<MerchantManagerLoginPage />} />` in `src/App.tsx` next to the existing merchant-login route.
-- Lazy-load like neighboring pages.
+A staff member never has the `merchant` role (only the owner does). So the moment `useStaffAccess` resolves with `isStaff=false`, the page commits to the "Become a Vendor" benefits screen.
 
-### 4. Cross-links elsewhere
-- In `MerchantStaffTab.tsx` (the invitation UI), the success toast / staff row already mentions the invitee should log in. We'll update the helper text shown after adding a staff member to: *"Ask them to sign in at the **Manager login** page using their own phone & PIN."* — no behavioral change, just wording.
+The data in the database is correct — `AR` is `is_active=true`, `linked=true`, merchant status `active`. The bug is purely a client-side race:
 
-## Technical Notes
-- The new page is essentially `MerchantLoginPage.tsx` with `loginMode` removed (always `"manager"`), the info card added, and the footer CTAs swapped. To avoid duplication drift, we extract the shared form/OTP logic only if it stays simple — otherwise we copy and trim, since the two screens will diverge in messaging over time.
-- No DB or edge function changes. The `merchant-login` function already enforces `get_staff_merchant_access` + `staff_role === 'Manager'` when `mode: "manager"`.
-- Lockout storage key stays `mfs_merchant_login_locked_until` (shared with owner page) since it's keyed per device, and a wrong PIN is a wrong PIN regardless of which screen submitted it.
+- `useStaffAccess` doesn't depend on `useAuth().user`. It calls `supabase.auth.getSession()` itself once on mount. If that runs before the auth session has rehydrated from `localStorage` (the well-known `INITIAL_SESSION` race documented in our project notes), `session?.user` is `null`, the RPC is skipped, `isStaff` is set to `false`, and `loading` becomes `false`.
+- The `onAuthStateChange` re-fetch inside the hook doesn't reset `loading=true`, and it `await`s inside the callback (against Supabase guidance), so the second pass can be swallowed.
+- `MerchantDashboard` only waits for `staffLoading`, not for a definitive "staff resolution complete" signal, so once `staffLoading=false` with `isStaff=false`, it commits to the benefits page.
 
-## Files
-- **Create**: `src/pages/MerchantManagerLoginPage.tsx`
-- **Edit**: `src/pages/MerchantLoginPage.tsx` (remove toggle, add owner-only copy + manager link)
-- **Edit**: `src/App.tsx` (register route)
-- **Edit**: `src/components/merchant/MerchantStaffTab.tsx` (invitation helper text)
+There is also a defensive gap: the dashboard's "no merchant role → benefits page" branch never re-checks staff status if it later flips true.
+
+## The fix
+
+1. **Make `useStaffAccess` resilient (`src/hooks/use-staff-access.ts`)**
+   - Re-set `loading = true` whenever auth state changes so the dashboard knows to wait again.
+   - Don't `await` inside the `onAuthStateChange` callback. Schedule the refetch with `setTimeout(fetch, 0)` (Supabase-recommended pattern) to avoid the listener deadlock.
+   - Fall back to `supabase.auth.getUser()` if `getSession()` returns no user yet, to handle the cold-start race.
+   - Retry the RPC once after ~300 ms when the first call returns no rows but a session exists, to absorb token-attachment lag.
+
+2. **Make `MerchantDashboard` (`src/pages/MerchantDashboard.tsx`) require a definitive answer before showing the benefits page**
+   - Track a `staffResolved` flag (true once the staff hook has completed at least one successful resolution after auth is ready).
+   - Only render `<MerchantBenefitsPage />` when `isMerchant === false` **and** `staffResolved === true` **and** `isStaff === false`. Otherwise keep showing the loading spinner.
+   - Re-run `loadData` whenever `isStaff` flips, even after the first resolution (already wired via deps — verified).
+
+3. **Belt-and-braces guard at the route level (`src/App.tsx`)**
+   - The `/merchant` `RoleGuard` already passes `allowStaff`, but it currently lets the page render even if neither role nor staff resolves cleanly. Add a small follow-up: if a user lands on `/merchant` with no merchant role and no staff link after both checks complete, redirect to `/merchant-login` instead of silently falling into the benefits page (only when the user is truly neither).
+
+4. **Diagnostic log** (temporary): add a single `console.info` in `useStaffAccess` and `MerchantDashboard.loadData` so if the issue recurs we can confirm timing in the user's preview console.
+
+## Files touched
+
+- `src/hooks/use-staff-access.ts` — race-safe resolution, no async inside `onAuthStateChange`, retry-once.
+- `src/pages/MerchantDashboard.tsx` — gate the `MerchantBenefitsPage` branch behind `staffResolved`.
+- `src/App.tsx` (small) — tighten `/merchant` fallback redirect when both checks are conclusively negative.
+
+## What you'll see after the fix
+
+When the manager `AR` opens `/merchant`:
+- Spinner stays until the staff RPC resolves.
+- Staff resolution returns the `Rafiq Electronics` link.
+- The merchant dashboard renders with the staff-allowed tabs (no "Become a Vendor" page).
