@@ -13,7 +13,6 @@ import {
 } from "@/hooks/use-device-otp-verification";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import DeviceOtpStep from "@/components/DeviceOtpStep";
-import DeviceVerifiedConfirm from "@/components/DeviceVerifiedConfirm";
 import {
   Store,
   ShieldCheck,
@@ -59,7 +58,7 @@ export default function MerchantLoginPage() {
   const tickerRef = useRef<number | null>(null);
 
   // Device-bound OTP flow
-  type Step = "signin" | "otp" | "confirm";
+  type Step = "signin" | "otp";
   const [step, setStep] = useState<Step>("signin");
   const pendingSessionRef = useRef<{
     access_token: string;
@@ -67,7 +66,6 @@ export default function MerchantLoginPage() {
     cleanedPhone: string;
   } | null>(null);
   const otp = useDeviceOtpVerification("merchant");
-  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Restore device-bound phone + persisted lockout
   useEffect(() => {
