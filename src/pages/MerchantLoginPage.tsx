@@ -374,7 +374,31 @@ export default function MerchantLoginPage() {
             </p>
           </div>
 
-          {/* Glass card */}
+          {step === "otp" && (
+            <DeviceOtpStep
+              phone={pendingSessionRef.current?.cleanedPhone || ""}
+              portalLabel="Merchant"
+              resendIn={otp.resendIn}
+              loading={otp.status === "verifying" || otp.status === "sending"}
+              error={otp.error}
+              devOtp={otp.devOtp}
+              onVerify={handleVerifyOtp}
+              onResend={handleResendOtp}
+              onCancel={handleCancelOtp}
+            />
+          )}
+
+          {step === "confirm" && (
+            <DeviceVerifiedConfirm
+              phone={pendingSessionRef.current?.cleanedPhone || ""}
+              portalLabel="Merchant"
+              loading={confirmLoading}
+              onContinue={handleConfirmContinue}
+            />
+          )}
+
+          {step === "signin" && (
+          /* Glass card */
           <form
             onSubmit={handleSignIn}
             aria-disabled={isLocked}
