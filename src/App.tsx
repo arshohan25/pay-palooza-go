@@ -28,7 +28,7 @@ const DistributorDashboard = lazy(() => import("./pages/DistributorDashboard"));
 const DistributorCreateAgent = lazy(() => import("./pages/DistributorCreateAgent"));
 const SuperDistributorDashboard = lazy(() => import("./pages/SuperDistributorDashboard"));
 const SuperDistributorCreateDistributor = lazy(() => import("./pages/SuperDistributorCreateDistributor"));
-const MerchantDashboard = lazy(() => import("./pages/MerchantDashboard"));
+const MerchantDashboard = lazy(() => retryLazyImport(() => import("./pages/MerchantDashboard")));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const DynamicQrPage = lazy(() => import("./pages/DynamicQrPage"));
 const PayPage = lazy(() => import("./pages/PayPage"));
