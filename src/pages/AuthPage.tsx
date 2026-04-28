@@ -401,6 +401,14 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [forgotOtpSending, setForgotOtpSending] = useState(false);
   const [serverOtp, setServerOtp] = useState(""); // DEV: stores OTP returned from server
 
+  // ── Device-bound first-login OTP ────────────────────────────────────────────
+  // Phase: 'none' | 'otp' | 'confirm' — overlays the auth flow after PIN success.
+  const [devicePhase, setDevicePhase] = useState<"none" | "otp" | "confirm">("none");
+  const [devicePortal, setDevicePortal] = useState<DeviceOtpPortal>("user");
+  const [devicePhone, setDevicePhone] = useState<string>("");
+  const [deviceConfirmLoading, setDeviceConfirmLoading] = useState(false);
+  const deviceOtp = useDeviceOtpVerification(devicePortal);
+
   // Check if returning user (has phone stored locally for UX only)
   const returningPhone = localStorage.getItem(DEVICE_KEY) ?? "";
   const isNewUser = !returningPhone;
