@@ -75,8 +75,13 @@ export default function MerchantLoginPage() {
   // Restore device-bound phone + persisted lockout
   useEffect(() => {
     const bound = typeof window !== "undefined" ? localStorage.getItem("mfs_device_phone") : null;
-    if (bound) setPhone(bound.replace(/^88/, ""));
-
+    if (bound) {
+      const cleaned = bound.replace(/^88/, "").replace(/\D/g, "");
+      if (/^01[3-9]\d{8}$/.test(cleaned)) {
+        setBoundPhone(cleaned);
+        setPhone(cleaned);
+      }
+    }
     try {
       const raw = localStorage.getItem(LS_LOCKED_UNTIL);
       if (raw) {
