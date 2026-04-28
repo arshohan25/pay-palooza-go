@@ -399,7 +399,25 @@ export default function MerchantManagerLoginPage() {
                   </div>
                 )}
 
-                {!isLocked && attemptsRemaining !== null && attemptsRemaining > 0 && attemptsRemaining <= 3 && (
+                {!isLocked && wrongPin && (
+                  <div
+                    role="alert"
+                    aria-live="assertive"
+                    className="mb-3 flex items-start gap-2.5 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-3 text-rose-100 animate-shake"
+                  >
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-semibold uppercase tracking-wider">Incorrect PIN</p>
+                      <p className="text-[13px] leading-snug text-rose-100/85">
+                        {attemptsRemaining != null
+                          ? `${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} remaining before this account is temporarily locked.`
+                          : "Please double-check your PIN and try again."}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!isLocked && !wrongPin && attemptsRemaining !== null && attemptsRemaining > 0 && attemptsRemaining <= 3 && (
                   <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-amber-100">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
                     <p className="text-[13px] leading-snug">
