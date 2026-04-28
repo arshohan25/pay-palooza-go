@@ -1,69 +1,22 @@
-# Custom Permission Presets for Merchant Staff
+## Problem
 
-Today merchant owners can only apply 3 hardcoded role presets (Manager / Cashier / Viewer) when inviting or editing staff. We'll let them save their own named presets (e.g. "Night Cashier", "Inventory Helper") that appear right next to the built-ins.
+On the Merchant (owner) login screen, the 4-digit PIN is rendered as plain digits (`1 1 2 2` visible in the screenshot) even though the intent is to mask them. The current code tries to hide the text with `color: transparent` + `textShadow`, but that style is set on the slot's wrapper `<div>` while the `InputOTPSlot` component renders the actual digit (`{char}`) as a child text node — so the trick doesn't take effect and the raw PIN is shown.
 
-## What the merchant will see
+The Manager login screen has the same OTP slot setup and is affected too.
 
-In the **Staff** tab, inside the permission picker (used by both Add Staff and Edit Permissions sheets):
+## Fix
 
-1. The existing "Role preset" dropdown becomes a unified preset picker showing:
-   - Built-in: Manager, Cashier, Viewer
-   - Custom: any presets they've saved (with a small "Custom" badge)
-2. New **"Save as preset"** button next to the checkbox grid:
-   - Opens a small inline input → name the preset → saves the current checked permissions
-3. Each custom preset row gets a **rename** and **delete** action (trash icon)
-4. The "Role Presets" summary card at the top of the Staff tab lists custom presets too with their feature count
+1. **`src/components/ui/input-otp.tsx`** — Add a `mask?: boolean` prop to `InputOTPSlot`. When `mask` is true and the slot has a character, render a small filled circle (`<span className="block h-2.5 w-2.5 rounded-full bg-current" />`) instead of the raw `{char}`. The fake caret behavior is preserved.
 
-## Technical design
+2. **`src/pages/MerchantLoginPage.tsx`** — Replace the brittle `style={{ color: "transparent", textShadow: ... }}` masking on each slot with the new `mask` prop:
+   ```tsx
+   <InputOTPSlot key={i} index={i} mask className="..." />
+   ```
 
-### Database (new table)
-```sql
-create table public.merchant_permission_presets (
-  id uuid primary key default gen_random_uuid(),
-  merchant_id uuid not null references merchants(id) on delete cascade,
-  name text not null,
-  permissions jsonb not null default '{}'::jsonb,
-  created_by uuid not null,         -- owner user_id
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  unique (merchant_id, name)
-);
-alter table public.merchant_permission_presets enable row level security;
-```
+3. **`src/pages/MerchantManagerLoginPage.tsx`** — Apply the same `mask` prop to its PIN slots so the manager screen also shows dots instead of digits.
 
-RLS: only the **store owner** of `merchant_id` can select/insert/update/delete. Staff members cannot read or modify presets (they'd just see the resolved permissions on themselves). Reuse existing owner-check pattern (`merchants.user_id = auth.uid()`).
+## Why this works
 
-A `BEFORE INSERT/UPDATE` trigger strips owner-only keys (`staff_manage`, `api_access`) and any unknown keys — same hygiene used by `validate_merchant_staff_permissions`.
+`InputOTPSlot` owns the rendering of the character. By moving the masking inside the slot component (rendering a dot element instead of the digit), the actual PIN value is never painted to the DOM as visible text — no DevTools "select text" reveal, no rendering-engine fallback, and it works regardless of font/color overrides.
 
-### Frontend
-
-**`src/hooks/use-permission-presets.ts`** (new)
-- `usePermissionPresets(merchantId)` → `{ presets, save(name, perms), rename(id, name), remove(id), loading }`
-- React Query keyed on merchantId; invalidates on mutation
-- Realtime subscribe to `merchant_permission_presets` filtered by merchant_id so multi-device owners stay in sync (same pattern as other merchant tabs)
-
-**`src/lib/staffPermissions.ts`** (extend)
-- Add `CustomPreset = { id: string; name: string; permissions: Record<string, boolean> }`
-- Add `applyPreset(perms)` helper that runs through `expandImplies`
-
-**`src/components/merchant/MerchantStaffTab.tsx`** (edit)
-- `PermissionPicker` component receives `customPresets` + `onSavePreset` props
-- Replace the simple "Reset to {role} preset" button with a `<Select>` listing built-ins + custom, plus a "Save current as preset…" item that opens a name input
-- Add inline manage row (rename / delete) for the currently-selected custom preset
-- The top "Role Presets" summary card maps over `[...builtIns, ...customPresets]`
-
-### Out of scope (keep it tight)
-- Sharing presets across merchants
-- Versioning / history of preset edits
-- Auto-applying a preset to all existing staff with a given role (would risk silent permission changes)
-
-## Files to create / edit
-
-- New migration: `merchant_permission_presets` table + RLS + validation trigger
-- New: `src/hooks/use-permission-presets.ts`
-- Edit: `src/lib/staffPermissions.ts` (types + helper)
-- Edit: `src/components/merchant/MerchantStaffTab.tsx` (UI integration)
-
-## Memory updates after build
-
-Add a short note under the staff/permissions area of project memory describing the custom-preset table and that only the store owner can manage them.
+No backend, schema, or auth flow changes are needed. The PIN value in state remains untouched; only its visual representation changes.
