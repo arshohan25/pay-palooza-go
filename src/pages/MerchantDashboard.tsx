@@ -743,36 +743,51 @@ const MerchantDashboard = () => {
 
       {/* ── Logout confirmation ── */}
       <AlertDialog open={showLogoutConfirm} onOpenChange={(open) => !loggingOut && setShowLogoutConfirm(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Sign out of merchant dashboard?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You'll be returned to the merchant login screen. Any unsaved changes may be lost.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={loggingOut}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleLogout();
-              }}
-              disabled={loggingOut}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {loggingOut ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 size={14} className="animate-spin" />
-                  Signing out...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <LogOut size={14} />
-                  Sign out
-                </span>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+        <AlertDialogContent className="max-w-[340px] rounded-[22px] border border-white/10 bg-gradient-to-br from-slate-950/95 via-slate-900/95 to-indigo-950/95 backdrop-blur-2xl p-0 overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)]">
+          <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-rose-500/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-indigo-500/20 blur-3xl" />
+
+          <div className="relative px-5 pt-6 pb-5">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-rose-500/30 to-rose-700/20 border border-rose-400/30 shadow-[0_8px_24px_-8px_rgba(244,63,94,0.5)]">
+                <LogOut size={20} className="text-rose-300" />
+              </div>
+              <AlertDialogHeader className="space-y-1.5">
+                <AlertDialogTitle className="text-[16px] font-semibold text-white tracking-tight">
+                  Sign out?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-[12.5px] leading-relaxed text-white/60">
+                  You'll return to the merchant login screen.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+            </div>
+
+            <div className="mt-5 flex items-center justify-center gap-2.5">
+              <AlertDialogCancel
+                disabled={loggingOut}
+                className="m-0 h-10 min-w-[88px] rounded-full border border-white/15 bg-white/5 px-5 text-[13px] font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all"
+              >
+                No
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleLogout();
+                }}
+                disabled={loggingOut}
+                className="m-0 h-10 min-w-[88px] rounded-full border border-rose-400/40 bg-gradient-to-r from-rose-500 to-rose-600 px-5 text-[13px] font-semibold text-white shadow-[0_8px_22px_-6px_rgba(244,63,94,0.6)] hover:from-rose-400 hover:to-rose-500 hover:shadow-[0_10px_28px_-6px_rgba(244,63,94,0.75)] transition-all"
+              >
+                {loggingOut ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 size={13} className="animate-spin" />
+                    ...
+                  </span>
+                ) : (
+                  "Yes"
+                )}
+              </AlertDialogAction>
+            </div>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </div>
