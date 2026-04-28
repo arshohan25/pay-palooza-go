@@ -617,7 +617,12 @@ export default function MerchantLoginPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate("/?apply=merchant")}
+              onClick={() => {
+                navigate("/");
+                setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent("open-feature", { detail: "merchant-apply" }));
+                }, 50);
+              }}
               className="h-10 w-full rounded-2xl border-white/20 bg-white/[0.06] text-sm font-medium text-amber-100 hover:bg-white/[0.12] hover:text-amber-50"
             >
               New here? Apply as a merchant
