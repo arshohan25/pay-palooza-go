@@ -21,8 +21,12 @@ import {
   expandImplies,
   applyPermissionSet,
   countActive,
+  findOwnerOnlyKeys,
+  stripOwnerOnlyKeys,
+  OWNER_ONLY_LABELS,
   type StaffRole,
 } from "@/lib/staffPermissions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { usePermissionPresets, type CustomPreset } from "@/hooks/use-permission-presets";
 
 const roleColors: Record<string, string> = {
@@ -87,8 +91,17 @@ function PermissionPicker({
     }
     const preset = customPresets.find(p => p.id === val);
     if (preset) {
-      onChange(applyPermissionSet(preset.permissions));
-      toast.success(`Applied "${preset.name}"`);
+      const stripped = findOwnerOnlyKeys(preset.permissions);
+      const safe = applyPermissionSet(stripOwnerOnlyKeys(preset.permissions));
+      onChange(safe);
+      if (stripped.length) {
+        const names = stripped.map(k => OWNER_ONLY_LABELS[k] ?? k).join(", ");
+        toast.warning(`Applied "${preset.name}" — owner-only removed: ${names}`, {
+          description: "Staff cannot hold owner-only permissions. They were stripped automatically.",
+        });
+      } else {
+        toast.success(`Applied "${preset.name}"`);
+      }
     }
   };
 
@@ -114,8 +127,20 @@ function PermissionPicker({
     setRenaming(null);
   };
 
+  const ownerOnlyPresent = findOwnerOnlyKeys(value);
+
   return (
     <div className="space-y-3">
+      {ownerOnlyPresent.length > 0 && (
+        <Alert variant="destructive" className="py-2 px-3">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          <AlertTitle className="text-[11px] font-semibold mb-0.5">Owner-only permissions will be stripped</AlertTitle>
+          <AlertDescription className="text-[10px] leading-tight">
+            {ownerOnlyPresent.map(k => OWNER_ONLY_LABELS[k] ?? k).join(", ")} can only be held by the
+            store owner. These will be removed automatically when you save this staff member.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="rounded-xl bg-muted/40 px-3 py-2 space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-[11px] text-muted-foreground">
