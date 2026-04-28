@@ -821,14 +821,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 onResend={handleDeviceResend}
               />
             )}
-            {devicePhase === "confirm" && (
-              <DeviceVerifiedConfirm
-                phone={devicePhone}
-                portalLabel={portalLabel}
-                loading={deviceConfirmLoading}
-                onContinue={handleDeviceContinue}
-              />
-            )}
           </div>
         </div>
       </div>
