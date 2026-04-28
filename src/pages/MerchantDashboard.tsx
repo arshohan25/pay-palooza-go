@@ -371,7 +371,7 @@ const MerchantDashboard = () => {
 
   const paymentTxns = useMemo(() => txns.filter(t => t.type === "payment"), [txns]);
 
-  if (authLoading || staffLoading || loading) {
+  if (authLoading || staffLoading || !staffResolved || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -392,7 +392,10 @@ const MerchantDashboard = () => {
       </div>
     );
   }
-  if (isMerchant === false) {
+  // Only show the "Become a Vendor" benefits page when we have a definitive
+  // answer that the user is neither a merchant owner nor active staff.
+  if (isMerchant === false && staffResolved && !isStaff) {
+    console.info("[MerchantDashboard] rendering benefits page", { userId: user?.id, isStaff, staffResolved, isMerchant });
     return <MerchantBenefitsPage navigate={navigate} />;
   }
 
