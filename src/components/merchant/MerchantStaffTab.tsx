@@ -65,6 +65,7 @@ function PermissionPicker({
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const [pendingPreset, setPendingPreset] = useState<{
     label: string;
+    source: { kind: "builtin" | "custom"; name: string; total: number };
     next: Record<string, boolean>;
     added: string[];
     removed: string[];
@@ -78,6 +79,7 @@ function PermissionPicker({
   const stagePreview = (
     label: string,
     rawNext: Record<string, boolean>,
+    source: { kind: "builtin" | "custom"; name: string; total: number },
     onConfirm: (cleaned: Record<string, boolean>) => void,
   ) => {
     const stripped = findOwnerOnlyKeys(rawNext);
@@ -93,6 +95,7 @@ function PermissionPicker({
     }
     setPendingPreset({
       label,
+      source,
       next: cleaned,
       added,
       removed,
@@ -119,12 +122,23 @@ function PermissionPicker({
     }
     if (val.startsWith("__role_")) {
       const r = val.replace("__role_", "").replace("__", "") as StaffRole;
-      stagePreview(`${r} preset`, defaultPermissionsFor(r), onChange);
+      const defaults = defaultPermissionsFor(r);
+      stagePreview(
+        `${r} preset`,
+        defaults,
+        { kind: "builtin", name: r, total: ROLE_DEFAULTS[r].length },
+        onChange,
+      );
       return;
     }
     const preset = customPresets.find(p => p.id === val);
     if (preset) {
-      stagePreview(`"${preset.name}"`, applyPermissionSet(preset.permissions), onChange);
+      stagePreview(
+        `"${preset.name}"`,
+        applyPermissionSet(preset.permissions),
+        { kind: "custom", name: preset.name, total: countActive(preset.permissions) },
+        onChange,
+      );
     }
   };
 
@@ -306,9 +320,29 @@ function PermissionPicker({
       <Dialog open={!!pendingPreset} onOpenChange={(o) => { if (!o) setPendingPreset(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-base">Apply {pendingPreset?.label}?</DialogTitle>
+            <div className="flex items-center gap-2 flex-wrap">
+              <DialogTitle className="text-base">Apply {pendingPreset?.label}?</DialogTitle>
+              {pendingPreset && (
+                <Badge
+                  variant="outline"
+                  className={
+                    pendingPreset.source.kind === "builtin"
+                      ? "text-[10px] border-primary/30 bg-primary/10 text-primary gap-1"
+                      : "text-[10px] border-violet-500/30 bg-violet-500/10 text-violet-700 gap-1"
+                  }
+                >
+                  {pendingPreset.source.kind === "builtin" ? (
+                    <><Shield size={10} /> Built-in role</>
+                  ) : (
+                    <><Bookmark size={10} /> Custom preset</>
+                  )}
+                </Badge>
+              )}
+            </div>
             <DialogDescription className="text-xs">
-              Review what will change before applying.
+              {pendingPreset?.source.kind === "builtin"
+                ? `System default for the ${pendingPreset.source.name} role · ${pendingPreset.source.total} features.`
+                : `Saved preset "${pendingPreset?.source.name}" · ${pendingPreset?.source.total} features.`} Review what will change before applying.
             </DialogDescription>
           </DialogHeader>
 
