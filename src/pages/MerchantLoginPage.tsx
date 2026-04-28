@@ -274,16 +274,15 @@ export default function MerchantLoginPage() {
 
       if (result.kind === "session") {
         // Returning trusted device — server already validated the device token.
-        pendingSessionRef.current = {
-          access_token: result.body.session.access_token,
-          refresh_token: result.body.session.refresh_token,
-          cleanedPhone,
-        };
         // Persist any rotated trust token (if server reissued one).
         if (result.body.device_token && result.body.device_token_expires_at) {
           otp.saveTrustToken(cleanedPhone, result.body.device_token, result.body.device_token_expires_at);
         }
-        setStep("confirm");
+        await finalizeSession({
+          access_token: result.body.session.access_token,
+          refresh_token: result.body.session.refresh_token,
+          cleanedPhone,
+        });
         return;
       }
 
@@ -328,15 +327,14 @@ export default function MerchantLoginPage() {
       return;
     }
 
-    pendingSessionRef.current = {
-      access_token: result.body.session.access_token,
-      refresh_token: result.body.session.refresh_token,
-      cleanedPhone,
-    };
     if (result.body.device_token && result.body.device_token_expires_at) {
       otp.saveTrustToken(cleanedPhone, result.body.device_token, result.body.device_token_expires_at);
     }
-    setStep("confirm");
+    await finalizeSession({
+      access_token: result.body.session.access_token,
+      refresh_token: result.body.session.refresh_token,
+      cleanedPhone,
+    });
   };
 
   const handleResendOtp = async () => {
@@ -348,14 +346,11 @@ export default function MerchantLoginPage() {
     } catch {}
   };
 
-  const handleConfirmContinue = async () => {
-    const pending = pendingSessionRef.current;
-    if (!pending || !pending.access_token) {
-      toast.error("Session expired. Please sign in again.");
-      setStep("signin");
-      return;
-    }
-    setConfirmLoading(true);
+  const finalizeSession = async (pending: {
+    access_token: string;
+    refresh_token: string;
+    cleanedPhone: string;
+  }) => {
     try {
       const { error: setErr } = await supabase.auth.setSession({
         access_token: pending.access_token,
@@ -373,8 +368,6 @@ export default function MerchantLoginPage() {
       navigate(redirectTarget, { replace: true });
     } catch (err: any) {
       toast.error(err?.message || "Failed to start session");
-    } finally {
-      setConfirmLoading(false);
     }
   };
 
