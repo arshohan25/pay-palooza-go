@@ -554,7 +554,7 @@ export default function MerchantLoginPage() {
                 <InputOTP
                   maxLength={4}
                   value={pin}
-                  onChange={setPin}
+                  onChange={(v) => { setPin(v); if (wrongPin) setWrongPin(false); }}
                   disabled={isLocked}
                   containerClassName="justify-center"
                 >
@@ -564,7 +564,7 @@ export default function MerchantLoginPage() {
                         key={i}
                         index={i}
                         mask
-                        className="h-11 w-11 rounded-xl border-white/15 bg-white/[0.06] text-lg font-semibold text-white"
+                        className={`h-11 w-11 rounded-xl text-lg font-semibold text-white ${wrongPin ? "border-rose-400/60 bg-rose-500/10" : "border-white/15 bg-white/[0.06]"}`}
                       />
                     ))}
                   </InputOTPGroup>
