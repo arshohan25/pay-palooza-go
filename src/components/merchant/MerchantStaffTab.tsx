@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle } from "lucide-react";
+import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -30,6 +30,31 @@ export default function MerchantStaffTab({ merchantId }: Props) {
   const [role, setRole] = useState<string>("Cashier");
   const [saving, setSaving] = useState(false);
   const [phoneLookup, setPhoneLookup] = useState<{ status: "idle" | "checking" | "found" | "missing"; name: string | null }>({ status: "idle", name: null });
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
+  const sendInvite = async (staff_id: string, opts?: { silent?: boolean }) => {
+    setResendingId(staff_id);
+    const { data, error } = await supabase.functions.invoke("notify-staff-invite", { body: { staff_id } });
+    setResendingId(null);
+    if (error) {
+      // 429 cooldown returns non-2xx; supabase-js surfaces it as error with context
+      const ctx: any = (error as any).context;
+      try {
+        const body = ctx ? await ctx.json() : null;
+        if (body?.cooldown) { toast.error(body.message || "Please wait before resending."); return; }
+      } catch (_) { /* ignore */ }
+      if (!opts?.silent) toast.error(error.message || "Failed to send invite");
+      return;
+    }
+    if (!opts?.silent) {
+      const r = (data as any)?.results || {};
+      const channels: string[] = [];
+      if (r.push?.sent > 0) channels.push("push");
+      if (r.sms?.status === "sent") channels.push("SMS");
+      if (r.email?.status === "sent") channels.push("email");
+      toast.success(channels.length ? `Invite sent via ${channels.join(", ")}` : "Invite logged (no channels available)");
+    }
+  };
 
   // Debounced EasyPay phone lookup
   useEffect(() => {
@@ -81,6 +106,8 @@ export default function MerchantStaffTab({ merchantId }: Props) {
     } else {
       toast.success("Staff added (not yet on EasyPay)");
     }
+    // Fire-and-forget invite send (push/SMS/email per availability)
+    if (data?.id) sendInvite(data.id, { silent: true });
     setShowAdd(false); setName(""); setPhone(""); setRole("Cashier"); setPhoneLookup({ status: "idle", name: null });
   };
 
@@ -156,6 +183,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={`text-[9px] ${roleColors[s.role] || ""}`}>{s.role}</Badge>
                     <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s.id, s.is_active)} />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title="Resend invite" disabled={resendingId === s.id} onClick={() => sendInvite(s.id)}><Send size={13} /></Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteStaff(s.id)}><Trash2 size={13} /></Button>
                   </div>
                 </div>

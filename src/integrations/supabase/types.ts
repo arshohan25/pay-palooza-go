@@ -3368,6 +3368,44 @@ export type Database = {
           },
         ]
       }
+      merchant_staff_invite_dispatch: {
+        Row: {
+          channel: string
+          detail: string | null
+          id: string
+          merchant_id: string
+          sent_at: string
+          staff_id: string
+          status: string
+        }
+        Insert: {
+          channel: string
+          detail?: string | null
+          id?: string
+          merchant_id: string
+          sent_at?: string
+          staff_id: string
+          status: string
+        }
+        Update: {
+          channel?: string
+          detail?: string | null
+          id?: string
+          merchant_id?: string
+          sent_at?: string
+          staff_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_staff_invite_dispatch_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           bank_account_holder: string | null
@@ -6413,6 +6451,10 @@ export type Database = {
       notify_insurance_expiry: { Args: never; Returns: number }
       notify_linked_staff: {
         Args: { p_merchant_id: string; p_role: string; p_user_id: string }
+        Returns: undefined
+      }
+      notify_owner_staff_active: {
+        Args: { p_merchant_id: string; p_role: string; p_staff_name: string }
         Returns: undefined
       }
       place_shop_order: {
