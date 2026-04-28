@@ -127,8 +127,20 @@ function PermissionPicker({
     setRenaming(null);
   };
 
+  const ownerOnlyPresent = findOwnerOnlyKeys(value);
+
   return (
     <div className="space-y-3">
+      {ownerOnlyPresent.length > 0 && (
+        <Alert variant="destructive" className="py-2 px-3">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          <AlertTitle className="text-[11px] font-semibold mb-0.5">Owner-only permissions will be stripped</AlertTitle>
+          <AlertDescription className="text-[10px] leading-tight">
+            {ownerOnlyPresent.map(k => OWNER_ONLY_LABELS[k] ?? k).join(", ")} can only be held by the
+            store owner. These will be removed automatically when you save this staff member.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="rounded-xl bg-muted/40 px-3 py-2 space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-[11px] text-muted-foreground">
