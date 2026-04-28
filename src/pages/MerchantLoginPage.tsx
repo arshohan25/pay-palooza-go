@@ -536,7 +536,7 @@ export default function MerchantLoginPage() {
               <Label htmlFor="merchant-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
                 {boundPhone ? "Signed in as" : "Mobile number"}
               </Label>
-             {boundPhone ? (
+              {boundPhone ? (
                 <>
                   <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-200/25 bg-amber-300/[0.06] px-3 py-2.5">
                     <div className="flex items-center gap-2 text-sm">
@@ -545,32 +545,22 @@ export default function MerchantLoginPage() {
                       </div>
                       <div className="leading-tight">
                         <div className="font-semibold tracking-wide text-white tabular-nums">
-                          +880 {maskBdPhone(boundPhone)}
+                          +88 {maskBdPhone(boundPhone)}
                         </div>
                         <div className="text-[10px] tracking-wide text-amber-100/70">
                           Middle digits hidden for privacy
                         </div>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        try { localStorage.removeItem("mfs_device_phone"); } catch {}
-                        clearDeviceToken(boundPhone, "merchant");
-                        setBoundPhone(null);
-                        setPhone("");
-                        setPin("");
-                        setWrongPin(false);
-                        setAttemptsRemaining(null);
-                      }}
-                      aria-label="Use a different number"
-                      className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white/60 transition-colors hover:bg-white/[0.12] hover:text-white"
+                    <div
+                      aria-label="Device locked to this account"
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/10 text-amber-200"
                     >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                      <Lock className="h-3.5 w-3.5" />
+                    </div>
                   </div>
-                  <p className="px-1 pt-1 text-[11px] text-white/50">
-                    Not you? Tap × to use a different number.
+                  <p className="px-1 pt-1 text-[11px] leading-snug text-white/50">
+                    This device is locked to this merchant account. To use a different number, clear app data in your browser settings.
                   </p>
                 </>
               ) : (
