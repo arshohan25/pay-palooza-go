@@ -162,6 +162,7 @@ Deno.serve(async (req) => {
   const device_fp = typeof body?.device_fp === "string" ? body.device_fp.trim() : "";
   const device_token = typeof body?.device_token === "string" ? body.device_token.trim() : "";
   const otp_ticket = typeof body?.otp_ticket === "string" ? body.otp_ticket.trim() : "";
+  const mode: "owner" | "manager" = body?.mode === "manager" ? "manager" : "owner";
 
   if (!phone) {
     return json(400, { ok: false, message: "Enter a valid 11-digit Bangladeshi mobile number." });
@@ -236,16 +237,30 @@ Deno.serve(async (req) => {
     return json(401, { ok: false, locked: false, attempts_remaining: pl?.attempts_remaining ?? null, message: "Wrong phone or PIN" });
   }
 
-  // 3. Merchant role check
-  const { data: roles, error: roleErr } = await admin
-    .from("user_roles").select("role").eq("user_id", user.id);
-  if (roleErr) {
-    console.error("role lookup failed", roleErr);
-    return json(500, { ok: false, message: "Login service unavailable" });
-  }
-  const roleNames = (roles ?? []).map((r: any) => r.role);
-  if (!(roleNames.includes("merchant") || roleNames.includes("admin"))) {
-    return json(403, { ok: false, locked: false, message: "This account isn't a merchant account" });
+  // 3. Role/access check (owner vs manager mode)
+  if (mode === "manager") {
+    const { data: staff, error: staffErr } = await admin.rpc(
+      "get_staff_merchant_access", { p_user_id: user.id },
+    );
+    if (staffErr) {
+      console.error("staff lookup failed", staffErr);
+      return json(500, { ok: false, message: "Login service unavailable" });
+    }
+    const row = Array.isArray(staff) ? staff[0] : null;
+    if (!row || row.staff_role !== "Manager") {
+      return json(403, { ok: false, locked: false, message: "This account isn't an active store manager" });
+    }
+  } else {
+    const { data: roles, error: roleErr } = await admin
+      .from("user_roles").select("role").eq("user_id", user.id);
+    if (roleErr) {
+      console.error("role lookup failed", roleErr);
+      return json(500, { ok: false, message: "Login service unavailable" });
+    }
+    const roleNames = (roles ?? []).map((r: any) => r.role);
+    if (!(roleNames.includes("merchant") || roleNames.includes("admin"))) {
+      return json(403, { ok: false, locked: false, message: "This account isn't a merchant account" });
+    }
   }
 
   // 4. DEVICE GATE — withhold session tokens until device is proven trusted
