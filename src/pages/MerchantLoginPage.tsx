@@ -25,9 +25,8 @@ import {
   Wallet,
   QrCode,
   BarChart3,
-  Eye,
-  EyeOff,
   AlertTriangle,
+  UserCog,
 } from "lucide-react";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
@@ -50,7 +49,7 @@ export default function MerchantLoginPage() {
   }, [searchParams]);
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
-  const [showPin, setShowPin] = useState(false);
+  const [loginMode, setLoginMode] = useState<"owner" | "manager">("owner");
   const [loading, setLoading] = useState(false);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
