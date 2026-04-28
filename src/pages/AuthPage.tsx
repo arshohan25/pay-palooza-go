@@ -688,6 +688,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     }
   }, [devicePhone, devicePortal, deviceOtp, goTo, onAuthenticated]);
 
+  useEffect(() => {
+    handleDeviceContinueRef.current = handleDeviceContinue;
+  }, [handleDeviceContinue]);
+
   const portalLabel = useMemo(() => {
     switch (devicePortal) {
       case "merchant": return "Merchant";
