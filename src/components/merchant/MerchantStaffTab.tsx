@@ -65,6 +65,7 @@ function PermissionPicker({
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const [pendingPreset, setPendingPreset] = useState<{
     label: string;
+    source: { kind: "builtin" | "custom"; name: string; total: number };
     next: Record<string, boolean>;
     added: string[];
     removed: string[];
@@ -78,6 +79,7 @@ function PermissionPicker({
   const stagePreview = (
     label: string,
     rawNext: Record<string, boolean>,
+    source: { kind: "builtin" | "custom"; name: string; total: number },
     onConfirm: (cleaned: Record<string, boolean>) => void,
   ) => {
     const stripped = findOwnerOnlyKeys(rawNext);
@@ -93,6 +95,7 @@ function PermissionPicker({
     }
     setPendingPreset({
       label,
+      source,
       next: cleaned,
       added,
       removed,
