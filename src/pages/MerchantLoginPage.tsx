@@ -539,13 +539,8 @@ export default function MerchantLoginPage() {
                       <InputOTPSlot
                         key={i}
                         index={i}
+                        mask
                         className="h-11 w-11 rounded-xl border-white/15 bg-white/[0.06] text-lg font-semibold text-white"
-                        // always mask digits as dots
-                        style={
-                          pin[i]
-                            ? { color: "transparent", textShadow: "0 0 0 white", caretColor: "transparent" }
-                            : undefined
-                        }
                       />
                     ))}
                   </InputOTPGroup>
