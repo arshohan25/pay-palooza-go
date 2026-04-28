@@ -536,38 +536,43 @@ export default function MerchantLoginPage() {
               <Label htmlFor="merchant-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
                 {boundPhone ? "Signed in as" : "Mobile number"}
               </Label>
-              {boundPhone ? (
-                <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-200/25 bg-amber-300/[0.06] px-3 py-2.5">
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/10">
-                      <Phone className="h-3.5 w-3.5 text-amber-200" />
-                    </div>
-                    <div className="leading-tight">
-                      <div className="font-semibold tracking-wide text-white tabular-nums">
-                        +880 {maskBdPhone(boundPhone)}
+             {boundPhone ? (
+                <>
+                  <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-200/25 bg-amber-300/[0.06] px-3 py-2.5">
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/10">
+                        <Phone className="h-3.5 w-3.5 text-amber-200" />
                       </div>
-                      <div className="text-[10px] uppercase tracking-wider text-amber-100/60">
-                        This device
+                      <div className="leading-tight">
+                        <div className="font-semibold tracking-wide text-white tabular-nums">
+                          +880 {maskBdPhone(boundPhone)}
+                        </div>
+                        <div className="text-[10px] tracking-wide text-amber-100/70">
+                          Middle digits hidden for privacy
+                        </div>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try { localStorage.removeItem("mfs_device_phone"); } catch {}
+                        clearDeviceToken(boundPhone, "merchant");
+                        setBoundPhone(null);
+                        setPhone("");
+                        setPin("");
+                        setWrongPin(false);
+                        setAttemptsRemaining(null);
+                      }}
+                      aria-label="Use a different number"
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white/60 transition-colors hover:bg-white/[0.12] hover:text-white"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      try { localStorage.removeItem("mfs_device_phone"); } catch {}
-                      clearDeviceToken(boundPhone, "merchant");
-                      setBoundPhone(null);
-                      setPhone("");
-                      setPin("");
-                      setWrongPin(false);
-                      setAttemptsRemaining(null);
-                    }}
-                    aria-label="Use a different number"
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white/60 transition-colors hover:bg-white/[0.12] hover:text-white"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                  <p className="px-1 pt-1 text-[11px] text-white/50">
+                    Not you? Tap × to use a different number.
+                  </p>
+                </>
               ) : (
                 <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors focus-within:border-amber-200/50 focus-within:bg-white/[0.06]">
                   <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
@@ -598,7 +603,7 @@ export default function MerchantLoginPage() {
                 <button
                   type="button"
                   onClick={() => setForgotOpen(true)}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-100/80 transition-colors hover:text-amber-50"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/40 bg-amber-300/10 px-2.5 py-1 text-[11px] font-semibold text-amber-100 transition-colors hover:border-amber-200/60 hover:bg-amber-300/20 hover:text-amber-50"
                 >
                   <HelpCircle className="h-3 w-3" />
                   Forgot PIN?
