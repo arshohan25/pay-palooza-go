@@ -50,6 +50,7 @@ export default function MerchantManagerLoginPage() {
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
+  const [wrongPin, setWrongPin] = useState(false);
   const tickerRef = useRef<number | null>(null);
 
   type Step = "signin" | "otp";
