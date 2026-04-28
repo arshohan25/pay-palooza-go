@@ -168,7 +168,7 @@ const stagger = {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const MerchantDashboard = () => {
   const { user, isAuthenticated, loading: authLoading, signOut } = useAuth();
-  const { isStaff, staffRole, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading, resolved: staffResolved } = useStaffAccess();
+  const { isStaff, staffRole, can, permissions: staffPermissions, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading, resolved: staffResolved } = useStaffAccess();
   const navigate = useNavigate();
   useUserSessionTimeout("merchant");
   const { toast } = useToast();
@@ -176,32 +176,22 @@ const MerchantDashboard = () => {
   const futureFeatures = useFutureFeatures();
   void futureFeatures.visibility.future_merchant_growth_os;
 
-  // Staff role-based tab restrictions
-  const staffAllowedTabs = useMemo<Set<MerchTab> | null>(() => {
-    if (!isStaff) return null; // no restriction for merchant owners
-    switch (staffRole) {
-      case "Manager": return null; // full read access
-      case "Cashier": return new Set<MerchTab>(["overview", "orders", "products"]);
-      case "Viewer": return new Set<MerchTab>(["overview"]);
-      default: return new Set<MerchTab>(["overview"]);
-    }
-  }, [isStaff, staffRole]);
-
+  // Permission-based filter — owners (non-staff) see everything; staff see only granted features.
   const visibleMainTabs = useMemo(() => {
     let tabs = mainTabs.filter(t => !t.toggleKey || !isDisabled(t.toggleKey));
-    if (staffAllowedTabs) tabs = tabs.filter(t => staffAllowedTabs.has(t.id));
+    if (isStaff) tabs = tabs.filter(t => can(TAB_TO_PERMISSION[t.id] ?? ""));
     return tabs;
-  }, [staffAllowedTabs, isDisabled]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDisabled, isStaff, staffPermissions]);
 
   const visibleMenuItems = useMemo(() => {
-    // The "api" item is owner-only and always shown to owners. When locked, it renders an access-request gate.
-    // Staff (Manager/Cashier/Viewer) never see the API tab regardless of access.
     let items = menuItems.filter(item =>
       (item.id === "api" && !isStaff) || !item.toggleKey || !isDisabled(item.toggleKey)
     );
-    if (staffAllowedTabs) items = items.filter(item => staffAllowedTabs.has(item.id));
+    if (isStaff) items = items.filter(item => can(TAB_TO_PERMISSION[item.id] ?? ""));
     return items;
-  }, [isDisabled, staffAllowedTabs, isStaff]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDisabled, isStaff, staffPermissions]);
 
   const apiLocked = isDisabled("merchant_api");
 
