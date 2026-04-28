@@ -525,7 +525,15 @@ export default function MerchantStaffTab({ merchantId }: Props) {
                 <SlidersHorizontal size={12} /> Feature access
               </Label>
               <div className="mt-2">
-                <PermissionPicker value={perms} onChange={setPerms} role={role} />
+                <PermissionPicker
+                  value={perms}
+                  onChange={setPerms}
+                  role={role}
+                  customPresets={customPresets}
+                  onSavePreset={handleSavePreset}
+                  onRenamePreset={handleRenamePreset}
+                  onDeletePreset={handleDeletePreset}
+                />
               </div>
             </div>
 
@@ -551,7 +559,15 @@ export default function MerchantStaffTab({ merchantId }: Props) {
               <Badge variant="outline" className={`text-[9px] ${roleColors[editing?.role] || ""}`}>{editing?.role}</Badge>
             </div>
             {editing && (
-              <PermissionPicker value={editPerms} onChange={setEditPerms} role={editing.role as StaffRole} />
+              <PermissionPicker
+                value={editPerms}
+                onChange={setEditPerms}
+                role={editing.role as StaffRole}
+                customPresets={customPresets}
+                onSavePreset={handleSavePreset}
+                onRenamePreset={handleRenamePreset}
+                onDeletePreset={handleDeletePreset}
+              />
             )}
             <Button className="w-full" disabled={savingEdit} onClick={saveEdit}>
               {savingEdit ? "Saving..." : `Save · ${countActive(editPerms)} feature${countActive(editPerms) === 1 ? "" : "s"}`}
