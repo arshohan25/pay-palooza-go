@@ -233,27 +233,96 @@ export default function MerchantLoginPage() {
         throw new Error(error?.message || "Sign-in failed");
       }
 
-      // Establish the session client-side
-      const { error: setErr } = await supabase.auth.setSession({
-        access_token: body.session.access_token,
-        refresh_token: body.session.refresh_token,
-      });
-      if (setErr) throw setErr;
-
       clearLockout();
 
-      try {
-        localStorage.setItem("mfs_device_phone", cleanedPhone);
-        localStorage.setItem("mfs_has_authenticated", "1");
-      } catch {}
+      // Hold the session tokens — do NOT call setSession yet.
+      pendingSessionRef.current = {
+        access_token: body.session.access_token,
+        refresh_token: body.session.refresh_token,
+        cleanedPhone,
+      };
 
-      toast.success("Welcome back, merchant!");
-      navigate(redirectTarget, { replace: true });
+      // Check if this device is already trusted for this merchant.
+      const trusted = await otp.checkTrusted(cleanedPhone);
+      if (trusted) {
+        // Skip OTP — go straight to confirm step.
+        setStep("confirm");
+      } else {
+        // Send a 6-digit OTP and switch to verification step.
+        try {
+          await otp.sendOtp(cleanedPhone);
+          setStep("otp");
+        } catch (sendErr: any) {
+          toast.error(sendErr?.message || "Couldn't send verification code");
+        }
+      }
     } catch (err: any) {
       toast.error(err?.message || "Sign-in failed");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerifyOtp = async (code: string) => {
+    const phoneForVerify = pendingSessionRef.current?.cleanedPhone;
+    if (!phoneForVerify) {
+      toast.error("Session expired. Please sign in again.");
+      setStep("signin");
+      return;
+    }
+    const ok = await otp.verifyOtp(phoneForVerify, code);
+    if (ok) {
+      setStep("confirm");
+    }
+  };
+
+  const handleResendOtp = async () => {
+    const phoneForVerify = pendingSessionRef.current?.cleanedPhone;
+    if (!phoneForVerify) return;
+    try {
+      await otp.sendOtp(phoneForVerify);
+      toast.success("New code sent");
+    } catch {}
+  };
+
+  const handleConfirmContinue = async () => {
+    const pending = pendingSessionRef.current;
+    if (!pending) {
+      toast.error("Session expired. Please sign in again.");
+      setStep("signin");
+      return;
+    }
+    setConfirmLoading(true);
+    try {
+      const { error: setErr } = await supabase.auth.setSession({
+        access_token: pending.access_token,
+        refresh_token: pending.refresh_token,
+      });
+      if (setErr) throw setErr;
+
+      // Mark the device trusted (now that we have an authenticated session).
+      await otp.markTrusted(pending.cleanedPhone);
+
+      try {
+        localStorage.setItem("mfs_device_phone", pending.cleanedPhone);
+        localStorage.setItem("mfs_has_authenticated", "1");
+      } catch {}
+
+      pendingSessionRef.current = null;
+      toast.success("Welcome back, merchant!");
+      navigate(redirectTarget, { replace: true });
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to start session");
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const handleCancelOtp = () => {
+    pendingSessionRef.current = null;
+    otp.reset();
+    setPin("");
+    setStep("signin");
   };
 
   return (
