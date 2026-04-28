@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
         message: `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
       }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(pl.retry_after_seconds) } });
     }
-    return json(401, { ok: false, locked: false, attempts_remaining: pl?.attempts_remaining ?? null, message: "Wrong phone or PIN" });
+    return json(200, { ok: false, locked: false, attempts_remaining: pl?.attempts_remaining ?? null, message: "Wrong phone or PIN" });
   }
 
   // 3. Role/access check (owner vs manager mode)
