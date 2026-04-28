@@ -113,34 +113,18 @@ function PermissionPicker({
   };
 
   const applyChoice = (val: string) => {
-    if (val === `__role_${role}__`) {
-      onChange(defaultPermissionsFor(role));
-      toast.success(`Applied ${role} preset`);
-      return;
-    }
-    if (val.startsWith("__role_")) {
-      const r = val.replace("__role_", "").replace("__", "") as StaffRole;
-      onChange(defaultPermissionsFor(r));
-      toast.success(`Applied ${r} preset`);
-      return;
-    }
     if (val === "__save_current__") {
       setShowSave(true);
       return;
     }
+    if (val.startsWith("__role_")) {
+      const r = val.replace("__role_", "").replace("__", "") as StaffRole;
+      stagePreview(`${r} preset`, defaultPermissionsFor(r), onChange);
+      return;
+    }
     const preset = customPresets.find(p => p.id === val);
     if (preset) {
-      const stripped = findOwnerOnlyKeys(preset.permissions);
-      const safe = applyPermissionSet(stripOwnerOnlyKeys(preset.permissions));
-      onChange(safe);
-      if (stripped.length) {
-        const names = stripped.map(k => OWNER_ONLY_LABELS[k] ?? k).join(", ");
-        toast.warning(`Applied "${preset.name}" — owner-only removed: ${names}`, {
-          description: "Staff cannot hold owner-only permissions. They were stripped automatically.",
-        });
-      } else {
-        toast.success(`Applied "${preset.name}"`);
-      }
+      stagePreview(`"${preset.name}"`, applyPermissionSet(preset.permissions), onChange);
     }
   };
 
