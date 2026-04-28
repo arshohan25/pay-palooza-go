@@ -183,6 +183,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={`text-[9px] ${roleColors[s.role] || ""}`}>{s.role}</Badge>
                     <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s.id, s.is_active)} />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title="Resend invite" disabled={resendingId === s.id} onClick={() => sendInvite(s.id)}><Send size={13} /></Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteStaff(s.id)}><Trash2 size={13} /></Button>
                   </div>
                 </div>
