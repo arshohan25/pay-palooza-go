@@ -3207,6 +3207,45 @@ export type Database = {
           },
         ]
       }
+      merchant_pin_reset_requests: {
+        Row: {
+          created_at: string
+          id: string
+          ip: string | null
+          note: string | null
+          phone: string
+          resolved_at: string | null
+          resolved_by: string | null
+          source: string
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip?: string | null
+          note?: string | null
+          phone: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source?: string
+          status?: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip?: string | null
+          note?: string | null
+          phone?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source?: string
+          status?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       merchant_products: {
         Row: {
           badge: string | null

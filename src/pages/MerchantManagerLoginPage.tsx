@@ -13,6 +13,7 @@ import {
 } from "@/hooks/use-device-otp-verification";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import DeviceOtpStep from "@/components/DeviceOtpStep";
+import MerchantForgotPinSheet from "@/components/merchant/MerchantForgotPinSheet";
 import {
   UserCog,
   ShieldCheck,
@@ -24,6 +25,7 @@ import {
   Info,
   AlertTriangle,
   Store,
+  HelpCircle,
 } from "lucide-react";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
@@ -51,6 +53,7 @@ export default function MerchantManagerLoginPage() {
   const [now, setNow] = useState(() => Date.now());
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const [wrongPin, setWrongPin] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const tickerRef = useRef<number | null>(null);
 
   type Step = "signin" | "otp";
@@ -452,9 +455,19 @@ export default function MerchantManagerLoginPage() {
 
                 {/* PIN */}
                 <div className="mt-3 space-y-1.5">
-                  <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                    Your 4-digit PIN
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                      Your 4-digit PIN
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={() => setForgotOpen(true)}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-100/80 transition-colors hover:text-sky-50"
+                    >
+                      <HelpCircle className="h-3 w-3" />
+                      Forgot PIN?
+                    </button>
+                  </div>
                   <div className={`rounded-2xl border p-2 transition-colors focus-within:border-sky-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
                     <InputOTP maxLength={4} value={pin} onChange={(v) => { setPin(v); if (wrongPin) setWrongPin(false); }} disabled={isLocked} containerClassName="justify-center">
                       <InputOTPGroup className="gap-2">
@@ -525,6 +538,14 @@ export default function MerchantManagerLoginPage() {
           </div>
         </div>
       </div>
+
+      <MerchantForgotPinSheet
+        open={forgotOpen}
+        onOpenChange={setForgotOpen}
+        defaultPhone={phone}
+        source="merchant-manager-login"
+        accent="sky"
+      />
     </div>
   );
 }

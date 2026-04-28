@@ -13,6 +13,7 @@ import {
 } from "@/hooks/use-device-otp-verification";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import DeviceOtpStep from "@/components/DeviceOtpStep";
+import MerchantForgotPinSheet, { maskBdPhone } from "@/components/merchant/MerchantForgotPinSheet";
 import {
   Store,
   ShieldCheck,
@@ -27,6 +28,8 @@ import {
   BarChart3,
   AlertTriangle,
   UserCog,
+  HelpCircle,
+  X,
 } from "lucide-react";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
@@ -55,6 +58,8 @@ export default function MerchantLoginPage() {
   const [now, setNow] = useState(() => Date.now());
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const [wrongPin, setWrongPin] = useState(false);
+  const [boundPhone, setBoundPhone] = useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const tickerRef = useRef<number | null>(null);
 
   // Device-bound OTP flow
@@ -70,8 +75,13 @@ export default function MerchantLoginPage() {
   // Restore device-bound phone + persisted lockout
   useEffect(() => {
     const bound = typeof window !== "undefined" ? localStorage.getItem("mfs_device_phone") : null;
-    if (bound) setPhone(bound.replace(/^88/, ""));
-
+    if (bound) {
+      const cleaned = bound.replace(/^88/, "").replace(/\D/g, "");
+      if (/^01[3-9]\d{8}$/.test(cleaned)) {
+        setBoundPhone(cleaned);
+        setPhone(cleaned);
+      }
+    }
     try {
       const raw = localStorage.getItem(LS_LOCKED_UNTIL);
       if (raw) {
@@ -521,35 +531,79 @@ export default function MerchantLoginPage() {
                 </div>
               )}
 
-            {/* Phone */}
+            {/* Phone — masked chip if device is bound, otherwise editable input */}
             <div className="space-y-1.5">
               <Label htmlFor="merchant-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                Mobile number
+                {boundPhone ? "Signed in as" : "Mobile number"}
               </Label>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors focus-within:border-amber-200/50 focus-within:bg-white/[0.06]">
-                <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
-                  <Phone className="h-4 w-4 text-amber-200" />
-                  <span className="font-medium">+880</span>
+              {boundPhone ? (
+                <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-200/25 bg-amber-300/[0.06] px-3 py-2.5">
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/10">
+                      <Phone className="h-3.5 w-3.5 text-amber-200" />
+                    </div>
+                    <div className="leading-tight">
+                      <div className="font-semibold tracking-wide text-white tabular-nums">
+                        +880 {maskBdPhone(boundPhone)}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wider text-amber-100/60">
+                        This device
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try { localStorage.removeItem("mfs_device_phone"); } catch {}
+                      clearDeviceToken(boundPhone, "merchant");
+                      setBoundPhone(null);
+                      setPhone("");
+                      setPin("");
+                      setWrongPin(false);
+                      setAttemptsRemaining(null);
+                    }}
+                    aria-label="Use a different number"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white/60 transition-colors hover:bg-white/[0.12] hover:text-white"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-                <Input
-                  id="merchant-phone"
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  placeholder="1XXXXXXXXX"
-                  value={phone}
-                  disabled={isLocked}
-                  onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); if (wrongPin) setWrongPin(false); }}
-                  className="h-9 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60"
-                />
-              </div>
+              ) : (
+                <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors focus-within:border-amber-200/50 focus-within:bg-white/[0.06]">
+                  <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
+                    <Phone className="h-4 w-4 text-amber-200" />
+                    <span className="font-medium">+880</span>
+                  </div>
+                  <Input
+                    id="merchant-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    placeholder="1XXXXXXXXX"
+                    value={phone}
+                    disabled={isLocked}
+                    onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); if (wrongPin) setWrongPin(false); }}
+                    className="h-9 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60"
+                  />
+                </div>
+              )}
             </div>
 
             {/* PIN — auto-masked, no show/hide toggle */}
             <div className="mt-3 space-y-1.5">
-              <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                4-digit PIN
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                  4-digit PIN
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(true)}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-100/80 transition-colors hover:text-amber-50"
+                >
+                  <HelpCircle className="h-3 w-3" />
+                  Forgot PIN?
+                </button>
+              </div>
               <div className={`rounded-2xl border p-2 transition-colors focus-within:border-amber-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
                 <InputOTP
                   maxLength={4}
@@ -659,6 +713,14 @@ export default function MerchantLoginPage() {
           </div>
         </div>
       </div>
+
+      <MerchantForgotPinSheet
+        open={forgotOpen}
+        onOpenChange={setForgotOpen}
+        defaultPhone={boundPhone || phone}
+        source="merchant-login"
+        accent="amber"
+      />
     </div>
   );
 }
