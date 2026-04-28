@@ -379,30 +379,20 @@ export default function MerchantLoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-emerald-950 text-white">
-      {/* Bokeh blobs */}
+    <div className="relative min-h-screen w-full overflow-hidden bg-background text-foreground">
+      {/* Top hero band — matches dashboard gradient-hero header */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-24 h-[420px] w-[420px] rounded-full bg-emerald-500/30 blur-[120px]"
+        className="absolute inset-x-0 top-0 h-[340px] gradient-hero"
+      />
+      {/* Soft ambient orbs over the hero */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -left-20 h-[320px] w-[320px] rounded-full bg-white/10 blur-[120px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-40 -right-24 h-[460px] w-[460px] rounded-full bg-indigo-500/30 blur-[140px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-1/2 left-1/2 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-fuchsia-500/10 blur-[120px]"
-      />
-
-      {/* Subtle grid texture */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.05]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
-          backgroundSize: "44px 44px",
-        }}
+        className="pointer-events-none absolute -top-10 -right-16 h-[280px] w-[280px] rounded-full bg-white/5 blur-[110px]"
       />
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
@@ -410,19 +400,19 @@ export default function MerchantLoginPage() {
           className="w-full max-w-md animate-fade-in"
           style={{ animationDuration: "500ms" }}
         >
-          {/* Logo + eyebrow */}
+          {/* Logo + eyebrow (sits on the gradient-hero band — keep light text here) */}
           <div className="mb-6 flex flex-col items-center text-center animate-scale-in">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[19px] border border-white/15 bg-white/10 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.6)] backdrop-blur-2xl">
-              <Store className="h-8 w-8 text-emerald-300" strokeWidth={1.8} />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[19px] border border-white/20 bg-white/15 shadow-float backdrop-blur-2xl">
+              <Store className="h-8 w-8 text-white" strokeWidth={1.8} />
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white backdrop-blur-sm">
               <Sparkles className="h-3 w-3" />
               Merchant Portal
             </span>
-            <h1 className="mt-3 text-3xl font-semibold leading-tight tracking-tight">
+            <h1 className="mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
               Welcome back
             </h1>
-            <p className="mt-1.5 max-w-xs text-sm text-white/60">
+            <p className="mt-1.5 max-w-xs text-sm text-white/75">
               Sign in to manage your store, orders, payouts and QR.
             </p>
           </div>
@@ -442,11 +432,11 @@ export default function MerchantLoginPage() {
           )}
 
           {step === "signin" && (
-          /* Glass card */
+          /* Card on background */
           <form
             onSubmit={handleSignIn}
             aria-disabled={isLocked}
-            className="rounded-[19px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:p-7"
+            className="rounded-[19px] border border-border bg-card p-6 shadow-elevated sm:p-7"
           >
             <fieldset disabled={isLocked} className="m-0 border-0 p-0 disabled:opacity-100">
             {/* Lockout banner */}
@@ -454,14 +444,14 @@ export default function MerchantLoginPage() {
               <div
                 role="alert"
                 aria-live="polite"
-                className="mb-5 flex items-start gap-2.5 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-rose-100"
+                className="mb-5 flex items-start gap-2.5 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-destructive"
               >
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <div className="space-y-0.5">
                   <p className="text-xs font-semibold uppercase tracking-wider">
                     Account temporarily locked
                   </p>
-                  <p className="text-[13px] leading-snug text-rose-100/85">
+                  <p className="text-[13px] leading-snug">
                     Too many failed sign-in attempts. Try again in{" "}
                     <span className="font-semibold tabular-nums">
                       {formatCountdown(remainingSeconds)}
@@ -477,9 +467,9 @@ export default function MerchantLoginPage() {
               attemptsRemaining !== null &&
               attemptsRemaining > 0 &&
               attemptsRemaining <= 3 && (
-                <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-amber-100">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                  <p className="text-[13px] leading-snug">
+                <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-accent/30 bg-accent/10 p-3 text-accent-foreground">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                  <p className="text-[13px] leading-snug text-foreground">
                     {attemptsRemaining} attempt{attemptsRemaining === 1 ? "" : "s"} remaining
                     before this account is temporarily locked.
                   </p>
@@ -488,12 +478,12 @@ export default function MerchantLoginPage() {
 
             {/* Phone */}
             <div className="space-y-2">
-              <Label htmlFor="merchant-phone" className="text-xs font-medium uppercase tracking-wider text-white/60">
+              <Label htmlFor="merchant-phone" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Mobile number
               </Label>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1.5 transition-colors focus-within:border-emerald-300/40 focus-within:bg-white/[0.06]">
-                <div className="flex items-center gap-1.5 border-r border-white/10 pr-3 text-sm text-white/70">
-                  <Phone className="h-4 w-4 text-emerald-300" />
+              <div className="flex items-center gap-2 rounded-2xl border border-input bg-background px-3 py-1.5 transition-colors focus-within:border-primary focus-within:shadow-glow">
+                <div className="flex items-center gap-1.5 border-r border-border pr-3 text-sm text-foreground/80">
+                  <Phone className="h-4 w-4 text-primary" />
                   <span className="font-medium">+880</span>
                 </div>
                 <Input
@@ -505,7 +495,7 @@ export default function MerchantLoginPage() {
                   value={phone}
                   disabled={isLocked}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                  className="h-10 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60"
+                  className="h-10 border-0 bg-transparent px-0 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60"
                 />
               </div>
             </div>
@@ -513,19 +503,19 @@ export default function MerchantLoginPage() {
             {/* PIN */}
             <div className="mt-5 space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium uppercase tracking-wider text-white/60">
+                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   4-digit PIN
                 </Label>
                 <button
                   type="button"
                   onClick={() => setShowPin((v) => !v)}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-white/60 transition-colors hover:text-white"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {showPin ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                   {showPin ? "Hide" : "Show"}
                 </button>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition-colors focus-within:border-emerald-300/40">
+              <div className="rounded-2xl border border-input bg-background p-3 transition-colors focus-within:border-primary focus-within:shadow-glow">
                 <InputOTP
                   maxLength={4}
                   value={pin}
@@ -538,11 +528,11 @@ export default function MerchantLoginPage() {
                       <InputOTPSlot
                         key={i}
                         index={i}
-                        className="h-12 w-12 rounded-xl border-white/15 bg-white/[0.06] text-lg font-semibold text-white"
+                        className="h-12 w-12 rounded-xl border-input bg-card text-lg font-semibold text-foreground"
                         // mask via CSS when hidden
                         style={
                           !showPin && pin[i]
-                            ? { color: "transparent", textShadow: "0 0 0 white", caretColor: "transparent" }
+                            ? { color: "transparent", textShadow: "0 0 0 hsl(var(--foreground))", caretColor: "transparent" }
                             : undefined
                         }
                       />
@@ -556,7 +546,7 @@ export default function MerchantLoginPage() {
             <Button
               type="submit"
               disabled={loading || isLocked}
-              className="mt-6 h-12 w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(16,185,129,0.7)] transition-transform hover:scale-[1.01] hover:from-emerald-400 hover:to-teal-400 disabled:opacity-70"
+              className="mt-6 h-12 w-full rounded-2xl gradient-hero text-base font-semibold text-white shadow-glow transition-transform hover:scale-[1.01] disabled:opacity-70"
             >
               {isLocked ? (
                 <>
@@ -585,24 +575,24 @@ export default function MerchantLoginPage() {
               ].map(({ icon: Icon, label }) => (
                 <div
                   key={label}
-                  className="flex items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2 py-1.5 text-[10.5px] font-medium text-white/70"
+                  className="flex items-center justify-center gap-1.5 rounded-full border border-border bg-muted/40 px-2 py-1.5 text-[10.5px] font-medium text-muted-foreground"
                 >
-                  <Icon className="h-3 w-3 text-emerald-300" />
+                  <Icon className="h-3 w-3 text-primary" />
                   {label}
                 </div>
               ))}
             </div>
 
             {/* Perks strip */}
-            <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.03] to-white/[0.06] px-4 py-3">
+            <div className="mt-5 flex items-center justify-between rounded-2xl border border-border bg-muted/30 px-4 py-3">
               {[
                 { icon: ShoppingBag, label: "Orders" },
                 { icon: Wallet, label: "Payouts" },
                 { icon: QrCode, label: "QR" },
                 { icon: BarChart3, label: "Insights" },
               ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex flex-col items-center gap-1 text-white/70">
-                  <Icon className="h-4 w-4 text-emerald-300" />
+                <div key={label} className="flex flex-col items-center gap-1 text-muted-foreground">
+                  <Icon className="h-4 w-4 text-primary" />
                   <span className="text-[10px] font-medium uppercase tracking-wider">{label}</span>
                 </div>
               ))}
@@ -616,24 +606,24 @@ export default function MerchantLoginPage() {
             <button
               type="button"
               onClick={() => navigate("/merchant")}
-              className="group inline-flex items-center gap-1.5 text-sm font-medium text-emerald-300 transition-colors hover:text-emerald-200"
+              className="group inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
             >
               New here? Apply as a merchant
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </button>
-            <div className="flex items-center gap-3 text-xs text-white/50">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <button
                 type="button"
                 onClick={() => navigate("/auth")}
-                className="hover:text-white"
+                className="hover:text-foreground"
               >
                 Customer login
               </button>
-              <span className="h-3 w-px bg-white/15" />
+              <span className="h-3 w-px bg-border" />
               <button
                 type="button"
                 onClick={() => navigate("/team-login")}
-                className="hover:text-white"
+                className="hover:text-foreground"
               >
                 Staff login
               </button>
