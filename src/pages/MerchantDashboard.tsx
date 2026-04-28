@@ -6,6 +6,7 @@ import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import { useAuth } from "@/hooks/use-auth";
 import { useStaffAccess } from "@/hooks/use-staff-access";
+import { TAB_TO_PERMISSION } from "@/lib/staffPermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
