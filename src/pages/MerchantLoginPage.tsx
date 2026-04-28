@@ -630,16 +630,12 @@ export default function MerchantLoginPage() {
             </Button>
             <button
               type="button"
-              onClick={() => {
-                setLoginMode((m) => (m === "owner" ? "manager" : "owner"));
-                setPin("");
-              }}
+              onClick={() => navigate("/merchant-manager-login")}
               className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/60 transition-colors hover:text-amber-100"
             >
               <UserCog className="h-3 w-3" />
-              {loginMode === "manager"
-                ? "Switch to merchant owner login"
-                : "Sign in as Manager instead"}
+              Manage a store as staff? Manager login
+              <ArrowRight className="h-3 w-3" />
             </button>
           </div>
         </div>
