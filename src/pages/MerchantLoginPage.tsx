@@ -159,17 +159,81 @@ export default function MerchantLoginPage() {
     } catch {}
   };
 
+  /**
+   * Calls the merchant-login edge function. The server gates session creation
+   * on a valid device trust token OR a single-use OTP ticket.
+   *
+   * Returns one of:
+   *  - { kind: "session", body }   → session tokens issued, ready to confirm
+   *  - { kind: "otp_required" }    → device not trusted, OTP must be verified
+   *  - { kind: "locked", retry }   → account temporarily locked
+   *  - { kind: "error", message }  → other terminal failure
+   */
+  const callMerchantLogin = async (
+    cleanedPhone: string,
+    pinValue: string,
+    extras: { device_token?: string; otp_ticket?: string },
+  ): Promise<
+    | { kind: "session"; body: any }
+    | { kind: "otp_required" }
+    | { kind: "locked"; retry: number; message?: string }
+    | { kind: "wrong_credentials"; attempts_remaining: number | null; message?: string }
+    | { kind: "error"; message: string }
+  > => {
+    const device_fp = await getDeviceFingerprint();
+    const { data, error } = await supabase.functions.invoke("merchant-login", {
+      body: {
+        phone: cleanedPhone,
+        pin: pinValue,
+        device_fp,
+        ...extras,
+      },
+    });
+
+    const ctx: any = (error as any)?.context;
+    let body: any = data ?? ctx?.body ?? null;
+    if (!body && ctx?.json) { try { body = await ctx.json(); } catch {} }
+    if (!body && ctx?.text) {
+      try { body = JSON.parse(await ctx.text()); } catch {}
+    }
+    const status: number | undefined = ctx?.status;
+    const headerRetry = (() => {
+      try {
+        const h = ctx?.headers?.get?.("retry-after");
+        const n = h ? parseInt(h, 10) : NaN;
+        return Number.isFinite(n) && n > 0 ? n : null;
+      } catch { return null; }
+    })();
+
+    if (body?.locked || status === 429) {
+      return {
+        kind: "locked",
+        retry: body?.retry_after_seconds ?? headerRetry ?? 900,
+        message: body?.message,
+      };
+    }
+    if (body?.ok === true && body?.requires_device_verification) {
+      return { kind: "otp_required" };
+    }
+    if (body?.ok === true && body?.session) {
+      return { kind: "session", body };
+    }
+    if (body?.ok === false) {
+      return {
+        kind: "wrong_credentials",
+        attempts_remaining: typeof body.attempts_remaining === "number" ? body.attempts_remaining : null,
+        message: body.message,
+      };
+    }
+    return { kind: "error", message: error?.message || "Sign-in failed" };
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading || isLocked) return;
 
-    // Belt-and-suspenders: re-check persisted lock in case the ticker hasn't
-    // fired yet or another tab just locked us out.
     const persisted = readPersistedLock();
-    if (persisted) {
-      setLockedUntil(persisted);
-      return;
-    }
+    if (persisted) { setLockedUntil(persisted); return; }
 
     const cleanedPhone = phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(cleanedPhone)) {
@@ -183,83 +247,62 @@ export default function MerchantLoginPage() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("merchant-login", {
-        body: { phone: cleanedPhone, pin },
+      const stored = getStoredDeviceToken(cleanedPhone, "merchant");
+      const result = await callMerchantLogin(cleanedPhone, pin, {
+        device_token: stored ?? undefined,
       });
 
-      // FunctionsHttpError surfaces non-2xx — body location varies by client version.
-      const ctx: any = (error as any)?.context;
-      let body: any = data ?? ctx?.body ?? null;
-
-      // Fallback 1: ctx.json()
-      if (!body && ctx && typeof ctx.json === "function") {
-        try { body = await ctx.json(); } catch {}
-      }
-      // Fallback 2: ctx.text() → JSON.parse
-      if (!body && ctx && typeof ctx.text === "function") {
-        try {
-          const txt = await ctx.text();
-          body = JSON.parse(txt);
-        } catch {}
-      }
-
-      // Fallback 3: Retry-After header if status was 429 but body unreadable
-      const headerRetry = (() => {
-        try {
-          const h = ctx?.headers?.get?.("retry-after");
-          const n = h ? parseInt(h, 10) : NaN;
-          return Number.isFinite(n) && n > 0 ? n : null;
-        } catch { return null; }
-      })();
-      const status: number | undefined = ctx?.status;
-
-      if (body?.locked || status === 429) {
-        const retry = body?.retry_after_seconds ?? headerRetry ?? 900;
-        applyLockout(retry);
+      if (result.kind === "locked") {
+        applyLockout(result.retry);
         setPin("");
-        toast.error(body?.message || "Too many failed attempts. Please wait.");
+        toast.error(result.message || "Too many failed attempts. Please wait.");
         return;
       }
-
-      if (body?.ok === false) {
-        if (typeof body.attempts_remaining === "number") {
-          setAttemptsRemaining(body.attempts_remaining);
-        }
-        const msg =
-          body.attempts_remaining != null && body.message === "Wrong phone or PIN"
-            ? `Wrong phone or PIN — ${body.attempts_remaining} attempt${body.attempts_remaining === 1 ? "" : "s"} left`
-            : body.message || "Sign-in failed";
+      if (result.kind === "wrong_credentials") {
+        if (result.attempts_remaining != null) setAttemptsRemaining(result.attempts_remaining);
+        const msg = result.attempts_remaining != null && result.message === "Wrong phone or PIN"
+          ? `Wrong phone or PIN — ${result.attempts_remaining} attempt${result.attempts_remaining === 1 ? "" : "s"} left`
+          : result.message || "Sign-in failed";
         toast.error(msg);
         setPin("");
         return;
       }
-
-      if (!body?.ok || !body?.session) {
-        throw new Error(error?.message || "Sign-in failed");
+      if (result.kind === "error") {
+        toast.error(result.message);
+        return;
       }
 
       clearLockout();
 
-      // Hold the session tokens — do NOT call setSession yet.
-      pendingSessionRef.current = {
-        access_token: body.session.access_token,
-        refresh_token: body.session.refresh_token,
-        cleanedPhone,
-      };
-
-      // Check if this device is already trusted for this merchant.
-      const trusted = await otp.checkTrusted(cleanedPhone);
-      if (trusted) {
-        // Skip OTP — go straight to confirm step.
-        setStep("confirm");
-      } else {
-        // Send a 6-digit OTP and switch to verification step.
-        try {
-          await otp.sendOtp(cleanedPhone);
-          setStep("otp");
-        } catch (sendErr: any) {
-          toast.error(sendErr?.message || "Couldn't send verification code");
+      if (result.kind === "session") {
+        // Returning trusted device — server already validated the device token.
+        pendingSessionRef.current = {
+          access_token: result.body.session.access_token,
+          refresh_token: result.body.session.refresh_token,
+          cleanedPhone,
+        };
+        // Persist any rotated trust token (if server reissued one).
+        if (result.body.device_token && result.body.device_token_expires_at) {
+          otp.saveTrustToken(cleanedPhone, result.body.device_token, result.body.device_token_expires_at);
         }
+        setStep("confirm");
+        return;
+      }
+
+      // result.kind === "otp_required"
+      // The stored token (if any) was rejected by the server. Drop it.
+      clearDeviceToken(cleanedPhone, "merchant");
+      try {
+        await otp.sendOtp(cleanedPhone);
+        // Stash the phone for the OTP step retry.
+        pendingSessionRef.current = {
+          access_token: "",
+          refresh_token: "",
+          cleanedPhone,
+        };
+        setStep("otp");
+      } catch (sendErr: any) {
+        toast.error(sendErr?.message || "Couldn't send verification code");
       }
     } catch (err: any) {
       toast.error(err?.message || "Sign-in failed");
@@ -269,16 +312,33 @@ export default function MerchantLoginPage() {
   };
 
   const handleVerifyOtp = async (code: string) => {
-    const phoneForVerify = pendingSessionRef.current?.cleanedPhone;
-    if (!phoneForVerify) {
+    const cleanedPhone = pendingSessionRef.current?.cleanedPhone;
+    if (!cleanedPhone) {
       toast.error("Session expired. Please sign in again.");
       setStep("signin");
       return;
     }
-    const ok = await otp.verifyOtp(phoneForVerify, code);
-    if (ok) {
-      setStep("confirm");
+    const ticket = await otp.verifyOtp(cleanedPhone, code);
+    if (!ticket) return;
+
+    // Re-call merchant-login with the OTP ticket so the server can mint a session
+    // + a fresh device trust token.
+    const result = await callMerchantLogin(cleanedPhone, pin, { otp_ticket: ticket });
+    if (result.kind !== "session") {
+      const msg = (result as any).message || "Verification didn't unlock the session.";
+      toast.error(msg);
+      return;
     }
+
+    pendingSessionRef.current = {
+      access_token: result.body.session.access_token,
+      refresh_token: result.body.session.refresh_token,
+      cleanedPhone,
+    };
+    if (result.body.device_token && result.body.device_token_expires_at) {
+      otp.saveTrustToken(cleanedPhone, result.body.device_token, result.body.device_token_expires_at);
+    }
+    setStep("confirm");
   };
 
   const handleResendOtp = async () => {
@@ -292,7 +352,7 @@ export default function MerchantLoginPage() {
 
   const handleConfirmContinue = async () => {
     const pending = pendingSessionRef.current;
-    if (!pending) {
+    if (!pending || !pending.access_token) {
       toast.error("Session expired. Please sign in again.");
       setStep("signin");
       return;
@@ -304,9 +364,6 @@ export default function MerchantLoginPage() {
         refresh_token: pending.refresh_token,
       });
       if (setErr) throw setErr;
-
-      // Mark the device trusted (now that we have an authenticated session).
-      await otp.markTrusted(pending.cleanedPhone);
 
       try {
         localStorage.setItem("mfs_device_phone", pending.cleanedPhone);
