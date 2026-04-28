@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle } from "lucide-react";
+import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -30,6 +30,31 @@ export default function MerchantStaffTab({ merchantId }: Props) {
   const [role, setRole] = useState<string>("Cashier");
   const [saving, setSaving] = useState(false);
   const [phoneLookup, setPhoneLookup] = useState<{ status: "idle" | "checking" | "found" | "missing"; name: string | null }>({ status: "idle", name: null });
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
+  const sendInvite = async (staff_id: string, opts?: { silent?: boolean }) => {
+    setResendingId(staff_id);
+    const { data, error } = await supabase.functions.invoke("notify-staff-invite", { body: { staff_id } });
+    setResendingId(null);
+    if (error) {
+      // 429 cooldown returns non-2xx; supabase-js surfaces it as error with context
+      const ctx: any = (error as any).context;
+      try {
+        const body = ctx ? await ctx.json() : null;
+        if (body?.cooldown) { toast.error(body.message || "Please wait before resending."); return; }
+      } catch (_) { /* ignore */ }
+      if (!opts?.silent) toast.error(error.message || "Failed to send invite");
+      return;
+    }
+    if (!opts?.silent) {
+      const r = (data as any)?.results || {};
+      const channels: string[] = [];
+      if (r.push?.sent > 0) channels.push("push");
+      if (r.sms?.status === "sent") channels.push("SMS");
+      if (r.email?.status === "sent") channels.push("email");
+      toast.success(channels.length ? `Invite sent via ${channels.join(", ")}` : "Invite logged (no channels available)");
+    }
+  };
 
   // Debounced EasyPay phone lookup
   useEffect(() => {
