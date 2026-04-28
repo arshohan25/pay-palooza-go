@@ -490,7 +490,7 @@ export default function MerchantLoginPage() {
               <div
                 role="alert"
                 aria-live="assertive"
-                className="mb-5 flex items-start gap-2.5 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-3 text-rose-100 animate-[shake_0.4s_ease-in-out]"
+                className="mb-5 flex items-start gap-2.5 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-3 text-rose-100 animate-shake"
               >
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <div className="space-y-0.5">
