@@ -50,6 +50,7 @@ export default function MerchantManagerLoginPage() {
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
+  const [wrongPin, setWrongPin] = useState(false);
   const tickerRef = useRef<number | null>(null);
 
   type Step = "signin" | "otp";
@@ -206,9 +207,10 @@ export default function MerchantManagerLoginPage() {
       }
       if (result.kind === "wrong_credentials") {
         if (result.attempts_remaining != null) setAttemptsRemaining(result.attempts_remaining);
+        setWrongPin(true);
         const msg = result.attempts_remaining != null && result.message === "Wrong phone or PIN"
-          ? `Wrong phone or PIN — ${result.attempts_remaining} attempt${result.attempts_remaining === 1 ? "" : "s"} left`
-          : result.message || "Sign-in failed";
+          ? `Incorrect PIN — ${result.attempts_remaining} attempt${result.attempts_remaining === 1 ? "" : "s"} left`
+          : result.message || "Incorrect PIN";
         toast.error(msg);
         setPin("");
         return;
@@ -397,7 +399,25 @@ export default function MerchantManagerLoginPage() {
                   </div>
                 )}
 
-                {!isLocked && attemptsRemaining !== null && attemptsRemaining > 0 && attemptsRemaining <= 3 && (
+                {!isLocked && wrongPin && (
+                  <div
+                    role="alert"
+                    aria-live="assertive"
+                    className="mb-3 flex items-start gap-2.5 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-3 text-rose-100 animate-shake"
+                  >
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-semibold uppercase tracking-wider">Incorrect PIN</p>
+                      <p className="text-[13px] leading-snug text-rose-100/85">
+                        {attemptsRemaining != null
+                          ? `${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} remaining before this account is temporarily locked.`
+                          : "Please double-check your PIN and try again."}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!isLocked && !wrongPin && attemptsRemaining !== null && attemptsRemaining > 0 && attemptsRemaining <= 3 && (
                   <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-amber-100">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
                     <p className="text-[13px] leading-snug">
@@ -424,7 +444,7 @@ export default function MerchantManagerLoginPage() {
                       placeholder="1XXXXXXXXX"
                       value={phone}
                       disabled={isLocked}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                      onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); if (wrongPin) setWrongPin(false); }}
                       className="h-9 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60"
                     />
                   </div>
@@ -435,15 +455,15 @@ export default function MerchantManagerLoginPage() {
                   <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
                     Your 4-digit PIN
                   </Label>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2 transition-colors focus-within:border-sky-200/50">
-                    <InputOTP maxLength={4} value={pin} onChange={setPin} disabled={isLocked} containerClassName="justify-center">
+                  <div className={`rounded-2xl border p-2 transition-colors focus-within:border-sky-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
+                    <InputOTP maxLength={4} value={pin} onChange={(v) => { setPin(v); if (wrongPin) setWrongPin(false); }} disabled={isLocked} containerClassName="justify-center">
                       <InputOTPGroup className="gap-2">
                         {[0, 1, 2, 3].map((i) => (
                           <InputOTPSlot
                             key={i}
                             index={i}
                             mask
-                            className="h-11 w-11 rounded-xl border-white/15 bg-white/[0.06] text-lg font-semibold text-white"
+                            className={`h-11 w-11 rounded-xl text-lg font-semibold text-white ${wrongPin ? "border-rose-400/60 bg-rose-500/10" : "border-white/15 bg-white/[0.06]"}`}
                           />
                         ))}
                       </InputOTPGroup>
