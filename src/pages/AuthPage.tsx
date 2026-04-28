@@ -639,6 +639,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
 
   // ── Device OTP handlers ──────────────────────────────────────────────────
   const otpTicketRef = useRef<string | null>(null);
+  const handleDeviceContinueRef = useRef<(() => void) | null>(null);
 
   const handleDeviceVerify = useCallback(async (code: string) => {
     if (!devicePhone) return;
