@@ -328,5 +328,7 @@ Deno.serve(async (req) => {
     device_verified: true,
     device_token: issuedTrust?.token ?? null,
     device_token_expires_at: issuedTrust?.expires_at ?? null,
+    mode,
+    staff: staffContext,
   });
 });
