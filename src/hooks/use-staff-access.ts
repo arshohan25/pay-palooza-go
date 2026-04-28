@@ -58,11 +58,12 @@ export function useStaffAccess() {
 
         const row = await runRpc(uid);
         if (cancelled) return;
-        const next = row
+        const next: StaffAccess | null = row
           ? {
               merchantId: row.merchant_id as string,
               merchantName: row.business_name as string,
               staffRole: row.staff_role as string,
+              permissions: ((row as any).permissions ?? {}) as Record<string, boolean>,
             }
           : null;
         _cachedAccess = next;
