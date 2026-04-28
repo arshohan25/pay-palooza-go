@@ -168,7 +168,7 @@ const stagger = {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const MerchantDashboard = () => {
   const { user, isAuthenticated, loading: authLoading, signOut } = useAuth();
-  const { isStaff, staffRole, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading } = useStaffAccess();
+  const { isStaff, staffRole, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading, resolved: staffResolved } = useStaffAccess();
   const navigate = useNavigate();
   useUserSessionTimeout("merchant");
   const { toast } = useToast();
@@ -249,10 +249,13 @@ const MerchantDashboard = () => {
 
   const loadData = useCallback(async () => {
     if (!user) return;
+    // Wait for staff resolution to avoid a race where the owner-only branch
+    // sets isMerchant=false before useStaffAccess has confirmed staff status.
+    if (!staffResolved || staffLoading) return;
     setLoading(true);
 
     // If user is staff (not merchant owner), load the merchant they're linked to
-    if (isStaff && staffMerchantId && !staffLoading) {
+    if (isStaff && staffMerchantId) {
       const [merchRes, profileRes] = await Promise.all([
         supabase.from("merchants").select("*").eq("id", staffMerchantId).single(),
         supabase.from("profiles").select("balance").eq("user_id", user.id).single(),
@@ -262,6 +265,7 @@ const MerchantDashboard = () => {
       setMerchant(merchRes.data as MerchantInfo | null);
       setTxns([]); // staff don't see owner's transactions
       setLoading(false);
+      console.info("[MerchantDashboard] loaded as staff", { userId: user.id, merchantId: staffMerchantId });
       return;
     }
 
@@ -271,12 +275,14 @@ const MerchantDashboard = () => {
       supabase.from("merchants").select("*").eq("user_id", user.id).single(),
       supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
     ]);
-    setIsMerchant((roleRes.data?.length ?? 0) > 0);
+    const hasMerchantRole = (roleRes.data?.length ?? 0) > 0;
+    setIsMerchant(hasMerchantRole);
     setBalance(profileRes.data?.balance ?? 0);
     setMerchant(merchRes.data as MerchantInfo | null);
     setTxns((txnRes.data ?? []) as TxnRow[]);
     setLoading(false);
-  }, [user, isStaff, staffMerchantId, staffLoading]);
+    console.info("[MerchantDashboard] loaded as owner-check", { userId: user.id, hasMerchantRole });
+  }, [user, isStaff, staffMerchantId, staffLoading, staffResolved]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -371,7 +377,7 @@ const MerchantDashboard = () => {
 
   const paymentTxns = useMemo(() => txns.filter(t => t.type === "payment"), [txns]);
 
-  if (authLoading || staffLoading || loading) {
+  if (authLoading || staffLoading || !staffResolved || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -392,7 +398,10 @@ const MerchantDashboard = () => {
       </div>
     );
   }
-  if (isMerchant === false) {
+  // Only show the "Become a Vendor" benefits page when we have a definitive
+  // answer that the user is neither a merchant owner nor active staff.
+  if (isMerchant === false && staffResolved && !isStaff) {
+    console.info("[MerchantDashboard] rendering benefits page", { userId: user?.id, isStaff, staffResolved, isMerchant });
     return <MerchantBenefitsPage navigate={navigate} />;
   }
 
