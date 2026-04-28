@@ -29,6 +29,27 @@ export default function MerchantStaffTab({ merchantId }: Props) {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<string>("Cashier");
   const [saving, setSaving] = useState(false);
+  const [phoneLookup, setPhoneLookup] = useState<{ status: "idle" | "checking" | "found" | "missing"; name: string | null }>({ status: "idle", name: null });
+
+  // Debounced EasyPay phone lookup
+  useEffect(() => {
+    if (!showAdd) return;
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 11) { setPhoneLookup({ status: "idle", name: null }); return; }
+    setPhoneLookup({ status: "checking", name: null });
+    const t = setTimeout(async () => {
+      const { data } = await supabase.rpc("lookup_easypay_user_by_phone", { p_phone: digits });
+      const row = Array.isArray(data) ? data[0] : null;
+      if (row?.found) {
+        setPhoneLookup({ status: "found", name: row.full_name });
+        setName(prev => prev.trim() ? prev : (row.full_name || ""));
+      } else {
+        setPhoneLookup({ status: "missing", name: null });
+      }
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone, showAdd]);
 
   const fetchStaff = async () => {
     const { data } = await supabase
