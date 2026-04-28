@@ -81,7 +81,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
     } else {
       toast.success("Staff added (not yet on EasyPay)");
     }
-    setShowAdd(false); setName(""); setPhone(""); setRole("Cashier");
+    setShowAdd(false); setName(""); setPhone(""); setRole("Cashier"); setPhoneLookup({ status: "idle", name: null });
   };
 
   const toggleActive = async (id: string, current: boolean) => {
@@ -170,7 +170,23 @@ export default function MerchantStaffTab({ merchantId }: Props) {
           <SheetHeader><SheetTitle>Add Staff Member</SheetTitle></SheetHeader>
           <div className="space-y-4 mt-4">
             <div><Label className="text-xs">Name</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Staff name" /></div>
-            <div><Label className="text-xs">Phone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="01XXXXXXXXX" /></div>
+            <div>
+              <Label className="text-xs">Phone</Label>
+              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="01XXXXXXXXX" inputMode="numeric" />
+              {phoneLookup.status === "checking" && (
+                <p className="text-[10px] text-muted-foreground mt-1">Checking EasyPay…</p>
+              )}
+              {phoneLookup.status === "found" && (
+                <p className="text-[10px] text-emerald-600 mt-1 flex items-center gap-1">
+                  <LinkIcon size={10} /> On EasyPay{phoneLookup.name ? ` — ${phoneLookup.name}` : ""}. They'll get instant access.
+                </p>
+              )}
+              {phoneLookup.status === "missing" && (
+                <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+                  <AlertTriangle size={10} /> Not on EasyPay yet. They'll be linked automatically when they sign up.
+                </p>
+              )}
+            </div>
             <div>
               <Label className="text-xs">Role</Label>
               <div className="flex gap-2 mt-1">
@@ -178,8 +194,8 @@ export default function MerchantStaffTab({ merchantId }: Props) {
                   <Button key={r} size="sm" variant={role === r ? "default" : "outline"} className="text-xs flex-1" onClick={() => setRole(r)}>{r}</Button>
                 ))}
               </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">Pick <span className="font-semibold text-foreground">Manager</span> to grant full dashboard access via Merchant Manager login.</p>
             </div>
-            <p className="text-[10px] text-muted-foreground">If the phone matches an EasyPay user, they'll get staff access to your merchant dashboard.</p>
             <Button className="w-full" disabled={saving} onClick={handleAdd}>{saving ? "Adding..." : "Add Staff"}</Button>
           </div>
         </SheetContent>
