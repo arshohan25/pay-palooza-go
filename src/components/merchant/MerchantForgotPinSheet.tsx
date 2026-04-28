@@ -22,7 +22,7 @@ interface MerchantForgotPinSheetProps {
 export function maskBdPhone(phone: string): string {
   const clean = phone.replace(/\D/g, "").replace(/^88/, "");
   if (clean.length !== 11) return phone;
-  return `${clean.slice(0, 3)}••••••${clean.slice(8)}`;
+  return `${clean.slice(0, 3)}•••••${clean.slice(8)}`;
 }
 
 export default function MerchantForgotPinSheet({

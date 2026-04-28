@@ -1,48 +1,46 @@
-## Goal
+## Goals
 
-Tighten the returning-user state on `/merchant-login` (and the manager login that mirrors it):
-
-1. Make the masked phone chip self-explanatory — users should immediately understand `+880 19••••••954` is their real number with the middle digits hidden.
-2. Make **Forgot PIN?** unmistakable (it exists today but reads as a tiny inline link).
-3. Remove the noisy trust pills (Secure PIN / Encrypted / Bank-grade) and perks strip (Orders / Payouts / QR / Insights) for returning users — the chip already establishes trust, and the perks belong on the apply-as-merchant landing, not the sign-in screen.
-
-The first-time (no `boundPhone`) state keeps the trust + perks rows since they're still useful for new visitors.
+1. Fix the masked phone format to exactly `+88 019•••••954` (prefix `+88`, 5 middle dots, last 3 visible).
+2. Lock the device to the bound merchant account: once a device has a verified merchant binding, the user cannot switch numbers or sign into a different merchant from the login page. Switching requires clearing app data / browser storage.
 
 ## Changes
 
-### 1. `src/pages/MerchantLoginPage.tsx`
+### 1. Mask format — `+88 019•••••954`
 
-**Masked chip (lines ~539–570)** — add a subtle helper line + a small "Hidden for privacy" hint inside the chip:
+**`src/components/merchant/MerchantForgotPinSheet.tsx`**
+- Update `maskBdPhone()` to return 5 dots instead of 6:
+  `${clean.slice(0,3)}•••••${clean.slice(8)}` → produces `019•••••954`.
 
-```text
-SIGNED IN AS
-┌──────────────────────────────────────┐
-│ 📞  +880 19••••••954            [×]  │
-│     Middle digits hidden for privacy │
-└──────────────────────────────────────┘
-Not you? Tap × to use a different number.
-```
+**`src/pages/MerchantLoginPage.tsx`** and **`src/pages/MerchantManagerLoginPage.tsx`**
+- Change displayed prefix from `+880` to `+88` in the masked chip so the full label reads `+88 019•••••954`.
+- Keep "Middle digits hidden for privacy" sub-label.
+- Update the Forgot-PIN sheet's masked preview to also render `+88` (it currently shows whatever prefix the sheet uses).
 
-- Replace the current "THIS DEVICE" sub-label with `Middle digits hidden for privacy` so the format is self-documenting.
-- Add a one-line caption directly under the chip: `Not you? Tap × to use a different number.` (text-[11px], white/50).
+Verify any other `+880 {maskBdPhone(...)}` occurrences (manager login, forgot-pin sheet body) and align them all to `+88`.
 
-**Forgot PIN button (lines ~593–606)** — promote from a thin text link to a pill button placed under the PIN grid (full width on the right side of the row stays, but styling becomes a clear glass pill with amber accent):
+### 2. Hard device lock once bound
 
-- Replace the current `<button>` with a `rounded-full border-amber-200/40 bg-amber-300/10 px-3 py-1` chip containing `HelpCircle` + "Forgot PIN?" so it visually reads as an action, not a footnote.
-- Add a second, larger fallback link **below** the Sign-in button when `boundPhone` is set: `Can't remember your PIN? Get help →` (text-[12px], amber-100/80, opens the same `MerchantForgotPinSheet`). This is the prominent "where is forgot button" answer.
+Currently the masked chip shows an `×` button that calls `localStorage.removeItem("mfs_device_phone")` + `clearDeviceToken(...)` and lets the user type a new number. We will remove that escape hatch on both merchant login pages.
 
-**Trust pills + perks strip (lines ~653–684)** — wrap both blocks in `{!boundPhone && (...)}` so they only render for first-time visitors. Returning users see a clean form: chip → PIN → Sign in → Forgot help link → Apply / Manager footer.
+**`src/pages/MerchantLoginPage.tsx`** + **`src/pages/MerchantManagerLoginPage.tsx`**
 
-### 2. `src/pages/MerchantManagerLoginPage.tsx`
+When `boundPhone` is set:
+- Remove the `×` "use a different number" button entirely.
+- Replace the helper text "Not you? Tap × to use a different number." with a locked notice:
+  > "This device is locked to this merchant account. To use a different number, clear app data in your browser settings."
+- Add a small lock icon (`Lock` from lucide-react) inside the chip to signal the binding is permanent.
+- Keep the Forgot-PIN button visible (so a locked-out owner can still request help via support ticket).
 
-Mirror the same three edits with the existing sky/blue accent palette (instead of amber) so the manager screen stays consistent.
+We do not change the server flow — `merchant-login` already requires a matching device token + OTP ticket. The login form simply no longer offers a UI path to overwrite the local `mfs_device_phone` flag, so the bound phone is the only number that can be entered from this device.
 
-### 3. No backend / schema / edge function changes
+### Notes on scope
 
-The `merchant-forgot-pin` edge function and `merchant_pin_reset_requests` table are already wired; this is UI-only.
+- Server-side `trusted_devices` row is already keyed to `(user_id, device_fp, portal)`, so even if the user manipulates localStorage manually they will still need a fresh OTP to bind a new account. The UI lock + the existing OTP gate together deliver the requested behavior.
+- "Clear app data" is the documented recovery path; this matches Bangladeshi MFS norms (bKash, Nagad behave the same way).
+- No DB / edge-function changes needed.
 
-## Out of scope
+### Files touched
 
-- No change to the unmasked input flow (first-time entry stays identical).
-- No change to mask format itself (`019••••••954` was already approved).
-- No change to `MerchantForgotPinSheet` internals.
+- `src/components/merchant/MerchantForgotPinSheet.tsx` — mask helper.
+- `src/pages/MerchantLoginPage.tsx` — chip prefix, remove × button, add lock notice.
+- `src/pages/MerchantManagerLoginPage.tsx` — same as above with sky accent.
