@@ -634,7 +634,41 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [phone, returningPhone, goTo, onAuthenticated, t]);
+  }, [phone, returningPhone, goTo, onAuthenticated, t, deviceOtp]);
+
+  // ── Device OTP handlers ──────────────────────────────────────────────────
+  const handleDeviceVerify = useCallback(async (code: string) => {
+    if (!devicePhone) return;
+    const ok = await deviceOtp.verifyOtp(devicePhone, code);
+    if (ok) setDevicePhase("confirm");
+  }, [devicePhone, deviceOtp]);
+
+  const handleDeviceResend = useCallback(async () => {
+    if (!devicePhone) return;
+    try { await deviceOtp.sendOtp(devicePhone); } catch {}
+  }, [devicePhone, deviceOtp]);
+
+  const handleDeviceContinue = useCallback(async () => {
+    if (!devicePhone) return;
+    setDeviceConfirmLoading(true);
+    try {
+      await deviceOtp.markTrusted(devicePhone);
+      goTo("success");
+      setTimeout(onAuthenticated, 1200);
+    } finally {
+      setDeviceConfirmLoading(false);
+    }
+  }, [devicePhone, deviceOtp, goTo, onAuthenticated]);
+
+  const portalLabel = useMemo(() => {
+    switch (devicePortal) {
+      case "merchant": return "Merchant";
+      case "agent": return "Agent";
+      case "distributor": return "Distributor";
+      case "super_distributor": return "Super Distributor";
+      default: return "Customer";
+    }
+  }, [devicePortal]);
 
   // ── Forgot PIN: send OTP → verify OTP → new PIN → server reset ─────────
   const handleForgotSendOtp = useCallback(async () => {
