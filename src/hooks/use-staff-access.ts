@@ -6,6 +6,7 @@ interface StaffAccess {
   merchantId: string;
   merchantName: string;
   staffRole: string;
+  permissions: Record<string, boolean>;
 }
 
 // Module-level cache so re-mounts on the same session don't re-hit the RPC.
