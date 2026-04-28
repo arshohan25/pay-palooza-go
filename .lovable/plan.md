@@ -1,52 +1,23 @@
-# Auto-redirect on Session Expiry — Merchant Routes
+# Premium Yes/No Logout Confirmation
 
-## Problem
+Redesign the merchant dashboard logout dialog into a compact, premium card with two small pill-shaped Yes/No buttons.
 
-`RoleGuard` redirects unauthenticated users to `/merchant-login` only on its initial mount + when `useAuth()` flips. Two gaps remain:
+## Design
 
-1. **Silent expiry** — when Supabase's refresh token is revoked or expires, the SDK may not emit `SIGNED_OUT` until the next API call fails. A merchant left idle on `/merchant` can sit there with a stale UI.
-2. **No feedback or return path** — when the redirect does fire, the user lands on the login page with no explanation and is dropped onto `/merchant` afterwards even if they were deep in a tab.
+- **Compact card** (max-width 340px, 22px radius), glassmorphic dark gradient (slate → indigo) with rose + indigo bokeh blur accents.
+- **Centered icon badge**: 48px rose-tinted gradient tile holding the `LogOut` icon, with a soft rose glow shadow.
+- **Title**: "Sign out?" — short, tight tracking.
+- **Description**: one short line — "You'll return to the merchant login screen."
+- **Two small pill buttons, side-by-side, centered**:
+  - **No** — ghost glass pill, white/15 border, subtle hover.
+  - **Yes** — gradient rose pill (rose-500 → rose-600), glowing shadow, brighter on hover. Shows spinner + "..." while signing out.
 
-## Solution
-
-Add a lightweight **global session watchdog** that runs whenever the user is on a merchant route, plus a small login-page tweak to honor a return path.
-
-### Behavior
-
-- On `SIGNED_OUT` or `TOKEN_REFRESHED` with no session → toast "Your session has expired. Please sign in again." and `navigate("/merchant-login?redirect=<current-path>", { replace: true })`.
-- Every 30s, read the cached session and, if `expires_at` is within 60s, proactively call `supabase.auth.refreshSession()`. On failure → same redirect path.
-- Watchdog only mounts when location pathname starts with `/merchant` (excluding `/merchant-login`), so other portals are unaffected.
-- After successful login on `MerchantLoginPage`, if `?redirect=` is present and starts with `/merchant`, navigate there instead of the default `/merchant`. Whitelisting prevents open-redirect abuse.
+Both buttons are ~88px min-width, 40px tall, rounded-full, 13px semibold — small but tactile and premium.
 
 ## Files
 
-### New: `src/hooks/use-merchant-session-watchdog.ts`
-- Subscribes to `supabase.auth.onAuthStateChange`.
-- 30s `setInterval` that proactively refreshes near-expiry tokens.
-- On any expiry signal: `toast.error(...)` (sonner) + `navigate("/merchant-login?redirect=...", { replace: true })`.
-- Cleans up listener + interval on unmount.
+- `src/pages/MerchantDashboard.tsx` — replace the existing `<AlertDialog>` block (lines ~744–777) with the new compact layout. No state or handler changes — `handleLogout` and `loggingOut` continue to work as-is.
 
-### New: `src/components/MerchantSessionWatchdog.tsx`
-- Tiny wrapper component (returns `null`) that calls the hook.
-- Mounted globally in `App.tsx` so it covers `/merchant` and any future merchant sub-routes without each page opting in.
-- Internally checks `useLocation()` and no-ops outside `/merchant*` paths.
+## Out of scope
 
-### Edit: `src/App.tsx`
-- Render `<MerchantSessionWatchdog />` inside `<BrowserRouter>` alongside `<Routes>`.
-
-### Edit: `src/pages/MerchantLoginPage.tsx`
-- Read `redirect` from `useSearchParams()`.
-- After successful login, if `redirect` starts with `/merchant` → navigate there; otherwise keep current default.
-
-## Technical Notes
-
-- We don't change `RoleGuard` — it still enforces the route. The watchdog only ensures the auth state actually flips promptly so the guard can act.
-- Supabase auto-refreshes tokens, but the watchdog is a safety net for tabs left open across long idle periods or when the refresh token is revoked server-side (PIN reset, admin force-logout).
-- Compatible with the disabled `useSessionTimeout` policy — this is server-token-expiry-driven, not idle-driven.
-- Toast uses the existing sonner instance already mounted in `App.tsx`.
-- Redirect param is whitelisted to `/merchant*` only.
-
-## Out of Scope
-
-- Same pattern for agent / distributor / super-distributor / admin portals (can be added later by reusing the hook with different prefixes).
-- Changing Supabase token lifetimes.
+- Other confirmation dialogs across the app (can adopt the same pattern later if desired).
