@@ -655,23 +655,53 @@ export default function MerchantLoginPage() {
               )}
             </Button>
 
-            {/* Trust pills */}
-            <div className="mt-3 grid grid-cols-3 gap-1.5">
-              {[
-                { icon: Lock, label: "Secure PIN" },
-                { icon: ShieldCheck, label: "Encrypted" },
-                { icon: Sparkles, label: "Bank-grade" },
-              ].map(({ icon: Icon, label }) => (
-                <div
-                  key={label}
-                  className="flex items-center justify-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-1 text-[10px] font-medium text-white/70"
-                >
-                  <Icon className="h-3 w-3 text-amber-200" />
-                  {label}
-                </div>
-              ))}
-            </div>
+            {/* Prominent Forgot PIN help link — only for returning devices */}
+            {boundPhone && (
+              <button
+                type="button"
+                onClick={() => setForgotOpen(true)}
+                className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-amber-200/30 bg-amber-300/[0.06] px-3 py-2 text-[12px] font-medium text-amber-100/90 transition-colors hover:border-amber-200/50 hover:bg-amber-300/[0.12] hover:text-amber-50"
+              >
+                <HelpCircle className="h-3.5 w-3.5" />
+                Can't remember your PIN? Get help
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            )}
 
+            {/* Trust pills + perks — only for first-time visitors */}
+            {!boundPhone && (
+              <>
+                <div className="mt-3 grid grid-cols-3 gap-1.5">
+                  {[
+                    { icon: Lock, label: "Secure PIN" },
+                    { icon: ShieldCheck, label: "Encrypted" },
+                    { icon: Sparkles, label: "Bank-grade" },
+                  ].map(({ icon: Icon, label }) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-1 text-[10px] font-medium text-white/70"
+                    >
+                      <Icon className="h-3 w-3 text-amber-200" />
+                      {label}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-2.5 flex items-center justify-between rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.03] to-white/[0.06] px-3 py-1.5">
+                  {[
+                    { icon: ShoppingBag, label: "Orders" },
+                    { icon: Wallet, label: "Payouts" },
+                    { icon: QrCode, label: "QR" },
+                    { icon: BarChart3, label: "Insights" },
+                  ].map(({ icon: Icon, label }) => (
+                    <div key={label} className="flex flex-col items-center gap-0.5 text-white/70">
+                      <Icon className="h-3.5 w-3.5 text-amber-200" />
+                      <span className="text-[9px] font-medium uppercase tracking-wider">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
             {/* Perks strip */}
             <div className="mt-2.5 flex items-center justify-between rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.03] to-white/[0.06] px-3 py-1.5">
               {[
