@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
-import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle, Send, SlidersHorizontal, Bookmark, Pencil, Check, X } from "lucide-react";
+import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle, Send, SlidersHorizontal, Bookmark, Pencil, Check, X, ArrowRight, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import {
@@ -62,6 +63,44 @@ function PermissionPicker({
   const [presetName, setPresetName] = useState("");
   const [showSave, setShowSave] = useState(false);
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
+  const [pendingPreset, setPendingPreset] = useState<{
+    label: string;
+    next: Record<string, boolean>;
+    added: string[];
+    removed: string[];
+    stripped: string[];
+    onConfirm: () => void;
+  } | null>(null);
+
+  const labelFor = (key: string) =>
+    STAFF_PERMISSIONS.find(p => p.key === key)?.label ?? OWNER_ONLY_LABELS[key] ?? key;
+
+  const stagePreview = (
+    label: string,
+    rawNext: Record<string, boolean>,
+    onConfirm: (cleaned: Record<string, boolean>) => void,
+  ) => {
+    const stripped = findOwnerOnlyKeys(rawNext);
+    const cleaned = applyPermissionSet(stripOwnerOnlyKeys(rawNext));
+    const currentSet = new Set(Object.entries(value).filter(([, v]) => v).map(([k]) => k));
+    const nextSet = new Set(Object.entries(cleaned).filter(([, v]) => v).map(([k]) => k));
+    const added = [...nextSet].filter(k => !currentSet.has(k));
+    const removed = [...currentSet].filter(k => !nextSet.has(k));
+    if (!added.length && !removed.length && !stripped.length) {
+      onConfirm(cleaned);
+      toast.success(`${label} matches current selection`);
+      return;
+    }
+    setPendingPreset({
+      label,
+      next: cleaned,
+      added,
+      removed,
+      stripped,
+      onConfirm: () => { onConfirm(cleaned); setPendingPreset(null); toast.success(`Applied ${label}`); },
+    });
+  };
+
 
   const toggle = (key: string, checked: boolean) => {
     const set = new Set(Object.entries(value).filter(([, v]) => v).map(([k]) => k));
@@ -74,34 +113,18 @@ function PermissionPicker({
   };
 
   const applyChoice = (val: string) => {
-    if (val === `__role_${role}__`) {
-      onChange(defaultPermissionsFor(role));
-      toast.success(`Applied ${role} preset`);
-      return;
-    }
-    if (val.startsWith("__role_")) {
-      const r = val.replace("__role_", "").replace("__", "") as StaffRole;
-      onChange(defaultPermissionsFor(r));
-      toast.success(`Applied ${r} preset`);
-      return;
-    }
     if (val === "__save_current__") {
       setShowSave(true);
       return;
     }
+    if (val.startsWith("__role_")) {
+      const r = val.replace("__role_", "").replace("__", "") as StaffRole;
+      stagePreview(`${r} preset`, defaultPermissionsFor(r), onChange);
+      return;
+    }
     const preset = customPresets.find(p => p.id === val);
     if (preset) {
-      const stripped = findOwnerOnlyKeys(preset.permissions);
-      const safe = applyPermissionSet(stripOwnerOnlyKeys(preset.permissions));
-      onChange(safe);
-      if (stripped.length) {
-        const names = stripped.map(k => OWNER_ONLY_LABELS[k] ?? k).join(", ");
-        toast.warning(`Applied "${preset.name}" — owner-only removed: ${names}`, {
-          description: "Staff cannot hold owner-only permissions. They were stripped automatically.",
-        });
-      } else {
-        toast.success(`Applied "${preset.name}"`);
-      }
+      stagePreview(`"${preset.name}"`, applyPermissionSet(preset.permissions), onChange);
     }
   };
 
@@ -279,6 +302,91 @@ function PermissionPicker({
           </div>
         ))}
       </div>
+
+      <Dialog open={!!pendingPreset} onOpenChange={(o) => { if (!o) setPendingPreset(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">Apply {pendingPreset?.label}?</DialogTitle>
+            <DialogDescription className="text-xs">
+              Review what will change before applying.
+            </DialogDescription>
+          </DialogHeader>
+
+          {pendingPreset && (
+            <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
+              {pendingPreset.stripped.length > 0 && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2.5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <AlertTriangle className="h-3 w-3 text-destructive" />
+                    <p className="text-[11px] font-semibold text-destructive">
+                      Owner-only · stripped ({pendingPreset.stripped.length})
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {pendingPreset.stripped.map(k => (
+                      <Badge key={k} variant="outline" className="text-[10px] border-destructive/40 text-destructive bg-background line-through">
+                        {labelFor(k)}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1.5 leading-tight">
+                    Staff cannot hold these. They are removed automatically.
+                  </p>
+                </div>
+              )}
+
+              {pendingPreset.added.length > 0 && (
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-2.5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Plus className="h-3 w-3 text-emerald-600" />
+                    <p className="text-[11px] font-semibold text-emerald-700">
+                      Will be added ({pendingPreset.added.length})
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {pendingPreset.added.map(k => (
+                      <Badge key={k} variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-700 bg-background">
+                        + {labelFor(k)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {pendingPreset.removed.length > 0 && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Minus className="h-3 w-3 text-amber-600" />
+                    <p className="text-[11px] font-semibold text-amber-700">
+                      Will be removed ({pendingPreset.removed.length})
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {pendingPreset.removed.map(k => (
+                      <Badge key={k} variant="outline" className="text-[10px] border-amber-500/40 text-amber-700 bg-background">
+                        − {labelFor(k)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground pt-1">
+                <span>{active} now</span>
+                <ArrowRight className="h-3 w-3" />
+                <span className="font-semibold text-foreground">
+                  {countActive(pendingPreset.next)} after
+                </span>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPendingPreset(null)}>Cancel</Button>
+            <Button size="sm" onClick={() => pendingPreset?.onConfirm()}>Apply changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
