@@ -63,6 +63,44 @@ function PermissionPicker({
   const [presetName, setPresetName] = useState("");
   const [showSave, setShowSave] = useState(false);
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
+  const [pendingPreset, setPendingPreset] = useState<{
+    label: string;
+    next: Record<string, boolean>;
+    added: string[];
+    removed: string[];
+    stripped: string[];
+    onConfirm: () => void;
+  } | null>(null);
+
+  const labelFor = (key: string) =>
+    STAFF_PERMISSIONS.find(p => p.key === key)?.label ?? OWNER_ONLY_LABELS[key] ?? key;
+
+  const stagePreview = (
+    label: string,
+    rawNext: Record<string, boolean>,
+    onConfirm: (cleaned: Record<string, boolean>) => void,
+  ) => {
+    const stripped = findOwnerOnlyKeys(rawNext);
+    const cleaned = applyPermissionSet(stripOwnerOnlyKeys(rawNext));
+    const currentSet = new Set(Object.entries(value).filter(([, v]) => v).map(([k]) => k));
+    const nextSet = new Set(Object.entries(cleaned).filter(([, v]) => v).map(([k]) => k));
+    const added = [...nextSet].filter(k => !currentSet.has(k));
+    const removed = [...currentSet].filter(k => !nextSet.has(k));
+    if (!added.length && !removed.length && !stripped.length) {
+      onConfirm(cleaned);
+      toast.success(`${label} matches current selection`);
+      return;
+    }
+    setPendingPreset({
+      label,
+      next: cleaned,
+      added,
+      removed,
+      stripped,
+      onConfirm: () => { onConfirm(cleaned); setPendingPreset(null); toast.success(`Applied ${label}`); },
+    });
+  };
+
 
   const toggle = (key: string, checked: boolean) => {
     const set = new Set(Object.entries(value).filter(([, v]) => v).map(([k]) => k));
