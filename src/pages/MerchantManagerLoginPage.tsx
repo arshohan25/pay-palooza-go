@@ -13,6 +13,7 @@ import {
 } from "@/hooks/use-device-otp-verification";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import DeviceOtpStep from "@/components/DeviceOtpStep";
+import MerchantForgotPinSheet from "@/components/merchant/MerchantForgotPinSheet";
 import {
   UserCog,
   ShieldCheck,
@@ -24,6 +25,7 @@ import {
   Info,
   AlertTriangle,
   Store,
+  HelpCircle,
 } from "lucide-react";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
