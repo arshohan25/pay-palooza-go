@@ -1,23 +1,24 @@
-# Premium Yes/No Logout Confirmation
+# Polish Merchant Logout Dialog
 
-Redesign the merchant dashboard logout dialog into a compact, premium card with two small pill-shaped Yes/No buttons.
+The dialog already disables both buttons via `disabled={loggingOut}` and Radix already returns focus to the opener on close. This pass tightens the UX with a smoother close transition, an explicit focus-return guarantee, and a clearer locked visual state on "No" while the logout request is in flight.
 
-## Design
+## Changes (single file: `src/pages/MerchantDashboard.tsx`)
 
-- **Compact card** (max-width 340px, 22px radius), glassmorphic dark gradient (slate → indigo) with rose + indigo bokeh blur accents.
-- **Centered icon badge**: 48px rose-tinted gradient tile holding the `LogOut` icon, with a soft rose glow shadow.
-- **Title**: "Sign out?" — short, tight tracking.
-- **Description**: one short line — "You'll return to the merchant login screen."
-- **Two small pill buttons, side-by-side, centered**:
-  - **No** — ghost glass pill, white/15 border, subtle hover.
-  - **Yes** — gradient rose pill (rose-500 → rose-600), glowing shadow, brighter on hover. Shows spinner + "..." while signing out.
+1. **Focus return to trigger**
+   - Add a `logoutTriggerRef = useRef<HTMLButtonElement>(null)` and attach it to the existing logout button (the one that calls `setShowLogoutConfirm(true)`).
+   - On `<AlertDialogContent>`, add `onCloseAutoFocus={(e) => { e.preventDefault(); logoutTriggerRef.current?.focus(); }}` so focus reliably returns to the trigger after both "No" and "Yes" (when the dialog later closes).
 
-Both buttons are ~88px min-width, 40px tall, rounded-full, 13px semibold — small but tactile and premium.
+2. **Smooth close transition**
+   - On `AlertDialogContent`, extend the existing classes with explicit timing/easing for the close animation:
+     `data-[state=closed]:duration-200 data-[state=open]:duration-200 data-[state=closed]:ease-out data-[state=open]:ease-out`
+     and add `data-[state=closed]:zoom-out-95 data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95` (overrides on top of defaults to ensure consistent feel on this custom-styled content).
 
-## Files
-
-- `src/pages/MerchantDashboard.tsx` — replace the existing `<AlertDialog>` block (lines ~744–777) with the new compact layout. No state or handler changes — `handleLogout` and `loggingOut` continue to work as-is.
+3. **Locked state while processing**
+   - Keep `disabled={loggingOut}` on both buttons (already present).
+   - Add visual lock styling to both: `disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none`.
+   - "No" label swaps to a muted `Please wait` (no spinner) while `loggingOut` is true so the user understands why it's inert.
+   - `onOpenChange` already blocks dismissal during `loggingOut` — keep as-is. Also add `onEscapeKeyDown` and `onPointerDownOutside` handlers that call `e.preventDefault()` when `loggingOut` so Esc / outside-click cannot bypass the lock.
 
 ## Out of scope
-
-- Other confirmation dialogs across the app (can adopt the same pattern later if desired).
+- No changes to `handleLogout`, the watchdog, or routing.
+- No restyle of the dialog card, gradient, or button shapes.
