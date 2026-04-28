@@ -1,24 +1,32 @@
-## Update Merchant Login Page to Match Dashboard Theme
+# Skip device-verified confirmation screen
 
-### Problem
-The merchant login page currently uses a dark gradient background (`from-slate-950 via-indigo-950 to-emerald-950`) with emerald accents. This doesn't match the merchant/agent dashboard which uses the app's standard light theme with `bg-background` and `gradient-hero` for headers.
+Today, after a trusted-device check (returning login) or a successful OTP (first login), users see a "You're all set / Continue to dashboard" page with a tap-through button. The user wants to bypass that screen and land directly on the dashboard.
 
-### Solution
-Update the merchant login page styling to align with the dashboard theme:
+## Changes
 
-1. **Background**: Change from dark gradient to `bg-background` (light theme)
-2. **Header section**: Use `gradient-hero` class for the top hero area (matching dashboard header)
-3. **Card styling**: Update glass card to use standard card colors (`bg-card`, `border-border`)
-4. **Text colors**: Change from `text-white` to `text-foreground` / `text-muted-foreground`
-5. **Accent colors**: Replace emerald accents with `primary` color
-6. **Input styling**: Update to use standard input borders (`border-input`, `focus:border-primary`)
-7. **Button styling**: Use `gradient-hero` or `bg-primary` instead of emerald gradient
+### 1. `src/pages/MerchantLoginPage.tsx`
+- Remove the `"confirm"` step from the `Step` union and stop rendering `<DeviceVerifiedConfirm />`.
+- Both code paths that previously called `setStep("confirm")` (returning trusted device + post-OTP session) will instead call the existing `handleConfirmContinue()` logic inline:
+  - Call `supabase.auth.setSession({ access_token, refresh_token })` immediately.
+  - Persist `mfs_device_phone` + `mfs_has_authenticated`.
+  - `toast.success("Welcome back, merchant!")` and `navigate(redirectTarget, { replace: true })`.
+- Remove `confirmLoading` state + the `DeviceVerifiedConfirm` import. Keep the OTP step intact.
 
-### Files to Edit
-- `src/pages/MerchantLoginPage.tsx` — Update all color classes
+### 2. `src/pages/AuthPage.tsx` (User / Agent / Distributor / Super Distributor portals)
+- Drop the `"confirm"` value from `devicePhase` (`"none" | "otp"` only).
+- Trusted returning user (line 599): instead of `setDevicePhase("confirm")`, immediately fire the same finalization that `handleDeviceContinue()` runs — go to `"success"` screen and call `onAuthenticated()` after the brief delay. No trust-token mint needed (no fresh OTP ticket).
+- Successful OTP verify (line 647): instead of `setDevicePhase("confirm")`, call `handleDeviceContinue()` directly so the OTP ticket is exchanged for a device trust token and the user is then forwarded to `"success"` → `onAuthenticated()`.
+- Remove the `devicePhase === "confirm"` render branch and the `<DeviceVerifiedConfirm />` import.
 
-### Technical Details
-- The `gradient-hero` CSS variable is already defined in `src/index.css` and provides the teal/green gradient used across the app
-- The `bg-background` variable provides the light off-white background
-- All standard Tailwind CSS variables (`--primary`, `--card`, `--border`, etc.) are already configured
-- No database or backend changes required — purely UI styling update
+### 3. Optional cleanup
+- `src/components/DeviceVerifiedConfirm.tsx` becomes unused. Leave the file in place (no other refs) or delete it — I'll delete it to keep the tree clean.
+
+## What stays the same
+- Server-side device trust gate, OTP minting, trust-token issuance, and the OTP entry screen are all unchanged.
+- A small "Welcome back" toast on the merchant side preserves the feedback that the previous confirm screen provided.
+- First-time users still see the OTP step; only the post-success "tap to continue" page is removed.
+
+## Files touched
+- `src/pages/MerchantLoginPage.tsx` — remove confirm step, auto-finalize session.
+- `src/pages/AuthPage.tsx` — remove confirm phase, auto-finalize after trusted check / OTP verify.
+- `src/components/DeviceVerifiedConfirm.tsx` — delete (no longer referenced).
