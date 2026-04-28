@@ -6,6 +6,7 @@ interface StaffAccess {
   merchantId: string;
   merchantName: string;
   staffRole: string;
+  permissions: Record<string, boolean>;
 }
 
 // Module-level cache so re-mounts on the same session don't re-hit the RPC.
@@ -57,11 +58,12 @@ export function useStaffAccess() {
 
         const row = await runRpc(uid);
         if (cancelled) return;
-        const next = row
+        const next: StaffAccess | null = row
           ? {
               merchantId: row.merchant_id as string,
               merchantName: row.business_name as string,
               staffRole: row.staff_role as string,
+              permissions: ((row as any).permissions ?? {}) as Record<string, boolean>,
             }
           : null;
         _cachedAccess = next;
@@ -118,10 +120,20 @@ export function useStaffAccess() {
     };
   }, []);
 
+  const permissions = access?.permissions ?? {};
+  const can = (key: string) => {
+    if (!access) return true; // owner / non-staff: full access
+    if (key === "" ) return true;
+    if (key === "__owner_only__") return false;
+    return !!permissions[key];
+  };
+
   return {
     merchantId: access?.merchantId ?? null,
     merchantName: access?.merchantName ?? null,
     staffRole: access?.staffRole ?? null,
+    permissions,
+    can,
     isStaff: !!access,
     loading,
     resolved,

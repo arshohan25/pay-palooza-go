@@ -3331,6 +3331,7 @@ export type Database = {
           is_active: boolean
           merchant_id: string
           name: string
+          permissions: Json
           phone: string
           role: string
           updated_at: string
@@ -3342,6 +3343,7 @@ export type Database = {
           is_active?: boolean
           merchant_id: string
           name: string
+          permissions?: Json
           phone: string
           role?: string
           updated_at?: string
@@ -3353,6 +3355,7 @@ export type Database = {
           is_active?: boolean
           merchant_id?: string
           name?: string
+          permissions?: Json
           phone?: string
           role?: string
           updated_at?: string
@@ -6392,6 +6395,7 @@ export type Database = {
         Returns: {
           business_name: string
           merchant_id: string
+          permissions: Json
           staff_role: string
         }[]
       }

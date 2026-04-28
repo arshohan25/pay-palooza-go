@@ -1,58 +1,102 @@
-# Why your manager is seeing the wrong page
+# Granular Staff Permissions on Invite
 
-## Root cause
+Right now a merchant only picks **Manager / Cashier / Viewer** when inviting staff, and the dashboard hard-codes which tabs each role sees. As a senior HR, the merchant should be able to **explicitly check which features each invited person can see or use** — and edit those permissions later.
 
-When a Manager (e.g. `AR / 01680693484`) signs in via `/merchant-manager-login` and lands on `/merchant`, two things have to be resolved in parallel:
+## What the merchant will see
 
-1. **`useStaffAccess`** — calls the `get_staff_merchant_access` RPC to check if this user is staff for any merchant.
-2. **`MerchantDashboard.loadData`** — checks the `user_roles` table for the `merchant` role.
+In **Add Staff** (and a new **Edit Permissions** sheet on each row):
 
-The dashboard logic at `src/pages/MerchantDashboard.tsx` is:
+1. **Pick a role** (Manager / Cashier / Viewer) — this pre-fills sensible defaults.
+2. **Pick exact features** via grouped checkboxes, with a clear "View" vs "Manage" distinction where it matters:
 
-```text
-if (isStaff && staffMerchantId)  → render dashboard as staff   ✓
-else                             → query user_roles
-   if has 'merchant' role        → render dashboard as owner   ✓
-   else                          → render MerchantBenefitsPage ✗  ← THIS IS WHAT YOU'RE SEEING
+   - **Operations**: Orders (View / Manage), Refunds (View / Process), Inbox / Customer Chat
+   - **Catalog**: Products (View / Edit), Coupons, Inventory alerts
+   - **Money**: Transactions, Payouts, Settlements, MDR
+   - **Customers & Growth**: Customers list, Analytics, Pay Links
+   - **Store**: Store settings, QR codes
+   - **Admin**: Staff management, API access, Notifications
+
+3. A **"Copy from preset"** button per role so an HR-style merchant can start from Cashier defaults and tweak.
+4. Live summary chip: *"Can access 6 of 14 features"*.
+
+Permissions are saved per-staff and take effect the moment the staff member opens the dashboard (no logout needed — already realtime).
+
+## Defaults per role (pre-checked on invite)
+
+- **Manager**: everything except `staff_manage` and `api_access` (owner-only).
+- **Cashier**: `orders_manage`, `products_view`, `inbox`, `customers_view`, `qr`.
+- **Viewer**: `overview` + `*_view` only (orders_view, products_view, transactions_view, analytics).
+
+## Technical changes
+
+### 1. Database (migration)
+
+Add to `merchant_staff`:
+```sql
+ALTER TABLE public.merchant_staff
+  ADD COLUMN permissions jsonb NOT NULL DEFAULT '{}'::jsonb;
+```
+Backfill existing rows from their `role` using the defaults above (one-shot UPDATE in the same migration).
+
+Update `validate_merchant_staff_role` trigger (or add a new `validate_merchant_staff_permissions` trigger) to:
+- Reject unknown permission keys.
+- Force `staff_manage=false` and `api_access=false` for any non-owner row.
+
+Update the `get_staff_merchant_access` RPC to also return `permissions jsonb` so the client gets it in one round-trip.
+
+### 2. Permission catalog (single source of truth)
+
+New file `src/lib/staffPermissions.ts`:
+```ts
+export const STAFF_PERMISSIONS = [
+  { key: "orders_view",      label: "View orders",        group: "Operations" },
+  { key: "orders_manage",    label: "Process orders",     group: "Operations", implies: ["orders_view"] },
+  { key: "refunds_view",     label: "View refunds",       group: "Operations" },
+  { key: "refunds_manage",   label: "Issue refunds",      group: "Operations", implies: ["refunds_view"] },
+  { key: "inbox",            label: "Customer inbox",     group: "Operations" },
+  { key: "products_view",    label: "View products",      group: "Catalog" },
+  { key: "products_manage",  label: "Edit products",      group: "Catalog", implies: ["products_view"] },
+  { key: "coupons",          label: "Coupons",            group: "Catalog" },
+  { key: "transactions",     label: "Transactions",       group: "Money" },
+  { key: "payouts",          label: "Payouts",            group: "Money" },
+  { key: "settlements",      label: "Settlements",        group: "Money" },
+  { key: "mdr",              label: "MDR / fees",         group: "Money" },
+  { key: "customers_view",   label: "Customers",          group: "Growth" },
+  { key: "analytics",        label: "Analytics",          group: "Growth" },
+  { key: "paylinks",         label: "Pay links",          group: "Growth" },
+  { key: "qr",               label: "QR codes",           group: "Store" },
+  { key: "store_settings",   label: "Store settings",     group: "Store" },
+  { key: "notifications",    label: "Notification prefs", group: "Personal" },
+] as const;
+
+export const ROLE_DEFAULTS: Record<"Manager"|"Cashier"|"Viewer", string[]> = { ... };
+export const TAB_TO_PERMISSION: Record<MerchTab, string> = { ... }; // maps MerchantDashboard tab id → permission key
 ```
 
-A staff member never has the `merchant` role (only the owner does). So the moment `useStaffAccess` resolves with `isStaff=false`, the page commits to the "Become a Vendor" benefits screen.
+### 3. Hook
 
-The data in the database is correct — `AR` is `is_active=true`, `linked=true`, merchant status `active`. The bug is purely a client-side race:
+`src/hooks/use-staff-access.ts` — extend cached return type to include `permissions: Record<string, boolean>` and a helper `can(key: string): boolean`.
 
-- `useStaffAccess` doesn't depend on `useAuth().user`. It calls `supabase.auth.getSession()` itself once on mount. If that runs before the auth session has rehydrated from `localStorage` (the well-known `INITIAL_SESSION` race documented in our project notes), `session?.user` is `null`, the RPC is skipped, `isStaff` is set to `false`, and `loading` becomes `false`.
-- The `onAuthStateChange` re-fetch inside the hook doesn't reset `loading=true`, and it `await`s inside the callback (against Supabase guidance), so the second pass can be swallowed.
-- `MerchantDashboard` only waits for `staffLoading`, not for a definitive "staff resolution complete" signal, so once `staffLoading=false` with `isStaff=false`, it commits to the benefits page.
+### 4. Dashboard enforcement
 
-There is also a defensive gap: the dashboard's "no merchant role → benefits page" branch never re-checks staff status if it later flips true.
+`src/pages/MerchantDashboard.tsx`:
+- Replace the hard-coded `staffAllowedTabs` switch with `tabs.filter(t => can(TAB_TO_PERMISSION[t.id]))`.
+- Owners (non-staff) keep full access unchanged.
+- For action-level guards (e.g. refund button inside Orders), gate with `can("refunds_manage")`.
 
-## The fix
+### 5. Staff tab UI
 
-1. **Make `useStaffAccess` resilient (`src/hooks/use-staff-access.ts`)**
-   - Re-set `loading = true` whenever auth state changes so the dashboard knows to wait again.
-   - Don't `await` inside the `onAuthStateChange` callback. Schedule the refetch with `setTimeout(fetch, 0)` (Supabase-recommended pattern) to avoid the listener deadlock.
-   - Fall back to `supabase.auth.getUser()` if `getSession()` returns no user yet, to handle the cold-start race.
-   - Retry the RPC once after ~300 ms when the first call returns no rows but a session exists, to absorb token-attachment lag.
+`src/components/merchant/MerchantStaffTab.tsx`:
+- Add Staff sheet: after the role pills, render a grouped checkbox list driven by `STAFF_PERMISSIONS`. Selecting a role re-applies `ROLE_DEFAULTS[role]`. `implies` are auto-checked.
+- Each staff row: replace the lone role badge with `Role · N features` and add a **"Permissions"** button that opens an Edit sheet with the same picker, saving back to `merchant_staff.permissions`.
+- Insert/update payloads include `permissions`.
 
-2. **Make `MerchantDashboard` (`src/pages/MerchantDashboard.tsx`) require a definitive answer before showing the benefits page**
-   - Track a `staffResolved` flag (true once the staff hook has completed at least one successful resolution after auth is ready).
-   - Only render `<MerchantBenefitsPage />` when `isMerchant === false` **and** `staffResolved === true` **and** `isStaff === false`. Otherwise keep showing the loading spinner.
-   - Re-run `loadData` whenever `isStaff` flips, even after the first resolution (already wired via deps — verified).
+### 6. Edge function
 
-3. **Belt-and-braces guard at the route level (`src/App.tsx`)**
-   - The `/merchant` `RoleGuard` already passes `allowStaff`, but it currently lets the page render even if neither role nor staff resolves cleanly. Add a small follow-up: if a user lands on `/merchant` with no merchant role and no staff link after both checks complete, redirect to `/merchant-login` instead of silently falling into the benefits page (only when the user is truly neither).
+`supabase/functions/notify-staff-invite/index.ts` — include the granted feature count in the SMS/push body so the invitee knows their scope: *"You've been added as Cashier (6 features) at …"*.
 
-4. **Diagnostic log** (temporary): add a single `console.info` in `useStaffAccess` and `MerchantDashboard.loadData` so if the issue recurs we can confirm timing in the user's preview console.
+## Out of scope
 
-## Files touched
-
-- `src/hooks/use-staff-access.ts` — race-safe resolution, no async inside `onAuthStateChange`, retry-once.
-- `src/pages/MerchantDashboard.tsx` — gate the `MerchantBenefitsPage` branch behind `staffResolved`.
-- `src/App.tsx` (small) — tighten `/merchant` fallback redirect when both checks are conclusively negative.
-
-## What you'll see after the fix
-
-When the manager `AR` opens `/merchant`:
-- Spinner stays until the staff RPC resolves.
-- Staff resolution returns the `Rafiq Electronics` link.
-- The merchant dashboard renders with the staff-allowed tabs (no "Become a Vendor" page).
+- No changes to merchant owner permissions.
+- No changes to authentication / OTP flow.
+- API tab and staff-management tab remain owner-only by trigger, regardless of UI.
