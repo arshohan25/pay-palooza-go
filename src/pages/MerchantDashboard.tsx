@@ -414,6 +414,7 @@ const MerchantDashboard = () => {
         <div className="relative  text-primary-foreground">
           <div className="flex items-center justify-between mb-5">
             <motion.button
+              ref={logoutTriggerRef}
               whileTap={{ scale: 0.92 }}
               onClick={() => setShowLogoutConfirm(true)}
               className="tap-target h-10 px-3 rounded-xl glass-hero flex items-center gap-1.5 text-[12px] font-semibold"
