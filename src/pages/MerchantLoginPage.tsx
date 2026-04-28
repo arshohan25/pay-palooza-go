@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
+import { useDeviceOtpVerification } from "@/hooks/use-device-otp-verification";
+import DeviceOtpStep from "@/components/DeviceOtpStep";
+import DeviceVerifiedConfirm from "@/components/DeviceVerifiedConfirm";
 import {
   Store,
   ShieldCheck,
