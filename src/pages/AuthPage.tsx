@@ -637,10 +637,15 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   }, [phone, returningPhone, goTo, onAuthenticated, t, deviceOtp]);
 
   // ── Device OTP handlers ──────────────────────────────────────────────────
+  const otpTicketRef = useRef<string | null>(null);
+
   const handleDeviceVerify = useCallback(async (code: string) => {
     if (!devicePhone) return;
-    const ok = await deviceOtp.verifyOtp(devicePhone, code);
-    if (ok) setDevicePhase("confirm");
+    const ticket = await deviceOtp.verifyOtp(devicePhone, code);
+    if (ticket) {
+      otpTicketRef.current = ticket;
+      setDevicePhase("confirm");
+    }
   }, [devicePhone, deviceOtp]);
 
   const handleDeviceResend = useCallback(async () => {
@@ -652,13 +657,33 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     if (!devicePhone) return;
     setDeviceConfirmLoading(true);
     try {
-      await deviceOtp.markTrusted(devicePhone);
+      // If we got here via OTP (fresh first-login), exchange the ticket for a
+      // server-issued device trust token. Returning trusted users skip this.
+      const ticket = otpTicketRef.current;
+      if (ticket) {
+        try {
+          const device_fp = await (await import("@/lib/deviceFingerprint")).getDeviceFingerprint();
+          const { data, error } = await supabase.functions.invoke("mint-device-trust-token", {
+            body: { phone: devicePhone, device_fp, portal: devicePortal, otp_ticket: ticket },
+          });
+          if (!error && (data as any)?.device_token) {
+            deviceOtp.saveTrustToken(
+              devicePhone,
+              (data as any).device_token,
+              (data as any).device_token_expires_at,
+            );
+          }
+        } catch (e) {
+          console.warn("mint-device-trust-token failed", e);
+        }
+        otpTicketRef.current = null;
+      }
       goTo("success");
       setTimeout(onAuthenticated, 1200);
     } finally {
       setDeviceConfirmLoading(false);
     }
-  }, [devicePhone, deviceOtp, goTo, onAuthenticated]);
+  }, [devicePhone, devicePortal, deviceOtp, goTo, onAuthenticated]);
 
   const portalLabel = useMemo(() => {
     switch (devicePortal) {
