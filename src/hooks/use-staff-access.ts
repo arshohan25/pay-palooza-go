@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedSession } from "@/hooks/use-auth";
 
 interface StaffAccess {
   merchantId: string;
@@ -7,43 +8,35 @@ interface StaffAccess {
   staffRole: string;
 }
 
+// Module-level cache so re-mounts on the same session don't re-hit the RPC.
+let _cachedAccess: StaffAccess | null | undefined; // undefined = not resolved yet
+let _cachedForUserId: string | null = null;
+
 export function useStaffAccess() {
-  const [access, setAccess] = useState<StaffAccess | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [resolved, setResolved] = useState(false);
+  const [access, setAccess] = useState<StaffAccess | null>(_cachedAccess ?? null);
+  const [resolved, setResolved] = useState<boolean>(_cachedAccess !== undefined);
+  const [loading, setLoading] = useState<boolean>(_cachedAccess === undefined);
   const inflightRef = useRef(false);
+  const didInitialFetchRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
-
-    const resolveUserId = async (): Promise<string | null> => {
-      const { data: sess } = await supabase.auth.getSession();
-      if (sess?.session?.user?.id) return sess.session.user.id;
-      // Fallback: getUser() can succeed during the INITIAL_SESSION race
-      // when getSession() momentarily returns null.
-      const { data: u } = await supabase.auth.getUser();
-      return u?.user?.id ?? null;
-    };
 
     const runRpc = async (uid: string) => {
       const { data, error } = await supabase.rpc("get_staff_merchant_access", {
         p_user_id: uid,
       });
-      if (error) {
-        console.info("[useStaffAccess] RPC error", error.message);
-        return null;
-      }
-      const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
-      return row;
+      if (error) return null;
+      return Array.isArray(data) && data.length > 0 ? data[0] : null;
     };
 
-    const fetch = async () => {
+    const fetch = async (uid: string | null) => {
       if (inflightRef.current) return;
       inflightRef.current = true;
       try {
-        setLoading(true);
-        const uid = await resolveUserId();
         if (!uid) {
+          _cachedAccess = null;
+          _cachedForUserId = null;
           if (!cancelled) {
             setAccess(null);
             setResolved(true);
@@ -52,52 +45,70 @@ export function useStaffAccess() {
           return;
         }
 
-        let row = await runRpc(uid);
-
-        // Retry once if the first call returned no row — absorbs the brief
-        // window where the JWT may not yet be attached to PostgREST requests.
-        if (!row) {
-          await new Promise((r) => setTimeout(r, 300));
-          row = await runRpc(uid);
+        // Serve from cache if same user already resolved.
+        if (_cachedForUserId === uid && _cachedAccess !== undefined) {
+          if (!cancelled) {
+            setAccess(_cachedAccess);
+            setResolved(true);
+            setLoading(false);
+          }
+          return;
         }
 
+        const row = await runRpc(uid);
         if (cancelled) return;
-        if (row) {
-          setAccess({
-            merchantId: row.merchant_id,
-            merchantName: row.business_name,
-            staffRole: row.staff_role,
-          });
-        } else {
-          setAccess(null);
-        }
+        const next = row
+          ? {
+              merchantId: row.merchant_id as string,
+              merchantName: row.business_name as string,
+              staffRole: row.staff_role as string,
+            }
+          : null;
+        _cachedAccess = next;
+        _cachedForUserId = uid;
+        setAccess(next);
         setResolved(true);
         setLoading(false);
-        console.info("[useStaffAccess] resolved", { uid, isStaff: !!row });
       } finally {
         inflightRef.current = false;
       }
     };
 
-    fetch();
+    // Kick off using cached session (no extra getSession round-trip if already resolved).
+    (async () => {
+      const session = await getCachedSession();
+      didInitialFetchRef.current = true;
+      void fetch(session?.user?.id ?? null);
+    })();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      // NEVER await inside this callback (Supabase deadlock guidance).
-      // Re-arm loading state then schedule the refetch on the next tick.
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "SIGNED_OUT" || event === "INITIAL_SESSION") {
-        if (event === "SIGNED_OUT") {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Skip the noisy INITIAL_SESSION + TOKEN_REFRESHED that fire on every mount.
+      if (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") return;
+
+      if (event === "SIGNED_OUT") {
+        _cachedAccess = null;
+        _cachedForUserId = null;
+        if (!cancelled) {
           setAccess(null);
           setResolved(true);
           setLoading(false);
-          return;
         }
-        setResolved(false);
-        setLoading(true);
-        setTimeout(() => {
-          if (!cancelled) void fetch();
-        }, 0);
+        return;
+      }
+
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        const uid = session?.user?.id ?? null;
+        // Only refetch if the user actually changed.
+        if (uid !== _cachedForUserId) {
+          _cachedAccess = undefined;
+          if (!cancelled) {
+            setResolved(false);
+            setLoading(true);
+          }
+          setTimeout(() => { if (!cancelled) void fetch(uid); }, 0);
+        }
       }
     });
 
