@@ -273,6 +273,24 @@ export default function MerchantStaffTab({ merchantId }: Props) {
   const [editPerms, setEditPerms] = useState<Record<string, boolean>>({});
   const [savingEdit, setSavingEdit] = useState(false);
 
+  const { presets: customPresets, save: savePreset, update: updatePreset, remove: removePreset } = usePermissionPresets(merchantId);
+
+  const handleSavePreset = async (name: string, perms: Record<string, boolean>) => {
+    const { error } = await savePreset(name, perms) as any;
+    if (error) toast.error(error.message || "Could not save preset");
+    else toast.success(`Preset "${name}" saved`);
+  };
+  const handleRenamePreset = async (id: string, name: string) => {
+    const { error } = await updatePreset(id, { name }) as any;
+    if (error) toast.error(error.message || "Could not rename");
+    else toast.success("Renamed");
+  };
+  const handleDeletePreset = async (id: string) => {
+    const { error } = await removePreset(id) as any;
+    if (error) toast.error(error.message || "Could not delete");
+    else toast.success("Preset deleted");
+  };
+
   // When role changes inside Add sheet, refresh defaults.
   useEffect(() => {
     if (showAdd) setPerms(defaultPermissionsFor(role));
