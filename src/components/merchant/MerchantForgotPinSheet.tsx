@@ -123,7 +123,7 @@ export default function MerchantForgotPinSheet({
               </div>
               {phone.length === 11 && (
                 <p className="text-[11px] text-white/50">
-                  We'll contact you on <span className="text-white/80 font-medium">+880 {maskBdPhone(phone)}</span>
+                  We'll contact you on <span className="text-white/80 font-medium">+88 {maskBdPhone(phone)}</span>
                 </p>
               )}
             </div>
