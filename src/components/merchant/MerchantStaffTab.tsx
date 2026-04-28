@@ -106,6 +106,8 @@ export default function MerchantStaffTab({ merchantId }: Props) {
     } else {
       toast.success("Staff added (not yet on EasyPay)");
     }
+    // Fire-and-forget invite send (push/SMS/email per availability)
+    if (data?.id) sendInvite(data.id, { silent: true });
     setShowAdd(false); setName(""); setPhone(""); setRole("Cashier"); setPhoneLookup({ status: "idle", name: null });
   };
 
