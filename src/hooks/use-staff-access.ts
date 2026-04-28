@@ -120,10 +120,20 @@ export function useStaffAccess() {
     };
   }, []);
 
+  const permissions = access?.permissions ?? {};
+  const can = (key: string) => {
+    if (!access) return true; // owner / non-staff: full access
+    if (key === "" ) return true;
+    if (key === "__owner_only__") return false;
+    return !!permissions[key];
+  };
+
   return {
     merchantId: access?.merchantId ?? null,
     merchantName: access?.merchantName ?? null,
     staffRole: access?.staffRole ?? null,
+    permissions,
+    can,
     isStaff: !!access,
     loading,
     resolved,
