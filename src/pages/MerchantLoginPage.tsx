@@ -539,7 +539,7 @@ export default function MerchantLoginPage() {
                   placeholder="1XXXXXXXXX"
                   value={phone}
                   disabled={isLocked}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                  onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); if (wrongPin) setWrongPin(false); }}
                   className="h-9 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60"
                 />
               </div>
@@ -550,7 +550,7 @@ export default function MerchantLoginPage() {
               <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
                 4-digit PIN
               </Label>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2 transition-colors focus-within:border-amber-200/50">
+              <div className={`rounded-2xl border p-2 transition-colors focus-within:border-amber-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
                 <InputOTP
                   maxLength={4}
                   value={pin}
