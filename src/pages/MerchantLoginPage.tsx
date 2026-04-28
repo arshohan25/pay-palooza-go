@@ -713,6 +713,14 @@ export default function MerchantLoginPage() {
           </div>
         </div>
       </div>
+
+      <MerchantForgotPinSheet
+        open={forgotOpen}
+        onOpenChange={setForgotOpen}
+        defaultPhone={boundPhone || phone}
+        source="merchant-login"
+        accent="amber"
+      />
     </div>
   );
 }
