@@ -645,7 +645,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     const ticket = await deviceOtp.verifyOtp(devicePhone, code);
     if (ticket) {
       otpTicketRef.current = ticket;
-      setDevicePhase("confirm");
+      // Skip the "all set" confirmation — go straight through.
+      handleDeviceContinueRef.current?.();
     }
   }, [devicePhone, deviceOtp]);
 
