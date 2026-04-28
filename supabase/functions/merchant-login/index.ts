@@ -237,16 +237,52 @@ Deno.serve(async (req) => {
     return json(401, { ok: false, locked: false, attempts_remaining: pl?.attempts_remaining ?? null, message: "Wrong phone or PIN" });
   }
 
-  // 3. Merchant role check
-  const { data: roles, error: roleErr } = await admin
-    .from("user_roles").select("role").eq("user_id", user.id);
-  if (roleErr) {
-    console.error("role lookup failed", roleErr);
-    return json(500, { ok: false, message: "Login service unavailable" });
-  }
-  const roleNames = (roles ?? []).map((r: any) => r.role);
-  if (!(roleNames.includes("merchant") || roleNames.includes("admin"))) {
-    return json(403, { ok: false, locked: false, message: "This account isn't a merchant account" });
+  // 3. Role / staff-link check
+  let staffContext: { merchant_id: string; business_name: string; role: string } | null = null;
+
+  if (mode === "staff") {
+    const { data: staffRows, error: staffErr } = await admin.rpc(
+      "get_staff_merchant_access", { p_user_id: user.id },
+    );
+    if (staffErr) {
+      console.error("staff lookup failed", staffErr);
+      return json(500, { ok: false, message: "Login service unavailable" });
+    }
+    const rows = (staffRows ?? []) as Array<{ merchant_id: string; business_name: string; staff_role: string }>;
+    if (!rows.length) {
+      return json(403, {
+        ok: false, locked: false,
+        message: "This number isn't linked to any merchant store. Ask the merchant owner to add you in Staff settings.",
+      });
+    }
+    // Confirm at least one active link
+    const { data: activeRow } = await admin
+      .from("merchant_staff")
+      .select("id, role, is_active, merchant_id")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+    if (!activeRow) {
+      return json(403, { ok: false, locked: false, message: "Your staff access has been disabled. Contact the merchant owner." });
+    }
+    const matched = rows.find((r) => r.merchant_id === (activeRow as any).merchant_id) ?? rows[0];
+    staffContext = {
+      merchant_id: matched.merchant_id,
+      business_name: matched.business_name,
+      role: matched.staff_role,
+    };
+  } else {
+    const { data: roles, error: roleErr } = await admin
+      .from("user_roles").select("role").eq("user_id", user.id);
+    if (roleErr) {
+      console.error("role lookup failed", roleErr);
+      return json(500, { ok: false, message: "Login service unavailable" });
+    }
+    const roleNames = (roles ?? []).map((r: any) => r.role);
+    if (!(roleNames.includes("merchant") || roleNames.includes("admin"))) {
+      return json(403, { ok: false, locked: false, message: "This account isn't a merchant account" });
+    }
   }
 
   // 4. DEVICE GATE — withhold session tokens until device is proven trusted
