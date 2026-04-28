@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
-import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle, Send, SlidersHorizontal, Bookmark, Pencil, Check, X } from "lucide-react";
+import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle, Send, SlidersHorizontal, Bookmark, Pencil, Check, X, ArrowRight, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import {
