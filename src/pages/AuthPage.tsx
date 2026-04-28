@@ -572,8 +572,44 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       localStorage.setItem(DEVICE_KEY, loginPhone);
       localStorage.setItem("mfs_registered_phone", loginPhone);
       haptics.success();
-      goTo("success");
-      setTimeout(onAuthenticated, 1500);
+
+      // ── Device-bound first-login OTP gate ──────────────────────────────
+      // Resolve user's primary role to pick the correct portal.
+      let portal: DeviceOtpPortal = "user";
+      try {
+        if (user) {
+          const { data: rolesData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id);
+          const roles = (rolesData ?? []).map((r: any) => r.role);
+          if (roles.includes("super_distributor")) portal = "super_distributor";
+          else if (roles.includes("distributor")) portal = "distributor";
+          else if (roles.includes("agent")) portal = "agent";
+          else if (roles.includes("merchant")) portal = "merchant";
+          else portal = "user";
+        }
+      } catch {}
+      setDevicePortal(portal);
+      setDevicePhone(loginPhone);
+
+      // Check if device is already trusted for this user/portal.
+      const trusted = await deviceOtp.checkTrusted(loginPhone);
+      if (trusted) {
+        setDevicePhase("confirm");
+        setIsSubmitting(false);
+        return;
+      }
+
+      try {
+        await deviceOtp.sendOtp(loginPhone);
+        setDevicePhase("otp");
+      } catch {
+        // If OTP can't be sent (e.g., rate-limited), fall through to success
+        // rather than blocking the user — security is still gated by PIN.
+        goTo("success");
+        setTimeout(onAuthenticated, 1500);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("Invalid login credentials")) {
