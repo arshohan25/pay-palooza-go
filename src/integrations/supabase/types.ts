@@ -6402,8 +6402,19 @@ export type Database = {
         Args: { p_category: string; p_user_id: string }
         Returns: boolean
       }
+      lookup_easypay_user_by_phone: {
+        Args: { p_phone: string }
+        Returns: {
+          found: boolean
+          full_name: string
+        }[]
+      }
       normalize_bd_phone: { Args: { p_raw: string }; Returns: string }
       notify_insurance_expiry: { Args: never; Returns: number }
+      notify_linked_staff: {
+        Args: { p_merchant_id: string; p_role: string; p_user_id: string }
+        Returns: undefined
+      }
       place_shop_order: {
         Args: {
           p_coupon_discount?: number
