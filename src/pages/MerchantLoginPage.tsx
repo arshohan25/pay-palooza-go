@@ -414,32 +414,34 @@ export default function MerchantLoginPage() {
         }}
       />
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-3">
         <div
           className="w-full max-w-md animate-fade-in"
           style={{ animationDuration: "500ms" }}
         >
           {/* Logo + eyebrow */}
-          <div className="mb-6 flex flex-col items-center text-center animate-scale-in">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[19px] border border-white/15 bg-white/10 shadow-[0_10px_40px_-10px_rgba(251,146,60,0.7)] backdrop-blur-2xl">
-              <Store className="h-8 w-8 text-amber-200" strokeWidth={1.8} />
+          <div className="mb-3 flex flex-col items-center text-center animate-scale-in">
+            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-[16px] border border-white/15 bg-white/10 shadow-[0_10px_40px_-10px_rgba(251,146,60,0.7)] backdrop-blur-2xl">
+              <Store className="h-6 w-6 text-amber-200" strokeWidth={1.8} />
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/30 bg-amber-300/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-amber-100">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/30 bg-amber-300/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-amber-100">
               <Sparkles className="h-3 w-3" />
-              Merchant Portal
+              {loginMode === "manager" ? "Store Manager" : "Merchant Portal"}
             </span>
-            <h1 className="mt-3 text-3xl font-semibold leading-tight tracking-tight">
-              Welcome back
+            <h1 className="mt-2 text-xl font-semibold leading-tight tracking-tight">
+              {loginMode === "manager" ? "Manager sign-in" : "Welcome back"}
             </h1>
-            <p className="mt-1.5 max-w-xs text-sm text-white/60">
-              Sign in to manage your store, orders, payouts and QR.
+            <p className="mt-1 text-[12px] text-white/60">
+              {loginMode === "manager"
+                ? "Access the store you manage."
+                : "Manage your store, orders, payouts and QR."}
             </p>
           </div>
 
           {step === "otp" && (
             <DeviceOtpStep
               phone={pendingSessionRef.current?.cleanedPhone || ""}
-              portalLabel="Merchant"
+              portalLabel={loginMode === "manager" ? "Manager" : "Merchant"}
               resendIn={otp.resendIn}
               loading={otp.status === "verifying" || otp.status === "sending"}
               error={otp.error}
@@ -455,7 +457,7 @@ export default function MerchantLoginPage() {
           <form
             onSubmit={handleSignIn}
             aria-disabled={isLocked}
-            className="rounded-[19px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:p-7"
+            className="rounded-[19px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
           >
             <fieldset disabled={isLocked} className="m-0 border-0 p-0 disabled:opacity-100">
             {/* Lockout banner */}
