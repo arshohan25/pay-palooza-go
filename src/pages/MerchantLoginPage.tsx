@@ -565,7 +565,7 @@ export default function MerchantLoginPage() {
             <Button
               type="submit"
               disabled={loading || isLocked}
-              className="mt-6 h-12 w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(16,185,129,0.7)] transition-transform hover:scale-[1.01] hover:from-emerald-400 hover:to-teal-400 disabled:opacity-70"
+              className="mt-6 h-12 w-full rounded-2xl bg-gradient-to-r from-orange-500 via-rose-500 to-rose-600 text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(244,63,94,0.7)] transition-transform hover:scale-[1.01] hover:from-orange-400 hover:via-rose-400 hover:to-rose-500 disabled:opacity-70"
             >
               {isLocked ? (
                 <>
