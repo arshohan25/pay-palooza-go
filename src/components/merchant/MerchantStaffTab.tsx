@@ -91,8 +91,17 @@ function PermissionPicker({
     }
     const preset = customPresets.find(p => p.id === val);
     if (preset) {
-      onChange(applyPermissionSet(preset.permissions));
-      toast.success(`Applied "${preset.name}"`);
+      const stripped = findOwnerOnlyKeys(preset.permissions);
+      const safe = applyPermissionSet(stripOwnerOnlyKeys(preset.permissions));
+      onChange(safe);
+      if (stripped.length) {
+        const names = stripped.map(k => OWNER_ONLY_LABELS[k] ?? k).join(", ");
+        toast.warning(`Applied "${preset.name}" — owner-only removed: ${names}`, {
+          description: "Staff cannot hold owner-only permissions. They were stripped automatically.",
+        });
+      } else {
+        toast.success(`Applied "${preset.name}"`);
+      }
     }
   };
 
