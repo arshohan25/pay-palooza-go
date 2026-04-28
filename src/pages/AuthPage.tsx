@@ -596,8 +596,9 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       // Check if device is already trusted for this user/portal.
       const trusted = await deviceOtp.checkTrusted(loginPhone);
       if (trusted) {
-        setDevicePhase("confirm");
         setIsSubmitting(false);
+        goTo("success");
+        setTimeout(onAuthenticated, 1200);
         return;
       }
 
