@@ -455,9 +455,19 @@ export default function MerchantManagerLoginPage() {
 
                 {/* PIN */}
                 <div className="mt-3 space-y-1.5">
-                  <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                    Your 4-digit PIN
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                      Your 4-digit PIN
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={() => setForgotOpen(true)}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-100/80 transition-colors hover:text-sky-50"
+                    >
+                      <HelpCircle className="h-3 w-3" />
+                      Forgot PIN?
+                    </button>
+                  </div>
                   <div className={`rounded-2xl border p-2 transition-colors focus-within:border-sky-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
                     <InputOTP maxLength={4} value={pin} onChange={(v) => { setPin(v); if (wrongPin) setWrongPin(false); }} disabled={isLocked} containerClassName="justify-center">
                       <InputOTPGroup className="gap-2">
