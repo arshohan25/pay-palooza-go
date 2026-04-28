@@ -455,15 +455,15 @@ export default function MerchantManagerLoginPage() {
                   <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
                     Your 4-digit PIN
                   </Label>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2 transition-colors focus-within:border-sky-200/50">
-                    <InputOTP maxLength={4} value={pin} onChange={setPin} disabled={isLocked} containerClassName="justify-center">
+                  <div className={`rounded-2xl border p-2 transition-colors focus-within:border-sky-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
+                    <InputOTP maxLength={4} value={pin} onChange={(v) => { setPin(v); if (wrongPin) setWrongPin(false); }} disabled={isLocked} containerClassName="justify-center">
                       <InputOTPGroup className="gap-2">
                         {[0, 1, 2, 3].map((i) => (
                           <InputOTPSlot
                             key={i}
                             index={i}
                             mask
-                            className="h-11 w-11 rounded-xl border-white/15 bg-white/[0.06] text-lg font-semibold text-white"
+                            className={`h-11 w-11 rounded-xl text-lg font-semibold text-white ${wrongPin ? "border-rose-400/60 bg-rose-500/10" : "border-white/15 bg-white/[0.06]"}`}
                           />
                         ))}
                       </InputOTPGroup>
