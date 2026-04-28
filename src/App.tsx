@@ -12,6 +12,7 @@ import AppLayout from "@/components/AppLayout";
 import RoleGuardLayout from "@/components/RoleGuardLayout";
 import RoleGuard from "@/components/RoleGuard";
 import MerchantSessionWatchdog from "@/components/MerchantSessionWatchdog";
+import LazyLoadErrorBoundary from "@/components/LazyLoadErrorBoundary";
 import { retryLazyImport } from "@/lib/cacheReset";
 
 const Index = lazy(() => retryLazyImport(() => import("./pages/Index")));
@@ -83,63 +84,65 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <MerchantSessionWatchdog />
-              <Suspense fallback={<LazyFallback />}>
-                <Routes>
-                  <Route path="/" element={<AppLayout />}>
-                    <Route index element={<Index />} />
-                    <Route path="shop" element={<ShopPage />} />
-                    <Route path="shop/checkout" element={<ShopCheckoutPage />} />
-                    <Route path="shop/:slug" element={<VendorStorePage />} />
-                    <Route path="product/:id" element={<ProductDetailPage />} />
-                    <Route path="wishlist" element={<WishlistPage />} />
-                    <Route path="orders" element={<CustomerOrdersPage />} />
-                    <Route path="orders/:id" element={<OrderDetailPage />} />
-                    <Route path="checkout/:sessionId" element={<CheckoutPage />} />
-                    <Route path="pay/qr/:sessionId" element={<DynamicQrPage />} />
-                    <Route path="pay" element={<PayPage />} />
-                    <Route path="careers" element={<CareersPage />} />
-                    <Route path="coupons" element={<CouponsPage />} />
-                    <Route path="donations" element={<DonationsPage />} />
-                    <Route path="loan" element={<LoanPage />} />
-                    <Route path="insurance" element={<InsurancePage />} />
-                    <Route path="giftcards" element={<GiftCardsPage />} />
-                    <Route path="account" element={<AccountPage />} />
-                  </Route>
+              <LazyLoadErrorBoundary>
+                <Suspense fallback={<LazyFallback />}>
+                  <Routes>
+                    <Route path="/" element={<AppLayout />}>
+                      <Route index element={<Index />} />
+                      <Route path="shop" element={<ShopPage />} />
+                      <Route path="shop/checkout" element={<ShopCheckoutPage />} />
+                      <Route path="shop/:slug" element={<VendorStorePage />} />
+                      <Route path="product/:id" element={<ProductDetailPage />} />
+                      <Route path="wishlist" element={<WishlistPage />} />
+                      <Route path="orders" element={<CustomerOrdersPage />} />
+                      <Route path="orders/:id" element={<OrderDetailPage />} />
+                      <Route path="checkout/:sessionId" element={<CheckoutPage />} />
+                      <Route path="pay/qr/:sessionId" element={<DynamicQrPage />} />
+                      <Route path="pay" element={<PayPage />} />
+                      <Route path="careers" element={<CareersPage />} />
+                      <Route path="coupons" element={<CouponsPage />} />
+                      <Route path="donations" element={<DonationsPage />} />
+                      <Route path="loan" element={<LoanPage />} />
+                      <Route path="insurance" element={<InsurancePage />} />
+                      <Route path="giftcards" element={<GiftCardsPage />} />
+                      <Route path="account" element={<AccountPage />} />
+                    </Route>
 
-                  <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
+                    <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
 
-                  <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} />}>
-                    <Route index element={<AgentDashboard />} />
-                    <Route path="cashin" element={<AgentCashIn />} />
-                    <Route path="b2b" element={<AgentB2B />} />
-                    <Route path="register" element={<AgentRegister />} />
-                    <Route path="billpay" element={<AgentBillPay />} />
-                    <Route path="history" element={<AgentTransactionHistory />} />
-                    <Route path="bank" element={<AgentBankTransfer />} />
-                    <Route path="analytics" element={<AgentAnalyticsPage />} />
-                  </Route>
+                    <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} />}>
+                      <Route index element={<AgentDashboard />} />
+                      <Route path="cashin" element={<AgentCashIn />} />
+                      <Route path="b2b" element={<AgentB2B />} />
+                      <Route path="register" element={<AgentRegister />} />
+                      <Route path="billpay" element={<AgentBillPay />} />
+                      <Route path="history" element={<AgentTransactionHistory />} />
+                      <Route path="bank" element={<AgentBankTransfer />} />
+                      <Route path="analytics" element={<AgentAnalyticsPage />} />
+                    </Route>
 
-                  <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} />}>
-                    <Route index element={<DistributorDashboard />} />
-                    <Route path="create-agent" element={<DistributorCreateAgent />} />
-                  </Route>
+                    <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} />}>
+                      <Route index element={<DistributorDashboard />} />
+                      <Route path="create-agent" element={<DistributorCreateAgent />} />
+                    </Route>
 
-                  <Route path="/super-distributor" element={<RoleGuardLayout roles={["super_distributor", "admin"]} />}>
-                    <Route index element={<SuperDistributorDashboard />} />
-                    <Route path="create-distributor" element={<SuperDistributorCreateDistributor />} />
-                  </Route>
+                    <Route path="/super-distributor" element={<RoleGuardLayout roles={["super_distributor", "admin"]} />}>
+                      <Route index element={<SuperDistributorDashboard />} />
+                      <Route path="create-distributor" element={<SuperDistributorCreateDistributor />} />
+                    </Route>
 
-                  <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant-login"><MerchantDashboard /></RoleGuard>} />
+                    <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant-login"><MerchantDashboard /></RoleGuard>} />
 
-                  <Route path="/team-login" element={<TeamLoginPage />} />
-                  <Route path="/merchant-login" element={<MerchantLoginPage />} />
-                  <Route path="/merchant-manager-login" element={<MerchantManagerLoginPage />} />
-                  <Route path="/install" element={<RoleInstallPage />} />
-                  <Route path="/install/:role" element={<RoleInstallPage />} />
-                  <Route path="/developers" element={<DeveloperPortal />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
+                    <Route path="/team-login" element={<TeamLoginPage />} />
+                    <Route path="/merchant-login" element={<MerchantLoginPage />} />
+                    <Route path="/merchant-manager-login" element={<MerchantManagerLoginPage />} />
+                    <Route path="/install" element={<RoleInstallPage />} />
+                    <Route path="/install/:role" element={<RoleInstallPage />} />
+                    <Route path="/developers" element={<DeveloperPortal />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </LazyLoadErrorBoundary>
             </BrowserRouter>
           </FestivalThemeProvider>
         </TooltipProvider>
