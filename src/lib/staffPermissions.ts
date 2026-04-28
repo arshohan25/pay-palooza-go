@@ -113,6 +113,15 @@ export function defaultPermissionsFor(role: StaffRole): Record<string, boolean> 
   return permsToObject(ROLE_DEFAULTS[role] ?? []);
 }
 
+/** Apply a flat permission map (presumed already validated) and expand implied keys. */
+export function applyPermissionSet(input: Record<string, boolean>): Record<string, boolean> {
+  const set = new Set(Object.entries(input).filter(([, v]) => v).map(([k]) => k));
+  const expanded = expandImplies(set);
+  const out: Record<string, boolean> = {};
+  for (const k of PERMISSION_KEYS) out[k] = expanded.has(k);
+  return out;
+}
+
 export function countActive(perms: Record<string, boolean> | null | undefined): number {
   if (!perms) return 0;
   return Object.entries(perms).filter(([, v]) => v).length;
