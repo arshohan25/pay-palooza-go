@@ -122,12 +122,23 @@ function PermissionPicker({
     }
     if (val.startsWith("__role_")) {
       const r = val.replace("__role_", "").replace("__", "") as StaffRole;
-      stagePreview(`${r} preset`, defaultPermissionsFor(r), onChange);
+      const defaults = defaultPermissionsFor(r);
+      stagePreview(
+        `${r} preset`,
+        defaults,
+        { kind: "builtin", name: r, total: ROLE_DEFAULTS[r].length },
+        onChange,
+      );
       return;
     }
     const preset = customPresets.find(p => p.id === val);
     if (preset) {
-      stagePreview(`"${preset.name}"`, applyPermissionSet(preset.permissions), onChange);
+      stagePreview(
+        `"${preset.name}"`,
+        applyPermissionSet(preset.permissions),
+        { kind: "custom", name: preset.name, total: countActive(preset.permissions) },
+        onChange,
+      );
     }
   };
 
