@@ -23,7 +23,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    const validPurpose = purpose || "pin_reset";
+    const ALLOWED_PURPOSES = new Set([
+      "pin_reset",
+      "payment",
+      "agent_register",
+      "device_verify_user",
+      "device_verify_merchant",
+      "device_verify_agent",
+      "device_verify_distributor",
+      "device_verify_super_distributor",
+    ]);
+    const validPurpose = (typeof purpose === "string" && ALLOWED_PURPOSES.has(purpose))
+      ? purpose
+      : "pin_reset";
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
