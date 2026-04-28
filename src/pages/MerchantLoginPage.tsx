@@ -58,6 +58,8 @@ export default function MerchantLoginPage() {
   const [now, setNow] = useState(() => Date.now());
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const [wrongPin, setWrongPin] = useState(false);
+  const [boundPhone, setBoundPhone] = useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const tickerRef = useRef<number | null>(null);
 
   // Device-bound OTP flow
