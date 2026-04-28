@@ -379,19 +379,28 @@ export default function MerchantLoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-emerald-950 text-white">
-      {/* Bokeh blobs */}
+    <div
+      className="relative min-h-screen w-full overflow-hidden text-white"
+      style={{
+        background:
+          "linear-gradient(150deg, hsl(24 90% 50%) 0%, hsl(16 82% 40%) 40%, hsl(350 65% 35%) 100%)",
+      }}
+    >
+      {/* Warm bokeh blobs matching dashboard header */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-24 h-[420px] w-[420px] rounded-full bg-emerald-500/30 blur-[120px]"
+        className="pointer-events-none absolute -top-32 -left-24 h-[420px] w-[420px] rounded-full blur-[120px]"
+        style={{ background: "radial-gradient(circle, hsl(36 95% 60%) 0%, transparent 70%)" }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-40 -right-24 h-[460px] w-[460px] rounded-full bg-indigo-500/30 blur-[140px]"
+        className="pointer-events-none absolute -bottom-40 -right-24 h-[460px] w-[460px] rounded-full blur-[140px]"
+        style={{ background: "radial-gradient(circle, hsl(350 65% 45%) 0%, transparent 70%)" }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-1/2 left-1/2 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-fuchsia-500/10 blur-[120px]"
+        className="pointer-events-none absolute top-1/2 left-1/2 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px]"
+        style={{ background: "radial-gradient(circle, hsl(0 0% 100% / 0.15) 0%, transparent 70%)" }}
       />
 
       {/* Subtle grid texture */}
