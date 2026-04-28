@@ -12,6 +12,7 @@ import AppLayout from "@/components/AppLayout";
 import RoleGuardLayout from "@/components/RoleGuardLayout";
 import RoleGuard from "@/components/RoleGuard";
 import MerchantSessionWatchdog from "@/components/MerchantSessionWatchdog";
+import LazyLoadErrorBoundary from "@/components/LazyLoadErrorBoundary";
 import { retryLazyImport } from "@/lib/cacheReset";
 
 const Index = lazy(() => retryLazyImport(() => import("./pages/Index")));
