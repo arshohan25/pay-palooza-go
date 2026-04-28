@@ -194,7 +194,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
                   <Button key={r} size="sm" variant={role === r ? "default" : "outline"} className="text-xs flex-1" onClick={() => setRole(r)}>{r}</Button>
                 ))}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1.5">Pick <span className="font-semibold text-foreground">Manager</span> to grant full dashboard access via Merchant Manager login.</p>
+              <p className="text-[10px] text-muted-foreground mt-1.5">Pick <span className="font-semibold text-foreground">Manager</span> for full dashboard access. Ask them to sign in at <span className="font-semibold text-foreground">/merchant-manager-login</span> using their <span className="font-semibold text-foreground">own phone &amp; PIN</span>.</p>
             </div>
             <Button className="w-full" disabled={saving} onClick={handleAdd}>{saving ? "Adding..." : "Add Staff"}</Button>
           </div>

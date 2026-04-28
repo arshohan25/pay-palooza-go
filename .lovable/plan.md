@@ -1,58 +1,44 @@
-## Manager Invitation Flow
+# Dedicated Manager Login Screen
 
-The `merchant_staff` table, `Add Staff` sheet, role-gated `merchant-login` edge function, and `get_staff_merchant_access` RPC are already wired up. A merchant owner can already add a staff row with `role=Manager` and the existing trigger links `user_id` from `profiles.phone`. The invited user can already log in via the Manager toggle on `/merchant-login` using their own PIN.
+The current `/merchant-login` page can toggle into a "manager" mode via a small footer button — easy to miss and confusingly worded. We'll give Managers a real, dedicated entry point with messaging that explains they must use **their own phone number and PIN** (the one tied to their personal EasyPay account), not the owner's.
 
-What's missing is **invitee discoverability and reliability**. This plan closes those gaps.
+## Goals
+- A standalone Manager login route with clear, friendly explainer copy.
+- Cross-links between Owner and Manager login screens (no more easy-to-miss toggle).
+- No backend changes — the existing `merchant-login` edge function already handles `mode: "manager"` and the staff role check.
 
-### 1. Auto-link on future signup (DB)
+## What gets built
 
-Add a trigger on `public.profiles` INSERT/UPDATE of `phone`: any `merchant_staff` row whose `phone` matches gets `user_id` populated automatically. This handles the case where the owner adds a phone *before* the person signs up.
+### 1. New route: `/merchant-manager-login`
+A new page `src/pages/MerchantManagerLoginPage.tsx` that:
+- Reuses the same glass UI, lockout, OTP/device-trust flow as `MerchantLoginPage` but hard-locks `loginMode = "manager"`.
+- Shows a prominent **info card** above the form:
+  > **Use your own phone & PIN** — Sign in with the personal EasyPay account that the store owner invited. Don't use the owner's number. New to EasyPay? Sign up first, then ask the owner to add you.
+- Header eyebrow: "Store Manager Access", title "Manager sign-in".
+- Submit button: "Sign in as Manager".
+- Footer link: "Are you the store owner? → Owner login" → navigates to `/merchant-login`.
+- Removes the "Apply as a merchant" CTA (irrelevant for managers); replaces with "Don't have an EasyPay account? Sign up" → `/auth`.
+- On success, navigates to `redirect` param (default `/merchant`), same as owner flow.
 
-### 2. Notify the invitee (DB)
+### 2. Update `/merchant-login` (Owner)
+- Remove the bottom mode-toggle button (`Sign in as Manager instead`).
+- Replace with a clean link: **"Manage a store as staff? → Manager login"** → `/merchant-manager-login`.
+- Strip out all `loginMode === "manager"` conditionals to simplify (page is owner-only now).
 
-Extend the existing `resolve_staff_user` trigger so that when a `user_id` resolves on insert/update (i.e., the staff row becomes "Linked"), it inserts a row into `public.notifications` for that user:
-- Title: `You're now a Manager at {business_name}` (Cashier/Viewer for those roles)
-- Body: `Use Merchant Manager login on the Merchant Login page with your PIN.`
-- Category: `system`
+### 3. Routing
+- Add `<Route path="/merchant-manager-login" element={<MerchantManagerLoginPage />} />` in `src/App.tsx` next to the existing merchant-login route.
+- Lazy-load like neighboring pages.
 
-Same notification fires from the new profiles trigger so retroactive links also notify.
+### 4. Cross-links elsewhere
+- In `MerchantStaffTab.tsx` (the invitation UI), the success toast / staff row already mentions the invitee should log in. We'll update the helper text shown after adding a staff member to: *"Ask them to sign in at the **Manager login** page using their own phone & PIN."* — no behavioral change, just wording.
 
-### 3. Live phone lookup in Add Staff sheet (UI)
+## Technical Notes
+- The new page is essentially `MerchantLoginPage.tsx` with `loginMode` removed (always `"manager"`), the info card added, and the footer CTAs swapped. To avoid duplication drift, we extract the shared form/OTP logic only if it stays simple — otherwise we copy and trim, since the two screens will diverge in messaging over time.
+- No DB or edge function changes. The `merchant-login` function already enforces `get_staff_merchant_access` + `staff_role === 'Manager'` when `mode: "manager"`.
+- Lockout storage key stays `mfs_merchant_login_locked_until` (shared with owner page) since it's keyed per device, and a wrong PIN is a wrong PIN regardless of which screen submitted it.
 
-In `MerchantStaffTab.tsx` Add Staff sheet, debounce the phone field and call a new lightweight RPC `lookup_easypay_user_by_phone(p_phone text)` returning `{ exists: boolean, full_name: text | null }` (SECURITY DEFINER, restricted to authenticated, returns minimal info — no user_id leak).
-
-Show a small inline status under the phone input:
-- `✓ On EasyPay — {name}. They'll get instant access.`
-- `⚠ Not on EasyPay yet. They'll be linked automatically when they sign up.`
-
-### 4. Pre-fill name when found (UI)
-
-If lookup returns a name and the Name field is empty, auto-fill it.
-
-### 5. Resend invite action (UI)
-
-Add a small "Notify" icon button on each unlinked staff row that triggers a "still waiting" notification once the user has signed up later (no-op if not yet linked — toast: "User hasn't joined EasyPay yet").
-
-### Technical Details
-
-**Migration** (`supabase/migrations/<new>.sql`):
-- `CREATE OR REPLACE FUNCTION public.backfill_staff_user_on_profile()` — on profiles insert/update of phone, `UPDATE merchant_staff SET user_id=NEW.user_id WHERE phone normalized = NEW.phone normalized AND user_id IS NULL`. Inserts a notification per linked row.
-- Trigger `trg_backfill_staff_user_on_profile AFTER INSERT OR UPDATE OF phone ON public.profiles`.
-- Update `resolve_staff_user()` to also INSERT a notifications row when `NEW.user_id` is non-null and changed.
-- `CREATE OR REPLACE FUNCTION public.lookup_easypay_user_by_phone(p_phone text) RETURNS TABLE(exists boolean, full_name text)` — SECURITY DEFINER, normalizes phone, returns existence + name only. `GRANT EXECUTE TO authenticated`.
-
-**Frontend** (`src/components/merchant/MerchantStaffTab.tsx`):
-- Add `phoneStatus` state + 400ms debounced effect calling `supabase.rpc('lookup_easypay_user_by_phone', { p_phone })`.
-- Render status pill below the phone input.
-- Auto-fill `name` when found and field is empty.
-- Default `role` selection in the sheet stays `Cashier` but add a tiny helper line: "Pick **Manager** to grant full dashboard access."
-
-**No changes needed** to:
-- `merchant-login` edge function (already gates by role).
-- `MerchantLoginPage.tsx` (Manager toggle already wired).
-- `useStaffAccess` hook (already drives dashboard access).
-
-### Files to be edited
-
-- `supabase/migrations/<timestamp>_manager_invite_flow.sql` (new)
-- `src/components/merchant/MerchantStaffTab.tsx`
+## Files
+- **Create**: `src/pages/MerchantManagerLoginPage.tsx`
+- **Edit**: `src/pages/MerchantLoginPage.tsx` (remove toggle, add owner-only copy + manager link)
+- **Edit**: `src/App.tsx` (register route)
+- **Edit**: `src/components/merchant/MerchantStaffTab.tsx` (invitation helper text)
