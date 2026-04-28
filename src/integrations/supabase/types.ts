@@ -3169,6 +3169,44 @@ export type Database = {
           },
         ]
       }
+      merchant_permission_presets: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          merchant_id: string
+          name: string
+          permissions: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          merchant_id: string
+          name: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          merchant_id?: string
+          name?: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_permission_presets_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_products: {
         Row: {
           badge: string | null
