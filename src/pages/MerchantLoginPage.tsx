@@ -421,10 +421,10 @@ export default function MerchantLoginPage() {
         >
           {/* Logo + eyebrow */}
           <div className="mb-6 flex flex-col items-center text-center animate-scale-in">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[19px] border border-white/15 bg-white/10 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.6)] backdrop-blur-2xl">
-              <Store className="h-8 w-8 text-emerald-300" strokeWidth={1.8} />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[19px] border border-white/15 bg-white/10 shadow-[0_10px_40px_-10px_rgba(251,146,60,0.7)] backdrop-blur-2xl">
+              <Store className="h-8 w-8 text-amber-200" strokeWidth={1.8} />
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/30 bg-amber-300/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-amber-100">
               <Sparkles className="h-3 w-3" />
               Merchant Portal
             </span>
