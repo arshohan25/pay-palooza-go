@@ -763,6 +763,46 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const loginStep    = { login_phone: 0, login_pin: 1 }[mode as string] ?? -1;
   const showBack     = mode !== "landing" && mode !== "success";
 
+  // Device-bound first-login OTP overlay — takes over the screen when active.
+  if (devicePhase !== "none") {
+    return (
+      <div className="fixed inset-0 z-[110] flex flex-col bg-gradient-to-br from-slate-950 via-indigo-950 to-emerald-950 text-white overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-32 -left-24 h-[420px] w-[420px] rounded-full bg-emerald-500/30 blur-[120px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-40 -right-24 h-[460px] w-[460px] rounded-full bg-indigo-500/30 blur-[140px]"
+        />
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
+          <div className="w-full max-w-md">
+            {devicePhase === "otp" && (
+              <DeviceOtpStep
+                phone={devicePhone}
+                portalLabel={portalLabel}
+                resendIn={deviceOtp.resendIn}
+                loading={deviceOtp.status === "verifying" || deviceOtp.status === "sending"}
+                error={deviceOtp.error}
+                devOtp={deviceOtp.devOtp}
+                onVerify={handleDeviceVerify}
+                onResend={handleDeviceResend}
+              />
+            )}
+            {devicePhase === "confirm" && (
+              <DeviceVerifiedConfirm
+                phone={devicePhone}
+                portalLabel={portalLabel}
+                loading={deviceConfirmLoading}
+                onContinue={handleDeviceContinue}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-background overflow-hidden">
 
