@@ -498,12 +498,12 @@ export default function MerchantLoginPage() {
               )}
 
             {/* Phone */}
-            <div className="space-y-2">
-              <Label htmlFor="merchant-phone" className="text-xs font-medium uppercase tracking-wider text-white/60">
+            <div className="space-y-1.5">
+              <Label htmlFor="merchant-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
                 Mobile number
               </Label>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1.5 transition-colors focus-within:border-amber-200/50 focus-within:bg-white/[0.06]">
-                <div className="flex items-center gap-1.5 border-r border-white/10 pr-3 text-sm text-white/70">
+              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors focus-within:border-amber-200/50 focus-within:bg-white/[0.06]">
+                <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
                   <Phone className="h-4 w-4 text-amber-200" />
                   <span className="font-medium">+880</span>
                 </div>
@@ -516,27 +516,17 @@ export default function MerchantLoginPage() {
                   value={phone}
                   disabled={isLocked}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                  className="h-10 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60"
+                  className="h-9 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60"
                 />
               </div>
             </div>
 
-            {/* PIN */}
-            <div className="mt-5 space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium uppercase tracking-wider text-white/60">
-                  4-digit PIN
-                </Label>
-                <button
-                  type="button"
-                  onClick={() => setShowPin((v) => !v)}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-white/60 transition-colors hover:text-white"
-                >
-                  {showPin ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                  {showPin ? "Hide" : "Show"}
-                </button>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition-colors focus-within:border-amber-200/50">
+            {/* PIN — auto-masked, no show/hide toggle */}
+            <div className="mt-3 space-y-1.5">
+              <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                4-digit PIN
+              </Label>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2 transition-colors focus-within:border-amber-200/50">
                 <InputOTP
                   maxLength={4}
                   value={pin}
@@ -549,10 +539,10 @@ export default function MerchantLoginPage() {
                       <InputOTPSlot
                         key={i}
                         index={i}
-                        className="h-12 w-12 rounded-xl border-white/15 bg-white/[0.06] text-lg font-semibold text-white"
-                        // mask via CSS when hidden
+                        className="h-11 w-11 rounded-xl border-white/15 bg-white/[0.06] text-lg font-semibold text-white"
+                        // always mask digits as dots
                         style={
-                          !showPin && pin[i]
+                          pin[i]
                             ? { color: "transparent", textShadow: "0 0 0 white", caretColor: "transparent" }
                             : undefined
                         }
@@ -567,7 +557,7 @@ export default function MerchantLoginPage() {
             <Button
               type="submit"
               disabled={loading || isLocked}
-              className="mt-6 h-12 w-full rounded-2xl bg-gradient-to-r from-orange-500 via-rose-500 to-rose-600 text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(244,63,94,0.7)] transition-transform hover:scale-[1.01] hover:from-orange-400 hover:via-rose-400 hover:to-rose-500 disabled:opacity-70"
+              className="mt-3 h-11 w-full rounded-2xl bg-gradient-to-r from-orange-500 via-rose-500 to-rose-600 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(244,63,94,0.7)] transition-transform hover:scale-[1.01] hover:from-orange-400 hover:via-rose-400 hover:to-rose-500 disabled:opacity-70"
             >
               {isLocked ? (
                 <>
@@ -581,14 +571,14 @@ export default function MerchantLoginPage() {
                 </>
               ) : (
                 <>
-                  Sign in to dashboard
+                  {loginMode === "manager" ? "Sign in as Manager" : "Sign in to dashboard"}
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </Button>
 
             {/* Trust pills */}
-            <div className="mt-5 grid grid-cols-3 gap-2">
+            <div className="mt-3 grid grid-cols-3 gap-1.5">
               {[
                 { icon: Lock, label: "Secure PIN" },
                 { icon: ShieldCheck, label: "Encrypted" },
@@ -596,7 +586,7 @@ export default function MerchantLoginPage() {
               ].map(({ icon: Icon, label }) => (
                 <div
                   key={label}
-                  className="flex items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2 py-1.5 text-[10.5px] font-medium text-white/70"
+                  className="flex items-center justify-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-1 text-[10px] font-medium text-white/70"
                 >
                   <Icon className="h-3 w-3 text-amber-200" />
                   {label}
@@ -605,16 +595,16 @@ export default function MerchantLoginPage() {
             </div>
 
             {/* Perks strip */}
-            <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.03] to-white/[0.06] px-4 py-3">
+            <div className="mt-2.5 flex items-center justify-between rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.03] to-white/[0.06] px-3 py-1.5">
               {[
                 { icon: ShoppingBag, label: "Orders" },
                 { icon: Wallet, label: "Payouts" },
                 { icon: QrCode, label: "QR" },
                 { icon: BarChart3, label: "Insights" },
               ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex flex-col items-center gap-1 text-white/70">
-                  <Icon className="h-4 w-4 text-amber-200" />
-                  <span className="text-[10px] font-medium uppercase tracking-wider">{label}</span>
+                <div key={label} className="flex flex-col items-center gap-0.5 text-white/70">
+                  <Icon className="h-3.5 w-3.5 text-amber-200" />
+                  <span className="text-[9px] font-medium uppercase tracking-wider">{label}</span>
                 </div>
               ))}
             </div>
@@ -622,33 +612,30 @@ export default function MerchantLoginPage() {
           </form>
           )}
 
-          {/* Footer links */}
-          <div className="mt-6 flex flex-col items-center gap-3 text-center">
-            <button
+          {/* Footer: apply button + manager toggle */}
+          <div className="mt-3 flex flex-col items-center gap-2 text-center">
+            <Button
               type="button"
-              onClick={() => navigate("/merchant")}
-              className="group inline-flex items-center gap-1.5 text-sm font-medium text-amber-200 transition-colors hover:text-amber-100"
+              variant="outline"
+              onClick={() => navigate("/?apply=merchant")}
+              className="h-10 w-full rounded-2xl border-white/20 bg-white/[0.06] text-sm font-medium text-amber-100 hover:bg-white/[0.12] hover:text-amber-50"
             >
               New here? Apply as a merchant
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMode((m) => (m === "owner" ? "manager" : "owner"));
+                setPin("");
+              }}
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/60 transition-colors hover:text-amber-100"
+            >
+              <UserCog className="h-3 w-3" />
+              {loginMode === "manager"
+                ? "Switch to merchant owner login"
+                : "Sign in as Manager instead"}
             </button>
-            <div className="flex items-center gap-3 text-xs text-white/50">
-              <button
-                type="button"
-                onClick={() => navigate("/auth")}
-                className="hover:text-white"
-              >
-                Customer login
-              </button>
-              <span className="h-3 w-px bg-white/15" />
-              <button
-                type="button"
-                onClick={() => navigate("/team-login")}
-                className="hover:text-white"
-              >
-                Staff login
-              </button>
-            </div>
           </div>
         </div>
       </div>
