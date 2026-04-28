@@ -11,6 +11,7 @@ import FestivalBodyEffect from "@/components/FestivalBodyEffect";
 import AppLayout from "@/components/AppLayout";
 import RoleGuardLayout from "@/components/RoleGuardLayout";
 import RoleGuard from "@/components/RoleGuard";
+import MerchantSessionWatchdog from "@/components/MerchantSessionWatchdog";
 import { retryLazyImport } from "@/lib/cacheReset";
 
 const Index = lazy(() => retryLazyImport(() => import("./pages/Index")));
@@ -80,6 +81,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <MerchantSessionWatchdog />
               <Suspense fallback={<LazyFallback />}>
                 <Routes>
                   <Route path="/" element={<AppLayout />}>
