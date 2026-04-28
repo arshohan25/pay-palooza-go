@@ -702,20 +702,6 @@ export default function MerchantLoginPage() {
                 </div>
               </>
             )}
-            {/* Perks strip */}
-            <div className="mt-2.5 flex items-center justify-between rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.03] to-white/[0.06] px-3 py-1.5">
-              {[
-                { icon: ShoppingBag, label: "Orders" },
-                { icon: Wallet, label: "Payouts" },
-                { icon: QrCode, label: "QR" },
-                { icon: BarChart3, label: "Insights" },
-              ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex flex-col items-center gap-0.5 text-white/70">
-                  <Icon className="h-3.5 w-3.5 text-amber-200" />
-                  <span className="text-[9px] font-medium uppercase tracking-wider">{label}</span>
-                </div>
-              ))}
-            </div>
             </fieldset>
           </form>
           )}
