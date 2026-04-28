@@ -49,6 +49,31 @@ export const STAFF_PERMISSIONS: StaffPermissionDef[] = [
 
 export const PERMISSION_KEYS = STAFF_PERMISSIONS.map(p => p.key);
 
+/**
+ * Permissions that ONLY the store owner may hold. Staff cannot be granted these
+ * regardless of UI state — the database `validate_merchant_staff_permissions`
+ * trigger strips them on insert/update. Keep this list aligned with the trigger.
+ */
+export const OWNER_ONLY_KEYS = ["staff_manage", "api_access"] as const;
+
+export const OWNER_ONLY_LABELS: Record<string, string> = {
+  staff_manage: "Manage staff",
+  api_access: "API access",
+};
+
+/** Returns the owner-only keys present (and truthy) in a permission map. */
+export function findOwnerOnlyKeys(perms: Record<string, boolean> | null | undefined): string[] {
+  if (!perms) return [];
+  return OWNER_ONLY_KEYS.filter(k => perms[k] === true);
+}
+
+/** Strip owner-only keys from a permission map (mirrors the DB trigger). */
+export function stripOwnerOnlyKeys(perms: Record<string, boolean>): Record<string, boolean> {
+  const out: Record<string, boolean> = { ...perms };
+  for (const k of OWNER_ONLY_KEYS) delete out[k];
+  return out;
+}
+
 export const ROLE_DEFAULTS: Record<StaffRole, string[]> = {
   Manager: [
     "orders_view","orders_manage","refunds_view","refunds_manage","inbox",
