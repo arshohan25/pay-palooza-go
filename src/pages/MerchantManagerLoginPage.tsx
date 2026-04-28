@@ -207,9 +207,10 @@ export default function MerchantManagerLoginPage() {
       }
       if (result.kind === "wrong_credentials") {
         if (result.attempts_remaining != null) setAttemptsRemaining(result.attempts_remaining);
+        setWrongPin(true);
         const msg = result.attempts_remaining != null && result.message === "Wrong phone or PIN"
-          ? `Wrong phone or PIN — ${result.attempts_remaining} attempt${result.attempts_remaining === 1 ? "" : "s"} left`
-          : result.message || "Sign-in failed";
+          ? `Incorrect PIN — ${result.attempts_remaining} attempt${result.attempts_remaining === 1 ? "" : "s"} left`
+          : result.message || "Incorrect PIN";
         toast.error(msg);
         setPin("");
         return;
