@@ -1,113 +1,94 @@
-# Device-Bound First-Login OTP Across All Portals
+# Server-Gated Device Verification with Signed Trust Tokens
 
-Add a 6-digit OTP step that runs **only on the first sign-in from a given device**. Once the device + phone pair is trusted, subsequent logins skip OTP and go straight from PIN to session — across **User, Merchant, Agent, Distributor, and Super Distributor** portals.
+## Goal
 
-## Important reality check (SIM detection)
+Make device verification a **hard server-side gate** before any merchant (and other portal) session is created on first login, and let returning users skip OTP via a **server-signed verified-device token** — not a client-side localStorage flag.
 
-Browsers **cannot** detect SIM card removal or carrier changes — that capability does not exist in the Web Platform (and even native apps require carrier-specific permissions). The closest practical equivalent is **device fingerprinting** (canvas + screen + platform hash), which we already use.
+Today: `merchant-login` returns session tokens immediately; the client decides whether to call OTP and whether to mark the device trusted. A tampered client can skip OTP entirely. The "trusted device" check also fronts a `localStorage` flag that bypasses the server round-trip.
 
-So the rule will be: **"trusted as long as the same device + same phone is used."** If the user clears browser data, switches devices/browsers, or the fingerprint changes, OTP will be re-required. This satisfies the spirit of "no re-OTP unless something changes," and is what bKash/Nagad-class apps actually do on web/PWA.
+After: the server is the source of truth. Sessions are only handed back when the device is proven trusted (returning user) or proven OTP-verified (first login).
 
-## Flow
+## What changes
 
-```text
-PIN entered correctly
-        │
-        ▼
-Is (device_fp + phone) trusted? ──Yes──► Confirm step ──► Create session
-        │No
-        ▼
-Send 6-digit OTP ──► User enters code ──► Verify ──► Mark device trusted
-                          ▲                                │
-                          │       Resend (60s cooldown)    ▼
-                          └────────────────────────────  Confirm step
-                                                            │
-                                                            ▼
-                                                      Create session
-```
+### 1. Database
 
-The "confirmation step" is a brief glass card showing phone + portal name with a single "Continue to dashboard" button so the user explicitly authorises session creation after device verification.
+Add columns to `trusted_devices`:
+- `token_hash text` — SHA-256 of the verified-device token issued to this device
+- `token_expires_at timestamptz` — rotation window (e.g. 90 days)
+- `revoked_at timestamptz null`
 
-## Backend
+Index on `(user_id, portal, device_fp)` already exists via the unique constraint; add a partial index on `token_hash` for lookup.
 
-### New table: `trusted_devices`
-```text
-id              uuid pk
-user_id         uuid → auth.users
-phone           text
-device_fp       text
-portal          text   -- 'user' | 'merchant' | 'agent' | 'distributor' | 'super_distributor'
-last_seen_at    timestamptz
-created_at      timestamptz
-unique (user_id, device_fp, portal)
-```
-RLS: `USING (false)` — only edge functions (service role) read/write it.
+### 2. Edge functions
 
-### New edge functions
+**New: `device-trust-token` (POST)**
+- Input: `{ phone, device_fp, portal, token }` — called with **no** user JWT
+- Looks up `profiles.id` by phone, then row in `trusted_devices` matching `(user_id, device_fp, portal)` where `revoked_at IS NULL` and `token_expires_at > now()` and `token_hash = sha256(token)`
+- Returns `{ trusted: true, user_id }` only if all match. Bumps `last_seen_at`.
+- This is what `merchant-login` calls internally to honor the trust token.
 
-1. **`check-trusted-device`** — input `{ phone, device_fp, portal }` → looks up the user by phone, returns `{ trusted: boolean, user_id? }`. Used **before** sending OTP so trusted devices skip it entirely.
-2. **`mark-trusted-device`** — input `{ user_id, phone, device_fp, portal }` (called by login functions only after successful auth + OTP verification) → upserts row, bumps `last_seen_at`.
+**Updated: `merchant-login`**
+- New required field in body: `device_fp` (string, ≥16 chars)
+- New optional field: `device_token` (the previously issued trust token) and `otp_ticket` (one-time ticket from `verify-otp`, see below)
+- After successful PIN auth + merchant role check, **before returning session tokens**:
+  - If `device_token` present → validate via the same logic as `device-trust-token`. If matches the authenticated `user.id`, return session tokens + `device_verified: true`.
+  - Else if `otp_ticket` present → validate ticket (see #3). On match, **issue a new device trust token** (random 32-byte base64url), store its SHA-256 + 90-day expiry on a new `trusted_devices` row, return session tokens + `{ device_token, device_token_expires_at }`.
+  - Else → **do not return session tokens**. Respond `200 { ok: true, requires_device_verification: true, otp_required: true }` plus a short-lived `pending_login_id` (signed JWT, 5 min) that the client must present alongside the OTP ticket on the retry.
+- All branches: never expose any `access_token`/`refresh_token` until device is proven.
 
-### Updated edge functions
+**Updated: `verify-otp`**
+- On success for `purpose = device_verify_*`, return a one-time `otp_ticket` (signed JWT, 2 min, payload `{ phone, portal, purpose, jti }`, `jti` recorded in a small `otp_tickets_used` table to prevent reuse).
+- The client passes this ticket back to `merchant-login` (and the equivalent for other portals).
 
-- **`merchant-login`** — accepts an optional `otp_verified: true` flag and `device_fp`. If the device isn't already trusted for that user/portal, the function **refuses to issue a session** unless `otp_verified` is true. On success, calls `mark-trusted-device`.
-- **`send-otp`** — add new purpose values: `device_verify_user`, `device_verify_merchant`, `device_verify_agent`, `device_verify_distributor`, `device_verify_super_distributor`. Same OTP/rate-limit logic as today.
-- **`verify-otp`** — already supports any purpose; no signature change.
+**Deprecated:** `check-trusted-device` and `mark-trusted-device` are no longer the trust source. We keep `check-trusted-device` only as a UX hint ("this device looks trusted, will skip OTP") returning `{ trusted_hint: boolean }`. `mark-trusted-device` is removed (server now mints tokens itself).
 
-## Frontend
+### 3. Client
 
-### Shared hook: `src/hooks/use-device-otp-verification.ts`
-Encapsulates: compute `device_fp`, call `check-trusted-device`, manage OTP send/verify, 60s resend cooldown, error states. Returns `{ status, sendOtp, verifyOtp, resendIn, ... }` so each login screen plugs it in identically.
+`use-device-otp-verification.ts`
+- Replace the `localStorage` "trusted" flag with a stored opaque token: `mfs_devtok_{portal}_{phone}` = `{ token, expires_at }`.
+- New helpers:
+  - `getStoredDeviceToken(phone)` → `{ token } | null` (returns null if expired)
+  - `storeDeviceToken(phone, token, exp)`
+  - `clearDeviceToken(phone)` (called on logout / on 401 from token check)
+- `checkTrusted(phone)` becomes a UX hint only; the real gate happens in the login function call.
 
-### Shared UI: `src/components/DeviceOtpStep.tsx`
-Reusable glass card with:
-- 6-digit `InputOTP` boxes (auto-advance, paste support, dev-mode prefill from response)
-- "Code sent to ••• XXXX" with masked phone
-- **Resend button** disabled until 60s timer expires (live `MM:SS` countdown)
-- Error toast for wrong code; auto-clear on retry
-- Loader on Verify
+`MerchantLoginPage.tsx` flow:
+1. User submits PIN.
+2. Read stored device token (if any).
+3. Call `merchant-login` with `{ phone, pin, device_fp, device_token? }`.
+4. **If response has session tokens** → straight to confirm step → `setSession` → dashboard. (Returning trusted user, no OTP shown.)
+5. **If response is `requires_device_verification`** → send OTP, show `DeviceOtpStep`, on verify get an `otp_ticket`, then call `merchant-login` again with `{ phone, pin, device_fp, otp_ticket, pending_login_id }`. Server returns session tokens + new `device_token` → store it, confirm, dashboard.
+6. On any 401 from a stored token, drop it and fall back to OTP.
 
-### Shared confirmation step: `src/components/DeviceVerifiedConfirm.tsx`
-Premium "Device verified ✓" card showing portal badge + masked phone + a single primary "Continue to dashboard" button. Prevents accidental auto-redirect after verification — user explicitly proceeds.
+Apply the same client wiring to `AuthPage.tsx` for user / agent / distributor / super-distributor (each portal has its own login function — same pattern: add `device_fp` + `device_token`/`otp_ticket` to the request, gate session creation server-side).
 
-### Per-portal wiring
+### 4. Logout / device revoke
 
-| Portal              | File                                | Hook into                                       |
-|---------------------|-------------------------------------|------------------------------------------------|
-| User                | `src/pages/AuthPage.tsx`            | After PIN success in `login_pin` mode          |
-| Merchant            | `src/pages/MerchantLoginPage.tsx`   | After `handleSignIn` PIN+phone validates       |
-| Agent (login)       | `src/pages/AgentDashboard.tsx` entry guard / agent login | After PIN, before dashboard mount      |
-| Distributor         | `src/pages/DistributorDashboard.tsx` entry / login flow  | Same pattern                                   |
-| Super Distributor   | `src/pages/SuperDistributorDashboard.tsx` entry / login  | Same pattern                                   |
+- On manual logout, call a tiny `revoke-device-token` function that sets `revoked_at = now()` for the row matching the current token hash, then clear local storage.
+- Admin already has visibility into `trusted_devices`; nothing extra needed there.
 
-For Agent / Distributor / Super Distributor that currently reuse `AuthPage` or merchant-style login, we route through the same `useDeviceOtpVerification` hook with the appropriate `portal` value so behavior is identical.
+## Security properties
 
-### Where the OTP delivery happens
+- A tampered or replayed client cannot obtain a session without either a valid unrevoked device token *or* a fresh OTP ticket — both bound to `(user_id, device_fp, portal)` server-side.
+- Trust tokens are opaque, hashed at rest, expire in 90 days, and are revocable.
+- OTP tickets are single-use (jti tracked) and expire in 2 minutes.
+- Device fingerprint is checked server-side as part of token validation, so swapping devices invalidates the token even if the token leaks.
 
-`send-otp` currently logs the OTP to function logs in dev (`dev_otp` is also returned in the JSON response). We'll keep that for testing — production SMS is wired through the same function and will send via the existing SMS pipeline used by `pin_reset` and `payment` purposes.
+## Files
 
-## Trust persistence semantics
+**New**
+- `supabase/functions/device-trust-token/index.ts`
+- `supabase/functions/revoke-device-token/index.ts`
+- `supabase/migrations/<ts>_trusted_device_tokens.sql` (columns + `otp_tickets_used` table)
 
-- Trust is keyed on `(user_id, device_fp, portal)`.
-- The `device_fp` is canvas+screen+platform hash already produced by `getDeviceFingerprint()`.
-- Cleared browser storage → new fingerprint → OTP re-required (correct behaviour).
-- Different browser/device → different fingerprint → OTP re-required.
-- Same device, same phone, repeated logins → **no OTP, ever again**. Matches the "won't ask again unless SIM removed" intent as closely as the web platform allows.
+**Edited**
+- `supabase/functions/merchant-login/index.ts` (gate session, accept token/ticket, mint token)
+- `supabase/functions/verify-otp/index.ts` (issue otp_ticket for `device_verify_*` purposes)
+- `supabase/functions/check-trusted-device/index.ts` (downgrade to hint-only)
+- `supabase/functions/user-login`, `agent-login`, `distributor-login`, `super-distributor-login` (same gating as merchant-login — exact filenames confirmed during implementation)
+- `src/hooks/use-device-otp-verification.ts` (token storage, ticket plumbing)
+- `src/pages/MerchantLoginPage.tsx` (two-call flow, no client-side trust decision)
+- `src/pages/AuthPage.tsx` (same for the other four portals)
 
-## Files to add
-
-- `supabase/migrations/<ts>_trusted_devices.sql`
-- `supabase/functions/check-trusted-device/index.ts`
-- `supabase/functions/mark-trusted-device/index.ts`
-- `src/hooks/use-device-otp-verification.ts`
-- `src/components/DeviceOtpStep.tsx`
-- `src/components/DeviceVerifiedConfirm.tsx`
-
-## Files to edit
-
-- `supabase/functions/merchant-login/index.ts` — gate session on `otp_verified` for untrusted devices; call `mark-trusted-device` on success
-- `supabase/functions/send-otp/index.ts` — accept new `device_verify_*` purposes
-- `src/pages/MerchantLoginPage.tsx` — insert OTP + confirm steps
-- `src/pages/AuthPage.tsx` — insert OTP + confirm steps in user `login_pin` flow
-- Agent / Distributor / Super-Distributor login entry points — same hook integration
-- `mem://auth/system` — document the trusted-device + first-login OTP rule
+**Removed**
+- `supabase/functions/mark-trusted-device/index.ts` (server now mints tokens itself)

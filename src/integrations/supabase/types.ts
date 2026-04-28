@@ -3883,6 +3883,30 @@ export type Database = {
         }
         Relationships: []
       }
+      otp_tickets_used: {
+        Row: {
+          expires_at: string
+          jti: string
+          phone: string
+          portal: string
+          used_at: string
+        }
+        Insert: {
+          expires_at: string
+          jti: string
+          phone: string
+          portal: string
+          used_at?: string
+        }
+        Update: {
+          expires_at?: string
+          jti?: string
+          phone?: string
+          portal?: string
+          used_at?: string
+        }
+        Relationships: []
+      }
       payment_gateways: {
         Row: {
           config: Json
@@ -5612,6 +5636,9 @@ export type Database = {
           last_seen_at: string
           phone: string
           portal: string
+          revoked_at: string | null
+          token_expires_at: string | null
+          token_hash: string | null
           user_id: string
         }
         Insert: {
@@ -5621,6 +5648,9 @@ export type Database = {
           last_seen_at?: string
           phone: string
           portal: string
+          revoked_at?: string | null
+          token_expires_at?: string | null
+          token_hash?: string | null
           user_id: string
         }
         Update: {
@@ -5630,6 +5660,9 @@ export type Database = {
           last_seen_at?: string
           phone?: string
           portal?: string
+          revoked_at?: string | null
+          token_expires_at?: string | null
+          token_hash?: string | null
           user_id?: string
         }
         Relationships: []

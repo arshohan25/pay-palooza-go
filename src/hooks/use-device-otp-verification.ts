@@ -17,32 +17,53 @@ const PURPOSE_BY_PORTAL: Record<DeviceOtpPortal, string> = {
   super_distributor: "device_verify_super_distributor",
 };
 
-const TRUST_KEY = (phone: string, portal: DeviceOtpPortal) =>
-  `mfs_trusted_${portal}_${phone}`;
+const TOKEN_KEY = (phone: string, portal: DeviceOtpPortal) =>
+  `mfs_devtok_${portal}_${phone}`;
+
+interface StoredToken { token: string; expires_at: string }
+
+export function getStoredDeviceToken(phone: string, portal: DeviceOtpPortal): string | null {
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY(phone, portal));
+    if (!raw) return null;
+    const parsed: StoredToken = JSON.parse(raw);
+    if (!parsed?.token) return null;
+    if (parsed.expires_at && new Date(parsed.expires_at).getTime() < Date.now()) {
+      localStorage.removeItem(TOKEN_KEY(phone, portal));
+      return null;
+    }
+    return parsed.token;
+  } catch { return null; }
+}
+
+export function storeDeviceToken(
+  phone: string, portal: DeviceOtpPortal, token: string, expires_at: string,
+) {
+  try {
+    localStorage.setItem(TOKEN_KEY(phone, portal), JSON.stringify({ token, expires_at }));
+  } catch {}
+}
+
+export function clearDeviceToken(phone: string, portal: DeviceOtpPortal) {
+  try { localStorage.removeItem(TOKEN_KEY(phone, portal)); } catch {}
+}
 
 export type DeviceOtpStatus =
-  | "idle"
-  | "checking"
-  | "sending"
-  | "awaiting_code"
-  | "verifying"
-  | "verified"
-  | "trusted"
-  | "error";
+  | "idle" | "checking" | "sending" | "awaiting_code"
+  | "verifying" | "verified" | "trusted" | "error";
 
 export interface UseDeviceOtpVerificationResult {
   status: DeviceOtpStatus;
   error: string | null;
   resendIn: number;
   devOtp: string | null;
-  /** Returns true if the device is already trusted for (phone, portal). */
+  /** Server-validated trust check using stored token. Returns true if verified by server. */
   checkTrusted: (phone: string) => Promise<boolean>;
-  /** Sends a fresh OTP for (phone, portal). */
   sendOtp: (phone: string) => Promise<void>;
-  /** Verifies the entered code; on success, status → "verified". */
-  verifyOtp: (phone: string, code: string) => Promise<boolean>;
-  /** Marks the device as trusted (call after backend session is established). */
-  markTrusted: (phone: string) => Promise<void>;
+  /** Verifies code → returns one-time otp_ticket on success, or null on failure. */
+  verifyOtp: (phone: string, code: string) => Promise<string | null>;
+  /** Persists a server-issued device trust token. */
+  saveTrustToken: (phone: string, token: string, expires_at: string) => void;
   reset: () => void;
 }
 
@@ -70,126 +91,84 @@ export function useDeviceOtpVerification(
   const purpose = PURPOSE_BY_PORTAL[portal];
 
   const reset = useCallback(() => {
-    setStatus("idle");
-    setError(null);
-    setResendIn(0);
-    setDevOtp(null);
+    setStatus("idle"); setError(null); setResendIn(0); setDevOtp(null);
   }, []);
 
-  const checkTrusted = useCallback(
-    async (phone: string) => {
-      // Local fast-path: if we previously trusted this device for this phone+portal,
-      // skip the round-trip. Server is source of truth for fresh devices.
-      try {
-        const local = localStorage.getItem(TRUST_KEY(phone, portal));
-        if (local === "1") {
-          setStatus("trusted");
-          return true;
-        }
-      } catch {}
-
-      setStatus("checking");
-      setError(null);
-      try {
-        const device_fp = await getDeviceFingerprint();
-        const { data, error: invokeErr } = await supabase.functions.invoke(
-          "check-trusted-device",
-          { body: { phone, device_fp, portal } },
-        );
-        if (invokeErr) throw invokeErr;
-        const trusted = !!(data as any)?.trusted;
-        if (trusted) {
-          try { localStorage.setItem(TRUST_KEY(phone, portal), "1"); } catch {}
-          setStatus("trusted");
-        } else {
-          setStatus("idle");
-        }
-        return trusted;
-      } catch (err: any) {
-        console.error("checkTrusted failed", err);
-        // Fail-closed but don't block: treat as untrusted so OTP path runs.
+  const checkTrusted = useCallback(async (phone: string) => {
+    const token = getStoredDeviceToken(phone, portal);
+    if (!token) { setStatus("idle"); return false; }
+    setStatus("checking");
+    setError(null);
+    try {
+      const device_fp = await getDeviceFingerprint();
+      const { data, error: invokeErr } = await supabase.functions.invoke(
+        "device-trust-token",
+        { body: { phone, device_fp, portal, token } },
+      );
+      if (invokeErr) throw invokeErr;
+      const trusted = !!(data as any)?.trusted;
+      if (trusted) {
+        setStatus("trusted");
+      } else {
+        // Stored token rejected — drop it.
+        clearDeviceToken(phone, portal);
         setStatus("idle");
-        return false;
       }
-    },
-    [portal],
-  );
+      return trusted;
+    } catch (err) {
+      console.error("checkTrusted failed", err);
+      setStatus("idle");
+      return false;
+    }
+  }, [portal]);
 
-  const sendOtp = useCallback(
-    async (phone: string) => {
-      setStatus("sending");
-      setError(null);
-      setDevOtp(null);
-      try {
-        const { data, error: invokeErr } = await supabase.functions.invoke("send-otp", {
-          body: { phone, purpose },
-        });
-        if (invokeErr) throw invokeErr;
-        const payload = data as any;
-        if (payload?.error) throw new Error(payload.error);
-        if (payload?.dev_otp) setDevOtp(String(payload.dev_otp));
-        setResendIn(RESEND_SECONDS);
+  const sendOtp = useCallback(async (phone: string) => {
+    setStatus("sending"); setError(null); setDevOtp(null);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke("send-otp", {
+        body: { phone, purpose },
+      });
+      if (invokeErr) throw invokeErr;
+      const payload = data as any;
+      if (payload?.error) throw new Error(payload.error);
+      if (payload?.dev_otp) setDevOtp(String(payload.dev_otp));
+      setResendIn(RESEND_SECONDS);
+      setStatus("awaiting_code");
+    } catch (err: any) {
+      setError(err?.message || "Failed to send code");
+      setStatus("error");
+      throw err;
+    }
+  }, [purpose]);
+
+  const verifyOtp = useCallback(async (phone: string, code: string) => {
+    setStatus("verifying"); setError(null);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke("verify-otp", {
+        body: { phone, code, purpose },
+      });
+      if (invokeErr) throw invokeErr;
+      const payload = data as any;
+      if (!payload?.verified) {
+        setError(payload?.error || "Incorrect code");
         setStatus("awaiting_code");
-      } catch (err: any) {
-        setError(err?.message || "Failed to send code");
-        setStatus("error");
-        throw err;
+        return null;
       }
-    },
-    [purpose],
-  );
+      setStatus("verified");
+      return (payload?.otp_ticket as string) || null;
+    } catch (err: any) {
+      setError(err?.message || "Verification failed");
+      setStatus("awaiting_code");
+      return null;
+    }
+  }, [purpose]);
 
-  const verifyOtp = useCallback(
-    async (phone: string, code: string) => {
-      setStatus("verifying");
-      setError(null);
-      try {
-        const { data, error: invokeErr } = await supabase.functions.invoke("verify-otp", {
-          body: { phone, code, purpose },
-        });
-        if (invokeErr) throw invokeErr;
-        const payload = data as any;
-        if (!payload?.verified) {
-          setError(payload?.error || "Incorrect code");
-          setStatus("awaiting_code");
-          return false;
-        }
-        setStatus("verified");
-        return true;
-      } catch (err: any) {
-        setError(err?.message || "Verification failed");
-        setStatus("awaiting_code");
-        return false;
-      }
-    },
-    [purpose],
-  );
-
-  const markTrusted = useCallback(
-    async (phone: string) => {
-      try {
-        const device_fp = await getDeviceFingerprint();
-        await supabase.functions.invoke("mark-trusted-device", {
-          body: { phone, device_fp, portal },
-        });
-        try { localStorage.setItem(TRUST_KEY(phone, portal), "1"); } catch {}
-      } catch (err) {
-        // Non-fatal — user is already authenticated; we'll re-prompt next time.
-        console.warn("markTrusted failed", err);
-      }
-    },
-    [portal],
-  );
+  const saveTrustToken = useCallback((phone: string, token: string, expires_at: string) => {
+    storeDeviceToken(phone, portal, token, expires_at);
+  }, [portal]);
 
   return {
-    status,
-    error,
-    resendIn,
-    devOtp,
-    checkTrusted,
-    sendOtp,
-    verifyOtp,
-    markTrusted,
-    reset,
+    status, error, resendIn, devOtp,
+    checkTrusted, sendOtp, verifyOtp, saveTrustToken, reset,
   };
 }
