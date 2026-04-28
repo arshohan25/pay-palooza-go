@@ -462,7 +462,7 @@ export default function MerchantManagerLoginPage() {
                     <button
                       type="button"
                       onClick={() => setForgotOpen(true)}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-100/80 transition-colors hover:text-sky-50"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-sky-200/40 bg-sky-300/10 px-2.5 py-1 text-[11px] font-semibold text-sky-100 transition-colors hover:border-sky-200/60 hover:bg-sky-300/20 hover:text-sky-50"
                     >
                       <HelpCircle className="h-3 w-3" />
                       Forgot PIN?
