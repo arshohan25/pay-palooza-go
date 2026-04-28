@@ -53,6 +53,17 @@ export default function MerchantLoginPage() {
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const tickerRef = useRef<number | null>(null);
 
+  // Device-bound OTP flow
+  type Step = "signin" | "otp" | "confirm";
+  const [step, setStep] = useState<Step>("signin");
+  const pendingSessionRef = useRef<{
+    access_token: string;
+    refresh_token: string;
+    cleanedPhone: string;
+  } | null>(null);
+  const otp = useDeviceOtpVerification("merchant");
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
   // Restore device-bound phone + persisted lockout
   useEffect(() => {
     const bound = typeof window !== "undefined" ? localStorage.getItem("mfs_device_phone") : null;
