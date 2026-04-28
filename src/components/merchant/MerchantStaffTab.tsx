@@ -320,9 +320,29 @@ function PermissionPicker({
       <Dialog open={!!pendingPreset} onOpenChange={(o) => { if (!o) setPendingPreset(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-base">Apply {pendingPreset?.label}?</DialogTitle>
+            <div className="flex items-center gap-2 flex-wrap">
+              <DialogTitle className="text-base">Apply {pendingPreset?.label}?</DialogTitle>
+              {pendingPreset && (
+                <Badge
+                  variant="outline"
+                  className={
+                    pendingPreset.source.kind === "builtin"
+                      ? "text-[10px] border-primary/30 bg-primary/10 text-primary gap-1"
+                      : "text-[10px] border-violet-500/30 bg-violet-500/10 text-violet-700 gap-1"
+                  }
+                >
+                  {pendingPreset.source.kind === "builtin" ? (
+                    <><Shield size={10} /> Built-in role</>
+                  ) : (
+                    <><Bookmark size={10} /> Custom preset</>
+                  )}
+                </Badge>
+              )}
+            </div>
             <DialogDescription className="text-xs">
-              Review what will change before applying.
+              {pendingPreset?.source.kind === "builtin"
+                ? `System default for the ${pendingPreset.source.name} role · ${pendingPreset.source.total} features.`
+                : `Saved preset "${pendingPreset?.source.name}" · ${pendingPreset?.source.total} features.`} Review what will change before applying.
             </DialogDescription>
           </DialogHeader>
 
