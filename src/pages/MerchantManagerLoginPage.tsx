@@ -538,6 +538,14 @@ export default function MerchantManagerLoginPage() {
           </div>
         </div>
       </div>
+
+      <MerchantForgotPinSheet
+        open={forgotOpen}
+        onOpenChange={setForgotOpen}
+        defaultPhone={phone}
+        source="merchant-manager-login"
+        accent="sky"
+      />
     </div>
   );
 }
