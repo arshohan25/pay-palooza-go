@@ -15,7 +15,7 @@ const logo = "/icons/easypay-logo.webp";
 import KycFlow from "@/components/KycFlow";
 import { useDeviceOtpVerification, type DeviceOtpPortal } from "@/hooks/use-device-otp-verification";
 import DeviceOtpStep from "@/components/DeviceOtpStep";
-import DeviceVerifiedConfirm from "@/components/DeviceVerifiedConfirm";
+
 
 // ─── Storage keys (only for UX preferences, NOT auth) ─────────────────────────
 const LANG_KEY       = "mfs_ui_lang";
@@ -402,8 +402,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [serverOtp, setServerOtp] = useState(""); // DEV: stores OTP returned from server
 
   // ── Device-bound first-login OTP ────────────────────────────────────────────
-  // Phase: 'none' | 'otp' | 'confirm' — overlays the auth flow after PIN success.
-  const [devicePhase, setDevicePhase] = useState<"none" | "otp" | "confirm">("none");
+  // Phase: 'none' | 'otp' — overlays the auth flow after PIN success.
+  const [devicePhase, setDevicePhase] = useState<"none" | "otp">("none");
   const [devicePortal, setDevicePortal] = useState<DeviceOtpPortal>("user");
   const [devicePhone, setDevicePhone] = useState<string>("");
   const [deviceConfirmLoading, setDeviceConfirmLoading] = useState(false);
@@ -596,8 +596,9 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       // Check if device is already trusted for this user/portal.
       const trusted = await deviceOtp.checkTrusted(loginPhone);
       if (trusted) {
-        setDevicePhase("confirm");
         setIsSubmitting(false);
+        goTo("success");
+        setTimeout(onAuthenticated, 1200);
         return;
       }
 
@@ -638,13 +639,15 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
 
   // ── Device OTP handlers ──────────────────────────────────────────────────
   const otpTicketRef = useRef<string | null>(null);
+  const handleDeviceContinueRef = useRef<(() => void) | null>(null);
 
   const handleDeviceVerify = useCallback(async (code: string) => {
     if (!devicePhone) return;
     const ticket = await deviceOtp.verifyOtp(devicePhone, code);
     if (ticket) {
       otpTicketRef.current = ticket;
-      setDevicePhase("confirm");
+      // Skip the "all set" confirmation — go straight through.
+      handleDeviceContinueRef.current?.();
     }
   }, [devicePhone, deviceOtp]);
 
@@ -684,6 +687,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       setDeviceConfirmLoading(false);
     }
   }, [devicePhone, devicePortal, deviceOtp, goTo, onAuthenticated]);
+
+  useEffect(() => {
+    handleDeviceContinueRef.current = handleDeviceContinue;
+  }, [handleDeviceContinue]);
 
   const portalLabel = useMemo(() => {
     switch (devicePortal) {
@@ -812,14 +819,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 devOtp={deviceOtp.devOtp}
                 onVerify={handleDeviceVerify}
                 onResend={handleDeviceResend}
-              />
-            )}
-            {devicePhase === "confirm" && (
-              <DeviceVerifiedConfirm
-                phone={devicePhone}
-                portalLabel={portalLabel}
-                loading={deviceConfirmLoading}
-                onContinue={handleDeviceContinue}
               />
             )}
           </div>
