@@ -162,6 +162,7 @@ Deno.serve(async (req) => {
   const device_fp = typeof body?.device_fp === "string" ? body.device_fp.trim() : "";
   const device_token = typeof body?.device_token === "string" ? body.device_token.trim() : "";
   const otp_ticket = typeof body?.otp_ticket === "string" ? body.otp_ticket.trim() : "";
+  const mode: "owner" | "staff" = body?.mode === "staff" ? "staff" : "owner";
 
   if (!phone) {
     return json(400, { ok: false, message: "Enter a valid 11-digit Bangladeshi mobile number." });
