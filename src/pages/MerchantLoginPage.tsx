@@ -379,19 +379,28 @@ export default function MerchantLoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-emerald-950 text-white">
-      {/* Bokeh blobs */}
+    <div
+      className="relative min-h-screen w-full overflow-hidden text-white"
+      style={{
+        background:
+          "linear-gradient(150deg, hsl(24 90% 50%) 0%, hsl(16 82% 40%) 40%, hsl(350 65% 35%) 100%)",
+      }}
+    >
+      {/* Warm bokeh blobs matching dashboard header */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-24 h-[420px] w-[420px] rounded-full bg-emerald-500/30 blur-[120px]"
+        className="pointer-events-none absolute -top-32 -left-24 h-[420px] w-[420px] rounded-full blur-[120px]"
+        style={{ background: "radial-gradient(circle, hsl(36 95% 60%) 0%, transparent 70%)" }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-40 -right-24 h-[460px] w-[460px] rounded-full bg-indigo-500/30 blur-[140px]"
+        className="pointer-events-none absolute -bottom-40 -right-24 h-[460px] w-[460px] rounded-full blur-[140px]"
+        style={{ background: "radial-gradient(circle, hsl(350 65% 45%) 0%, transparent 70%)" }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-1/2 left-1/2 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-fuchsia-500/10 blur-[120px]"
+        className="pointer-events-none absolute top-1/2 left-1/2 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px]"
+        style={{ background: "radial-gradient(circle, hsl(0 0% 100% / 0.15) 0%, transparent 70%)" }}
       />
 
       {/* Subtle grid texture */}
@@ -412,10 +421,10 @@ export default function MerchantLoginPage() {
         >
           {/* Logo + eyebrow */}
           <div className="mb-6 flex flex-col items-center text-center animate-scale-in">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[19px] border border-white/15 bg-white/10 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.6)] backdrop-blur-2xl">
-              <Store className="h-8 w-8 text-emerald-300" strokeWidth={1.8} />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[19px] border border-white/15 bg-white/10 shadow-[0_10px_40px_-10px_rgba(251,146,60,0.7)] backdrop-blur-2xl">
+              <Store className="h-8 w-8 text-amber-200" strokeWidth={1.8} />
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/30 bg-amber-300/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-amber-100">
               <Sparkles className="h-3 w-3" />
               Merchant Portal
             </span>
@@ -491,9 +500,9 @@ export default function MerchantLoginPage() {
               <Label htmlFor="merchant-phone" className="text-xs font-medium uppercase tracking-wider text-white/60">
                 Mobile number
               </Label>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1.5 transition-colors focus-within:border-emerald-300/40 focus-within:bg-white/[0.06]">
+              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1.5 transition-colors focus-within:border-amber-200/50 focus-within:bg-white/[0.06]">
                 <div className="flex items-center gap-1.5 border-r border-white/10 pr-3 text-sm text-white/70">
-                  <Phone className="h-4 w-4 text-emerald-300" />
+                  <Phone className="h-4 w-4 text-amber-200" />
                   <span className="font-medium">+880</span>
                 </div>
                 <Input
@@ -525,7 +534,7 @@ export default function MerchantLoginPage() {
                   {showPin ? "Hide" : "Show"}
                 </button>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition-colors focus-within:border-emerald-300/40">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition-colors focus-within:border-amber-200/50">
                 <InputOTP
                   maxLength={4}
                   value={pin}
@@ -556,7 +565,7 @@ export default function MerchantLoginPage() {
             <Button
               type="submit"
               disabled={loading || isLocked}
-              className="mt-6 h-12 w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(16,185,129,0.7)] transition-transform hover:scale-[1.01] hover:from-emerald-400 hover:to-teal-400 disabled:opacity-70"
+              className="mt-6 h-12 w-full rounded-2xl bg-gradient-to-r from-orange-500 via-rose-500 to-rose-600 text-base font-semibold text-white shadow-[0_10px_30px_-10px_rgba(244,63,94,0.7)] transition-transform hover:scale-[1.01] hover:from-orange-400 hover:via-rose-400 hover:to-rose-500 disabled:opacity-70"
             >
               {isLocked ? (
                 <>
@@ -587,7 +596,7 @@ export default function MerchantLoginPage() {
                   key={label}
                   className="flex items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2 py-1.5 text-[10.5px] font-medium text-white/70"
                 >
-                  <Icon className="h-3 w-3 text-emerald-300" />
+                  <Icon className="h-3 w-3 text-amber-200" />
                   {label}
                 </div>
               ))}
@@ -602,7 +611,7 @@ export default function MerchantLoginPage() {
                 { icon: BarChart3, label: "Insights" },
               ].map(({ icon: Icon, label }) => (
                 <div key={label} className="flex flex-col items-center gap-1 text-white/70">
-                  <Icon className="h-4 w-4 text-emerald-300" />
+                  <Icon className="h-4 w-4 text-amber-200" />
                   <span className="text-[10px] font-medium uppercase tracking-wider">{label}</span>
                 </div>
               ))}
@@ -616,7 +625,7 @@ export default function MerchantLoginPage() {
             <button
               type="button"
               onClick={() => navigate("/merchant")}
-              className="group inline-flex items-center gap-1.5 text-sm font-medium text-emerald-300 transition-colors hover:text-emerald-200"
+              className="group inline-flex items-center gap-1.5 text-sm font-medium text-amber-200 transition-colors hover:text-amber-100"
             >
               New here? Apply as a merchant
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
