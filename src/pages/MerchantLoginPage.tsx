@@ -29,7 +29,7 @@ import {
   AlertTriangle,
   UserCog,
   HelpCircle,
-  
+  KeyRound,
 } from "lucide-react";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
@@ -537,32 +537,22 @@ export default function MerchantLoginPage() {
                 {boundPhone ? "Signed in as" : "Mobile number"}
               </Label>
               {boundPhone ? (
-                <>
-                  <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-200/25 bg-amber-300/[0.06] px-3 py-2.5">
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/10">
-                        <Phone className="h-3.5 w-3.5 text-amber-200" />
-                      </div>
-                      <div className="leading-tight">
-                        <div className="font-semibold tracking-wide text-white tabular-nums">
-                          +88 {maskBdPhone(boundPhone)}
-                        </div>
-                        <div className="text-[10px] tracking-wide text-amber-100/70">
-                          Middle digits hidden for privacy
-                        </div>
-                      </div>
+                <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-200/25 bg-amber-300/[0.06] px-3 py-2.5">
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/10">
+                      <Phone className="h-3.5 w-3.5 text-amber-200" />
                     </div>
-                    <div
-                      aria-label="Device locked to this account"
-                      className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/10 text-amber-200"
-                    >
-                      <Lock className="h-3.5 w-3.5" />
+                    <div className="font-semibold tracking-wide text-white tabular-nums">
+                      +88 {maskBdPhone(boundPhone)}
                     </div>
                   </div>
-                  <p className="px-1 pt-1 text-[11px] leading-snug text-white/50">
-                    This device is locked to this merchant account. To use a different number, clear app data in your browser settings.
-                  </p>
-                </>
+                  <div
+                    aria-label="Device locked to this merchant account"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/10 text-amber-200"
+                  >
+                    <Lock className="h-3.5 w-3.5" />
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors focus-within:border-amber-200/50 focus-within:bg-white/[0.06]">
                   <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
@@ -586,19 +576,9 @@ export default function MerchantLoginPage() {
 
             {/* PIN — auto-masked, no show/hide toggle */}
             <div className="mt-3 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                  4-digit PIN
-                </Label>
-                <button
-                  type="button"
-                  onClick={() => setForgotOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/40 bg-amber-300/10 px-2.5 py-1 text-[11px] font-semibold text-amber-100 transition-colors hover:border-amber-200/60 hover:bg-amber-300/20 hover:text-amber-50"
-                >
-                  <HelpCircle className="h-3 w-3" />
-                  Forgot PIN?
-                </button>
-              </div>
+              <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                4-digit PIN
+              </Label>
               <div className={`rounded-2xl border p-2 transition-colors focus-within:border-amber-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
                 <InputOTP
                   maxLength={4}
@@ -645,19 +625,6 @@ export default function MerchantLoginPage() {
               )}
             </Button>
 
-            {/* Prominent Forgot PIN help link — only for returning devices */}
-            {boundPhone && (
-              <button
-                type="button"
-                onClick={() => setForgotOpen(true)}
-                className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-amber-200/30 bg-amber-300/[0.06] px-3 py-2 text-[12px] font-medium text-amber-100/90 transition-colors hover:border-amber-200/50 hover:bg-amber-300/[0.12] hover:text-amber-50"
-              >
-                <HelpCircle className="h-3.5 w-3.5" />
-                Can't remember your PIN? Get help
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            )}
-
             {/* Trust pills + perks — only for first-time visitors */}
             {!boundPhone && (
               <>
@@ -696,8 +663,26 @@ export default function MerchantLoginPage() {
           </form>
           )}
 
-          {/* Footer: apply button + manager toggle */}
+          {/* Footer: forgot PIN (premium) + apply button + manager toggle */}
           <div className="mt-3 flex flex-col items-center gap-2 text-center">
+            <button
+              type="button"
+              onClick={() => setForgotOpen(true)}
+              className="group relative h-11 w-full overflow-hidden rounded-2xl border border-amber-200/40 bg-gradient-to-r from-amber-300/[0.10] via-orange-300/[0.12] to-rose-300/[0.10] px-4 text-sm font-semibold text-amber-50 shadow-[0_8px_24px_-12px_rgba(251,146,60,0.55)] backdrop-blur-xl transition-all hover:border-amber-200/70 hover:from-amber-300/[0.20] hover:via-orange-300/[0.24] hover:to-rose-300/[0.20] hover:shadow-[0_14px_36px_-12px_rgba(244,63,94,0.65)]"
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition-opacity group-hover:animate-[shimmer_1.4s_ease-out] group-hover:opacity-100"
+              />
+              <span className="relative z-10 inline-flex items-center justify-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-200/40 bg-amber-300/15 shadow-inner">
+                  <KeyRound className="h-3.5 w-3.5 text-amber-200" />
+                </span>
+                Forgot PIN? Reset securely
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </button>
+
             <Button
               type="button"
               variant="outline"

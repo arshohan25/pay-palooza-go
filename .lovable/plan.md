@@ -1,46 +1,76 @@
 ## Goals
 
-1. Fix the masked phone format to exactly `+88 019•••••954` (prefix `+88`, 5 middle dots, last 3 visible).
-2. Lock the device to the bound merchant account: once a device has a verified merchant binding, the user cannot switch numbers or sign into a different merchant from the login page. Switching requires clearing app data / browser storage.
+1. On a verified/bound device, declutter the merchant + manager login screens by removing the redundant explanatory copy and secondary help button.
+2. Move the **Forgot PIN / Reset PIN** action out of the form area and place it as a premium, full-width pill **above** the existing footer buttons ("New here? Apply as a merchant" on owner login, "Are you the store owner? Owner login" on manager login), so it sits in front of the arrow-style footer actions.
 
 ## Changes
 
-### 1. Mask format — `+88 019•••••954`
+### 1. Owner login — `src/pages/MerchantLoginPage.tsx`
 
-**`src/components/merchant/MerchantForgotPinSheet.tsx`**
-- Update `maskBdPhone()` to return 5 dots instead of 6:
-  `${clean.slice(0,3)}•••••${clean.slice(8)}` → produces `019•••••954`.
+Inside the masked-phone chip block (currently shows `+88 019•••••954`):
+- **Remove** the sub-label `"Middle digits hidden for privacy"` (line ~550-552).
+- **Remove** the paragraph `"This device is locked to this merchant account. To use a different number, clear app data..."` (line ~562-564).
+- Keep the `Lock` icon badge on the right of the chip — it already signals the lock visually. Optionally add `aria-label="Locked to this merchant account"` for screen readers (already present).
 
-**`src/pages/MerchantLoginPage.tsx`** and **`src/pages/MerchantManagerLoginPage.tsx`**
-- Change displayed prefix from `+880` to `+88` in the masked chip so the full label reads `+88 019•••••954`.
-- Keep "Middle digits hidden for privacy" sub-label.
-- Update the Forgot-PIN sheet's masked preview to also render `+88` (it currently shows whatever prefix the sheet uses).
+Inside the PIN section header (line ~593-600):
+- **Remove** the small "Forgot PIN?" pill button next to the "4-DIGIT PIN" label so the label sits clean on its own row.
 
-Verify any other `+880 {maskBdPhone(...)}` occurrences (manager login, forgot-pin sheet body) and align them all to `+88`.
+Below the "Sign in to dashboard" submit button:
+- **Remove** the existing `{boundPhone && (...)}` "Can't remember your PIN? Get help →" secondary button (lines ~648-659).
 
-### 2. Hard device lock once bound
+### 2. Manager login — `src/pages/MerchantManagerLoginPage.tsx`
 
-Currently the masked chip shows an `×` button that calls `localStorage.removeItem("mfs_device_phone")` + `clearDeviceToken(...)` and lets the user type a new number. We will remove that escape hatch on both merchant login pages.
+Inside the PIN section header (line ~458-470):
+- **Remove** the small "Forgot PIN?" pill button next to the "Your 4-digit PIN" label.
 
-**`src/pages/MerchantLoginPage.tsx`** + **`src/pages/MerchantManagerLoginPage.tsx`**
+### 3. New premium Forgot PIN button in footer — both pages
 
-When `boundPhone` is set:
-- Remove the `×` "use a different number" button entirely.
-- Replace the helper text "Not you? Tap × to use a different number." with a locked notice:
-  > "This device is locked to this merchant account. To use a different number, clear app data in your browser settings."
-- Add a small lock icon (`Lock` from lucide-react) inside the chip to signal the binding is permanent.
-- Keep the Forgot-PIN button visible (so a locked-out owner can still request help via support ticket).
+Add a new full-width pill **above** the existing footer "New here? Apply as a merchant" / "Owner login" buttons (i.e. as the first item inside the `<div className="mt-3 flex flex-col items-center gap-2 text-center">` footer block).
 
-We do not change the server flow — `merchant-login` already requires a matching device token + OTP ticket. The login form simply no longer offers a UI path to overwrite the local `mfs_device_phone` flag, so the bound phone is the only number that can be entered from this device.
+**Design — premium glass pill, brand-accent gradient ring, shimmer hover:**
 
-### Notes on scope
+```tsx
+<button
+  type="button"
+  onClick={() => setForgotOpen(true)}
+  className="group relative h-11 w-full overflow-hidden rounded-2xl border border-amber-200/40 bg-gradient-to-r from-amber-300/[0.08] via-orange-300/[0.10] to-rose-300/[0.08] px-4 text-sm font-semibold text-amber-50 shadow-[0_8px_24px_-12px_rgba(251,146,60,0.55)] backdrop-blur-xl transition-all hover:border-amber-200/60 hover:from-amber-300/[0.18] hover:via-orange-300/[0.22] hover:to-rose-300/[0.18] hover:shadow-[0_12px_32px_-12px_rgba(244,63,94,0.6)]"
+>
+  <span
+    aria-hidden
+    className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-0 transition-opacity group-hover:animate-[shimmer_1.4s_ease-out] group-hover:opacity-100"
+  />
+  <span className="relative z-10 inline-flex items-center justify-center gap-2">
+    <span className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-200/40 bg-amber-300/15">
+      <KeyRound className="h-3.5 w-3.5 text-amber-200" />
+    </span>
+    Forgot PIN? Reset securely
+    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+  </span>
+</button>
+```
 
-- Server-side `trusted_devices` row is already keyed to `(user_id, device_fp, portal)`, so even if the user manipulates localStorage manually they will still need a fresh OTP to bind a new account. The UI lock + the existing OTP gate together deliver the requested behavior.
-- "Clear app data" is the documented recovery path; this matches Bangladeshi MFS norms (bKash, Nagad behave the same way).
-- No DB / edge-function changes needed.
+For manager login, swap `amber/orange/rose` palette for `sky/indigo/violet` to match the page's blue accent and use `text-sky-50` / `border-sky-200/40` etc.
+
+Add `KeyRound` to the `lucide-react` imports on both pages (or reuse `HelpCircle` if `KeyRound` causes friction — `KeyRound` reads more "premium / reset PIN").
+
+If the shimmer keyframe isn't already in `tailwind.config.ts`, add:
+```ts
+keyframes: {
+  shimmer: { '0%': { transform: 'translateX(-30%) skewX(-12deg)' }, '100%': { transform: 'translateX(400%) skewX(-12deg)' } },
+}
+```
+(Check `tailwind.config.ts` first — many projects already have a `shimmer` keyframe; if so, skip.)
+
+### 4. Behaviour preserved
+
+- The Forgot PIN sheet (`MerchantForgotPinSheet`) wiring is unchanged — same `setForgotOpen(true)` handler, same `defaultPhone` prop.
+- The `boundPhone` lock behaviour, masked phone format (`+88 019•••••954`) and `Lock` icon badge stay intact.
+- On the owner page the new button shows for **both** first-time and returning users (it replaces both the in-form pill and the conditional secondary button).
 
 ### Files touched
 
-- `src/components/merchant/MerchantForgotPinSheet.tsx` — mask helper.
-- `src/pages/MerchantLoginPage.tsx` — chip prefix, remove × button, add lock notice.
-- `src/pages/MerchantManagerLoginPage.tsx` — same as above with sky accent.
+- `src/pages/MerchantLoginPage.tsx` — strip redundant copy from masked chip, remove in-form Forgot PIN pill, remove secondary help button, add premium Forgot PIN pill at top of footer stack.
+- `src/pages/MerchantManagerLoginPage.tsx` — remove in-form Forgot PIN pill, add premium Forgot PIN pill (sky variant) at top of footer stack.
+- `tailwind.config.ts` — add `shimmer` keyframe + animation only if not already defined.
+
+No DB / edge-function changes.

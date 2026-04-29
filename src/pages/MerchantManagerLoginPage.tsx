@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   Store,
   HelpCircle,
+  KeyRound,
 } from "lucide-react";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
@@ -455,19 +456,9 @@ export default function MerchantManagerLoginPage() {
 
                 {/* PIN */}
                 <div className="mt-3 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                      Your 4-digit PIN
-                    </Label>
-                    <button
-                      type="button"
-                      onClick={() => setForgotOpen(true)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-sky-200/40 bg-sky-300/10 px-2.5 py-1 text-[11px] font-semibold text-sky-100 transition-colors hover:border-sky-200/60 hover:bg-sky-300/20 hover:text-sky-50"
-                    >
-                      <HelpCircle className="h-3 w-3" />
-                      Forgot PIN?
-                    </button>
-                  </div>
+                  <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                    Your 4-digit PIN
+                  </Label>
                   <div className={`rounded-2xl border p-2 transition-colors focus-within:border-sky-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
                     <InputOTP maxLength={4} value={pin} onChange={(v) => { setPin(v); if (wrongPin) setWrongPin(false); }} disabled={isLocked} containerClassName="justify-center">
                       <InputOTPGroup className="gap-2">
@@ -516,8 +507,26 @@ export default function MerchantManagerLoginPage() {
             </form>
           )}
 
-          {/* Footer cross-links */}
+          {/* Footer: forgot PIN (premium) + cross-links */}
           <div className="mt-3 flex flex-col items-center gap-2 text-center">
+            <button
+              type="button"
+              onClick={() => setForgotOpen(true)}
+              className="group relative h-11 w-full overflow-hidden rounded-2xl border border-sky-200/40 bg-gradient-to-r from-sky-300/[0.10] via-indigo-300/[0.12] to-violet-300/[0.10] px-4 text-sm font-semibold text-sky-50 shadow-[0_8px_24px_-12px_rgba(99,102,241,0.55)] backdrop-blur-xl transition-all hover:border-sky-200/70 hover:from-sky-300/[0.20] hover:via-indigo-300/[0.24] hover:to-violet-300/[0.20] hover:shadow-[0_14px_36px_-12px_rgba(124,58,237,0.65)]"
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition-opacity group-hover:animate-[shimmer_1.4s_ease-out] group-hover:opacity-100"
+              />
+              <span className="relative z-10 inline-flex items-center justify-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full border border-sky-200/40 bg-sky-300/15 shadow-inner">
+                  <KeyRound className="h-3.5 w-3.5 text-sky-200" />
+                </span>
+                Forgot PIN? Reset securely
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </button>
+
             <Button
               type="button"
               variant="outline"
