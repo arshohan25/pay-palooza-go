@@ -132,7 +132,10 @@ Deno.serve(async (req) => {
 
   return json(200, {
     ok: true,
+    otp_verified: otpVerified,
     masked_phone: maskPhone(phone),
-    message: `Request received. Our team will contact you on +880 ${maskPhone(phone)} shortly.`,
+    message: otpVerified
+      ? `Identity verified. Continue in live support to complete your PIN reset.`
+      : `Request received. Our team will contact you on +880 ${maskPhone(phone)} shortly.`,
   });
 });
