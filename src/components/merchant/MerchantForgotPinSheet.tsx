@@ -1,21 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, LifeBuoy, Phone, Send, Clock, ShieldCheck } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import {
+  Loader2,
+  LifeBuoy,
+  Phone,
+  Send,
+  Clock,
+  ShieldCheck,
+  ArrowRight,
+  CheckCircle2,
+  RefreshCw,
+  MessageCircle,
+  KeyRound,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface MerchantForgotPinSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Pre-fill phone (clean 11-digit BD form). */
   defaultPhone?: string;
-  /** Which login page opened this — used for ticket source attribution. */
   source?: "merchant-login" | "merchant-manager-login";
-  /** Accent color theme matching the host page. */
   accent?: "amber" | "sky";
 }
 
@@ -25,6 +36,9 @@ export function maskBdPhone(phone: string): string {
   return `${clean.slice(0, 3)}•••••${clean.slice(8)}`;
 }
 
+const RESEND_SECONDS = 60;
+type Step = "request" | "verify" | "handoff";
+
 export default function MerchantForgotPinSheet({
   open,
   onOpenChange,
@@ -32,16 +46,40 @@ export default function MerchantForgotPinSheet({
   source = "merchant-login",
   accent = "amber",
 }: MerchantForgotPinSheetProps) {
+  const navigate = useNavigate();
+  const [step, setStep] = useState<Step>("request");
   const [phone, setPhone] = useState(defaultPhone);
   const [note, setNote] = useState("");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState(0);
+  const tickerRef = useRef<number | null>(null);
 
+  // Reset everything whenever the sheet opens
   useEffect(() => {
     if (open) {
+      setStep("request");
       setPhone(defaultPhone);
       setNote("");
+      setCode("");
+      setOtpError(null);
+      setDevOtp(null);
+      setResendIn(0);
     }
   }, [open, defaultPhone]);
+
+  // Resend countdown ticker
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    tickerRef.current = window.setInterval(() => {
+      setResendIn((s) => (s <= 1 ? 0 : s - 1));
+    }, 1000);
+    return () => {
+      if (tickerRef.current) window.clearInterval(tickerRef.current);
+    };
+  }, [resendIn]);
 
   const accentRing = accent === "sky" ? "focus-within:border-sky-200/50" : "focus-within:border-amber-200/50";
   const accentIcon = accent === "sky" ? "text-sky-200" : "text-amber-200";
@@ -49,35 +87,108 @@ export default function MerchantForgotPinSheet({
     accent === "sky"
       ? "bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-600 hover:from-sky-400 hover:via-indigo-400 hover:to-violet-500 shadow-[0_10px_30px_-10px_rgba(99,102,241,0.7)]"
       : "bg-gradient-to-r from-orange-500 via-rose-500 to-rose-600 hover:from-orange-400 hover:via-rose-400 hover:to-rose-500 shadow-[0_10px_30px_-10px_rgba(244,63,94,0.7)]";
+  const accentRingHex = accent === "sky" ? "ring-sky-200/40" : "ring-amber-200/40";
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleaned = phone.replace(/\D/g, "").replace(/^88/, "");
-    if (!/^01[3-9]\d{8}$/.test(cleaned)) {
+  const cleanedPhone = phone.replace(/\D/g, "").replace(/^88/, "");
+  const phoneValid = /^01[3-9]\d{8}$/.test(cleanedPhone);
+
+  // ── Step 1: Send OTP ─────────────────────────────────────────────
+  const sendOtp = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!phoneValid) {
       toast.error("Enter a valid 11-digit Bangladeshi mobile number.");
       return;
     }
     setLoading(true);
+    setOtpError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("merchant-forgot-pin", {
-        body: { phone: cleaned, note: note.trim(), source },
+      const { data, error } = await supabase.functions.invoke("send-otp", {
+        body: { phone: cleanedPhone, purpose: "merchant_pin_reset" },
       });
-      const ctx: any = (error as any)?.context;
-      let body: any = data ?? null;
-      if (!body && ctx?.json) { try { body = await ctx.json(); } catch {} }
-      if (!body && ctx?.text) { try { body = JSON.parse(await ctx.text()); } catch {} }
-
-      if (body?.ok) {
-        toast.success(body.message || "Request received. Our team will reach out shortly.");
-        onOpenChange(false);
-        return;
-      }
-      toast.error(body?.message || error?.message || "Couldn't submit request. Please try again.");
+      if (error) throw error;
+      const payload: any = data;
+      if (payload?.error) throw new Error(payload.error);
+      if (payload?.dev_otp) setDevOtp(String(payload.dev_otp));
+      setResendIn(RESEND_SECONDS);
+      setCode("");
+      setStep("verify");
+      toast.success(`Code sent to +88 ${maskBdPhone(cleanedPhone)}`);
     } catch (err: any) {
-      toast.error(err?.message || "Couldn't submit request. Please try again.");
+      toast.error(err?.message || "Couldn't send verification code");
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── Step 2: Verify OTP ───────────────────────────────────────────
+  const verifyOtp = async (codeValue: string) => {
+    setLoading(true);
+    setOtpError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-otp", {
+        body: { phone: cleanedPhone, code: codeValue, purpose: "merchant_pin_reset" },
+      });
+      if (error) throw error;
+      const payload: any = data;
+      if (!payload?.verified) {
+        setOtpError(payload?.error || "Incorrect code. Please try again.");
+        setCode("");
+        return;
+      }
+      const ticket: string | null = payload?.otp_ticket ?? null;
+      if (!ticket) {
+        setOtpError("Verification failed. Please request a new code.");
+        setCode("");
+        return;
+      }
+
+      // Log the verified ticket so support sees it in queue
+      await supabase.functions.invoke("merchant-forgot-pin", {
+        body: {
+          phone: cleanedPhone,
+          note: note.trim(),
+          source,
+          otp_ticket: ticket,
+        },
+      });
+
+      setStep("handoff");
+    } catch (err: any) {
+      setOtpError(err?.message || "Verification failed.");
+      setCode("");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-verify when 6 digits entered
+  useEffect(() => {
+    if (step === "verify" && code.length === 6 && !loading) {
+      void verifyOtp(code);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, step]);
+
+  // ── Step 3: Handoff to live chat ─────────────────────────────────
+  const goToLiveSupport = () => {
+    const masked = maskBdPhone(cleanedPhone);
+    const prefill = encodeURIComponent(
+      `Hi, I forgot my Merchant PIN for +88 ${masked}. Identity verified via OTP at ${new Date().toLocaleString()}. Please complete my PIN reset.`,
+    );
+    const ctxTitle = encodeURIComponent("Merchant PIN reset · OTP verified");
+    const ctxBody = encodeURIComponent(
+      `Phone: +88 ${masked} · Source: ${source} · Verified at ${new Date().toISOString()}`,
+    );
+    onOpenChange(false);
+    navigate(
+      `/account?openChat=1&prefill=${prefill}&contextTitle=${ctxTitle}&contextBody=${ctxBody}`,
+    );
+  };
+
+  const fmtCountdown = (s: number) => {
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2, "0")}`;
   };
 
   return (
@@ -89,85 +200,207 @@ export default function MerchantForgotPinSheet({
         <div className="px-5 pt-5 pb-6">
           <SheetHeader className="space-y-2 text-left">
             <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.06] ${accentIcon}`}>
-              <LifeBuoy className="h-5 w-5" />
+              {step === "handoff" ? <CheckCircle2 className="h-5 w-5 text-emerald-300" /> : <LifeBuoy className="h-5 w-5" />}
             </div>
             <SheetTitle className="text-lg font-semibold text-white">
-              Reset your merchant PIN
+              {step === "request" && "Reset your merchant PIN"}
+              {step === "verify" && "Verify your number"}
+              {step === "handoff" && "Identity verified"}
             </SheetTitle>
             <SheetDescription className="text-[13px] leading-snug text-white/60">
-              Our support team will verify your identity over a call/SMS and help you set a new PIN.
-              Typical response: <span className="text-white/80 font-medium">within 15 minutes</span> during business hours (10am–10pm).
+              {step === "request" && "We'll send a one-time code to your registered number. Once verified, our support team will help you set a new PIN over secure live chat."}
+              {step === "verify" && (
+                <>Enter the 6-digit code we sent to <span className="text-white/85 font-medium">+88 {maskBdPhone(cleanedPhone)}</span>.</>
+              )}
+              {step === "handoff" && "We've confirmed it's really you. Continue to live support and our team will finish your PIN reset on this chat."}
             </SheetDescription>
           </SheetHeader>
 
-          <form onSubmit={submit} className="mt-5 space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="forgot-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                Registered mobile number
-              </Label>
-              <div className={`flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors ${accentRing}`}>
-                <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
-                  <Phone className={`h-4 w-4 ${accentIcon}`} />
-                  <span className="font-medium">+880</span>
+          {/* Step indicator */}
+          <div className="mt-4 flex items-center gap-1.5">
+            {(["request", "verify", "handoff"] as Step[]).map((s, i) => {
+              const active = step === s;
+              const done =
+                (step === "verify" && s === "request") ||
+                (step === "handoff" && s !== "handoff");
+              return (
+                <div
+                  key={s}
+                  className={`h-1 flex-1 rounded-full transition-all ${
+                    done ? "bg-emerald-400/70" : active ? (accent === "sky" ? "bg-sky-300" : "bg-amber-300") : "bg-white/10"
+                  }`}
+                />
+              );
+            })}
+          </div>
+
+          {/* ── Step 1: Request code ─────────────────────────── */}
+          {step === "request" && (
+            <form onSubmit={sendOtp} className="mt-5 space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="forgot-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                  Registered mobile number
+                </Label>
+                <div className={`flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors ${accentRing}`}>
+                  <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
+                    <Phone className={`h-4 w-4 ${accentIcon}`} />
+                    <span className="font-medium">+880</span>
+                  </div>
+                  <Input
+                    id="forgot-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    placeholder="1XXXXXXXXX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                    className="h-9 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  />
                 </div>
-                <Input
-                  id="forgot-phone"
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  placeholder="1XXXXXXXXX"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                  className="h-9 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0"
+                {phone.length === 11 && (
+                  <p className="text-[11px] text-white/50">
+                    Code will be sent to <span className="text-white/80 font-medium">+88 {maskBdPhone(phone)}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="forgot-note" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+                  Anything we should know? <span className="text-white/40 normal-case">(optional)</span>
+                </Label>
+                <Textarea
+                  id="forgot-note"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value.slice(0, 500))}
+                  placeholder="e.g. I changed my phone, can't receive SMS at the old SIM..."
+                  className="min-h-[72px] rounded-2xl border-white/10 bg-white/[0.04] text-sm text-white placeholder:text-white/30 focus-visible:ring-amber-200/40"
                 />
               </div>
-              {phone.length === 11 && (
-                <p className="text-[11px] text-white/50">
-                  We'll contact you on <span className="text-white/80 font-medium">+88 {maskBdPhone(phone)}</span>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/70">
+                  <Clock className={`h-3.5 w-3.5 ${accentIcon}`} />
+                  ~15 min response
+                </div>
+                <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/70">
+                  <ShieldCheck className={`h-3.5 w-3.5 ${accentIcon}`} />
+                  OTP-protected
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading || !phoneValid}
+                className={`h-11 w-full rounded-2xl text-sm font-semibold text-white transition-transform hover:scale-[1.01] disabled:opacity-70 ${accentBtn}`}
+              >
+                {loading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Sending code...</>
+                ) : (
+                  <><Send className="h-4 w-4" /> Send verification code</>
+                )}
+              </Button>
+
+              <p className="text-center text-[11px] text-white/45">
+                By continuing, you agree to be contacted by EasyPay support for identity verification.
+              </p>
+            </form>
+          )}
+
+          {/* ── Step 2: Verify OTP ───────────────────────────── */}
+          {step === "verify" && (
+            <div className="mt-5 space-y-4">
+              <div className={`rounded-2xl border border-white/10 bg-white/[0.04] p-3 ring-1 ${accentRingHex}`}>
+                <InputOTP
+                  maxLength={6}
+                  value={code}
+                  onChange={(v) => { setCode(v); if (otpError) setOtpError(null); }}
+                  disabled={loading}
+                  containerClassName="justify-center"
+                  autoFocus
+                >
+                  <InputOTPGroup className="gap-1.5">
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <InputOTPSlot
+                        key={i}
+                        index={i}
+                        className={`h-12 w-10 rounded-xl border-white/15 bg-white/[0.06] text-lg font-semibold text-white ${otpError ? "border-rose-400/60 bg-rose-500/10" : ""}`}
+                      />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              {otpError && (
+                <p role="alert" className="text-center text-[12.5px] font-medium text-rose-300">{otpError}</p>
+              )}
+              {devOtp && (
+                <p className="text-center text-[11px] uppercase tracking-wider text-amber-200/70">
+                  Dev OTP: <span className="font-mono font-semibold text-amber-200">{devOtp}</span>
                 </p>
               )}
-            </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="forgot-note" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                Anything we should know? <span className="text-white/40 normal-case">(optional)</span>
-              </Label>
-              <Textarea
-                id="forgot-note"
-                value={note}
-                onChange={(e) => setNote(e.target.value.slice(0, 500))}
-                placeholder="e.g. I changed my phone, can't receive SMS at the old SIM..."
-                className="min-h-[88px] rounded-2xl border-white/10 bg-white/[0.04] text-sm text-white placeholder:text-white/30 focus-visible:ring-amber-200/40"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/70">
-                <Clock className={`h-3.5 w-3.5 ${accentIcon}`} />
-                ~15 min response
+              <div className="flex items-center justify-between text-[12.5px] text-white/60">
+                <button
+                  type="button"
+                  onClick={() => void sendOtp()}
+                  disabled={resendIn > 0 || loading}
+                  className={`inline-flex items-center gap-1.5 font-medium transition-opacity disabled:cursor-not-allowed disabled:text-white/40 ${accent === "sky" ? "text-sky-300 hover:text-sky-200" : "text-amber-300 hover:text-amber-200"}`}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  {resendIn > 0 ? `Resend in ${fmtCountdown(resendIn)}` : "Resend code"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setStep("request"); setCode(""); setOtpError(null); }}
+                  disabled={loading}
+                  className="font-medium text-white/60 hover:text-white/85"
+                >
+                  Change number
+                </button>
               </div>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/70">
-                <ShieldCheck className={`h-3.5 w-3.5 ${accentIcon}`} />
-                Identity verified
-              </div>
-            </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className={`h-11 w-full rounded-2xl text-sm font-semibold text-white transition-transform hover:scale-[1.01] disabled:opacity-70 ${accentBtn}`}
-            >
-              {loading ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Sending request...</>
-              ) : (
-                <><Send className="h-4 w-4" /> Send to support team</>
+              {loading && (
+                <div className="flex items-center justify-center gap-2 text-[12px] text-white/60">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying…
+                </div>
               )}
-            </Button>
+            </div>
+          )}
 
-            <p className="text-center text-[11px] text-white/45">
-              By submitting, you agree to be contacted by EasyPay support for identity verification.
-            </p>
-          </form>
+          {/* ── Step 3: Live-support handoff ─────────────────── */}
+          {step === "handoff" && (
+            <div className="mt-5 space-y-4">
+              <div className="flex flex-col items-center rounded-2xl border border-emerald-300/30 bg-emerald-400/[0.06] p-5 text-center">
+                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-emerald-300/40 bg-emerald-400/15 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.6)]">
+                  <KeyRound className="h-6 w-6 text-emerald-200" />
+                </div>
+                <p className="text-[13px] text-emerald-100/85">
+                  +88 <span className="font-semibold text-white">{maskBdPhone(cleanedPhone)}</span> verified
+                </p>
+                <p className="mt-1 text-[12px] text-white/55">
+                  Continue to live support to set your new PIN safely with our team.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                onClick={goToLiveSupport}
+                className={`h-11 w-full rounded-2xl text-sm font-semibold text-white transition-transform hover:scale-[1.01] ${accentBtn}`}
+              >
+                <MessageCircle className="h-4 w-4" />
+                Open live support to finish reset
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="block w-full text-center text-[12px] font-medium text-white/55 hover:text-white/80"
+              >
+                I'll wait for a callback instead
+              </button>
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>
