@@ -371,26 +371,28 @@ export default function MerchantManagerLoginPage() {
               className="rounded-[19px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
             >
               <fieldset disabled={isLocked} className="m-0 border-0 p-0 disabled:opacity-100">
-                {/* Manager-specific explainer */}
-                <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-sky-300/25 bg-sky-400/10 p-3 text-sky-50">
-                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-200" />
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-100">
-                      Use your own phone & PIN
-                    </p>
-                    <p className="text-[12px] leading-snug text-sky-50/85">
-                      Sign in with the EasyPay account the store owner invited — not the owner's number. New here?{" "}
-                      <button
-                        type="button"
-                        onClick={() => navigate("/auth")}
-                        className="font-semibold underline underline-offset-2 hover:text-white"
-                      >
-                        Sign up first
-                      </button>
-                      , then ask the owner to add you.
-                    </p>
+                {/* Manager-specific explainer (only for first-time visitors) */}
+                {!hasAuthedBefore && (
+                  <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-sky-300/25 bg-sky-400/10 p-3 text-sky-50">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-200" />
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-100">
+                        Use your own phone & PIN
+                      </p>
+                      <p className="text-[12px] leading-snug text-sky-50/85">
+                        Sign in with the EasyPay account the store owner invited — not the owner's number. New here?{" "}
+                        <button
+                          type="button"
+                          onClick={() => navigate("/auth")}
+                          className="font-semibold underline underline-offset-2 hover:text-white"
+                        >
+                          Sign up first
+                        </button>
+                        , then ask the owner to add you.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {isLocked && (
                   <div role="alert" aria-live="polite"
@@ -493,20 +495,22 @@ export default function MerchantManagerLoginPage() {
                   )}
                 </Button>
 
-                <div className="mt-3 grid grid-cols-3 gap-1.5">
-                  {[
-                    { icon: Lock, label: "Secure PIN" },
-                    { icon: ShieldCheck, label: "Encrypted" },
-                    { icon: Sparkles, label: "Bank-grade" },
-                  ].map(({ icon: Icon, label }) => (
-                    <div key={label}
-                      className="flex items-center justify-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-1 text-[10px] font-medium text-white/70"
-                    >
-                      <Icon className="h-3 w-3 text-sky-200" />
-                      {label}
-                    </div>
-                  ))}
-                </div>
+                {!hasAuthedBefore && (
+                  <div className="mt-3 grid grid-cols-3 gap-1.5">
+                    {[
+                      { icon: Lock, label: "Secure PIN" },
+                      { icon: ShieldCheck, label: "Encrypted" },
+                      { icon: Sparkles, label: "Bank-grade" },
+                    ].map(({ icon: Icon, label }) => (
+                      <div key={label}
+                        className="flex items-center justify-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-1 text-[10px] font-medium text-white/70"
+                      >
+                        <Icon className="h-3 w-3 text-sky-200" />
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </fieldset>
             </form>
           )}
