@@ -663,8 +663,26 @@ export default function MerchantLoginPage() {
           </form>
           )}
 
-          {/* Footer: apply button + manager toggle */}
+          {/* Footer: forgot PIN (premium) + apply button + manager toggle */}
           <div className="mt-3 flex flex-col items-center gap-2 text-center">
+            <button
+              type="button"
+              onClick={() => setForgotOpen(true)}
+              className="group relative h-11 w-full overflow-hidden rounded-2xl border border-amber-200/40 bg-gradient-to-r from-amber-300/[0.10] via-orange-300/[0.12] to-rose-300/[0.10] px-4 text-sm font-semibold text-amber-50 shadow-[0_8px_24px_-12px_rgba(251,146,60,0.55)] backdrop-blur-xl transition-all hover:border-amber-200/70 hover:from-amber-300/[0.20] hover:via-orange-300/[0.24] hover:to-rose-300/[0.20] hover:shadow-[0_14px_36px_-12px_rgba(244,63,94,0.65)]"
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition-opacity group-hover:animate-[shimmer_1.4s_ease-out] group-hover:opacity-100"
+              />
+              <span className="relative z-10 inline-flex items-center justify-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-200/40 bg-amber-300/15 shadow-inner">
+                  <KeyRound className="h-3.5 w-3.5 text-amber-200" />
+                </span>
+                Forgot PIN? Reset securely
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </button>
+
             <Button
               type="button"
               variant="outline"
