@@ -55,6 +55,7 @@ export default function MerchantManagerLoginPage() {
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const [wrongPin, setWrongPin] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [hasAuthedBefore, setHasAuthedBefore] = useState(false);
   const tickerRef = useRef<number | null>(null);
 
   type Step = "signin" | "otp";
@@ -64,6 +65,9 @@ export default function MerchantManagerLoginPage() {
 
   // Restore lockout — but DO NOT prefill device-bound owner phone (managers use their own).
   useEffect(() => {
+    try {
+      setHasAuthedBefore(localStorage.getItem("mfs_has_authenticated") === "1");
+    } catch {}
     try {
       const raw = localStorage.getItem(LS_LOCKED_UNTIL);
       if (raw) {
@@ -367,26 +371,28 @@ export default function MerchantManagerLoginPage() {
               className="rounded-[19px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
             >
               <fieldset disabled={isLocked} className="m-0 border-0 p-0 disabled:opacity-100">
-                {/* Manager-specific explainer */}
-                <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-sky-300/25 bg-sky-400/10 p-3 text-sky-50">
-                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-200" />
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-100">
-                      Use your own phone & PIN
-                    </p>
-                    <p className="text-[12px] leading-snug text-sky-50/85">
-                      Sign in with the EasyPay account the store owner invited — not the owner's number. New here?{" "}
-                      <button
-                        type="button"
-                        onClick={() => navigate("/auth")}
-                        className="font-semibold underline underline-offset-2 hover:text-white"
-                      >
-                        Sign up first
-                      </button>
-                      , then ask the owner to add you.
-                    </p>
+                {/* Manager-specific explainer (only for first-time visitors) */}
+                {!hasAuthedBefore && (
+                  <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-sky-300/25 bg-sky-400/10 p-3 text-sky-50">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-200" />
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-100">
+                        Use your own phone & PIN
+                      </p>
+                      <p className="text-[12px] leading-snug text-sky-50/85">
+                        Sign in with the EasyPay account the store owner invited — not the owner's number. New here?{" "}
+                        <button
+                          type="button"
+                          onClick={() => navigate("/auth")}
+                          className="font-semibold underline underline-offset-2 hover:text-white"
+                        >
+                          Sign up first
+                        </button>
+                        , then ask the owner to add you.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {isLocked && (
                   <div role="alert" aria-live="polite"
@@ -489,42 +495,37 @@ export default function MerchantManagerLoginPage() {
                   )}
                 </Button>
 
-                <div className="mt-3 grid grid-cols-3 gap-1.5">
-                  {[
-                    { icon: Lock, label: "Secure PIN" },
-                    { icon: ShieldCheck, label: "Encrypted" },
-                    { icon: Sparkles, label: "Bank-grade" },
-                  ].map(({ icon: Icon, label }) => (
-                    <div key={label}
-                      className="flex items-center justify-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-1 text-[10px] font-medium text-white/70"
-                    >
-                      <Icon className="h-3 w-3 text-sky-200" />
-                      {label}
-                    </div>
-                  ))}
-                </div>
+                {!hasAuthedBefore && (
+                  <div className="mt-3 grid grid-cols-3 gap-1.5">
+                    {[
+                      { icon: Lock, label: "Secure PIN" },
+                      { icon: ShieldCheck, label: "Encrypted" },
+                      { icon: Sparkles, label: "Bank-grade" },
+                    ].map(({ icon: Icon, label }) => (
+                      <div key={label}
+                        className="flex items-center justify-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-1 text-[10px] font-medium text-white/70"
+                      >
+                        <Icon className="h-3 w-3 text-sky-200" />
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </fieldset>
             </form>
           )}
 
-          {/* Footer: forgot PIN (premium) + cross-links */}
+          {/* Footer: forgot PIN (compact) + cross-links */}
           <div className="mt-3 flex flex-col items-center gap-2 text-center">
             <button
               type="button"
               onClick={() => setForgotOpen(true)}
-              className="group relative h-11 w-full overflow-hidden rounded-2xl border border-sky-200/40 bg-gradient-to-r from-sky-300/[0.10] via-indigo-300/[0.12] to-violet-300/[0.10] px-4 text-sm font-semibold text-sky-50 shadow-[0_8px_24px_-12px_rgba(99,102,241,0.55)] backdrop-blur-xl transition-all hover:border-sky-200/70 hover:from-sky-300/[0.20] hover:via-indigo-300/[0.24] hover:to-violet-300/[0.20] hover:shadow-[0_14px_36px_-12px_rgba(124,58,237,0.65)]"
+              className="group inline-flex items-center gap-1.5 rounded-full border border-sky-200/30 bg-white/[0.04] px-3.5 py-1.5 text-[12px] font-medium text-sky-100/90 backdrop-blur-md transition-all hover:border-sky-200/60 hover:bg-sky-300/[0.08] hover:text-sky-50"
             >
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition-opacity group-hover:animate-[shimmer_1.4s_ease-out] group-hover:opacity-100"
-              />
-              <span className="relative z-10 inline-flex items-center justify-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full border border-sky-200/40 bg-sky-300/15 shadow-inner">
-                  <KeyRound className="h-3.5 w-3.5 text-sky-200" />
-                </span>
-                Forgot PIN? Reset securely
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </span>
+              <KeyRound className="h-3 w-3" />
+              Forgot PIN?
+              <span className="text-sky-200/70 group-hover:text-sky-100">Reset securely</span>
+              <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
             </button>
 
             <Button

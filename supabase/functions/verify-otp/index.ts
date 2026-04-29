@@ -71,14 +71,19 @@ Deno.serve(async (req) => {
 
     await supabaseAdmin.from("otp_codes").update({ verified: true }).eq("id", otpRecord.id);
 
-    // Mint a single-use OTP ticket for device-verification purposes.
+    // Mint a single-use OTP ticket for device-verification or merchant PIN reset.
     let otp_ticket: string | null = null;
     let otp_ticket_expires_at: string | null = null;
-    if (typeof validPurpose === "string" && validPurpose.startsWith("device_verify_")) {
-      const portal = validPurpose.replace(/^device_verify_/, "");
+    const issuesTicket =
+      typeof validPurpose === "string" &&
+      (validPurpose.startsWith("device_verify_") || validPurpose === "merchant_pin_reset");
+    if (issuesTicket) {
+      const portal = validPurpose.startsWith("device_verify_")
+        ? validPurpose.replace(/^device_verify_/, "")
+        : "merchant_pin_reset";
       const jti = crypto.randomUUID();
       const exp = Math.floor(Date.now() / 1000) + 120; // 2 min
-      const payload = { jti, phone, portal, exp };
+      const payload = { jti, phone, portal, exp, purpose: validPurpose };
       const payloadB64 = b64urlEncode(payload);
       const sig = await hmacSha256B64Url(TICKET_SECRET, payloadB64);
       otp_ticket = `${payloadB64}.${sig}`;

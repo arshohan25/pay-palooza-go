@@ -8,6 +8,38 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const TICKET_SECRET = Deno.env.get("OTP_TICKET_SECRET") || SUPABASE_SERVICE_ROLE_KEY || "fallback-dev-secret";
+
+async function hmacSha256B64Url(key: string, msg: string): Promise<string> {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw", enc.encode(key), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(msg));
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function b64urlDecodeJson(b64: string): any | null {
+  try {
+    const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+    const std = b64.replace(/-/g, "+").replace(/_/g, "/") + pad;
+    return JSON.parse(atob(std));
+  } catch { return null; }
+}
+
+async function verifyOtpTicket(ticket: string, expectedPhone: string): Promise<boolean> {
+  const [payloadB64, sig] = ticket.split(".");
+  if (!payloadB64 || !sig) return false;
+  const expected = await hmacSha256B64Url(TICKET_SECRET, payloadB64);
+  if (expected !== sig) return false;
+  const payload = b64urlDecodeJson(payloadB64);
+  if (!payload) return false;
+  if (payload.phone !== expectedPhone) return false;
+  if (payload.purpose !== "merchant_pin_reset") return false;
+  if (typeof payload.exp !== "number" || payload.exp * 1000 < Date.now()) return false;
+  return true;
+}
 
 const PHONE_REGEX = /^01[3-9]\d{8}$/;
 
@@ -74,11 +106,20 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Optional OTP-verified ticket — when present and valid, prefix the note so admins can trust it.
+  let otpVerified = false;
+  if (typeof body?.otp_ticket === "string" && body.otp_ticket.length > 0) {
+    otpVerified = await verifyOtpTicket(body.otp_ticket, phone);
+  }
+  const finalNote = otpVerified
+    ? `[OTP-VERIFIED ${new Date().toISOString()}] ${note || ""}`.trim()
+    : (note || null);
+
   const { error: insertErr } = await admin
     .from("merchant_pin_reset_requests")
     .insert({
       phone,
-      note: note || null,
+      note: finalNote,
       source: body?.source === "merchant-manager-login" ? "merchant-manager-login" : "merchant-login",
       ip,
       user_agent: userAgent,
@@ -91,7 +132,10 @@ Deno.serve(async (req) => {
 
   return json(200, {
     ok: true,
+    otp_verified: otpVerified,
     masked_phone: maskPhone(phone),
-    message: `Request received. Our team will contact you on +880 ${maskPhone(phone)} shortly.`,
+    message: otpVerified
+      ? `Identity verified. Continue in live support to complete your PIN reset.`
+      : `Request received. Our team will contact you on +880 ${maskPhone(phone)} shortly.`,
   });
 });
