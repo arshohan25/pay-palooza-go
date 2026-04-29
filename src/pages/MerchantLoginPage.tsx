@@ -29,7 +29,7 @@ import {
   AlertTriangle,
   UserCog,
   HelpCircle,
-  
+  KeyRound,
 } from "lucide-react";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
