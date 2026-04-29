@@ -55,6 +55,7 @@ export default function MerchantManagerLoginPage() {
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const [wrongPin, setWrongPin] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [hasAuthedBefore, setHasAuthedBefore] = useState(false);
   const tickerRef = useRef<number | null>(null);
 
   type Step = "signin" | "otp";
@@ -64,6 +65,9 @@ export default function MerchantManagerLoginPage() {
 
   // Restore lockout — but DO NOT prefill device-bound owner phone (managers use their own).
   useEffect(() => {
+    try {
+      setHasAuthedBefore(localStorage.getItem("mfs_has_authenticated") === "1");
+    } catch {}
     try {
       const raw = localStorage.getItem(LS_LOCKED_UNTIL);
       if (raw) {
