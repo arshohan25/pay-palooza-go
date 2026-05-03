@@ -22,14 +22,13 @@ import {
   Sparkles,
   Loader2,
   ArrowRight,
-  Info,
   AlertTriangle,
-  Store,
   HelpCircle,
   KeyRound,
 } from "lucide-react";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
+const LS_MANAGER_PHONE = "mfs_merchant_manager_phone";
 
 function formatCountdown(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -47,7 +46,9 @@ export default function MerchantManagerLoginPage() {
     }
     return "/merchant";
   }, [searchParams]);
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(() => {
+    try { return localStorage.getItem(LS_MANAGER_PHONE) || ""; } catch { return ""; }
+  });
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
@@ -55,10 +56,6 @@ export default function MerchantManagerLoginPage() {
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const [wrongPin, setWrongPin] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
-  // Manager login is intentionally always treated as a fresh sign-in — we do
-  // NOT remember the manager's phone or hide the explainer based on prior
-  // global auth, otherwise the page looks "half logged in" after a logout.
-  const hasAuthedBefore = false;
   const tickerRef = useRef<number | null>(null);
 
   type Step = "signin" | "otp";
@@ -66,7 +63,7 @@ export default function MerchantManagerLoginPage() {
   const pendingSessionRef = useRef<{ cleanedPhone: string } | null>(null);
   const otp = useDeviceOtpVerification("merchant");
 
-  // Restore lockout — but DO NOT prefill device-bound owner phone (managers use their own).
+  // Restore lockout only; manager phone is saved in its own isolated key.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LS_LOCKED_UNTIL);
