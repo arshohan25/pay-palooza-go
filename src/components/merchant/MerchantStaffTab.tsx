@@ -29,6 +29,7 @@ import {
 } from "@/lib/staffPermissions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { usePermissionPresets, type CustomPreset } from "@/hooks/use-permission-presets";
+import StaffAccessRequestsPanel, { AccessRequestsHeaderButton } from "./StaffAccessRequestsPanel";
 
 const roleColors: Record<string, string> = {
   Manager: "bg-primary/10 text-primary border-primary/20",
@@ -590,6 +591,9 @@ export default function MerchantStaffTab({ merchantId }: Props) {
           <Plus size={13} className="mr-1" /> Add Staff
         </Button>
       </div>
+
+      <StaffAccessRequestsPanel merchantId={merchantId} inboxOnly />
+      <AccessRequestsHeaderButton merchantId={merchantId} />
 
       <div className="grid grid-cols-3 gap-2">
         <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{staff.length}</p><p className="text-[10px] text-muted-foreground">Total Staff</p></CardContent></Card>

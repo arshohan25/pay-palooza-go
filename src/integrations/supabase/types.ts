@@ -3486,6 +3486,69 @@ export type Database = {
           },
         ]
       }
+      merchant_staff_permission_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          deny_reason: string | null
+          display_label: string
+          id: string
+          merchant_id: string
+          note: string | null
+          permission_key: string
+          requested_by: string
+          staff_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          deny_reason?: string | null
+          display_label: string
+          id?: string
+          merchant_id: string
+          note?: string | null
+          permission_key: string
+          requested_by: string
+          staff_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          deny_reason?: string | null
+          display_label?: string
+          id?: string
+          merchant_id?: string
+          note?: string | null
+          permission_key?: string
+          requested_by?: string
+          staff_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_staff_permission_requests_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_staff_permission_requests_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           bank_account_holder: string | null
@@ -6473,6 +6536,7 @@ export type Database = {
           business_name: string
           merchant_id: string
           permissions: Json
+          staff_id: string
           staff_role: string
         }[]
       }
@@ -6516,6 +6580,8 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      is_merchant_owner: { Args: { _merchant_id: string }; Returns: boolean }
+      is_merchant_staff_user: { Args: { _staff_id: string }; Returns: boolean }
       is_phone_registered: { Args: { p_phone: string }; Returns: boolean }
       is_push_enabled: {
         Args: { p_category: string; p_user_id: string }

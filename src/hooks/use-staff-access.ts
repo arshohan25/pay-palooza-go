@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCachedSession } from "@/hooks/use-auth";
 
 interface StaffAccess {
+  staffId: string;
   merchantId: string;
   merchantName: string;
   staffRole: string;
@@ -60,6 +61,7 @@ export function useStaffAccess() {
         if (cancelled) return;
         const next: StaffAccess | null = row
           ? {
+              staffId: row.staff_id as string,
               merchantId: row.merchant_id as string,
               merchantName: row.business_name as string,
               staffRole: row.staff_role as string,
@@ -129,6 +131,7 @@ export function useStaffAccess() {
   };
 
   return {
+    staffId: access?.staffId ?? null,
     merchantId: access?.merchantId ?? null,
     merchantName: access?.merchantName ?? null,
     staffRole: access?.staffRole ?? null,

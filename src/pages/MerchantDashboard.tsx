@@ -67,6 +67,7 @@ import MerchantCouponsTab from "@/components/merchant/MerchantCouponsTab";
 import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { useFutureFeatures } from "@/hooks/use-future-features";
+import RequestAccessSheet from "@/components/merchant/RequestAccessSheet";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts" | "notifications";
@@ -169,7 +170,7 @@ const stagger = {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const MerchantDashboard = () => {
   const { user, isAuthenticated, loading: authLoading, signOut } = useAuth();
-  const { isStaff, staffRole, can, permissions: staffPermissions, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading, resolved: staffResolved } = useStaffAccess();
+  const { isStaff, staffRole, staffId, can, permissions: staffPermissions, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading, resolved: staffResolved } = useStaffAccess();
   const navigate = useNavigate();
   useUserSessionTimeout("merchant");
   const { toast } = useToast();
@@ -572,7 +573,7 @@ const MerchantDashboard = () => {
       {activeTab === "overview" && (
         <div className="px-4 py-4 pb-24">
           
-          <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} allTxns={txns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} isStaff={isStaff} can={can} />
+          <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} allTxns={txns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} isStaff={isStaff} can={can} staffId={staffId} />
         </div>
       )}
 
@@ -1038,7 +1039,7 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Overview Tab ── */
-const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onSeeAll, onOpenInbox, isStaff, can }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; allTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void; onOpenInbox: () => void; isStaff: boolean; can: (key: string) => boolean }) => {
+const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onSeeAll, onOpenInbox, isStaff, can, staffId }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; allTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void; onOpenInbox: () => void; isStaff: boolean; can: (key: string) => boolean; staffId: string | null }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { totalUnread } = useChat();
@@ -1046,6 +1047,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const [showCashOut, setShowCashOut] = useState(false);
   const [showAddBank, setShowAddBank] = useState(false);
   const [showSettlementConfig, setShowSettlementConfig] = useState(false);
+  const [requestSheet, setRequestSheet] = useState<{ label: string } | null>(null);
   const [overviewSelectedTx, setOverviewSelectedTx] = useState<TxnRow | null>(null);
 
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
@@ -1175,7 +1177,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
                 key={a.label}
                 whileTap={locked ? undefined : { scale: 0.95 }}
                 onClick={() => locked
-                  ? toast({ title: "Permission required", description: "Ask the store owner to enable this for you." })
+                  ? setRequestSheet({ label: a.label })
                   : a.onClick()}
                 aria-disabled={locked}
                 className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-card shadow-card border border-border/40 transition-all ${locked ? "opacity-50 cursor-not-allowed" : "hover:shadow-elevated press-effect"}`}>
@@ -1474,6 +1476,14 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
           </motion.div>
         )}
       </AnimatePresence>
+
+      <RequestAccessSheet
+        open={!!requestSheet}
+        onClose={() => setRequestSheet(null)}
+        tileLabel={requestSheet?.label ?? null}
+        merchantId={merchant?.id ?? null}
+        staffId={staffId}
+      />
     </motion.div>
   );
 };
