@@ -559,14 +559,14 @@ export default function MerchantLoginPage() {
                 <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors focus-within:border-amber-200/50 focus-within:bg-white/[0.06]">
                   <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
                     <Phone className="h-4 w-4 text-amber-200" />
-                    <span className="font-medium">+880</span>
+                    <span className="font-medium">+88</span>
                   </div>
                   <Input
                     id="merchant-phone"
                     type="tel"
                     inputMode="numeric"
                     autoComplete="tel"
-                    placeholder="1XXXXXXXXX"
+                    placeholder="01XXXXXXXXX"
                     value={phone}
                     disabled={isLocked}
                     onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); if (wrongPin) setWrongPin(false); }}

@@ -244,14 +244,14 @@ export default function MerchantForgotPinSheet({
                 <div className={`flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors ${accentRing}`}>
                   <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
                     <Phone className={`h-4 w-4 ${accentIcon}`} />
-                    <span className="font-medium">+880</span>
+                    <span className="font-medium">+88</span>
                   </div>
                   <Input
                     id="forgot-phone"
                     type="tel"
                     inputMode="numeric"
                     autoComplete="tel"
-                    placeholder="1XXXXXXXXX"
+                    placeholder="01XXXXXXXXX"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
                     className="h-9 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0"
