@@ -206,14 +206,21 @@ Deno.serve(async (req) => {
 
   let resolvedEmail: string | null = null;
   try {
+    // Find the profile for this phone, then look up the auth user's email
+    // so we know exactly which domain to sign in against (avoids 3x signins
+    // per attempt and the resulting GoTrue rate-limit false negatives).
     const { data: profileRow } = await admin
       .from("profiles")
-      .select("email")
+      .select("user_id")
       .eq("phone", phone)
       .maybeSingle();
-    const candidateFromProfile = (profileRow as { email?: string } | null)?.email;
-    if (candidateFromProfile && candidateEmails.includes(candidateFromProfile)) {
-      resolvedEmail = candidateFromProfile;
+    const profileUserId = (profileRow as { user_id?: string } | null)?.user_id;
+    if (profileUserId) {
+      const { data: authUserData } = await admin.auth.admin.getUserById(profileUserId);
+      const authEmail = authUserData?.user?.email ?? null;
+      if (authEmail && candidateEmails.includes(authEmail)) {
+        resolvedEmail = authEmail;
+      }
     }
   } catch (lookupErr) {
     console.warn("profile lookup failed", lookupErr);
