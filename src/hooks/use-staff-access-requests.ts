@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type RequestStatus = "pending" | "granted" | "denied" | "cancelled" | "revoked";
-export type RequestablePermissionKey = "payouts" | "store_settings" | "settlements";
+export type RequestablePermissionKey = "payouts" | "store_settings" | "settlements" | "add_bank";
 
 export interface StaffAccessRequest {
   id: string;
