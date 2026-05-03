@@ -220,7 +220,7 @@ function FullScreenSheet({
 
   const grantedList = useMemo(() => {
     const rows: Array<{ staff: StaffLite; key: RequestablePermissionKey; label: string }> = [];
-    const KEYS: RequestablePermissionKey[] = ["payouts", "store_settings", "settlements"];
+    const KEYS: RequestablePermissionKey[] = ["payouts", "add_bank", "store_settings", "settlements"];
     for (const s of staff) {
       const perms = (s.permissions ?? {}) as Record<string, boolean>;
       for (const k of KEYS) {
