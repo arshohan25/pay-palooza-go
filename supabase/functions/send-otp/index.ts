@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
 
     const ALLOWED_PURPOSES = new Set([
       "pin_reset",
+      "merchant_pin_reset",
       "payment",
       "agent_register",
       "device_verify_user",
@@ -59,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     // Check phone is registered (for pin_reset and payment purposes, skip for agent_register)
-    if (validPurpose === "pin_reset" || validPurpose === "payment") {
+    if (validPurpose === "pin_reset" || validPurpose === "merchant_pin_reset" || validPurpose === "payment") {
       const { data: profile } = await supabaseAdmin
         .from("profiles")
         .select("id")
