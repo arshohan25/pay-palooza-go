@@ -195,16 +195,36 @@ Deno.serve(async (req) => {
   }
 
   // 2. PIN auth (no session returned to client until device verified)
+  // Look up the correct email domain first to avoid hammering GoTrue with
+  // 3x signIn attempts per request (which triggers per-IP/email rate limits
+  // and produces spurious "Invalid login credentials" errors).
   const password = `${pin}EP`;
   const candidateEmails = [
     `${phone}@${PRIMARY_DOMAIN}`,
     ...FALLBACK_DOMAINS.map((d) => `${phone}@${d}`),
   ];
 
+  let resolvedEmail: string | null = null;
+  try {
+    const { data: profileRow } = await admin
+      .from("profiles")
+      .select("email")
+      .eq("phone", phone)
+      .maybeSingle();
+    const candidateFromProfile = (profileRow as { email?: string } | null)?.email;
+    if (candidateFromProfile && candidateEmails.includes(candidateFromProfile)) {
+      resolvedEmail = candidateFromProfile;
+    }
+  } catch (lookupErr) {
+    console.warn("profile lookup failed", lookupErr);
+  }
+
+  const emailsToTry = resolvedEmail ? [resolvedEmail] : candidateEmails;
+
   let session: any = null;
   let user: any = null;
 
-  for (const email of candidateEmails) {
+  for (const email of emailsToTry) {
     const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -216,8 +236,16 @@ Deno.serve(async (req) => {
     }
     if (error?.message?.includes("Invalid login credentials")) continue;
     if (error) {
+      // Rate-limit / transient auth errors: don't burn a failed-attempt slot,
+      // tell the client to retry instead of falsely showing "Incorrect PIN".
       console.error("auth error", error);
-      return json(500, { ok: false, message: "Login service unavailable" });
+      const isRateLimited = /rate.?limit|too many/i.test(error.message || "");
+      return json(isRateLimited ? 429 : 500, {
+        ok: false,
+        message: isRateLimited
+          ? "Too many sign-in attempts. Please wait a minute and try again."
+          : "Login service unavailable",
+      });
     }
   }
 
