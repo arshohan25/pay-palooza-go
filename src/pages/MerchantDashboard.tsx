@@ -229,6 +229,16 @@ const MerchantDashboard = () => {
   const handleLogout = useCallback(async () => {
     const loginRedirect = isStaff ? "/merchant-manager-login" : "/merchant-login";
     try { sessionStorage.setItem("mfs_manual_logout", "1"); } catch {}
+    // Staff/manager logout must not leave the manager phone bound to this
+    // device, otherwise the next visit to the manager login page would show
+    // the previous manager's number instead of a clean form.
+    if (isStaff) {
+      try {
+        localStorage.removeItem("mfs_device_phone");
+        localStorage.removeItem("mfs_is_merchant_staff");
+        localStorage.removeItem("mfs_has_authenticated");
+      } catch {}
+    }
     setLoggingOut(true);
     // Navigate first so the session watchdog (which fires on SIGNED_OUT)
     // doesn't race us to /merchant-login with an "expired" toast.
