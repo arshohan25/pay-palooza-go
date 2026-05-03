@@ -171,17 +171,16 @@ export default function MerchantForgotPinSheet({
 
   // ── Step 3: Handoff to live chat ─────────────────────────────────
   const goToLiveSupport = () => {
-    const masked = maskBdPhone(cleanedPhone);
     const prefill = encodeURIComponent(
-      `Hi, I forgot my Merchant PIN for +88 ${masked}. Identity verified via OTP at ${new Date().toLocaleString()}. Please complete my PIN reset.`,
+      `Hi, I forgot my Merchant PIN. Identity verified via OTP at ${new Date().toLocaleString()}. Please complete my PIN reset on my registered number.`,
     );
     const ctxTitle = encodeURIComponent("Merchant PIN reset · OTP verified");
     const ctxBody = encodeURIComponent(
-      `Phone: +88 ${masked} · Source: ${source} · Verified at ${new Date().toISOString()}`,
+      `Source: ${source} · Verified at ${new Date().toISOString()} · Registered number on file with support`,
     );
     onOpenChange(false);
     navigate(
-      `/account?openChat=1&prefill=${prefill}&contextTitle=${ctxTitle}&contextBody=${ctxBody}`,
+      `/merchant-support?openChat=1&prefill=${prefill}&contextTitle=${ctxTitle}&contextBody=${ctxBody}`,
     );
   };
 

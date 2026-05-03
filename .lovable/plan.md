@@ -1,25 +1,53 @@
-I found the cause: the manager login page is using the shared device auth flags (`mfs_device_phone` and `mfs_has_authenticated`) that are also used by the main wallet/merchant returning-user flow. On successful manager login it writes the manager phone into `mfs_device_phone`, and on logout the app does not clear that phone. The page also uses `mfs_has_authenticated` to hide the first-time explainer, so after logout it still looks like a returning/remembered session instead of a clean login page.
+## Issues observed (from screenshot at /account in merchant PIN reset flow)
 
-Plan:
+1. **Full phone visible in composer.** The prefilled draft contains `+88 019•••••954` text — but `redactSensitive` runs only on the rendered context body, not on the input text. Worse, on submit the actual sent message will contain the masked form fine, BUT the screenshot shows `+88 019•••••954` already masked in composer ✓. The real leak is **the context banner body** still shows the full masked phone — actually that's masked too. Re-reading: the red box highlights the composer text containing `+88 019•••••954`. That IS masked. The user's complaint is that this masked-but-still-identifiable number plus the dotted middle is undesirable, AND `redactSensitive` would normally turn `01XXXXXXXXX` into `[PHONE REDACTED]` — but the masked form (`019•••••954`) bypasses the regex.
 
-1. Stop saving manager numbers as the device-bound phone
-   - Update `src/pages/MerchantManagerLoginPage.tsx` so manager sign-in no longer writes `mfs_device_phone`.
-   - Keep only the minimum “manager has signed in before” UX if needed, but do not store/prefill the phone number.
+   **Real fix:** In `MerchantForgotPinSheet.goToLiveSupport()`, do not embed the phone (masked or otherwise) into either the prefill draft or the context body. Reference it generically ("my registered number") and rely on the OTP ticket / server-side log for identification.
 
-2. Clear manager-only UI state on manual logout
-   - Update `src/pages/MerchantDashboard.tsx` logout handling so when a staff/manager logs out it clears manager-specific local state and trusted-device token for the current manager phone where possible.
-   - Keep owner logout behavior intact.
+2. **Live Chat sheet not responsive on 390px viewport.** In `AccountPage.tsx` (lines 523–538), the `<SheetContent>` uses `h-[85vh]` with `<SupportChat>` inside — but `SupportChat` itself sets `h-[50vh]` on its root, so it doesn't fill the sheet, and the messages area gets squeezed. On small phones the bubbles overlap the avatars and the composer is cramped.
 
-3. Make the manager login page always a clean sign-in form after logout
-   - Remove the dependency on the global `mfs_has_authenticated` flag for hiding/showing the manager page explainer/footer.
-   - Ensure the phone input value starts as empty on `/merchant-manager-login` every time, with placeholder `01XXXXXXXXX` and prefix `+88`.
+   **Fix:**
+   - Change `SupportChat` root from `h-[50vh]` to `h-full min-h-0`.
+   - Add `flex flex-col min-h-0` chain so the messages list scrolls independently.
+   - Reduce horizontal padding (`px-4` → `px-3`) and tighten message bubble max-width on `<sm` so avatars don't get clipped.
+   - Make the AccountPage sheet use `h-[92dvh] sm:h-[85vh]` with `dvh` for mobile browser chrome.
 
-4. Prevent future cross-contamination between owner and manager login
-   - Use manager-specific keys only for manager UI state if any is still required.
-   - Avoid using the owner/wallet device-bound phone key for manager login.
+3. **Merchant PIN reset chat opens user app (`/account`) instead of merchant app.** `MerchantForgotPinSheet.goToLiveSupport()` always navigates to `/account?openChat=1...`, but this sheet is launched from `/merchant-login` and `/merchant-manager-login`. After login the user lands in `/merchant`, which doesn't even have an `openChat` handler.
 
-5. Add/adjust tests
-   - Add coverage that visiting `/merchant-manager-login` with existing localStorage does not prefill or show a saved manager phone.
-   - Add coverage that manager logout redirects to `/merchant-manager-login` and clears manager login state.
+   **Fix:**
+   - Add an `openChat` query handler on the merchant side. Two options:
+     - **(a) New route `/merchant-support`** — a lightweight standalone page that renders `<SupportChat>` in a full-screen sheet, gated by auth, branded with the merchant theme. Works even if the user isn't yet logged into merchant portal (since PIN reset is pre-login).
+     - **(b) Reuse `/account` but theme it.** Less work but mixes user + merchant surfaces.
+   - Recommend **(a)**: PIN reset is pre-login, so we cannot rely on the merchant dashboard's auth guard. The new `/merchant-support` page will:
+     - Require a valid Supabase session (sign in is independent of merchant PIN — the OTP step just verified phone ownership; if no session exists, prompt them to sign in to the EasyPay account first, OR allow anonymous handoff via the existing `merchant-forgot-pin` edge function ticket which already logged the request server-side).
+     - Read `prefill`, `contextTitle`, `contextBody` query params identically to `AccountPage`.
+     - Render `<SupportChat>` filling the viewport.
+   - Update `MerchantForgotPinSheet.goToLiveSupport()` to navigate to `/merchant-support?...` instead of `/account?...`.
 
-Result: after a manager logs out, they will land on the manager login page as a fresh/clean form, without any saved number shown or returning-user state leaking from the previous session.
+## Files to change
+
+- `src/components/merchant/MerchantForgotPinSheet.tsx`
+  - Remove phone from `prefill` and `contextBody` (use generic phrasing + reference the OTP ticket id if available).
+  - Change navigation target from `/account` to `/merchant-support`.
+
+- `src/components/SupportChat.tsx`
+  - Root: `h-[50vh]` → `h-full min-h-0 flex flex-col`.
+  - Tighten bubble `max-w-[75%]` → `max-w-[78%] sm:max-w-[75%]`, add `break-words` (already present), and shrink avatar spacing on small screens.
+
+- `src/pages/AccountPage.tsx`
+  - Sheet height: `h-[85vh]` → `h-[92dvh] sm:h-[85vh]`, ensure inner wrapper is `flex flex-col min-h-0`.
+
+- `src/pages/MerchantSupportPage.tsx` (new)
+  - Mirrors AccountPage's `openChat` query parsing.
+  - Full-screen merchant-themed shell (dark gradient matching `MerchantForgotPinSheet`).
+  - Renders `<SupportChat userId={...} initialDraft={...} initialContext={...} />`.
+  - If no session: show a CTA explaining the verified ticket has been logged and to sign in to continue chat.
+
+- `src/App.tsx`
+  - Register `/merchant-support` route (public — no `RoleGuard`, so pre-login users from PIN reset flow can land here).
+
+## Acceptance
+
+- Submitting the PIN reset chat from `/merchant-login` lands on `/merchant-support`, not `/account`.
+- The composer prefill no longer contains the phone digits (masked or otherwise). Context banner shows only "Source: merchant-login · Verified at <timestamp>".
+- At 390×638, the Live Chat sheet fills the viewport, messages scroll independently, no avatar/bubble overlap, composer fully visible above the keyboard.

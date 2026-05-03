@@ -37,6 +37,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const TeamLoginPage = lazy(() => import("./pages/TeamLoginPage"));
 const MerchantLoginPage = lazy(() => retryLazyImport(() => import("./pages/MerchantLoginPage")));
 const MerchantManagerLoginPage = lazy(() => retryLazyImport(() => import("./pages/MerchantManagerLoginPage")));
+const MerchantSupportPage = lazy(() => retryLazyImport(() => import("./pages/MerchantSupportPage")));
 const RoleInstallPage = lazy(() => import("./pages/RoleInstallPage"));
 const ShopPage = lazy(() => import("./pages/ShopPage"));
 const ShopCheckoutPage = lazy(() => import("./pages/ShopCheckoutPage"));
@@ -136,6 +137,7 @@ const App = () => (
                     <Route path="/team-login" element={<TeamLoginPage />} />
                     <Route path="/merchant-login" element={<MerchantLoginPage />} />
                     <Route path="/merchant-manager-login" element={<MerchantManagerLoginPage />} />
+                    <Route path="/merchant-support" element={<MerchantSupportPage />} />
                     <Route path="/install" element={<RoleInstallPage />} />
                     <Route path="/install/:role" element={<RoleInstallPage />} />
                     <Route path="/developers" element={<DeveloperPortal />} />

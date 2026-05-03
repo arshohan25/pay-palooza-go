@@ -521,11 +521,11 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
 
       {/* Live Chat Sheet */}
       <Sheet open={showSupport} onOpenChange={setShowSupport}>
-        <SheetContent side="bottom" className="rounded-t-3xl h-[85vh] flex flex-col p-0">
-          <SheetHeader className="px-6 pt-5 pb-3">
+        <SheetContent side="bottom" className="rounded-t-3xl h-[92dvh] sm:h-[85vh] flex flex-col p-0 gap-0">
+          <SheetHeader className="px-4 sm:px-6 pt-4 pb-2 shrink-0">
             <SheetTitle className="text-base">{t("liveChatTitle")}</SheetTitle>
           </SheetHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
             {userId ? (
               <SupportChat userId={userId} initialDraft={chatDraft} initialContext={chatContext} />
             ) : (
