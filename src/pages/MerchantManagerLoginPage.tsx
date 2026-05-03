@@ -55,7 +55,10 @@ export default function MerchantManagerLoginPage() {
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const [wrongPin, setWrongPin] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
-  const [hasAuthedBefore, setHasAuthedBefore] = useState(false);
+  // Manager login is intentionally always treated as a fresh sign-in — we do
+  // NOT remember the manager's phone or hide the explainer based on prior
+  // global auth, otherwise the page looks "half logged in" after a logout.
+  const hasAuthedBefore = false;
   const tickerRef = useRef<number | null>(null);
 
   type Step = "signin" | "otp";
@@ -65,9 +68,6 @@ export default function MerchantManagerLoginPage() {
 
   // Restore lockout — but DO NOT prefill device-bound owner phone (managers use their own).
   useEffect(() => {
-    try {
-      setHasAuthedBefore(localStorage.getItem("mfs_has_authenticated") === "1");
-    } catch {}
     try {
       const raw = localStorage.getItem(LS_LOCKED_UNTIL);
       if (raw) {
@@ -294,10 +294,10 @@ export default function MerchantManagerLoginPage() {
         refresh_token: pending.refresh_token,
       });
       if (setErr) throw setErr;
-      try {
-        localStorage.setItem("mfs_device_phone", pending.cleanedPhone);
-        localStorage.setItem("mfs_has_authenticated", "1");
-      } catch {}
+      // Note: manager sign-in does NOT bind the device phone or set the
+      // global "has authenticated" flag — those belong to the wallet/owner
+      // returning-user flow. Otherwise after logout the manager login page
+      // would still look like a remembered session.
       pendingSessionRef.current = null;
       toast.success("Welcome back, Manager!");
       navigate(redirectTarget, { replace: true });
