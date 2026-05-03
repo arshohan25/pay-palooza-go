@@ -314,7 +314,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
   }
 
   return (
-    <div className="flex flex-col h-[50vh]">
+    <div className="flex flex-col h-full min-h-0 px-3 sm:px-4 pb-3">
       {/* E2E Encryption + Screenshot Alert Header */}
       <div className={`flex items-center justify-between px-3 py-1.5 border-b border-border/40 transition-colors ${screenshotAlert ? "bg-destructive/10" : "bg-muted/40"}`}>
         <div className="flex items-center gap-1.5">
