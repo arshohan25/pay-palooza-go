@@ -1151,10 +1151,10 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   };
 
   const quickActions = [
-    { icon: Send, label: "Send Money", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
-    { icon: HandCoins, label: "Cash Out", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
-    { icon: Landmark, label: "Add Bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
-    { icon: CalendarClock, label: "Settlement", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
+    { icon: Send, label: "Send Money", permission: "payouts", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
+    { icon: HandCoins, label: "Cash Out", permission: "payouts", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
+    { icon: Landmark, label: "Add Bank", permission: "store_settings", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
+    { icon: CalendarClock, label: "Settlement", permission: "settlements", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
     
   ];
 
@@ -1168,17 +1168,31 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
           </h3>
         </div>
         <div className="grid grid-cols-4 gap-2">
-          {quickActions.map(a => (
-            <motion.button key={a.label} whileTap={{ scale: 0.95 }} onClick={a.onClick}
-              className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-card shadow-card border border-border/40 hover:shadow-elevated transition-all press-effect">
-              <div className="relative">
-                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shadow-sm`}>
-                  <a.icon size={18} className="text-white" />
+          {quickActions.map(a => {
+            const locked = isStaff && !can(a.permission);
+            return (
+              <motion.button
+                key={a.label}
+                whileTap={locked ? undefined : { scale: 0.95 }}
+                onClick={() => locked
+                  ? toast({ title: "Permission required", description: "Ask the store owner to enable this for you." })
+                  : a.onClick()}
+                aria-disabled={locked}
+                className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-card shadow-card border border-border/40 transition-all ${locked ? "opacity-50 cursor-not-allowed" : "hover:shadow-elevated press-effect"}`}>
+                <div className="relative">
+                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shadow-sm`}>
+                    <a.icon size={18} className="text-white" />
+                  </div>
+                  {locked && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-background border border-border/60 flex items-center justify-center shadow-sm">
+                      <Lock size={9} className="text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
-              </div>
-              <span className="text-[10px] font-bold text-foreground leading-tight text-center">{a.label}</span>
-            </motion.button>
-          ))}
+                <span className="text-[10px] font-bold text-foreground leading-tight text-center">{a.label}</span>
+              </motion.button>
+            );
+          })}
         </div>
       </motion.div>
 
