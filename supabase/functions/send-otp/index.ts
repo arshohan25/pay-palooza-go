@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
 
     const ALLOWED_PURPOSES = new Set([
       "pin_reset",
+      "merchant_pin_reset",
       "payment",
       "agent_register",
       "device_verify_user",
