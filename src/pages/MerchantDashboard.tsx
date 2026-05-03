@@ -572,7 +572,7 @@ const MerchantDashboard = () => {
       {activeTab === "overview" && (
         <div className="px-4 py-4 pb-24">
           
-          <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} allTxns={txns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} />
+          <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} allTxns={txns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} isStaff={isStaff} can={can} />
         </div>
       )}
 
