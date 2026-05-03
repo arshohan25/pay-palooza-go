@@ -20,8 +20,9 @@ interface Props {
 
 const PERM_LABEL: Record<RequestablePermissionKey, string> = {
   payouts: "Payouts (Send Money, Cash Out, Bank Transfer)",
-  store_settings: "Store Settings (incl. Add Bank)",
+  store_settings: "Store Settings",
   settlements: "Settlements",
+  add_bank: "Add bank account",
 };
 
 function timeAgo(iso: string) {
