@@ -227,6 +227,7 @@ const MerchantDashboard = () => {
   }, []);
 
   const handleLogout = useCallback(async () => {
+    const loginRedirect = isStaff ? "/merchant-manager-login" : "/merchant-login";
     setLoggingOut(true);
     try {
       await signOut();
@@ -235,9 +236,9 @@ const MerchantDashboard = () => {
     } finally {
       setLoggingOut(false);
       setShowLogoutConfirm(false);
-      navigate("/merchant-login", { replace: true });
+      navigate(loginRedirect, { replace: true });
     }
-  }, [signOut, navigate]);
+  }, [signOut, navigate, isStaff]);
 
   const loadData = useCallback(async () => {
     if (!user) return;
