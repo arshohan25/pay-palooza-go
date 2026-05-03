@@ -70,6 +70,10 @@ export function useStaffAccess() {
           : null;
         _cachedAccess = next;
         _cachedForUserId = uid;
+        try {
+          if (next) localStorage.setItem("mfs_is_merchant_staff", "1");
+          else localStorage.removeItem("mfs_is_merchant_staff");
+        } catch {}
         setAccess(next);
         setResolved(true);
         setLoading(false);

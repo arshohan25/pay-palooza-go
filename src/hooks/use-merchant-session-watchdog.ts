@@ -44,9 +44,13 @@ export function useMerchantSessionWatchdog() {
       const redirectTarget = pathRef.current.startsWith("/merchant")
         ? pathRef.current
         : "/merchant";
+      let isStaff = false;
+      try { isStaff = localStorage.getItem("mfs_is_merchant_staff") === "1"; } catch {}
+      try { localStorage.removeItem("mfs_is_merchant_staff"); } catch {}
+      const loginPath = isStaff ? "/merchant-manager-login" : "/merchant-login";
       toast.error("Your session has expired. Please sign in again.");
       navigate(
-        `/merchant-login?redirect=${encodeURIComponent(redirectTarget)}`,
+        `${loginPath}?redirect=${encodeURIComponent(redirectTarget)}`,
         { replace: true }
       );
     };
