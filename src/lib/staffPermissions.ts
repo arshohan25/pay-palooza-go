@@ -41,6 +41,7 @@ export const STAFF_PERMISSIONS: StaffPermissionDef[] = [
 
   // Store
   { key: "qr",              label: "QR codes",          group: "Store", hint: "Generate payment QR" },
+  { key: "add_bank",         label: "Add bank account",  group: "Store", hint: "Link bank accounts for payouts" },
   { key: "store_settings",  label: "Store settings",    group: "Store", hint: "Edit business info, hours" },
 
   // Personal
@@ -80,7 +81,7 @@ export const ROLE_DEFAULTS: Record<StaffRole, string[]> = {
     "products_view","products_manage","coupons",
     "transactions","payouts","settlements","mdr",
     "customers_view","analytics","paylinks",
-    "qr","store_settings","notifications",
+    "qr","add_bank","store_settings","notifications",
   ],
   Cashier: [
     "orders_view","orders_manage","products_view","inbox","customers_view","qr","notifications",
