@@ -1,29 +1,71 @@
-## Hide cross-portal CTAs for verified devices
+## Goal
 
-The screenshot points at the "New here? Apply as a merchant →" pill and the "Manage a store as staff? Manager login →" link at the bottom of the merchant login screen. These are acquisition/discovery prompts — once the device is already verified and bound to a returning user, they're noise. Same applies to the matching block on the manager login screen ("Are you the store owner? Owner login" + "Don't have an EasyPay account? Sign up").
+In the merchant dashboard's "Merchant Services" grid, the four quick actions — **Send Money, Cash Out, Add Bank, Settlement** — are currently always visible and clickable. When a **manager (staff)** is signed in, they must only be able to use each action if the **merchant owner** has granted the matching permission. Owners are unaffected.
 
-### What changes
+## Permission mapping
 
-**`src/pages/MerchantLoginPage.tsx`** (lines ~679–701)
-- Wrap the **"New here? Apply as a merchant"** Button and the **"Manage a store as staff? Manager login"** link in a `{!boundPhone && ( … )}` guard.
-- `boundPhone` is already set from `localStorage.mfs_device_phone` on mount, so a returning verified merchant on this device will see only:
-  - The phone + PIN form
-  - The compact "Forgot PIN? Reset securely →" chip
-- A first-time visitor (no `mfs_device_phone`) keeps the full discovery footer.
+Map each quick action to an existing permission key from `src/lib/staffPermissions.ts`:
 
-**`src/pages/MerchantManagerLoginPage.tsx`** (lines ~531–547)
-- Wrap the **"Are you the store owner? Owner login"** Button and the **"Don't have an EasyPay account? Sign up"** link in a `{!hasAuthedBefore && ( … )}` guard.
-- `hasAuthedBefore` is already populated from `localStorage.mfs_has_authenticated` on mount and is the same flag we use for the manager explainer + trust pills, keeping behavior consistent: returning managers see the clean form + Forgot PIN chip only.
+| Action      | Required permission key | Group label                |
+|-------------|-------------------------|----------------------------|
+| Send Money  | `payouts`               | Money — "Payouts"          |
+| Cash Out    | `payouts`               | Money — "Payouts"          |
+| Add Bank    | `store_settings`        | Store — "Store settings"   |
+| Settlement  | `settlements`           | Money — "Settlements"      |
 
-### What stays visible for everyone
+These keys already exist, are already shown in the owner's "Add/Edit Permissions" sheet (`MerchantStaffTab`), and are already saved on each staff row — no schema or DB changes needed.
 
-- The phone + PIN inputs and primary "Sign in" CTA
-- The compact **Forgot PIN? Reset securely →** chip (still essential for verified users)
-- Lockout / wrong-PIN banners
-- The OTP step when triggered
+(If later we want finer separation between Send Money and Cash Out we can split them, but `payouts` is the closest existing concept and reuses the owner's existing UI without adding new toggles.)
 
-### Technical notes
+## Behaviour
 
-- No new state, no new effects — both pages already track the "returning device" signal (`boundPhone` for merchant, `hasAuthedBefore` for manager). This is purely a conditional render around an existing JSX block.
-- The acquisition CTAs remain reachable via the public landing page (`/`) and `/auth`, so we're not removing entry points — only decluttering the verified-device experience.
-- No backend, route, or auth-flow changes.
+- **Owner** (`isStaff === false`): all 4 actions visible and enabled. No change.
+- **Manager / staff** (`isStaff === true`):
+  - Each action is rendered, but if `can(requiredPermission)` is false the tile is shown in a **locked state**:
+    - Reduced opacity (~50%), small lock icon overlay on the icon tile
+    - `disabled` button — tap does not open the sheet
+    - On tap, a toast: *"Ask the store owner to enable this for you."*
+  - This keeps the 4-up grid layout intact (no jumping) and makes the restriction obvious without hiding features completely. Matches the existing pattern used elsewhere in the app for permission-gated tabs.
+
+## Implementation
+
+Single file: `src/pages/MerchantDashboard.tsx`.
+
+1. **Pass staff context into `MerchOverview`** — in the parent component, read `isStaff` and `can` from the already-mounted `useStaffAccess()` hook and pass them as props (`isStaff: boolean`, `can: (key: string) => boolean`).
+
+2. **Update `quickActions` array** (around line 1153) to include a `permission` field:
+   ```ts
+   const quickActions = [
+     { icon: Send,          label: "Send Money", permission: "payouts",        ... },
+     { icon: HandCoins,     label: "Cash Out",   permission: "payouts",        ... },
+     { icon: Landmark,      label: "Add Bank",   permission: "store_settings", ... },
+     { icon: CalendarClock, label: "Settlement", permission: "settlements",    ... },
+   ];
+   ```
+
+3. **Render-time gating** in the grid map (around line 1170):
+   ```tsx
+   const locked = isStaff && !can(a.permission);
+   <motion.button
+     disabled={locked}
+     onClick={() => locked
+       ? toast({ title: "Permission required", description: "Ask the store owner to enable this for you." })
+       : a.onClick()}
+     className={`... ${locked ? "opacity-50" : ""}`}
+   >
+     ...icon tile...
+     {locked && <Lock size={10} className="absolute -top-1 -right-1 ..." />}
+   </motion.button>
+   ```
+
+4. **Import** `Lock` from `lucide-react` (already used elsewhere in the file — verify and add if missing).
+
+## Out of scope
+
+- No DB / RLS changes. The DB-level guards on `wallet_transactions`, `merchant_bank_accounts`, and `settlement_*` already enforce ownership; this is purely a UX gate so managers don't tap into a flow they'll be denied at submit time.
+- No changes to the owner's permission editor (`MerchantStaffTab`) — the four mapped keys are already shown there.
+- No changes to other tabs/menus — those are already filtered by `TAB_TO_PERMISSION` (lines 183, 192).
+
+## Files touched
+
+- `src/pages/MerchantDashboard.tsx` — pass staff props into `MerchOverview`, add `permission` to `quickActions`, lock-state rendering.
