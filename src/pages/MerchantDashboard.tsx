@@ -228,15 +228,19 @@ const MerchantDashboard = () => {
 
   const handleLogout = useCallback(async () => {
     const loginRedirect = isStaff ? "/merchant-manager-login" : "/merchant-login";
+    try { sessionStorage.setItem("mfs_manual_logout", "1"); } catch {}
     setLoggingOut(true);
+    // Navigate first so the session watchdog (which fires on SIGNED_OUT)
+    // doesn't race us to /merchant-login with an "expired" toast.
+    navigate(loginRedirect, { replace: true });
     try {
       await signOut();
     } catch (err) {
-      // ignore — still redirect to login
+      // ignore — already navigated away
     } finally {
       setLoggingOut(false);
       setShowLogoutConfirm(false);
-      navigate(loginRedirect, { replace: true });
+      try { sessionStorage.removeItem("mfs_manual_logout"); } catch {}
     }
   }, [signOut, navigate, isStaff]);
 
