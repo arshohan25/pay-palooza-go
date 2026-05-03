@@ -23,10 +23,14 @@ import {
   ArrowRight,
   AlertTriangle,
   KeyRound,
+  ShieldCheck,
+  Fingerprint,
+  Building2,
 } from "lucide-react";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
 const LS_MANAGER_PHONE = "mfs_merchant_manager_phone";
+const LS_MANAGER_SEEN = "mfs_manager_login_seen";
 
 function formatCountdown(seconds: number) {
   const m = Math.floor(seconds / 60);
