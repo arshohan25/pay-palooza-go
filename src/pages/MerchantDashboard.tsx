@@ -169,7 +169,7 @@ const stagger = {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const MerchantDashboard = () => {
   const { user, isAuthenticated, loading: authLoading, signOut } = useAuth();
-  const { isStaff, staffRole, can, permissions: staffPermissions, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading, resolved: staffResolved } = useStaffAccess();
+  const { isStaff, staffRole, staffId, can, permissions: staffPermissions, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading, resolved: staffResolved } = useStaffAccess();
   const navigate = useNavigate();
   useUserSessionTimeout("merchant");
   const { toast } = useToast();
