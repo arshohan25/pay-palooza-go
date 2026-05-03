@@ -29,6 +29,7 @@ import {
 } from "@/lib/staffPermissions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { usePermissionPresets, type CustomPreset } from "@/hooks/use-permission-presets";
+import StaffAccessRequestsPanel, { AccessRequestsHeaderButton } from "./StaffAccessRequestsPanel";
 
 const roleColors: Record<string, string> = {
   Manager: "bg-primary/10 text-primary border-primary/20",
