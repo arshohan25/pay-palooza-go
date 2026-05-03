@@ -81,7 +81,7 @@ export const ROLE_DEFAULTS: Record<StaffRole, string[]> = {
     "products_view","products_manage","coupons",
     "transactions","payouts","settlements","mdr",
     "customers_view","analytics","paylinks",
-    "qr","store_settings","notifications",
+    "qr","add_bank","store_settings","notifications",
   ],
   Cashier: [
     "orders_view","orders_manage","products_view","inbox","customers_view","qr","notifications",
