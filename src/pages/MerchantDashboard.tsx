@@ -1047,6 +1047,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const [showCashOut, setShowCashOut] = useState(false);
   const [showAddBank, setShowAddBank] = useState(false);
   const [showSettlementConfig, setShowSettlementConfig] = useState(false);
+  const [requestSheet, setRequestSheet] = useState<{ label: string } | null>(null);
   const [overviewSelectedTx, setOverviewSelectedTx] = useState<TxnRow | null>(null);
 
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
