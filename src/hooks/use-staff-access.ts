@@ -131,6 +131,7 @@ export function useStaffAccess() {
   };
 
   return {
+    staffId: access?.staffId ?? null,
     merchantId: access?.merchantId ?? null,
     merchantName: access?.merchantName ?? null,
     staffRole: access?.staffRole ?? null,
