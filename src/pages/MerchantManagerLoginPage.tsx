@@ -528,23 +528,27 @@ export default function MerchantManagerLoginPage() {
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
             </button>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/merchant-login")}
-              className="h-10 w-full rounded-2xl border-white/20 bg-white/[0.06] text-sm font-medium text-sky-100 hover:bg-white/[0.12] hover:text-white"
-            >
-              <Store className="mr-1 h-4 w-4" />
-              Are you the store owner? Owner login
-              <ArrowRight className="ml-1 h-3.5 w-3.5" />
-            </Button>
-            <button
-              type="button"
-              onClick={() => navigate("/auth")}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/60 transition-colors hover:text-sky-100"
-            >
-              Don't have an EasyPay account? Sign up
-            </button>
+            {!hasAuthedBefore && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/merchant-login")}
+                  className="h-10 w-full rounded-2xl border-white/20 bg-white/[0.06] text-sm font-medium text-sky-100 hover:bg-white/[0.12] hover:text-white"
+                >
+                  <Store className="mr-1 h-4 w-4" />
+                  Are you the store owner? Owner login
+                  <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/auth")}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/60 transition-colors hover:text-sky-100"
+                >
+                  Don't have an EasyPay account? Sign up
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
