@@ -16,14 +16,12 @@ import DeviceOtpStep from "@/components/DeviceOtpStep";
 import MerchantForgotPinSheet from "@/components/merchant/MerchantForgotPinSheet";
 import {
   UserCog,
-  ShieldCheck,
   Lock,
   Phone,
   Sparkles,
   Loader2,
   ArrowRight,
   AlertTriangle,
-  HelpCircle,
   KeyRound,
 } from "lucide-react";
 
@@ -291,10 +289,9 @@ export default function MerchantManagerLoginPage() {
         refresh_token: pending.refresh_token,
       });
       if (setErr) throw setErr;
-      // Note: manager sign-in does NOT bind the device phone or set the
-      // global "has authenticated" flag — those belong to the wallet/owner
-      // returning-user flow. Otherwise after logout the manager login page
-      // would still look like a remembered session.
+      // Save only the manager phone in an isolated key; do not touch the
+      // owner/wallet returning-user keys.
+      try { localStorage.setItem(LS_MANAGER_PHONE, pending.cleanedPhone); } catch {}
       pendingSessionRef.current = null;
       toast.success("Welcome back, Manager!");
       navigate(redirectTarget, { replace: true });
