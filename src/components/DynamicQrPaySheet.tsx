@@ -54,8 +54,9 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
       setAmount(session.amount);
       setReference(session.reference || "");
 
-      const { data: merch } = await supabase.from("merchants").select("business_name").eq("id", session.merchant_id).single();
-      if (merch) setMerchantName(merch.business_name);
+      const { data: merchRows } = await supabase.rpc("get_merchant_display_name", { p_merchant_id: session.merchant_id });
+      const merch = Array.isArray(merchRows) ? merchRows[0] : null;
+      if (merch?.business_name) setMerchantName(merch.business_name);
 
       setStep("confirm");
     })();
