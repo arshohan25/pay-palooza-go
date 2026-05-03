@@ -365,29 +365,6 @@ export default function MerchantManagerLoginPage() {
               className="rounded-[19px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
             >
               <fieldset disabled={isLocked} className="m-0 border-0 p-0 disabled:opacity-100">
-                {/* Manager-specific explainer (only for first-time visitors) */}
-                {!hasAuthedBefore && (
-                  <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-sky-300/25 bg-sky-400/10 p-3 text-sky-50">
-                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-200" />
-                    <div className="space-y-0.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-100">
-                        Use your own phone & PIN
-                      </p>
-                      <p className="text-[12px] leading-snug text-sky-50/85">
-                        Sign in with the EasyPay account the store owner invited — not the owner's number. New here?{" "}
-                        <button
-                          type="button"
-                          onClick={() => navigate("/auth")}
-                          className="font-semibold underline underline-offset-2 hover:text-white"
-                        >
-                          Sign up first
-                        </button>
-                        , then ask the owner to add you.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 {isLocked && (
                   <div role="alert" aria-live="polite"
                     className="mb-3 flex items-start gap-2.5 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-rose-100"
@@ -489,22 +466,6 @@ export default function MerchantManagerLoginPage() {
                   )}
                 </Button>
 
-                {!hasAuthedBefore && (
-                  <div className="mt-3 grid grid-cols-3 gap-1.5">
-                    {[
-                      { icon: Lock, label: "Secure PIN" },
-                      { icon: ShieldCheck, label: "Encrypted" },
-                      { icon: Sparkles, label: "Bank-grade" },
-                    ].map(({ icon: Icon, label }) => (
-                      <div key={label}
-                        className="flex items-center justify-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-1 text-[10px] font-medium text-white/70"
-                      >
-                        <Icon className="h-3 w-3 text-sky-200" />
-                        {label}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </fieldset>
             </form>
           )}
@@ -522,27 +483,6 @@ export default function MerchantManagerLoginPage() {
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
             </button>
 
-            {!hasAuthedBefore && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate("/merchant-login")}
-                  className="h-10 w-full rounded-2xl border-white/20 bg-white/[0.06] text-sm font-medium text-sky-100 hover:bg-white/[0.12] hover:text-white"
-                >
-                  <Store className="mr-1 h-4 w-4" />
-                  Are you the store owner? Owner login
-                  <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/auth")}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/60 transition-colors hover:text-sky-100"
-                >
-                  Don't have an EasyPay account? Sign up
-                </button>
-              </>
-            )}
           </div>
         </div>
       </div>
