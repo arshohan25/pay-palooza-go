@@ -65,6 +65,15 @@ export default function MerchantManagerLoginPage() {
   const pendingSessionRef = useRef<{ cleanedPhone: string } | null>(null);
   const otp = useDeviceOtpVerification("merchant");
 
+  // First-visit-per-device intro screen
+  const [showIntro, setShowIntro] = useState(() => {
+    try { return localStorage.getItem(LS_MANAGER_SEEN) !== "1"; } catch { return true; }
+  });
+  const dismissIntro = () => {
+    try { localStorage.setItem(LS_MANAGER_SEEN, "1"); } catch {}
+    setShowIntro(false);
+  };
+
   // Restore lockout only; manager phone is saved in its own isolated key.
   useEffect(() => {
     try {
