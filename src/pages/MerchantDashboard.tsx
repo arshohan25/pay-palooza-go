@@ -1177,7 +1177,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
                 key={a.label}
                 whileTap={locked ? undefined : { scale: 0.95 }}
                 onClick={() => locked
-                  ? toast({ title: "Permission required", description: "Ask the store owner to enable this for you." })
+                  ? setRequestSheet({ label: a.label })
                   : a.onClick()}
                 aria-disabled={locked}
                 className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-card shadow-card border border-border/40 transition-all ${locked ? "opacity-50 cursor-not-allowed" : "hover:shadow-elevated press-effect"}`}>
