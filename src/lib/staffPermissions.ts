@@ -41,6 +41,7 @@ export const STAFF_PERMISSIONS: StaffPermissionDef[] = [
 
   // Store
   { key: "qr",              label: "QR codes",          group: "Store", hint: "Generate payment QR" },
+  { key: "add_bank",         label: "Add bank account",  group: "Store", hint: "Link bank accounts for payouts" },
   { key: "store_settings",  label: "Store settings",    group: "Store", hint: "Edit business info, hours" },
 
   // Personal
