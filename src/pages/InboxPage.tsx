@@ -853,9 +853,14 @@ const ChatView = ({
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Upload to Supabase Storage
+    if (!userId || !conversationId) {
+      toast.error("Cannot upload right now");
+      e.target.value = "";
+      return;
+    }
+    // Path convention: <user_id>/<conversation_id>/<filename> — required by storage RLS
     const ext = file.name.split('.').pop() || 'jpg';
-    const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const path = `${userId}/${conversationId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
     const { data, error } = await supabase.storage
       .from('chat_attachments')
       .upload(path, file, { contentType: file.type });
@@ -864,8 +869,16 @@ const ChatView = ({
       e.target.value = "";
       return;
     }
-    const { data: urlData } = supabase.storage.from('chat_attachments').getPublicUrl(data.path);
-    onSendImage(urlData.publicUrl);
+    // Bucket is private — issue a long-lived signed URL for chat display
+    const { data: signed, error: signErr } = await supabase.storage
+      .from('chat_attachments')
+      .createSignedUrl(data.path, 60 * 60 * 24 * 365);
+    if (signErr || !signed?.signedUrl) {
+      toast.error("Failed to prepare image");
+      e.target.value = "";
+      return;
+    }
+    onSendImage(signed.signedUrl);
     e.target.value = "";
   };
 
