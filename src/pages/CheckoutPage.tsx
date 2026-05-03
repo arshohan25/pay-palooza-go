@@ -269,8 +269,9 @@ const CheckoutPage = () => {
       const remainingSec = Math.max(0, Math.floor((new Date(data.expires_at).getTime() - Date.now()) / 1000));
       setTotalSeconds(remainingSec || 600);
 
-      const { data: merch } = await supabase.from("merchants").select("business_name").eq("id", data.merchant_id).single();
-      if (merch) setMerchantName(merch.business_name);
+      const { data: merchRows } = await supabase.rpc("get_merchant_display_name", { p_merchant_id: data.merchant_id });
+      const merch = Array.isArray(merchRows) ? merchRows[0] : null;
+      if (merch?.business_name) setMerchantName(merch.business_name);
 
       setSession(data as SessionData);
       setStep("phone");

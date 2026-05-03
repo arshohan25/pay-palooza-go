@@ -6477,6 +6477,14 @@ export type Database = {
           total_spent: number
         }[]
       }
+      get_merchant_display_name: {
+        Args: { p_merchant_id: string }
+        Returns: {
+          business_name: string
+          category: string
+          id: string
+        }[]
+      }
       get_merchant_review_eta: { Args: never; Returns: Json }
       get_nearby_agents: {
         Args: { p_lat: number; p_lng: number; p_radius_km?: number }
