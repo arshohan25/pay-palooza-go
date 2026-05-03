@@ -26,7 +26,7 @@ export const TILE_TO_PERMISSION: Record<string, RequestablePermissionKey> = {
   "Cash Out": "payouts",
   "Bank Transfer": "payouts",
   "Payouts": "payouts",
-  "Add Bank": "store_settings",
+  "Add Bank": "add_bank",
   "Store Settings": "store_settings",
   "Settlement": "settlements",
   "Settlements": "settlements",
