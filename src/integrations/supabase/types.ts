@@ -6536,6 +6536,7 @@ export type Database = {
           business_name: string
           merchant_id: string
           permissions: Json
+          staff_id: string
           staff_role: string
         }[]
       }
