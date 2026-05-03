@@ -545,6 +545,8 @@ export default function MerchantManagerLoginPage() {
             </button>
 
           </div>
+          </>
+          )}
         </div>
       </div>
 
