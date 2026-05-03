@@ -1476,6 +1476,14 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
           </motion.div>
         )}
       </AnimatePresence>
+
+      <RequestAccessSheet
+        open={!!requestSheet}
+        onClose={() => setRequestSheet(null)}
+        tileLabel={requestSheet?.label ?? null}
+        merchantId={merchant?.id ?? null}
+        staffId={staffId}
+      />
     </motion.div>
   );
 };
