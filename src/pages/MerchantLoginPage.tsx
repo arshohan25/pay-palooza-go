@@ -676,29 +676,33 @@ export default function MerchantLoginPage() {
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
             </button>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                navigate("/");
-                setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent("open-feature", { detail: "merchant-apply" }));
-                }, 50);
-              }}
-              className="h-10 w-full rounded-2xl border-white/20 bg-white/[0.06] text-sm font-medium text-amber-100 hover:bg-white/[0.12] hover:text-amber-50"
-            >
-              New here? Apply as a merchant
-              <ArrowRight className="ml-1 h-3.5 w-3.5" />
-            </Button>
-            <button
-              type="button"
-              onClick={() => navigate("/merchant-manager-login")}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/60 transition-colors hover:text-amber-100"
-            >
-              <UserCog className="h-3 w-3" />
-              Manage a store as staff? Manager login
-              <ArrowRight className="h-3 w-3" />
-            </button>
+            {!boundPhone && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    navigate("/");
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent("open-feature", { detail: "merchant-apply" }));
+                    }, 50);
+                  }}
+                  className="h-10 w-full rounded-2xl border-white/20 bg-white/[0.06] text-sm font-medium text-amber-100 hover:bg-white/[0.12] hover:text-amber-50"
+                >
+                  New here? Apply as a merchant
+                  <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/merchant-manager-login")}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/60 transition-colors hover:text-amber-100"
+                >
+                  <UserCog className="h-3 w-3" />
+                  Manage a store as staff? Manager login
+                  <ArrowRight className="h-3 w-3" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
