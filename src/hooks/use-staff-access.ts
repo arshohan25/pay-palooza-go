@@ -61,6 +61,7 @@ export function useStaffAccess() {
         if (cancelled) return;
         const next: StaffAccess | null = row
           ? {
+              staffId: row.staff_id as string,
               merchantId: row.merchant_id as string,
               merchantName: row.business_name as string,
               staffRole: row.staff_role as string,
