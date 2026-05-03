@@ -1038,7 +1038,7 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Overview Tab ── */
-const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onSeeAll, onOpenInbox }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; allTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void; onOpenInbox: () => void }) => {
+const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onSeeAll, onOpenInbox, isStaff, can }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; allTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void; onOpenInbox: () => void; isStaff: boolean; can: (key: string) => boolean }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { totalUnread } = useChat();
