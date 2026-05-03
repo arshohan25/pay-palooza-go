@@ -592,6 +592,9 @@ export default function MerchantStaffTab({ merchantId }: Props) {
         </Button>
       </div>
 
+      <StaffAccessRequestsPanel merchantId={merchantId} inboxOnly />
+      <AccessRequestsHeaderButton merchantId={merchantId} />
+
       <div className="grid grid-cols-3 gap-2">
         <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{staff.length}</p><p className="text-[10px] text-muted-foreground">Total Staff</p></CardContent></Card>
         <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-emerald-600">{activeCount}</p><p className="text-[10px] text-muted-foreground">Active</p></CardContent></Card>
