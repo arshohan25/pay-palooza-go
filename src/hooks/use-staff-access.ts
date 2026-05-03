@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCachedSession } from "@/hooks/use-auth";
 
 interface StaffAccess {
+  staffId: string;
   merchantId: string;
   merchantName: string;
   staffRole: string;
