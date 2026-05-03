@@ -72,22 +72,9 @@ export default function MerchantLoginPage() {
   } | null>(null);
   const otp = useDeviceOtpVerification("merchant");
 
-  // If the device's last session was a manager, bounce to the manager login page.
-  useEffect(() => {
-    try {
-      if (localStorage.getItem("mfs_is_merchant_staff") === "1") {
-        const qs = searchParams.toString();
-        navigate(`/merchant-manager-login${qs ? `?${qs}` : ""}`, { replace: true });
-      }
-    } catch {}
-  }, [navigate, searchParams]);
-
   // Restore device-bound phone + persisted lockout
   useEffect(() => {
-    // Skip phone prefill if device last hosted a manager session.
-    let isStaffDevice = false;
-    try { isStaffDevice = localStorage.getItem("mfs_is_merchant_staff") === "1"; } catch {}
-    const bound = !isStaffDevice && typeof window !== "undefined"
+    const bound = typeof window !== "undefined"
       ? localStorage.getItem("mfs_device_phone")
       : null;
     if (bound) {
