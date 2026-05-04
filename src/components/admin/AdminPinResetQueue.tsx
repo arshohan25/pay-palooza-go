@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, KeyRound, CheckCircle2, Phone, Clock } from "lucide-react";
+import { Loader2, Send, KeyRound, CheckCircle2, Phone, Clock, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 
 interface Request {
@@ -23,6 +23,18 @@ interface Message {
   created_at: string;
   read_by_admin: boolean;
   read_by_merchant: boolean;
+  read_by_admin_at?: string | null;
+  attachment_path?: string | null;
+  attachment_mime?: string | null;
+  attachment_name?: string | null;
+  attachment_size?: number | null;
+}
+
+function formatBytes(n?: number | null) {
+  if (!n) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function maskPhone(p: string) {
@@ -89,10 +101,10 @@ export default function AdminPinResetQueue() {
       setLoadingChat(false);
       requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; });
 
-      // Mark merchant messages as read
+      // Mark merchant messages as read (with timestamp so the merchant sees "Seen at ...")
       await supabase
         .from("merchant_pin_reset_messages")
-        .update({ read_by_admin: true })
+        .update({ read_by_admin: true, read_by_admin_at: new Date().toISOString() })
         .eq("request_id", selectedId)
         .eq("sender_role", "merchant")
         .eq("read_by_admin", false);
@@ -232,7 +244,16 @@ export default function AdminPinResetQueue() {
                 return (
                   <div key={m.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${isAdmin ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md bg-background border"}`}>
-                      <p className="break-words">{m.content}</p>
+                      {m.attachment_path && (
+                        <AdminAttachment
+                          path={m.attachment_path}
+                          mime={m.attachment_mime}
+                          name={m.attachment_name}
+                          size={m.attachment_size}
+                          isAdmin={isAdmin}
+                        />
+                      )}
+                      {m.content && <p className="mt-1 break-words">{m.content}</p>}
                       <p className={`mt-0.5 text-[9px] ${isAdmin ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                         {new Date(m.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
                       </p>
@@ -264,3 +285,76 @@ export default function AdminPinResetQueue() {
     </div>
   );
 }
+
+/* Admin-side attachment: signed-URL fetched directly via supabase storage (admins are authenticated). */
+function AdminAttachment({
+  path,
+  mime,
+  name,
+  size,
+  isAdmin,
+}: {
+  path: string;
+  mime?: string | null;
+  name?: string | null;
+  size?: number | null;
+  isAdmin: boolean;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const isImage = (mime ?? "").startsWith("image/");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isImage) return;
+    setLoading(true);
+    supabase.storage
+      .from("pin-reset-attachments")
+      .createSignedUrl(path, 300)
+      .then(({ data }) => { if (!cancelled) setUrl(data?.signedUrl ?? null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [path, isImage]);
+
+  const openSigned = async () => {
+    const { data } = await supabase.storage
+      .from("pin-reset-attachments")
+      .createSignedUrl(path, 300);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  if (isImage) {
+    return (
+      <button
+        type="button"
+        onClick={openSigned}
+        className="block overflow-hidden rounded-lg border border-white/10"
+        style={{ maxWidth: 220 }}
+      >
+        {loading || !url ? (
+          <div className="flex h-32 w-32 items-center justify-center bg-muted">
+            <Loader2 className="h-3 w-3 animate-spin" />
+          </div>
+        ) : (
+          <img src={url} alt={name ?? "attachment"} className="block max-h-[220px] w-auto" />
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={openSigned}
+      className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left ${isAdmin ? "border-white/20 bg-white/10" : "border-border bg-muted/40"}`}
+    >
+      <FileText className="h-4 w-4 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[11px] font-medium">{name ?? "Attachment"}</p>
+        <p className="text-[9px] opacity-70">{formatBytes(size)} · PDF</p>
+      </div>
+      <Download className="h-3 w-3 shrink-0 opacity-70" />
+    </button>
+  );
+}
+

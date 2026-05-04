@@ -10,8 +10,11 @@ import {
   Send,
   Shield,
   ShieldCheck,
-  User as UserIcon,
   Sparkles,
+  Paperclip,
+  X,
+  FileText,
+  Download,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -24,6 +27,11 @@ interface PinResetMessage {
   created_at: string;
   read_by_admin: boolean;
   read_by_merchant: boolean;
+  read_by_admin_at?: string | null;
+  attachment_path?: string | null;
+  attachment_mime?: string | null;
+  attachment_name?: string | null;
+  attachment_size?: number | null;
 }
 
 interface PinResetTicketChatProps {
@@ -35,6 +43,15 @@ interface PinResetTicketChatProps {
 }
 
 const POLL_FALLBACK_MS = 8000;
+const MAX_ATTACH_BYTES = 5 * 1024 * 1024;
+const ALLOWED_MIMES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+];
+const ATTACH_BUCKET = "pin-reset-attachments";
 
 /* ────────────────────────────────────────────────────────────── helpers ── */
 
@@ -53,6 +70,13 @@ const formatDayLabel = (iso: string) => {
 const formatTime = (iso: string) =>
   new Date(iso).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" });
 
+const formatBytes = (n?: number | null) => {
+  if (!n) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+};
+
 /* ────────────────────────────────────────────────────────────── component */
 
 export default function PinResetTicketChat({
@@ -69,23 +93,25 @@ export default function PinResetTicketChat({
   const [bootstrapping, setBootstrapping] = useState(true);
   const [sending, setSending] = useState(false);
 
+  // Pending attachment state (selected → uploaded → attached on send)
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0); // 0..1
+  const [uploaded, setUploaded] = useState<{ path: string; mime: string; name: string; size: number } | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const ticketRef = useRef(initialTicket);
   const requestIdRef = useRef(initialRequestId);
   const expiredHandledRef = useRef(false);
 
-  useEffect(() => {
-    ticketRef.current = ticket;
-  }, [ticket]);
-  useEffect(() => {
-    requestIdRef.current = requestId;
-  }, [requestId]);
+  useEffect(() => { ticketRef.current = ticket; }, [ticket]);
+  useEffect(() => { requestIdRef.current = requestId; }, [requestId]);
 
   /* Listen for parent's background-resolved request id */
   useEffect(() => {
     if (requestId !== "pending") return;
-    // Pick up id resolved BEFORE we mounted (race fallback).
     try {
       const stashed = (window as any).__pinResetResolvedId;
       if (typeof stashed === "string" && stashed && stashed !== "pending") {
@@ -114,7 +140,7 @@ export default function PinResetTicketChat({
   }, [onSessionExpired]);
 
   const callChat = useCallback(
-    async (action: "fetch" | "send" | "ack", extra: Record<string, unknown> = {}) => {
+    async (action: "fetch" | "send" | "ack" | "attach_init" | "attach_url", extra: Record<string, unknown> = {}) => {
       const id = requestIdRef.current;
       if (!id || id === "pending") throw new Error("__pending__");
       const { data, error } = await supabase.functions.invoke("merchant-pin-reset-chat", {
@@ -137,7 +163,7 @@ export default function PinResetTicketChat({
     [handleExpiry],
   );
 
-  /* Fetch + polling — only once a real requestId is known */
+  /* Fetch + polling */
   useEffect(() => {
     if (requestId === "pending") return;
     let cancelled = false;
@@ -168,19 +194,14 @@ export default function PinResetTicketChat({
     };
   }, [requestId, callChat, scrollToBottom]);
 
-  /* Realtime — only once requestId is real */
+  /* Realtime — both INSERT (new messages) and UPDATE (read receipts) */
   useEffect(() => {
     if (requestId === "pending") return;
     const channel = supabase
       .channel(`pin-reset-${requestId}`)
       .on(
         "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "merchant_pin_reset_messages",
-          filter: `request_id=eq.${requestId}`,
-        },
+        { event: "INSERT", schema: "public", table: "merchant_pin_reset_messages", filter: `request_id=eq.${requestId}` },
         (payload) => {
           const msg = payload.new as PinResetMessage;
           setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
@@ -190,41 +211,112 @@ export default function PinResetTicketChat({
           }
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "merchant_pin_reset_messages", filter: `request_id=eq.${requestId}` },
+        (payload) => {
+          const next = payload.new as PinResetMessage;
+          setMessages((prev) => prev.map((m) => (m.id === next.id ? { ...m, ...next } : m)));
+        },
+      )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [requestId, callChat, scrollToBottom]);
 
-  /* Composer */
+  /* ───── Attachment selection + upload ──────────────────────────────────── */
+  const clearPending = () => {
+    setPendingFile(null);
+    setUploaded(null);
+    setUploadProgress(0);
+    if (pendingPreview) {
+      URL.revokeObjectURL(pendingPreview);
+      setPendingPreview(null);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!ALLOWED_MIMES.includes(file.type)) {
+      toast.error("Only images (JPG, PNG, WEBP, GIF) and PDFs are allowed");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > MAX_ATTACH_BYTES) {
+      toast.error("File too large (max 5 MB)");
+      e.target.value = "";
+      return;
+    }
+    if (requestId === "pending") {
+      toast.info("Connecting… try again in a moment.");
+      e.target.value = "";
+      return;
+    }
+
+    setPendingFile(file);
+    setPendingPreview(file.type.startsWith("image/") ? URL.createObjectURL(file) : null);
+    setUploadProgress(0.05);
+
+    try {
+      const init = await callChat("attach_init", { mime: file.type, size: file.size, name: file.name });
+      const { path, token } = init.upload as { path: string; token: string };
+      setUploadProgress(0.25);
+
+      const { error: upErr } = await supabase.storage
+        .from(ATTACH_BUCKET)
+        .uploadToSignedUrl(path, token, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+
+      setUploaded({ path, mime: file.type, name: file.name, size: file.size });
+      setUploadProgress(1);
+    } catch (err: any) {
+      toast.error(err?.message || "Upload failed");
+      clearPending();
+    }
+  };
+
+  /* Composer send */
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || sending || status !== "open") return;
+    if ((!text && !uploaded) || sending || status !== "open") return;
     if (requestId === "pending") {
       toast.info("Connecting you to support… try again in a second.");
       return;
     }
     setSending(true);
+    const sentText = text;
+    const sentAttachment = uploaded;
     setInput("");
+    clearPending();
+
     const optimistic: PinResetMessage = {
       id: `temp-${Date.now()}`,
       request_id: requestId,
       sender_role: "merchant",
-      content: text,
+      content: sentText,
       created_at: new Date().toISOString(),
       read_by_admin: false,
       read_by_merchant: true,
+      read_by_admin_at: null,
+      attachment_path: sentAttachment?.path ?? null,
+      attachment_mime: sentAttachment?.mime ?? null,
+      attachment_name: sentAttachment?.name ?? null,
+      attachment_size: sentAttachment?.size ?? null,
     };
     setMessages((prev) => [...prev, optimistic]);
     scrollToBottom();
     try {
-      const payload = await callChat("send", { content: text });
+      const payload = await callChat("send", {
+        content: sentText,
+        ...(sentAttachment ? { attachment: sentAttachment } : {}),
+      });
       const real = payload.message as PinResetMessage;
       setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? real : m)));
     } catch (err: any) {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-      setInput(text);
+      setInput(sentText);
       toast.error(err?.message || "Couldn't send message");
     } finally {
       setSending(false);
@@ -240,11 +332,23 @@ export default function PinResetTicketChat({
     return messages.map((m, i) => {
       const prev = messages[i - 1];
       const isFirstOfRun = !prev || prev.sender_role !== m.sender_role;
-      const showDayDivider =
-        !prev || formatDayLabel(prev.created_at) !== formatDayLabel(m.created_at);
+      const showDayDivider = !prev || formatDayLabel(prev.created_at) !== formatDayLabel(m.created_at);
       return { msg: m, isFirstOfRun, showDayDivider };
     });
   }, [messages]);
+
+  /* Find the last outgoing message id so we can render a "Seen by support" line under it */
+  const lastOwnMessageId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].sender_role === "merchant" && !messages[i].id.startsWith("temp-")) {
+        return messages[i].id;
+      }
+    }
+    return null;
+  }, [messages]);
+
+  const composerDisabled = sending || stillConnecting || (uploaded === null && pendingFile !== null);
+  const canSend = (!!input.trim() || !!uploaded) && !sending && !stillConnecting;
 
   return (
     <motion.div
@@ -305,7 +409,7 @@ export default function PinResetTicketChat({
           paddingRight: "max(env(safe-area-inset-right), 1.25rem)",
         }}
       >
-        {/* Welcome bubble — always shown instantly, no network needed */}
+        {/* Welcome bubble */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -326,18 +430,13 @@ export default function PinResetTicketChat({
           </div>
         </motion.div>
 
-        {/* Skeletons while bootstrapping */}
+        {/* Skeletons */}
         {stillConnecting && messages.length === 0 && (
           <div className="space-y-2 pt-1">
             {[0, 1].map((i) => (
-              <div
-                key={i}
-                className={`flex items-end gap-2 ${i % 2 ? "flex-row-reverse" : ""}`}
-              >
+              <div key={i} className={`flex items-end gap-2 ${i % 2 ? "flex-row-reverse" : ""}`}>
                 <div className="h-6 w-6 shrink-0 rounded-full bg-muted/60" />
-                <div
-                  className={`h-9 ${i % 2 ? "w-[55%]" : "w-[65%]"} animate-pulse rounded-[20px] bg-gradient-to-r from-muted/70 via-muted/40 to-muted/70`}
-                />
+                <div className={`h-9 ${i % 2 ? "w-[55%]" : "w-[65%]"} animate-pulse rounded-[20px] bg-gradient-to-r from-muted/70 via-muted/40 to-muted/70`} />
               </div>
             ))}
             <p className="pt-1 text-center text-[10px] text-muted-foreground/70">
@@ -349,6 +448,7 @@ export default function PinResetTicketChat({
         <AnimatePresence initial={false}>
           {decorated.map(({ msg, isFirstOfRun, showDayDivider }) => {
             const isMe = msg.sender_role === "merchant";
+            const isLastOwn = isMe && msg.id === lastOwnMessageId;
             return (
               <div key={msg.id}>
                 {showDayDivider && (
@@ -364,57 +464,73 @@ export default function PinResetTicketChat({
                   transition={{ duration: 0.16 }}
                   className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : ""} ${isFirstOfRun ? "mt-1.5" : "mt-0.5"}`}
                 >
-                  {/* Avatar — only on first of run */}
-                  <div className="w-7 shrink-0">
-                    {isFirstOfRun && (
-                      <div
-                        className={`flex h-7 w-7 items-center justify-center rounded-full ring-1 ${
-                          isMe
-                            ? "bg-gradient-to-br from-primary to-primary/70 ring-primary/30"
-                            : "bg-gradient-to-br from-primary/20 to-primary/5 ring-primary/20"
-                        }`}
-                      >
-                        {isMe ? (
-                          <UserIcon size={12} className="text-primary-foreground" />
-                        ) : (
+                  {/* Avatar — only on incoming first-of-run. Outgoing rows have NO avatar slot. */}
+                  {!isMe && (
+                    <div className="w-7 shrink-0">
+                      {isFirstOfRun && (
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/20">
                           <Bot size={12} className="text-primary" />
-                        )}
-                      </div>
-                    )}
-                  </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div
-                    className={`max-w-[76%] px-3.5 py-2 ${
+                    className={`max-w-[78%] px-3.5 py-2 ${
                       isMe
                         ? "rounded-[20px] rounded-br-[6px] bg-gradient-to-br from-primary to-primary/85 text-primary-foreground shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.45)]"
                         : "rounded-[20px] rounded-bl-[6px] border border-border/40 bg-card/80 text-foreground shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] backdrop-blur-sm"
                     }`}
                   >
-                    <p className="break-words text-[12.5px] leading-relaxed">{msg.content}</p>
-                    <div
-                      className={`mt-0.5 flex items-center gap-1 ${isMe ? "justify-end" : ""}`}
-                    >
-                      <span
-                        className={`text-[9px] ${isMe ? "text-primary-foreground/65" : "text-muted-foreground"}`}
-                      >
+                    {msg.attachment_path && (
+                      <AttachmentBubble
+                        message={msg}
+                        isMe={isMe}
+                        callChat={callChat}
+                      />
+                    )}
+                    {msg.content && (
+                      <p className={`break-words text-[12.5px] leading-relaxed ${msg.attachment_path ? "mt-1.5" : ""}`}>
+                        {msg.content}
+                      </p>
+                    )}
+                    <div className={`mt-0.5 flex items-center gap-1 ${isMe ? "justify-end" : ""}`}>
+                      <span className={`text-[9px] ${isMe ? "text-primary-foreground/65" : "text-muted-foreground"}`}>
                         {formatTime(msg.created_at)}
                       </span>
                       {isMe &&
-                        (msg.read_by_admin ? (
+                        (msg.id.startsWith("temp-") ? (
+                          <Loader2 size={10} className="animate-spin text-primary-foreground/65" />
+                        ) : msg.read_by_admin ? (
                           <CheckCheck size={11} className="text-cyan-200" />
                         ) : (
-                          <Check size={11} className="text-primary-foreground/50" />
+                          <Check size={11} className="text-primary-foreground/55" />
                         ))}
                     </div>
                   </div>
                 </motion.div>
+
+                {/* Per-conversation "Seen by support · time" line under the LAST outgoing message */}
+                {isLastOwn && msg.read_by_admin && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -2 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-1 flex justify-end pr-1 text-[9.5px] font-medium text-emerald-600 dark:text-emerald-400"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      <CheckCheck size={10} />
+                      Seen by support
+                      {msg.read_by_admin_at && ` · ${formatTime(msg.read_by_admin_at)}`}
+                    </span>
+                  </motion.div>
+                )}
               </div>
             );
           })}
         </AnimatePresence>
       </div>
 
-      {/* Composer — premium glassmorphism */}
+      {/* Composer */}
       <div
         className="relative shrink-0 pt-3"
         style={{
@@ -423,116 +539,169 @@ export default function PinResetTicketChat({
           paddingBottom: "max(env(safe-area-inset-bottom), 10px)",
         }}
       >
-        {/* Frosted top fade so messages dissolve into the composer */}
         <div className="pointer-events-none absolute inset-x-0 -top-5 h-5 bg-gradient-to-t from-background/85 to-transparent" />
-        {/* Glass surface */}
         <div className="absolute inset-0 -z-0 border-t border-white/10 bg-gradient-to-b from-background/65 via-background/85 to-background/95 backdrop-blur-2xl" />
 
         <div className="relative z-10">
           {isResolved ? (
             <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/[0.08] to-emerald-500/[0.02] p-3 text-center backdrop-blur-xl">
-              <p className="text-[12.5px] font-semibold text-emerald-700 dark:text-emerald-300">
-                ✓ Ticket resolved
-              </p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Try signing in with your new PIN.
-              </p>
+              <p className="text-[12.5px] font-semibold text-emerald-700 dark:text-emerald-300">✓ Ticket resolved</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">Try signing in with your new PIN.</p>
             </div>
           ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void sendMessage();
-              }}
-              className="flex items-end gap-2"
-            >
-              {/* Glass pill input with gradient ring */}
-              <motion.div
-                initial={false}
-                animate={{
-                  boxShadow: input
-                    ? "0 10px 30px -12px hsl(var(--primary) / 0.4), inset 0 1px 0 hsl(var(--background) / 0.45)"
-                    : "0 4px 18px -10px hsl(var(--foreground) / 0.18), inset 0 1px 0 hsl(var(--background) / 0.4)",
-                }}
-                transition={{ duration: 0.18 }}
-                className="relative flex-1 overflow-hidden rounded-[24px]"
+            <>
+              {/* Pending attachment chip */}
+              <AnimatePresence>
+                {pendingFile && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    className="mb-2 flex items-center gap-2 rounded-2xl border border-border/40 bg-card/70 p-1.5 pr-2 backdrop-blur-xl"
+                  >
+                    <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-muted">
+                      {pendingPreview ? (
+                        <img src={pendingPreview} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11.5px] font-medium text-foreground">{pendingFile.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {formatBytes(pendingFile.size)}
+                        {!uploaded && uploadProgress < 1 && ` · uploading ${Math.round(uploadProgress * 100)}%`}
+                        {uploaded && " · ready"}
+                      </p>
+                      {!uploaded && (
+                        <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-primary to-primary/70"
+                            animate={{ width: `${Math.max(8, uploadProgress * 100)}%` }}
+                            transition={{ duration: 0.3 }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearPending}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted/70 text-muted-foreground hover:bg-muted"
+                      aria-label="Remove attachment"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <form
+                onSubmit={(e) => { e.preventDefault(); void sendMessage(); }}
+                className="flex items-end gap-2"
               >
-                {/* gradient border layer */}
-                <div
-                  className={`absolute inset-0 rounded-[24px] bg-gradient-to-br transition-opacity duration-300 ${
-                    input
-                      ? "from-primary/55 via-primary/25 to-primary/45"
-                      : "from-border/70 via-border/40 to-border/70"
-                  }`}
+                {/* Attach button */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
+                  className="hidden"
+                  onChange={onPickFile}
                 />
-                {/* glass body */}
-                <div className="relative m-[1px] rounded-[23px] bg-gradient-to-br from-background/60 via-card/55 to-background/75 backdrop-blur-xl">
-                  {/* highlight sheen */}
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                <motion.button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={sending || stillConnecting || !!pendingFile}
+                  whileTap={{ scale: 0.92 }}
+                  whileHover={{ scale: 1.04 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/50 bg-card/70 text-muted-foreground backdrop-blur-xl transition-colors hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Attach file"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </motion.button>
 
-                  <textarea
-                    ref={inputRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value.slice(0, 2000))}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        void sendMessage();
-                      }
-                    }}
-                    placeholder={stillConnecting ? "Connecting…" : "Reply to support…"}
-                    rows={1}
-                    disabled={sending || stillConnecting}
-                    className="block w-full resize-none rounded-[23px] border-0 bg-transparent px-4 py-3 pr-14 text-[13px] leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 disabled:opacity-60"
-                    style={{ maxHeight: 120 }}
+                {/* Glass pill input */}
+                <motion.div
+                  initial={false}
+                  animate={{
+                    boxShadow: input
+                      ? "0 10px 30px -12px hsl(var(--primary) / 0.4), inset 0 1px 0 hsl(var(--background) / 0.45)"
+                      : "0 4px 18px -10px hsl(var(--foreground) / 0.18), inset 0 1px 0 hsl(var(--background) / 0.4)",
+                  }}
+                  transition={{ duration: 0.18 }}
+                  className="relative flex-1 overflow-hidden rounded-[24px]"
+                >
+                  <div
+                    className={`absolute inset-0 rounded-[24px] bg-gradient-to-br transition-opacity duration-300 ${
+                      input ? "from-primary/55 via-primary/25 to-primary/45" : "from-border/70 via-border/40 to-border/70"
+                    }`}
                   />
+                  <div className="relative m-[1px] rounded-[23px] bg-gradient-to-br from-background/60 via-card/55 to-background/75 backdrop-blur-xl">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                    <textarea
+                      ref={inputRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value.slice(0, 2000))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          void sendMessage();
+                        }
+                      }}
+                      placeholder={stillConnecting ? "Connecting…" : uploaded ? "Add a caption…" : "Reply to support…"}
+                      rows={1}
+                      disabled={composerDisabled}
+                      className="block w-full resize-none rounded-[23px] border-0 bg-transparent px-4 py-3 pr-14 text-[13px] leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 disabled:opacity-60"
+                      style={{ maxHeight: 120 }}
+                    />
+                    <AnimatePresence>
+                      {input.length > 0 && (
+                        <motion.div
+                          key="counter"
+                          initial={{ opacity: 0, scale: 0.7 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.7 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 24 }}
+                          className="pointer-events-none absolute bottom-2 right-2.5 flex items-center"
+                        >
+                          {input.length > 1500 ? (
+                            <CounterRing value={input.length} max={2000} />
+                          ) : (
+                            <span className="text-[9.5px] font-medium tabular-nums text-muted-foreground/55">
+                              {input.length}/2000
+                            </span>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
 
-                  {/* Character counter */}
-                  <AnimatePresence>
-                    {input.length > 0 && (
-                      <motion.div
-                        key="counter"
-                        initial={{ opacity: 0, scale: 0.7 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.7 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 24 }}
-                        className="pointer-events-none absolute bottom-2 right-2.5 flex items-center"
-                      >
-                        {input.length > 1500 ? (
-                          <CounterRing value={input.length} max={2000} />
-                        ) : (
-                          <span className="text-[9.5px] font-medium tabular-nums text-muted-foreground/55">
-                            {input.length}/2000
-                          </span>
-                        )}
-                      </motion.div>
+                {/* Gradient send button */}
+                <motion.button
+                  type="submit"
+                  disabled={!canSend}
+                  whileTap={{ scale: 0.92 }}
+                  whileHover={{ scale: 1.04 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                  className="group relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Send"
+                >
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-primary to-primary/65" />
+                  <div className="absolute inset-0 rounded-full shadow-[0_10px_28px_-8px_hsl(var(--primary)/0.65),inset_0_1px_0_hsl(var(--background)/0.35)]" />
+                  <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                  <div className="relative">
+                    {sending ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
+                    ) : (
+                      <Send className="h-4 w-4 text-primary-foreground" strokeWidth={2.4} />
                     )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-
-              {/* Gradient send button */}
-              <motion.button
-                type="submit"
-                disabled={!input.trim() || sending || stillConnecting}
-                whileTap={{ scale: 0.92 }}
-                whileHover={{ scale: 1.04 }}
-                transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                className="group relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="Send"
-              >
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-primary to-primary/65" />
-                <div className="absolute inset-0 rounded-full shadow-[0_10px_28px_-8px_hsl(var(--primary)/0.65),inset_0_1px_0_hsl(var(--background)/0.35)]" />
-                <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                <div className="relative">
-                  {sending ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
-                  ) : (
-                    <Send className="h-4 w-4 text-primary-foreground" strokeWidth={2.4} />
-                  )}
-                </div>
-              </motion.button>
-            </form>
+                  </div>
+                </motion.button>
+              </form>
+            </>
           )}
         </div>
       </div>
@@ -540,7 +709,93 @@ export default function PinResetTicketChat({
   );
 }
 
-/* ─── Animated counter ring for the last 500 chars ────────────────────────── */
+/* ─── Attachment bubble (image thumbnail or PDF chip) ────────────────────── */
+function AttachmentBubble({
+  message,
+  isMe,
+  callChat,
+}: {
+  message: PinResetMessage;
+  isMe: boolean;
+  callChat: (action: "fetch" | "send" | "ack" | "attach_init" | "attach_url", extra?: Record<string, unknown>) => Promise<any>;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const isImage = (message.attachment_mime ?? "").startsWith("image/");
+  const isOptimistic = message.id.startsWith("temp-");
+
+  useEffect(() => {
+    if (!isImage || isOptimistic) return;
+    let cancelled = false;
+    setLoading(true);
+    callChat("attach_url", { message_id: message.id })
+      .then((p) => { if (!cancelled) setUrl(p?.url ?? null); })
+      .catch(() => { /* ignore */ })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [message.id, isImage, isOptimistic, callChat]);
+
+  const open = async () => {
+    if (isOptimistic) return;
+    try {
+      const p = await callChat("attach_url", { message_id: message.id });
+      if (p?.url) window.open(p.url, "_blank", "noopener,noreferrer");
+    } catch { /* ignore */ }
+  };
+
+  if (isImage) {
+    return (
+      <button
+        type="button"
+        onClick={open}
+        className="block overflow-hidden rounded-xl"
+        style={{ maxWidth: 220 }}
+      >
+        {(loading || (!url && !isOptimistic)) ? (
+          <div className="flex h-32 w-32 items-center justify-center rounded-xl bg-muted/60">
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <img
+            src={url ?? ""}
+            alt={message.attachment_name ?? "attachment"}
+            className="block max-h-[220px] w-auto rounded-xl"
+            loading="lazy"
+          />
+        )}
+      </button>
+    );
+  }
+
+  // PDF / other
+  return (
+    <button
+      type="button"
+      onClick={open}
+      className={`flex items-center gap-2 rounded-xl border px-2.5 py-2 text-left ${
+        isMe ? "border-primary-foreground/25 bg-primary-foreground/10" : "border-border/50 bg-muted/40"
+      }`}
+      style={{ maxWidth: 240 }}
+    >
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+        isMe ? "bg-primary-foreground/15" : "bg-background"
+      }`}>
+        <FileText className={`h-4 w-4 ${isMe ? "text-primary-foreground" : "text-primary"}`} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className={`truncate text-[11.5px] font-medium ${isMe ? "text-primary-foreground" : "text-foreground"}`}>
+          {message.attachment_name ?? "Attachment"}
+        </p>
+        <p className={`text-[9.5px] ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+          {formatBytes(message.attachment_size)} · PDF
+        </p>
+      </div>
+      <Download className={`h-3 w-3 shrink-0 ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`} />
+    </button>
+  );
+}
+
+/* ─── Animated counter ring ──────────────────────────────────────────────── */
 function CounterRing({ value, max }: { value: number; max: number }) {
   const pct = Math.min(1, value / max);
   const radius = 8;
@@ -553,13 +808,7 @@ function CounterRing({ value, max }: { value: number; max: number }) {
   return (
     <motion.div
       className="relative flex h-5 w-5 items-center justify-center"
-      animate={
-        danger
-          ? { scale: [1, 1.12, 1] }
-          : warn
-            ? { scale: [1, 1.05, 1] }
-            : { scale: 1 }
-      }
+      animate={danger ? { scale: [1, 1.12, 1] } : warn ? { scale: [1, 1.05, 1] } : { scale: 1 }}
       transition={
         danger
           ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
@@ -591,31 +840,17 @@ function CounterRing({ value, max }: { value: number; max: number }) {
             )}
           </linearGradient>
         </defs>
+        <circle cx="10" cy="10" r={radius} fill="none" stroke="hsl(var(--muted) / 0.6)" strokeWidth="2" />
         <circle
-          cx="10"
-          cy="10"
-          r={radius}
-          fill="none"
-          stroke="hsl(var(--muted) / 0.6)"
-          strokeWidth="2"
-        />
-        <circle
-          cx="10"
-          cy="10"
-          r={radius}
-          fill="none"
-          stroke={`url(#${gradId})`}
-          strokeWidth="2"
-          strokeLinecap="round"
+          cx="10" cy="10" r={radius} fill="none"
+          stroke={`url(#${gradId})`} strokeWidth="2" strokeLinecap="round"
           strokeDasharray={`${dash} ${circ}`}
           className="transition-[stroke-dasharray] duration-300 ease-out"
         />
       </svg>
-      <span
-        className={`absolute text-[8px] font-semibold tabular-nums transition-colors ${
-          danger ? "text-destructive" : warn ? "text-primary" : "text-foreground/70"
-        }`}
-      >
+      <span className={`absolute text-[8px] font-semibold tabular-nums transition-colors ${
+        danger ? "text-destructive" : warn ? "text-primary" : "text-foreground/70"
+      }`}>
         {remaining}
       </span>
     </motion.div>
