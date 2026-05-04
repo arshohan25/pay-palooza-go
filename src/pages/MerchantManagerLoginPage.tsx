@@ -530,13 +530,6 @@ export default function MerchantManagerLoginPage() {
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
             </button>
 
-            <button
-              type="button"
-              onClick={() => navigate("/merchant-login")}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-[12px] font-medium text-white/75 backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-            >
-              Are you the store owner? <span className="font-semibold text-white/90">Owner login</span>
-            </button>
           </div>
         </div>
       </div>
