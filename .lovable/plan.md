@@ -1,53 +1,96 @@
-## Issues observed (from screenshot at /account in merchant PIN reset flow)
+## Goal
 
-1. **Full phone visible in composer.** The prefilled draft contains `+88 019•••••954` text — but `redactSensitive` runs only on the rendered context body, not on the input text. Worse, on submit the actual sent message will contain the masked form fine, BUT the screenshot shows `+88 019•••••954` already masked in composer ✓. The real leak is **the context banner body** still shows the full masked phone — actually that's masked too. Re-reading: the red box highlights the composer text containing `+88 019•••••954`. That IS masked. The user's complaint is that this masked-but-still-identifiable number plus the dotted middle is undesirable, AND `redactSensitive` would normally turn `01XXXXXXXXX` into `[PHONE REDACTED]` — but the masked form (`019•••••954`) bypasses the regex.
+After a merchant verifies their phone via OTP on the Forgot-PIN flow, drop them straight into a working live-chat thread tied to the existing `merchant_pin_reset_requests` row — without requiring them to sign in. Admins reply from a new "PIN reset queue" panel.
 
-   **Real fix:** In `MerchantForgotPinSheet.goToLiveSupport()`, do not embed the phone (masked or otherwise) into either the prefill draft or the context body. Reference it generically ("my registered number") and rely on the OTP ticket / server-side log for identification.
+## Why the current screen is wrong
 
-2. **Live Chat sheet not responsive on 390px viewport.** In `AccountPage.tsx` (lines 523–538), the `<SheetContent>` uses `h-[85vh]` with `<SupportChat>` inside — but `SupportChat` itself sets `h-[50vh]` on its root, so it doesn't fill the sheet, and the messages area gets squeezed. On small phones the bubbles overlap the avatars and the composer is cramped.
+`MerchantSupportPage` only renders `SupportChat` when `supabase.auth.getSession()` returns a user. The whole `support_conversations` / `support_messages` stack is keyed to `auth.uid()` via RLS, so a logged-out merchant hits the "Sign in to continue" wall — exactly what the screenshot shows. We need a second, narrower chat surface that works for guests holding a valid OTP ticket.
 
-   **Fix:**
-   - Change `SupportChat` root from `h-[50vh]` to `h-full min-h-0`.
-   - Add `flex flex-col min-h-0` chain so the messages list scrolls independently.
-   - Reduce horizontal padding (`px-4` → `px-3`) and tighten message bubble max-width on `<sm` so avatars don't get clipped.
-   - Make the AccountPage sheet use `h-[92dvh] sm:h-[85vh]` with `dvh` for mobile browser chrome.
+## Design
 
-3. **Merchant PIN reset chat opens user app (`/account`) instead of merchant app.** `MerchantForgotPinSheet.goToLiveSupport()` always navigates to `/account?openChat=1...`, but this sheet is launched from `/merchant-login` and `/merchant-manager-login`. After login the user lands in `/merchant`, which doesn't even have an `openChat` handler.
+```text
+Forgot-PIN sheet  ──OTP verified──▶  /merchant-support?ticket=<request_id>&t=<otp_ticket>
+                                            │
+                                            ▼
+                                MerchantSupportPage (guest mode)
+                                            │
+                                            ▼
+                            <PinResetTicketChat ticketId t />
+                                            │
+                  ┌─────────────────────────┼──────────────────────────┐
+                  ▼                         ▼                          ▼
+       merchant-pin-reset-chat       merchant_pin_reset_messages    Admin "PIN Reset Queue"
+       (edge fn, validates OTP)        (new table, RLS-locked)      (in AdminSupportDashboard)
+```
 
-   **Fix:**
-   - Add an `openChat` query handler on the merchant side. Two options:
-     - **(a) New route `/merchant-support`** — a lightweight standalone page that renders `<SupportChat>` in a full-screen sheet, gated by auth, branded with the merchant theme. Works even if the user isn't yet logged into merchant portal (since PIN reset is pre-login).
-     - **(b) Reuse `/account` but theme it.** Less work but mixes user + merchant surfaces.
-   - Recommend **(a)**: PIN reset is pre-login, so we cannot rely on the merchant dashboard's auth guard. The new `/merchant-support` page will:
-     - Require a valid Supabase session (sign in is independent of merchant PIN — the OTP step just verified phone ownership; if no session exists, prompt them to sign in to the EasyPay account first, OR allow anonymous handoff via the existing `merchant-forgot-pin` edge function ticket which already logged the request server-side).
-     - Read `prefill`, `contextTitle`, `contextBody` query params identically to `AccountPage`.
-     - Render `<SupportChat>` filling the viewport.
-   - Update `MerchantForgotPinSheet.goToLiveSupport()` to navigate to `/merchant-support?...` instead of `/account?...`.
+### 1. New table `public.merchant_pin_reset_messages`
 
-## Files to change
+| column           | type                       | notes                           |
+|------------------|----------------------------|---------------------------------|
+| `id`             | uuid pk                    | gen_random_uuid()               |
+| `request_id`     | uuid not null              | FK → `merchant_pin_reset_requests(id)` on delete cascade |
+| `sender_role`    | text not null              | `'merchant'` or `'admin'`        |
+| `sender_admin_id`| uuid null                  | set when admin replies           |
+| `content`        | text not null              | plaintext (no E2E for guest flow)|
+| `created_at`     | timestamptz default now()  |                                 |
+| `read_by_admin`  | bool default false         |                                 |
+| `read_by_merchant`| bool default false        |                                 |
 
-- `src/components/merchant/MerchantForgotPinSheet.tsx`
-  - Remove phone from `prefill` and `contextBody` (use generic phrasing + reference the OTP ticket id if available).
-  - Change navigation target from `/account` to `/merchant-support`.
+Indexes on `(request_id, created_at)`. Realtime publication added.
 
-- `src/components/SupportChat.tsx`
-  - Root: `h-[50vh]` → `h-full min-h-0 flex flex-col`.
-  - Tighten bubble `max-w-[75%]` → `max-w-[78%] sm:max-w-[75%]`, add `break-words` (already present), and shrink avatar spacing on small screens.
+### 2. RLS
 
-- `src/pages/AccountPage.tsx`
-  - Sheet height: `h-[85vh]` → `h-[92dvh] sm:h-[85vh]`, ensure inner wrapper is `flex flex-col min-h-0`.
+- Reads/writes by merchants are **never direct from the client**. RLS:
+  - SELECT/INSERT/UPDATE: only `has_role(auth.uid(), 'admin')`.
+  - All guest interaction goes through edge functions that present the OTP ticket.
 
-- `src/pages/MerchantSupportPage.tsx` (new)
-  - Mirrors AccountPage's `openChat` query parsing.
-  - Full-screen merchant-themed shell (dark gradient matching `MerchantForgotPinSheet`).
-  - Renders `<SupportChat userId={...} initialDraft={...} initialContext={...} />`.
-  - If no session: show a CTA explaining the verified ticket has been logged and to sign in to continue chat.
+### 3. Edge functions (new + extend existing)
 
-- `src/App.tsx`
-  - Register `/merchant-support` route (public — no `RoleGuard`, so pre-login users from PIN reset flow can land here).
+**New `merchant-pin-reset-chat`** with three actions, each requires `{ request_id, otp_ticket, ... }`:
 
-## Acceptance
+- `action: "fetch"` → returns messages + ticket status after verifying ticket signature, phone match, expiry, and that ticket's phone matches the request's phone.
+- `action: "send"` → inserts a `'merchant'` message after the same verification, marks admin-unread.
+- `action: "ack"` → marks admin messages `read_by_merchant = true`.
 
-- Submitting the PIN reset chat from `/merchant-login` lands on `/merchant-support`, not `/account`.
-- The composer prefill no longer contains the phone digits (masked or otherwise). Context banner shows only "Source: merchant-login · Verified at <timestamp>".
-- At 390×638, the Live Chat sheet fills the viewport, messages scroll independently, no avatar/bubble overlap, composer fully visible above the keyboard.
+The OTP ticket from `verify-otp` already encodes `{phone, purpose: 'merchant_pin_reset', exp}`. We will:
+- Bump `exp` to **30 min** for the `merchant_pin_reset` purpose only (not the 2 min device-verify path), so the chat stays usable.
+- Re-sign / refresh the ticket on each successful `fetch` so an active conversation keeps the merchant in.
+
+**Extend `merchant-forgot-pin`** to return the inserted `request_id` so the client can navigate with `?ticket=<id>`.
+
+### 4. Frontend
+
+**`MerchantForgotPinSheet.goToLiveSupport`** — change navigation to:
+`/merchant-support?ticket=<request_id>&t=<otp_ticket>` (no `openChat`, no prefill needed, the chat is the page).
+
+**`MerchantSupportPage`** — when `?ticket` + `?t` are present, render a new `PinResetTicketChat` instead of the auth-gated `SupportChat`. Header keeps the merchant theme. Sign-in fallback is only shown when neither `?ticket` nor a session exists.
+
+**New `src/components/merchant/PinResetTicketChat.tsx`** — bubble UI mirroring `SupportChat`'s look (welcome bubble, user-right / admin-left, send composer, realtime via Supabase channel filtered on `request_id`). Uses `supabase.functions.invoke('merchant-pin-reset-chat', ...)` for fetch/send/ack. Shows ticket status pill ("Waiting for support" / "Agent online" via realtime presence on a `pin-reset-<id>` channel). Auto-poll fallback every 8 s if realtime is blocked.
+
+### 5. Admin surface
+
+In **`AdminSupportDashboard`** add a new tab/section "PIN Reset" that:
+- Lists open `merchant_pin_reset_requests` (newest first), shows masked phone, source, OTP-verified flag (parsed from note prefix), unread-message badge.
+- Selecting one opens a chat panel that reads/writes `merchant_pin_reset_messages` directly (admin RLS allows it). Uses realtime postgres_changes filtered on `request_id`.
+- Provides "Mark resolved" → updates `merchant_pin_reset_requests.status='resolved'`, sends a final system message, and locks further merchant input.
+
+### 6. Watchdog already fixed
+
+`useMerchantSessionWatchdog` was updated last turn to skip `/merchant-support`, so no false "session expired" toast during the handoff.
+
+## Files
+
+- `supabase/migrations/<ts>_pin_reset_chat.sql` — new table, indexes, RLS, realtime publication
+- `supabase/functions/merchant-pin-reset-chat/index.ts` — new edge function (fetch/send/ack)
+- `supabase/functions/merchant-forgot-pin/index.ts` — return `request_id`
+- `supabase/functions/verify-otp/index.ts` — extend ticket lifetime to 30 min for `merchant_pin_reset`
+- `src/components/merchant/PinResetTicketChat.tsx` — new
+- `src/pages/MerchantSupportPage.tsx` — branch on `?ticket` + `?t`
+- `src/components/merchant/MerchantForgotPinSheet.tsx` — pass through `request_id` and ticket in URL
+- `src/components/admin/AdminSupportDashboard.tsx` — add PIN Reset queue tab + chat panel
+
+## Out of scope
+
+- E2E encryption on guest tickets (intentionally plaintext on server; ticket already proves phone ownership).
+- Migrating the verified guest into a full account — that happens after admins reset the PIN and the merchant signs in normally.
+- Push notifications to the guest (no auth, no subscription).
