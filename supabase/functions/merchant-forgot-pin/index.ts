@@ -91,26 +91,52 @@ Deno.serve(async (req) => {
   const ip = getClientIp(req);
   const userAgent = req.headers.get("user-agent")?.slice(0, 300) ?? null;
 
-  // Rate-limit: max 3 open requests for this phone in the last hour.
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const { count } = await admin
-    .from("merchant_pin_reset_requests")
-    .select("id", { count: "exact", head: true })
-    .eq("phone", phone)
-    .gte("created_at", oneHourAgo);
-
-  if ((count ?? 0) >= 3) {
-    return json(429, {
-      ok: false,
-      message: "We've already received your request. Our support team will reach out shortly.",
-    });
-  }
-
   // Optional OTP-verified ticket — when present and valid, prefix the note so admins can trust it.
   let otpVerified = false;
   if (typeof body?.otp_ticket === "string" && body.otp_ticket.length > 0) {
     otpVerified = await verifyOtpTicket(body.otp_ticket, phone);
   }
+
+  // When the caller holds a valid OTP ticket, reuse the most recent open request
+  // for this phone instead of inserting a new one. This keeps the guest live-chat
+  // thread stable across re-verifications and bypasses the rate limit, since the
+  // ticket already proves phone ownership.
+  if (otpVerified) {
+    const { data: existing } = await admin
+      .from("merchant_pin_reset_requests")
+      .select("id")
+      .eq("phone", phone)
+      .neq("status", "resolved")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing?.id) {
+      return json(200, {
+        ok: true,
+        otp_verified: true,
+        request_id: existing.id,
+        masked_phone: maskPhone(phone),
+        message: `Identity verified. Continue in live support to complete your PIN reset.`,
+      });
+    }
+  } else {
+    // Rate-limit only un-verified requests: max 3 open requests per phone per hour.
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await admin
+      .from("merchant_pin_reset_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("phone", phone)
+      .gte("created_at", oneHourAgo);
+
+    if ((count ?? 0) >= 3) {
+      return json(429, {
+        ok: false,
+        message: "We've already received your request. Our support team will reach out shortly.",
+      });
+    }
+  }
+
   const finalNote = otpVerified
     ? `[OTP-VERIFIED ${new Date().toISOString()}] ${note || ""}`.trim()
     : (note || null);
