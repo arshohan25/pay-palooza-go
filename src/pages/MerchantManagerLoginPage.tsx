@@ -344,54 +344,6 @@ export default function MerchantManagerLoginPage() {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-3">
         <div className="w-full max-w-md animate-fade-in" style={{ animationDuration: "500ms" }}>
-          {showIntro ? (
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl animate-scale-in">
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-[18px] border border-white/15 bg-white/10 shadow-[0_10px_40px_-10px_rgba(99,102,241,0.7)]">
-                  <UserCog className="h-7 w-7 text-sky-200" strokeWidth={1.8} />
-                </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200/30 bg-sky-300/10 px-3 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-sky-100">
-                  <Sparkles className="h-3 w-3" />
-                  Store Manager Access
-                </span>
-                <h1 className="mt-3 text-2xl font-semibold leading-tight tracking-tight">Welcome, Store Manager</h1>
-                <p className="mt-2 text-sm text-white/65">
-                  Use your own phone number to sign in to a store you've been added to as a manager.
-                </p>
-              </div>
-
-              <div className="mt-5 space-y-2.5">
-                <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                  <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-200" />
-                  <p className="text-[13px] leading-snug text-white/80">
-                    Access only the store you've been added to — never the owner's wallet.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-200" />
-                  <p className="text-[13px] leading-snug text-white/80">
-                    Bank-grade encryption keeps your PIN and session secure.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                  <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-violet-200" />
-                  <p className="text-[13px] leading-snug text-white/80">
-                    This device will be remembered after your first verified sign-in.
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                onClick={dismissIntro}
-                className="mt-5 h-11 w-full rounded-2xl bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-600 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.7)] transition-transform hover:scale-[1.01] hover:from-sky-400 hover:via-indigo-400 hover:to-violet-500"
-              >
-                Continue to sign in
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-          <>
           {/* Header */}
           <div className="mb-3 flex flex-col items-center text-center animate-scale-in">
             <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-[16px] border border-white/15 bg-white/10 shadow-[0_10px_40px_-10px_rgba(99,102,241,0.7)] backdrop-blur-2xl">
@@ -421,11 +373,31 @@ export default function MerchantManagerLoginPage() {
 
           {step === "signin" && (
             <form
-              onSubmit={handleSignIn}
+              onSubmit={(e) => { markVisited(); handleSignIn(e); }}
               aria-disabled={isLocked}
               className="rounded-[19px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
             >
               <fieldset disabled={isLocked} className="m-0 border-0 p-0 disabled:opacity-100">
+                {isFirstVisit && !isLocked && !wrongPin && (
+                  <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-sky-200/25 bg-sky-300/[0.06] p-3 text-sky-50">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-200" />
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-100">Use your own phone & PIN</p>
+                      <p className="text-[12.5px] leading-snug text-white/80">
+                        Sign in with the EasyPay account the store owner invited — not the owner's number. New here?{" "}
+                        <button
+                          type="button"
+                          onClick={() => navigate("/?signup=1")}
+                          className="font-semibold text-sky-100 underline underline-offset-2 hover:text-white"
+                        >
+                          Sign up first
+                        </button>
+                        , then ask the owner to add you.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {isLocked && (
                   <div role="alert" aria-live="polite"
                     className="mb-3 flex items-start gap-2.5 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-rose-100"
@@ -527,6 +499,20 @@ export default function MerchantManagerLoginPage() {
                   )}
                 </Button>
 
+                {isFirstVisit && (
+                  <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10.5px] font-medium text-white/75">
+                      <Lock className="h-3 w-3 text-sky-200" /> Secure PIN
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10.5px] font-medium text-white/75">
+                      <ShieldCheck className="h-3 w-3 text-emerald-200" /> Encrypted
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10.5px] font-medium text-white/75">
+                      <Sparkles className="h-3 w-3 text-violet-200" /> Bank-grade
+                    </span>
+                  </div>
+                )}
+
               </fieldset>
             </form>
           )}
@@ -544,9 +530,14 @@ export default function MerchantManagerLoginPage() {
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
             </button>
 
+            <button
+              type="button"
+              onClick={() => navigate("/merchant-login")}
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-[12px] font-medium text-white/75 backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
+            >
+              Are you the store owner? <span className="font-semibold text-white/90">Owner login</span>
+            </button>
           </div>
-          </>
-          )}
         </div>
       </div>
 
