@@ -96,7 +96,7 @@ export default function MerchantSupportPage() {
 
       {/* Header */}
       <header
-        className="mx-auto flex w-full max-w-2xl shrink-0 items-center gap-3 border-b border-white/10 bg-white/[0.03] pb-3 backdrop-blur md:max-w-3xl"
+        className="relative z-10 mx-auto flex w-full max-w-2xl shrink-0 items-center gap-3 border-b border-white/15 bg-white/[0.06] pb-3 backdrop-blur-xl md:max-w-3xl"
         style={{
           paddingTop: "max(env(safe-area-inset-top), 12px)",
           paddingLeft: "0.5rem",
