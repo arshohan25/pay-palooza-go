@@ -127,7 +127,7 @@ export default function MerchantSupportPage() {
       </header>
 
       {/* Body */}
-      <div className="relative -mt-1 mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden rounded-t-[28px] bg-white text-foreground shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.55)] ring-1 ring-white/10 sm:max-w-2xl md:max-w-3xl lg:max-w-3xl">
+      <div className="relative z-10 -mt-1 mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden rounded-t-[28px] bg-white text-foreground shadow-[0_-22px_60px_-22px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.7)] ring-1 ring-white/20 sm:max-w-2xl md:max-w-3xl lg:max-w-3xl">
         {isGuestTicketMode ? (
           <PinResetTicketChat
             requestId={ticketId!}
