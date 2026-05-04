@@ -1,59 +1,50 @@
-# Premium Chat Drawer Redesign
+# Premium Backdrop + Bottom Shutter for Support Chat
 
-Three things to fix from the screenshot:
+Two changes to `src/pages/MerchantSupportPage.tsx` (no schema, no new deps):
 
-1. The white chat panel touches the left/right edges of the screen — needs visible "floating" gutters with a soft blur on the dark backdrop.
-2. A stray small icon appears just to the right of outgoing bubbles (the leftover read-receipt + spacing combo reads visually like an avatar). The outgoing row needs to end cleanly at the bubble edge.
-3. Read receipts exist but are too quiet — they need a clearer "Sent / Delivered / Seen at HH:MM" treatment so you can actually track when support has read each message.
+## 1. Replace flat black with a layered premium backdrop
 
-## What changes
+Swap the current `bg-[radial-gradient(ellipse_at_top,#2a1a3a...)]` for a richer aurora composition that matches the drawer's primary glow:
 
-### 1. Floating drawer with blurred outer gutters — `src/pages/MerchantSupportPage.tsx`
+- **Base gradient**: `radial-gradient(120% 80% at 50% -10%, #6d4ea8 0%, #3b2563 28%, #1f1638 60%, #15102b 100%)` — warm violet at top blending into deep indigo.
+- **Three blurred color blooms** (absolute, behind drawer, `pointer-events-none`):
+  - Top-center primary halo: `hsl(var(--primary)/0.45)`, `h-80 w-[140%]`, `blur-3xl`
+  - Mid-left fuchsia bloom: `bg-fuchsia-500/15`, `h-72 w-72`, `blur-3xl`
+  - Bottom-right cyan bloom: `bg-cyan-400/10`, `h-72 w-72`, `blur-3xl`
+- **Film-grain overlay** via inline SVG fractal noise data URL at `opacity-[0.05] mix-blend-overlay` to kill banding and add a "physical" feel.
+- **Frosted ring behind drawer**: an absolutely positioned blurred element (`backdrop-blur-2xl bg-white/5`) extending slightly beyond the drawer's top so the gutters feel intentional.
+- Add `overflow-hidden` to root so blooms don't trigger scrollbars.
+- Strengthen drawer ring to `ring-1 ring-white/20` with inset top highlight `inset_0_1px_0_rgba(255,255,255,0.7)`.
 
-- Add responsive horizontal padding to the page-level `fixed inset-0` container so the white drawer no longer touches the edges:
-  - Mobile (`<sm`): `12px` left/right (combined with safe-area insets via `max(env(safe-area-inset-*), 12px)`)
-  - `sm`: `20px`
-  - `md`+: keep the existing `max-w-3xl` centering — no extra gutter needed since there's already empty space.
-- Strengthen the dark backdrop so the gutter feels intentional: add a subtle radial glow + a frosted blur ring directly behind the drawer (`bg-[radial-gradient(...)]` + an absolutely-positioned blurred element behind the panel).
-- Soften the drawer's top corners (already `rounded-t-3xl`) and add a thin highlight border `ring-1 ring-white/10` so the panel reads as a discrete card.
-- Header keeps its current safe-area padding — those still work because they live inside the now-padded parent.
+## 2. Bottom shutter system (open / close the drawer)
 
-### 2. Polished message rows — `src/components/merchant/PinResetTicketChat.tsx`
+Make the chat panel itself a controllable bottom sheet that the user can collapse to a peek and re-expand — without leaving the page.
 
-- Outgoing (`isMe`) rows: drop the `gap-2` on `flex-row-reverse` and tighten to `gap-0` plus a small right margin on the bubble. This guarantees nothing renders to the right of the bubble — eliminating the phantom-icon look in the screenshot.
-- Bubble tail refinements:
-  - Outgoing: keep gradient `from-primary to-primary/85`, increase shadow softness (`shadow-[0_6px_18px_-8px_hsl(var(--primary)/0.5)]`), bump max width to `82%`.
-  - Incoming: switch background to `bg-white/85 dark:bg-card/80` with a hairline `border-border/30` and a subtle inner top highlight for depth.
-- Day divider: replace the muted pill with a thin hairline + centered uppercase label ("TODAY") flanked by two `1px` lines — feels more like iMessage/Linear.
-- First-of-run avatar (incoming side) gets a soft halo ring instead of the current solid ring.
+State: `const [shutterOpen, setShutterOpen] = useState(true)` (default open).
 
-### 3. Premium read-receipt UI — same file
+Three drawer states driven by Framer Motion `animate` on the panel:
+- **Open** (default): `y: 0` — full height as today.
+- **Closed/peek**: `y: calc(100% - 64px)` — only a 64px header strip (grab handle + title + unread count) remains visible at the bottom.
 
-Per-message footer (right-aligned for outgoing) becomes a single compact pill:
+Interactions:
+- **Grab handle** at the top of the drawer (a 36×4 rounded `bg-white/40` pill inside a 24px tap zone) — tap toggles `shutterOpen`. Already-existing rounded-top corners stay.
+- **Drag-to-dismiss**: wrap the panel in `motion.div` with `drag="y"`, `dragConstraints={{ top: 0, bottom: 0 }}`, `dragElastic={0.15}`. On `onDragEnd`, if `offset.y > 120` or `velocity.y > 500` → close; else snap back. If currently closed and `offset.y < -120` → open.
+- **Backdrop tap**: clicking the dark backdrop area above the closed peek strip re-opens the drawer (or closes it when open and tapped above panel — only when `shutterOpen` is true and tap is outside panel).
+- **Close button** (small `ChevronDown` icon top-right of header inside the drawer) for explicit collapse; replaced by `ChevronUp` when collapsed.
 
-```text
-12:21 PM  ✓        →  sending / sent, not yet seen   (grey check)
-12:21 PM  ✓✓       →  delivered, seen by admin       (cyan double check)
-12:21 PM  Seen 12:24 ✓✓   →  last own message only, with admin's read time inline
+Peek strip content (visible when closed):
 ```
+[ ═══ ]   PIN reset chat       2 new
+```
+- Grab pill, title "PIN reset · Live support", and a small unread badge (reuses the unread count already tracked by `PinResetTicketChat` via a new `onUnreadChange?: (n: number) => void` callback prop — optional; if not wired, just show the title).
 
-Concretely:
-- Sending (optimistic / temp- id): tiny spinner + "Sending…" in `primary-foreground/65`.
-- Sent but `read_by_admin = false`: time + single `Check` icon in `primary-foreground/60`.
-- Read (`read_by_admin = true`): time + double `CheckCheck` in soft cyan (`text-cyan-200`).
-- Last outgoing message AND read: append a subtle inline "Seen HH:MM" using `read_by_admin_at` — replaces the current separate "Seen by support" row beneath the bubble (cleaner, less vertical noise).
-- Add a typed `tooltip` on hover/long-press over the receipt showing the full date + time ("Seen on May 4 at 12:24 PM") — small affordance for power users.
+Animation: `transition={{ type: "spring", stiffness: 380, damping: 36 }}` (matches `springTransition` in `src/lib/transitions.ts`).
 
-Inbound bubbles continue to show only `HH:MM` in muted text.
-
-### 4. Composer polish (small)
-
-- Tighten attach-button + send-button height from `h-12` to `h-11` to match the slimmer composer feel.
-- Composer top-edge gradient stays; add a `shadow-[0_-12px_24px_-20px_rgba(0,0,0,0.3)]` to lift the composer above the message list when scrolled.
+Keyboard: `Escape` toggles shutter closed when open.
 
 ## Technical notes
 
-- No backend or schema changes. All read-receipt data (`read_by_admin`, `read_by_admin_at`) is already populated by the edge function; we're only redesigning how the UI surfaces it.
-- No new dependencies; uses existing `framer-motion` + `lucide-react` icons (`Check`, `CheckCheck`, `Loader2`).
-- Files touched: `src/pages/MerchantSupportPage.tsx`, `src/components/merchant/PinResetTicketChat.tsx`.
-- Verification: navigate to `/merchant-support?ticket=…` at viewport 390×844 and confirm visible gutters on both sides + clear "Seen 12:24" inline on the last sent message.
+- Files touched: `src/pages/MerchantSupportPage.tsx` only (and one optional prop addition on `PinResetTicketChat` for unread count — non-breaking, default no-op).
+- Uses existing `framer-motion` (already imported elsewhere) and `lucide-react` (`ChevronDown`, `ChevronUp`).
+- No backend, no schema, no new dependencies.
+- Verify at 390×638: closed state shows ~64px peek at bottom with grab handle; open state restores current full drawer; backdrop visibly violet/indigo with soft color blooms — no flat black.
