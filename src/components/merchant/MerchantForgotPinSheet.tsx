@@ -146,21 +146,36 @@ export default function MerchantForgotPinSheet({
         return;
       }
 
-      // Log the verified ticket so support sees it in queue and capture the request id
-      const { data: forgotData } = await supabase.functions.invoke("merchant-forgot-pin", {
-        body: {
-          phone: cleanedPhone,
-          note: note.trim(),
-          source,
-          otp_ticket: ticketValue,
-        },
-      });
-      const forgotPayload: any = forgotData;
-      const newRequestId: string | null = forgotPayload?.request_id ?? null;
+      // Fire the request-creation in the BACKGROUND so we can navigate immediately.
+      // The chat screen waits for the resolved request_id via window event below.
+      const forgotPromise = supabase.functions
+        .invoke("merchant-forgot-pin", {
+          body: {
+            phone: cleanedPhone,
+            note: note.trim(),
+            source,
+            otp_ticket: ticketValue,
+          },
+        })
+        .then(({ data: forgotData }: any) => {
+          const newRequestId: string | null = forgotData?.request_id ?? null;
+          if (newRequestId) {
+            window.dispatchEvent(
+              new CustomEvent("pin-reset-request-resolved", { detail: { requestId: newRequestId } }),
+            );
+          }
+          return newRequestId;
+        })
+        .catch(() => null);
 
-      setTicket(ticketValue);
-      setRequestId(newRequestId);
-      setStep("handoff");
+      // Navigate instantly — chat sheet renders skeletons + welcome while request_id resolves.
+      onOpenChange(false);
+      const masked = encodeURIComponent(maskBdPhone(cleanedPhone));
+      navigate(
+        `/merchant-support?ticket=pending&t=${encodeURIComponent(ticketValue)}&masked=${masked}`,
+      );
+      // Keep the promise alive
+      void forgotPromise;
     } catch (err: any) {
       setOtpError(err?.message || "Verification failed.");
       setCode("");
