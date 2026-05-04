@@ -619,7 +619,7 @@ export default function PinResetTicketChat({
                   whileTap={{ scale: 0.92 }}
                   whileHover={{ scale: 1.04 }}
                   transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/50 bg-card/70 text-muted-foreground backdrop-blur-xl transition-colors hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/50 bg-card/70 text-muted-foreground backdrop-blur-xl transition-colors hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label="Attach file"
                 >
                   <Paperclip className="h-4 w-4" />
@@ -689,7 +689,7 @@ export default function PinResetTicketChat({
                   whileTap={{ scale: 0.92 }}
                   whileHover={{ scale: 1.04 }}
                   transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                  className="group relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full disabled:cursor-not-allowed disabled:opacity-40"
+                  className="group relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label="Send"
                 >
                   <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-primary to-primary/65" />
