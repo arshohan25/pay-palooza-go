@@ -69,6 +69,8 @@ export default function MerchantForgotPinSheet({
       setOtpError(null);
       setDevOtp(null);
       setResendIn(0);
+      setTicket(null);
+      setRequestId(null);
     }
   }, [open, defaultPhone]);
 
@@ -137,23 +139,27 @@ export default function MerchantForgotPinSheet({
         setCode("");
         return;
       }
-      const ticket: string | null = payload?.otp_ticket ?? null;
-      if (!ticket) {
+      const ticketValue: string | null = payload?.otp_ticket ?? null;
+      if (!ticketValue) {
         setOtpError("Verification failed. Please request a new code.");
         setCode("");
         return;
       }
 
-      // Log the verified ticket so support sees it in queue
-      await supabase.functions.invoke("merchant-forgot-pin", {
+      // Log the verified ticket so support sees it in queue and capture the request id
+      const { data: forgotData } = await supabase.functions.invoke("merchant-forgot-pin", {
         body: {
           phone: cleanedPhone,
           note: note.trim(),
           source,
-          otp_ticket: ticket,
+          otp_ticket: ticketValue,
         },
       });
+      const forgotPayload: any = forgotData;
+      const newRequestId: string | null = forgotPayload?.request_id ?? null;
 
+      setTicket(ticketValue);
+      setRequestId(newRequestId);
       setStep("handoff");
     } catch (err: any) {
       setOtpError(err?.message || "Verification failed.");
