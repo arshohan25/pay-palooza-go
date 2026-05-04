@@ -463,17 +463,26 @@ export default function PinResetTicketChat({
                   />
 
                   {/* Character counter */}
-                  {input.length > 0 && (
-                    <div className="pointer-events-none absolute bottom-2 right-2.5 flex items-center">
-                      {input.length > 1500 ? (
-                        <CounterRing value={input.length} max={2000} />
-                      ) : (
-                        <span className="text-[9.5px] font-medium tabular-nums text-muted-foreground/55">
-                          {input.length}/2000
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <AnimatePresence>
+                    {input.length > 0 && (
+                      <motion.div
+                        key="counter"
+                        initial={{ opacity: 0, scale: 0.7 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.7 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 24 }}
+                        className="pointer-events-none absolute bottom-2 right-2.5 flex items-center"
+                      >
+                        {input.length > 1500 ? (
+                          <CounterRing value={input.length} max={2000} />
+                        ) : (
+                          <span className="text-[9.5px] font-medium tabular-nums text-muted-foreground/55">
+                            {input.length}/2000
+                          </span>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
 
