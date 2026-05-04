@@ -179,16 +179,15 @@ export default function MerchantForgotPinSheet({
 
   // ── Step 3: Handoff to live chat ─────────────────────────────────
   const goToLiveSupport = () => {
-    const prefill = encodeURIComponent(
-      `Hi, I forgot my Merchant PIN. Identity verified via OTP at ${new Date().toLocaleString()}. Please complete my PIN reset on my registered number.`,
-    );
-    const ctxTitle = encodeURIComponent("Merchant PIN reset · OTP verified");
-    const ctxBody = encodeURIComponent(
-      `Source: ${source} · Verified at ${new Date().toISOString()} · Registered number on file with support`,
-    );
+    if (!ticket || !requestId) {
+      toast.error("Verification expired. Please request a new code.");
+      setStep("request");
+      return;
+    }
     onOpenChange(false);
+    const masked = encodeURIComponent(maskBdPhone(cleanedPhone));
     navigate(
-      `/merchant-support?openChat=1&prefill=${prefill}&contextTitle=${ctxTitle}&contextBody=${ctxBody}`,
+      `/merchant-support?ticket=${encodeURIComponent(requestId)}&t=${encodeURIComponent(ticket)}&masked=${masked}`,
     );
   };
 
