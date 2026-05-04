@@ -469,13 +469,13 @@ export default function PinResetTicketChat({
                   initial={{ opacity: 0, y: 6, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ duration: 0.16 }}
-                  className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : ""} ${isFirstOfRun ? "mt-1.5" : "mt-0.5"}`}
+                  className={`flex items-end ${isMe ? "flex-row-reverse gap-0" : "gap-2"} ${isFirstOfRun ? "mt-1.5" : "mt-0.5"}`}
                 >
                   {/* Avatar — only on incoming first-of-run. Outgoing rows have NO avatar slot. */}
                   {!isMe && (
                     <div className="w-7 shrink-0">
                       {isFirstOfRun && (
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/20">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/25 to-primary/5 ring-2 ring-primary/15 ring-offset-1 ring-offset-background">
                           <Bot size={12} className="text-primary" />
                         </div>
                       )}
@@ -483,12 +483,15 @@ export default function PinResetTicketChat({
                   )}
 
                   <div
-                    className={`max-w-[78%] px-3.5 py-2 ${
+                    className={`relative max-w-[82%] px-3.5 py-2 ${
                       isMe
-                        ? "rounded-[20px] rounded-br-[6px] bg-gradient-to-br from-primary to-primary/85 text-primary-foreground shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.45)]"
-                        : "rounded-[20px] rounded-bl-[6px] border border-border/40 bg-card/80 text-foreground shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] backdrop-blur-sm"
+                        ? "rounded-[20px] rounded-br-[6px] bg-gradient-to-br from-primary to-primary/85 text-primary-foreground shadow-[0_6px_18px_-8px_hsl(var(--primary)/0.5)]"
+                        : "rounded-[20px] rounded-bl-[6px] border border-border/30 bg-white/85 text-foreground shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] backdrop-blur-sm dark:bg-card/80"
                     }`}
                   >
+                    {!isMe && (
+                      <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                    )}
                     {msg.attachment_path && (
                       <AttachmentBubble
                         message={msg}
@@ -501,12 +504,20 @@ export default function PinResetTicketChat({
                         {msg.content}
                       </p>
                     )}
-                    <div className={`mt-0.5 flex items-center gap-1 ${isMe ? "justify-end" : ""}`}>
-                      <span className={`text-[9px] ${isMe ? "text-primary-foreground/65" : "text-muted-foreground"}`}>
+                    <div
+                      className={`mt-0.5 flex items-center gap-1 ${isMe ? "justify-end" : ""}`}
+                      title={isMe && msg.read_by_admin ? fullSeenTitle : undefined}
+                    >
+                      {isMe && isLastOwn && msg.read_by_admin && seenLabel && (
+                        <span className="mr-0.5 text-[9.5px] font-medium tracking-wide text-cyan-100">
+                          Seen {seenLabel}
+                        </span>
+                      )}
+                      <span className={`text-[9px] tabular-nums ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                         {formatTime(msg.created_at)}
                       </span>
                       {isMe &&
-                        (msg.id.startsWith("temp-") ? (
+                        (isPending ? (
                           <Loader2 size={10} className="animate-spin text-primary-foreground/65" />
                         ) : msg.read_by_admin ? (
                           <CheckCheck size={11} className="text-cyan-200" />
@@ -516,21 +527,6 @@ export default function PinResetTicketChat({
                     </div>
                   </div>
                 </motion.div>
-
-                {/* Per-conversation "Seen by support · time" line under the LAST outgoing message */}
-                {isLastOwn && msg.read_by_admin && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -2 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-1 flex justify-end pr-1 text-[9.5px] font-medium text-emerald-600 dark:text-emerald-400"
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      <CheckCheck size={10} />
-                      Seen by support
-                      {msg.read_by_admin_at && ` · ${formatTime(msg.read_by_admin_at)}`}
-                    </span>
-                  </motion.div>
-                )}
               </div>
             );
           })}
