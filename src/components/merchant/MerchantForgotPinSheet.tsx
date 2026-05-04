@@ -55,6 +55,8 @@ export default function MerchantForgotPinSheet({
   const [otpError, setOtpError] = useState<string | null>(null);
   const [devOtp, setDevOtp] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+  const [ticket, setTicket] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
   const tickerRef = useRef<number | null>(null);
 
   // Reset everything whenever the sheet opens
