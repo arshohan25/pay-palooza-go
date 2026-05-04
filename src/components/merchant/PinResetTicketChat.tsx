@@ -254,7 +254,13 @@ export default function PinResetTicketChat({
       className="relative flex h-full min-h-0 flex-col bg-gradient-to-b from-background via-background to-primary/[0.04]"
     >
       {/* Premium header */}
-      <div className="relative shrink-0 border-b border-border/50 bg-gradient-to-r from-primary/[0.07] via-background to-primary/[0.04] px-4 py-2.5 backdrop-blur-xl">
+      <div
+        className="relative shrink-0 border-b border-border/50 bg-gradient-to-r from-primary/[0.07] via-background to-primary/[0.04] py-2.5 backdrop-blur-xl"
+        style={{
+          paddingLeft: "max(env(safe-area-inset-left), 1rem)",
+          paddingRight: "max(env(safe-area-inset-right), 1rem)",
+        }}
+      >
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-[0_6px_18px_-6px_hsl(var(--primary)/0.55)] ring-1 ring-primary/30">
