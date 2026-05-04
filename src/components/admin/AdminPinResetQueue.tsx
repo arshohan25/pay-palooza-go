@@ -244,7 +244,16 @@ export default function AdminPinResetQueue() {
                 return (
                   <div key={m.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${isAdmin ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md bg-background border"}`}>
-                      <p className="break-words">{m.content}</p>
+                      {m.attachment_path && (
+                        <AdminAttachment
+                          path={m.attachment_path}
+                          mime={m.attachment_mime}
+                          name={m.attachment_name}
+                          size={m.attachment_size}
+                          isAdmin={isAdmin}
+                        />
+                      )}
+                      {m.content && <p className="mt-1 break-words">{m.content}</p>}
                       <p className={`mt-0.5 text-[9px] ${isAdmin ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                         {new Date(m.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
                       </p>
