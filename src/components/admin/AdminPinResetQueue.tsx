@@ -89,10 +89,10 @@ export default function AdminPinResetQueue() {
       setLoadingChat(false);
       requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; });
 
-      // Mark merchant messages as read
+      // Mark merchant messages as read (with timestamp so the merchant sees "Seen at ...")
       await supabase
         .from("merchant_pin_reset_messages")
-        .update({ read_by_admin: true })
+        .update({ read_by_admin: true, read_by_admin_at: new Date().toISOString() })
         .eq("request_id", selectedId)
         .eq("sender_role", "merchant")
         .eq("read_by_admin", false);
