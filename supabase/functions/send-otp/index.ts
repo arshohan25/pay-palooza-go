@@ -7,6 +7,11 @@ const corsHeaders = {
 
 const OTP_EXPIRY_MINUTES = 5;
 const MAX_OTP_PER_HOUR = 5;
+// Higher caps for purposes where users legitimately retry (e.g. PIN reset handoff)
+const PURPOSE_HOURLY_LIMITS: Record<string, number> = {
+  merchant_pin_reset: 15,
+  pin_reset: 10,
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
