@@ -10,7 +10,23 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const TICKET_SECRET = Deno.env.get("OTP_TICKET_SECRET") || SUPABASE_SERVICE_ROLE_KEY || "fallback-dev-secret";
 
-const TICKET_EXTEND_S = 30 * 60; // refresh ticket to 30 min on every successful fetch
+const TICKET_EXTEND_S = 30 * 60;
+const ATTACH_BUCKET = "pin-reset-attachments";
+const MAX_ATTACH_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_MIMES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+]);
+const MIME_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "application/pdf": "pdf",
+};
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -69,6 +85,9 @@ async function mintTicket(phone: string): Promise<{ ticket: string; exp: number 
   return { ticket: `${payloadB64}.${sig}`, exp };
 }
 
+const MESSAGE_COLS =
+  "id, request_id, sender_role, content, created_at, read_by_admin, read_by_merchant, read_by_admin_at, attachment_path, attachment_mime, attachment_name, attachment_size";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { ok: false, message: "Method not allowed" });
@@ -90,7 +109,6 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // Validate the ticket phone matches the request
   const { data: requestRow, error: reqErr } = await admin
     .from("merchant_pin_reset_requests")
     .select("id, phone, status")
@@ -103,12 +121,11 @@ Deno.serve(async (req) => {
   if (action === "fetch") {
     const { data: messages, error: mErr } = await admin
       .from("merchant_pin_reset_messages")
-      .select("id, request_id, sender_role, content, created_at, read_by_admin, read_by_merchant")
+      .select(MESSAGE_COLS)
       .eq("request_id", requestId)
       .order("created_at", { ascending: true });
     if (mErr) return json(500, { ok: false, message: "Couldn't load messages" });
 
-    // Mark admin messages as read by merchant
     await admin
       .from("merchant_pin_reset_messages")
       .update({ read_by_merchant: true })
@@ -131,7 +148,37 @@ Deno.serve(async (req) => {
       return json(409, { ok: false, message: "This ticket is closed." });
     }
     const text = typeof body?.content === "string" ? body.content.trim().slice(0, 2000) : "";
-    if (!text) return json(400, { ok: false, message: "Message can't be empty" });
+
+    // Optional attachment metadata (object must already be uploaded via attach_init)
+    const att = body?.attachment;
+    let attachmentFields: Record<string, unknown> = {};
+    if (att && typeof att === "object") {
+      const path = typeof att.path === "string" ? att.path : "";
+      const mime = typeof att.mime === "string" ? att.mime : "";
+      const name = typeof att.name === "string" ? att.name.slice(0, 200) : "file";
+      const size = typeof att.size === "number" ? Math.floor(att.size) : 0;
+      if (!path.startsWith(`${requestId}/`)) return json(400, { ok: false, message: "Invalid attachment path" });
+      if (!ALLOWED_MIMES.has(mime)) return json(400, { ok: false, message: "Unsupported file type" });
+      if (size <= 0 || size > MAX_ATTACH_BYTES) return json(400, { ok: false, message: "File too large (max 5 MB)" });
+
+      // Verify the object actually exists (HEAD via service-role download with HEAD-equivalent: list/info)
+      const { data: info, error: infoErr } = await admin.storage
+        .from(ATTACH_BUCKET)
+        .list(requestId, { limit: 1000, search: path.substring(requestId.length + 1) });
+      if (infoErr || !info?.some((o) => `${requestId}/${o.name}` === path)) {
+        return json(400, { ok: false, message: "Attachment not found" });
+      }
+      attachmentFields = {
+        attachment_path: path,
+        attachment_mime: mime,
+        attachment_name: name,
+        attachment_size: size,
+      };
+    }
+
+    if (!text && !attachmentFields.attachment_path) {
+      return json(400, { ok: false, message: "Message can't be empty" });
+    }
 
     const { data: inserted, error: insErr } = await admin
       .from("merchant_pin_reset_messages")
@@ -141,8 +188,9 @@ Deno.serve(async (req) => {
         content: text,
         read_by_admin: false,
         read_by_merchant: true,
+        ...attachmentFields,
       })
-      .select("id, request_id, sender_role, content, created_at, read_by_admin, read_by_merchant")
+      .select(MESSAGE_COLS)
       .single();
     if (insErr || !inserted) return json(500, { ok: false, message: "Couldn't send message" });
 
@@ -163,6 +211,61 @@ Deno.serve(async (req) => {
       .eq("sender_role", "admin")
       .eq("read_by_merchant", false);
     return json(200, { ok: true });
+  }
+
+  if (action === "attach_init") {
+    const mime = typeof body?.mime === "string" ? body.mime : "";
+    const size = typeof body?.size === "number" ? Math.floor(body.size) : 0;
+    const name = typeof body?.name === "string" ? body.name.slice(0, 200) : "file";
+    if (!ALLOWED_MIMES.has(mime)) return json(400, { ok: false, message: "Unsupported file type" });
+    if (size <= 0 || size > MAX_ATTACH_BYTES) return json(400, { ok: false, message: "File too large (max 5 MB)" });
+
+    const ext = MIME_EXT[mime] ?? "bin";
+    const objectPath = `${requestId}/${crypto.randomUUID()}.${ext}`;
+
+    const { data: signed, error: signErr } = await admin.storage
+      .from(ATTACH_BUCKET)
+      .createSignedUploadUrl(objectPath);
+    if (signErr || !signed) return json(500, { ok: false, message: "Couldn't prepare upload" });
+
+    const fresh = await mintTicket(verified.phone);
+    return json(200, {
+      ok: true,
+      upload: {
+        path: objectPath,
+        token: signed.token,
+        signed_url: signed.signedUrl,
+        bucket: ATTACH_BUCKET,
+        suggested_name: name,
+      },
+      otp_ticket: fresh.ticket,
+    });
+  }
+
+  if (action === "attach_url") {
+    const messageId = typeof body?.message_id === "string" ? body.message_id : "";
+    if (!messageId) return json(400, { ok: false, message: "Missing message_id" });
+
+    const { data: msg, error: mErr } = await admin
+      .from("merchant_pin_reset_messages")
+      .select("attachment_path, request_id")
+      .eq("id", messageId)
+      .maybeSingle();
+    if (mErr || !msg || msg.request_id !== requestId || !msg.attachment_path) {
+      return json(404, { ok: false, message: "Attachment not found" });
+    }
+
+    const { data: signed, error: sErr } = await admin.storage
+      .from(ATTACH_BUCKET)
+      .createSignedUrl(msg.attachment_path, 300);
+    if (sErr || !signed) return json(500, { ok: false, message: "Couldn't generate URL" });
+
+    const fresh = await mintTicket(verified.phone);
+    return json(200, {
+      ok: true,
+      url: signed.signedUrl,
+      otp_ticket: fresh.ticket,
+    });
   }
 
   return json(400, { ok: false, message: "Unknown action" });
