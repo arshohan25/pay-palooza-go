@@ -39,6 +39,7 @@ import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
 import AdminDisputeResolution from "@/components/admin/AdminDisputeResolution";
 import AdminReporting from "@/components/admin/AdminReporting";
 import AdminSupportDashboard from "@/components/admin/AdminSupportDashboard";
+import AdminPinResetQueue from "@/components/admin/AdminPinResetQueue";
 import AdminFeatureLocks from "@/components/admin/AdminFeatureLocks";
 import AdminFraudAlerts from "@/components/admin/AdminFraudAlerts";
 import AdminActivityMonitor from "@/components/admin/AdminActivityMonitor";
@@ -269,6 +270,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "live_chat", label: "Live Chat", icon: MessageCircle },
       { id: "tickets", label: "Tickets", icon: FileText },
+      { id: "pin_reset_queue", label: "PIN Reset Queue", icon: Key },
       { id: "chat_monitor", label: "Chat Monitor", icon: MessageCircle },
     ],
   },

@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     ? `[OTP-VERIFIED ${new Date().toISOString()}] ${note || ""}`.trim()
     : (note || null);
 
-  const { error: insertErr } = await admin
+  const { data: insertedRow, error: insertErr } = await admin
     .from("merchant_pin_reset_requests")
     .insert({
       phone,
@@ -123,9 +123,11 @@ Deno.serve(async (req) => {
       source: body?.source === "merchant-manager-login" ? "merchant-manager-login" : "merchant-login",
       ip,
       user_agent: userAgent,
-    });
+    })
+    .select("id")
+    .single();
 
-  if (insertErr) {
+  if (insertErr || !insertedRow) {
     console.error("merchant-forgot-pin insert failed", insertErr);
     return json(500, { ok: false, message: "Couldn't submit request. Please try again." });
   }
@@ -133,6 +135,7 @@ Deno.serve(async (req) => {
   return json(200, {
     ok: true,
     otp_verified: otpVerified,
+    request_id: insertedRow.id,
     masked_phone: maskPhone(phone),
     message: otpVerified
       ? `Identity verified. Continue in live support to complete your PIN reset.`

@@ -3207,6 +3207,47 @@ export type Database = {
           },
         ]
       }
+      merchant_pin_reset_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read_by_admin: boolean
+          read_by_merchant: boolean
+          request_id: string
+          sender_admin_id: string | null
+          sender_role: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read_by_admin?: boolean
+          read_by_merchant?: boolean
+          request_id: string
+          sender_admin_id?: string | null
+          sender_role: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read_by_admin?: boolean
+          read_by_merchant?: boolean
+          request_id?: string
+          sender_admin_id?: string | null
+          sender_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_pin_reset_messages_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_pin_reset_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_pin_reset_requests: {
         Row: {
           created_at: string

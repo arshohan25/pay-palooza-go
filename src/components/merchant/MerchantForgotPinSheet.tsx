@@ -55,6 +55,8 @@ export default function MerchantForgotPinSheet({
   const [otpError, setOtpError] = useState<string | null>(null);
   const [devOtp, setDevOtp] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+  const [ticket, setTicket] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
   const tickerRef = useRef<number | null>(null);
 
   // Reset everything whenever the sheet opens
@@ -67,6 +69,8 @@ export default function MerchantForgotPinSheet({
       setOtpError(null);
       setDevOtp(null);
       setResendIn(0);
+      setTicket(null);
+      setRequestId(null);
     }
   }, [open, defaultPhone]);
 
@@ -135,23 +139,27 @@ export default function MerchantForgotPinSheet({
         setCode("");
         return;
       }
-      const ticket: string | null = payload?.otp_ticket ?? null;
-      if (!ticket) {
+      const ticketValue: string | null = payload?.otp_ticket ?? null;
+      if (!ticketValue) {
         setOtpError("Verification failed. Please request a new code.");
         setCode("");
         return;
       }
 
-      // Log the verified ticket so support sees it in queue
-      await supabase.functions.invoke("merchant-forgot-pin", {
+      // Log the verified ticket so support sees it in queue and capture the request id
+      const { data: forgotData } = await supabase.functions.invoke("merchant-forgot-pin", {
         body: {
           phone: cleanedPhone,
           note: note.trim(),
           source,
-          otp_ticket: ticket,
+          otp_ticket: ticketValue,
         },
       });
+      const forgotPayload: any = forgotData;
+      const newRequestId: string | null = forgotPayload?.request_id ?? null;
 
+      setTicket(ticketValue);
+      setRequestId(newRequestId);
       setStep("handoff");
     } catch (err: any) {
       setOtpError(err?.message || "Verification failed.");
@@ -171,16 +179,15 @@ export default function MerchantForgotPinSheet({
 
   // ── Step 3: Handoff to live chat ─────────────────────────────────
   const goToLiveSupport = () => {
-    const prefill = encodeURIComponent(
-      `Hi, I forgot my Merchant PIN. Identity verified via OTP at ${new Date().toLocaleString()}. Please complete my PIN reset on my registered number.`,
-    );
-    const ctxTitle = encodeURIComponent("Merchant PIN reset · OTP verified");
-    const ctxBody = encodeURIComponent(
-      `Source: ${source} · Verified at ${new Date().toISOString()} · Registered number on file with support`,
-    );
+    if (!ticket || !requestId) {
+      toast.error("Verification expired. Please request a new code.");
+      setStep("request");
+      return;
+    }
     onOpenChange(false);
+    const masked = encodeURIComponent(maskBdPhone(cleanedPhone));
     navigate(
-      `/merchant-support?openChat=1&prefill=${prefill}&contextTitle=${ctxTitle}&contextBody=${ctxBody}`,
+      `/merchant-support?ticket=${encodeURIComponent(requestId)}&t=${encodeURIComponent(ticket)}&masked=${masked}`,
     );
   };
 

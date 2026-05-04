@@ -82,7 +82,10 @@ Deno.serve(async (req) => {
         ? validPurpose.replace(/^device_verify_/, "")
         : "merchant_pin_reset";
       const jti = crypto.randomUUID();
-      const exp = Math.floor(Date.now() / 1000) + 120; // 2 min
+      // Device-verify tickets are short-lived (2 min). Merchant PIN-reset tickets
+      // are reused by the guest live-chat thread, so they need a longer life (30 min).
+      const ttlSeconds = validPurpose === "merchant_pin_reset" ? 30 * 60 : 120;
+      const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
       const payload = { jti, phone, portal, exp, purpose: validPurpose };
       const payloadB64 = b64urlEncode(payload);
       const sig = await hmacSha256B64Url(TICKET_SECRET, payloadB64);
