@@ -285,3 +285,76 @@ export default function AdminPinResetQueue() {
     </div>
   );
 }
+
+/* Admin-side attachment: signed-URL fetched directly via supabase storage (admins are authenticated). */
+function AdminAttachment({
+  path,
+  mime,
+  name,
+  size,
+  isAdmin,
+}: {
+  path: string;
+  mime?: string | null;
+  name?: string | null;
+  size?: number | null;
+  isAdmin: boolean;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const isImage = (mime ?? "").startsWith("image/");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isImage) return;
+    setLoading(true);
+    supabase.storage
+      .from("pin-reset-attachments")
+      .createSignedUrl(path, 300)
+      .then(({ data }) => { if (!cancelled) setUrl(data?.signedUrl ?? null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [path, isImage]);
+
+  const openSigned = async () => {
+    const { data } = await supabase.storage
+      .from("pin-reset-attachments")
+      .createSignedUrl(path, 300);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  if (isImage) {
+    return (
+      <button
+        type="button"
+        onClick={openSigned}
+        className="block overflow-hidden rounded-lg border border-white/10"
+        style={{ maxWidth: 220 }}
+      >
+        {loading || !url ? (
+          <div className="flex h-32 w-32 items-center justify-center bg-muted">
+            <Loader2 className="h-3 w-3 animate-spin" />
+          </div>
+        ) : (
+          <img src={url} alt={name ?? "attachment"} className="block max-h-[220px] w-auto" />
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={openSigned}
+      className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left ${isAdmin ? "border-white/20 bg-white/10" : "border-border bg-muted/40"}`}
+    >
+      <FileText className="h-4 w-4 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[11px] font-medium">{name ?? "Attachment"}</p>
+        <p className="text-[9px] opacity-70">{formatBytes(size)} · PDF</p>
+      </div>
+      <Download className="h-3 w-3 shrink-0 opacity-70" />
+    </button>
+  );
+}
+
