@@ -23,6 +23,18 @@ interface Message {
   created_at: string;
   read_by_admin: boolean;
   read_by_merchant: boolean;
+  read_by_admin_at?: string | null;
+  attachment_path?: string | null;
+  attachment_mime?: string | null;
+  attachment_name?: string | null;
+  attachment_size?: number | null;
+}
+
+function formatBytes(n?: number | null) {
+  if (!n) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function maskPhone(p: string) {
