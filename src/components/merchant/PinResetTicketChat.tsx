@@ -452,10 +452,12 @@ export default function PinResetTicketChat({
             return (
               <div key={msg.id}>
                 {showDayDivider && (
-                  <div className="my-3 flex items-center justify-center">
-                    <span className="rounded-full bg-muted/60 px-2.5 py-0.5 text-[9.5px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <div className="my-3 flex items-center gap-2 px-2">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border/60" />
+                    <span className="text-[9.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
                       {formatDayLabel(msg.created_at)}
                     </span>
+                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border/60" />
                   </div>
                 )}
                 <motion.div
