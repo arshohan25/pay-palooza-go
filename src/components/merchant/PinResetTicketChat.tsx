@@ -415,7 +415,14 @@ export default function PinResetTicketChat({
       </div>
 
       {/* Composer — premium glassmorphism */}
-      <div className="relative shrink-0 px-5 pb-[max(env(safe-area-inset-bottom),10px)] pt-3">
+      <div
+        className="relative shrink-0 pt-3"
+        style={{
+          paddingLeft: "max(env(safe-area-inset-left), 1.25rem)",
+          paddingRight: "max(env(safe-area-inset-right), 1.25rem)",
+          paddingBottom: "max(env(safe-area-inset-bottom), 10px)",
+        }}
+      >
         {/* Frosted top fade so messages dissolve into the composer */}
         <div className="pointer-events-none absolute inset-x-0 -top-5 h-5 bg-gradient-to-t from-background/85 to-transparent" />
         {/* Glass surface */}
