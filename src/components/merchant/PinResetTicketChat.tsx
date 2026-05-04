@@ -449,6 +449,11 @@ export default function PinResetTicketChat({
           {decorated.map(({ msg, isFirstOfRun, showDayDivider }) => {
             const isMe = msg.sender_role === "merchant";
             const isLastOwn = isMe && msg.id === lastOwnMessageId;
+            const isPending = msg.id.startsWith("temp-");
+            const seenLabel = msg.read_by_admin_at ? formatTime(msg.read_by_admin_at) : null;
+            const fullSeenTitle = msg.read_by_admin_at
+              ? `Seen on ${new Date(msg.read_by_admin_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+              : undefined;
             return (
               <div key={msg.id}>
                 {showDayDivider && (
