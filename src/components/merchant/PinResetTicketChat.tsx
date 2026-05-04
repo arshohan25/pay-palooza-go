@@ -13,7 +13,7 @@ import {
   User as UserIcon,
   Sparkles,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import { toast } from "sonner";
 
 interface PinResetMessage {
