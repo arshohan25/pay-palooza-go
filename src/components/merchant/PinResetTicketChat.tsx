@@ -299,7 +299,11 @@ export default function PinResetTicketChat({
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 space-y-2 overflow-y-auto px-5 pb-3 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex-1 space-y-2 overflow-y-auto pb-3 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{
+          paddingLeft: "max(env(safe-area-inset-left), 1.25rem)",
+          paddingRight: "max(env(safe-area-inset-right), 1.25rem)",
+        }}
       >
         {/* Welcome bubble — always shown instantly, no network needed */}
         <motion.div
