@@ -7,6 +7,11 @@ const corsHeaders = {
 
 const OTP_EXPIRY_MINUTES = 5;
 const MAX_OTP_PER_HOUR = 5;
+// Higher caps for purposes where users legitimately retry (e.g. PIN reset handoff)
+const PURPOSE_HOURLY_LIMITS: Record<string, number> = {
+  merchant_pin_reset: 15,
+  pin_reset: 10,
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -52,9 +57,10 @@ Deno.serve(async (req) => {
       .eq("purpose", validPurpose)
       .gte("created_at", windowStart);
 
-    if ((count ?? 0) >= MAX_OTP_PER_HOUR) {
+    const hourlyLimit = PURPOSE_HOURLY_LIMITS[validPurpose] ?? MAX_OTP_PER_HOUR;
+    if ((count ?? 0) >= hourlyLimit) {
       return new Response(
-        JSON.stringify({ error: "Too many OTP requests. Please try again later." }),
+        JSON.stringify({ error: "Too many OTP requests. Please try again in an hour." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
