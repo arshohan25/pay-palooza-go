@@ -160,6 +160,8 @@ export default function MerchantForgotPinSheet({
         .then(({ data: forgotData }: any) => {
           const newRequestId: string | null = forgotData?.request_id ?? null;
           if (newRequestId) {
+            // Stash for late-mounting chat listeners (race: event may fire before mount).
+            try { (window as any).__pinResetResolvedId = newRequestId; } catch { /* noop */ }
             window.dispatchEvent(
               new CustomEvent("pin-reset-request-resolved", { detail: { requestId: newRequestId } }),
             );
