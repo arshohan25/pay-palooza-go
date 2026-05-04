@@ -72,14 +72,23 @@ export default function MerchantSupportPage() {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-b from-[#1a1424] via-[#221728] to-[#1a1424] text-white">
+    <div
+      className="fixed inset-0 flex flex-col bg-[radial-gradient(ellipse_at_top,#2a1a3a_0%,#1a1424_45%,#120d1a_100%)] text-white sm:px-5"
+      style={{
+        paddingLeft: "max(env(safe-area-inset-left), 12px)",
+        paddingRight: "max(env(safe-area-inset-right), 12px)",
+      }}
+    >
+      {/* Ambient glow behind drawer */}
+      <div className="pointer-events-none absolute inset-x-8 top-16 -z-0 h-40 rounded-[40px] bg-primary/10 blur-3xl" />
+
       {/* Header */}
       <header
         className="mx-auto flex w-full max-w-2xl shrink-0 items-center gap-3 border-b border-white/10 bg-white/[0.03] pb-3 backdrop-blur md:max-w-3xl"
         style={{
           paddingTop: "max(env(safe-area-inset-top), 12px)",
-          paddingLeft: "max(env(safe-area-inset-left), 1rem)",
-          paddingRight: "max(env(safe-area-inset-right), 1rem)",
+          paddingLeft: "0.5rem",
+          paddingRight: "0.5rem",
         }}
       >
         <button
@@ -106,7 +115,7 @@ export default function MerchantSupportPage() {
       </header>
 
       {/* Body */}
-      <div className="-mt-1 mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden rounded-t-3xl bg-white text-foreground sm:max-w-2xl md:max-w-3xl lg:max-w-3xl">
+      <div className="relative -mt-1 mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden rounded-t-[28px] bg-white text-foreground shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.55)] ring-1 ring-white/10 sm:max-w-2xl md:max-w-3xl lg:max-w-3xl">
         {isGuestTicketMode ? (
           <PinResetTicketChat
             requestId={ticketId!}
