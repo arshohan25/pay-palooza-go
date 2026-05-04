@@ -1,84 +1,59 @@
-## Fix chat layout + add read receipts + secure attachments
+# Premium Chat Drawer Redesign
 
-Three things, all confined to the merchant PIN-reset chat. Database schema and storage bucket already exist (`pin-reset-attachments` private, 5 MB cap, image/* + PDF only).
+Three things to fix from the screenshot:
 
----
+1. The white chat panel touches the left/right edges of the screen — needs visible "floating" gutters with a soft blur on the dark backdrop.
+2. A stray small icon appears just to the right of outgoing bubbles (the leftover read-receipt + spacing combo reads visually like an avatar). The outgoing row needs to end cleanly at the bubble edge.
+3. Read receipts exist but are too quiet — they need a clearer "Sent / Delivered / Seen at HH:MM" treatment so you can actually track when support has read each message.
 
-### 1. Fix the avatar-in-the-middle bug (from screenshot)
+## What changes
 
-In `PinResetTicketChat.tsx` the merchant's outgoing rows render as `flex-row-reverse` with a fixed-width avatar slot, so the avatar ends up **between** the bubble and the right edge instead of flush against the edge — that's the small person icon visible next to the "Hi" bubble.
+### 1. Floating drawer with blurred outer gutters — `src/pages/MerchantSupportPage.tsx`
 
-Fix: for outgoing (merchant) messages, drop the avatar slot entirely. Outgoing bubbles get the gradient + a tail; the user already knows it's them. Admin messages keep their avatar on the left. This also reclaims ~28 px of horizontal room on the right and makes the layout match the reference.
+- Add responsive horizontal padding to the page-level `fixed inset-0` container so the white drawer no longer touches the edges:
+  - Mobile (`<sm`): `12px` left/right (combined with safe-area insets via `max(env(safe-area-inset-*), 12px)`)
+  - `sm`: `20px`
+  - `md`+: keep the existing `max-w-3xl` centering — no extra gutter needed since there's already empty space.
+- Strengthen the dark backdrop so the gutter feels intentional: add a subtle radial glow + a frosted blur ring directly behind the drawer (`bg-[radial-gradient(...)]` + an absolutely-positioned blurred element behind the panel).
+- Soften the drawer's top corners (already `rounded-t-3xl`) and add a thin highlight border `ring-1 ring-white/10` so the panel reads as a discrete card.
+- Header keeps its current safe-area padding — those still work because they live inside the now-padded parent.
 
----
+### 2. Polished message rows — `src/components/merchant/PinResetTicketChat.tsx`
 
-### 2. Read receipts + "Seen" timestamps
+- Outgoing (`isMe`) rows: drop the `gap-2` on `flex-row-reverse` and tighten to `gap-0` plus a small right margin on the bubble. This guarantees nothing renders to the right of the bubble — eliminating the phantom-icon look in the screenshot.
+- Bubble tail refinements:
+  - Outgoing: keep gradient `from-primary to-primary/85`, increase shadow softness (`shadow-[0_6px_18px_-8px_hsl(var(--primary)/0.5)]`), bump max width to `82%`.
+  - Incoming: switch background to `bg-white/85 dark:bg-card/80` with a hairline `border-border/30` and a subtle inner top highlight for depth.
+- Day divider: replace the muted pill with a thin hairline + centered uppercase label ("TODAY") flanked by two `1px` lines — feels more like iMessage/Linear.
+- First-of-run avatar (incoming side) gets a soft halo ring instead of the current solid ring.
 
-Backend already has `read_by_admin` on each message but does not record **when** it was read. Add a single nullable column and surface it.
+### 3. Premium read-receipt UI — same file
 
-**Migration**
-- `ALTER TABLE merchant_pin_reset_messages ADD COLUMN read_by_admin_at timestamptz;`
-- Backfill existing read rows: `UPDATE … SET read_by_admin_at = created_at WHERE read_by_admin = true;`
+Per-message footer (right-aligned for outgoing) becomes a single compact pill:
 
-**Edge function `merchant-pin-reset-chat`**
-- When admin opens the ticket (already handled by the admin-side function), it sets `read_by_admin = true`. Update both spots that flip the flag to also set `read_by_admin_at = now()` (admin-side function lives in `admin-pin-reset-*` — verify and patch the same way).
-- Return the new field in the `fetch` payload (already selecting `*` essentially — just add it to the explicit `select` list).
+```text
+12:21 PM  ✓        →  sending / sent, not yet seen   (grey check)
+12:21 PM  ✓✓       →  delivered, seen by admin       (cyan double check)
+12:21 PM  Seen 12:24 ✓✓   →  last own message only, with admin's read time inline
+```
 
-**UI changes in `PinResetTicketChat.tsx`**
-- Per-message footer for the merchant's own bubbles:
-  - Sending: spinner + "Sending…"
-  - Sent, unread by admin: single grey check + "Sent 12:21 PM"
-  - Read by admin: double cyan check + "Seen 12:23 PM" (uses `read_by_admin_at`)
-- Last outgoing message also shows a subtle full-width line under the bubble: "Seen by support · 12:23 PM" so it's clearly trackable without hunting tick marks.
-- Inbound (admin) bubbles show only the time.
+Concretely:
+- Sending (optimistic / temp- id): tiny spinner + "Sending…" in `primary-foreground/65`.
+- Sent but `read_by_admin = false`: time + single `Check` icon in `primary-foreground/60`.
+- Read (`read_by_admin = true`): time + double `CheckCheck` in soft cyan (`text-cyan-200`).
+- Last outgoing message AND read: append a subtle inline "Seen HH:MM" using `read_by_admin_at` — replaces the current separate "Seen by support" row beneath the bubble (cleaner, less vertical noise).
+- Add a typed `tooltip` on hover/long-press over the receipt showing the full date + time ("Seen on May 4 at 12:24 PM") — small affordance for power users.
 
----
+Inbound bubbles continue to show only `HH:MM` in muted text.
 
-### 3. Secure file attachments (images + PDF)
+### 4. Composer polish (small)
 
-**Composer UI**
-- Add a circular paperclip button to the left of the textarea (matches the gradient send button styling, neutral color).
-- Hidden `<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf">`.
-- Client-side validation:
-  - Allowed MIME: PNG / JPEG / WEBP / GIF / PDF
-  - Max size: 5 MB (matches bucket limit)
-  - On reject: toast with the reason ("Only images & PDFs", "Max 5 MB").
-- Selected-file preview chip above the textarea: thumbnail (for images) or PDF icon + filename + size + "×" to remove. Disabled while uploading.
+- Tighten attach-button + send-button height from `h-12` to `h-11` to match the slimmer composer feel.
+- Composer top-edge gradient stays; add a `shadow-[0_-12px_24px_-20px_rgba(0,0,0,0.3)]` to lift the composer above the message list when scrolled.
 
-**Send flow**
-- New edge-function action `attach_init` → returns a signed **upload** URL (`createSignedUploadUrl`) for a path like `<request_id>/<uuid>.<ext>` in `pin-reset-attachments`. Server validates ticket + request ownership + extension/MIME before signing.
-- Client uploads the file directly to the signed URL with `fetch(PUT)`, showing a small linear progress bar in the chip.
-- On success, client calls existing `send` action with `{ content, attachment: { path, mime, name, size } }`. Server validates the path lives under `<request_id>/`, the MIME is allowed, size ≤ 5 MB, and the object actually exists (HEAD via service role). Then it inserts the message row with the attachment columns populated. `content` may be empty when an attachment is present.
+## Technical notes
 
-**Render flow**
-- New action `attach_url` → returns a short-lived (5 min) signed **read** URL for a given message id. Server checks the message belongs to the request and the ticket matches.
-- Bubble rendering:
-  - Image attachment → fetch signed URL on first render (cached in component state), show as a rounded thumbnail (max 220×220, click to open full in a new tab).
-  - PDF attachment → show file-icon card with name + size; click triggers signed-URL fetch and opens it in a new tab.
-  - Caption text (if any) renders below the attachment.
-
-**Realtime**
-- Postgres `INSERT` listener already returns the new row including the new attachment columns — no schema change needed there.
-
----
-
-### Technical details
-
-**Files touched**
-- `supabase/migrations/<new>.sql` — add `read_by_admin_at` + backfill.
-- `supabase/functions/merchant-pin-reset-chat/index.ts` — set `read_by_admin_at` is **admin-side**, not here. Here we add: `attach_init`, `attach_url`; extend `send` to accept attachments; include `read_by_admin_at` in fetch response; add server-side MIME/size/path validation.
-- `supabase/functions/admin-pin-reset-chat/index.ts` (or whichever admin endpoint flips `read_by_admin`) — also set `read_by_admin_at = now()` whenever it transitions false → true. (Will locate exact file in build mode.)
-- `src/components/merchant/PinResetTicketChat.tsx`:
-  - Remove avatar slot for outgoing rows.
-  - New "Seen by support · HH:MM" line under last own message.
-  - New `Paperclip` button + hidden file input + preview chip + upload progress.
-  - New `AttachmentPreview` sub-component (signed-URL fetch on mount, image vs PDF rendering).
-  - Extend `PinResetMessage` type with `attachment_path | attachment_mime | attachment_name | attachment_size | read_by_admin_at`.
-
-**Validation rules (mirrored client + server)**
-- MIME: `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `application/pdf`
-- Max size: 5 MB
-- Filename sanitised server-side; storage path = `<request_id>/<uuid>.<ext>` (never trust client path).
-- Signed read URLs expire in 5 minutes. Signed upload URLs expire in 2 minutes.
-
-**No changes** to: header, bubble colors/typography, composer glass styling, counter ring, OTP/ticket flow, RLS on `merchant_pin_reset_messages`, storage bucket configuration (already locked to service-role only).
+- No backend or schema changes. All read-receipt data (`read_by_admin`, `read_by_admin_at`) is already populated by the edge function; we're only redesigning how the UI surfaces it.
+- No new dependencies; uses existing `framer-motion` + `lucide-react` icons (`Check`, `CheckCheck`, `Loader2`).
+- Files touched: `src/pages/MerchantSupportPage.tsx`, `src/components/merchant/PinResetTicketChat.tsx`.
+- Verification: navigate to `/merchant-support?ticket=…` at viewport 390×844 and confirm visible gutters on both sides + clear "Seen 12:24" inline on the last sent message.
