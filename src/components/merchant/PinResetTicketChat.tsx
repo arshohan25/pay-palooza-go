@@ -254,7 +254,13 @@ export default function PinResetTicketChat({
       className="relative flex h-full min-h-0 flex-col bg-gradient-to-b from-background via-background to-primary/[0.04]"
     >
       {/* Premium header */}
-      <div className="relative shrink-0 border-b border-border/50 bg-gradient-to-r from-primary/[0.07] via-background to-primary/[0.04] px-4 py-2.5 backdrop-blur-xl">
+      <div
+        className="relative shrink-0 border-b border-border/50 bg-gradient-to-r from-primary/[0.07] via-background to-primary/[0.04] py-2.5 backdrop-blur-xl"
+        style={{
+          paddingLeft: "max(env(safe-area-inset-left), 1rem)",
+          paddingRight: "max(env(safe-area-inset-right), 1rem)",
+        }}
+      >
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-[0_6px_18px_-6px_hsl(var(--primary)/0.55)] ring-1 ring-primary/30">
@@ -293,7 +299,11 @@ export default function PinResetTicketChat({
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 space-y-2 overflow-y-auto px-5 pb-3 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex-1 space-y-2 overflow-y-auto pb-3 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{
+          paddingLeft: "max(env(safe-area-inset-left), 1.25rem)",
+          paddingRight: "max(env(safe-area-inset-right), 1.25rem)",
+        }}
       >
         {/* Welcome bubble — always shown instantly, no network needed */}
         <motion.div
@@ -405,7 +415,14 @@ export default function PinResetTicketChat({
       </div>
 
       {/* Composer — premium glassmorphism */}
-      <div className="relative shrink-0 px-5 pb-[max(env(safe-area-inset-bottom),10px)] pt-3">
+      <div
+        className="relative shrink-0 pt-3"
+        style={{
+          paddingLeft: "max(env(safe-area-inset-left), 1.25rem)",
+          paddingRight: "max(env(safe-area-inset-right), 1.25rem)",
+          paddingBottom: "max(env(safe-area-inset-bottom), 10px)",
+        }}
+      >
         {/* Frosted top fade so messages dissolve into the composer */}
         <div className="pointer-events-none absolute inset-x-0 -top-5 h-5 bg-gradient-to-t from-background/85 to-transparent" />
         {/* Glass surface */}

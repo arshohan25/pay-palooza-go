@@ -74,7 +74,14 @@ export default function MerchantSupportPage() {
   return (
     <div className="fixed inset-0 flex flex-col bg-gradient-to-b from-[#1a1424] via-[#221728] to-[#1a1424] text-white">
       {/* Header */}
-      <header className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-white/[0.03] px-4 pb-3 pt-[max(env(safe-area-inset-top),12px)] backdrop-blur">
+      <header
+        className="mx-auto flex w-full max-w-2xl shrink-0 items-center gap-3 border-b border-white/10 bg-white/[0.03] pb-3 backdrop-blur md:max-w-3xl"
+        style={{
+          paddingTop: "max(env(safe-area-inset-top), 12px)",
+          paddingLeft: "max(env(safe-area-inset-left), 1rem)",
+          paddingRight: "max(env(safe-area-inset-right), 1rem)",
+        }}
+      >
         <button
           type="button"
           onClick={() => navigate("/merchant-login")}
@@ -99,7 +106,7 @@ export default function MerchantSupportPage() {
       </header>
 
       {/* Body */}
-      <div className="-mt-1 flex flex-1 flex-col overflow-hidden rounded-t-3xl bg-white text-foreground">
+      <div className="-mt-1 mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden rounded-t-3xl bg-white text-foreground sm:max-w-2xl md:max-w-3xl lg:max-w-3xl">
         {isGuestTicketMode ? (
           <PinResetTicketChat
             requestId={ticketId!}
