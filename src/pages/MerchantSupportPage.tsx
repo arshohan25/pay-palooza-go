@@ -99,7 +99,7 @@ export default function MerchantSupportPage() {
       </header>
 
       {/* Body */}
-      <div className="-mt-1 flex flex-1 flex-col overflow-hidden rounded-t-3xl bg-white text-foreground">
+      <div className="-mt-1 mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden rounded-t-3xl bg-white text-foreground sm:max-w-2xl md:max-w-3xl lg:max-w-3xl">
         {isGuestTicketMode ? (
           <PinResetTicketChat
             requestId={ticketId!}
