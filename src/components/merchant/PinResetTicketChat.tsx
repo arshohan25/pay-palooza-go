@@ -396,64 +396,146 @@ export default function PinResetTicketChat({
         </AnimatePresence>
       </div>
 
-      {/* Composer */}
-      <div className="shrink-0 border-t border-border/40 bg-background/95 px-3 pb-[max(env(safe-area-inset-bottom),10px)] pt-2.5 backdrop-blur-xl">
-        {isResolved ? (
-          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-3 text-center">
-            <p className="text-[12.5px] font-medium text-emerald-700 dark:text-emerald-300">
-              ✓ Ticket resolved
-            </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Try signing in with your new PIN.
-            </p>
-          </div>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void sendMessage();
-            }}
-            className="flex items-end gap-2"
-          >
-            <div className="relative flex-1">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value.slice(0, 2000))}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void sendMessage();
-                  }
-                }}
-                placeholder={stillConnecting ? "Connecting…" : "Reply to support…"}
-                rows={1}
-                disabled={sending || stillConnecting}
-                className="block w-full resize-none rounded-[22px] border border-border/40 bg-muted/40 px-4 py-2.5 text-[13px] leading-snug text-foreground placeholder:text-muted-foreground/70 transition focus:border-primary/40 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:opacity-60"
-                style={{ maxHeight: 120 }}
-              />
-              {input.length > 1700 && (
-                <span className="absolute bottom-1 right-3 text-[9px] text-muted-foreground/70">
-                  {input.length}/2000
-                </span>
-              )}
+      {/* Composer — premium glassmorphism */}
+      <div className="relative shrink-0 px-3 pb-[max(env(safe-area-inset-bottom),10px)] pt-3">
+        {/* Frosted top fade so messages dissolve into the composer */}
+        <div className="pointer-events-none absolute inset-x-0 -top-5 h-5 bg-gradient-to-t from-background/85 to-transparent" />
+        {/* Glass surface */}
+        <div className="absolute inset-0 -z-0 border-t border-white/10 bg-gradient-to-b from-background/65 via-background/85 to-background/95 backdrop-blur-2xl" />
+
+        <div className="relative z-10">
+          {isResolved ? (
+            <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/[0.08] to-emerald-500/[0.02] p-3 text-center backdrop-blur-xl">
+              <p className="text-[12.5px] font-semibold text-emerald-700 dark:text-emerald-300">
+                ✓ Ticket resolved
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Try signing in with your new PIN.
+              </p>
             </div>
-            <Button
-              type="submit"
-              size="icon"
-              disabled={!input.trim() || sending || stillConnecting}
-              className="h-11 w-11 shrink-0 rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.55)] transition active:scale-95 disabled:opacity-50"
-              aria-label="Send"
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void sendMessage();
+              }}
+              className="flex items-end gap-2"
             >
-              {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </form>
-        )}
+              {/* Glass pill input with gradient ring */}
+              <motion.div
+                initial={false}
+                animate={{
+                  boxShadow: input
+                    ? "0 10px 30px -12px hsl(var(--primary) / 0.4), inset 0 1px 0 hsl(var(--background) / 0.45)"
+                    : "0 4px 18px -10px hsl(var(--foreground) / 0.18), inset 0 1px 0 hsl(var(--background) / 0.4)",
+                }}
+                transition={{ duration: 0.18 }}
+                className="relative flex-1 overflow-hidden rounded-[24px]"
+              >
+                {/* gradient border layer */}
+                <div
+                  className={`absolute inset-0 rounded-[24px] bg-gradient-to-br transition-opacity duration-300 ${
+                    input
+                      ? "from-primary/55 via-primary/25 to-primary/45"
+                      : "from-border/70 via-border/40 to-border/70"
+                  }`}
+                />
+                {/* glass body */}
+                <div className="relative m-[1px] rounded-[23px] bg-gradient-to-br from-background/60 via-card/55 to-background/75 backdrop-blur-xl">
+                  {/* highlight sheen */}
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value.slice(0, 2000))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        void sendMessage();
+                      }
+                    }}
+                    placeholder={stillConnecting ? "Connecting…" : "Reply to support…"}
+                    rows={1}
+                    disabled={sending || stillConnecting}
+                    className="block w-full resize-none rounded-[23px] border-0 bg-transparent px-4 py-3 pr-14 text-[13px] leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 disabled:opacity-60"
+                    style={{ maxHeight: 120 }}
+                  />
+
+                  {/* Character counter */}
+                  {input.length > 0 && (
+                    <div className="pointer-events-none absolute bottom-2 right-2.5 flex items-center">
+                      {input.length > 1500 ? (
+                        <CounterRing value={input.length} max={2000} />
+                      ) : (
+                        <span className="text-[9.5px] font-medium tabular-nums text-muted-foreground/55">
+                          {input.length}/2000
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Gradient send button */}
+              <motion.button
+                type="submit"
+                disabled={!input.trim() || sending || stillConnecting}
+                whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.04 }}
+                transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                className="group relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Send"
+              >
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-primary to-primary/65" />
+                <div className="absolute inset-0 rounded-full shadow-[0_10px_28px_-8px_hsl(var(--primary)/0.65),inset_0_1px_0_hsl(var(--background)/0.35)]" />
+                <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                <div className="relative">
+                  {sending ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
+                  ) : (
+                    <Send className="h-4 w-4 text-primary-foreground" strokeWidth={2.4} />
+                  )}
+                </div>
+              </motion.button>
+            </form>
+          )}
+        </div>
       </div>
     </motion.div>
+  );
+}
+
+/* ─── Animated counter ring for the last 500 chars ────────────────────────── */
+function CounterRing({ value, max }: { value: number; max: number }) {
+  const pct = Math.min(1, value / max);
+  const radius = 8;
+  const circ = 2 * Math.PI * radius;
+  const dash = circ * pct;
+  const danger = value >= max - 50;
+  return (
+    <div className="relative flex h-5 w-5 items-center justify-center">
+      <svg viewBox="0 0 20 20" className="h-5 w-5 -rotate-90">
+        <circle cx="10" cy="10" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="2" />
+        <circle
+          cx="10"
+          cy="10"
+          r={radius}
+          fill="none"
+          stroke={danger ? "hsl(var(--destructive))" : "hsl(var(--primary))"}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circ}`}
+          className="transition-all duration-200"
+        />
+      </svg>
+      <span
+        className={`absolute text-[8px] font-semibold tabular-nums ${
+          danger ? "text-destructive" : "text-foreground/70"
+        }`}
+      >
+        {max - value}
+      </span>
+    </div>
   );
 }
