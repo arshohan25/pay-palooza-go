@@ -73,14 +73,26 @@ export default function MerchantSupportPage() {
 
   return (
     <div
-      className="fixed inset-0 flex flex-col bg-[radial-gradient(ellipse_at_top,#2a1a3a_0%,#1a1424_45%,#120d1a_100%)] text-white sm:px-5"
+      className="fixed inset-0 flex flex-col overflow-hidden text-white sm:px-5"
       style={{
         paddingLeft: "max(env(safe-area-inset-left), 12px)",
         paddingRight: "max(env(safe-area-inset-right), 12px)",
+        background:
+          "radial-gradient(120% 80% at 50% -10%, #6d4ea8 0%, #3b2563 28%, #1f1638 60%, #15102b 100%)",
       }}
     >
-      {/* Ambient glow behind drawer */}
-      <div className="pointer-events-none absolute inset-x-8 top-16 -z-0 h-40 rounded-[40px] bg-primary/10 blur-3xl" />
+      {/* Layered ambient blooms */}
+      <div className="pointer-events-none absolute -top-24 left-1/2 -z-0 h-80 w-[140%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.45),transparent_60%)] blur-3xl" />
+      <div className="pointer-events-none absolute -left-24 top-1/3 -z-0 h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 bottom-1/4 -z-0 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
+      {/* Subtle grain */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-0 opacity-[0.05] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
+        }}
+      />
 
       {/* Header */}
       <header
