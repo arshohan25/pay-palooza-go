@@ -3217,6 +3217,7 @@ export type Database = {
           created_at: string
           id: string
           read_by_admin: boolean
+          read_by_admin_at: string | null
           read_by_merchant: boolean
           request_id: string
           sender_admin_id: string | null
@@ -3231,6 +3232,7 @@ export type Database = {
           created_at?: string
           id?: string
           read_by_admin?: boolean
+          read_by_admin_at?: string | null
           read_by_merchant?: boolean
           request_id: string
           sender_admin_id?: string | null
@@ -3245,6 +3247,7 @@ export type Database = {
           created_at?: string
           id?: string
           read_by_admin?: boolean
+          read_by_admin_at?: string | null
           read_by_merchant?: boolean
           request_id?: string
           sender_admin_id?: string | null
