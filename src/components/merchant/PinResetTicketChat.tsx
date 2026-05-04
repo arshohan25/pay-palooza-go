@@ -85,6 +85,14 @@ export default function PinResetTicketChat({
   /* Listen for parent's background-resolved request id */
   useEffect(() => {
     if (requestId !== "pending") return;
+    // Pick up id resolved BEFORE we mounted (race fallback).
+    try {
+      const stashed = (window as any).__pinResetResolvedId;
+      if (typeof stashed === "string" && stashed && stashed !== "pending") {
+        setRequestId(stashed);
+        return;
+      }
+    } catch { /* noop */ }
     const onResolved = (e: Event) => {
       const id = (e as CustomEvent).detail?.requestId;
       if (id) setRequestId(id);
