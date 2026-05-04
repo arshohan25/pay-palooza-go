@@ -463,17 +463,26 @@ export default function PinResetTicketChat({
                   />
 
                   {/* Character counter */}
-                  {input.length > 0 && (
-                    <div className="pointer-events-none absolute bottom-2 right-2.5 flex items-center">
-                      {input.length > 1500 ? (
-                        <CounterRing value={input.length} max={2000} />
-                      ) : (
-                        <span className="text-[9.5px] font-medium tabular-nums text-muted-foreground/55">
-                          {input.length}/2000
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <AnimatePresence>
+                    {input.length > 0 && (
+                      <motion.div
+                        key="counter"
+                        initial={{ opacity: 0, scale: 0.7 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.7 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 24 }}
+                        className="pointer-events-none absolute bottom-2 right-2.5 flex items-center"
+                      >
+                        {input.length > 1500 ? (
+                          <CounterRing value={input.length} max={2000} />
+                        ) : (
+                          <span className="text-[9.5px] font-medium tabular-nums text-muted-foreground/55">
+                            {input.length}/2000
+                          </span>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
 
@@ -512,30 +521,78 @@ function CounterRing({ value, max }: { value: number; max: number }) {
   const radius = 8;
   const circ = 2 * Math.PI * radius;
   const dash = circ * pct;
-  const danger = value >= max - 50;
+  const remaining = max - value;
+  const danger = remaining <= 50;
+  const warn = remaining <= 200;
+  const gradId = "counterRingGrad";
   return (
-    <div className="relative flex h-5 w-5 items-center justify-center">
+    <motion.div
+      className="relative flex h-5 w-5 items-center justify-center"
+      animate={
+        danger
+          ? { scale: [1, 1.12, 1] }
+          : warn
+            ? { scale: [1, 1.05, 1] }
+            : { scale: 1 }
+      }
+      transition={
+        danger
+          ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+          : warn
+            ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+            : { duration: 0.2 }
+      }
+      style={
+        danger
+          ? { filter: "drop-shadow(0 0 6px hsl(var(--destructive) / 0.55))" }
+          : warn
+            ? { filter: "drop-shadow(0 0 5px hsl(var(--primary) / 0.45))" }
+            : undefined
+      }
+    >
       <svg viewBox="0 0 20 20" className="h-5 w-5 -rotate-90">
-        <circle cx="10" cy="10" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="2" />
+        <defs>
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            {danger ? (
+              <>
+                <stop offset="0%" stopColor="hsl(var(--destructive))" />
+                <stop offset="100%" stopColor="hsl(var(--primary))" />
+              </>
+            ) : (
+              <>
+                <stop offset="0%" stopColor="hsl(var(--primary))" />
+                <stop offset="100%" stopColor="hsl(var(--primary) / 0.55)" />
+              </>
+            )}
+          </linearGradient>
+        </defs>
         <circle
           cx="10"
           cy="10"
           r={radius}
           fill="none"
-          stroke={danger ? "hsl(var(--destructive))" : "hsl(var(--primary))"}
+          stroke="hsl(var(--muted) / 0.6)"
+          strokeWidth="2"
+        />
+        <circle
+          cx="10"
+          cy="10"
+          r={radius}
+          fill="none"
+          stroke={`url(#${gradId})`}
           strokeWidth="2"
           strokeLinecap="round"
           strokeDasharray={`${dash} ${circ}`}
-          className="transition-all duration-200"
+          className="transition-[stroke-dasharray] duration-300 ease-out"
         />
       </svg>
       <span
-        className={`absolute text-[8px] font-semibold tabular-nums ${
-          danger ? "text-destructive" : "text-foreground/70"
+        className={`absolute text-[8px] font-semibold tabular-nums transition-colors ${
+          danger ? "text-destructive" : warn ? "text-primary" : "text-foreground/70"
         }`}
       >
-        {max - value}
+        {remaining}
       </span>
-    </div>
+    </motion.div>
   );
 }
