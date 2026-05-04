@@ -293,7 +293,7 @@ export default function PinResetTicketChat({
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 space-y-2 overflow-y-auto px-3 pb-3 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex-1 space-y-2 overflow-y-auto px-5 pb-3 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {/* Welcome bubble — always shown instantly, no network needed */}
         <motion.div
@@ -405,7 +405,7 @@ export default function PinResetTicketChat({
       </div>
 
       {/* Composer — premium glassmorphism */}
-      <div className="relative shrink-0 px-3 pb-[max(env(safe-area-inset-bottom),10px)] pt-3">
+      <div className="relative shrink-0 px-5 pb-[max(env(safe-area-inset-bottom),10px)] pt-3">
         {/* Frosted top fade so messages dissolve into the composer */}
         <div className="pointer-events-none absolute inset-x-0 -top-5 h-5 bg-gradient-to-t from-background/85 to-transparent" />
         {/* Glass surface */}
