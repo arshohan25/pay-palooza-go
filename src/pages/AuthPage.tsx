@@ -1027,13 +1027,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                   <span className="font-semibold text-white underline-offset-4 group-hover:underline">{t.reset} Now</span>
                   <ArrowRight size={12} className="text-white transition-transform group-hover:translate-x-0.5" />
                 </button>
-                <span className="h-3 w-px bg-white/15" />
-                <button
-                  onClick={() => setShowPin(v => !v)}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-white/40 hover:text-white/75 transition-colors"
-                >
-                  {showPin ? <EyeOff size={11} /> : <Eye size={11} />} {showPin ? t.hidePin : t.showPin}
-                </button>
               </motion.div>
 
               {/* Spacer */}
