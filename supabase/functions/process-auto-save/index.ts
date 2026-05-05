@@ -200,8 +200,14 @@ Deno.serve(async (req) => {
       } catch (_) { /* best-effort */ }
     };
 
-    const sendPush = async (user_id: string, title: string, bodyTxt: string) => {
+    const sendPush = async (user_id: string, category: string, title: string, bodyTxt: string) => {
       try {
+        // Per-user category preference + quiet-hours gate (Asia/Dhaka)
+        const { data: allowed } = await supabase.rpc("should_send_push", {
+          p_user_id: user_id,
+          p_category: category,
+        });
+        if (allowed !== true) return;
         await supabase.functions.invoke("send-push-notification", {
           body: { user_ids: [user_id], title, body: bodyTxt, url: "/savings" },
         });
@@ -243,7 +249,7 @@ Deno.serve(async (req) => {
           body: `Your ৳${schedule.amount}/${schedule.frequency} DPS plan has completed. Total paid: ${schedule.total_paid ?? 0} installments.`,
           category: "savings",
         });
-        await sendPush(schedule.user_id, "✅ DPS Plan Completed", `Your DPS plan has finished. ${schedule.total_paid ?? 0} installments paid.`);
+        await sendPush(schedule.user_id, "savings_collected", "✅ DPS Plan Completed", `Your DPS plan has finished. ${schedule.total_paid ?? 0} installments paid.`);
 
         await log(schedule, "settled", "ends_at reached", 0);
         settled++;
@@ -294,7 +300,7 @@ Deno.serve(async (req) => {
         await supabase.from("notifications").insert({
           user_id: schedule.user_id, title: t, body: b, category: "savings",
         });
-        await sendPush(schedule.user_id, t, b);
+        await sendPush(schedule.user_id, "savings_missed", t, b);
         await log(schedule, "missed", "Insufficient balance", Number(schedule.amount));
         missed++;
         continue;
@@ -355,7 +361,7 @@ Deno.serve(async (req) => {
       await supabase.from("notifications").insert({
         user_id: schedule.user_id, title: successTitle, body: successBody, category: "savings",
       });
-      await sendPush(schedule.user_id, successTitle, successBody);
+      await sendPush(schedule.user_id, "savings_collected", successTitle, successBody);
       await log(schedule, "collected", `Collected to ${goal.name}`, Number(schedule.amount));
       processed++;
     }

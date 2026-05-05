@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, BellOff, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Bell, BellOff, Loader2, CheckCircle2, AlertCircle, Moon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { usePushSubscription } from "@/hooks/use-push-subscription";
@@ -31,13 +32,18 @@ const AGENT_CATEGORIES: Category[] = [
   { key: "agent_cash_in_out", label: "Cash in / out", description: "When customers transact with you." },
 ];
 
+const SAVINGS_CATEGORIES: Category[] = [
+  { key: "savings_collected", label: "DPS collected", description: "When an auto-save installment is collected or your goal completes." },
+  { key: "savings_missed", label: "DPS missed", description: "When an installment can't be collected (insufficient balance)." },
+];
+
 const COMMON_CATEGORIES: Category[] = [
   { key: "daily_summary", label: "Daily summary", description: "Yesterday's recap at 8:00 PM." },
   { key: "marketing", label: "Promotions & tips", description: "Offers, drops, and platform updates." },
 ];
 
 interface Props {
-  scope: "merchant" | "agent" | "distributor";
+  scope: "merchant" | "agent" | "distributor" | "customer";
 }
 
 export default function NotificationPreferences({ scope }: Props) {
@@ -47,29 +53,74 @@ export default function NotificationPreferences({ scope }: Props) {
     usePushSubscription();
 
   const categories = useMemo(() => {
-    const base = scope === "merchant" ? MERCHANT_CATEGORIES : AGENT_CATEGORIES;
-    return [...base, ...COMMON_CATEGORIES];
+    const base =
+      scope === "merchant" ? MERCHANT_CATEGORIES :
+      scope === "agent" ? AGENT_CATEGORIES :
+      scope === "customer" ? [] :
+      AGENT_CATEGORIES;
+    return [...base, ...SAVINGS_CATEGORIES, ...COMMON_CATEGORIES];
   }, [scope]);
 
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
+  // Quiet hours state
+  const [quietEnabled, setQuietEnabled] = useState(false);
+  const [quietStart, setQuietStart] = useState("22:00");
+  const [quietEnd, setQuietEnd] = useState("07:00");
+  const [savingQuiet, setSavingQuiet] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const { data } = await (supabase as any)
-        .from("notification_preferences")
-        .select("category, push_enabled")
-        .eq("user_id", user.id);
+      const [{ data }, { data: settings }] = await Promise.all([
+        (supabase as any)
+          .from("notification_preferences")
+          .select("category, push_enabled")
+          .eq("user_id", user.id),
+        (supabase as any)
+          .from("user_notification_settings")
+          .select("quiet_hours_enabled, quiet_hours_start, quiet_hours_end")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
       const map: Record<string, boolean> = {};
       for (const c of categories) map[c.key] = true; // default on
       for (const row of data ?? []) map[row.category] = !!row.push_enabled;
       setPrefs(map);
+      if (settings) {
+        setQuietEnabled(!!settings.quiet_hours_enabled);
+        setQuietStart((settings.quiet_hours_start ?? "22:00").slice(0, 5));
+        setQuietEnd((settings.quiet_hours_end ?? "07:00").slice(0, 5));
+      }
       setLoading(false);
     })();
   }, [user, categories]);
+
+  const saveQuiet = async (next: { enabled?: boolean; start?: string; end?: string }) => {
+    if (!user) return;
+    const enabled = next.enabled ?? quietEnabled;
+    const start = next.start ?? quietStart;
+    const end = next.end ?? quietEnd;
+    setSavingQuiet(true);
+    const { error } = await (supabase as any)
+      .from("user_notification_settings")
+      .upsert(
+        {
+          user_id: user.id,
+          quiet_hours_enabled: enabled,
+          quiet_hours_start: start,
+          quiet_hours_end: end,
+        },
+        { onConflict: "user_id" }
+      );
+    setSavingQuiet(false);
+    if (error) {
+      toast({ title: "Couldn't save quiet hours", description: error.message, variant: "destructive" });
+    }
+  };
 
   const toggle = async (category: string, next: boolean) => {
     if (!user) return;
@@ -208,6 +259,55 @@ export default function NotificationPreferences({ scope }: Props) {
                 </div>
               );
             })}
+      </div>
+
+      {/* Quiet hours */}
+      <div className="mt-4 pt-4 border-t border-border/40">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <Moon size={16} className="text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold text-foreground">Quiet hours</p>
+              <p className="text-[11.5px] text-muted-foreground leading-snug">
+                Mute push during this window (Asia/Dhaka time). In-app alerts still appear.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {savingQuiet && <Loader2 size={12} className="text-muted-foreground animate-spin" />}
+            <Switch
+              checked={quietEnabled}
+              onCheckedChange={(v) => { setQuietEnabled(v); saveQuiet({ enabled: v }); }}
+              aria-label="Toggle quiet hours"
+            />
+          </div>
+        </div>
+        {quietEnabled && (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label className="text-[11.5px] text-muted-foreground">
+              From
+              <Input
+                type="time"
+                value={quietStart}
+                onChange={(e) => setQuietStart(e.target.value)}
+                onBlur={() => saveQuiet({ start: quietStart })}
+                className="mt-1 h-9"
+              />
+            </label>
+            <label className="text-[11.5px] text-muted-foreground">
+              To
+              <Input
+                type="time"
+                value={quietEnd}
+                onChange={(e) => setQuietEnd(e.target.value)}
+                onBlur={() => saveQuiet({ end: quietEnd })}
+                className="mt-1 h-9"
+              />
+            </label>
+          </div>
+        )}
       </div>
 
       {!subscribed && supported && configured && permission !== "denied" && (

@@ -6050,6 +6050,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_notification_settings: {
+        Row: {
+          created_at: string
+          quiet_hours_enabled: boolean
+          quiet_hours_end: string
+          quiet_hours_start: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string
+          quiet_hours_start?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string
+          quiet_hours_start?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           created_at: string | null
@@ -6832,6 +6859,10 @@ export type Database = {
         Returns: undefined
       }
       settle_matured_dps: { Args: { p_plan_id: string }; Returns: Json }
+      should_send_push: {
+        Args: { p_category: string; p_user_id: string }
+        Returns: boolean
+      }
       submit_addmoney_request: {
         Args: {
           p_amount: number
