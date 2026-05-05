@@ -65,21 +65,62 @@ export default function NotificationPreferences({ scope }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
+  // Quiet hours state
+  const [quietEnabled, setQuietEnabled] = useState(false);
+  const [quietStart, setQuietStart] = useState("22:00");
+  const [quietEnd, setQuietEnd] = useState("07:00");
+  const [savingQuiet, setSavingQuiet] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const { data } = await (supabase as any)
-        .from("notification_preferences")
-        .select("category, push_enabled")
-        .eq("user_id", user.id);
+      const [{ data }, { data: settings }] = await Promise.all([
+        (supabase as any)
+          .from("notification_preferences")
+          .select("category, push_enabled")
+          .eq("user_id", user.id),
+        (supabase as any)
+          .from("user_notification_settings")
+          .select("quiet_hours_enabled, quiet_hours_start, quiet_hours_end")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
       const map: Record<string, boolean> = {};
       for (const c of categories) map[c.key] = true; // default on
       for (const row of data ?? []) map[row.category] = !!row.push_enabled;
       setPrefs(map);
+      if (settings) {
+        setQuietEnabled(!!settings.quiet_hours_enabled);
+        setQuietStart((settings.quiet_hours_start ?? "22:00").slice(0, 5));
+        setQuietEnd((settings.quiet_hours_end ?? "07:00").slice(0, 5));
+      }
       setLoading(false);
     })();
   }, [user, categories]);
+
+  const saveQuiet = async (next: { enabled?: boolean; start?: string; end?: string }) => {
+    if (!user) return;
+    const enabled = next.enabled ?? quietEnabled;
+    const start = next.start ?? quietStart;
+    const end = next.end ?? quietEnd;
+    setSavingQuiet(true);
+    const { error } = await (supabase as any)
+      .from("user_notification_settings")
+      .upsert(
+        {
+          user_id: user.id,
+          quiet_hours_enabled: enabled,
+          quiet_hours_start: start,
+          quiet_hours_end: end,
+        },
+        { onConflict: "user_id" }
+      );
+    setSavingQuiet(false);
+    if (error) {
+      toast({ title: "Couldn't save quiet hours", description: error.message, variant: "destructive" });
+    }
+  };
 
   const toggle = async (category: string, next: boolean) => {
     if (!user) return;
