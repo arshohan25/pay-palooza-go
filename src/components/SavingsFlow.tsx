@@ -2392,9 +2392,59 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               })()}
 
               {/* Timeline */}
-              {dpsTimeline.length > 0 && (
+              {dpsTimeline.length > 0 && (() => {
+                const totalCollected = dpsTimeline
+                  .filter(i => i.status === "processed" || i.status === "repaid")
+                  .reduce((s, i) => s + i.amount, 0);
+                const totalRefunded = dpsTimeline
+                  .filter(i => i.status === "refunded")
+                  .reduce((s, i) => s + i.amount, 0);
+                const totalPending = dpsTimeline
+                  .filter(i => i.status === "pending")
+                  .reduce((s, i) => s + i.amount, 0);
+                const totalMissed = dpsTimeline
+                  .filter(i => i.status === "missed")
+                  .reduce((s, i) => s + i.amount, 0);
+                const totalPlanned = totalCollected + totalRefunded + totalPending + totalMissed;
+                return (
                 <div className="space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Installment History</p>
+                  {/* Summary above timeline */}
+                  <div className="rounded-[18px] border border-border/60 bg-card p-3.5 space-y-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">DPS Summary</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-[12px] bg-muted/40 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Planned</p>
+                        <p className="text-[15px] font-black text-foreground mt-0.5">৳{totalPlanned.toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-[12px] bg-emerald-500/10 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Collected</p>
+                        <p className="text-[15px] font-black text-emerald-600 dark:text-emerald-400 mt-0.5">৳{totalCollected.toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-[12px] bg-sky-500/10 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-400">Refunded</p>
+                        <p className="text-[15px] font-black text-sky-600 dark:text-sky-400 mt-0.5">৳{totalRefunded.toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-[12px] bg-muted/40 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Pending</p>
+                        <p className="text-[15px] font-black text-foreground mt-0.5">৳{totalPending.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    {totalPlanned > 0 && (
+                      <div className="space-y-1">
+                        <div className="h-2 rounded-full bg-muted/60 overflow-hidden flex">
+                          <div className="h-full bg-emerald-500" style={{ width: `${(totalCollected / totalPlanned) * 100}%` }} />
+                          <div className="h-full bg-sky-500" style={{ width: `${(totalRefunded / totalPlanned) * 100}%` }} />
+                          <div className="h-full bg-destructive/70" style={{ width: `${(totalMissed / totalPlanned) * 100}%` }} />
+                        </div>
+                        <p className="text-[9px] text-muted-foreground text-center">
+                          {Math.round((totalCollected / totalPlanned) * 100)}% collected • {Math.round((totalPending / totalPlanned) * 100)}% remaining
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1 pt-1">Installment History</p>
+                  <p className="text-[10px] text-muted-foreground/70 px-1">Tap any installment for full details</p>
                   <div className="relative py-6 px-2">
                     {/* Center trunk line */}
                     <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/60 via-primary/25 to-transparent rounded-full" />
@@ -2443,11 +2493,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                       );
 
                       return (
-                        <motion.div key={item.id}
+                        <motion.button key={item.id} type="button"
+                          onClick={() => setSelectedInstallment(item)}
                           initial={{ opacity: 0, x: isRight ? 20 : -20 }}
                           animate={{ opacity: 1, x: 0 }}
+                          whileTap={{ scale: 0.98 }}
                           transition={{ delay: Math.min(i * 0.06, 0.6), type: "spring", stiffness: 350, damping: 28 }}
-                          className={`relative flex items-center mb-8 last:mb-0 min-h-[36px] ${item.status === "pending" ? "opacity-70" : ""}`}
+                          className={`relative flex items-center mb-8 last:mb-0 min-h-[36px] w-full text-left rounded-lg hover:bg-muted/30 transition-colors ${item.status === "pending" ? "opacity-70" : ""}`}
                         >
                           <div className="w-[42%] text-right pr-6">
                             {isRight ? (
@@ -2465,12 +2517,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                               <p className="text-[11px] font-semibold text-muted-foreground leading-tight">{dateStr}</p>
                             )}
                           </div>
-                        </motion.div>
+                        </motion.button>
                       );
                     })}
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
               {dpsTimeline.length === 0 && (
                 <div className="text-center py-6 rounded-[18px] border border-dashed border-border/60 bg-muted/20">
