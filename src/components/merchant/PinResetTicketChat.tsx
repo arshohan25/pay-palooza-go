@@ -194,10 +194,22 @@ export default function PinResetTicketChat({
         const payload = await callChat("fetch");
         if (cancelled) return;
         const next = (payload.messages ?? []) as PinResetMessage[];
-        setMessages(next);
+        let hadNewAdmin = false;
+        setMessages((prev) => {
+          if (!initial) {
+            const prevIds = new Set(prev.map((m) => m.id));
+            hadNewAdmin = next.some((m) => m.sender_role === "admin" && !prevIds.has(m.id));
+          }
+          return next;
+        });
         if (payload.status) setStatus(payload.status);
-        if (initial) setBootstrapping(false);
-        scrollToBottom();
+        if (initial) {
+          setBootstrapping(false);
+          scrollToBottom();
+        } else if (hadNewAdmin) {
+          if (atBottomRef.current) scrollToBottom(true);
+          else setUnreadCount((c) => c + (next.filter((m) => m.sender_role === "admin").length > 0 ? 1 : 0));
+        }
       } catch (err: any) {
         if (cancelled) return;
         if (err?.message === "__pending__") return;
