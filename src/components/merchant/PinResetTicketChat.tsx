@@ -581,7 +581,7 @@ export default function PinResetTicketChat({
                         ) : msg.read_by_admin ? (
                           <CheckCheck size={11} className="text-cyan-200" aria-label="Delivered & read" />
                         ) : (
-                          <CheckCheck size={11} className="text-primary-foreground/55" aria-label="Sent" />
+                          <Check size={11} className="text-primary-foreground/55" aria-label="Sent" />
                         ))}
                     </div>
                   </div>
