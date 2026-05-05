@@ -24,6 +24,7 @@ import SlideToConfirm from "@/components/SlideToConfirm";
 import { haptics } from "@/lib/haptics";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface SavingsGoal {
@@ -248,9 +249,17 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     amount: number;
     status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending";
     goalName?: string | null;
+    goalId?: string | null;
     note?: string;
     txReference?: string | null;
+    txId?: string | null;
+    txStatus?: string | null;
+    balanceAfter?: number | null;
+    walletDelta?: number | null;
+    refundReason?: string | null;
+    outcome?: string | null;
   }>>([]);
+  const [selectedInstallment, setSelectedInstallment] = useState<null | (typeof dpsTimeline)[number]>(null);
 
 
   // ─── PIN state (shared across all confirm actions) ────────
@@ -1515,7 +1524,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                               .order("created_at", { ascending: true })
                               .limit(500),
                             supabase.from("transactions")
-                              .select("id, reference, status, amount, created_at")
+                              .select("id, reference, status, amount, balance_after, description, created_at")
                               .like("reference", `DPS-INST-${schedule.id.substring(0, 8)}-%`)
                               .order("created_at", { ascending: true })
                               .limit(500),
@@ -1527,7 +1536,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           const repaidById: Record<string, boolean> = {};
                           scheduleMissed.forEach(m => { repaidById[m.id] = !!m.repaid; });
 
-                          const timeline: Array<{ id: string; date: string; amount: number; status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending"; goalName?: string | null; note?: string; txReference?: string | null }> = [];
+                          const timeline: Array<{ id: string; date: string; amount: number; status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending"; goalName?: string | null; goalId?: string | null; note?: string; txReference?: string | null; txId?: string | null; txStatus?: string | null; balanceAfter?: number | null; walletDelta?: number | null; refundReason?: string | null; outcome?: string | null }> = [];
 
                           (runRows as any[] ?? []).forEach((r: any) => {
                             const ref = r.tx_reference as string | null;
@@ -1538,7 +1547,14 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                                 id: r.id, date: r.created_at, amount: Number(r.amount),
                                 status: refunded ? "refunded" : "processed",
                                 goalName: r.goal_name ?? linkedGoal?.name ?? null,
+                                goalId: r.goal_id ?? linkedGoal?.id ?? null,
                                 txReference: ref,
+                                txId: tx?.id ?? null,
+                                txStatus: tx?.status ?? null,
+                                balanceAfter: tx?.balance_after ?? null,
+                                walletDelta: refunded ? Number(r.amount) : -Number(r.amount),
+                                refundReason: refunded ? (tx?.description ?? "Reversed by system") : null,
+                                outcome: r.outcome,
                                 note: refunded ? "Refunded to wallet" : undefined,
                               });
                             } else if (r.outcome === "missed") {
@@ -1546,12 +1562,15 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                                 id: r.id, date: r.created_at, amount: Number(r.amount),
                                 status: "missed",
                                 goalName: r.goal_name ?? linkedGoal?.name ?? null,
+                                goalId: r.goal_id ?? linkedGoal?.id ?? null,
+                                outcome: r.outcome,
                                 note: r.reason ?? "Insufficient balance",
                               });
                             } else if (r.outcome === "no_goal" || r.outcome === "schedule_inactive" || r.outcome === "dedup_skipped" || r.outcome === "plan_expired") {
                               timeline.push({
                                 id: r.id, date: r.created_at, amount: Number(r.amount || 0),
                                 status: "skipped",
+                                outcome: r.outcome,
                                 note: r.reason ?? r.outcome,
                               });
                             }
@@ -1563,6 +1582,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                             timeline.push({
                               id: `repaid-${m.id}`, date: m.due_date, amount: Number(m.amount),
                               status: "repaid", goalName: linkedGoal?.name ?? null,
+                              goalId: linkedGoal?.id ?? null,
+                              walletDelta: -Number(m.amount),
                               note: "Caught up later",
                             });
                           });
@@ -1584,6 +1605,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                                 amount: Number(schedule.amount),
                                 status: "pending",
                                 goalName: linkedGoal?.name ?? null,
+                                goalId: linkedGoal?.id ?? null,
                               });
                               cursor += stepMs;
                             }
@@ -2370,9 +2392,59 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               })()}
 
               {/* Timeline */}
-              {dpsTimeline.length > 0 && (
+              {dpsTimeline.length > 0 && (() => {
+                const totalCollected = dpsTimeline
+                  .filter(i => i.status === "processed" || i.status === "repaid")
+                  .reduce((s, i) => s + i.amount, 0);
+                const totalRefunded = dpsTimeline
+                  .filter(i => i.status === "refunded")
+                  .reduce((s, i) => s + i.amount, 0);
+                const totalPending = dpsTimeline
+                  .filter(i => i.status === "pending")
+                  .reduce((s, i) => s + i.amount, 0);
+                const totalMissed = dpsTimeline
+                  .filter(i => i.status === "missed")
+                  .reduce((s, i) => s + i.amount, 0);
+                const totalPlanned = totalCollected + totalRefunded + totalPending + totalMissed;
+                return (
                 <div className="space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Installment History</p>
+                  {/* Summary above timeline */}
+                  <div className="rounded-[18px] border border-border/60 bg-card p-3.5 space-y-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">DPS Summary</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-[12px] bg-muted/40 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Planned</p>
+                        <p className="text-[15px] font-black text-foreground mt-0.5">৳{totalPlanned.toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-[12px] bg-emerald-500/10 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Collected</p>
+                        <p className="text-[15px] font-black text-emerald-600 dark:text-emerald-400 mt-0.5">৳{totalCollected.toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-[12px] bg-sky-500/10 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-400">Refunded</p>
+                        <p className="text-[15px] font-black text-sky-600 dark:text-sky-400 mt-0.5">৳{totalRefunded.toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-[12px] bg-muted/40 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Pending</p>
+                        <p className="text-[15px] font-black text-foreground mt-0.5">৳{totalPending.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    {totalPlanned > 0 && (
+                      <div className="space-y-1">
+                        <div className="h-2 rounded-full bg-muted/60 overflow-hidden flex">
+                          <div className="h-full bg-emerald-500" style={{ width: `${(totalCollected / totalPlanned) * 100}%` }} />
+                          <div className="h-full bg-sky-500" style={{ width: `${(totalRefunded / totalPlanned) * 100}%` }} />
+                          <div className="h-full bg-destructive/70" style={{ width: `${(totalMissed / totalPlanned) * 100}%` }} />
+                        </div>
+                        <p className="text-[9px] text-muted-foreground text-center">
+                          {Math.round((totalCollected / totalPlanned) * 100)}% collected • {Math.round((totalPending / totalPlanned) * 100)}% remaining
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1 pt-1">Installment History</p>
+                  <p className="text-[10px] text-muted-foreground/70 px-1">Tap any installment for full details</p>
                   <div className="relative py-6 px-2">
                     {/* Center trunk line */}
                     <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/60 via-primary/25 to-transparent rounded-full" />
@@ -2421,11 +2493,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                       );
 
                       return (
-                        <motion.div key={item.id}
+                        <motion.button key={item.id} type="button"
+                          onClick={() => setSelectedInstallment(item)}
                           initial={{ opacity: 0, x: isRight ? 20 : -20 }}
                           animate={{ opacity: 1, x: 0 }}
+                          whileTap={{ scale: 0.98 }}
                           transition={{ delay: Math.min(i * 0.06, 0.6), type: "spring", stiffness: 350, damping: 28 }}
-                          className={`relative flex items-center mb-8 last:mb-0 min-h-[36px] ${item.status === "pending" ? "opacity-70" : ""}`}
+                          className={`relative flex items-center mb-8 last:mb-0 min-h-[36px] w-full text-left rounded-lg hover:bg-muted/30 transition-colors ${item.status === "pending" ? "opacity-70" : ""}`}
                         >
                           <div className="w-[42%] text-right pr-6">
                             {isRight ? (
@@ -2443,12 +2517,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                               <p className="text-[11px] font-semibold text-muted-foreground leading-tight">{dateStr}</p>
                             )}
                           </div>
-                        </motion.div>
+                        </motion.button>
                       );
                     })}
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
               {dpsTimeline.length === 0 && (
                 <div className="text-center py-6 rounded-[18px] border border-dashed border-border/60 bg-muted/20">
@@ -3083,6 +3158,124 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           );
         })()}
       </AnimatePresence>
+
+      {/* Installment Detail Modal */}
+      <Dialog open={!!selectedInstallment} onOpenChange={(o) => { if (!o) setSelectedInstallment(null); }}>
+        <DialogContent className="max-w-md rounded-[20px]">
+          {selectedInstallment && (() => {
+            const item = selectedInstallment;
+            const statusLabel: Record<string, string> = {
+              processed: "Processed", repaid: "Repaid", refunded: "Refunded",
+              missed: "Missed", skipped: "Skipped", pending: "Pending",
+            };
+            const statusColor: Record<string, string> = {
+              processed: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+              repaid: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30",
+              refunded: "text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/30",
+              missed: "text-destructive bg-destructive/10 border-destructive/30",
+              skipped: "text-muted-foreground bg-muted/40 border-border/60",
+              pending: "text-muted-foreground bg-muted/40 border-dashed border-border/60",
+            };
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CalendarClock size={18} className="text-primary" />
+                    Installment Details
+                  </DialogTitle>
+                  <DialogDescription className="text-[11px]">
+                    {new Date(item.date).toLocaleString("en-BD", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between rounded-[14px] border border-border/60 bg-muted/30 p-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Amount</p>
+                      <p className="text-[22px] font-black text-foreground">৳{item.amount.toLocaleString()}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full border ${statusColor[item.status]}`}>
+                      {statusLabel[item.status]}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[12px]">
+                    {item.goalName && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Credited Goal</span>
+                        <span className="font-semibold text-foreground text-right truncate">{item.goalName}</span>
+                      </div>
+                    )}
+                    {item.goalId && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Goal ID</span>
+                        <span className="font-mono text-[10px] text-muted-foreground/80 truncate">{item.goalId}</span>
+                      </div>
+                    )}
+                    {item.txReference && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Tx Reference</span>
+                        <span className="font-mono text-[10px] text-foreground truncate">{item.txReference}</span>
+                      </div>
+                    )}
+                    {item.txId && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Transaction ID</span>
+                        <span className="font-mono text-[10px] text-foreground truncate">{item.txId}</span>
+                      </div>
+                    )}
+                    {item.txStatus && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Tx Status</span>
+                        <span className="font-semibold text-foreground capitalize">{item.txStatus}</span>
+                      </div>
+                    )}
+                    {item.outcome && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Run Outcome</span>
+                        <span className="font-semibold text-foreground">{item.outcome}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Run ID</span>
+                      <span className="font-mono text-[10px] text-muted-foreground/80 truncate">{item.id}</span>
+                    </div>
+                  </div>
+
+                  {(item.walletDelta != null || item.balanceAfter != null) && (
+                    <div className="rounded-[14px] border border-border/60 bg-card p-3 space-y-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Wallet Movement</p>
+                      {item.walletDelta != null && (
+                        <div className="flex justify-between text-[12px]">
+                          <span className="text-muted-foreground">Change</span>
+                          <span className={`font-bold ${item.walletDelta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                            {item.walletDelta >= 0 ? "+" : ""}৳{Math.abs(item.walletDelta).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {item.balanceAfter != null && (
+                        <div className="flex justify-between text-[12px]">
+                          <span className="text-muted-foreground">Balance After</span>
+                          <span className="font-semibold text-foreground">৳{Number(item.balanceAfter).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(item.refundReason || item.note) && (
+                    <div className={`rounded-[14px] border p-3 ${item.status === "refunded" ? "border-sky-500/30 bg-sky-500/5" : item.status === "missed" ? "border-destructive/30 bg-destructive/5" : "border-border/60 bg-muted/30"}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                        {item.status === "refunded" ? "Refund Reason" : item.status === "missed" ? "Reason Missed" : "Note"}
+                      </p>
+                      <p className="text-[12px] text-foreground">{item.refundReason ?? item.note}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
