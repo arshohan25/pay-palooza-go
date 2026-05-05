@@ -109,6 +109,7 @@ import AdminComplaintManager from "@/components/admin/AdminComplaintManager";
 import AdminDeviceManager from "@/components/admin/AdminDeviceManager";
 import AdminAutoSaveMonitor from "@/components/admin/AdminAutoSaveMonitor";
 import AdminDpsAuditTrail from "@/components/admin/AdminDpsAuditTrail";
+import AdminDpsAlerts from "@/components/admin/AdminDpsAlerts";
 import AdminOtpMonitor from "@/components/admin/AdminOtpMonitor";
 import AdminPinHistory from "@/components/admin/AdminPinHistory";
 import AdminCommissionLedger from "@/components/admin/AdminCommissionLedger";
@@ -313,6 +314,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "donation_funds", label: "Donation Funds", icon: Heart },
       { id: "auto_save", label: "Auto-Save", icon: CalendarClock },
       { id: "dps_audit", label: "DPS Audit Trail", icon: ScrollText },
+      { id: "dps_alerts", label: "DPS Alerts", icon: AlertTriangle },
       { id: "recharge", label: "Recharge", icon: Smartphone },
       { id: "billers", label: "Billers", icon: FileText },
     ],
@@ -2058,6 +2060,7 @@ export default function AdminDashboard() {
         {/* ═══ AUTO-SAVE MONITOR ═══ */}
         {activeTab === "auto_save" && <AdminAutoSaveMonitor />}
         {activeTab === "dps_audit" && <AdminDpsAuditTrail />}
+        {activeTab === "dps_alerts" && <AdminDpsAlerts />}
 
         {/* ═══ OTP MONITOR ═══ */}
         {activeTab === "otp_monitor" && <AdminOtpMonitor />}
