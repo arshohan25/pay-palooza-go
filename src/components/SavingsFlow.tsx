@@ -1524,7 +1524,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                               .order("created_at", { ascending: true })
                               .limit(500),
                             supabase.from("transactions")
-                              .select("id, reference, status, amount, created_at")
+                              .select("id, reference, status, amount, balance_after, description, created_at")
                               .like("reference", `DPS-INST-${schedule.id.substring(0, 8)}-%`)
                               .order("created_at", { ascending: true })
                               .limit(500),
@@ -1536,7 +1536,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           const repaidById: Record<string, boolean> = {};
                           scheduleMissed.forEach(m => { repaidById[m.id] = !!m.repaid; });
 
-                          const timeline: Array<{ id: string; date: string; amount: number; status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending"; goalName?: string | null; note?: string; txReference?: string | null }> = [];
+                          const timeline: Array<{ id: string; date: string; amount: number; status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending"; goalName?: string | null; goalId?: string | null; note?: string; txReference?: string | null; txId?: string | null; txStatus?: string | null; balanceAfter?: number | null; walletDelta?: number | null; refundReason?: string | null; outcome?: string | null }> = [];
 
                           (runRows as any[] ?? []).forEach((r: any) => {
                             const ref = r.tx_reference as string | null;
@@ -1547,7 +1547,14 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                                 id: r.id, date: r.created_at, amount: Number(r.amount),
                                 status: refunded ? "refunded" : "processed",
                                 goalName: r.goal_name ?? linkedGoal?.name ?? null,
+                                goalId: r.goal_id ?? linkedGoal?.id ?? null,
                                 txReference: ref,
+                                txId: tx?.id ?? null,
+                                txStatus: tx?.status ?? null,
+                                balanceAfter: tx?.balance_after ?? null,
+                                walletDelta: refunded ? Number(r.amount) : -Number(r.amount),
+                                refundReason: refunded ? (tx?.description ?? "Reversed by system") : null,
+                                outcome: r.outcome,
                                 note: refunded ? "Refunded to wallet" : undefined,
                               });
                             } else if (r.outcome === "missed") {
@@ -1555,12 +1562,15 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                                 id: r.id, date: r.created_at, amount: Number(r.amount),
                                 status: "missed",
                                 goalName: r.goal_name ?? linkedGoal?.name ?? null,
+                                goalId: r.goal_id ?? linkedGoal?.id ?? null,
+                                outcome: r.outcome,
                                 note: r.reason ?? "Insufficient balance",
                               });
                             } else if (r.outcome === "no_goal" || r.outcome === "schedule_inactive" || r.outcome === "dedup_skipped" || r.outcome === "plan_expired") {
                               timeline.push({
                                 id: r.id, date: r.created_at, amount: Number(r.amount || 0),
                                 status: "skipped",
+                                outcome: r.outcome,
                                 note: r.reason ?? r.outcome,
                               });
                             }
@@ -1572,6 +1582,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                             timeline.push({
                               id: `repaid-${m.id}`, date: m.due_date, amount: Number(m.amount),
                               status: "repaid", goalName: linkedGoal?.name ?? null,
+                              goalId: linkedGoal?.id ?? null,
+                              walletDelta: -Number(m.amount),
                               note: "Caught up later",
                             });
                           });
@@ -1593,6 +1605,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                                 amount: Number(schedule.amount),
                                 status: "pending",
                                 goalName: linkedGoal?.name ?? null,
+                                goalId: linkedGoal?.id ?? null,
                               });
                               cursor += stepMs;
                             }
