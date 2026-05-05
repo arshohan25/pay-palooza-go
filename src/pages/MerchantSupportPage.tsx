@@ -8,11 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, ShieldCheck, LogIn, KeyRound, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
-const PEEK_HEIGHT = 72; // px visible when shutter is closed
-
-// Tiny inline grain to kill banding on the dark backdrop
-const GRAIN_SVG =
-  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>\")";
+const PEEK_HEIGHT = 72;
 
 export default function MerchantSupportPage() {
   const location = useLocation();
@@ -62,7 +58,6 @@ export default function MerchantSupportPage() {
     return () => { mounted = false; sub.subscription.unsubscribe(); };
   }, [isGuestTicketMode]);
 
-  // Esc closes the shutter
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && shutterOpen) setShutterOpen(false);
@@ -87,64 +82,46 @@ export default function MerchantSupportPage() {
 
   return (
     <div
-      className="fixed inset-0 flex flex-col overflow-hidden text-white sm:px-5"
+      className="fixed inset-0 flex flex-col overflow-hidden bg-[#f5f6f8] text-foreground"
       style={{
-        background:
-          "radial-gradient(120% 80% at 50% -10%, #6d4ea8 0%, #3b2563 28%, #1f1638 60%, #15102b 100%)",
-        paddingLeft: "max(env(safe-area-inset-left), 12px)",
-        paddingRight: "max(env(safe-area-inset-right), 12px)",
+        paddingLeft: "max(env(safe-area-inset-left), 0px)",
+        paddingRight: "max(env(safe-area-inset-right), 0px)",
       }}
     >
-      {/* Aurora blooms */}
+      {/* Soft minimal accents */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="absolute left-1/2 top-[-12%] h-80 w-[140%] -translate-x-1/2 rounded-full blur-3xl"
-          style={{ background: "radial-gradient(closest-side, hsl(var(--primary) / 0.45), transparent 70%)" }}
-        />
-        <div className="absolute left-[-10%] top-[28%] h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl" />
-        <div className="absolute right-[-8%] bottom-[18%] h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
-        <div
-          className="absolute inset-0 mix-blend-overlay opacity-[0.05]"
-          style={{ backgroundImage: GRAIN_SVG }}
-        />
+        <div className="absolute -top-24 left-1/2 h-64 w-[120%] -translate-x-1/2 rounded-full bg-emerald-200/30 blur-3xl" />
+        <div className="absolute -bottom-32 right-[-20%] h-72 w-72 rounded-full bg-sky-200/30 blur-3xl" />
       </div>
-
-      {/* Frosted halo behind drawer */}
-      <div className="pointer-events-none absolute inset-x-4 bottom-0 top-20 -z-0 rounded-t-[40px] bg-white/5 backdrop-blur-2xl" />
 
       {/* Header */}
       <header
-        className="relative z-10 mx-auto flex w-full max-w-2xl shrink-0 items-center gap-3 border-b border-white/10 bg-white/[0.06] pb-3 backdrop-blur md:max-w-3xl"
-        style={{
-          paddingTop: "max(env(safe-area-inset-top), 12px)",
-          paddingLeft: "0.5rem",
-          paddingRight: "0.5rem",
-        }}
+        className="relative z-10 mx-auto flex w-full max-w-2xl shrink-0 items-center gap-3 px-4 pb-3 md:max-w-3xl"
+        style={{ paddingTop: "max(env(safe-area-inset-top), 14px)" }}
       >
         <button
           type="button"
           onClick={() => navigate("/merchant-login")}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.08] text-white/85 ring-1 ring-white/10 transition hover:bg-white/[0.16]"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-white text-foreground/80 shadow-sm transition hover:bg-muted"
           aria-label="Back"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className="min-w-0">
-          <h1 className="truncate text-[15px] font-semibold leading-tight">
+          <h1 className="truncate text-[15px] font-semibold leading-tight text-foreground">
             {isGuestTicketMode ? "PIN reset · Live support" : "Merchant Live Support"}
           </h1>
-          <p className="truncate text-[11px] leading-tight text-white/60">
+          <p className="truncate text-[11px] leading-tight text-muted-foreground">
             {isGuestTicketMode
-              ? `Verified guest chat · +88 ${maskedPhone}`
-              : "End-to-end encrypted · PIN reset assistance"}
+              ? `Verified guest · +88 ${maskedPhone}`
+              : "End-to-end encrypted"}
           </p>
         </div>
-        <div className="ml-auto flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-medium text-emerald-200">
-          <ShieldCheck className="h-3 w-3" /> {isGuestTicketMode ? "OTP-Verified" : "Verified"}
+        <div className="ml-auto flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700">
+          <ShieldCheck className="h-3 w-3" /> {isGuestTicketMode ? "Verified" : "Secure"}
         </div>
       </header>
 
-      {/* Backdrop tap zone — opens the shutter when collapsed */}
       {!shutterOpen && (
         <button
           type="button"
@@ -154,16 +131,9 @@ export default function MerchantSupportPage() {
         />
       )}
 
-      {/* Shutter Drawer */}
+      {/* Drawer */}
       <motion.div
-        className="relative z-20 mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden rounded-t-[28px] bg-white text-foreground sm:max-w-2xl md:max-w-3xl lg:max-w-3xl"
-        style={{
-          boxShadow:
-            "0 -22px 60px -22px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.7)",
-          // ring effect
-          outline: "1px solid rgba(255,255,255,0.18)",
-          outlineOffset: "-1px",
-        }}
+        className="relative z-20 mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden rounded-t-[28px] border border-border/60 border-b-0 bg-white text-foreground shadow-[0_-12px_40px_-20px_rgba(15,23,42,0.18)] md:max-w-3xl"
         initial={false}
         animate={{ y: shutterOpen ? 0 : `calc(100% - ${PEEK_HEIGHT}px)` }}
         transition={{ type: "spring", stiffness: 380, damping: 36 }}
@@ -172,20 +142,18 @@ export default function MerchantSupportPage() {
         dragElastic={0.15}
         onDragEnd={handleDragEnd}
       >
-        {/* Grab handle / shutter toggle */}
         <button
           type="button"
           onClick={() => setShutterOpen((v) => !v)}
           className="group relative flex w-full shrink-0 items-center justify-center pt-2.5 pb-1.5"
           aria-label={shutterOpen ? "Collapse chat" : "Expand chat"}
         >
-          <span className="block h-1 w-10 rounded-full bg-foreground/25 transition-colors group-hover:bg-foreground/45" />
-          <span className="absolute right-3 flex h-7 w-7 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+          <span className="block h-1 w-10 rounded-full bg-foreground/15 transition-colors group-hover:bg-foreground/30" />
+          <span className="absolute right-3 flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
             {shutterOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
           </span>
         </button>
 
-        {/* Peek strip — only visible when collapsed */}
         {!shutterOpen && (
           <div className="flex items-center gap-2 px-5 pb-2 text-[13px] font-medium text-foreground/80">
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
@@ -193,7 +161,6 @@ export default function MerchantSupportPage() {
           </div>
         )}
 
-        {/* Chat body */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {isGuestTicketMode ? (
             <PinResetTicketChat
