@@ -103,21 +103,76 @@ export default function AdminAutoSaveMonitor() {
     else await fetchAll();
   };
 
-  const runOne = async (schedule_id: string, force = true) => {
+  const runOne = useCallback(async (schedule_id: string, force = true): Promise<{ outcome: string; reason: string } | null> => {
     setRunning(schedule_id);
     try {
       const { data, error } = await supabase.functions.invoke("process-auto-save", { body: { schedule_id, force } });
       if (error) throw error;
       const r = data as any;
-      const out = r?.perSchedule?.[0]?.outcome ?? "done";
-      toast.success(`Run complete: ${out}`);
+      const entry = r?.perSchedule?.[0];
+      const outcome = entry?.outcome ?? "done";
+      const reason = entry?.reason ?? "";
+      toast.success(`Run complete: ${outcome}${reason ? ` — ${reason}` : ""}`);
       await fetchAll();
+      return { outcome, reason };
     } catch (e: any) {
-      toast.error(e?.message ?? "Run failed");
+      const reason = e?.message ?? "Run failed";
+      toast.error(reason);
+      return { outcome: "error", reason };
     } finally {
       setRunning(null);
     }
-  };
+  }, [fetchAll]);
+
+  const cancelRetry = useCallback((schedule_id: string) => {
+    const t = retryTimers.current[schedule_id];
+    if (t) clearTimeout(t);
+    delete retryTimers.current[schedule_id];
+    setRetries((prev) => {
+      const next = { ...prev };
+      delete next[schedule_id];
+      return next;
+    });
+  }, []);
+
+  const scheduleRetry = useCallback((schedule_id: string, attempt: number, lastOutcome: string, lastReason: string) => {
+    if (attempt > MAX_RETRY_ATTEMPTS) {
+      toast.error(`Auto-retry exhausted after ${MAX_RETRY_ATTEMPTS} attempts (${lastOutcome})`);
+      cancelRetry(schedule_id);
+      return;
+    }
+    const delay = Math.min(BASE_BACKOFF_MS * 2 ** (attempt - 1), MAX_BACKOFF_MS);
+    const nextAt = Date.now() + delay;
+    setRetries((prev) => ({ ...prev, [schedule_id]: { attempt, nextAt, lastOutcome, lastReason } }));
+    const existing = retryTimers.current[schedule_id];
+    if (existing) clearTimeout(existing);
+    retryTimers.current[schedule_id] = setTimeout(async () => {
+      const result = await runOne(schedule_id, true);
+      if (!result) return;
+      if (result.outcome === "collected" || result.outcome === "settled") {
+        toast.success(`Auto-retry succeeded on attempt ${attempt}`);
+        cancelRetry(schedule_id);
+        return;
+      }
+      // Failure → schedule next attempt
+      scheduleRetry(schedule_id, attempt + 1, result.outcome, result.reason);
+    }, delay);
+  }, [runOne, cancelRetry]);
+
+  const startAutoRetry = useCallback(async (schedule_id: string) => {
+    const result = await runOne(schedule_id, true);
+    if (!result) return;
+    if (result.outcome === "collected" || result.outcome === "settled") return;
+    scheduleRetry(schedule_id, 1, result.outcome, result.reason);
+  }, [runOne, scheduleRetry]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(retryTimers.current).forEach((t) => clearTimeout(t));
+      retryTimers.current = {};
+    };
+  }, []);
 
   const runAllDue = async () => {
     setBulkRunning(true);
