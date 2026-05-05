@@ -26,6 +26,32 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
+// ─── Date formatting (user's local timezone) ─────────────────────────
+const USER_TIMEZONE = (() => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Dhaka"; }
+  catch { return "Asia/Dhaka"; }
+})();
+const USER_TZ_ABBR = (() => {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: USER_TIMEZONE, timeZoneName: "short" }).formatToParts(new Date());
+    return parts.find(p => p.type === "timeZoneName")?.value ?? "";
+  } catch { return ""; }
+})();
+function formatInstallmentDate(d: string | Date, opts: { withTime?: boolean; long?: boolean } = {}) {
+  const { withTime = true, long = false } = opts;
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (isNaN(date.getTime())) return "—";
+  const fmt: Intl.DateTimeFormatOptions = {
+    timeZone: USER_TIMEZONE,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    ...(long ? { weekday: "short" } : {}),
+    ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
+  };
+  return date.toLocaleString("en-GB", fmt);
+}
+
 // ─── Types ───────────────────────────────────────────────────────────
 interface SavingsGoal {
   id: string; name: string; emoji: string;
