@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, BellOff, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Bell, BellOff, Loader2, CheckCircle2, AlertCircle, Moon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { usePushSubscription } from "@/hooks/use-push-subscription";
