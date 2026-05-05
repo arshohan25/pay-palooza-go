@@ -1505,11 +1505,90 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         onClick={async () => {
                           setSelectedSchedule(schedule);
                           const linkedGoal = goals.find(g => g.id === schedule.goal_id);
-                          const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", schedule.goal_id || "").order("created_at", { ascending: true });
+                          // Source the timeline from the authoritative run-log so we always
+                          // know exactly what happened (collected / missed / no_goal / skipped)
+                          // and which goal was credited. Also pull wallet transactions to detect refunds.
+                          const [{ data: runRows }, { data: txRows }] = await Promise.all([
+                            (supabase.from as any)("dps_run_log")
+                              .select("*")
+                              .eq("schedule_id", schedule.id)
+                              .order("created_at", { ascending: true })
+                              .limit(500),
+                            supabase.from("transactions")
+                              .select("id, reference, status, amount, created_at")
+                              .like("reference", `DPS-INST-${schedule.id.substring(0, 8)}-%`)
+                              .order("created_at", { ascending: true })
+                              .limit(500),
+                          ]);
+                          const txByRef: Record<string, any> = {};
+                          (txRows ?? []).forEach((t: any) => { if (t.reference) txByRef[t.reference] = t; });
+
                           const scheduleMissed = missedPayments.filter(m => m.schedule_id === schedule.id);
-                          const timeline: Array<{ id: string; date: string; amount: number; type: "paid" | "missed"; repaid?: boolean }> = [];
-                          (deps as any[] ?? []).forEach((d: any) => timeline.push({ id: d.id, date: d.created_at, amount: Number(d.amount), type: "paid" }));
-                          scheduleMissed.forEach(m => timeline.push({ id: m.id, date: m.due_date, amount: Number(m.amount), type: "missed", repaid: m.repaid }));
+                          const repaidById: Record<string, boolean> = {};
+                          scheduleMissed.forEach(m => { repaidById[m.id] = !!m.repaid; });
+
+                          const timeline: Array<{ id: string; date: string; amount: number; status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending"; goalName?: string | null; note?: string; txReference?: string | null }> = [];
+
+                          (runRows as any[] ?? []).forEach((r: any) => {
+                            const ref = r.tx_reference as string | null;
+                            const tx = ref ? txByRef[ref] : null;
+                            const refunded = tx && (tx.status === "reversed" || tx.status === "refunded");
+                            if (r.outcome === "collected") {
+                              timeline.push({
+                                id: r.id, date: r.created_at, amount: Number(r.amount),
+                                status: refunded ? "refunded" : "processed",
+                                goalName: r.goal_name ?? linkedGoal?.name ?? null,
+                                txReference: ref,
+                                note: refunded ? "Refunded to wallet" : undefined,
+                              });
+                            } else if (r.outcome === "missed") {
+                              timeline.push({
+                                id: r.id, date: r.created_at, amount: Number(r.amount),
+                                status: "missed",
+                                goalName: r.goal_name ?? linkedGoal?.name ?? null,
+                                note: r.reason ?? "Insufficient balance",
+                              });
+                            } else if (r.outcome === "no_goal" || r.outcome === "schedule_inactive" || r.outcome === "dedup_skipped" || r.outcome === "plan_expired") {
+                              timeline.push({
+                                id: r.id, date: r.created_at, amount: Number(r.amount || 0),
+                                status: "skipped",
+                                note: r.reason ?? r.outcome,
+                              });
+                            }
+                          });
+
+                          // Mark missed entries that have since been repaid (legacy missed_payments table)
+                          scheduleMissed.forEach(m => {
+                            if (!m.repaid) return;
+                            timeline.push({
+                              id: `repaid-${m.id}`, date: m.due_date, amount: Number(m.amount),
+                              status: "repaid", goalName: linkedGoal?.name ?? null,
+                              note: "Caught up later",
+                            });
+                          });
+
+                          // Project upcoming pending installments (next N cycles up to total_installments)
+                          const totalInst = schedule.total_installments ?? 0;
+                          const paid = schedule.total_paid ?? 0;
+                          const remaining = Math.max(0, totalInst - paid);
+                          if (schedule.is_active && !schedule.settled && schedule.next_run_at && remaining > 0) {
+                            const stepMs = schedule.frequency === "daily" ? 86400000
+                              : schedule.frequency === "weekly" ? 7 * 86400000
+                              : 30 * 86400000;
+                            let cursor = new Date(schedule.next_run_at).getTime();
+                            const projectCount = Math.min(remaining, 12);
+                            for (let i = 0; i < projectCount; i++) {
+                              timeline.push({
+                                id: `pending-${schedule.id}-${i}`,
+                                date: new Date(cursor).toISOString(),
+                                amount: Number(schedule.amount),
+                                status: "pending",
+                                goalName: linkedGoal?.name ?? null,
+                              });
+                              cursor += stepMs;
+                            }
+                          }
+
                           timeline.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                           setDpsTimeline(timeline);
                           setStep("dps-detail");
