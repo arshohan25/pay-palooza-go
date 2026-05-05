@@ -225,9 +225,15 @@ export default function PinResetTicketChat({
         (payload) => {
           const msg = payload.new as PinResetMessage;
           setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
-          scrollToBottom();
           if (msg.sender_role === "admin") {
+            if (atBottomRef.current) {
+              scrollToBottom(true);
+            } else {
+              setUnreadCount((c) => c + 1);
+            }
             void callChat("ack").catch(() => {});
+          } else {
+            scrollToBottom(true);
           }
         },
       )
