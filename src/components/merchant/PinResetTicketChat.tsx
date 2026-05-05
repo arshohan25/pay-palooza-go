@@ -456,20 +456,7 @@ export default function PinResetTicketChat({
           </div>
         </motion.div>
 
-        {/* Skeletons */}
-        {stillConnecting && messages.length === 0 && (
-          <div className="space-y-2 pt-1">
-            {[0, 1].map((i) => (
-              <div key={i} className={`flex items-end gap-2 ${i % 2 ? "flex-row-reverse" : ""}`}>
-                <div className="h-6 w-6 shrink-0 rounded-full bg-muted/60" />
-                <div className={`h-9 ${i % 2 ? "w-[55%]" : "w-[65%]"} animate-pulse rounded-[20px] bg-gradient-to-r from-muted/70 via-muted/40 to-muted/70`} />
-              </div>
-            ))}
-            <p className="pt-1 text-center text-[10px] text-muted-foreground/70">
-              {requestId === "pending" ? "Connecting you to support…" : "Loading conversation…"}
-            </p>
-          </div>
-        )}
+        {/* No connecting skeleton — chat is treated as instantly ready. */}
 
         <AnimatePresence initial={false}>
           {decorated.map(({ msg, isFirstOfRun, showDayDivider }) => {
