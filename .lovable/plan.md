@@ -1,63 +1,75 @@
-## DPS Flow Audit – Issues Found
+## Goal
+Make DPS (auto-save) fully observable, manually controllable, and verifiable end-to-end.
 
-After tracing the flow from `SavingsFlow.tsx` → DB → `process-auto-save` / `dps-reminder` edge functions → realtime updates, the DPS pipeline is **not actually running end-to-end**. Specific defects:
+## 1. Admin DPS Operations Dashboard
+Replace the current minimal `AdminAutoSaveMonitor` with a richer monitoring panel (same `auto_save` tab in `AdminDashboard`).
 
-1. **`process-auto-save` is never scheduled.** Only `phase4-dps-reminder` exists in `cron.job`. So no installment is ever auto-collected. Existing schedule from Apr 16 has `next_run_at = 2026-04-23` and `total_paid = 0` — proves nothing has run.
-2. **First installment never credits the goal.** `handleCreateAutoSave` (SavingsFlow.tsx:528-544) deducts the wallet via `recordTransaction` and sets `total_paid: 1`, but never calls `savings_deposit` RPC nor inserts into `savings_deposits`. Goal `saved_amount` stays 0; user loses ৳ visually.
-3. **`savings_auto_save` not in `supabase_realtime` publication.** UI subscribes (line 371) for zero-refresh updates but never receives them. Schedules don't update live after auto-collect/missed.
-4. **`process-auto-save` is unauthenticated and unprotected.** No cron-secret check, no service-role validation. Anyone can hit it and trigger processing. Also no idempotency guard — a double invocation in the same minute would double-charge.
-5. **No push notification on auto-collect / missed.** `dps-reminder` sends web push, but the actual payment events only insert a `notifications` row.
-6. **Repay flow inconsistency.** `handleRepayMissed` only updates `total_paid` when `repayScheduleId` is set (single-schedule context). Multi-schedule repay leaves counters stale.
-7. **Goal-less DPS (no `goal_id`) on auto-save:** edge function deducts balance + records transaction but skips the deposit row. Counter is fine, but UI shows installment in plan progress without a deposit trail. Acceptable but should be consistent.
+New columns/sections:
+- **Per-schedule row**: user, amount/frequency, total_paid / total_installments, missed_count, `last_run_at`, `next_run_at`, status badge (Active / Paused / Settled / At-Risk if missed_count >= 3).
+- **Summary cards**: Active, Settled, Missed today, Due in next 24h, Total ৳/cycle.
+- **Filter bar**: status (all/active/paused/settled/at-risk), frequency, search by phone/name.
+- **Row actions**:
+  - "Run now" → invokes `process-auto-save` Edge Function via `supabase.functions.invoke` with `{ schedule_id }` (see §3).
+  - "Pause/Resume" (existing toggle, kept).
+  - "View timeline" → drawer showing deposits + missed payments + notifications for that schedule.
+- **Recent cron runs panel**: list last 20 entries from a new `dps_run_log` table (function summary: processed/skipped/missed/dedup, per-schedule outcome + skip reason). Shows last processed time at top.
 
----
+## 2. User-Facing DPS Timeline (real-time)
+The existing DPS detail sheet in `SavingsFlow.tsx` already shows a basic paid/missed list. Upgrade it to a vertical timeline with status chips:
+- **Collected** (deposit row, source=auto/manual)
+- **Missed** (insufficient balance)
+- **Repaid** (missed → repaid)
+- **Credited to goal** (when linked goal saved_amount increased — derived from deposit row with goal_id)
+- **Plan Completed** (when `settled = true`)
 
-## Plan
+Visuals: vertical line + colored dots, date/time, amount, optional note. Already-realtime channels (`savings_auto_save`, `savings_deposits`, `dps_missed_payments`) refresh the list automatically.
 
-### 1. Schedule `process-auto-save` (migration)
-Add a cron job that runs every 15 minutes (matches the per-day granularity needed and catches schedules across all timezones). Also unschedule any duplicate if present.
+## 3. Manual Repay / Collect Now button
+Two entry points:
+- **Active plans card** in `SavingsFlow.tsx`: small "Collect Now" button on each active, non-settled schedule.
+- **Admin row action**: "Run now".
 
+Both call `process-auto-save` with optional `{ schedule_id }` body. Edge function changes:
+- Accept JSON body `{ schedule_id?: string, force?: boolean }`.
+- If `schedule_id` provided: process only that schedule (single-row fetch, ignoring `next_run_at`).
+- Idempotency guard (existing cycle-window check via `last_run_at`) still applies unless `force=true` (admin only — verified by `has_role(admin)` when called with bearer).
+- All counters (`total_paid`, `last_run_at`, `next_run_at`, deposits, transactions, notifications, push) reuse the current code path so behaviour matches cron.
+- Append a row to new `dps_run_log` per schedule attempt with outcome (`collected | missed | settled | dedup_skipped | no_goal | plan_expired`) + reason text + trigger source (`cron | user | admin`).
+
+User-side button shows toast based on returned outcome and relies on realtime channels for UI refresh.
+
+## 4. dps_run_log table (new)
 ```text
-SELECT cron.schedule(
-  'phase4-process-auto-save',
-  '*/15 * * * *',
-  $$ SELECT net.http_post(
-        url := '.../functions/v1/process-auto-save',
-        headers := jsonb_build_object('Content-Type','application/json',
-                   'x-cron-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='ADMIN_METRICS_CRON_SECRET' LIMIT 1)),
-        body := '{}'::jsonb
-      ); $$);
+id uuid pk
+schedule_id uuid → savings_auto_save
+user_id uuid
+outcome text
+reason text
+amount numeric
+triggered_by text  -- 'cron' | 'user' | 'admin'
+created_at timestamptz default now()
 ```
+RLS: users can `select` own rows; admins can `select` all; only service role inserts.
 
-### 2. Add `savings_auto_save` to realtime
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE public.savings_auto_save;
-ALTER TABLE public.savings_auto_save REPLICA IDENTITY FULL;
-```
+## 5. Automated end-to-end tests
+Add Deno test `supabase/functions/process-auto-save/index.test.ts` (uses dotenv loader pattern, anon + service keys from `.env`).
 
-### 3. Fix first-installment credit in `SavingsFlow.tsx`
-After successful `savings_auto_save` insert:
-- If `linkedGoalId` exists → `supabase.rpc("savings_deposit", { p_goal_id, p_amount: amt, p_source: "auto" })` instead of plain `recordTransaction`.
-- If no goal → keep current `recordTransaction` deduction but also insert a `savings_deposits` row with `goal_id: null` (skip if FK requires goal) — fall back to current behavior.
-- Use `DPS-INST-{schedule.id.slice(0,8)}-1` reference to match server format.
+Test scenarios (each creates its own throwaway user via service role, then cleans up):
+1. **Successful collection** — seed wallet ৳500, schedule ৳100 daily with linked goal, `next_run_at = now()-1m`. Invoke EF. Assert: wallet -100, goal saved_amount +100, `savings_deposits` row inserted, `transactions` row inserted, `total_paid=1`, `last_run_at` set, `next_run_at` ≈ +1d, run_log outcome=`collected`, push function invoked (mock-asserted via `notifications` row).
+2. **Insufficient balance / missed** — wallet ৳10, schedule ৳100. Assert `dps_missed_payments` row, `missed_count+1`, run_log=`missed`, notification row created.
+3. **Idempotency** — invoke twice in a row. Second call returns `dedup>=1`, no double deduction, run_log=`dedup_skipped`.
+4. **Plan completion** — schedule with `ends_at = now()-1s`. Assert `settled=true`, `is_active=false`, run_log=`settled`.
+5. **Manual collect via `{schedule_id, force:true}`** as admin — bypasses dedup window, processes once.
+6. **Realtime** — open a Postgres `LISTEN`/changes channel via supabase-js subscription before invoking; assert at least one event for `savings_auto_save` row update arrives within 5s (validates publication membership end-to-end).
 
-### 4. Harden `process-auto-save/index.ts`
-- Require `x-cron-secret` header (matching `ADMIN_METRICS_CRON_SECRET`) OR a service-role bearer; return 401 otherwise (same pattern as `admin-metrics-snapshot`).
-- Add idempotency: skip a schedule if `last_run_at` is within the cycle window (e.g. last_run_at + frequency interval > now()) to avoid double-charging on rapid re-invocation.
-- After successful collection, fire web push via `send-push-notification` (best-effort, swallow errors) — same pattern already used by `dps-reminder`.
-- Same push for missed payments.
+Frontend smoke test (`vitest`, jsdom): render new admin panel with mocked supabase client returning canned schedules + run-log rows; assert columns, filter, and "Run now" calls `supabase.functions.invoke('process-auto-save', { body: { schedule_id, force: true } })`.
 
-### 5. Fix repay counters in `SavingsFlow.tsx`
-`handleRepayMissed`: aggregate `toRepay` by `schedule_id` and update each schedule's `total_paid` and `missed_count`, not only `repayScheduleId`.
+## Files touched
+- New migration: create `dps_run_log` table + RLS + add to `supabase_realtime`.
+- `supabase/functions/process-auto-save/index.ts` — body parsing, single-schedule mode, `force`, run-log writes, admin check.
+- `src/components/admin/AdminAutoSaveMonitor.tsx` — redesigned dashboard.
+- `src/components/SavingsFlow.tsx` — vertical timeline + "Collect Now" button.
+- New `supabase/functions/process-auto-save/index.test.ts` — Deno e2e tests.
+- New `src/components/admin/__tests__/AdminAutoSaveMonitor.test.tsx` — vitest smoke test.
 
-### 6. Quick verification after deploy
-Manually invoke `process-auto-save` once to drain the overdue schedules created in dev, confirm balances/goals/transactions update live in the UI without refresh.
-
----
-
-## Files Touched
-- New migration: enable realtime + schedule cron job.
-- `supabase/functions/process-auto-save/index.ts` — auth guard, idempotency, push notifications.
-- `src/components/SavingsFlow.tsx` — first-installment goal credit + multi-schedule repay counters.
-
-No UI redesign, no schema changes beyond publication membership.
+No schema changes to existing DPS tables; only the new `dps_run_log` table and a publication add.
