@@ -242,7 +242,15 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   // ─── Detail view state ────────
   const [selectedSchedule, setSelectedSchedule] = useState<AutoSaveSchedule | null>(null);
   const [goalDeposits, setGoalDeposits] = useState<Array<{ id: string; amount: number; source: string; created_at: string }>>([]);
-  const [dpsTimeline, setDpsTimeline] = useState<Array<{ id: string; date: string; amount: number; type: "paid" | "missed"; repaid?: boolean }>>([]);
+  const [dpsTimeline, setDpsTimeline] = useState<Array<{
+    id: string;
+    date: string;
+    amount: number;
+    status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending";
+    goalName?: string | null;
+    note?: string;
+    txReference?: string | null;
+  }>>([]);
 
 
   // ─── PIN state (shared across all confirm actions) ────────
