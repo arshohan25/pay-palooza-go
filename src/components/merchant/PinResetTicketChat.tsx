@@ -42,7 +42,7 @@ interface PinResetTicketChatProps {
   onSessionExpired: () => void;
 }
 
-const POLL_FALLBACK_MS = 8000;
+const POLL_FALLBACK_MS = 4000;
 const MAX_ATTACH_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIMES = [
   "image/jpeg",
@@ -277,22 +277,59 @@ export default function PinResetTicketChat({
     }
   };
 
+  /* Outgoing queue — lets the user send before request_id resolves */
+  type Pending = { id: string; text: string; attachment: typeof uploaded };
+  const [queue, setQueue] = useState<Pending[]>([]);
+  const queueRef = useRef<Pending[]>([]);
+  const flushingRef = useRef(false);
+  useEffect(() => { queueRef.current = queue; }, [queue]);
+
+  const flushQueue = useCallback(async () => {
+    if (flushingRef.current) return;
+    if (requestIdRef.current === "pending") return;
+    flushingRef.current = true;
+    try {
+      while (queueRef.current.length > 0) {
+        const next = queueRef.current[0];
+        try {
+          const payload = await callChat("send", {
+            content: next.text,
+            ...(next.attachment ? { attachment: next.attachment } : {}),
+          });
+          const real = payload.message as PinResetMessage;
+          setMessages((prev) => prev.map((m) => (m.id === next.id ? real : m)));
+          setQueue((q) => q.slice(1));
+        } catch (err: any) {
+          // Stop flushing on error; surface and remove the failed item
+          setMessages((prev) => prev.filter((m) => m.id !== next.id));
+          setQueue((q) => q.slice(1));
+          toast.error(err?.message || "Couldn't send message");
+          break;
+        }
+      }
+    } finally {
+      flushingRef.current = false;
+    }
+  }, [callChat]);
+
+  // Flush as soon as the request id resolves or new items arrive
+  useEffect(() => {
+    if (requestId !== "pending" && queue.length > 0) void flushQueue();
+  }, [requestId, queue.length, flushQueue]);
+
   /* Composer send */
   const sendMessage = async () => {
     const text = input.trim();
     if ((!text && !uploaded) || sending || status !== "open") return;
-    if (requestId === "pending") {
-      toast.info("Connecting you to support… try again in a second.");
-      return;
-    }
-    setSending(true);
+
     const sentText = text;
     const sentAttachment = uploaded;
     setInput("");
     clearPending();
 
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const optimistic: PinResetMessage = {
-      id: `temp-${Date.now()}`,
+      id: tempId,
       request_id: requestId,
       sender_role: "merchant",
       content: sentText,
@@ -306,22 +343,11 @@ export default function PinResetTicketChat({
       attachment_size: sentAttachment?.size ?? null,
     };
     setMessages((prev) => [...prev, optimistic]);
+    setQueue((q) => [...q, { id: tempId, text: sentText, attachment: sentAttachment }]);
     scrollToBottom();
-    try {
-      const payload = await callChat("send", {
-        content: sentText,
-        ...(sentAttachment ? { attachment: sentAttachment } : {}),
-      });
-      const real = payload.message as PinResetMessage;
-      setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? real : m)));
-    } catch (err: any) {
-      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-      setInput(sentText);
-      toast.error(err?.message || "Couldn't send message");
-    } finally {
-      setSending(false);
-      inputRef.current?.focus();
-    }
+    inputRef.current?.focus();
+
+    if (requestId !== "pending") void flushQueue();
   };
 
   const isResolved = status !== "open";
@@ -347,8 +373,8 @@ export default function PinResetTicketChat({
     return null;
   }, [messages]);
 
-  const composerDisabled = sending || stillConnecting || (uploaded === null && pendingFile !== null);
-  const canSend = (!!input.trim() || !!uploaded) && !sending && !stillConnecting;
+  const composerDisabled = sending || (uploaded === null && pendingFile !== null) || isResolved;
+  const canSend = (!!input.trim() || !!uploaded) && !sending && !isResolved;
 
   return (
     <motion.div
@@ -430,20 +456,7 @@ export default function PinResetTicketChat({
           </div>
         </motion.div>
 
-        {/* Skeletons */}
-        {stillConnecting && messages.length === 0 && (
-          <div className="space-y-2 pt-1">
-            {[0, 1].map((i) => (
-              <div key={i} className={`flex items-end gap-2 ${i % 2 ? "flex-row-reverse" : ""}`}>
-                <div className="h-6 w-6 shrink-0 rounded-full bg-muted/60" />
-                <div className={`h-9 ${i % 2 ? "w-[55%]" : "w-[65%]"} animate-pulse rounded-[20px] bg-gradient-to-r from-muted/70 via-muted/40 to-muted/70`} />
-              </div>
-            ))}
-            <p className="pt-1 text-center text-[10px] text-muted-foreground/70">
-              {requestId === "pending" ? "Connecting you to support…" : "Loading conversation…"}
-            </p>
-          </div>
-        )}
+        {/* No connecting skeleton — chat is treated as instantly ready. */}
 
         <AnimatePresence initial={false}>
           {decorated.map(({ msg, isFirstOfRun, showDayDivider }) => {
@@ -615,7 +628,7 @@ export default function PinResetTicketChat({
                 <motion.button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={sending || stillConnecting || !!pendingFile}
+                  disabled={sending || isResolved || !!pendingFile}
                   whileTap={{ scale: 0.92 }}
                   whileHover={{ scale: 1.04 }}
                   transition={{ type: "spring", stiffness: 500, damping: 25 }}
@@ -653,7 +666,7 @@ export default function PinResetTicketChat({
                           void sendMessage();
                         }
                       }}
-                      placeholder={stillConnecting ? "Connecting…" : uploaded ? "Add a caption…" : "Reply to support…"}
+                      placeholder={uploaded ? "Add a caption…" : "Type your message…"}
                       rows={1}
                       disabled={composerDisabled}
                       className="block w-full resize-none rounded-[23px] border-0 bg-transparent px-4 py-3 pr-14 text-[13px] leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 disabled:opacity-60"

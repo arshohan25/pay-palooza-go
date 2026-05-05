@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import SupportChat from "@/components/SupportChat";
 import PinResetTicketChat from "@/components/merchant/PinResetTicketChat";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, ShieldCheck, LogIn, KeyRound, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldCheck, LogIn, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
 const PEEK_HEIGHT = 72;
@@ -149,9 +149,6 @@ export default function MerchantSupportPage() {
           aria-label={shutterOpen ? "Collapse chat" : "Expand chat"}
         >
           <span className="block h-1 w-10 rounded-full bg-foreground/15 transition-colors group-hover:bg-foreground/30" />
-          <span className="absolute right-3 flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            {shutterOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-          </span>
         </button>
 
         {!shutterOpen && (
