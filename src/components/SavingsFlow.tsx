@@ -2493,7 +2493,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                             return { node: "border-muted-foreground/40 border-dashed", branch: "bg-muted-foreground/20", amount: "text-muted-foreground", label: "Pending", icon: <CalendarClock size={8} /> };
                         }
                       })();
-                      const dateStr = new Date(item.date).toLocaleString("en-BD", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                      const dateStr = `${formatInstallmentDate(item.date)}${USER_TZ_ABBR ? ` ${USER_TZ_ABBR}` : ""}`;
                       const detailBlock = (
                         <div className={`inline-flex flex-col gap-0.5 ${isRight ? "items-start" : "items-end"}`}>
                           <p className={`text-[15px] font-black tracking-tight ${palette.amount}`}>৳{item.amount.toLocaleString()}</p>
