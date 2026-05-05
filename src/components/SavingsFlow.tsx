@@ -24,6 +24,7 @@ import SlideToConfirm from "@/components/SlideToConfirm";
 import { haptics } from "@/lib/haptics";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface SavingsGoal {
