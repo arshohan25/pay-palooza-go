@@ -628,7 +628,7 @@ export default function PinResetTicketChat({
                 <motion.button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={sending || stillConnecting || !!pendingFile}
+                  disabled={sending || isResolved || !!pendingFile}
                   whileTap={{ scale: 0.92 }}
                   whileHover={{ scale: 1.04 }}
                   transition={{ type: "spring", stiffness: 500, damping: 25 }}
@@ -666,7 +666,7 @@ export default function PinResetTicketChat({
                           void sendMessage();
                         }
                       }}
-                      placeholder={stillConnecting ? "Connecting…" : uploaded ? "Add a caption…" : "Reply to support…"}
+                      placeholder={uploaded ? "Add a caption…" : "Type your message…"}
                       rows={1}
                       disabled={composerDisabled}
                       className="block w-full resize-none rounded-[23px] border-0 bg-transparent px-4 py-3 pr-14 text-[13px] leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 disabled:opacity-60"
