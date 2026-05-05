@@ -312,6 +312,11 @@ export default function AdminAutoSaveMonitor() {
               {filtered.map((s) => {
                 const p = profiles[s.user_id];
                 const atRisk = (s.missed_count ?? 0) >= 3 && !s.settled;
+                const lastLog = runLogs.find((l) => l.schedule_id === s.id);
+                const lastFailed = lastLog && RETRYABLE_OUTCOMES.has(lastLog.outcome);
+                const retry = retries[s.id];
+                const secondsLeft = retry ? Math.max(0, Math.ceil((retry.nextAt - Date.now()) / 1000)) : 0;
+                void tick;
                 return (
                   <TableRow key={s.id}>
                     <TableCell>
@@ -322,13 +327,25 @@ export default function AdminAutoSaveMonitor() {
                     <TableCell><Badge variant="secondary" className="text-[10px] capitalize">{s.frequency}</Badge></TableCell>
                     <TableCell className="text-xs">{(s.total_paid ?? 0)} / {s.total_installments ?? "∞"}</TableCell>
                     <TableCell className={`text-xs font-semibold ${(s.missed_count ?? 0) > 0 ? "text-destructive" : "text-muted-foreground"}`}>{s.missed_count ?? 0}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{s.last_run_at ? new Date(s.last_run_at).toLocaleString() : "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {s.last_run_at ? new Date(s.last_run_at).toLocaleString() : "—"}
+                      {lastLog?.reason && (
+                        <p className={`text-[10px] ${lastFailed ? "text-destructive" : "text-muted-foreground"}`}>
+                          {lastLog.outcome}: {lastLog.reason}
+                        </p>
+                      )}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{s.next_run_at ? new Date(s.next_run_at).toLocaleString() : "—"}</TableCell>
                     <TableCell>
                       {s.settled ? <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-[10px]">Settled</Badge>
                         : atRisk ? <Badge className="bg-destructive/10 text-destructive text-[10px]">At risk</Badge>
                         : s.is_active ? <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px]">Active</Badge>
                         : <Badge variant="secondary" className="text-[10px]">Paused</Badge>}
+                      {retry && (
+                        <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-[10px] mt-1 block w-fit">
+                          Retry {retry.attempt}/{MAX_RETRY_ATTEMPTS} in {secondsLeft}s
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -336,6 +353,26 @@ export default function AdminAutoSaveMonitor() {
                         <Button size="sm" variant="ghost" onClick={() => runOne(s.id)} disabled={s.settled || running === s.id} title="Run now">
                           <Play size={14} className={running === s.id ? "animate-pulse" : ""} />
                         </Button>
+                        {retry ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => cancelRetry(s.id)}
+                            title="Cancel auto-retry"
+                          >
+                            <X size={14} className="text-destructive" />
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startAutoRetry(s.id)}
+                            disabled={s.settled || running === s.id || !lastFailed}
+                            title={lastFailed ? "Auto-retry with exponential backoff" : "Only available after a failed run"}
+                          >
+                            <Repeat size={14} />
+                          </Button>
+                        )}
                         <Switch checked={s.is_active} disabled={s.settled} onCheckedChange={(v) => toggleActive(s.id, v)} />
                       </div>
                     </TableCell>
