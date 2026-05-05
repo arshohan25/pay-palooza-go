@@ -261,6 +261,55 @@ export default function NotificationPreferences({ scope }: Props) {
             })}
       </div>
 
+      {/* Quiet hours */}
+      <div className="mt-4 pt-4 border-t border-border/40">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <Moon size={16} className="text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold text-foreground">Quiet hours</p>
+              <p className="text-[11.5px] text-muted-foreground leading-snug">
+                Mute push during this window (Asia/Dhaka time). In-app alerts still appear.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {savingQuiet && <Loader2 size={12} className="text-muted-foreground animate-spin" />}
+            <Switch
+              checked={quietEnabled}
+              onCheckedChange={(v) => { setQuietEnabled(v); saveQuiet({ enabled: v }); }}
+              aria-label="Toggle quiet hours"
+            />
+          </div>
+        </div>
+        {quietEnabled && (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label className="text-[11.5px] text-muted-foreground">
+              From
+              <Input
+                type="time"
+                value={quietStart}
+                onChange={(e) => setQuietStart(e.target.value)}
+                onBlur={() => saveQuiet({ start: quietStart })}
+                className="mt-1 h-9"
+              />
+            </label>
+            <label className="text-[11.5px] text-muted-foreground">
+              To
+              <Input
+                type="time"
+                value={quietEnd}
+                onChange={(e) => setQuietEnd(e.target.value)}
+                onBlur={() => saveQuiet({ end: quietEnd })}
+                className="mt-1 h-9"
+              />
+            </label>
+          </div>
+        )}
+      </div>
+
       {!subscribed && supported && configured && permission !== "denied" && (
         <p className="mt-3 text-[11px] text-muted-foreground leading-snug">
           Enable push above to start receiving alerts. Your category choices are saved either way.
