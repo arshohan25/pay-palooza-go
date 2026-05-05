@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Coins, Clock, CheckCircle, RefreshCw, AlertTriangle, Play, History, Search } from "lucide-react";
+import { Coins, Clock, CheckCircle, RefreshCw, AlertTriangle, Play, History, Search, Repeat, X } from "lucide-react";
 import { toast } from "sonner";
 
 type Schedule = any;
@@ -32,6 +32,18 @@ const OUTCOME_COLOR: Record<string, string> = {
   schedule_inactive: "bg-muted text-muted-foreground",
 };
 
+const RETRYABLE_OUTCOMES = new Set(["missed", "no_goal"]);
+const MAX_RETRY_ATTEMPTS = 5;
+const BASE_BACKOFF_MS = 30_000; // 30s, doubles each attempt
+const MAX_BACKOFF_MS = 15 * 60_000; // cap 15min
+
+type RetryState = {
+  attempt: number;
+  nextAt: number;
+  lastOutcome: string;
+  lastReason: string;
+};
+
 export default function AdminAutoSaveMonitor() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
@@ -44,6 +56,15 @@ export default function AdminAutoSaveMonitor() {
   const [search, setSearch] = useState("");
   const [drawer, setDrawer] = useState<Schedule | null>(null);
   const [drawerLogs, setDrawerLogs] = useState<RunLog[]>([]);
+  const [retries, setRetries] = useState<Record<string, RetryState>>({});
+  const retryTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [tick, setTick] = useState(0); // forces countdown re-render every second
+
+  // 1Hz tick for countdown labels
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -82,21 +103,76 @@ export default function AdminAutoSaveMonitor() {
     else await fetchAll();
   };
 
-  const runOne = async (schedule_id: string, force = true) => {
+  const runOne = useCallback(async (schedule_id: string, force = true): Promise<{ outcome: string; reason: string } | null> => {
     setRunning(schedule_id);
     try {
       const { data, error } = await supabase.functions.invoke("process-auto-save", { body: { schedule_id, force } });
       if (error) throw error;
       const r = data as any;
-      const out = r?.perSchedule?.[0]?.outcome ?? "done";
-      toast.success(`Run complete: ${out}`);
+      const entry = r?.perSchedule?.[0];
+      const outcome = entry?.outcome ?? "done";
+      const reason = entry?.reason ?? "";
+      toast.success(`Run complete: ${outcome}${reason ? ` — ${reason}` : ""}`);
       await fetchAll();
+      return { outcome, reason };
     } catch (e: any) {
-      toast.error(e?.message ?? "Run failed");
+      const reason = e?.message ?? "Run failed";
+      toast.error(reason);
+      return { outcome: "error", reason };
     } finally {
       setRunning(null);
     }
-  };
+  }, [fetchAll]);
+
+  const cancelRetry = useCallback((schedule_id: string) => {
+    const t = retryTimers.current[schedule_id];
+    if (t) clearTimeout(t);
+    delete retryTimers.current[schedule_id];
+    setRetries((prev) => {
+      const next = { ...prev };
+      delete next[schedule_id];
+      return next;
+    });
+  }, []);
+
+  const scheduleRetry = useCallback((schedule_id: string, attempt: number, lastOutcome: string, lastReason: string) => {
+    if (attempt > MAX_RETRY_ATTEMPTS) {
+      toast.error(`Auto-retry exhausted after ${MAX_RETRY_ATTEMPTS} attempts (${lastOutcome})`);
+      cancelRetry(schedule_id);
+      return;
+    }
+    const delay = Math.min(BASE_BACKOFF_MS * 2 ** (attempt - 1), MAX_BACKOFF_MS);
+    const nextAt = Date.now() + delay;
+    setRetries((prev) => ({ ...prev, [schedule_id]: { attempt, nextAt, lastOutcome, lastReason } }));
+    const existing = retryTimers.current[schedule_id];
+    if (existing) clearTimeout(existing);
+    retryTimers.current[schedule_id] = setTimeout(async () => {
+      const result = await runOne(schedule_id, true);
+      if (!result) return;
+      if (result.outcome === "collected" || result.outcome === "settled") {
+        toast.success(`Auto-retry succeeded on attempt ${attempt}`);
+        cancelRetry(schedule_id);
+        return;
+      }
+      // Failure → schedule next attempt
+      scheduleRetry(schedule_id, attempt + 1, result.outcome, result.reason);
+    }, delay);
+  }, [runOne, cancelRetry]);
+
+  const startAutoRetry = useCallback(async (schedule_id: string) => {
+    const result = await runOne(schedule_id, true);
+    if (!result) return;
+    if (result.outcome === "collected" || result.outcome === "settled") return;
+    scheduleRetry(schedule_id, 1, result.outcome, result.reason);
+  }, [runOne, scheduleRetry]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(retryTimers.current).forEach((t) => clearTimeout(t));
+      retryTimers.current = {};
+    };
+  }, []);
 
   const runAllDue = async () => {
     setBulkRunning(true);
@@ -236,6 +312,11 @@ export default function AdminAutoSaveMonitor() {
               {filtered.map((s) => {
                 const p = profiles[s.user_id];
                 const atRisk = (s.missed_count ?? 0) >= 3 && !s.settled;
+                const lastLog = runLogs.find((l) => l.schedule_id === s.id);
+                const lastFailed = lastLog && RETRYABLE_OUTCOMES.has(lastLog.outcome);
+                const retry = retries[s.id];
+                const secondsLeft = retry ? Math.max(0, Math.ceil((retry.nextAt - Date.now()) / 1000)) : 0;
+                void tick;
                 return (
                   <TableRow key={s.id}>
                     <TableCell>
@@ -246,13 +327,25 @@ export default function AdminAutoSaveMonitor() {
                     <TableCell><Badge variant="secondary" className="text-[10px] capitalize">{s.frequency}</Badge></TableCell>
                     <TableCell className="text-xs">{(s.total_paid ?? 0)} / {s.total_installments ?? "∞"}</TableCell>
                     <TableCell className={`text-xs font-semibold ${(s.missed_count ?? 0) > 0 ? "text-destructive" : "text-muted-foreground"}`}>{s.missed_count ?? 0}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{s.last_run_at ? new Date(s.last_run_at).toLocaleString() : "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {s.last_run_at ? new Date(s.last_run_at).toLocaleString() : "—"}
+                      {lastLog?.reason && (
+                        <p className={`text-[10px] ${lastFailed ? "text-destructive" : "text-muted-foreground"}`}>
+                          {lastLog.outcome}: {lastLog.reason}
+                        </p>
+                      )}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{s.next_run_at ? new Date(s.next_run_at).toLocaleString() : "—"}</TableCell>
                     <TableCell>
                       {s.settled ? <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-[10px]">Settled</Badge>
                         : atRisk ? <Badge className="bg-destructive/10 text-destructive text-[10px]">At risk</Badge>
                         : s.is_active ? <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px]">Active</Badge>
                         : <Badge variant="secondary" className="text-[10px]">Paused</Badge>}
+                      {retry && (
+                        <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-[10px] mt-1 block w-fit">
+                          Retry {retry.attempt}/{MAX_RETRY_ATTEMPTS} in {secondsLeft}s
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -260,6 +353,26 @@ export default function AdminAutoSaveMonitor() {
                         <Button size="sm" variant="ghost" onClick={() => runOne(s.id)} disabled={s.settled || running === s.id} title="Run now">
                           <Play size={14} className={running === s.id ? "animate-pulse" : ""} />
                         </Button>
+                        {retry ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => cancelRetry(s.id)}
+                            title="Cancel auto-retry"
+                          >
+                            <X size={14} className="text-destructive" />
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startAutoRetry(s.id)}
+                            disabled={s.settled || running === s.id || !lastFailed}
+                            title={lastFailed ? "Auto-retry with exponential backoff" : "Only available after a failed run"}
+                          >
+                            <Repeat size={14} />
+                          </Button>
+                        )}
                         <Switch checked={s.is_active} disabled={s.settled} onCheckedChange={(v) => toggleActive(s.id, v)} />
                       </div>
                     </TableCell>
