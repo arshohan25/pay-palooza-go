@@ -256,16 +256,13 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Find target goal
-      let goalId = schedule.goal_id;
+      // Target goal MUST be explicitly linked on the schedule.
+      // Never silently fall back to "first active goal" — that misroutes funds.
+      const goalId: string | null = schedule.goal_id ?? null;
       if (!goalId) {
-        const { data: goals } = await supabase
-          .from("savings_goals")
-          .select("id")
-          .eq("user_id", schedule.user_id)
-          .eq("status", "active")
-          .limit(1);
-        goalId = goals && goals.length > 0 ? goals[0].id : null;
+        await log(schedule, "no_goal", "Schedule has no linked goal_id", 0);
+        skipped++;
+        continue;
       }
 
       const { data: profile } = await supabase
