@@ -2487,6 +2487,22 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   .filter(i => i.status === "missed")
                   .reduce((s, i) => s + i.amount, 0);
                 const totalPlanned = totalCollected + totalRefunded + totalPending + totalMissed;
+
+                // ─── Reconciliation ─────────
+                // Compare schedule expectation vs actual transactions surfaced in the timeline.
+                const scheduledCount = selectedSchedule?.total_installments ?? 0;
+                const expectedAmount = scheduledCount * Number(selectedSchedule?.amount ?? 0);
+                const collectedItems = dpsTimeline.filter(i => i.status === "processed" || i.status === "repaid");
+                const refundedItems = dpsTimeline.filter(i => i.status === "refunded");
+                const missedItems = dpsTimeline.filter(i => i.status === "missed");
+                const linkedTxCount = dpsTimeline.filter(i => i.txId).length;
+                const unlinkedRuns = dpsTimeline.filter(
+                  i => (i.status === "processed" || i.status === "refunded" || i.status === "repaid") && !i.txId,
+                );
+                const netCollectedAmt = collectedItems.reduce((s, i) => s + i.amount, 0);
+                const variance = netCollectedAmt - (selectedSchedule?.total_paid ?? 0) * Number(selectedSchedule?.amount ?? 0);
+                const recIssues = refundedItems.length + missedItems.length + unlinkedRuns.length + (variance !== 0 ? 1 : 0);
+
                 return (
                 <div className="space-y-2">
                   {/* Summary above timeline */}
@@ -2520,6 +2536,74 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         <p className="text-[9px] text-muted-foreground text-center">
                           {Math.round((totalCollected / totalPlanned) * 100)}% collected • {Math.round((totalPending / totalPlanned) * 100)}% remaining
                         </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Deposit Reconciliation */}
+                  <div className={`rounded-[18px] border p-3.5 space-y-2.5 ${recIssues > 0 ? "border-amber-500/40 bg-amber-500/5" : "border-emerald-500/30 bg-emerald-500/5"}`}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground inline-flex items-center gap-1.5">
+                        {recIssues > 0 ? <AlertTriangle size={12} className="text-amber-600 dark:text-amber-400" /> : <CheckCircle2 size={12} className="text-emerald-600 dark:text-emerald-400" />}
+                        Deposit Reconciliation
+                      </p>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${recIssues > 0 ? "bg-amber-500/15 text-amber-700 dark:text-amber-400" : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"}`}>
+                        {recIssues > 0 ? `${recIssues} issue${recIssues !== 1 ? "s" : ""}` : "All clear"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground">Scheduled</span>
+                        <span className="font-bold text-foreground">{scheduledCount}× ৳{Number(selectedSchedule?.amount ?? 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground">Expected total</span>
+                        <span className="font-bold text-foreground">৳{expectedAmount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground">Collected (net)</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">৳{netCollectedAmt.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground">Linked txns</span>
+                        <span className="font-bold text-foreground">{linkedTxCount} / {dpsTimeline.filter(i => i.status !== "pending").length}</span>
+                      </div>
+                    </div>
+
+                    {(refundedItems.length > 0 || missedItems.length > 0 || unlinkedRuns.length > 0 || variance !== 0) && (
+                      <div className="space-y-1.5 pt-1 border-t border-border/40">
+                        {variance !== 0 && (
+                          <div className="flex items-start gap-2 text-[11px]">
+                            <AlertTriangle size={12} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                            <p className="text-foreground">
+                              <span className="font-bold">Counter mismatch:</span> schedule says {selectedSchedule?.total_paid ?? 0} paid (৳{((selectedSchedule?.total_paid ?? 0) * Number(selectedSchedule?.amount ?? 0)).toLocaleString()}), transactions show ৳{netCollectedAmt.toLocaleString()} ({variance > 0 ? "+" : ""}৳{variance.toLocaleString()}).
+                            </p>
+                          </div>
+                        )}
+                        {refundedItems.length > 0 && (
+                          <div className="flex items-start gap-2 text-[11px]">
+                            <RefreshCw size={12} className="text-sky-600 dark:text-sky-400 mt-0.5 shrink-0" />
+                            <p className="text-foreground">
+                              <span className="font-bold">{refundedItems.length} refunded deposit{refundedItems.length !== 1 ? "s" : ""}</span> (৳{refundedItems.reduce((s, i) => s + i.amount, 0).toLocaleString()}) — money was returned to wallet, goal not credited.
+                            </p>
+                          </div>
+                        )}
+                        {missedItems.length > 0 && (
+                          <div className="flex items-start gap-2 text-[11px]">
+                            <AlertTriangle size={12} className="text-destructive mt-0.5 shrink-0" />
+                            <p className="text-foreground">
+                              <span className="font-bold">{missedItems.length} missed installment{missedItems.length !== 1 ? "s" : ""}</span> (৳{missedItems.reduce((s, i) => s + i.amount, 0).toLocaleString()}) — no transaction recorded, balance was insufficient.
+                            </p>
+                          </div>
+                        )}
+                        {unlinkedRuns.length > 0 && (
+                          <div className="flex items-start gap-2 text-[11px]">
+                            <AlertTriangle size={12} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                            <p className="text-foreground">
+                              <span className="font-bold">{unlinkedRuns.length} uncredited run{unlinkedRuns.length !== 1 ? "s" : ""}</span> — run logged but no matching wallet transaction found.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
