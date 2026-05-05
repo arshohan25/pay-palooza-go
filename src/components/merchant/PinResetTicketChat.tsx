@@ -15,6 +15,7 @@ import {
   X,
   FileText,
   Download,
+  ArrowDown,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -106,6 +107,13 @@ export default function PinResetTicketChat({
   const requestIdRef = useRef(initialRequestId);
   const expiredHandledRef = useRef(false);
 
+  // Auto-scroll + unread tracking
+  const [atBottom, setAtBottom] = useState(true);
+  const atBottomRef = useRef(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => { atBottomRef.current = atBottom; }, [atBottom]);
+
   useEffect(() => { ticketRef.current = ticket; }, [ticket]);
   useEffect(() => { requestIdRef.current = requestId; }, [requestId]);
 
@@ -127,10 +135,22 @@ export default function PinResetTicketChat({
     return () => window.removeEventListener("pin-reset-request-resolved", onResolved);
   }, [requestId]);
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((smooth = false) => {
     requestAnimationFrame(() => {
-      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const el = scrollRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+      setUnreadCount(0);
     });
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const isBottom = distance < 60;
+    setAtBottom(isBottom);
+    if (isBottom) setUnreadCount(0);
   }, []);
 
   const handleExpiry = useCallback(() => {
@@ -174,10 +194,22 @@ export default function PinResetTicketChat({
         const payload = await callChat("fetch");
         if (cancelled) return;
         const next = (payload.messages ?? []) as PinResetMessage[];
-        setMessages(next);
+        let hadNewAdmin = false;
+        setMessages((prev) => {
+          if (!initial) {
+            const prevIds = new Set(prev.map((m) => m.id));
+            hadNewAdmin = next.some((m) => m.sender_role === "admin" && !prevIds.has(m.id));
+          }
+          return next;
+        });
         if (payload.status) setStatus(payload.status);
-        if (initial) setBootstrapping(false);
-        scrollToBottom();
+        if (initial) {
+          setBootstrapping(false);
+          scrollToBottom();
+        } else if (hadNewAdmin) {
+          if (atBottomRef.current) scrollToBottom(true);
+          else setUnreadCount((c) => c + (next.filter((m) => m.sender_role === "admin").length > 0 ? 1 : 0));
+        }
       } catch (err: any) {
         if (cancelled) return;
         if (err?.message === "__pending__") return;
@@ -205,9 +237,15 @@ export default function PinResetTicketChat({
         (payload) => {
           const msg = payload.new as PinResetMessage;
           setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
-          scrollToBottom();
           if (msg.sender_role === "admin") {
+            if (atBottomRef.current) {
+              scrollToBottom(true);
+            } else {
+              setUnreadCount((c) => c + 1);
+            }
             void callChat("ack").catch(() => {});
+          } else {
+            scrollToBottom(true);
           }
         },
       )
@@ -427,9 +465,11 @@ export default function PinResetTicketChat({
       </div>
 
       {/* Messages */}
+      <div className="relative flex-1 min-h-0">
       <div
         ref={scrollRef}
-        className="flex-1 space-y-2 overflow-y-auto pb-3 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        onScroll={handleScroll}
+        className="absolute inset-0 space-y-2 overflow-y-auto pb-3 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{
           paddingLeft: "max(env(safe-area-inset-left), 1.25rem)",
           paddingRight: "max(env(safe-area-inset-right), 1.25rem)",
@@ -519,7 +559,15 @@ export default function PinResetTicketChat({
                     )}
                     <div
                       className={`mt-0.5 flex items-center gap-1 ${isMe ? "justify-end" : ""}`}
-                      title={isMe && msg.read_by_admin ? fullSeenTitle : undefined}
+                      title={
+                        isMe
+                          ? isPending
+                            ? "Sending…"
+                            : msg.read_by_admin
+                              ? fullSeenTitle ?? "Delivered & read by support"
+                              : "Sent"
+                          : undefined
+                      }
                     >
                       {isMe && isLastOwn && msg.read_by_admin && seenLabel && (
                         <span className="mr-0.5 text-[9.5px] font-medium tracking-wide text-cyan-100">
@@ -531,11 +579,11 @@ export default function PinResetTicketChat({
                       </span>
                       {isMe &&
                         (isPending ? (
-                          <Loader2 size={10} className="animate-spin text-primary-foreground/65" />
+                          <Loader2 size={10} className="animate-spin text-primary-foreground/65" aria-label="Sending" />
                         ) : msg.read_by_admin ? (
-                          <CheckCheck size={11} className="text-cyan-200" />
+                          <CheckCheck size={11} className="text-cyan-200" aria-label="Delivered & read" />
                         ) : (
-                          <Check size={11} className="text-primary-foreground/55" />
+                          <Check size={11} className="text-primary-foreground/55" aria-label="Sent" />
                         ))}
                     </div>
                   </div>
@@ -544,6 +592,26 @@ export default function PinResetTicketChat({
             );
           })}
         </AnimatePresence>
+      </div>
+
+      {/* Unread badge / jump-to-bottom */}
+      <AnimatePresence>
+        {unreadCount > 0 && !atBottom && (
+          <motion.button
+            type="button"
+            onClick={() => scrollToBottom(true)}
+            initial={{ opacity: 0, y: 8, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 420, damping: 28 }}
+            className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground shadow-[0_8px_24px_-6px_hsl(var(--primary)/0.55)] ring-1 ring-primary/40"
+            aria-label={`${unreadCount} new message${unreadCount > 1 ? "s" : ""}, jump to latest`}
+          >
+            <ArrowDown className="h-3 w-3" />
+            {unreadCount} new {unreadCount > 1 ? "messages" : "message"}
+          </motion.button>
+        )}
+      </AnimatePresence>
       </div>
 
       {/* Composer */}
