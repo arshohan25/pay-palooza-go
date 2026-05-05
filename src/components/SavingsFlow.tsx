@@ -507,35 +507,29 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       const pinValid = await verifyPin(pin);
       if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
 
-      // If coming from combined create flow, create the goal first
-      let linkedGoalId: string | null = autoGoalId === "general" ? null : autoGoalId;
+      // STRICT VALIDATION: every DPS schedule MUST link to a real holding goal.
+      // Resolve / create the goal BEFORE inserting the schedule so we never
+      // persist a row with goal_id = null.
+      let linkedGoalId: string | null =
+        autoGoalId && autoGoalId !== "general" ? autoGoalId : null;
+
+      // Calculate total installments for DPS tracking
+      const totalInstallments = autoFreq === "daily" ? selectedDuration.months * 30
+        : autoFreq === "weekly" ? selectedDuration.months * 4 : selectedDuration.months;
+
+      // Path 1: combined "create goal + auto-save" flow
       if (enableAutoSaveInCreate && newName.trim()) {
         const target = parseFloat(newTarget);
-        const { data: goalData, error: goalErr } = await supabase.from("savings_goals").insert({ user_id: user.id, name: newName.trim(), emoji: newEmoji, target_amount: target || 0 } as any).select("id").single();
+        const { data: goalData, error: goalErr } = await supabase
+          .from("savings_goals")
+          .insert({ user_id: user.id, name: newName.trim(), emoji: newEmoji, target_amount: target || 0 } as any)
+          .select("id").single();
         if (goalErr) throw goalErr;
         linkedGoalId = goalData?.id ?? null;
         loadGoals();
       }
 
-      const nextRun = new Date();
-      if (autoFreq === "daily") nextRun.setDate(nextRun.getDate() + 1);
-      else if (autoFreq === "weekly") nextRun.setDate(nextRun.getDate() + 7);
-      else nextRun.setMonth(nextRun.getMonth() + 1);
-      const endsAt = calcEndsAt(autoDuration);
-      // Calculate total installments for DPS tracking
-      const totalInstallments = autoFreq === "daily" ? selectedDuration.months * 30
-        : autoFreq === "weekly" ? selectedDuration.months * 4 : selectedDuration.months;
-      const { data: schedRow, error: insertErr } = await supabase.from("savings_auto_save").insert({
-        user_id: user.id, goal_id: linkedGoalId,
-        frequency: autoFreq, amount: amt, next_run_at: nextRun.toISOString(), duration: autoDuration, ends_at: endsAt,
-        strategy: autoStrategy, total_installments: totalInstallments, total_paid: 1, missed_count: 0,
-        last_run_at: new Date().toISOString(),
-      } as any).select("id").single();
-      if (insertErr) throw insertErr;
-
-      // 1st installment MUST credit a goal — otherwise funds are deducted with no destination.
-      // If the user picked "general" (no linked goal), auto-create a holding "DPS Plan" goal
-      // and link the schedule to it so future cron runs deposit correctly.
+      // Path 2: user picked "general" → auto-create a holding "DPS Plan" goal up-front
       if (!linkedGoalId) {
         const holdingTarget = totalInstallments > 0 ? amt * totalInstallments : amt * 12;
         const { data: holdingGoal, error: holdingErr } = await supabase
@@ -544,11 +538,28 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           .select("id").single();
         if (holdingErr) throw holdingErr;
         linkedGoalId = holdingGoal?.id ?? null;
-        if (linkedGoalId && schedRow?.id) {
-          await supabase.from("savings_auto_save").update({ goal_id: linkedGoalId } as any).eq("id", schedRow.id);
-        }
         loadGoals();
       }
+
+      // Hard guard — refuse to insert a schedule without a linked goal.
+      if (!linkedGoalId) {
+        throw new Error("Could not link a savings goal to this DPS plan. Please try again.");
+      }
+
+      const nextRun = new Date();
+      if (autoFreq === "daily") nextRun.setDate(nextRun.getDate() + 1);
+      else if (autoFreq === "weekly") nextRun.setDate(nextRun.getDate() + 7);
+      else nextRun.setMonth(nextRun.getMonth() + 1);
+      const endsAt = calcEndsAt(autoDuration);
+
+      const { error: insertErr } = await supabase.from("savings_auto_save").insert({
+        user_id: user.id, goal_id: linkedGoalId,
+        frequency: autoFreq, amount: amt, next_run_at: nextRun.toISOString(), duration: autoDuration, ends_at: endsAt,
+        strategy: autoStrategy, total_installments: totalInstallments, total_paid: 1, missed_count: 0,
+        last_run_at: new Date().toISOString(),
+      } as any).select("id").single();
+      if (insertErr) throw insertErr;
+
       const goalLabel = goals.find(g => g.id === linkedGoalId)?.name ?? newName ?? "DPS Plan";
       const { error: depErr } = await supabase.rpc("savings_deposit", {
         p_goal_id: linkedGoalId, p_amount: amt, p_source: "auto",

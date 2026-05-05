@@ -5223,7 +5223,7 @@ export type Database = {
           duration: string | null
           ends_at: string | null
           frequency: string
-          goal_id: string | null
+          goal_id: string
           id: string
           is_active: boolean
           last_missed_at: string | null
@@ -5243,7 +5243,7 @@ export type Database = {
           duration?: string | null
           ends_at?: string | null
           frequency?: string
-          goal_id?: string | null
+          goal_id: string
           id?: string
           is_active?: boolean
           last_missed_at?: string | null
@@ -5263,7 +5263,7 @@ export type Database = {
           duration?: string | null
           ends_at?: string | null
           frequency?: string
-          goal_id?: string | null
+          goal_id?: string
           id?: string
           is_active?: boolean
           last_missed_at?: string | null
