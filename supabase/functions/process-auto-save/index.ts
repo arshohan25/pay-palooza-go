@@ -361,7 +361,7 @@ Deno.serve(async (req) => {
       await supabase.from("notifications").insert({
         user_id: schedule.user_id, title: successTitle, body: successBody, category: "savings",
       });
-      await sendPush(schedule.user_id, successTitle, successBody);
+      await sendPush(schedule.user_id, "savings_collected", successTitle, successBody);
       await log(schedule, "collected", `Collected to ${goal.name}`, Number(schedule.amount));
       processed++;
     }
