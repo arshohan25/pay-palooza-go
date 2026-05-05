@@ -533,23 +533,27 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       } as any).select("id").single();
       if (insertErr) throw insertErr;
 
-      // 1st installment: credit the linked goal via savings_deposit RPC (handles balance + deposit + transaction)
-      const goalLabel = linkedGoalId ? goals.find(g => g.id === linkedGoalId)?.name : newName;
-      if (linkedGoalId) {
-        const { error: depErr } = await supabase.rpc("savings_deposit", {
-          p_goal_id: linkedGoalId, p_amount: amt, p_source: "auto",
-        });
-        if (depErr) throw depErr;
-      } else {
-        // Goal-less DPS — just deduct wallet and log transaction
-        await recordTransaction({
-          type: "payment",
-          amount: amt,
-          fee: 0,
-          description: `DPS Installment: ${goalLabel || "DPS Plan"} (#1)`,
-          reference: `DPS-INST-${(schedRow?.id ?? "").substring(0, 8)}-1`,
-        });
+      // 1st installment MUST credit a goal — otherwise funds are deducted with no destination.
+      // If the user picked "general" (no linked goal), auto-create a holding "DPS Plan" goal
+      // and link the schedule to it so future cron runs deposit correctly.
+      if (!linkedGoalId) {
+        const holdingTarget = totalInstallments > 0 ? amt * totalInstallments : amt * 12;
+        const { data: holdingGoal, error: holdingErr } = await supabase
+          .from("savings_goals")
+          .insert({ user_id: user.id, name: "DPS Plan", emoji: "💰", target_amount: holdingTarget } as any)
+          .select("id").single();
+        if (holdingErr) throw holdingErr;
+        linkedGoalId = holdingGoal?.id ?? null;
+        if (linkedGoalId && schedRow?.id) {
+          await supabase.from("savings_auto_save").update({ goal_id: linkedGoalId } as any).eq("id", schedRow.id);
+        }
+        loadGoals();
       }
+      const goalLabel = goals.find(g => g.id === linkedGoalId)?.name ?? newName ?? "DPS Plan";
+      const { error: depErr } = await supabase.rpc("savings_deposit", {
+        p_goal_id: linkedGoalId, p_amount: amt, p_source: "auto",
+      });
+      if (depErr) throw depErr;
       await fetchBalance();
 
       fireSuccessConfetti();
