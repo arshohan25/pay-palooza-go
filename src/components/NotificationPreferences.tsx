@@ -32,13 +32,18 @@ const AGENT_CATEGORIES: Category[] = [
   { key: "agent_cash_in_out", label: "Cash in / out", description: "When customers transact with you." },
 ];
 
+const SAVINGS_CATEGORIES: Category[] = [
+  { key: "savings_collected", label: "DPS collected", description: "When an auto-save installment is collected or your goal completes." },
+  { key: "savings_missed", label: "DPS missed", description: "When an installment can't be collected (insufficient balance)." },
+];
+
 const COMMON_CATEGORIES: Category[] = [
   { key: "daily_summary", label: "Daily summary", description: "Yesterday's recap at 8:00 PM." },
   { key: "marketing", label: "Promotions & tips", description: "Offers, drops, and platform updates." },
 ];
 
 interface Props {
-  scope: "merchant" | "agent" | "distributor";
+  scope: "merchant" | "agent" | "distributor" | "customer";
 }
 
 export default function NotificationPreferences({ scope }: Props) {
@@ -48,8 +53,12 @@ export default function NotificationPreferences({ scope }: Props) {
     usePushSubscription();
 
   const categories = useMemo(() => {
-    const base = scope === "merchant" ? MERCHANT_CATEGORIES : AGENT_CATEGORIES;
-    return [...base, ...COMMON_CATEGORIES];
+    const base =
+      scope === "merchant" ? MERCHANT_CATEGORIES :
+      scope === "agent" ? AGENT_CATEGORIES :
+      scope === "customer" ? [] :
+      AGENT_CATEGORIES;
+    return [...base, ...SAVINGS_CATEGORIES, ...COMMON_CATEGORIES];
   }, [scope]);
 
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
