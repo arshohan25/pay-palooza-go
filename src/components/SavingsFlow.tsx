@@ -6,7 +6,7 @@ import {
   Trash2, Clock, CalendarClock, Power, Gem, BarChart3, Wallet,
   ArrowUpRight, ArrowDownRight, ShieldCheck, Coins, LineChart,
   RefreshCw, Sparkles, Target, CircleDollarSign, FileText, Lock,
-  AlertTriangle, X, ChevronDown, ChevronLeft, Gift, AlertCircle
+  AlertTriangle, X, ChevronDown, ChevronLeft, Gift, AlertCircle, Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBalance, onBalanceChange, fetchBalance, recordTransaction } from "@/lib/balanceStore";
