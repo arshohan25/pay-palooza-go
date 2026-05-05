@@ -42,7 +42,7 @@ interface PinResetTicketChatProps {
   onSessionExpired: () => void;
 }
 
-const POLL_FALLBACK_MS = 8000;
+const POLL_FALLBACK_MS = 4000;
 const MAX_ATTACH_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIMES = [
   "image/jpeg",
@@ -277,22 +277,59 @@ export default function PinResetTicketChat({
     }
   };
 
+  /* Outgoing queue — lets the user send before request_id resolves */
+  type Pending = { id: string; text: string; attachment: typeof uploaded };
+  const [queue, setQueue] = useState<Pending[]>([]);
+  const queueRef = useRef<Pending[]>([]);
+  const flushingRef = useRef(false);
+  useEffect(() => { queueRef.current = queue; }, [queue]);
+
+  const flushQueue = useCallback(async () => {
+    if (flushingRef.current) return;
+    if (requestIdRef.current === "pending") return;
+    flushingRef.current = true;
+    try {
+      while (queueRef.current.length > 0) {
+        const next = queueRef.current[0];
+        try {
+          const payload = await callChat("send", {
+            content: next.text,
+            ...(next.attachment ? { attachment: next.attachment } : {}),
+          });
+          const real = payload.message as PinResetMessage;
+          setMessages((prev) => prev.map((m) => (m.id === next.id ? real : m)));
+          setQueue((q) => q.slice(1));
+        } catch (err: any) {
+          // Stop flushing on error; surface and remove the failed item
+          setMessages((prev) => prev.filter((m) => m.id !== next.id));
+          setQueue((q) => q.slice(1));
+          toast.error(err?.message || "Couldn't send message");
+          break;
+        }
+      }
+    } finally {
+      flushingRef.current = false;
+    }
+  }, [callChat]);
+
+  // Flush as soon as the request id resolves or new items arrive
+  useEffect(() => {
+    if (requestId !== "pending" && queue.length > 0) void flushQueue();
+  }, [requestId, queue.length, flushQueue]);
+
   /* Composer send */
   const sendMessage = async () => {
     const text = input.trim();
     if ((!text && !uploaded) || sending || status !== "open") return;
-    if (requestId === "pending") {
-      toast.info("Connecting you to support… try again in a second.");
-      return;
-    }
-    setSending(true);
+
     const sentText = text;
     const sentAttachment = uploaded;
     setInput("");
     clearPending();
 
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const optimistic: PinResetMessage = {
-      id: `temp-${Date.now()}`,
+      id: tempId,
       request_id: requestId,
       sender_role: "merchant",
       content: sentText,
@@ -306,22 +343,11 @@ export default function PinResetTicketChat({
       attachment_size: sentAttachment?.size ?? null,
     };
     setMessages((prev) => [...prev, optimistic]);
+    setQueue((q) => [...q, { id: tempId, text: sentText, attachment: sentAttachment }]);
     scrollToBottom();
-    try {
-      const payload = await callChat("send", {
-        content: sentText,
-        ...(sentAttachment ? { attachment: sentAttachment } : {}),
-      });
-      const real = payload.message as PinResetMessage;
-      setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? real : m)));
-    } catch (err: any) {
-      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-      setInput(sentText);
-      toast.error(err?.message || "Couldn't send message");
-    } finally {
-      setSending(false);
-      inputRef.current?.focus();
-    }
+    inputRef.current?.focus();
+
+    if (requestId !== "pending") void flushQueue();
   };
 
   const isResolved = status !== "open";
@@ -347,8 +373,8 @@ export default function PinResetTicketChat({
     return null;
   }, [messages]);
 
-  const composerDisabled = sending || stillConnecting || (uploaded === null && pendingFile !== null);
-  const canSend = (!!input.trim() || !!uploaded) && !sending && !stillConnecting;
+  const composerDisabled = sending || (uploaded === null && pendingFile !== null) || isResolved;
+  const canSend = (!!input.trim() || !!uploaded) && !sending && !isResolved;
 
   return (
     <motion.div
