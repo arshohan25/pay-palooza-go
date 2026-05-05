@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
           body: `Your ৳${schedule.amount}/${schedule.frequency} DPS plan has completed. Total paid: ${schedule.total_paid ?? 0} installments.`,
           category: "savings",
         });
-        await sendPush(schedule.user_id, "✅ DPS Plan Completed", `Your DPS plan has finished. ${schedule.total_paid ?? 0} installments paid.`);
+        await sendPush(schedule.user_id, "savings_collected", "✅ DPS Plan Completed", `Your DPS plan has finished. ${schedule.total_paid ?? 0} installments paid.`);
 
         await log(schedule, "settled", "ends_at reached", 0);
         settled++;
