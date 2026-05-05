@@ -3158,6 +3158,124 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           );
         })()}
       </AnimatePresence>
+
+      {/* Installment Detail Modal */}
+      <Dialog open={!!selectedInstallment} onOpenChange={(o) => { if (!o) setSelectedInstallment(null); }}>
+        <DialogContent className="max-w-md rounded-[20px]">
+          {selectedInstallment && (() => {
+            const item = selectedInstallment;
+            const statusLabel: Record<string, string> = {
+              processed: "Processed", repaid: "Repaid", refunded: "Refunded",
+              missed: "Missed", skipped: "Skipped", pending: "Pending",
+            };
+            const statusColor: Record<string, string> = {
+              processed: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+              repaid: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30",
+              refunded: "text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/30",
+              missed: "text-destructive bg-destructive/10 border-destructive/30",
+              skipped: "text-muted-foreground bg-muted/40 border-border/60",
+              pending: "text-muted-foreground bg-muted/40 border-dashed border-border/60",
+            };
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CalendarClock size={18} className="text-primary" />
+                    Installment Details
+                  </DialogTitle>
+                  <DialogDescription className="text-[11px]">
+                    {new Date(item.date).toLocaleString("en-BD", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between rounded-[14px] border border-border/60 bg-muted/30 p-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Amount</p>
+                      <p className="text-[22px] font-black text-foreground">৳{item.amount.toLocaleString()}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full border ${statusColor[item.status]}`}>
+                      {statusLabel[item.status]}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[12px]">
+                    {item.goalName && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Credited Goal</span>
+                        <span className="font-semibold text-foreground text-right truncate">{item.goalName}</span>
+                      </div>
+                    )}
+                    {item.goalId && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Goal ID</span>
+                        <span className="font-mono text-[10px] text-muted-foreground/80 truncate">{item.goalId}</span>
+                      </div>
+                    )}
+                    {item.txReference && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Tx Reference</span>
+                        <span className="font-mono text-[10px] text-foreground truncate">{item.txReference}</span>
+                      </div>
+                    )}
+                    {item.txId && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Transaction ID</span>
+                        <span className="font-mono text-[10px] text-foreground truncate">{item.txId}</span>
+                      </div>
+                    )}
+                    {item.txStatus && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Tx Status</span>
+                        <span className="font-semibold text-foreground capitalize">{item.txStatus}</span>
+                      </div>
+                    )}
+                    {item.outcome && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Run Outcome</span>
+                        <span className="font-semibold text-foreground">{item.outcome}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Run ID</span>
+                      <span className="font-mono text-[10px] text-muted-foreground/80 truncate">{item.id}</span>
+                    </div>
+                  </div>
+
+                  {(item.walletDelta != null || item.balanceAfter != null) && (
+                    <div className="rounded-[14px] border border-border/60 bg-card p-3 space-y-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Wallet Movement</p>
+                      {item.walletDelta != null && (
+                        <div className="flex justify-between text-[12px]">
+                          <span className="text-muted-foreground">Change</span>
+                          <span className={`font-bold ${item.walletDelta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                            {item.walletDelta >= 0 ? "+" : ""}৳{Math.abs(item.walletDelta).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {item.balanceAfter != null && (
+                        <div className="flex justify-between text-[12px]">
+                          <span className="text-muted-foreground">Balance After</span>
+                          <span className="font-semibold text-foreground">৳{Number(item.balanceAfter).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(item.refundReason || item.note) && (
+                    <div className={`rounded-[14px] border p-3 ${item.status === "refunded" ? "border-sky-500/30 bg-sky-500/5" : item.status === "missed" ? "border-destructive/30 bg-destructive/5" : "border-border/60 bg-muted/30"}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                        {item.status === "refunded" ? "Refund Reason" : item.status === "missed" ? "Reason Missed" : "Note"}
+                      </p>
+                      <p className="text-[12px] text-foreground">{item.refundReason ?? item.note}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
