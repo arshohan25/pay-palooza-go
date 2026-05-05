@@ -365,9 +365,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("process-auto-save error:", err);
+    return jsonError(500, "INTERNAL_ERROR", "Internal server error");
   }
 });
