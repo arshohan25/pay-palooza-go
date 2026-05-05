@@ -77,7 +77,7 @@ describe("AdminAutoSaveMonitor", () => {
 
   it("renders schedule rows and run logs", async () => {
     render(<AdminAutoSaveMonitor />);
-    expect(await screen.findAllByText(/Alice/)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Alice/)).length).toBeGreaterThan(0);
     expect(screen.getByText(/Bob/)).toBeInTheDocument();
     expect(screen.getByText(/2 \/ 30/)).toBeInTheDocument();
     expect(screen.getByText(/Recent processing runs/)).toBeInTheDocument();
