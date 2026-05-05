@@ -61,6 +61,7 @@ interface AutoSaveSchedule {
   id: string; goal_id: string | null; frequency: string; amount: number;
   is_active: boolean; next_run_at: string; duration: string | null;
   ends_at: string | null; settled: boolean;
+  created_at?: string; user_id?: string;
   missed_count?: number; total_paid?: number; total_installments?: number;
   strategy?: string; last_missed_at?: string;
 }
