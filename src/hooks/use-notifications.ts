@@ -1,96 +1,169 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type DbNotification = Tables<"notifications">;
 
-export function useNotifications() {
-  const [notifications, setNotifications] = useState<DbNotification[]>([]);
-  const [loading, setLoading] = useState(true);
+/**
+ * Shared singleton store so every component using `useNotifications()`
+ * (header bell, NotificationCenter sheet, etc.) sees the same state.
+ * Without this, each consumer kept its own `useState` array — marking
+ * notifications as read inside the sheet would not update the bell badge
+ * until a refresh.
+ */
+type State = {
+  notifications: DbNotification[];
+  loading: boolean;
+  userId: string | null;
+};
 
-  // Fetch initial notifications
-  useEffect(() => {
-    let cancelled = false;
+let state: State = { notifications: [], loading: true, userId: null };
+const listeners = new Set<() => void>();
+let channel: ReturnType<typeof supabase.channel> | null = null;
+let initPromise: Promise<void> | null = null;
 
-    const fetch = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+function setState(next: Partial<State>) {
+  state = { ...state, ...next };
+  listeners.forEach((l) => l());
+}
 
-      const { data } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+function patchOne(id: string, patch: Partial<DbNotification>) {
+  setState({
+    notifications: state.notifications.map((n) => (n.id === id ? { ...n, ...patch } : n)),
+  });
+}
 
-      if (!cancelled && data) setNotifications(data);
-      if (!cancelled) setLoading(false);
-    };
+function upsertOne(n: DbNotification) {
+  if (state.userId && n.user_id !== state.userId) return;
+  const exists = state.notifications.some((x) => x.id === n.id);
+  setState({
+    notifications: exists
+      ? state.notifications.map((x) => (x.id === n.id ? n : x))
+      : [n, ...state.notifications],
+  });
+}
 
-    fetch();
+function removeOne(id: string) {
+  setState({ notifications: state.notifications.filter((x) => x.id !== id) });
+}
 
-    // Real-time subscription
-    const channel = supabase
-      .channel("user-notifications")
+async function initOnce() {
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setState({ loading: false, userId: null });
+      return;
+    }
+    setState({ userId: user.id });
+
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    setState({ notifications: data ?? [], loading: false });
+
+    if (channel) supabase.removeChannel(channel);
+    channel = supabase
+      .channel(`user-notifications-${user.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications" },
-        (payload) => {
-          const n = payload.new as DbNotification;
-          setNotifications((prev) => [n, ...prev]);
-        }
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => upsertOne(payload.new as DbNotification),
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "notifications" },
-        (payload) => {
-          const n = payload.new as DbNotification;
-          setNotifications((prev) => prev.map((x) => (x.id === n.id ? n : x)));
-        }
+        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => upsertOne(payload.new as DbNotification),
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "notifications" },
-        (payload) => {
-          const old = payload.old as { id: string };
-          setNotifications((prev) => prev.filter((x) => x.id !== old.id));
-        }
+        { event: "DELETE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => removeOne((payload.old as { id: string }).id),
       )
       .subscribe();
+  })();
+  return initPromise;
+}
 
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
-  }, []);
+// React to auth changes — reset store and re-init for the new user.
+supabase.auth.onAuthStateChange((_event, session) => {
+  if (session?.user?.id !== state.userId) {
+    if (channel) { supabase.removeChannel(channel); channel = null; }
+    initPromise = null;
+    setState({ notifications: [], loading: true, userId: null });
+    initOnce();
+  }
+});
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  initOnce();
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+const getSnapshot = () => state;
+
+export function useNotifications() {
+  const snap = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const markRead = useCallback(async (id: string) => {
-    setNotifications((prev) => prev.map((x) => (x.id === id ? { ...x, read: true } : x)));
-    await supabase.from("notifications").update({ read: true }).eq("id", id);
+    // Optimistic local update — every consumer re-renders instantly
+    patchOne(id, { read: true });
+    const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
+    if (error) patchOne(id, { read: false });
   }, []);
 
   const markAllRead = useCallback(async () => {
-    setNotifications((prev) => prev.map((x) => ({ ...x, read: true })));
-    const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
-    if (unreadIds.length > 0) {
-      await supabase.from("notifications").update({ read: true }).in("id", unreadIds);
+    const unreadIds = state.notifications.filter((n) => !n.read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+    setState({
+      notifications: state.notifications.map((x) => ({ ...x, read: true })),
+    });
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .in("id", unreadIds);
+    if (error) {
+      // Revert
+      setState({
+        notifications: state.notifications.map((x) =>
+          unreadIds.includes(x.id) ? { ...x, read: false } : x,
+        ),
+      });
     }
-  }, [notifications]);
+  }, []);
 
   const dismiss = useCallback(async (id: string) => {
-    setNotifications((prev) => prev.filter((x) => x.id !== id));
-    await supabase.from("notifications").delete().eq("id", id);
+    const previous = state.notifications;
+    removeOne(id);
+    const { error } = await supabase.from("notifications").delete().eq("id", id);
+    if (error) setState({ notifications: previous });
   }, []);
 
   const clearAll = useCallback(async () => {
-    const ids = notifications.map((n) => n.id);
-    setNotifications([]);
-    if (ids.length > 0) {
-      await supabase.from("notifications").delete().in("id", ids);
-    }
-  }, [notifications]);
+    const previous = state.notifications;
+    const ids = previous.map((n) => n.id);
+    if (ids.length === 0) return;
+    setState({ notifications: [] });
+    const { error } = await supabase.from("notifications").delete().in("id", ids);
+    if (error) setState({ notifications: previous });
+  }, []);
 
-  return { notifications, loading, unreadCount, markRead, markAllRead, dismiss, clearAll };
+  const unreadCount = snap.notifications.filter((n) => !n.read).length;
+
+  return {
+    notifications: snap.notifications,
+    loading: snap.loading,
+    unreadCount,
+    markRead,
+    markAllRead,
+    dismiss,
+    clearAll,
+  };
 }
