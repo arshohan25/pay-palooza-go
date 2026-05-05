@@ -525,22 +525,31 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       // Calculate total installments for DPS tracking
       const totalInstallments = autoFreq === "daily" ? selectedDuration.months * 30
         : autoFreq === "weekly" ? selectedDuration.months * 4 : selectedDuration.months;
-      const { error: insertErr } = await supabase.from("savings_auto_save").insert({
+      const { data: schedRow, error: insertErr } = await supabase.from("savings_auto_save").insert({
         user_id: user.id, goal_id: linkedGoalId,
         frequency: autoFreq, amount: amt, next_run_at: nextRun.toISOString(), duration: autoDuration, ends_at: endsAt,
         strategy: autoStrategy, total_installments: totalInstallments, total_paid: 1, missed_count: 0,
-      } as any);
+        last_run_at: new Date().toISOString(),
+      } as any).select("id").single();
       if (insertErr) throw insertErr;
 
-      // Deduct 1st installment from wallet
+      // 1st installment: credit the linked goal via savings_deposit RPC (handles balance + deposit + transaction)
       const goalLabel = linkedGoalId ? goals.find(g => g.id === linkedGoalId)?.name : newName;
-      await recordTransaction({
-        type: "payment",
-        amount: amt,
-        fee: 0,
-        description: `DPS Installment: ${goalLabel || "DPS Plan"} (#1)`,
-        reference: `DPS-INST-${Date.now().toString(36).toUpperCase()}`,
-      });
+      if (linkedGoalId) {
+        const { error: depErr } = await supabase.rpc("savings_deposit", {
+          p_goal_id: linkedGoalId, p_amount: amt, p_source: "auto",
+        });
+        if (depErr) throw depErr;
+      } else {
+        // Goal-less DPS — just deduct wallet and log transaction
+        await recordTransaction({
+          type: "payment",
+          amount: amt,
+          fee: 0,
+          description: `DPS Installment: ${goalLabel || "DPS Plan"} (#1)`,
+          reference: `DPS-INST-${(schedRow?.id ?? "").substring(0, 8)}-1`,
+        });
+      }
       await fetchBalance();
 
       fireSuccessConfetti();
