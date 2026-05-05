@@ -983,10 +983,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
-                className="w-full max-w-[280px] bg-white/[0.07] backdrop-blur-md border border-white/[0.1] rounded-3xl px-6 py-7 flex flex-col items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
+                className="w-full max-w-[280px] bg-white/[0.07] backdrop-blur-md border border-white/[0.1] rounded-3xl px-6 py-4 flex flex-col items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
               >
-                <p className="text-[11px] font-semibold text-white/40 uppercase tracking-[0.15em] mb-5">{t.enterPin}</p>
-                <div className="relative mb-4">
+                <p className="text-[11px] font-semibold text-white/40 uppercase tracking-[0.15em] mb-3">{t.enterPin}</p>
+                <div className="relative mb-2">
                   <PinCircles pin={pin} error={!!error} dark />
                   <HiddenPinInput
                     value={pin}
@@ -1000,7 +1000,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 </div>
 
                 {/* Error / Status */}
-                <div className="h-7 flex items-center justify-center">
+                <div className="h-5 flex items-center justify-center">
                   {error ? (
                     <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                       className="text-xs text-red-300/90 flex items-center gap-1.5">
@@ -1008,10 +1008,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                     </motion.p>
                   ) : isSubmitting ? (
                     <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-white/45">{t.signingIn}</motion.p>
-                  ) : showPin && pin.length > 0 ? (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      <span className="text-lg font-black tracking-[0.6em] text-white/60 pl-[0.6em]">{pin}</span>
-                    </motion.div>
                   ) : null}
                 </div>
               </motion.div>
