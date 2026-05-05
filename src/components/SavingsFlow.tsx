@@ -6,7 +6,7 @@ import {
   Trash2, Clock, CalendarClock, Power, Gem, BarChart3, Wallet,
   ArrowUpRight, ArrowDownRight, ShieldCheck, Coins, LineChart,
   RefreshCw, Sparkles, Target, CircleDollarSign, FileText, Lock,
-  AlertTriangle, X, ChevronDown, ChevronLeft, Gift, AlertCircle
+  AlertTriangle, X, ChevronDown, ChevronLeft, Gift, AlertCircle, Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBalance, onBalanceChange, fetchBalance, recordTransaction } from "@/lib/balanceStore";
@@ -2226,6 +2226,41 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           <p className="text-[10px] text-muted-foreground">Tap to repay overdue payments</p>
                         </div>
                         <ChevronRight size={16} className="text-destructive/50" />
+                      </motion.button>
+                    )}
+
+                    {/* Collect Now (manual trigger) */}
+                    {selectedSchedule.is_active && !selectedSchedule.settled && (
+                      <motion.button whileTap={{ scale: 0.96 }}
+                        onClick={async () => {
+                          try {
+                            toast.loading("Processing installment…", { id: "collect-now" });
+                            const { data, error } = await supabase.functions.invoke("process-auto-save", {
+                              body: { schedule_id: selectedSchedule.id },
+                            });
+                            if (error) throw error;
+                            const r = (data ?? {}) as any;
+                            const out = r.perSchedule?.[0]?.outcome as string | undefined;
+                            if (out === "collected") toast.success("Installment collected", { id: "collect-now" });
+                            else if (out === "missed") toast.error("Insufficient balance — marked missed", { id: "collect-now" });
+                            else if (out === "dedup_skipped") toast("Already collected for this cycle", { id: "collect-now" });
+                            else if (out === "settled") toast.success("Plan completed", { id: "collect-now" });
+                            else if (out === "no_goal") toast.error("No active linked goal", { id: "collect-now" });
+                            else toast.success("Done", { id: "collect-now" });
+                            loadAutoSaves(); loadMissedPayments(); loadGoals();
+                          } catch (e: any) {
+                            toast.error(e?.message ?? "Failed to collect", { id: "collect-now" });
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 p-3.5 rounded-[16px] border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <Zap size={18} className="text-primary" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-[13px] font-bold text-primary">Collect Now</p>
+                          <p className="text-[10px] text-muted-foreground">Run this installment immediately</p>
+                        </div>
+                        <ChevronRight size={16} className="text-primary/50" />
                       </motion.button>
                     )}
                   </>

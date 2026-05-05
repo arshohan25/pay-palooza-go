@@ -1791,6 +1791,47 @@ export type Database = {
           },
         ]
       }
+      dps_run_log: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          outcome: string
+          reason: string | null
+          schedule_id: string
+          triggered_by: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          outcome: string
+          reason?: string | null
+          schedule_id: string
+          triggered_by?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          outcome?: string
+          reason?: string | null
+          schedule_id?: string
+          triggered_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dps_run_log_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "savings_auto_save"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_locks: {
         Row: {
           created_at: string

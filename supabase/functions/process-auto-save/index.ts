@@ -3,7 +3,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+type Outcome =
+  | "collected"
+  | "missed"
+  | "settled"
+  | "dedup_skipped"
+  | "no_goal"
+  | "plan_expired"
+  | "schedule_inactive"
+  | "schedule_not_found";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -11,13 +22,14 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const cronSecret = Deno.env.get("ADMIN_METRICS_CRON_SECRET") ?? "";
 
-    // Authorization: cron-secret OR any bearer token (job is idempotent — safe to allow re-triggering)
     const authHeader = req.headers.get("Authorization") ?? "";
     const cronHeader = req.headers.get("x-cron-secret") ?? "";
-    const isCron = cronSecret && cronHeader === cronSecret;
+    const isCron = !!cronSecret && cronHeader === cronSecret;
     const hasBearer = authHeader.startsWith("Bearer ") && authHeader.length > 20;
+
     if (!isCron && !hasBearer) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -25,46 +37,116 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Optional body: { schedule_id?, force? }
+    let body: { schedule_id?: string; force?: boolean } = {};
+    try {
+      if (req.headers.get("content-type")?.includes("application/json")) {
+        body = await req.json();
+      }
+    } catch (_) { /* no body */ }
+
+    // Resolve caller identity (for user/admin manual triggers)
+    let callerUserId: string | null = null;
+    let callerIsAdmin = false;
+    if (!isCron && hasBearer) {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claims } = await userClient.auth.getClaims(token);
+      callerUserId = claims?.claims?.sub ?? null;
+      if (callerUserId) {
+        const admin = createClient(supabaseUrl, serviceKey);
+        const { data: roleRow } = await admin
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", callerUserId)
+          .eq("role", "admin")
+          .maybeSingle();
+        callerIsAdmin = !!roleRow;
+      }
+    }
+
+    const triggeredBy: "cron" | "user" | "admin" = isCron ? "cron" : callerIsAdmin ? "admin" : "user";
+    const force = !!body.force && callerIsAdmin; // only admins can force
+
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Get all due auto-saves
-    const { data: schedules, error: fetchErr } = await supabase
-      .from("savings_auto_save")
-      .select("*")
-      .eq("is_active", true)
-      .lte("next_run_at", new Date().toISOString());
-
+    // Fetch schedules
+    let schedulesQuery = supabase.from("savings_auto_save").select("*");
+    if (body.schedule_id) {
+      schedulesQuery = schedulesQuery.eq("id", body.schedule_id);
+    } else {
+      schedulesQuery = schedulesQuery
+        .eq("is_active", true)
+        .lte("next_run_at", new Date().toISOString());
+    }
+    const { data: schedules, error: fetchErr } = await schedulesQuery;
     if (fetchErr) throw fetchErr;
 
-    let processed = 0;
-    let skipped = 0;
-    let settled = 0;
-    let missed = 0;
-    let dedup = 0;
+    // Authorization for single-schedule manual run
+    if (body.schedule_id && schedules && schedules.length > 0 && !isCron) {
+      const own = schedules[0].user_id === callerUserId;
+      if (!own && !callerIsAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
-    const sendPush = async (user_id: string, title: string, body: string) => {
+    let processed = 0, skipped = 0, settled = 0, missed = 0, dedup = 0;
+    const perSchedule: Array<{ schedule_id: string; outcome: Outcome; reason?: string }> = [];
+
+    const log = async (
+      schedule: any,
+      outcome: Outcome,
+      reason: string,
+      amount: number,
+    ) => {
+      perSchedule.push({ schedule_id: schedule.id, outcome, reason });
+      try {
+        await supabase.from("dps_run_log").insert({
+          schedule_id: schedule.id,
+          user_id: schedule.user_id,
+          outcome,
+          reason,
+          amount,
+          triggered_by: triggeredBy,
+        });
+      } catch (_) { /* best-effort */ }
+    };
+
+    const sendPush = async (user_id: string, title: string, bodyTxt: string) => {
       try {
         await supabase.functions.invoke("send-push-notification", {
-          body: { user_ids: [user_id], title, body, url: "/savings" },
+          body: { user_ids: [user_id], title, body: bodyTxt, url: "/savings" },
         });
       } catch (_) { /* best-effort */ }
     };
 
     for (const schedule of schedules ?? []) {
-      // ─── Idempotency guard ────────────────────────────
-      // If last_run_at is within the cycle window, skip (prevents double-charge on rapid re-invocation)
-      if (schedule.last_run_at) {
+      // Honor inactive when manual single-target
+      if (body.schedule_id && !schedule.is_active && !force) {
+        await log(schedule, "schedule_inactive", "Schedule is paused", 0);
+        skipped++;
+        continue;
+      }
+
+      // Idempotency guard (skip when force=true)
+      if (!force && schedule.last_run_at) {
         const last = new Date(schedule.last_run_at).getTime();
-        const minGap = schedule.frequency === "daily" ? 20 * 60 * 60 * 1000 // 20h
-          : schedule.frequency === "weekly" ? 6 * 24 * 60 * 60 * 1000      // 6d
-          : 27 * 24 * 60 * 60 * 1000;                                       // 27d
+        const minGap = schedule.frequency === "daily" ? 20 * 60 * 60 * 1000
+          : schedule.frequency === "weekly" ? 6 * 24 * 60 * 60 * 1000
+          : 27 * 24 * 60 * 60 * 1000;
         if (Date.now() - last < minGap) {
+          await log(schedule, "dedup_skipped", "Within cycle window", 0);
           dedup++;
           continue;
         }
       }
 
-      // Check if schedule has expired (duration ended)
+      // Plan expired
       if (schedule.ends_at && new Date(schedule.ends_at) <= new Date()) {
         await supabase.from("savings_auto_save").update({
           is_active: false,
@@ -75,18 +157,18 @@ Deno.serve(async (req) => {
         await supabase.from("notifications").insert({
           user_id: schedule.user_id,
           title: "✅ DPS Plan Completed",
-          body: `Your ৳${schedule.amount}/${schedule.frequency} DPS plan has completed its ${schedule.duration || ""} duration. Total paid: ${schedule.total_paid ?? 0} installments.`,
+          body: `Your ৳${schedule.amount}/${schedule.frequency} DPS plan has completed. Total paid: ${schedule.total_paid ?? 0} installments.`,
           category: "savings",
         });
         await sendPush(schedule.user_id, "✅ DPS Plan Completed", `Your DPS plan has finished. ${schedule.total_paid ?? 0} installments paid.`);
 
+        await log(schedule, "settled", "ends_at reached", 0);
         settled++;
         continue;
       }
 
-      // Find the target goal
+      // Find target goal
       let goalId = schedule.goal_id;
-
       if (!goalId) {
         const { data: goals } = await supabase
           .from("savings_goals")
@@ -94,29 +176,21 @@ Deno.serve(async (req) => {
           .eq("user_id", schedule.user_id)
           .eq("status", "active")
           .limit(1);
-
-        if (!goals || goals.length === 0) {
-          goalId = null;
-        } else {
-          goalId = goals[0].id;
-        }
+        goalId = goals && goals.length > 0 ? goals[0].id : null;
       }
 
-      // Check balance
       const { data: profile } = await supabase
         .from("profiles")
         .select("balance")
         .eq("user_id", schedule.user_id)
         .single();
 
-      // Calculate next run regardless of success/failure
       const nextRun = new Date();
       if (schedule.frequency === "daily") nextRun.setDate(nextRun.getDate() + 1);
       else if (schedule.frequency === "weekly") nextRun.setDate(nextRun.getDate() + 7);
       else nextRun.setMonth(nextRun.getMonth() + 1);
 
       if (!profile || Number(profile.balance) < Number(schedule.amount)) {
-        // ═══ MISSED PAYMENT ═══
         await supabase.from("dps_missed_payments").insert({
           schedule_id: schedule.id,
           user_id: schedule.user_id,
@@ -132,33 +206,27 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         }).eq("id", schedule.id);
 
-        const missedTitle = "⚠️ DPS Installment Missed";
-        const missedBody = `Insufficient balance for ৳${schedule.amount} DPS installment. You can repay later from Savings > Active Plans.`;
+        const t = "⚠️ DPS Installment Missed";
+        const b = `Insufficient balance for ৳${schedule.amount} DPS installment. You can repay later from Savings > Active Plans.`;
         await supabase.from("notifications").insert({
-          user_id: schedule.user_id,
-          title: missedTitle,
-          body: missedBody,
-          category: "savings",
+          user_id: schedule.user_id, title: t, body: b, category: "savings",
         });
-        await sendPush(schedule.user_id, missedTitle, missedBody);
-
+        await sendPush(schedule.user_id, t, b);
+        await log(schedule, "missed", "Insufficient balance", Number(schedule.amount));
         missed++;
         continue;
       }
 
-      // ═══ SUCCESSFUL PAYMENT ═══
       if (!goalId) {
+        await log(schedule, "no_goal", "No active linked goal", 0);
         skipped++;
         continue;
       }
 
       const { data: goal } = await supabase
-        .from("savings_goals")
-        .select("*")
-        .eq("id", goalId)
-        .single();
-
+        .from("savings_goals").select("*").eq("id", goalId).single();
       if (!goal || goal.status !== "active") {
+        await log(schedule, "no_goal", "Goal not active", 0);
         skipped++;
         continue;
       }
@@ -168,7 +236,6 @@ Deno.serve(async (req) => {
       const completed = newSaved >= Number(goal.target_amount);
 
       await supabase.from("profiles").update({ balance: newBalance }).eq("user_id", schedule.user_id);
-
       await supabase.from("savings_goals").update({
         saved_amount: newSaved,
         status: completed ? "completed" : "active",
@@ -179,7 +246,7 @@ Deno.serve(async (req) => {
         goal_id: goalId,
         user_id: schedule.user_id,
         amount: schedule.amount,
-        source: "auto",
+        source: triggeredBy === "cron" ? "auto" : "manual",
       });
 
       await supabase.from("transactions").insert({
@@ -201,21 +268,19 @@ Deno.serve(async (req) => {
       }).eq("id", schedule.id);
 
       const successTitle = completed ? "🎉 Goal Completed!" : "✅ DPS Installment Collected";
-      const successBody = `৳${schedule.amount} auto-collected to "${goal.name}"${completed ? " — Goal completed!" : `. Installment ${(schedule.total_paid ?? 0) + 1}/${schedule.total_installments ?? "∞"}`}`;
+      const successBody = `৳${schedule.amount} ${triggeredBy === "cron" ? "auto-collected" : "collected"} to "${goal.name}"${completed ? " — Goal completed!" : `. Installment ${(schedule.total_paid ?? 0) + 1}/${schedule.total_installments ?? "∞"}`}`;
       await supabase.from("notifications").insert({
-        user_id: schedule.user_id,
-        title: successTitle,
-        body: successBody,
-        category: "savings",
+        user_id: schedule.user_id, title: successTitle, body: successBody, category: "savings",
       });
       await sendPush(schedule.user_id, successTitle, successBody);
-
+      await log(schedule, "collected", `Collected to ${goal.name}`, Number(schedule.amount));
       processed++;
     }
 
-    return new Response(JSON.stringify({ processed, skipped, settled, missed, dedup }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ processed, skipped, settled, missed, dedup, triggeredBy, perSchedule, total: (schedules ?? []).length }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
