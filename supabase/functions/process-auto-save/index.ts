@@ -186,6 +186,7 @@ Deno.serve(async (req) => {
       outcome: Outcome,
       reason: string,
       amount: number,
+      extra?: { goal_id?: string | null; goal_name?: string | null; tx_reference?: string | null; transaction_id?: string | null },
     ) => {
       perSchedule.push({ schedule_id: schedule.id, outcome, reason });
       try {
@@ -196,6 +197,10 @@ Deno.serve(async (req) => {
           reason,
           amount,
           triggered_by: triggeredBy,
+          goal_id: extra?.goal_id ?? null,
+          goal_name: extra?.goal_name ?? null,
+          tx_reference: extra?.tx_reference ?? null,
+          transaction_id: extra?.transaction_id ?? null,
         });
       } catch (_) { /* best-effort */ }
     };
@@ -335,16 +340,17 @@ Deno.serve(async (req) => {
         source: triggeredBy === "cron" ? "auto" : "manual",
       });
 
-      await supabase.from("transactions").insert({
+      const txRef = `DPS-INST-${schedule.id.substring(0, 8)}-${(schedule.total_paid ?? 0) + 1}`;
+      const { data: txRow } = await supabase.from("transactions").insert({
         user_id: schedule.user_id,
         type: "payment",
         amount: schedule.amount,
         fee: 0,
         description: `DPS Installment: ${goal.name} (#${(schedule.total_paid ?? 0) + 1})`,
-        reference: `DPS-INST-${schedule.id.substring(0, 8)}-${(schedule.total_paid ?? 0) + 1}`,
+        reference: txRef,
         status: "completed",
         balance_after: newBalance,
-      });
+      }).select("id").single();
 
       await supabase.from("savings_auto_save").update({
         next_run_at: nextRun.toISOString(),
@@ -359,7 +365,12 @@ Deno.serve(async (req) => {
         user_id: schedule.user_id, title: successTitle, body: successBody, category: "savings",
       });
       await sendPush(schedule.user_id, "savings_collected", successTitle, successBody);
-      await log(schedule, "collected", `Collected to ${goal.name}`, Number(schedule.amount));
+      await log(schedule, "collected", `Collected to ${goal.name}`, Number(schedule.amount), {
+        goal_id: goalId,
+        goal_name: goal.name,
+        tx_reference: txRef,
+        transaction_id: txRow?.id ?? null,
+      });
       processed++;
     }
 

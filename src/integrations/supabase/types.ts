@@ -1795,31 +1795,43 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          goal_id: string | null
+          goal_name: string | null
           id: string
           outcome: string
           reason: string | null
           schedule_id: string
+          transaction_id: string | null
           triggered_by: string
+          tx_reference: string | null
           user_id: string
         }
         Insert: {
           amount?: number
           created_at?: string
+          goal_id?: string | null
+          goal_name?: string | null
           id?: string
           outcome: string
           reason?: string | null
           schedule_id: string
+          transaction_id?: string | null
           triggered_by?: string
+          tx_reference?: string | null
           user_id: string
         }
         Update: {
           amount?: number
           created_at?: string
+          goal_id?: string | null
+          goal_name?: string | null
           id?: string
           outcome?: string
           reason?: string | null
           schedule_id?: string
+          transaction_id?: string | null
           triggered_by?: string
+          tx_reference?: string | null
           user_id?: string
         }
         Relationships: [

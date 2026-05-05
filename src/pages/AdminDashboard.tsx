@@ -9,7 +9,7 @@ import {
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
   Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, Shield, Star, Building2, Megaphone, CalendarClock,
-  ShoppingBag, Heart, Bot, Sparkles, Key, Rocket, ClipboardCheck, FileArchive, Palette, Network, Gauge,
+  ShoppingBag, Heart, Bot, Sparkles, Key, Rocket, ClipboardCheck, FileArchive, Palette, Network, Gauge, ScrollText,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -108,6 +108,7 @@ import AdminUserSessions from "@/components/admin/AdminUserSessions";
 import AdminComplaintManager from "@/components/admin/AdminComplaintManager";
 import AdminDeviceManager from "@/components/admin/AdminDeviceManager";
 import AdminAutoSaveMonitor from "@/components/admin/AdminAutoSaveMonitor";
+import AdminDpsAuditTrail from "@/components/admin/AdminDpsAuditTrail";
 import AdminOtpMonitor from "@/components/admin/AdminOtpMonitor";
 import AdminPinHistory from "@/components/admin/AdminPinHistory";
 import AdminCommissionLedger from "@/components/admin/AdminCommissionLedger";
@@ -311,6 +312,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "savings", label: "Savings", icon: Wallet },
       { id: "donation_funds", label: "Donation Funds", icon: Heart },
       { id: "auto_save", label: "Auto-Save", icon: CalendarClock },
+      { id: "dps_audit", label: "DPS Audit Trail", icon: ScrollText },
       { id: "recharge", label: "Recharge", icon: Smartphone },
       { id: "billers", label: "Billers", icon: FileText },
     ],
@@ -2055,6 +2057,7 @@ export default function AdminDashboard() {
 
         {/* ═══ AUTO-SAVE MONITOR ═══ */}
         {activeTab === "auto_save" && <AdminAutoSaveMonitor />}
+        {activeTab === "dps_audit" && <AdminDpsAuditTrail />}
 
         {/* ═══ OTP MONITOR ═══ */}
         {activeTab === "otp_monitor" && <AdminOtpMonitor />}
