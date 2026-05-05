@@ -200,8 +200,14 @@ Deno.serve(async (req) => {
       } catch (_) { /* best-effort */ }
     };
 
-    const sendPush = async (user_id: string, title: string, bodyTxt: string) => {
+    const sendPush = async (user_id: string, category: string, title: string, bodyTxt: string) => {
       try {
+        // Per-user category preference + quiet-hours gate (Asia/Dhaka)
+        const { data: allowed } = await supabase.rpc("should_send_push", {
+          p_user_id: user_id,
+          p_category: category,
+        });
+        if (allowed !== true) return;
         await supabase.functions.invoke("send-push-notification", {
           body: { user_ids: [user_id], title, body: bodyTxt, url: "/savings" },
         });
