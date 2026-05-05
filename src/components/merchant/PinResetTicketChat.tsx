@@ -107,6 +107,13 @@ export default function PinResetTicketChat({
   const requestIdRef = useRef(initialRequestId);
   const expiredHandledRef = useRef(false);
 
+  // Auto-scroll + unread tracking
+  const [atBottom, setAtBottom] = useState(true);
+  const atBottomRef = useRef(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => { atBottomRef.current = atBottom; }, [atBottom]);
+
   useEffect(() => { ticketRef.current = ticket; }, [ticket]);
   useEffect(() => { requestIdRef.current = requestId; }, [requestId]);
 
