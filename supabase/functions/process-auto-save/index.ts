@@ -174,10 +174,7 @@ Deno.serve(async (req) => {
     if (body.schedule_id && schedules && schedules.length > 0 && !isCron) {
       const own = schedules[0].user_id === callerUserId;
       if (!own && !callerIsAdmin) {
-        return new Response(JSON.stringify({ error: "Forbidden" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return jsonError(403, "FORBIDDEN", "You do not own this schedule");
       }
     }
 
