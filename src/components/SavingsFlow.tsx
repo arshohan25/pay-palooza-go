@@ -61,6 +61,7 @@ interface AutoSaveSchedule {
   id: string; goal_id: string | null; frequency: string; amount: number;
   is_active: boolean; next_run_at: string; duration: string | null;
   ends_at: string | null; settled: boolean;
+  created_at?: string; user_id?: string;
   missed_count?: number; total_paid?: number; total_installments?: number;
   strategy?: string; last_missed_at?: string;
 }
@@ -1563,6 +1564,60 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           scheduleMissed.forEach(m => { repaidById[m.id] = !!m.repaid; });
 
                           const timeline: Array<{ id: string; date: string; amount: number; status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending"; goalName?: string | null; goalId?: string | null; note?: string; txReference?: string | null; txId?: string | null; txStatus?: string | null; balanceAfter?: number | null; walletDelta?: number | null; refundReason?: string | null; outcome?: string | null }> = [];
+
+                          const referencedTxRefs = new Set<string>();
+                          (runRows as any[] ?? []).forEach((r: any) => { if (r.tx_reference) referencedTxRefs.add(r.tx_reference); });
+
+                          // ─── Opening deposit ─────────
+                          // The 1st installment is deducted immediately at schedule creation
+                          // and may not have a dps_run_log entry. Surface it explicitly so
+                          // the user can trace where the opening ৳ went.
+                          const scheduleCreatedMs = new Date(schedule.created_at ?? schedule.next_run_at).getTime();
+                          const openingWindowMs = 5 * 60 * 1000; // 5-minute grace
+                          const openingTxs = (txRows ?? []).filter((t: any) => {
+                            if (!t.reference || referencedTxRefs.has(t.reference)) return false;
+                            const ts = new Date(t.created_at).getTime();
+                            return ts >= scheduleCreatedMs - 2000 && ts <= scheduleCreatedMs + openingWindowMs;
+                          });
+                          // Also fetch a fallback opening deposit by short_id pattern when txRows didn't match
+                          // (e.g. legacy `DPS-INST-XXXXXXXX` references without numeric suffix).
+                          const fallbackOpening = await supabase.from("transactions")
+                            .select("id, reference, status, amount, balance_after, description, created_at")
+                            .eq("user_id", schedule.user_id ?? (await supabase.auth.getUser()).data.user?.id ?? "")
+                            .like("reference", "DPS-INST-%")
+                            .gte("created_at", new Date(scheduleCreatedMs - 2000).toISOString())
+                            .lte("created_at", new Date(scheduleCreatedMs + openingWindowMs).toISOString())
+                            .order("created_at", { ascending: true })
+                            .limit(5);
+                          const seenOpeningIds = new Set(openingTxs.map((t: any) => t.id));
+                          (fallbackOpening.data ?? []).forEach((t: any) => {
+                            if (!referencedTxRefs.has(t.reference) && !seenOpeningIds.has(t.id)) {
+                              openingTxs.push(t);
+                              seenOpeningIds.add(t.id);
+                            }
+                          });
+
+                          openingTxs.forEach((tx: any, idx: number) => {
+                            const refunded = tx.status === "reversed" || tx.status === "refunded";
+                            timeline.push({
+                              id: `opening-${tx.id}`,
+                              date: tx.created_at,
+                              amount: Number(tx.amount),
+                              status: refunded ? "refunded" : "processed",
+                              goalName: linkedGoal?.name ?? null,
+                              goalId: linkedGoal?.id ?? null,
+                              txReference: tx.reference,
+                              txId: tx.id,
+                              txStatus: tx.status,
+                              balanceAfter: tx.balance_after ?? null,
+                              walletDelta: refunded ? Number(tx.amount) : -Number(tx.amount),
+                              refundReason: refunded ? (tx.description ?? "Reversed by system") : null,
+                              outcome: "opening_deposit",
+                              note: refunded
+                                ? `Opening deposit • Refunded to wallet${tx.description ? ` — ${tx.description}` : ""}`
+                                : "Opening deposit (1st installment, deducted at plan creation)",
+                            });
+                          });
 
                           (runRows as any[] ?? []).forEach((r: any) => {
                             const ref = r.tx_reference as string | null;
