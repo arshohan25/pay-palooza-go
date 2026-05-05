@@ -26,6 +26,32 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
+// ─── Date formatting (user's local timezone) ─────────────────────────
+const USER_TIMEZONE = (() => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Dhaka"; }
+  catch { return "Asia/Dhaka"; }
+})();
+const USER_TZ_ABBR = (() => {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: USER_TIMEZONE, timeZoneName: "short" }).formatToParts(new Date());
+    return parts.find(p => p.type === "timeZoneName")?.value ?? "";
+  } catch { return ""; }
+})();
+function formatInstallmentDate(d: string | Date, opts: { withTime?: boolean; long?: boolean } = {}) {
+  const { withTime = true, long = false } = opts;
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (isNaN(date.getTime())) return "—";
+  const fmt: Intl.DateTimeFormatOptions = {
+    timeZone: USER_TIMEZONE,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    ...(long ? { weekday: "short" } : {}),
+    ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
+  };
+  return date.toLocaleString("en-GB", fmt);
+}
+
 // ─── Types ───────────────────────────────────────────────────────────
 interface SavingsGoal {
   id: string; name: string; emoji: string;
@@ -2467,7 +2493,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                             return { node: "border-muted-foreground/40 border-dashed", branch: "bg-muted-foreground/20", amount: "text-muted-foreground", label: "Pending", icon: <CalendarClock size={8} /> };
                         }
                       })();
-                      const dateStr = new Date(item.date).toLocaleString("en-BD", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                      const dateStr = `${formatInstallmentDate(item.date)}${USER_TZ_ABBR ? ` ${USER_TZ_ABBR}` : ""}`;
                       const detailBlock = (
                         <div className={`inline-flex flex-col gap-0.5 ${isRight ? "items-start" : "items-end"}`}>
                           <p className={`text-[15px] font-black tracking-tight ${palette.amount}`}>৳{item.amount.toLocaleString()}</p>
@@ -3184,7 +3210,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     Installment Details
                   </DialogTitle>
                   <DialogDescription className="text-[11px]">
-                    {new Date(item.date).toLocaleString("en-BD", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {formatInstallmentDate(item.date, { long: true })}{USER_TZ_ABBR ? ` • ${USER_TZ_ABBR}` : ""} ({USER_TIMEZONE})
                   </DialogDescription>
                 </DialogHeader>
 
