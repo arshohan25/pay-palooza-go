@@ -589,14 +589,18 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
         }
         await supabase.from("dps_missed_payments" as any).update({ repaid: true, repaid_at: new Date().toISOString() }).eq("id", mp.id);
       }
-      if (repayScheduleId) {
-        const schedule = autoSaves.find(a => a.id === repayScheduleId);
-        if (schedule) {
-          await supabase.from("savings_auto_save").update({
-            total_paid: (schedule.total_paid ?? 0) + toRepay.length,
-            missed_count: Math.max(0, (schedule.missed_count ?? 0) - toRepay.length),
-          } as any).eq("id", repayScheduleId);
-        }
+      // Aggregate repayments per schedule and update counters for each
+      const bySchedule = new Map<string, number>();
+      for (const mp of toRepay) {
+        bySchedule.set(mp.schedule_id, (bySchedule.get(mp.schedule_id) ?? 0) + 1);
+      }
+      for (const [scheduleId, count] of bySchedule) {
+        const schedule = autoSaves.find(a => a.id === scheduleId);
+        if (!schedule) continue;
+        await supabase.from("savings_auto_save").update({
+          total_paid: (schedule.total_paid ?? 0) + count,
+          missed_count: Math.max(0, (schedule.missed_count ?? 0) - count),
+        } as any).eq("id", scheduleId);
       }
       await fetchBalance();
       loadMissedPayments(); loadAutoSaves();
