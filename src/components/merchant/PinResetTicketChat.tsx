@@ -557,7 +557,15 @@ export default function PinResetTicketChat({
                     )}
                     <div
                       className={`mt-0.5 flex items-center gap-1 ${isMe ? "justify-end" : ""}`}
-                      title={isMe && msg.read_by_admin ? fullSeenTitle : undefined}
+                      title={
+                        isMe
+                          ? isPending
+                            ? "Sending…"
+                            : msg.read_by_admin
+                              ? fullSeenTitle ?? "Delivered & read by support"
+                              : "Sent"
+                          : undefined
+                      }
                     >
                       {isMe && isLastOwn && msg.read_by_admin && seenLabel && (
                         <span className="mr-0.5 text-[9.5px] font-medium tracking-wide text-cyan-100">
@@ -569,11 +577,11 @@ export default function PinResetTicketChat({
                       </span>
                       {isMe &&
                         (isPending ? (
-                          <Loader2 size={10} className="animate-spin text-primary-foreground/65" />
+                          <Loader2 size={10} className="animate-spin text-primary-foreground/65" aria-label="Sending" />
                         ) : msg.read_by_admin ? (
-                          <CheckCheck size={11} className="text-cyan-200" />
+                          <CheckCheck size={11} className="text-cyan-200" aria-label="Delivered & read" />
                         ) : (
-                          <Check size={11} className="text-primary-foreground/55" />
+                          <CheckCheck size={11} className="text-primary-foreground/55" aria-label="Sent" />
                         ))}
                     </div>
                   </div>
