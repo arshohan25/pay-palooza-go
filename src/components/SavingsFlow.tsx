@@ -3210,7 +3210,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     Installment Details
                   </DialogTitle>
                   <DialogDescription className="text-[11px]">
-                    {new Date(item.date).toLocaleString("en-BD", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {formatInstallmentDate(item.date, { long: true })}{USER_TZ_ABBR ? ` • ${USER_TZ_ABBR}` : ""} ({USER_TIMEZONE})
                   </DialogDescription>
                 </DialogHeader>
 
