@@ -465,9 +465,11 @@ export default function PinResetTicketChat({
       </div>
 
       {/* Messages */}
+      <div className="relative flex-1 min-h-0">
       <div
         ref={scrollRef}
-        className="flex-1 space-y-2 overflow-y-auto pb-3 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        onScroll={handleScroll}
+        className="absolute inset-0 space-y-2 overflow-y-auto pb-3 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{
           paddingLeft: "max(env(safe-area-inset-left), 1.25rem)",
           paddingRight: "max(env(safe-area-inset-right), 1.25rem)",
