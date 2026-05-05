@@ -242,7 +242,15 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   // ─── Detail view state ────────
   const [selectedSchedule, setSelectedSchedule] = useState<AutoSaveSchedule | null>(null);
   const [goalDeposits, setGoalDeposits] = useState<Array<{ id: string; amount: number; source: string; created_at: string }>>([]);
-  const [dpsTimeline, setDpsTimeline] = useState<Array<{ id: string; date: string; amount: number; type: "paid" | "missed"; repaid?: boolean }>>([]);
+  const [dpsTimeline, setDpsTimeline] = useState<Array<{
+    id: string;
+    date: string;
+    amount: number;
+    status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending";
+    goalName?: string | null;
+    note?: string;
+    txReference?: string | null;
+  }>>([]);
 
 
   // ─── PIN state (shared across all confirm actions) ────────
@@ -1497,11 +1505,90 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         onClick={async () => {
                           setSelectedSchedule(schedule);
                           const linkedGoal = goals.find(g => g.id === schedule.goal_id);
-                          const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", schedule.goal_id || "").order("created_at", { ascending: true });
+                          // Source the timeline from the authoritative run-log so we always
+                          // know exactly what happened (collected / missed / no_goal / skipped)
+                          // and which goal was credited. Also pull wallet transactions to detect refunds.
+                          const [{ data: runRows }, { data: txRows }] = await Promise.all([
+                            (supabase.from as any)("dps_run_log")
+                              .select("*")
+                              .eq("schedule_id", schedule.id)
+                              .order("created_at", { ascending: true })
+                              .limit(500),
+                            supabase.from("transactions")
+                              .select("id, reference, status, amount, created_at")
+                              .like("reference", `DPS-INST-${schedule.id.substring(0, 8)}-%`)
+                              .order("created_at", { ascending: true })
+                              .limit(500),
+                          ]);
+                          const txByRef: Record<string, any> = {};
+                          (txRows ?? []).forEach((t: any) => { if (t.reference) txByRef[t.reference] = t; });
+
                           const scheduleMissed = missedPayments.filter(m => m.schedule_id === schedule.id);
-                          const timeline: Array<{ id: string; date: string; amount: number; type: "paid" | "missed"; repaid?: boolean }> = [];
-                          (deps as any[] ?? []).forEach((d: any) => timeline.push({ id: d.id, date: d.created_at, amount: Number(d.amount), type: "paid" }));
-                          scheduleMissed.forEach(m => timeline.push({ id: m.id, date: m.due_date, amount: Number(m.amount), type: "missed", repaid: m.repaid }));
+                          const repaidById: Record<string, boolean> = {};
+                          scheduleMissed.forEach(m => { repaidById[m.id] = !!m.repaid; });
+
+                          const timeline: Array<{ id: string; date: string; amount: number; status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending"; goalName?: string | null; note?: string; txReference?: string | null }> = [];
+
+                          (runRows as any[] ?? []).forEach((r: any) => {
+                            const ref = r.tx_reference as string | null;
+                            const tx = ref ? txByRef[ref] : null;
+                            const refunded = tx && (tx.status === "reversed" || tx.status === "refunded");
+                            if (r.outcome === "collected") {
+                              timeline.push({
+                                id: r.id, date: r.created_at, amount: Number(r.amount),
+                                status: refunded ? "refunded" : "processed",
+                                goalName: r.goal_name ?? linkedGoal?.name ?? null,
+                                txReference: ref,
+                                note: refunded ? "Refunded to wallet" : undefined,
+                              });
+                            } else if (r.outcome === "missed") {
+                              timeline.push({
+                                id: r.id, date: r.created_at, amount: Number(r.amount),
+                                status: "missed",
+                                goalName: r.goal_name ?? linkedGoal?.name ?? null,
+                                note: r.reason ?? "Insufficient balance",
+                              });
+                            } else if (r.outcome === "no_goal" || r.outcome === "schedule_inactive" || r.outcome === "dedup_skipped" || r.outcome === "plan_expired") {
+                              timeline.push({
+                                id: r.id, date: r.created_at, amount: Number(r.amount || 0),
+                                status: "skipped",
+                                note: r.reason ?? r.outcome,
+                              });
+                            }
+                          });
+
+                          // Mark missed entries that have since been repaid (legacy missed_payments table)
+                          scheduleMissed.forEach(m => {
+                            if (!m.repaid) return;
+                            timeline.push({
+                              id: `repaid-${m.id}`, date: m.due_date, amount: Number(m.amount),
+                              status: "repaid", goalName: linkedGoal?.name ?? null,
+                              note: "Caught up later",
+                            });
+                          });
+
+                          // Project upcoming pending installments (next N cycles up to total_installments)
+                          const totalInst = schedule.total_installments ?? 0;
+                          const paid = schedule.total_paid ?? 0;
+                          const remaining = Math.max(0, totalInst - paid);
+                          if (schedule.is_active && !schedule.settled && schedule.next_run_at && remaining > 0) {
+                            const stepMs = schedule.frequency === "daily" ? 86400000
+                              : schedule.frequency === "weekly" ? 7 * 86400000
+                              : 30 * 86400000;
+                            let cursor = new Date(schedule.next_run_at).getTime();
+                            const projectCount = Math.min(remaining, 12);
+                            for (let i = 0; i < projectCount; i++) {
+                              timeline.push({
+                                id: `pending-${schedule.id}-${i}`,
+                                date: new Date(cursor).toISOString(),
+                                amount: Number(schedule.amount),
+                                status: "pending",
+                                goalName: linkedGoal?.name ?? null,
+                              });
+                              cursor += stepMs;
+                            }
+                          }
+
                           timeline.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                           setDpsTimeline(timeline);
                           setStep("dps-detail");
@@ -2291,62 +2378,69 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/60 via-primary/25 to-transparent rounded-full" />
                     {dpsTimeline.map((item, i) => {
                       const isRight = (i * 7 + 3) % 2 === 1;
-                      const nodeColor = item.type === "paid" ? "border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.35)]"
-                        : item.repaid ? "border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.35)]"
-                        : "border-destructive shadow-[0_0_8px_hsl(var(--destructive)/0.35)]";
-                      const branchColor = item.type === "paid" ? "bg-emerald-500/30" : item.repaid ? "bg-amber-500/30" : "bg-destructive/30";
-                      const amountColor = item.type === "paid" ? "text-emerald-600 dark:text-emerald-400" : item.repaid ? "text-amber-600 dark:text-amber-400" : "text-destructive";
+                      const palette = (() => {
+                        switch (item.status) {
+                          case "processed":
+                            return { node: "border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.35)]", branch: "bg-emerald-500/30", amount: "text-emerald-600 dark:text-emerald-400", label: "Processed", icon: <CheckCircle2 size={8} /> };
+                          case "repaid":
+                            return { node: "border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.35)]", branch: "bg-amber-500/30", amount: "text-amber-600 dark:text-amber-400", label: "Repaid", icon: <RefreshCw size={8} /> };
+                          case "refunded":
+                            return { node: "border-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.35)]", branch: "bg-sky-500/30", amount: "text-sky-600 dark:text-sky-400", label: "Refunded", icon: <RefreshCw size={8} /> };
+                          case "missed":
+                            return { node: "border-destructive shadow-[0_0_8px_hsl(var(--destructive)/0.35)]", branch: "bg-destructive/30", amount: "text-destructive", label: "Missed", icon: <AlertTriangle size={8} /> };
+                          case "skipped":
+                            return { node: "border-muted-foreground/60", branch: "bg-muted-foreground/20", amount: "text-muted-foreground", label: "Skipped", icon: <AlertTriangle size={8} /> };
+                          case "pending":
+                          default:
+                            return { node: "border-muted-foreground/40 border-dashed", branch: "bg-muted-foreground/20", amount: "text-muted-foreground", label: "Pending", icon: <CalendarClock size={8} /> };
+                        }
+                      })();
+                      const dateStr = new Date(item.date).toLocaleString("en-BD", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                      const detailBlock = (
+                        <div className={`inline-flex flex-col gap-0.5 ${isRight ? "items-start" : "items-end"}`}>
+                          <p className={`text-[15px] font-black tracking-tight ${palette.amount}`}>৳{item.amount.toLocaleString()}</p>
+                          <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-wider inline-flex items-center gap-0.5">
+                            {palette.icon} {palette.label}
+                          </p>
+                          {item.goalName && (
+                            <p className="text-[9px] font-semibold text-primary/80 truncate max-w-[120px]" title={item.goalName}>
+                              → {item.goalName}
+                            </p>
+                          )}
+                          {item.note && (
+                            <p className="text-[9px] text-muted-foreground/80 truncate max-w-[140px]" title={item.note}>
+                              {item.note}
+                            </p>
+                          )}
+                          {item.txReference && (
+                            <p className="text-[8px] font-mono text-muted-foreground/60 truncate max-w-[140px]" title={item.txReference}>
+                              {item.txReference}
+                            </p>
+                          )}
+                        </div>
+                      );
 
                       return (
                         <motion.div key={item.id}
                           initial={{ opacity: 0, x: isRight ? 20 : -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.08, type: "spring", stiffness: 350, damping: 28 }}
-                          className="relative flex items-center mb-8 last:mb-0 min-h-[36px]"
+                          transition={{ delay: Math.min(i * 0.06, 0.6), type: "spring", stiffness: 350, damping: 28 }}
+                          className={`relative flex items-center mb-8 last:mb-0 min-h-[36px] ${item.status === "pending" ? "opacity-70" : ""}`}
                         >
-                          {/* Left side */}
                           <div className="w-[42%] text-right pr-6">
                             {isRight ? (
-                              <p className="text-[11px] font-semibold text-muted-foreground leading-tight">
-                                {new Date(item.date).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
-                              </p>
-                            ) : (
-                              <div className="inline-flex flex-col items-end gap-0.5">
-                                <p className={`text-[15px] font-black tracking-tight ${amountColor}`}>৳{item.amount.toLocaleString()}</p>
-                                <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-wider inline-flex items-center gap-0.5">
-                                  {item.type === "paid" ? <><CheckCircle2 size={8} /> Paid</> 
-                                  : item.repaid ? <><RefreshCw size={8} /> Repaid</>
-                                  : <><AlertTriangle size={8} /> Missed</>}
-                                </p>
-                              </div>
-                            )}
+                              <p className="text-[11px] font-semibold text-muted-foreground leading-tight">{dateStr}</p>
+                            ) : detailBlock}
                           </div>
-
-                          {/* Center: node */}
                           <div className="absolute left-1/2 -translate-x-1/2 z-10">
-                            <div className={`w-3.5 h-3.5 rounded-full border-[2.5px] bg-card ${nodeColor}`} />
+                            <div className={`w-3.5 h-3.5 rounded-full border-[2.5px] bg-card ${palette.node}`} />
                           </div>
-
-                          {/* Branch line */}
-                          <div className={`absolute top-1/2 -translate-y-1/2 h-[1.5px] ${branchColor} ${
+                          <div className={`absolute top-1/2 -translate-y-1/2 h-[1.5px] ${palette.branch} ${
                             isRight ? "left-[calc(50%+8px)] w-6" : "right-[calc(50%+8px)] w-6"
                           }`} />
-
-                          {/* Right side */}
                           <div className="w-[42%] ml-auto pl-6">
-                            {isRight ? (
-                              <div className="inline-flex flex-col items-start gap-0.5">
-                                <p className={`text-[15px] font-black tracking-tight ${amountColor}`}>৳{item.amount.toLocaleString()}</p>
-                                <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-wider inline-flex items-center gap-0.5">
-                                  {item.type === "paid" ? <><CheckCircle2 size={8} /> Paid</> 
-                                  : item.repaid ? <><RefreshCw size={8} /> Repaid</>
-                                  : <><AlertTriangle size={8} /> Missed</>}
-                                </p>
-                              </div>
-                            ) : (
-                              <p className="text-[11px] font-semibold text-muted-foreground leading-tight">
-                                {new Date(item.date).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
-                              </p>
+                            {isRight ? detailBlock : (
+                              <p className="text-[11px] font-semibold text-muted-foreground leading-tight">{dateStr}</p>
                             )}
                           </div>
                         </motion.div>
