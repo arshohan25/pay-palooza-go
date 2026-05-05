@@ -365,7 +365,12 @@ Deno.serve(async (req) => {
         user_id: schedule.user_id, title: successTitle, body: successBody, category: "savings",
       });
       await sendPush(schedule.user_id, "savings_collected", successTitle, successBody);
-      await log(schedule, "collected", `Collected to ${goal.name}`, Number(schedule.amount));
+      await log(schedule, "collected", `Collected to ${goal.name}`, Number(schedule.amount), {
+        goal_id: goalId,
+        goal_name: goal.name,
+        tx_reference: txRef,
+        transaction_id: txRow?.id ?? null,
+      });
       processed++;
     }
 
