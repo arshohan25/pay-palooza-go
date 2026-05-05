@@ -16,6 +16,43 @@ type Outcome =
   | "schedule_inactive"
   | "schedule_not_found";
 
+function jsonError(status: number, code: string, message: string): Response {
+  return new Response(JSON.stringify({ error: { code, message } }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+// Constant-time string comparison to avoid timing attacks on the cron secret
+function safeEq(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
+
+// In-memory rate limit for `force` runs (per-instance only — best-effort).
+// Key: `${actor}:${scope}` -> last-run timestamp (ms).
+const FORCE_COOLDOWN_MS = 30_000; // 30s between forced runs per admin per scope
+const forceLastRun = new Map<string, number>();
+function checkForceRateLimit(actor: string, scope: string): { ok: boolean; retryAfterMs: number } {
+  const key = `${actor}:${scope}`;
+  const now = Date.now();
+  const last = forceLastRun.get(key) ?? 0;
+  const delta = now - last;
+  if (delta < FORCE_COOLDOWN_MS) {
+    return { ok: false, retryAfterMs: FORCE_COOLDOWN_MS - delta };
+  }
+  forceLastRun.set(key, now);
+  // Opportunistic cleanup
+  if (forceLastRun.size > 500) {
+    for (const [k, t] of forceLastRun) {
+      if (now - t > 10 * 60_000) forceLastRun.delete(k);
+    }
+  }
+  return { ok: true, retryAfterMs: 0 };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -25,19 +62,27 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const cronSecret = Deno.env.get("ADMIN_METRICS_CRON_SECRET") ?? "";
 
+    if (!serviceKey || !anonKey) {
+      return jsonError(500, "MISCONFIGURED", "Server is missing required configuration");
+    }
+
     const authHeader = req.headers.get("Authorization") ?? "";
     const cronHeader = req.headers.get("x-cron-secret") ?? "";
-    const isCron = !!cronSecret && cronHeader === cronSecret;
+
+    // Cron auth: require a configured secret AND constant-time match.
+    // A bearer header MUST NOT be used to escalate to cron privileges.
+    const isCron =
+      cronSecret.length >= 16 &&
+      cronHeader.length > 0 &&
+      safeEq(cronHeader, cronSecret);
+
     const hasBearer = authHeader.startsWith("Bearer ") && authHeader.length > 20;
 
     if (!isCron && !hasBearer) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonError(401, "UNAUTHORIZED", "Unauthorized");
     }
 
-    // Optional body: { schedule_id?, force? }
+    // Parse optional body: { schedule_id?, force? }
     let body: { schedule_id?: string; force?: boolean } = {};
     try {
       if (req.headers.get("content-type")?.includes("application/json")) {
@@ -45,7 +90,15 @@ Deno.serve(async (req) => {
       }
     } catch (_) { /* no body */ }
 
-    // Resolve caller identity (for user/admin manual triggers)
+    if (body.schedule_id !== undefined && typeof body.schedule_id !== "string") {
+      return jsonError(400, "BAD_REQUEST", "schedule_id must be a string");
+    }
+    if (body.schedule_id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.schedule_id)) {
+      return jsonError(400, "BAD_REQUEST", "schedule_id must be a UUID");
+    }
+
+    // Resolve caller identity (for user/admin manual triggers).
+    // Cron callers are NEVER treated as admins, even if a bearer is also present.
     let callerUserId: string | null = null;
     let callerIsAdmin = false;
     if (!isCron && hasBearer) {
@@ -53,22 +106,55 @@ Deno.serve(async (req) => {
         global: { headers: { Authorization: authHeader } },
       });
       const token = authHeader.replace("Bearer ", "");
-      const { data: claims } = await userClient.auth.getClaims(token);
-      callerUserId = claims?.claims?.sub ?? null;
-      if (callerUserId) {
-        const admin = createClient(supabaseUrl, serviceKey);
-        const { data: roleRow } = await admin
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", callerUserId)
-          .eq("role", "admin")
-          .maybeSingle();
-        callerIsAdmin = !!roleRow;
+      const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
+      if (claimsErr || !claims?.claims?.sub) {
+        return jsonError(401, "UNAUTHORIZED", "Invalid or expired token");
       }
+      callerUserId = claims.claims.sub;
+      const admin = createClient(supabaseUrl, serviceKey);
+      const { data: roleRow, error: roleErr } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", callerUserId)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (roleErr) {
+        return jsonError(500, "INTERNAL_ERROR", "Failed to resolve role");
+      }
+      callerIsAdmin = !!roleRow;
     }
 
     const triggeredBy: "cron" | "user" | "admin" = isCron ? "cron" : callerIsAdmin ? "admin" : "user";
-    const force = !!body.force && callerIsAdmin; // only admins can force
+
+    // `force` is admin-only. Reject (don't silently downgrade) so callers see the failure.
+    if (body.force && !callerIsAdmin) {
+      return jsonError(403, "FORBIDDEN_ADMIN_REQUIRED", "force requires admin role");
+    }
+    const force = !!body.force && callerIsAdmin;
+
+    // Rate-limit forced runs per-admin (best-effort, per-instance).
+    if (force) {
+      const scope = body.schedule_id ?? "all";
+      const rl = checkForceRateLimit(callerUserId ?? "anon", scope);
+      if (!rl.ok) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              code: "RATE_LIMITED",
+              message: `Forced runs are limited to one per ${Math.round(FORCE_COOLDOWN_MS / 1000)}s per scope`,
+            },
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)),
+            },
+          },
+        );
+      }
+    }
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
