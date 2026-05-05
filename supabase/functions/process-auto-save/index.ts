@@ -300,7 +300,7 @@ Deno.serve(async (req) => {
         await supabase.from("notifications").insert({
           user_id: schedule.user_id, title: t, body: b, category: "savings",
         });
-        await sendPush(schedule.user_id, t, b);
+        await sendPush(schedule.user_id, "savings_missed", t, b);
         await log(schedule, "missed", "Insufficient balance", Number(schedule.amount));
         missed++;
         continue;
