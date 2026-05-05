@@ -135,10 +135,22 @@ export default function PinResetTicketChat({
     return () => window.removeEventListener("pin-reset-request-resolved", onResolved);
   }, [requestId]);
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((smooth = false) => {
     requestAnimationFrame(() => {
-      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const el = scrollRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+      setUnreadCount(0);
     });
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const isBottom = distance < 60;
+    setAtBottom(isBottom);
+    if (isBottom) setUnreadCount(0);
   }, []);
 
   const handleExpiry = useCallback(() => {
