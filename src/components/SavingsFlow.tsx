@@ -249,9 +249,17 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     amount: number;
     status: "processed" | "missed" | "repaid" | "refunded" | "skipped" | "pending";
     goalName?: string | null;
+    goalId?: string | null;
     note?: string;
     txReference?: string | null;
+    txId?: string | null;
+    txStatus?: string | null;
+    balanceAfter?: number | null;
+    walletDelta?: number | null;
+    refundReason?: string | null;
+    outcome?: string | null;
   }>>([]);
+  const [selectedInstallment, setSelectedInstallment] = useState<null | (typeof dpsTimeline)[number]>(null);
 
 
   // ─── PIN state (shared across all confirm actions) ────────
