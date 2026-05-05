@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-// Mock supabase client
-const invoke = vi.fn().mockResolvedValue({
-  data: { processed: 1, missed: 0, dedup: 0, settled: 0, perSchedule: [{ schedule_id: "s1", outcome: "collected" }] },
-  error: null,
-});
+const { invoke } = vi.hoisted(() => ({
+  invoke: vi.fn().mockResolvedValue({
+    data: { processed: 1, missed: 0, dedup: 0, settled: 0, perSchedule: [{ schedule_id: "s1", outcome: "collected" }] },
+    error: null,
+  }),
+}));
 
 const baseScheds = [
   {
