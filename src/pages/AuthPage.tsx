@@ -1016,24 +1016,32 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 </div>
               </motion.div>
 
-              {/* Spacer */}
-              <div className="flex-1" />
-
-              {/* Footer actions — frosted glass bar */}
+              {/* Forgot PIN — directly under PIN, modern minimal */}
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.55, duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-                className="flex items-center gap-4 px-5 py-2.5 rounded-2xl bg-white/[0.06] backdrop-blur-sm border border-white/[0.08]"
+                transition={{ delay: 0.5, duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+                className="mt-5 flex items-center gap-3"
               >
-                <button onClick={() => { setPin(""); setOtp(""); handleForgotSendOtp(); }}
-                  className="text-[11px] text-white/40 hover:text-white/70 transition-colors font-semibold">{forgotOtpSending ? t.sending : t.forgotPin}</button>
-                <div className="w-px h-3 bg-white/12" />
-                <button onClick={() => setShowPin(v => !v)}
-                  className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/70 transition-colors font-semibold">
+                <button
+                  onClick={() => { setPin(""); setOtp(""); handleForgotSendOtp(); }}
+                  className="group inline-flex items-center gap-1.5 text-[12px] font-medium transition-colors"
+                >
+                  <span className="text-white/50">{forgotOtpSending ? t.sending : t.forgotPin}</span>
+                  <span className="font-semibold text-white underline-offset-4 group-hover:underline">{t.reset} Now</span>
+                  <ArrowRight size={12} className="text-white transition-transform group-hover:translate-x-0.5" />
+                </button>
+                <span className="h-3 w-px bg-white/15" />
+                <button
+                  onClick={() => setShowPin(v => !v)}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-white/40 hover:text-white/75 transition-colors"
+                >
                   {showPin ? <EyeOff size={11} /> : <Eye size={11} />} {showPin ? t.hidePin : t.showPin}
                 </button>
               </motion.div>
+
+              {/* Spacer */}
+              <div className="flex-1" />
             </div>
           </motion.div>
         )}
