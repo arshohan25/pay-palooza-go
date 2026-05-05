@@ -77,7 +77,7 @@ describe("AdminAutoSaveMonitor", () => {
 
   it("renders schedule rows and run logs", async () => {
     render(<AdminAutoSaveMonitor />);
-    expect(await screen.findByText(/Alice/)).toBeInTheDocument();
+    expect(await screen.findAllByText(/Alice/)).toBeInTheDocument();
     expect(screen.getByText(/Bob/)).toBeInTheDocument();
     expect(screen.getByText(/2 \/ 30/)).toBeInTheDocument();
     expect(screen.getByText(/Recent processing runs/)).toBeInTheDocument();
@@ -86,7 +86,7 @@ describe("AdminAutoSaveMonitor", () => {
 
   it("triggers process-auto-save with force=true when 'Run now' clicked", async () => {
     render(<AdminAutoSaveMonitor />);
-    await screen.findByText(/Alice/);
+    await screen.findAllByText(/Alice/);
     // Find the "Run now" buttons (Play icon). Use title attribute.
     const runButtons = screen.getAllByTitle("Run now");
     fireEvent.click(runButtons[0]);
@@ -97,7 +97,7 @@ describe("AdminAutoSaveMonitor", () => {
 
   it("triggers cron tick (no schedule_id) when 'Run cron tick' clicked", async () => {
     render(<AdminAutoSaveMonitor />);
-    await screen.findByText(/Alice/);
+    await screen.findAllByText(/Alice/);
     fireEvent.click(screen.getByRole("button", { name: /Run cron tick/i }));
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("process-auto-save", { body: {} });
