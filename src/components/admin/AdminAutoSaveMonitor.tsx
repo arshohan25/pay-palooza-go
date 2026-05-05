@@ -32,6 +32,18 @@ const OUTCOME_COLOR: Record<string, string> = {
   schedule_inactive: "bg-muted text-muted-foreground",
 };
 
+const RETRYABLE_OUTCOMES = new Set(["missed", "no_goal"]);
+const MAX_RETRY_ATTEMPTS = 5;
+const BASE_BACKOFF_MS = 30_000; // 30s, doubles each attempt
+const MAX_BACKOFF_MS = 15 * 60_000; // cap 15min
+
+type RetryState = {
+  attempt: number;
+  nextAt: number;
+  lastOutcome: string;
+  lastReason: string;
+};
+
 export default function AdminAutoSaveMonitor() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
@@ -44,6 +56,15 @@ export default function AdminAutoSaveMonitor() {
   const [search, setSearch] = useState("");
   const [drawer, setDrawer] = useState<Schedule | null>(null);
   const [drawerLogs, setDrawerLogs] = useState<RunLog[]>([]);
+  const [retries, setRetries] = useState<Record<string, RetryState>>({});
+  const retryTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [tick, setTick] = useState(0); // forces countdown re-render every second
+
+  // 1Hz tick for countdown labels
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
