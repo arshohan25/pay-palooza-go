@@ -199,7 +199,7 @@ const LIFE_GOAL_PRESETS = [
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "goals" | "gold" | "stocks";
-type SavingsStep = "home" | "add" | "create" | "autosave" | "dps-create" | "review" | "goal-review" | "terms" | "detail" | "pick-goal" | "repay-missed" | "goal-detail" | "dps-detail";
+type SavingsStep = "home" | "add" | "create" | "autosave" | "dps-create" | "review" | "goal-review" | "terms" | "detail" | "pick-goal" | "repay-missed" | "goal-detail" | "dps-detail" | "collect-now";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
 
@@ -711,7 +711,35 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     } finally { setProcessing(false); }
   };
 
-  // ─── Gold handlers ────────
+  // ─── Collect Now (manual installment trigger) — PIN gated ────────
+  const handleCollectNow = async () => {
+    if (!selectedSchedule) return;
+    setProcessing(true); setError(""); setPinError("");
+    try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+      const { data, error: invErr } = await supabase.functions.invoke("process-auto-save", {
+        body: { schedule_id: selectedSchedule.id },
+      });
+      if (invErr) throw invErr;
+      const r = (data ?? {}) as any;
+      const out = r.perSchedule?.[0]?.outcome as string | undefined;
+      if (out === "collected") toast.success("Installment collected");
+      else if (out === "missed") toast.error("Insufficient balance — marked missed");
+      else if (out === "dedup_skipped") toast("Already collected for this cycle");
+      else if (out === "settled") toast.success("Plan completed");
+      else if (out === "no_goal") toast.error("No active linked goal");
+      else toast.success("Done");
+      await fetchBalance();
+      loadAutoSaves(); loadMissedPayments(); loadGoals();
+      setPin(""); setPinError("");
+      setStep("dps-detail");
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to collect");
+    } finally {
+      setProcessing(false);
+    }
+  };
   const currentGoldPrice = goldKarat === "24k" ? LIVE_GOLD_24K_PRICE : LIVE_GOLD_PRICE;
 
   const handleBuyGold = async () => {
@@ -855,6 +883,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       else if (step === "dps-create") { setStep("autosave"); }
       else if (step === "repay-missed") { setPin(""); setPinError(""); setSelectedMissedIds([]); setStep("autosave"); }
       else if (step === "dps-detail") { setStep("autosave"); setSelectedSchedule(null); }
+      else if (step === "collect-now") { setPin(""); setPinError(""); setStep("dps-detail"); }
       else if (step === "home") onClose();
       else setStep("home");
     } else if (mainTab === "goals") {
@@ -2356,7 +2385,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 const totalInst = selectedSchedule.total_installments ?? 0;
                 const paid = selectedSchedule.total_paid ?? 0;
                 const missed = selectedSchedule.missed_count ?? 0;
-                const totalDeposited = paid * Number(selectedSchedule.amount);
+                // Net deposited = money currently sitting in the linked goal.
+                // Includes opening deposit + processed + repaid runs, less any refunds.
+                // Falls back to (paid × amount) when timeline hasn't loaded yet.
+                const _amt = Number(selectedSchedule.amount);
+                const _net = dpsTimeline.reduce((s, it) => {
+                  if (it.status === "processed" || it.status === "repaid") return s + Number(it.amount || 0);
+                  if (it.status === "refunded") return s - Number(it.amount || 0);
+                  return s;
+                }, 0);
+                const totalDeposited = dpsTimeline.length > 0 ? _net : paid * _amt;
                 const paidPct = totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0;
 
                 return (
@@ -2437,25 +2475,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     {/* Collect Now (manual trigger) */}
                     {selectedSchedule.is_active && !selectedSchedule.settled && (
                       <motion.button whileTap={{ scale: 0.96 }}
-                        onClick={async () => {
-                          try {
-                            toast.loading("Processing installment…", { id: "collect-now" });
-                            const { data, error } = await supabase.functions.invoke("process-auto-save", {
-                              body: { schedule_id: selectedSchedule.id },
-                            });
-                            if (error) throw error;
-                            const r = (data ?? {}) as any;
-                            const out = r.perSchedule?.[0]?.outcome as string | undefined;
-                            if (out === "collected") toast.success("Installment collected", { id: "collect-now" });
-                            else if (out === "missed") toast.error("Insufficient balance — marked missed", { id: "collect-now" });
-                            else if (out === "dedup_skipped") toast("Already collected for this cycle", { id: "collect-now" });
-                            else if (out === "settled") toast.success("Plan completed", { id: "collect-now" });
-                            else if (out === "no_goal") toast.error("No active linked goal", { id: "collect-now" });
-                            else toast.success("Done", { id: "collect-now" });
-                            loadAutoSaves(); loadMissedPayments(); loadGoals();
-                          } catch (e: any) {
-                            toast.error(e?.message ?? "Failed to collect", { id: "collect-now" });
-                          }
+                        onClick={() => {
+                          setPin(""); setPinError(""); setError("");
+                          setStep("collect-now");
                         }}
                         className="w-full flex items-center gap-3 p-3.5 rounded-[16px] border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors">
                         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -2739,6 +2761,54 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </motion.div>
           )}
 
+
+          {/* ══════════ SAVINGS: COLLECT NOW (PIN-gated) ══════════ */}
+          {mainTab === "savings" && step === "collect-now" && selectedSchedule && (() => {
+            const amt = Number(selectedSchedule.amount);
+            const linkedGoal = goals.find(g => g.id === selectedSchedule.goal_id);
+            const insufficient = balance < amt;
+            return (
+              <motion.div key="collect-now" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <Zap size={20} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-bold text-foreground">Collect Installment Now</p>
+                      <p className="text-[11px] text-muted-foreground">Run this DPS installment immediately</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 pt-1">
+                    {[
+                      { label: "Amount", value: `৳${amt.toLocaleString()}` },
+                      { label: "Frequency", value: selectedSchedule.frequency },
+                      { label: "Linked Goal", value: linkedGoal ? `${linkedGoal.emoji} ${linkedGoal.name}` : "General Savings" },
+                      { label: "Wallet Balance", value: `৳${balance.toLocaleString()}` },
+                    ].map((row, i) => (
+                      <div key={i} className="flex justify-between items-center text-[12px]">
+                        <span className="text-muted-foreground">{row.label}</span>
+                        <span className="font-semibold text-foreground">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {insufficient && (
+                    <div className="rounded-xl px-3 py-2 bg-destructive/8 border border-destructive/20 flex items-start gap-2">
+                      <AlertTriangle size={13} className="text-destructive shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-destructive font-medium leading-relaxed">
+                        Insufficient wallet balance — this run will be marked as missed.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
+
+                <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+                <SlideToConfirm onConfirm={handleCollectNow} label={processing ? "Processing…" : "Slide to Collect"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
+              </motion.div>
+            );
+          })()}
 
           {mainTab === "gold" && goldStep === "portfolio" && (
             <motion.div key="g-port" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
