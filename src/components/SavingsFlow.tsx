@@ -2459,6 +2459,24 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         </div>
                       </div>
 
+                      {/* Time to fully paid */}
+                      {totalInst > 0 && remainingInst > 0 && (
+                        <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-[14px] bg-primary/5 border border-primary/15">
+                          <div className="flex items-center gap-2">
+                            <CalendarClock size={14} className="text-primary shrink-0" />
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Time to Fully Paid</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[12px] font-black text-primary leading-none">{etaText}</p>
+                            {completionDate && (
+                              <p className="text-[9px] text-muted-foreground mt-0.5">
+                                ~{completionDate.toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Progress Bar */}
                       {totalInst > 0 && (
                         <div className="space-y-1.5">
