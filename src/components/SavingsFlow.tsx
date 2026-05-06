@@ -2357,7 +2357,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 const totalInst = selectedSchedule.total_installments ?? 0;
                 const paid = selectedSchedule.total_paid ?? 0;
                 const missed = selectedSchedule.missed_count ?? 0;
-                const totalDeposited = paid * Number(selectedSchedule.amount);
+                // Net deposited = money currently sitting in the linked goal.
+                // Includes opening deposit + processed + repaid runs, less any refunds.
+                // Falls back to (paid × amount) when timeline hasn't loaded yet.
+                const _amt = Number(selectedSchedule.amount);
+                const _net = dpsTimeline.reduce((s, it) => {
+                  if (it.status === "processed" || it.status === "repaid") return s + Number(it.amount || 0);
+                  if (it.status === "refunded") return s - Number(it.amount || 0);
+                  return s;
+                }, 0);
+                const totalDeposited = dpsTimeline.length > 0 ? _net : paid * _amt;
                 const paidPct = totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0;
 
                 return (
