@@ -2762,6 +2762,54 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           )}
 
 
+          {/* ══════════ SAVINGS: COLLECT NOW (PIN-gated) ══════════ */}
+          {mainTab === "savings" && step === "collect-now" && selectedSchedule && (() => {
+            const amt = Number(selectedSchedule.amount);
+            const linkedGoal = goals.find(g => g.id === selectedSchedule.goal_id);
+            const insufficient = balance < amt;
+            return (
+              <motion.div key="collect-now" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <Zap size={20} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-bold text-foreground">Collect Installment Now</p>
+                      <p className="text-[11px] text-muted-foreground">Run this DPS installment immediately</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 pt-1">
+                    {[
+                      { label: "Amount", value: `৳${amt.toLocaleString()}` },
+                      { label: "Frequency", value: selectedSchedule.frequency },
+                      { label: "Linked Goal", value: linkedGoal ? `${linkedGoal.emoji} ${linkedGoal.name}` : "General Savings" },
+                      { label: "Wallet Balance", value: `৳${balance.toLocaleString()}` },
+                    ].map((row, i) => (
+                      <div key={i} className="flex justify-between items-center text-[12px]">
+                        <span className="text-muted-foreground">{row.label}</span>
+                        <span className="font-semibold text-foreground">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {insufficient && (
+                    <div className="rounded-xl px-3 py-2 bg-destructive/8 border border-destructive/20 flex items-start gap-2">
+                      <AlertTriangle size={13} className="text-destructive shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-destructive font-medium leading-relaxed">
+                        Insufficient wallet balance — this run will be marked as missed.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
+
+                <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+                <SlideToConfirm onConfirm={handleCollectNow} label={processing ? "Processing…" : "Slide to Collect"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
+              </motion.div>
+            );
+          })()}
+
           {mainTab === "gold" && goldStep === "portfolio" && (
             <motion.div key="g-port" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
