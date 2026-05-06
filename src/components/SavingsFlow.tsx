@@ -2474,34 +2474,73 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
               {/* Timeline */}
               {dpsTimeline.length > 0 && (() => {
-                const totalCollected = dpsTimeline
-                  .filter(i => i.status === "processed" || i.status === "repaid")
-                  .reduce((s, i) => s + i.amount, 0);
-                const totalRefunded = dpsTimeline
-                  .filter(i => i.status === "refunded")
-                  .reduce((s, i) => s + i.amount, 0);
-                const totalPending = dpsTimeline
-                  .filter(i => i.status === "pending")
-                  .reduce((s, i) => s + i.amount, 0);
-                const totalMissed = dpsTimeline
-                  .filter(i => i.status === "missed")
-                  .reduce((s, i) => s + i.amount, 0);
-                const totalPlanned = totalCollected + totalRefunded + totalPending + totalMissed;
+                // ─── Bucket the timeline once (single source of truth) ─────────
+                const amount = Number(selectedSchedule?.amount ?? 0);
+                const processedItems = dpsTimeline.filter(i => i.status === "processed");
+                const repaidItems    = dpsTimeline.filter(i => i.status === "repaid");
+                const refundedItems  = dpsTimeline.filter(i => i.status === "refunded");
+                const missedItems    = dpsTimeline.filter(i => i.status === "missed");
+                const pendingItems   = dpsTimeline.filter(i => i.status === "pending");
+                const openingItems   = dpsTimeline.filter(i => i.outcome === "opening_deposit" && i.status === "processed");
+
+                const sum = (arr: typeof dpsTimeline) => arr.reduce((s, i) => s + Number(i.amount || 0), 0);
+                const processedSum = sum(processedItems);
+                const repaidSum    = sum(repaidItems);
+                const refundedSum  = sum(refundedItems);
+                const missedSum    = sum(missedItems);
+                const pendingSum   = sum(pendingItems);
+
+                // Net = money that currently sits in the goal (debited & not refunded)
+                const totalCollected = processedSum + repaidSum;
+                const totalRefunded  = refundedSum;
+                const totalPending   = pendingSum;
+                const totalMissed    = missedSum;
 
                 // ─── Reconciliation ─────────
-                // Compare schedule expectation vs actual transactions surfaced in the timeline.
-                const scheduledCount = selectedSchedule?.total_installments ?? 0;
-                const expectedAmount = scheduledCount * Number(selectedSchedule?.amount ?? 0);
-                const collectedItems = dpsTimeline.filter(i => i.status === "processed" || i.status === "repaid");
-                const refundedItems = dpsTimeline.filter(i => i.status === "refunded");
-                const missedItems = dpsTimeline.filter(i => i.status === "missed");
-                const linkedTxCount = dpsTimeline.filter(i => i.txId).length;
-                const unlinkedRuns = dpsTimeline.filter(
-                  i => (i.status === "processed" || i.status === "refunded" || i.status === "repaid") && !i.txId,
-                );
-                const netCollectedAmt = collectedItems.reduce((s, i) => s + i.amount, 0);
-                const variance = netCollectedAmt - (selectedSchedule?.total_paid ?? 0) * Number(selectedSchedule?.amount ?? 0);
-                const recIssues = refundedItems.length + missedItems.length + unlinkedRuns.length + (variance !== 0 ? 1 : 0);
+                // Use max of declared installments vs observed events so open-ended
+                // plans (total_installments = 0) still reconcile sensibly.
+                const declaredInst = selectedSchedule?.total_installments ?? 0;
+                const observedInst =
+                  processedItems.length + refundedItems.length + missedItems.length + pendingItems.length;
+                const scheduledCount = Math.max(declaredInst, observedInst);
+                const expectedAmount = scheduledCount * amount;
+                // Planned total shown in summary should equal expected when known,
+                // otherwise fall back to sum of observed buckets.
+                const totalPlanned = expectedAmount > 0
+                  ? expectedAmount
+                  : totalCollected + totalRefunded + totalPending + totalMissed;
+
+                // Tx-ledger reconciliation: only debit-bearing rows should have a txId.
+                const debitableItems = [...processedItems, ...repaidItems, ...refundedItems];
+                const linkedTxCount  = debitableItems.filter(i => !!i.txId).length;
+                const expectedTxCount = debitableItems.length;
+                const unlinkedRuns = debitableItems.filter(i => !i.txId);
+
+                // Schedule counter mismatch: the schedule's `total_paid` counts cron
+                // collections only — it does NOT include the opening deposit (debited
+                // at plan creation) nor any later refunds. Compare gross debits
+                // against `total_paid`, allowing for the opening deposit if present.
+                const totalPaid = selectedSchedule?.total_paid ?? 0;
+                const grossDebited = processedSum + repaidSum + refundedSum;
+                const expectedFromSchedule = totalPaid * amount;
+                const grossVariance = grossDebited - expectedFromSchedule;
+                const openingOffset = openingItems.length * amount; // 0 or amount
+                const counterReconciled =
+                  Math.abs(grossVariance) < 0.5 ||
+                  Math.abs(grossVariance - openingOffset) < 0.5;
+                // Variance shown to user excludes the legitimate opening-deposit gap.
+                const variance = counterReconciled
+                  ? 0
+                  : grossVariance - (Math.abs(grossVariance - openingOffset) < Math.abs(grossVariance) ? openingOffset : 0);
+
+                // `netCollectedAmt` retained for the summary card; equals net in goal.
+                const netCollectedAmt = totalCollected;
+
+                const recIssues =
+                  refundedItems.length +
+                  missedItems.length +
+                  unlinkedRuns.length +
+                  (counterReconciled ? 0 : 1);
 
                 return (
                 <div className="space-y-2">
