@@ -2398,6 +2398,26 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 const totalDeposited = dpsTimeline.length > 0 ? _grossDeposited : paid * _amt;
                 const paidPct = totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0;
 
+                // ─── Estimated time to fully paid ─────────
+                // Project remaining installments forward using the schedule cadence.
+                const freq = (selectedSchedule.frequency ?? "").toLowerCase();
+                const intervalDays = freq === "daily" ? 1 : freq === "weekly" ? 7 : freq === "monthly" ? 30 : 30;
+                const remainingInst = Math.max(totalInst - paid, 0);
+                const remainingDays = remainingInst * intervalDays;
+                const completionDate = remainingInst > 0 && selectedSchedule.next_run_at
+                  ? new Date(new Date(selectedSchedule.next_run_at).getTime() + (remainingInst - 1) * intervalDays * 86400000)
+                  : null;
+                const formatDuration = (days: number) => {
+                  if (days <= 0) return "—";
+                  if (days < 14) return `${days} day${days === 1 ? "" : "s"}`;
+                  if (days < 60) return `${Math.round(days / 7)} weeks`;
+                  if (days < 365) return `${Math.round(days / 30)} months`;
+                  const years = Math.floor(days / 365);
+                  const months = Math.round((days % 365) / 30);
+                  return months > 0 ? `${years}y ${months}m` : `${years} year${years === 1 ? "" : "s"}`;
+                };
+                const etaText = remainingInst > 0 ? formatDuration(remainingDays) : "Completed";
+
                 return (
                   <>
                     <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4">
