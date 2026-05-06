@@ -855,6 +855,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       else if (step === "dps-create") { setStep("autosave"); }
       else if (step === "repay-missed") { setPin(""); setPinError(""); setSelectedMissedIds([]); setStep("autosave"); }
       else if (step === "dps-detail") { setStep("autosave"); setSelectedSchedule(null); }
+      else if (step === "collect-now") { setPin(""); setPinError(""); setStep("dps-detail"); }
       else if (step === "home") onClose();
       else setStep("home");
     } else if (mainTab === "goals") {
