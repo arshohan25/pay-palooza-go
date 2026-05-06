@@ -2398,6 +2398,26 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 const totalDeposited = dpsTimeline.length > 0 ? _grossDeposited : paid * _amt;
                 const paidPct = totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0;
 
+                // ─── Estimated time to fully paid ─────────
+                // Project remaining installments forward using the schedule cadence.
+                const freq = (selectedSchedule.frequency ?? "").toLowerCase();
+                const intervalDays = freq === "daily" ? 1 : freq === "weekly" ? 7 : freq === "monthly" ? 30 : 30;
+                const remainingInst = Math.max(totalInst - paid, 0);
+                const remainingDays = remainingInst * intervalDays;
+                const completionDate = remainingInst > 0 && selectedSchedule.next_run_at
+                  ? new Date(new Date(selectedSchedule.next_run_at).getTime() + (remainingInst - 1) * intervalDays * 86400000)
+                  : null;
+                const formatDuration = (days: number) => {
+                  if (days <= 0) return "—";
+                  if (days < 14) return `${days} day${days === 1 ? "" : "s"}`;
+                  if (days < 60) return `${Math.round(days / 7)} weeks`;
+                  if (days < 365) return `${Math.round(days / 30)} months`;
+                  const years = Math.floor(days / 365);
+                  const months = Math.round((days % 365) / 30);
+                  return months > 0 ? `${years}y ${months}m` : `${years} year${years === 1 ? "" : "s"}`;
+                };
+                const etaText = remainingInst > 0 ? formatDuration(remainingDays) : "Completed";
+
                 return (
                   <>
                     <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4">
@@ -2438,6 +2458,24 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           <p className={`text-[14px] font-black mt-1 ${missed > 0 ? "text-destructive" : "text-foreground"}`}>{missed}</p>
                         </div>
                       </div>
+
+                      {/* Time to fully paid */}
+                      {totalInst > 0 && remainingInst > 0 && (
+                        <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-[14px] bg-primary/5 border border-primary/15">
+                          <div className="flex items-center gap-2">
+                            <CalendarClock size={14} className="text-primary shrink-0" />
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Time to Fully Paid</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[12px] font-black text-primary leading-none">{etaText}</p>
+                            {completionDate && (
+                              <p className="text-[9px] text-muted-foreground mt-0.5">
+                                ~{completionDate.toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Progress Bar */}
                       {totalInst > 0 && (
