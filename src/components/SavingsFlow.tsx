@@ -2397,7 +2397,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 // Fallback to (paid × amount) before timeline loads.
                 const totalDeposited = dpsTimeline.length > 0 ? _grossDeposited : paid * _amt;
                 const paidPct = totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0;
-                const paidPct = totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0;
 
                 return (
                   <>
