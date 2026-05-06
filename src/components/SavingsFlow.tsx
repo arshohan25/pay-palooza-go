@@ -2605,17 +2605,17 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                       </div>
                       <div className="flex justify-between gap-2">
                         <span className="text-muted-foreground">Linked txns</span>
-                        <span className="font-bold text-foreground">{linkedTxCount} / {dpsTimeline.filter(i => i.status !== "pending").length}</span>
+                        <span className="font-bold text-foreground">{linkedTxCount} / {expectedTxCount}</span>
                       </div>
                     </div>
 
-                    {(refundedItems.length > 0 || missedItems.length > 0 || unlinkedRuns.length > 0 || variance !== 0) && (
+                    {(refundedItems.length > 0 || missedItems.length > 0 || unlinkedRuns.length > 0 || !counterReconciled) && (
                       <div className="space-y-1.5 pt-1 border-t border-border/40">
-                        {variance !== 0 && (
+                        {!counterReconciled && (
                           <div className="flex items-start gap-2 text-[11px]">
                             <AlertTriangle size={12} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                             <p className="text-foreground">
-                              <span className="font-bold">Counter mismatch:</span> schedule says {selectedSchedule?.total_paid ?? 0} paid (৳{((selectedSchedule?.total_paid ?? 0) * Number(selectedSchedule?.amount ?? 0)).toLocaleString()}), transactions show ৳{netCollectedAmt.toLocaleString()} ({variance > 0 ? "+" : ""}৳{variance.toLocaleString()}).
+                              <span className="font-bold">Counter mismatch:</span> schedule says {selectedSchedule?.total_paid ?? 0} paid (৳{((selectedSchedule?.total_paid ?? 0) * amount).toLocaleString()}), ledger shows ৳{grossDebited.toLocaleString()} debited ({variance > 0 ? "+" : ""}৳{variance.toLocaleString()}).
                             </p>
                           </div>
                         )}
