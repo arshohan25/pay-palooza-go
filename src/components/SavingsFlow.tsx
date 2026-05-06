@@ -711,7 +711,35 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     } finally { setProcessing(false); }
   };
 
-  // ─── Gold handlers ────────
+  // ─── Collect Now (manual installment trigger) — PIN gated ────────
+  const handleCollectNow = async () => {
+    if (!selectedSchedule) return;
+    setProcessing(true); setError(""); setPinError("");
+    try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+      const { data, error: invErr } = await supabase.functions.invoke("process-auto-save", {
+        body: { schedule_id: selectedSchedule.id },
+      });
+      if (invErr) throw invErr;
+      const r = (data ?? {}) as any;
+      const out = r.perSchedule?.[0]?.outcome as string | undefined;
+      if (out === "collected") toast.success("Installment collected");
+      else if (out === "missed") toast.error("Insufficient balance — marked missed");
+      else if (out === "dedup_skipped") toast("Already collected for this cycle");
+      else if (out === "settled") toast.success("Plan completed");
+      else if (out === "no_goal") toast.error("No active linked goal");
+      else toast.success("Done");
+      await fetchBalance();
+      loadAutoSaves(); loadMissedPayments(); loadGoals();
+      setPin(""); setPinError("");
+      setStep("dps-detail");
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to collect");
+    } finally {
+      setProcessing(false);
+    }
+  };
   const currentGoldPrice = goldKarat === "24k" ? LIVE_GOLD_24K_PRICE : LIVE_GOLD_PRICE;
 
   const handleBuyGold = async () => {
