@@ -724,12 +724,37 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       if (invErr) throw invErr;
       const r = (data ?? {}) as any;
       const out = r.perSchedule?.[0]?.outcome as string | undefined;
-      if (out === "collected") toast.success("Installment collected");
+      if (out === "collected") {
+        toast.success("Installment collected");
+        const linkedGoal = goals.find(g => g.id === selectedSchedule.goal_id);
+        const now = new Date().toISOString();
+        setDpsTimeline(prev => [
+          ...prev,
+          {
+            id: `manual-collected-${Date.now()}`,
+            date: now,
+            amount: Number(selectedSchedule.amount),
+            status: "processed" as const,
+            goalName: linkedGoal?.name ?? null,
+            goalId: linkedGoal?.id ?? selectedSchedule.goal_id ?? null,
+            outcome: "collected",
+            note: "Collected now",
+          },
+        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+      }
       else if (out === "missed") toast.error("Insufficient balance — marked missed");
       else if (out === "dedup_skipped") toast("Already collected for this cycle");
       else if (out === "settled") toast.success("Plan completed");
       else if (out === "no_goal") toast.error("No active linked goal");
       else toast.success("Done");
+      const { data: freshSchedule } = await supabase
+        .from("savings_auto_save")
+        .select("*")
+        .eq("id", selectedSchedule.id)
+        .maybeSingle();
+      if (freshSchedule) {
+        setSelectedSchedule({ ...(freshSchedule as any), status: (freshSchedule as any).is_active ? "active" : "closed" });
+      }
       await fetchBalance();
       loadAutoSaves(); loadMissedPayments(); loadGoals();
       setPin(""); setPinError("");
@@ -963,9 +988,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <p className="text-[16px] font-black text-foreground tabular-nums">
                     {autoSaves.filter(a => a.is_active).length > 0 ? `${autoSaves.filter(a => a.is_active).length} active` : "—"}
                   </p>
-                  {autoSaves.filter(a => a.is_active).length > 0 && (
+                    {autoSaves.filter(a => a.is_active).length > 0 && (
                     <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                      ৳{autoSaves.filter(a => a.is_active).reduce((s, a) => s + Number(a.amount) * Number(a.total_paid ?? 0), 0).toLocaleString()} saved
+                        ৳{autoSaves.filter(a => a.is_active).reduce((s, a) => s + Number(goals.find(g => g.id === a.goal_id)?.saved_amount ?? (Number(a.amount) * Number(a.total_paid ?? 0))), 0).toLocaleString()} saved
                     </p>
                   )}
                 </button>
@@ -2383,20 +2408,19 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 const stratObj = INVESTMENT_STRATEGIES.find(s => s.key === selectedSchedule.strategy);
                 const linkedGoal = goals.find(g => g.id === selectedSchedule.goal_id);
                 const totalInst = selectedSchedule.total_installments ?? 0;
-                const paid = selectedSchedule.total_paid ?? 0;
+                const linkedGoalSaved = linkedGoal ? Number(linkedGoal.saved_amount || 0) : null;
                 const missed = selectedSchedule.missed_count ?? 0;
-                // Total deposited = every successful debit into the linked goal
-                // (opening deposit + auto-collected runs + repaid catch-ups).
-                // Refunds are listed in the timeline but do NOT erase the
-                // historical "deposited" total; they're shown separately.
                 const _amt = Number(selectedSchedule.amount);
-                const _grossDeposited = dpsTimeline.reduce((s, it) => {
-                  if (it.status === "processed" || it.status === "repaid") return s + Number(it.amount || 0);
+                // Total Deposited must show what is actually credited in the linked goal.
+                // The schedule counter can drift after retries/refunds, so use the goal
+                // ledger balance first and only fall back to the local timeline while loading.
+                const timelineCredited = dpsTimeline.reduce((s, it) => {
+                  if ((it.status === "processed" || it.status === "repaid") && it.goalId === selectedSchedule.goal_id) return s + Number(it.amount || 0);
                   return s;
                 }, 0);
-                // Fallback to (paid × amount) before timeline loads.
-                const totalDeposited = dpsTimeline.length > 0 ? _grossDeposited : paid * _amt;
-                const paidPct = totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0;
+                const totalDeposited = linkedGoalSaved ?? timelineCredited;
+                const paid = _amt > 0 ? Math.floor(totalDeposited / _amt) : (selectedSchedule.total_paid ?? 0);
+                const paidPct = totalInst > 0 ? Math.min(100, Math.round((paid / totalInst) * 100)) : 0;
 
                 // ─── Estimated time to fully paid ─────────
                 // Project remaining installments forward using the schedule cadence.
@@ -2537,12 +2561,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               {dpsTimeline.length > 0 && (() => {
                 // ─── Bucket the timeline once (single source of truth) ─────────
                 const amount = Number(selectedSchedule?.amount ?? 0);
-                const processedItems = dpsTimeline.filter(i => i.status === "processed");
-                const repaidItems    = dpsTimeline.filter(i => i.status === "repaid");
+                const processedItems = dpsTimeline.filter(i => i.status === "processed" && i.goalId === selectedSchedule?.goal_id);
+                const repaidItems    = dpsTimeline.filter(i => i.status === "repaid" && i.goalId === selectedSchedule?.goal_id);
                 const refundedItems  = dpsTimeline.filter(i => i.status === "refunded");
                 const missedItems    = dpsTimeline.filter(i => i.status === "missed");
                 const pendingItems   = dpsTimeline.filter(i => i.status === "pending");
-                const openingItems   = dpsTimeline.filter(i => i.outcome === "opening_deposit" && i.status === "processed");
+                const openingItems   = dpsTimeline.filter(i => i.outcome === "opening_deposit" && i.status === "processed" && i.goalId === selectedSchedule?.goal_id);
 
                 const sum = (arr: typeof dpsTimeline) => arr.reduce((s, i) => s + Number(i.amount || 0), 0);
                 const processedSum = sum(processedItems);
@@ -2552,7 +2576,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 const pendingSum   = sum(pendingItems);
 
                 // Net = money that currently sits in the goal (debited & not refunded)
-                const totalCollected = processedSum + repaidSum;
+                const goalLedgerSaved = goals.find(g => g.id === selectedSchedule?.goal_id)?.saved_amount;
+                const totalCollected = Number(goalLedgerSaved ?? (processedSum + repaidSum));
                 const totalRefunded  = refundedSum;
                 const totalPending   = pendingSum;
                 const totalMissed    = missedSum;
@@ -2562,7 +2587,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 // plans (total_installments = 0) still reconcile sensibly.
                 const declaredInst = selectedSchedule?.total_installments ?? 0;
                 const observedInst =
-                  processedItems.length + refundedItems.length + missedItems.length + pendingItems.length;
+                  Math.max(Math.ceil(totalCollected / Math.max(amount, 1)), processedItems.length + refundedItems.length + missedItems.length + pendingItems.length);
                 const scheduledCount = Math.max(declaredInst, observedInst);
                 const expectedAmount = scheduledCount * amount;
                 // Planned total shown in summary should equal expected when known,
@@ -2582,7 +2607,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 // at plan creation) nor any later refunds. Compare gross debits
                 // against `total_paid`, allowing for the opening deposit if present.
                 const totalPaid = selectedSchedule?.total_paid ?? 0;
-                const grossDebited = processedSum + repaidSum + refundedSum;
+                const grossDebited = totalCollected + refundedSum;
                 const expectedFromSchedule = totalPaid * amount;
                 const grossVariance = grossDebited - expectedFromSchedule;
                 const openingOffset = openingItems.length * amount; // 0 or amount
