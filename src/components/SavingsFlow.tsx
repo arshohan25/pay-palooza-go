@@ -2408,20 +2408,19 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 const stratObj = INVESTMENT_STRATEGIES.find(s => s.key === selectedSchedule.strategy);
                 const linkedGoal = goals.find(g => g.id === selectedSchedule.goal_id);
                 const totalInst = selectedSchedule.total_installments ?? 0;
-                const paid = selectedSchedule.total_paid ?? 0;
+                const linkedGoalSaved = linkedGoal ? Number(linkedGoal.saved_amount || 0) : null;
                 const missed = selectedSchedule.missed_count ?? 0;
-                // Total deposited = every successful debit into the linked goal
-                // (opening deposit + auto-collected runs + repaid catch-ups).
-                // Refunds are listed in the timeline but do NOT erase the
-                // historical "deposited" total; they're shown separately.
                 const _amt = Number(selectedSchedule.amount);
-                const _grossDeposited = dpsTimeline.reduce((s, it) => {
-                  if (it.status === "processed" || it.status === "repaid") return s + Number(it.amount || 0);
+                // Total Deposited must show what is actually credited in the linked goal.
+                // The schedule counter can drift after retries/refunds, so use the goal
+                // ledger balance first and only fall back to the local timeline while loading.
+                const timelineCredited = dpsTimeline.reduce((s, it) => {
+                  if ((it.status === "processed" || it.status === "repaid") && it.goalId === selectedSchedule.goal_id) return s + Number(it.amount || 0);
                   return s;
                 }, 0);
-                // Fallback to (paid × amount) before timeline loads.
-                const totalDeposited = dpsTimeline.length > 0 ? _grossDeposited : paid * _amt;
-                const paidPct = totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0;
+                const totalDeposited = linkedGoalSaved ?? timelineCredited;
+                const paid = _amt > 0 ? Math.floor(totalDeposited / _amt) : (selectedSchedule.total_paid ?? 0);
+                const paidPct = totalInst > 0 ? Math.min(100, Math.round((paid / totalInst) * 100)) : 0;
 
                 // ─── Estimated time to fully paid ─────────
                 // Project remaining installments forward using the schedule cadence.
