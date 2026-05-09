@@ -2561,12 +2561,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               {dpsTimeline.length > 0 && (() => {
                 // ─── Bucket the timeline once (single source of truth) ─────────
                 const amount = Number(selectedSchedule?.amount ?? 0);
-                const processedItems = dpsTimeline.filter(i => i.status === "processed");
-                const repaidItems    = dpsTimeline.filter(i => i.status === "repaid");
+                const processedItems = dpsTimeline.filter(i => i.status === "processed" && i.goalId === selectedSchedule?.goal_id);
+                const repaidItems    = dpsTimeline.filter(i => i.status === "repaid" && i.goalId === selectedSchedule?.goal_id);
                 const refundedItems  = dpsTimeline.filter(i => i.status === "refunded");
                 const missedItems    = dpsTimeline.filter(i => i.status === "missed");
                 const pendingItems   = dpsTimeline.filter(i => i.status === "pending");
-                const openingItems   = dpsTimeline.filter(i => i.outcome === "opening_deposit" && i.status === "processed");
+                const openingItems   = dpsTimeline.filter(i => i.outcome === "opening_deposit" && i.status === "processed" && i.goalId === selectedSchedule?.goal_id);
 
                 const sum = (arr: typeof dpsTimeline) => arr.reduce((s, i) => s + Number(i.amount || 0), 0);
                 const processedSum = sum(processedItems);
@@ -2576,7 +2576,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 const pendingSum   = sum(pendingItems);
 
                 // Net = money that currently sits in the goal (debited & not refunded)
-                const totalCollected = processedSum + repaidSum;
+                const goalLedgerSaved = goals.find(g => g.id === selectedSchedule?.goal_id)?.saved_amount;
+                const totalCollected = Number(goalLedgerSaved ?? (processedSum + repaidSum));
                 const totalRefunded  = refundedSum;
                 const totalPending   = pendingSum;
                 const totalMissed    = missedSum;
