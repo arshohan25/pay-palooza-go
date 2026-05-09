@@ -2587,7 +2587,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 // plans (total_installments = 0) still reconcile sensibly.
                 const declaredInst = selectedSchedule?.total_installments ?? 0;
                 const observedInst =
-                  processedItems.length + refundedItems.length + missedItems.length + pendingItems.length;
+                  Math.max(Math.ceil(totalCollected / Math.max(amount, 1)), processedItems.length + refundedItems.length + missedItems.length + pendingItems.length);
                 const scheduledCount = Math.max(declaredInst, observedInst);
                 const expectedAmount = scheduledCount * amount;
                 // Planned total shown in summary should equal expected when known,
@@ -2607,7 +2607,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 // at plan creation) nor any later refunds. Compare gross debits
                 // against `total_paid`, allowing for the opening deposit if present.
                 const totalPaid = selectedSchedule?.total_paid ?? 0;
-                const grossDebited = processedSum + repaidSum + refundedSum;
+                const grossDebited = totalCollected + refundedSum;
                 const expectedFromSchedule = totalPaid * amount;
                 const grossVariance = grossDebited - expectedFromSchedule;
                 const openingOffset = openingItems.length * amount; // 0 or amount
