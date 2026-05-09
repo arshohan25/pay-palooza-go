@@ -724,12 +724,37 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       if (invErr) throw invErr;
       const r = (data ?? {}) as any;
       const out = r.perSchedule?.[0]?.outcome as string | undefined;
-      if (out === "collected") toast.success("Installment collected");
+      if (out === "collected") {
+        toast.success("Installment collected");
+        const linkedGoal = goals.find(g => g.id === selectedSchedule.goal_id);
+        const now = new Date().toISOString();
+        setDpsTimeline(prev => [
+          ...prev,
+          {
+            id: `manual-collected-${Date.now()}`,
+            date: now,
+            amount: Number(selectedSchedule.amount),
+            status: "processed" as const,
+            goalName: linkedGoal?.name ?? null,
+            goalId: linkedGoal?.id ?? selectedSchedule.goal_id ?? null,
+            outcome: "collected",
+            note: "Collected now",
+          },
+        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+      }
       else if (out === "missed") toast.error("Insufficient balance — marked missed");
       else if (out === "dedup_skipped") toast("Already collected for this cycle");
       else if (out === "settled") toast.success("Plan completed");
       else if (out === "no_goal") toast.error("No active linked goal");
       else toast.success("Done");
+      const { data: freshSchedule } = await supabase
+        .from("savings_auto_save")
+        .select("*")
+        .eq("id", selectedSchedule.id)
+        .maybeSingle();
+      if (freshSchedule) {
+        setSelectedSchedule({ ...(freshSchedule as any), status: (freshSchedule as any).is_active ? "active" : "closed" });
+      }
       await fetchBalance();
       loadAutoSaves(); loadMissedPayments(); loadGoals();
       setPin(""); setPinError("");
