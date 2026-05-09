@@ -988,9 +988,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <p className="text-[16px] font-black text-foreground tabular-nums">
                     {autoSaves.filter(a => a.is_active).length > 0 ? `${autoSaves.filter(a => a.is_active).length} active` : "—"}
                   </p>
-                  {autoSaves.filter(a => a.is_active).length > 0 && (
+                    {autoSaves.filter(a => a.is_active).length > 0 && (
                     <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                      ৳{autoSaves.filter(a => a.is_active).reduce((s, a) => s + Number(a.amount) * Number(a.total_paid ?? 0), 0).toLocaleString()} saved
+                        ৳{autoSaves.filter(a => a.is_active).reduce((s, a) => s + Number(goals.find(g => g.id === a.goal_id)?.saved_amount ?? (Number(a.amount) * Number(a.total_paid ?? 0))), 0).toLocaleString()} saved
                     </p>
                   )}
                 </button>
