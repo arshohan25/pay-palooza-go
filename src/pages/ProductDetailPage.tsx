@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";

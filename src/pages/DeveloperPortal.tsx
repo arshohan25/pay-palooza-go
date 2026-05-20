@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Code2, Zap, QrCode, Copy, Check, ChevronDown, ChevronRight, ArrowRight, Shield, Globe, Terminal, Building2, CreditCard, Smartphone, FileText, Handshake } from "lucide-react";
