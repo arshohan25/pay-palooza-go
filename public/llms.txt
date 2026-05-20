@@ -1,0 +1,23 @@
+# EasyPay
+
+> Mobile financial services for Bangladesh — send money, pay bills, cash out, shop online, and manage your wallet securely.
+
+EasyPay is a digital wallet and e-commerce platform built for Bangladesh. It offers peer-to-peer money transfers, mobile recharges, bill payments, agent cash-in / cash-out, merchant QR payments, gift cards, savings, loans (Qard Hasan), insurance, and an integrated online shop.
+
+## Pages
+
+- [Home](/): Overview of the EasyPay wallet, balance, and quick actions.
+- [Shop](/shop): Browse products from verified vendors across Bangladesh.
+- [Pay](/pay): Pay merchants by QR code, phone number, or wallet ID.
+- [Gift Cards](/giftcards): Buy gift cards across 17 categories.
+- [Coupons](/coupons): Available promotions and discount codes.
+- [Loan](/loan): Sharia-compliant Qard Hasan micro-loans.
+- [Insurance](/insurance): Micro-insurance plans.
+- [Donations](/donations): Donate to verified causes.
+- [Careers](/careers): Open roles at EasyPay.
+- [Developer Portal](/developers): API keys, webhooks, and SDK docs.
+- [Install App](/install): Install the EasyPay PWA for any role.
+
+## Optional
+
+- [Merchant Support](/merchant-support): Help center for merchants.
