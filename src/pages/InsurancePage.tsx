@@ -91,6 +91,11 @@ const InsurancePage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Micro Insurance – Affordable Coverage | EasyPay"
+        description="Browse and buy micro-insurance plans – health, life, accident and device protection – directly from EasyPay."
+        path="/insurance"
+      />
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
         <button onClick={() => { if (selectedPlan) setSelectedPlan(null); else navigate(-1); }} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
         <h1 className="text-lg font-bold text-foreground">{selectedPlan ? selectedPlan.name : "Insurance"}</h1>

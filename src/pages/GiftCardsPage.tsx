@@ -136,6 +136,11 @@ const GiftCardsPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Gift Cards – EasyPay"
+        description="Buy and send digital gift cards across 17 categories – fashion, food, gaming, travel and more – instantly with EasyPay."
+        path="/giftcards"
+      />
       {/* Header */}
       <div className="sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b border-border/50">
         <div className="px-4 py-3 flex items-center gap-3">

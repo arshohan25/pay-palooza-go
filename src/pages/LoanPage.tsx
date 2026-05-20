@@ -262,6 +262,11 @@ const LoanPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Qard Hasan Loan – Sharia-Compliant Micro Loans | EasyPay"
+        description="Apply for interest-free Qard Hasan micro-loans through EasyPay. Transparent flat fee, instant disbursal to your wallet."
+        path="/loan"
+      />
       {/* Header */}
       <div className="sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b border-border/40">
         <div className="px-4 py-3 flex items-center gap-3">
