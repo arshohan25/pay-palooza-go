@@ -248,13 +248,13 @@ export default function ProductDetailPage() {
         description={(product.description ?? `Buy ${product.name} on EasyPay Shop. Secure checkout, fast delivery across Bangladesh.`).slice(0, 160)}
         path={`/product/${product.id}`}
         type="product"
-        image={product.images?.[0]}
+        image={images[0]}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Product",
           name: product.name,
           description: product.description ?? undefined,
-          image: product.images?.[0],
+          image: images[0],
           offers: {
             "@type": "Offer",
             priceCurrency: "BDT",
