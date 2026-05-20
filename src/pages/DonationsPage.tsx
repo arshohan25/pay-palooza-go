@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -211,6 +212,11 @@ const DonationsPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <Seo
+        title="Donations – Give Securely with EasyPay"
+        description="Donate to verified causes, mosques, charities and disaster relief directly from your EasyPay wallet."
+        path="/donations"
+      />
       {/* Minimal Header */}
       <div className="sticky top-0 z-30 bg-background/70 backdrop-blur-xl">
         <div className="flex items-center gap-3 px-5 py-4 max-w-md mx-auto">

@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -415,6 +416,11 @@ const PayPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <Seo
+        title="Pay Merchants – QR & Wallet Payments | EasyPay"
+        description="Pay any EasyPay merchant instantly by scanning a QR code, entering a wallet ID or selecting a contact. Secure, instant, no fees on most payments."
+        path="/pay"
+      />
       <GradientMesh />
 
       <motion.div

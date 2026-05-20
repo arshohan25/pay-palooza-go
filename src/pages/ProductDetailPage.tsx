@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -242,6 +243,27 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-background pb-28">
+      <Seo
+        title={`${product.name} – EasyPay Shop`}
+        description={(product.description ?? `Buy ${product.name} on EasyPay Shop. Secure checkout, fast delivery across Bangladesh.`).slice(0, 160)}
+        path={`/product/${product.id}`}
+        type="product"
+        image={images[0]}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.name,
+          description: product.description ?? undefined,
+          image: images[0],
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "BDT",
+            price: product.price,
+            availability: (product.stock ?? 1) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            url: `https://pay-palooza-go.lovable.app/product/${product.id}`,
+          },
+        }}
+      />
       {/* ── Sticky header ── */}
       <motion.div
         className={cn("sticky top-0 z-50 backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-3 py-2.5 transition-colors duration-300",

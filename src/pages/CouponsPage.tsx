@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -173,6 +174,11 @@ export default function CouponsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <Seo
+        title="Coupons & Promotions – EasyPay"
+        description="Browse the latest EasyPay coupons, cashback offers and discount codes across shopping, recharge, bills and more."
+        path="/coupons"
+      />
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background/70 backdrop-blur-2xl border-b border-border/20">
         <div className="flex items-center justify-between px-4 h-14">

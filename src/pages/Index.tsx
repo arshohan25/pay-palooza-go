@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -516,6 +517,11 @@ const Index = () => {
 
   return (
     <>
+      <Seo
+        title="EasyPay – Mobile Financial Services Bangladesh"
+        description="Send money, pay bills, cash out, shop and manage your finances securely with EasyPay – Bangladesh's all-in-one digital wallet."
+        path="/"
+      />
       <AnimatePresence>
         {!isAuthenticated && (
           <Suspense fallback={null}>
