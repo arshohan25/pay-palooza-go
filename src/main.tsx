@@ -31,7 +31,11 @@ async function bootstrap() {
   }
   cleanupCacheRecoveryParams();
 
-  createRoot(document.getElementById("root")!).render(<App />);
+  createRoot(document.getElementById("root")!).render(
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
+  );
 
   const isInIframe = (() => {
     try {
