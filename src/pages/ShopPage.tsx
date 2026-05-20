@@ -368,6 +368,12 @@ export default function ShopPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <Seo
+        title="Shop – Verified Vendors & Flash Sales | EasyPay"
+        description="Discover deals from verified Bangladeshi vendors. Flash sales, gift cards and fast delivery, all paid securely with your EasyPay wallet."
+        path="/shop"
+        jsonLd={{ "@context": "https://schema.org", "@type": "CollectionPage", name: "EasyPay Shop", url: "https://pay-palooza-go.lovable.app/shop" }}
+      />
       {/* ── Sticky Header ── */}
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/30">
         <div className="flex items-center gap-2.5 px-4 py-3">

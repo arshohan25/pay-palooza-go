@@ -143,6 +143,11 @@ export default function DeveloperPortal() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Developer Portal – API Keys, SDKs & Webhooks | EasyPay"
+        description="Integrate EasyPay payments. Manage API keys, configure webhooks and read the official SDK docs in the EasyPay Developer Portal."
+        path="/developers"
+      />
       {/* Nav */}
       <header className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">

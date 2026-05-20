@@ -416,6 +416,11 @@ const PayPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <Seo
+        title="Pay Merchants – QR & Wallet Payments | EasyPay"
+        description="Pay any EasyPay merchant instantly by scanning a QR code, entering a wallet ID or selecting a contact. Secure, instant, no fees on most payments."
+        path="/pay"
+      />
       <GradientMesh />
 
       <motion.div
