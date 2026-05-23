@@ -6527,6 +6527,20 @@ export type Database = {
         Args: { p_referee_id: string }
         Returns: undefined
       }
+      checkout_atomic_transfer: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_payer_recipient_name: string
+          p_payer_recipient_phone: string
+          p_payer_user_id: string
+          p_recipient_payer_name: string
+          p_recipient_payer_phone: string
+          p_recipient_user_id: string
+          p_reference?: string
+        }
+        Returns: Json
+      }
       create_direct_chat_request: {
         Args: { p_metadata?: Json; p_other_user_id: string }
         Returns: string
