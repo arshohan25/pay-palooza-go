@@ -282,11 +282,10 @@ interface QuickActionsProps {
   onRefer: () => void;
   onShop: () => void;
   onBankTransfer: () => void;
-  onSavings: () => void;
   
 }
 
-const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer, onSavings }: QuickActionsProps) => {
+const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer }: QuickActionsProps) => {
   const navigate = useNavigate();
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
