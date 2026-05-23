@@ -562,7 +562,7 @@ const Index = () => {
           {showAddMoney  && <AddMoneyFlow key="addmoney-flow" onClose={() => setShowAddMoney(false)} />}
           
           {showBankTransfer && <BankTransferFlow key="bank-transfer-flow" onClose={() => setShowBankTransfer(false)} />}
-          {showSavings   && <SavingsFlow key="savings-flow" onClose={() => setShowSavings(false)} />}
+          
           {showKycFlow   && <KycFlow key="kyc-flow" onClose={() => setShowKycFlow(false)} />}
         </AnimatePresence>
         <MerchantApplicationFlow open={showMerchantApply} onOpenChange={setShowMerchantApply} />
