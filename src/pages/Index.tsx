@@ -47,7 +47,7 @@ const PayBillFlow = lazy(() => import("@/components/PayBillFlow"));
 const AddMoneyFlow = lazy(() => import("@/components/AddMoneyFlow"));
 const BankTransferFlow = lazy(() => import("@/components/BankTransferFlow"));
 const DynamicQrPaySheet = lazy(() => import("@/components/DynamicQrPaySheet"));
-const SavingsFlow = lazy(() => import("@/components/SavingsFlow"));
+
 const MerchantApplicationFlow = lazy(() => import("@/components/MerchantApplicationFlow"));
 const KycFlow = lazy(() => import("@/components/KycFlow"));
 
@@ -122,7 +122,7 @@ const Index = () => {
   
   
   const [showBankTransfer, setShowBankTransfer] = useState(false);
-  const [showSavings, setShowSavings]     = useState(false);
+  
   const [showMerchantApply, setShowMerchantApply] = useState(false);
   const [showScanPay, setShowScanPay]     = useState(false);
   const [dynamicQrSession, setDynamicQrSession] = useState<{ sessionId: string; merchantId?: string; amount?: number; ref?: string | null } | null>(null);
@@ -224,7 +224,7 @@ const Index = () => {
         "payment": () => setShowPayment(true),
         "bank-transfer": () => setShowBankTransfer(true),
         "shop": () => navigate("/shop"),
-        "savings": () => setShowSavings(true),
+        
         "merchant-apply": () => setShowMerchantApply(true),
         "scan-pay": () => setShowScanPay(true),
         "kyc": () => setShowKycFlow(true),
@@ -278,7 +278,7 @@ const Index = () => {
       import("@/components/PayBillFlow");
       import("@/components/AddMoneyFlow");
       import("@/components/BankTransferFlow");
-      import("@/components/SavingsFlow");
+      
       import("@/components/KycFlow");
       import("@/components/QrScannerModal");
       import("@/components/DynamicQrPaySheet");
@@ -390,7 +390,7 @@ const Index = () => {
                 onRefer={() => handleTabChange("refer")}
                 onShop={() => navigate("/shop")}
                 onBankTransfer={() => setShowBankTransfer(true)}
-                onSavings={() => setShowSavings(true)}
+                
               />
               
               <PromoSlider onFeatureOpen={(feature) => {
@@ -403,7 +403,7 @@ const Index = () => {
                   addmoney: () => setShowAddMoney(true),
                   shop: () => navigate("/shop"),
                   banktransfer: () => setShowBankTransfer(true),
-                  savings: () => setShowSavings(true),
+                  
                   refer: () => handleTabChange("refer"),
                   kyc: () => setShowKycFlow(true),
                   history: () => handleTabChange("history"),
@@ -562,7 +562,7 @@ const Index = () => {
           {showAddMoney  && <AddMoneyFlow key="addmoney-flow" onClose={() => setShowAddMoney(false)} />}
           
           {showBankTransfer && <BankTransferFlow key="bank-transfer-flow" onClose={() => setShowBankTransfer(false)} />}
-          {showSavings   && <SavingsFlow key="savings-flow" onClose={() => setShowSavings(false)} />}
+          
           {showKycFlow   && <KycFlow key="kyc-flow" onClose={() => setShowKycFlow(false)} />}
         </AnimatePresence>
         <MerchantApplicationFlow open={showMerchantApply} onOpenChange={setShowMerchantApply} />

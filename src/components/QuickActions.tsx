@@ -31,7 +31,7 @@ import {
   ShopIcon,
   MoreIcon,
   ReferIcon,
-  SavingsIcon,
+  
   CouponsIcon,
   DonationsIcon,
   LoanIcon,
@@ -93,7 +93,7 @@ const FIXED_IDS = new Set(["send", "cashout", "payment"]);
 
 const moreServices = [
   { id: "refer", Icon: ReferIcon, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500", featureKey: "refer" },
-  { id: "savings", Icon: SavingsIcon, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600", featureKey: "savings" },
+  
   
   { id: "coupons", Icon: CouponsIcon, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: false, featureKey: "coupons" },
   { id: "donations", Icon: DonationsIcon, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: false, featureKey: "donations" },
@@ -282,11 +282,10 @@ interface QuickActionsProps {
   onRefer: () => void;
   onShop: () => void;
   onBankTransfer: () => void;
-  onSavings: () => void;
   
 }
 
-const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer, onSavings }: QuickActionsProps) => {
+const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer }: QuickActionsProps) => {
   const navigate = useNavigate();
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
@@ -425,7 +424,6 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const handleMoreService = (id: string, soon?: boolean) => {
     if (soon) { toast.info("Coming soon!"); return; }
     if (id === "refer") onRefer();
-    else if (id === "savings") onSavings();
     else if (id === "donations") navigate("/donations");
     else if (id === "coupons") navigate("/coupons");
     else if (id === "careers") navigate("/careers");
