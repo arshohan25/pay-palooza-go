@@ -31,7 +31,7 @@ import {
   ShopIcon,
   MoreIcon,
   ReferIcon,
-  SavingsIcon,
+  
   CouponsIcon,
   DonationsIcon,
   LoanIcon,
