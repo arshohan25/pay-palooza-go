@@ -278,7 +278,7 @@ const Index = () => {
       import("@/components/PayBillFlow");
       import("@/components/AddMoneyFlow");
       import("@/components/BankTransferFlow");
-      import("@/components/SavingsFlow");
+      
       import("@/components/KycFlow");
       import("@/components/QrScannerModal");
       import("@/components/DynamicQrPaySheet");
