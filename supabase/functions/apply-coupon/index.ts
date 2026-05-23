@@ -12,6 +12,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require authenticated caller so per-user coupon limits enforce against the real user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ valid: false, error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { code, cart_total, merchant_id } = await req.json();
 
     if (!code || !cart_total) {
@@ -21,10 +30,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Use the caller's JWT so validate_and_apply_coupon sees the correct auth.uid()
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
     );
+
+    // Verify the token is valid before invoking the RPC
+    const { data: claims, error: cErr } = await supabase.auth.getClaims(
+      authHeader.replace("Bearer ", ""),
+    );
+    if (cErr || !claims?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ valid: false, error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const { data, error } = await supabase.rpc("validate_and_apply_coupon", {
       p_code: code,
