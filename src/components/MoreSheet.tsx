@@ -13,7 +13,7 @@ interface MoreSheetProps {
 
 const FEATURE_KEY_MAP: Record<string, string> = {
   bank: "bank_transfer",
-  savings: "savings",
+  
   loan: "loan",
   insurance: "insurance",
   giftcards: "gift_cards",
