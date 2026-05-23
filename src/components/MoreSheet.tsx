@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Landmark, Wallet, Ticket, Heart, X, Briefcase, HandCoins, Shield, Gift } from "lucide-react";
+import { Landmark, Ticket, Heart, X, Briefcase, HandCoins, Shield, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 
