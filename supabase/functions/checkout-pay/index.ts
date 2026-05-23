@@ -152,54 +152,23 @@ Deno.serve(async (req) => {
 
     const amount = session.amount;
 
-    // 6. Check payer balance
-    if (payer.balance < amount) {
-      return jsonRes({ error: "Insufficient balance" }, 400);
+    // 6-7. Atomic transfer via RPC
+    const { error: rpcErr } = await supabaseAdmin.rpc("checkout_atomic_transfer", {
+      p_payer_user_id: payer.user_id,
+      p_recipient_user_id: merchant.user_id,
+      p_amount: amount,
+      p_payer_recipient_phone: merchantProfile.phone,
+      p_payer_recipient_name: merchant.business_name,
+      p_recipient_payer_phone: payer.phone,
+      p_recipient_payer_name: payer.name,
+      p_description: session.description ?? null,
+      p_reference: session.reference || session.id,
+    });
+    if (rpcErr) {
+      const msg = rpcErr.message || "Transfer failed";
+      const status = /insufficient/i.test(msg) ? 400 : 500;
+      return jsonRes({ error: msg }, status);
     }
-
-    // 7. Execute transfer
-    const payerNewBalance = payer.balance - amount;
-    const merchantNewBalance = merchantProfile.balance + amount;
-
-    const { error: debitErr } = await supabaseAdmin
-      .from("profiles")
-      .update({ balance: payerNewBalance })
-      .eq("user_id", payer.user_id);
-    if (debitErr) throw debitErr;
-
-    const { error: creditErr } = await supabaseAdmin
-      .from("profiles")
-      .update({ balance: merchantNewBalance })
-      .eq("user_id", merchant.user_id);
-    if (creditErr) throw creditErr;
-
-    // Record payer transaction
-    await supabaseAdmin.from("transactions").insert({
-      user_id: payer.user_id,
-      type: "payment",
-      amount,
-      fee: 0,
-      balance_after: payerNewBalance,
-      recipient_phone: merchantProfile.phone,
-      recipient_name: merchant.business_name,
-      description: session.description || `Payment to ${merchant.business_name}`,
-      reference: session.reference || session.id,
-      status: "completed",
-    });
-
-    // Record merchant transaction
-    await supabaseAdmin.from("transactions").insert({
-      user_id: merchant.user_id,
-      type: "payment",
-      amount,
-      fee: 0,
-      balance_after: merchantNewBalance,
-      recipient_phone: payer.phone,
-      recipient_name: payer.name,
-      description: session.description || `Payment from ${payer.name || payer.phone}`,
-      reference: session.reference || session.id,
-      status: "completed",
-    });
 
     // 8. Update session to completed
     await supabaseAdmin
