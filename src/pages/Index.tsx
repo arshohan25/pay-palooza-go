@@ -390,7 +390,7 @@ const Index = () => {
                 onRefer={() => handleTabChange("refer")}
                 onShop={() => navigate("/shop")}
                 onBankTransfer={() => setShowBankTransfer(true)}
-                onSavings={() => setShowSavings(true)}
+                
               />
               
               <PromoSlider onFeatureOpen={(feature) => {
