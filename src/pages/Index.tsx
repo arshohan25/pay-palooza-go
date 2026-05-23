@@ -122,7 +122,7 @@ const Index = () => {
   
   
   const [showBankTransfer, setShowBankTransfer] = useState(false);
-  const [showSavings, setShowSavings]     = useState(false);
+  
   const [showMerchantApply, setShowMerchantApply] = useState(false);
   const [showScanPay, setShowScanPay]     = useState(false);
   const [dynamicQrSession, setDynamicQrSession] = useState<{ sessionId: string; merchantId?: string; amount?: number; ref?: string | null } | null>(null);
