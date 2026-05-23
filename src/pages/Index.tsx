@@ -224,7 +224,7 @@ const Index = () => {
         "payment": () => setShowPayment(true),
         "bank-transfer": () => setShowBankTransfer(true),
         "shop": () => navigate("/shop"),
-        "savings": () => setShowSavings(true),
+        
         "merchant-apply": () => setShowMerchantApply(true),
         "scan-pay": () => setShowScanPay(true),
         "kyc": () => setShowKycFlow(true),
