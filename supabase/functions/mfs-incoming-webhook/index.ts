@@ -67,17 +67,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify HMAC signature if secret is configured
+    // Verify HMAC signature — REQUIRED. If secret missing or signature absent/invalid, reject.
     const secretEnvName = PROVIDER_SECRET_MAP[normalizedProvider];
     const webhookSecret = Deno.env.get(secretEnvName);
-    if (webhookSecret && signature) {
-      const valid = await verifyHmac(body, signature, webhookSecret);
-      if (!valid) {
-        return new Response(
-          JSON.stringify({ error: "Invalid signature" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    if (!webhookSecret) {
+      console.error(`Webhook secret ${secretEnvName} not configured for ${normalizedProvider}`);
+      return new Response(
+        JSON.stringify({ error: "Webhook signing not configured for provider" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!signature) {
+      return new Response(
+        JSON.stringify({ error: "Missing signature" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const valid = await verifyHmac(body, signature, webhookSecret);
+    if (!valid) {
+      return new Response(
+        JSON.stringify({ error: "Invalid signature" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Create service-role client for DB operations
