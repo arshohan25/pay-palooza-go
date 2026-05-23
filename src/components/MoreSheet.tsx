@@ -33,8 +33,6 @@ const items = [
 ];
 
 const MoreSheet = ({ open, onClose, onBankTransfer }: MoreSheetProps) => {
-
-const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps) => {
   const navigate = useNavigate();
   const { isHidden } = useGlobalToggles();
 
@@ -50,7 +48,6 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
     onClose();
     setTimeout(() => {
       if (id === "bank") onBankTransfer();
-      else if (id === "savings") onSavings();
       else if (id === "careers") navigate("/careers");
       else if (id === "coupons") navigate("/coupons");
       else if (id === "donations") navigate("/donations");
