@@ -22,6 +22,52 @@ const sb = createClient(
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Authentication: must be (a) service-role JWT (used by internal trigger/function callers),
+  // (b) admin user JWT (can target any users), or (c) a regular user JWT only targeting self.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const token = authHeader.replace("Bearer ", "");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+  let isServiceRole = false;
+  let callerId: string | null = null;
+  let callerIsAdmin = false;
+
+  if (token === serviceKey) {
+    isServiceRole = true;
+  } else {
+    try {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: c, error: cErr } = await userClient.auth.getClaims(token);
+      if (cErr || !c?.claims?.sub) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      callerId = c.claims.sub as string;
+      const admin = createClient(supabaseUrl, serviceKey);
+      const { data: roleCheck } = await admin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", callerId)
+        .eq("role", "admin")
+        .maybeSingle();
+      callerIsAdmin = !!roleCheck;
+    } catch {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   try {
     if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
       return new Response(JSON.stringify({ error: "VAPID keys not configured" }),
@@ -34,6 +80,16 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "user_ids[] and title required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Non-admin user JWT may only push to themselves
+    if (!isServiceRole && !callerIsAdmin) {
+      const onlySelf = user_ids.every((id: string) => id === callerId);
+      if (!onlySelf) {
+        return new Response(JSON.stringify({ error: "Forbidden: can only push to self" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
 
     // If a category is provided, filter out users who have disabled push for that category
     let allowedUserIds: string[] = user_ids;

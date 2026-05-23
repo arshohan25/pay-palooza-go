@@ -8,9 +8,42 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+  // Authorize: shared cron secret OR admin JWT
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const cronSecret = Deno.env.get("FRAUD_RULES_SECRET");
+  let authorized = false;
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+    authorized = true;
+  } else if (authHeader.startsWith("Bearer ")) {
+    try {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: c } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
+      if (c?.claims?.sub) {
+        const admin = createClient(supabaseUrl, serviceKey);
+        const { data: roleCheck } = await admin
+          .from("user_roles")
+          .select("id")
+          .eq("user_id", c.claims.sub as string)
+          .in("role", ["admin", "risk", "compliance"])
+          .maybeSingle();
+        if (roleCheck) authorized = true;
+      }
+    } catch { /* noop */ }
+  }
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
     // Fetch active auto-rules
