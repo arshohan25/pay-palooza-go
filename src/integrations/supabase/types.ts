@@ -6867,15 +6867,20 @@ export type Database = {
         Args: { p_amount: number; p_goal_id: string; p_source?: string }
         Returns: Json
       }
-      sell_gold: {
-        Args: {
-          p_grams: number
-          p_karat: string
-          p_pin?: string
-          p_price_per_gram: number
-        }
-        Returns: Json
-      }
+      sell_gold:
+        | {
+            Args: { p_grams: number; p_karat: string; p_price_per_gram: number }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_grams: number
+              p_karat: string
+              p_pin?: string
+              p_price_per_gram: number
+            }
+            Returns: Json
+          }
       sell_stock: {
         Args: {
           p_pin?: string
