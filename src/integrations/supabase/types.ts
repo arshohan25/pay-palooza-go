@@ -6471,15 +6471,20 @@ export type Database = {
         Args: { p_note?: string; p_payout_id: string }
         Returns: Json
       }
-      buy_gold: {
-        Args: {
-          p_grams: number
-          p_karat: string
-          p_pin?: string
-          p_price_per_gram: number
-        }
-        Returns: Json
-      }
+      buy_gold:
+        | {
+            Args: { p_grams: number; p_karat: string; p_price_per_gram: number }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_grams: number
+              p_karat: string
+              p_pin?: string
+              p_price_per_gram: number
+            }
+            Returns: Json
+          }
       buy_stock:
         | {
             Args: {
