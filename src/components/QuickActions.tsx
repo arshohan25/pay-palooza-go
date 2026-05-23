@@ -93,7 +93,7 @@ const FIXED_IDS = new Set(["send", "cashout", "payment"]);
 
 const moreServices = [
   { id: "refer", Icon: ReferIcon, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500", featureKey: "refer" },
-  { id: "savings", Icon: SavingsIcon, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600", featureKey: "savings" },
+  
   
   { id: "coupons", Icon: CouponsIcon, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: false, featureKey: "coupons" },
   { id: "donations", Icon: DonationsIcon, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: false, featureKey: "donations" },
