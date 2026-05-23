@@ -403,7 +403,7 @@ const Index = () => {
                   addmoney: () => setShowAddMoney(true),
                   shop: () => navigate("/shop"),
                   banktransfer: () => setShowBankTransfer(true),
-                  savings: () => setShowSavings(true),
+                  
                   refer: () => handleTabChange("refer"),
                   kyc: () => setShowKycFlow(true),
                   history: () => handleTabChange("history"),
