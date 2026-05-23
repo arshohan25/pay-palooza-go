@@ -108,8 +108,6 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         message: "OTP sent successfully.",
-        // DEV ONLY: return code for testing. Remove in production!
-        dev_otp: code,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
