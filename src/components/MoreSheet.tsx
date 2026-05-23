@@ -9,7 +9,6 @@ interface MoreSheetProps {
   open: boolean;
   onClose: () => void;
   onBankTransfer: () => void;
-  onSavings: () => void;
 }
 
 const FEATURE_KEY_MAP: Record<string, string> = {
