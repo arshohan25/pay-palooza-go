@@ -193,25 +193,6 @@ Deno.serve(async (req) => {
     if (payer.user_id === recipient.user_id) {
       return jsonRes({ error: "Cannot pay yourself" }, 400);
     }
-    if (payer.balance < amount) {
-      return jsonRes({ error: "Insufficient balance" }, 400);
-    }
-
-    // ── 5. Execute transfer ──
-    const payerNewBalance = payer.balance - amount;
-    const recipientNewBalance = recipient.balance + amount;
-
-    const { error: debitErr } = await dbClient
-      .from("profiles")
-      .update({ balance: payerNewBalance })
-      .eq("user_id", payer.user_id);
-    if (debitErr) throw debitErr;
-
-    const { error: creditErr } = await dbClient
-      .from("profiles")
-      .update({ balance: recipientNewBalance })
-      .eq("user_id", recipient.user_id);
-    if (creditErr) throw creditErr;
 
     const { data: merch } = await dbClient
       .from("merchants")
@@ -223,31 +204,23 @@ Deno.serve(async (req) => {
     const recipientName = merch?.business_name || recipient.name || recipient.phone;
     const payerName = payer.name || cleanPhone;
 
-    await dbClient.from("transactions").insert({
-      user_id: payer.user_id,
-      type: "payment",
-      amount,
-      fee: 0,
-      balance_after: payerNewBalance,
-      recipient_phone: recipient.phone,
-      recipient_name: recipientName,
-      description: description || `Payment to ${recipientName}`,
-      reference: cleanReference || null,
-      status: "completed",
+    // ── 5. Atomic transfer via RPC ──
+    const { error: rpcErr } = await dbClient.rpc("checkout_atomic_transfer", {
+      p_payer_user_id: payer.user_id,
+      p_recipient_user_id: recipient.user_id,
+      p_amount: amount,
+      p_payer_recipient_phone: recipient.phone,
+      p_payer_recipient_name: recipientName,
+      p_recipient_payer_phone: cleanPhone,
+      p_recipient_payer_name: payerName,
+      p_description: description ?? null,
+      p_reference: cleanReference || null,
     });
-
-    await dbClient.from("transactions").insert({
-      user_id: recipient.user_id,
-      type: "payment",
-      amount,
-      fee: 0,
-      balance_after: recipientNewBalance,
-      recipient_phone: cleanPhone,
-      recipient_name: payerName,
-      description: description || `Payment from ${payerName}`,
-      reference: cleanReference || null,
-      status: "completed",
-    });
+    if (rpcErr) {
+      const msg = rpcErr.message || "Transfer failed";
+      const status = /insufficient/i.test(msg) ? 400 : 500;
+      return jsonRes({ error: msg }, status);
+    }
 
     // Update payment link usage
     if (cleanReference) {
