@@ -6852,6 +6852,7 @@ export type Database = {
         Args: { p_amount: number; p_loan_id: string }
         Returns: Json
       }
+      repay_missed_dps: { Args: { p_missed_id: string }; Returns: Json }
       request_vendor_payout: { Args: { p_amount: number }; Returns: Json }
       require_kyc_verified: { Args: { p_user_id: string }; Returns: undefined }
       resolve_payment_merchant: {
