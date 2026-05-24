@@ -6881,15 +6881,20 @@ export type Database = {
             }
             Returns: Json
           }
-      sell_stock: {
-        Args: {
-          p_pin?: string
-          p_price: number
-          p_quantity: number
-          p_symbol: string
-        }
-        Returns: Json
-      }
+      sell_stock:
+        | {
+            Args: { p_price: number; p_quantity: number; p_symbol: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_pin?: string
+              p_price: number
+              p_quantity: number
+              p_symbol: string
+            }
+            Returns: Json
+          }
       set_kyc_exempt: {
         Args: { exempt: boolean; target_user_id: string }
         Returns: undefined
