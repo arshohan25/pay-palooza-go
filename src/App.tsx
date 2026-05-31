@@ -108,6 +108,7 @@ const App = () => (
                       <Route path="insurance" element={<InsurancePage />} />
                       <Route path="giftcards" element={<GiftCardsPage />} />
                       <Route path="account" element={<AccountPage />} />
+                      <Route path="savings" element={<SavingsPage />} />
                     </Route>
 
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
