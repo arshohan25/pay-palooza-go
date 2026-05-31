@@ -830,7 +830,7 @@ const SavingsPage = () => {
   if (kycLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   }
-  if (kyc !== "approved") {
+  if (kyc !== "verified") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center gap-3">
         <Lock className="w-10 h-10 text-muted-foreground" />
