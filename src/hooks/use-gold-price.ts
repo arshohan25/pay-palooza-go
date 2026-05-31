@@ -35,8 +35,8 @@ export function useGoldPrice(): GoldPriceData {
 
   useEffect(() => {
     fetchPrice();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchPrice, 30 * 1000);
+    // Auto-refresh every 5 minutes
+    const interval = setInterval(fetchPrice, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchPrice]);
 

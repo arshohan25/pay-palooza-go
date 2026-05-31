@@ -54,6 +54,7 @@ const InsurancePage = lazy(() => retryLazyImport(() => import("./pages/Insurance
 const GiftCardsPage = lazy(() => import("./pages/GiftCardsPage"));
 const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
+const SavingsPage = lazy(() => import("./pages/SavingsPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -107,6 +108,7 @@ const App = () => (
                       <Route path="insurance" element={<InsurancePage />} />
                       <Route path="giftcards" element={<GiftCardsPage />} />
                       <Route path="account" element={<AccountPage />} />
+                      <Route path="savings" element={<SavingsPage />} />
                     </Route>
 
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />

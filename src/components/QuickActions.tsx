@@ -31,6 +31,7 @@ import {
   ShopIcon,
   MoreIcon,
   ReferIcon,
+  SavingsIcon,
   
   CouponsIcon,
   DonationsIcon,
@@ -93,8 +94,7 @@ const FIXED_IDS = new Set(["send", "cashout", "payment"]);
 
 const moreServices = [
   { id: "refer", Icon: ReferIcon, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500", featureKey: "refer" },
-  
-  
+  { id: "savings", Icon: SavingsIcon, label: "Islamic Savings", desc: "Sharia goals, DPS, gold, stocks", gradient: "from-emerald-500 to-teal-600", soon: false, featureKey: "savings" },
   { id: "coupons", Icon: CouponsIcon, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: false, featureKey: "coupons" },
   { id: "donations", Icon: DonationsIcon, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: false, featureKey: "donations" },
   { id: "loan", Icon: LoanIcon, label: "Loan", desc: "Quick personal loans", gradient: "from-amber-500 to-orange-600", soon: false, featureKey: "loan" },
@@ -430,6 +430,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     else if (id === "loan") navigate("/loan");
     else if (id === "insurance") navigate("/insurance");
     else if (id === "giftcards") navigate("/giftcards");
+    else if (id === "savings") navigate("/savings");
   };
 
   const filteredMoreServices = visibleMoreServices;
