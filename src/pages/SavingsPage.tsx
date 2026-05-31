@@ -851,7 +851,7 @@ const SavingsPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Seo title="Islamic Savings & DPS" description="Sharia-compliant savings, DPS, gold, and stocks." />
+      <Seo title="Islamic Savings & DPS" description="Sharia-compliant savings, DPS, gold, and stocks." path="/savings" />
 
       {/* Header */}
       <div className="sticky top-0 z-10 backdrop-blur-xl bg-background/80 border-b border-border/40">
