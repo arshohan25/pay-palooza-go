@@ -805,7 +805,8 @@ const SavingsPage = () => {
   const [walletBal, setWalletBal] = useState<number>(getBalance());
   useEffect(() => {
     if (user?.id) { fetchBalance(user.id).then(setWalletBal); }
-    return onBalanceChange(setWalletBal);
+    const unsub = onBalanceChange(setWalletBal);
+    return () => { unsub(); };
   }, [user?.id]);
   const { goals, plans, gold, stocks } = useSavings();
   const [tab, setTab] = useState<Tab>("goals");
