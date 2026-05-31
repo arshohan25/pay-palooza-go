@@ -1,48 +1,70 @@
-## Issues
+# Islamic Savings & DPS — Full Implementation Plan
 
-**1. "Total Deposited ৳0" ignores the opening deposit**
+## Scope
 
-The summary card at the top of the DPS detail screen computes:
+Close all gaps from the audit: small backend fixes plus the entire missing frontend module. I'll keep existing working code untouched (RPCs, edge function, current Investment Hub screens) and only add what's missing or correcting what deviates from spec.
+
+## Part A — Backend fixes (1 migration)
+
+1. **Drop overloaded RPC signatures** (`buy_gold`, `sell_gold`, `buy_stock`, `sell_stock`) so PostgREST resolves a single function. Keep the newest, correct version of each.
+2. **`process-auto-save` final-installment settlement**: when `total_paid + 1 == total_installments`, set `settled = true, is_active = false` on the schedule (edge function edit, not migration).
+3. **3-month DPS lock-in**: add a guard inside `cancel_goal` / a new helper so DPS-linked goals raise an error if cancelled before 90 days from creation. Goal lock-in stays 60 days for non-DPS goals.
+
+## Part B — Frontend module
+
+New files:
 
 ```
-totalDeposited = schedule.total_paid * schedule.amount
+src/lib/savingsReturns.ts          // STRATEGY_RETURNS, FREQ_BONUS, getEstReturn (6% cap),
+                                   // calcCompoundProfit, calcDpsEstimate
+src/hooks/use-savings.ts           // goals, deposits, schedules, missed payments
+                                   // + realtime channels on all 6 tables
+src/components/savings/
+  SavingsHome.tsx                  // hub: balance, goals grid, DPS list, gold/stock cards
+  GoalsList.tsx + GoalDetail.tsx   // create, deposit, withdraw, cancel (60-day)
+  DpsList.tsx + DpsDetail.tsx      // create plan, timeline, repay missed, collect-now
+  DpsCreateFlow.tsx                // amount, frequency, duration, strategy picker
+  GoldHome.tsx + GoldBuySheet.tsx + GoldSellSheet.tsx
+  StocksHome.tsx + StockBuySheet.tsx + StockSellSheet.tsx
+  shared/
+    SavingsPinInput.tsx
+    DpsTimeline.tsx
+    GoalDepositTimeline.tsx
+    EstimatedReturnsCard.tsx
+    StrategyPicker.tsx
+    ReconciliationPanel.tsx
+    TermsSheet.tsx
+    DeleteConfirmSheet.tsx
+    InstallmentDetailDialog.tsx
 ```
 
-`total_paid` is the cron‑run counter, which is `0` until the first scheduled installment runs. The ৳1,000 debited at plan creation (the "opening deposit") never increments `total_paid`, so the card shows ৳0 even though the timeline already lists the opening deposit and the reconciliation card already accounts for it.
+Behaviour:
 
-**2. "Collect Now" debits the wallet without a PIN**
+- **Realtime**: subscribe to `savings_goals`, `savings_deposits`, `savings_auto_save`, `dps_run_log`, `dps_missed_payments`, `gold_holdings`, `stock_holdings` filtered by `user_id`. Zero-refresh.
+- **First DPS installment** deducted at plan creation via `savings_deposit` RPC before `INSERT INTO savings_auto_save`.
+- **Lock-in checks** surfaced in UI (60-day goal, 90-day DPS) before opening cancel sheet.
+- **Live prices**: change polling interval in `use-gold-price.ts` and `use-stock-prices.ts` from 30 s → 5 min; persist to DB on each poll via a small RPC update on existing holdings.
+- **PIN + SlideToConfirm**: every money-moving action (buy/sell/cancel/withdraw/repay/collect-now) goes through `SavingsPinInput → verifyPin → SlideToConfirm`, with terms checkbox where the spec requires it.
+- **Plan.md fix**: also resolve the two issues already noted in `.lovable/plan.md` (Total Deposited derivation, Collect Now PIN gate) — these fall inside the new DpsDetail screen.
 
-The Collect Now button on the DPS detail screen invokes the `process-auto-save` edge function directly on tap. Every other money‑moving action in this flow (create plan, repay missed, delete, withdraw, etc.) routes through `SavingsPinInput` + `verifyPin()` + `SlideToConfirm`. Collect Now is the only debit path that skips this.
+## Part C — Wiring
 
-## Fix
+- Add `/savings` route in `src/App.tsx` (lazy-loaded `SavingsHome`).
+- Replace the existing Investment Hub entry point on the dashboard to navigate to `/savings` (keep old screens accessible via deep link until parity is verified, then remove in a follow-up).
 
-### A. Total Deposited reflects actual money in the goal
+## Out of scope
 
-In the DPS detail header (around line 2357‑2360 of `src/components/SavingsFlow.tsx`):
+- No changes to admin panels, notifications schema, or auth.
+- No new Supabase tables — all 7 already exist.
+- I will NOT touch `src/integrations/supabase/{client,types}.ts` or `.env`.
 
-- Derive `totalDeposited` from the same bucketed timeline used by the reconciliation card: `processedSum + repaidSum + openingSum − refundedSum` (i.e. money that currently sits in the linked goal).
-- Lift the timeline bucketing (currently inside the timeline IIFE at ~line 2476) into the parent `dps-detail` scope, or compute a lightweight `netDeposited` from `dpsTimeline` once and reuse it in both the header card and the reconciliation card so the two never disagree.
-- Keep the `Installments` tile as `paid / totalInst` (cron count) — that semantic is correct; only the money figure changes.
+## Order of execution
 
-### B. Collect Now goes through PIN verification
+1. Migration (Part A.1 + A.3) — wait for approval.
+2. Edit `process-auto-save` (A.2).
+3. Build `savingsReturns.ts` + `use-savings.ts`.
+4. Build shared components.
+5. Build screens top-down (Home → Goals → DPS → Gold → Stocks).
+6. Wire route, swap dashboard entry, verify build.
 
-Add a new flow step `collect-now` and route the button to it instead of calling the edge function directly:
-
-1. Add `"collect-now"` to the `step` union and to the back‑button handler (line ~857) so it returns to `dps-detail`.
-2. Change the Collect Now button (line ~2439) to `setStep("collect-now"); setPin(""); setPinError("");` instead of invoking the function.
-3. Add a new step view rendered when `step === "collect-now"` containing:
-   - A summary card: schedule amount, linked goal, current wallet balance, and a warning if `balance < amount` ("Insufficient balance — this run will be marked missed").
-   - `SavingsPinInput` bound to the existing `pin` / `pinError` state.
-   - `SlideToConfirm` that calls a new `handleCollectNow()` handler.
-4. `handleCollectNow()`:
-   - `await verifyPin(pin)` — on failure call `failPin()` and return.
-   - Set `processing`, then invoke `supabase.functions.invoke("process-auto-save", { body: { schedule_id: selectedSchedule.id } })`.
-   - Map the existing outcome codes (`collected`, `missed`, `dedup_skipped`, `settled`, `no_goal`) to the same toasts already used inline today.
-   - On success: refresh `loadAutoSaves / loadMissedPayments / loadGoals`, clear PIN, return to `dps-detail`.
-   - On error: show error inline (`setError`) and keep the user on the PIN screen.
-
-No backend / RLS changes needed — `process-auto-save` already runs against the authenticated user; this only adds a client‑side PIN gate to match every other debit flow.
-
-### Files touched
-
-- `src/components/SavingsFlow.tsx` (only)
+This is a large change (~15–20 files). I'll batch writes in parallel where possible.
