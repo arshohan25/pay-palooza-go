@@ -802,7 +802,11 @@ const SavingsPage = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { status: kyc, loading: kycLoading } = useKycStatus();
-  const { profile } = useProfile();
+  const [walletBal, setWalletBal] = useState<number>(getBalance());
+  useEffect(() => {
+    if (user?.id) { fetchBalance(user.id).then(setWalletBal); }
+    return onBalanceChange(setWalletBal);
+  }, [user?.id]);
   const { goals, plans, gold, stocks } = useSavings();
   const [tab, setTab] = useState<Tab>("goals");
   const { price22k } = useGoldPrice();
