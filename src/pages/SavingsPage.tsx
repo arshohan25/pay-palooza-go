@@ -878,7 +878,7 @@ const SavingsPage = () => {
             <div><div className="text-xs text-muted-foreground">Gold</div><div className="text-sm font-semibold">{gold.reduce((s,g) => s + Number(g.grams), 0).toFixed(1)}g</div></div>
             <div><div className="text-xs text-muted-foreground">Stocks</div><div className="text-sm font-semibold">{stocks.length}</div></div>
           </div>
-          <div className="text-[10px] text-muted-foreground mt-3">Wallet balance: ৳{Number(profile?.balance ?? 0).toLocaleString()}</div>
+          <div className="text-[10px] text-muted-foreground mt-3">Wallet balance: ৳{Number(walletBal ?? 0).toLocaleString()}</div>
         </div>
 
         {/* Tabs */}
