@@ -54,6 +54,7 @@ const InsurancePage = lazy(() => retryLazyImport(() => import("./pages/Insurance
 const GiftCardsPage = lazy(() => import("./pages/GiftCardsPage"));
 const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
+const SavingsPage = lazy(() => import("./pages/SavingsPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
