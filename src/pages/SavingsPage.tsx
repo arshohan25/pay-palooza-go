@@ -17,7 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useProfile } from "@/hooks/use-profile";
+import { fetchBalance, onBalanceChange, getBalance } from "@/lib/balanceStore";
 import { useKycStatus } from "@/hooks/use-kyc-status";
 import { useSavings } from "@/hooks/use-savings";
 import { useGoldPrice } from "@/hooks/use-gold-price";
