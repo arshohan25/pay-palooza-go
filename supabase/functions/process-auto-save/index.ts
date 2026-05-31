@@ -352,12 +352,17 @@ Deno.serve(async (req) => {
         balance_after: newBalance,
       }).select("id").single();
 
+      const newTotalPaid = (schedule.total_paid ?? 0) + 1;
+      const reachedFinal = !!schedule.total_installments && newTotalPaid >= Number(schedule.total_installments);
       await supabase.from("savings_auto_save").update({
         next_run_at: nextRun.toISOString(),
         last_run_at: new Date().toISOString(),
-        total_paid: (schedule.total_paid ?? 0) + 1,
+        total_paid: newTotalPaid,
+        is_active: reachedFinal ? false : schedule.is_active,
+        settled: reachedFinal ? true : (schedule.settled ?? false),
         updated_at: new Date().toISOString(),
       }).eq("id", schedule.id);
+      if (reachedFinal) settled++;
 
       const successTitle = completed ? "🎉 Goal Completed!" : "✅ DPS Installment Collected";
       const successBody = `৳${schedule.amount} ${triggeredBy === "cron" ? "auto-collected" : "collected"} to "${goal.name}"${completed ? " — Goal completed!" : `. Installment ${(schedule.total_paid ?? 0) + 1}/${schedule.total_installments ?? "∞"}`}`;
