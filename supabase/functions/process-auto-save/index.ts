@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret, x-request-id",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -16,14 +16,9 @@ type Outcome =
   | "schedule_inactive"
   | "schedule_not_found";
 
-function jsonError(status: number, code: string, message: string): Response {
-  return new Response(JSON.stringify({ error: { code, message } }), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
+type AuthMethod = "vault_secret" | "env_secret" | "bearer_user" | "bearer_admin" | "none";
+type TriggeredBy = "cron" | "user" | "admin" | "retry";
 
-// Constant-time string comparison to avoid timing attacks on the cron secret
 function safeEq(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let r = 0;
@@ -31,38 +26,27 @@ function safeEq(a: string, b: string): boolean {
   return r === 0;
 }
 
-// In-memory rate limit for `force` runs (per-instance only — best-effort).
-// Key: `${actor}:${scope}` -> last-run timestamp (ms).
-const FORCE_COOLDOWN_MS = 30_000; // 30s between forced runs per admin per scope
+const FORCE_COOLDOWN_MS = 30_000;
 const forceLastRun = new Map<string, number>();
 function checkForceRateLimit(actor: string, scope: string): { ok: boolean; retryAfterMs: number } {
   const key = `${actor}:${scope}`;
   const now = Date.now();
   const last = forceLastRun.get(key) ?? 0;
   const delta = now - last;
-  if (delta < FORCE_COOLDOWN_MS) {
-    return { ok: false, retryAfterMs: FORCE_COOLDOWN_MS - delta };
-  }
+  if (delta < FORCE_COOLDOWN_MS) return { ok: false, retryAfterMs: FORCE_COOLDOWN_MS - delta };
   forceLastRun.set(key, now);
-  // Opportunistic cleanup
   if (forceLastRun.size > 500) {
-    for (const [k, t] of forceLastRun) {
-      if (now - t > 10 * 60_000) forceLastRun.delete(k);
-    }
+    for (const [k, t] of forceLastRun) if (now - t > 10 * 60_000) forceLastRun.delete(k);
   }
   return { ok: true, retryAfterMs: 0 };
 }
 
-// Cache the vault-stored cron secret across warm invocations to avoid an extra DB hit per call.
 let cachedVaultCronSecret: string | null = null;
 let cachedVaultCronSecretAt = 0;
 const VAULT_CACHE_TTL_MS = 5 * 60 * 1000;
-
 async function getVaultCronSecret(adminClient: ReturnType<typeof createClient>): Promise<string> {
   const now = Date.now();
-  if (cachedVaultCronSecret && now - cachedVaultCronSecretAt < VAULT_CACHE_TTL_MS) {
-    return cachedVaultCronSecret;
-  }
+  if (cachedVaultCronSecret && now - cachedVaultCronSecretAt < VAULT_CACHE_TTL_MS) return cachedVaultCronSecret;
   const { data, error } = await adminClient.rpc("get_autosave_cron_secret");
   if (error || !data || typeof data !== "string") return "";
   cachedVaultCronSecret = data;
@@ -73,46 +57,65 @@ async function getVaultCronSecret(adminClient: ReturnType<typeof createClient>):
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const startedAt = Date.now();
+  const requestId = req.headers.get("x-request-id") ?? crypto.randomUUID();
+
+  // Mutable state captured for logging in finally
+  let triggeredBy: TriggeredBy = "user";
+  let authMethod: AuthMethod = "none";
+  let statusCode = 500;
+  let processed = 0, skipped = 0, settled = 0, missed = 0, dedup = 0, scheduleCount = 0;
+  let errorCode: string | null = null;
+  let errorMessage: string | null = null;
+  let logClient: ReturnType<typeof createClient> | null = null;
+  let backfillMeta: any = null;
+
+  const respond = (status: number, payload: unknown) => {
+    statusCode = status;
+    return new Response(JSON.stringify(payload), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json", "x-request-id": requestId },
+    });
+  };
+  const jsonError = (status: number, code: string, message: string) => {
+    errorCode = code;
+    errorMessage = message;
+    return respond(status, { error: { code, message } });
+  };
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const envCronSecret = Deno.env.get("ADMIN_METRICS_CRON_SECRET") ?? "";
 
-    if (!serviceKey || !anonKey) {
-      return jsonError(500, "MISCONFIGURED", "Server is missing required configuration");
-    }
+    if (!serviceKey || !anonKey) return jsonError(500, "MISCONFIGURED", "Server is missing required configuration");
+
+    logClient = createClient(supabaseUrl, serviceKey);
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const cronHeader = req.headers.get("x-cron-secret") ?? "";
 
-    // Cron auth: accept either the env-var secret OR the vault-stored secret.
-    // Constant-time match; bearer header MUST NOT escalate to cron privileges.
-    const adminClientForAuth = createClient(supabaseUrl, serviceKey);
     let isCron = false;
     if (cronHeader.length >= 16) {
       if (envCronSecret.length >= 16 && safeEq(cronHeader, envCronSecret)) {
         isCron = true;
+        authMethod = "env_secret";
       } else {
-        const vaultSecret = await getVaultCronSecret(adminClientForAuth);
+        const vaultSecret = await getVaultCronSecret(logClient);
         if (vaultSecret.length >= 16 && safeEq(cronHeader, vaultSecret)) {
           isCron = true;
+          authMethod = "vault_secret";
         }
       }
     }
 
     const hasBearer = authHeader.startsWith("Bearer ") && authHeader.length > 20;
+    if (!isCron && !hasBearer) return jsonError(401, "UNAUTHORIZED", "Unauthorized");
 
-    if (!isCron && !hasBearer) {
-      return jsonError(401, "UNAUTHORIZED", "Unauthorized");
-    }
-
-    // Parse optional body: { schedule_id?, force? }
-    let body: { schedule_id?: string; force?: boolean } = {};
+    let body: { schedule_id?: string; force?: boolean; mode?: "backfill"; retry?: boolean } = {};
     try {
-      if (req.headers.get("content-type")?.includes("application/json")) {
-        body = await req.json();
-      }
+      if (req.headers.get("content-type")?.includes("application/json")) body = await req.json();
     } catch (_) { /* no body */ }
 
     if (body.schedule_id !== undefined && typeof body.schedule_id !== "string") {
@@ -122,8 +125,6 @@ Deno.serve(async (req) => {
       return jsonError(400, "BAD_REQUEST", "schedule_id must be a UUID");
     }
 
-    // Resolve caller identity (for user/admin manual triggers).
-    // Cron callers are NEVER treated as admins, even if a bearer is also present.
     let callerUserId: string | null = null;
     let callerIsAdmin = false;
     if (!isCron && hasBearer) {
@@ -132,61 +133,51 @@ Deno.serve(async (req) => {
       });
       const token = authHeader.replace("Bearer ", "");
       const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
-      if (claimsErr || !claims?.claims?.sub) {
-        return jsonError(401, "UNAUTHORIZED", "Invalid or expired token");
-      }
+      if (claimsErr || !claims?.claims?.sub) return jsonError(401, "UNAUTHORIZED", "Invalid or expired token");
       callerUserId = claims.claims.sub;
-      const admin = createClient(supabaseUrl, serviceKey);
-      const { data: roleRow, error: roleErr } = await admin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", callerUserId)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (roleErr) {
-        return jsonError(500, "INTERNAL_ERROR", "Failed to resolve role");
-      }
+      const { data: roleRow, error: roleErr } = await logClient
+        .from("user_roles").select("role").eq("user_id", callerUserId).eq("role", "admin").maybeSingle();
+      if (roleErr) return jsonError(500, "INTERNAL_ERROR", "Failed to resolve role");
       callerIsAdmin = !!roleRow;
+      authMethod = callerIsAdmin ? "bearer_admin" : "bearer_user";
     }
 
-    const triggeredBy: "cron" | "user" | "admin" = isCron ? "cron" : callerIsAdmin ? "admin" : "user";
+    triggeredBy = isCron ? (body.retry ? "retry" : "cron") : callerIsAdmin ? "admin" : "user";
 
-    // `force` is admin-only. Reject (don't silently downgrade) so callers see the failure.
-    if (body.force && !callerIsAdmin) {
-      return jsonError(403, "FORBIDDEN_ADMIN_REQUIRED", "force requires admin role");
-    }
+    if (body.force && !callerIsAdmin) return jsonError(403, "FORBIDDEN_ADMIN_REQUIRED", "force requires admin role");
     const force = !!body.force && callerIsAdmin;
 
-    // Rate-limit forced runs per-admin (best-effort, per-instance).
+    // Backfill mode: admin or cron only
+    const isBackfill = body.mode === "backfill";
+    if (isBackfill && !callerIsAdmin && !isCron) {
+      return jsonError(403, "FORBIDDEN", "backfill requires admin or cron");
+    }
+
     if (force) {
       const scope = body.schedule_id ?? "all";
       const rl = checkForceRateLimit(callerUserId ?? "anon", scope);
       if (!rl.ok) {
+        errorCode = "RATE_LIMITED";
+        errorMessage = "Forced runs throttled";
+        statusCode = 429;
         return new Response(
-          JSON.stringify({
-            error: {
-              code: "RATE_LIMITED",
-              message: `Forced runs are limited to one per ${Math.round(FORCE_COOLDOWN_MS / 1000)}s per scope`,
-            },
-          }),
-          {
-            status: 429,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-              "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)),
-            },
-          },
+          JSON.stringify({ error: { code: "RATE_LIMITED", message: `Forced runs are limited to one per ${Math.round(FORCE_COOLDOWN_MS / 1000)}s per scope` } }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)), "x-request-id": requestId } },
         );
       }
     }
 
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = logClient!;
 
-    // Fetch schedules
+    // Resolve target schedules
     let schedulesQuery = supabase.from("savings_auto_save").select("*");
     if (body.schedule_id) {
       schedulesQuery = schedulesQuery.eq("id", body.schedule_id);
+    } else if (isBackfill) {
+      // Backfill: only schedules overdue by > 24h
+      schedulesQuery = schedulesQuery
+        .eq("is_active", true)
+        .lt("next_run_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
     } else {
       schedulesQuery = schedulesQuery
         .eq("is_active", true)
@@ -194,85 +185,67 @@ Deno.serve(async (req) => {
     }
     const { data: schedules, error: fetchErr } = await schedulesQuery;
     if (fetchErr) throw fetchErr;
+    scheduleCount = (schedules ?? []).length;
 
-    // Authorization for single-schedule manual run
     if (body.schedule_id && schedules && schedules.length > 0 && !isCron) {
       const own = schedules[0].user_id === callerUserId;
-      if (!own && !callerIsAdmin) {
-        return jsonError(403, "FORBIDDEN", "You do not own this schedule");
-      }
+      if (!own && !callerIsAdmin) return jsonError(403, "FORBIDDEN", "You do not own this schedule");
     }
 
-    let processed = 0, skipped = 0, settled = 0, missed = 0, dedup = 0;
-    const perSchedule: Array<{ schedule_id: string; outcome: Outcome; reason?: string }> = [];
+    const perSchedule: Array<{ schedule_id: string; outcome: Outcome; reason?: string; cycles?: number }> = [];
 
-    const log = async (
-      schedule: any,
-      outcome: Outcome,
-      reason: string,
-      amount: number,
-      extra?: { goal_id?: string | null; goal_name?: string | null; tx_reference?: string | null; transaction_id?: string | null },
-    ) => {
-      perSchedule.push({ schedule_id: schedule.id, outcome, reason });
-      try {
-        await supabase.from("dps_run_log").insert({
-          schedule_id: schedule.id,
-          user_id: schedule.user_id,
-          outcome,
-          reason,
-          amount,
-          triggered_by: triggeredBy,
-          goal_id: extra?.goal_id ?? null,
-          goal_name: extra?.goal_name ?? null,
-          tx_reference: extra?.tx_reference ?? null,
-          transaction_id: extra?.transaction_id ?? null,
-        });
-      } catch (_) { /* best-effort */ }
-    };
+    // ---- Per-schedule single-cycle processor (returns outcome) ----
+    const runCycle = async (schedule: any): Promise<{ outcome: Outcome; reason: string; updatedSchedule: any | null }> => {
+      const log = async (
+        outcome: Outcome,
+        reason: string,
+        amount: number,
+        extra?: { goal_id?: string | null; goal_name?: string | null; tx_reference?: string | null; transaction_id?: string | null },
+      ) => {
+        try {
+          await supabase.from("dps_run_log").insert({
+            schedule_id: schedule.id,
+            user_id: schedule.user_id,
+            outcome, reason, amount,
+            triggered_by: triggeredBy,
+            goal_id: extra?.goal_id ?? null,
+            goal_name: extra?.goal_name ?? null,
+            tx_reference: extra?.tx_reference ?? null,
+            transaction_id: extra?.transaction_id ?? null,
+          });
+        } catch (_) { /* best-effort */ }
+      };
 
-    const sendPush = async (user_id: string, category: string, title: string, bodyTxt: string) => {
-      try {
-        // Per-user category preference + quiet-hours gate (Asia/Dhaka)
-        const { data: allowed } = await supabase.rpc("should_send_push", {
-          p_user_id: user_id,
-          p_category: category,
-        });
-        if (allowed !== true) return;
-        await supabase.functions.invoke("send-push-notification", {
-          body: { user_ids: [user_id], title, body: bodyTxt, url: "/savings" },
-        });
-      } catch (_) { /* best-effort */ }
-    };
+      const sendPush = async (user_id: string, category: string, title: string, bodyTxt: string) => {
+        try {
+          const { data: allowed } = await supabase.rpc("should_send_push", { p_user_id: user_id, p_category: category });
+          if (allowed !== true) return;
+          await supabase.functions.invoke("send-push-notification", {
+            body: { user_ids: [user_id], title, body: bodyTxt, url: "/savings" },
+          });
+        } catch (_) { /* best-effort */ }
+      };
 
-    for (const schedule of schedules ?? []) {
-      // Honor inactive when manual single-target
       if (body.schedule_id && !schedule.is_active && !force) {
-        await log(schedule, "schedule_inactive", "Schedule is paused", 0);
-        skipped++;
-        continue;
+        await log("schedule_inactive", "Schedule is paused", 0);
+        return { outcome: "schedule_inactive", reason: "paused", updatedSchedule: null };
       }
 
-      // Idempotency guard (skip when force=true)
-      if (!force && schedule.last_run_at) {
+      if (!force && !isBackfill && schedule.last_run_at) {
         const last = new Date(schedule.last_run_at).getTime();
         const minGap = schedule.frequency === "daily" ? 20 * 60 * 60 * 1000
           : schedule.frequency === "weekly" ? 6 * 24 * 60 * 60 * 1000
           : 27 * 24 * 60 * 60 * 1000;
         if (Date.now() - last < minGap) {
-          await log(schedule, "dedup_skipped", "Within cycle window", 0);
-          dedup++;
-          continue;
+          await log("dedup_skipped", "Within cycle window", 0);
+          return { outcome: "dedup_skipped", reason: "within window", updatedSchedule: null };
         }
       }
 
-      // Plan expired
       if (schedule.ends_at && new Date(schedule.ends_at) <= new Date()) {
         await supabase.from("savings_auto_save").update({
-          is_active: false,
-          settled: true,
-          updated_at: new Date().toISOString(),
+          is_active: false, settled: true, updated_at: new Date().toISOString(),
         }).eq("id", schedule.id);
-
         await supabase.from("notifications").insert({
           user_id: schedule.user_id,
           title: "✅ DPS Plan Completed",
@@ -280,26 +253,17 @@ Deno.serve(async (req) => {
           category: "savings",
         });
         await sendPush(schedule.user_id, "savings_collected", "✅ DPS Plan Completed", `Your DPS plan has finished. ${schedule.total_paid ?? 0} installments paid.`);
-
-        await log(schedule, "settled", "ends_at reached", 0);
-        settled++;
-        continue;
+        await log("settled", "ends_at reached", 0);
+        return { outcome: "settled", reason: "ends_at", updatedSchedule: null };
       }
 
-      // Target goal MUST be explicitly linked on the schedule.
-      // Never silently fall back to "first active goal" — that misroutes funds.
       const goalId: string | null = schedule.goal_id ?? null;
       if (!goalId) {
-        await log(schedule, "no_goal", "Schedule has no linked goal_id", 0);
-        skipped++;
-        continue;
+        await log("no_goal", "Schedule has no linked goal_id", 0);
+        return { outcome: "no_goal", reason: "no goal", updatedSchedule: null };
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("balance")
-        .eq("user_id", schedule.user_id)
-        .single();
+      const { data: profile } = await supabase.from("profiles").select("balance").eq("user_id", schedule.user_id).single();
 
       const nextRun = new Date();
       if (schedule.frequency === "daily") nextRun.setDate(nextRun.getDate() + 1);
@@ -308,43 +272,28 @@ Deno.serve(async (req) => {
 
       if (!profile || Number(profile.balance) < Number(schedule.amount)) {
         await supabase.from("dps_missed_payments").insert({
-          schedule_id: schedule.id,
-          user_id: schedule.user_id,
-          amount: schedule.amount,
-          due_date: new Date().toISOString(),
+          schedule_id: schedule.id, user_id: schedule.user_id, amount: schedule.amount, due_date: new Date().toISOString(),
         });
-
-        await supabase.from("savings_auto_save").update({
+        const updated = {
           missed_count: (schedule.missed_count ?? 0) + 1,
           last_missed_at: new Date().toISOString(),
           next_run_at: nextRun.toISOString(),
           last_run_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        }).eq("id", schedule.id);
-
+        };
+        await supabase.from("savings_auto_save").update(updated).eq("id", schedule.id);
         const t = "⚠️ DPS Installment Missed";
         const b = `Insufficient balance for ৳${schedule.amount} DPS installment. You can repay later from Savings > Active Plans.`;
-        await supabase.from("notifications").insert({
-          user_id: schedule.user_id, title: t, body: b, category: "savings",
-        });
+        await supabase.from("notifications").insert({ user_id: schedule.user_id, title: t, body: b, category: "savings" });
         await sendPush(schedule.user_id, "savings_missed", t, b);
-        await log(schedule, "missed", "Insufficient balance", Number(schedule.amount));
-        missed++;
-        continue;
+        await log("missed", "Insufficient balance", Number(schedule.amount));
+        return { outcome: "missed", reason: "insufficient balance", updatedSchedule: { ...schedule, ...updated } };
       }
 
-      if (!goalId) {
-        await log(schedule, "no_goal", "No active linked goal", 0);
-        skipped++;
-        continue;
-      }
-
-      const { data: goal } = await supabase
-        .from("savings_goals").select("*").eq("id", goalId).single();
+      const { data: goal } = await supabase.from("savings_goals").select("*").eq("id", goalId).single();
       if (!goal || goal.status !== "active") {
-        await log(schedule, "no_goal", "Goal not active", 0);
-        skipped++;
-        continue;
+        await log("no_goal", "Goal not active", 0);
+        return { outcome: "no_goal", reason: "goal inactive", updatedSchedule: null };
       }
 
       const newBalance = Number(profile.balance) - Number(schedule.amount);
@@ -353,63 +302,111 @@ Deno.serve(async (req) => {
 
       await supabase.from("profiles").update({ balance: newBalance }).eq("user_id", schedule.user_id);
       await supabase.from("savings_goals").update({
-        saved_amount: newSaved,
-        status: completed ? "completed" : "active",
-        updated_at: new Date().toISOString(),
+        saved_amount: newSaved, status: completed ? "completed" : "active", updated_at: new Date().toISOString(),
       }).eq("id", goalId);
-
       await supabase.from("savings_deposits").insert({
-        goal_id: goalId,
-        user_id: schedule.user_id,
-        amount: schedule.amount,
-        source: triggeredBy === "cron" ? "auto" : "manual",
+        goal_id: goalId, user_id: schedule.user_id, amount: schedule.amount, source: triggeredBy === "cron" || triggeredBy === "retry" ? "auto" : "manual",
       });
 
       const txRef = `DPS-INST-${schedule.id.substring(0, 8)}-${(schedule.total_paid ?? 0) + 1}`;
       const { data: txRow } = await supabase.from("transactions").insert({
-        user_id: schedule.user_id,
-        type: "payment",
-        amount: schedule.amount,
-        fee: 0,
+        user_id: schedule.user_id, type: "payment", amount: schedule.amount, fee: 0,
         description: `DPS Installment: ${goal.name} (#${(schedule.total_paid ?? 0) + 1})`,
-        reference: txRef,
-        status: "completed",
-        balance_after: newBalance,
+        reference: txRef, status: "completed", balance_after: newBalance,
       }).select("id").single();
 
       const newTotalPaid = (schedule.total_paid ?? 0) + 1;
       const reachedFinal = !!schedule.total_installments && newTotalPaid >= Number(schedule.total_installments);
-      await supabase.from("savings_auto_save").update({
+      const updatedSch = {
         next_run_at: nextRun.toISOString(),
         last_run_at: new Date().toISOString(),
         total_paid: newTotalPaid,
         is_active: reachedFinal ? false : schedule.is_active,
         settled: reachedFinal ? true : (schedule.settled ?? false),
         updated_at: new Date().toISOString(),
-      }).eq("id", schedule.id);
-      if (reachedFinal) settled++;
+      };
+      await supabase.from("savings_auto_save").update(updatedSch).eq("id", schedule.id);
 
       const successTitle = completed ? "🎉 Goal Completed!" : "✅ DPS Installment Collected";
-      const successBody = `৳${schedule.amount} ${triggeredBy === "cron" ? "auto-collected" : "collected"} to "${goal.name}"${completed ? " — Goal completed!" : `. Installment ${(schedule.total_paid ?? 0) + 1}/${schedule.total_installments ?? "∞"}`}`;
-      await supabase.from("notifications").insert({
-        user_id: schedule.user_id, title: successTitle, body: successBody, category: "savings",
-      });
+      const successBody = `৳${schedule.amount} ${triggeredBy === "cron" || triggeredBy === "retry" ? "auto-collected" : "collected"} to "${goal.name}"${completed ? " — Goal completed!" : `. Installment ${newTotalPaid}/${schedule.total_installments ?? "∞"}`}`;
+      await supabase.from("notifications").insert({ user_id: schedule.user_id, title: successTitle, body: successBody, category: "savings" });
       await sendPush(schedule.user_id, "savings_collected", successTitle, successBody);
-      await log(schedule, "collected", `Collected to ${goal.name}`, Number(schedule.amount), {
-        goal_id: goalId,
-        goal_name: goal.name,
-        tx_reference: txRef,
-        transaction_id: txRow?.id ?? null,
+      await log("collected", `Collected to ${goal.name}`, Number(schedule.amount), {
+        goal_id: goalId, goal_name: goal.name, tx_reference: txRef, transaction_id: txRow?.id ?? null,
       });
-      processed++;
+      return {
+        outcome: reachedFinal ? "settled" : "collected",
+        reason: reachedFinal ? "final installment" : "ok",
+        updatedSchedule: { ...schedule, ...updatedSch },
+      };
+    };
+
+    // Iterate schedules. In backfill mode, replay cycles until caught up.
+    const MAX_BACKFILL_CYCLES = 10;
+    for (const sched of schedules ?? []) {
+      let cur = sched;
+      let cycles = 0;
+      while (true) {
+        const { outcome, updatedSchedule } = await runCycle(cur);
+        cycles++;
+        if (outcome === "collected") processed++;
+        else if (outcome === "missed") missed++;
+        else if (outcome === "settled") settled++;
+        else if (outcome === "dedup_skipped") dedup++;
+        else skipped++;
+
+        if (!isBackfill) {
+          perSchedule.push({ schedule_id: cur.id, outcome });
+          break;
+        }
+        if (cycles >= MAX_BACKFILL_CYCLES) { perSchedule.push({ schedule_id: cur.id, outcome, cycles }); break; }
+        if (!updatedSchedule) { perSchedule.push({ schedule_id: cur.id, outcome, cycles }); break; }
+        // Stop if next_run_at is now caught up
+        if (new Date(updatedSchedule.next_run_at).getTime() > Date.now() - 24 * 60 * 60 * 1000) {
+          perSchedule.push({ schedule_id: cur.id, outcome, cycles });
+          break;
+        }
+        // Stop on terminal outcomes
+        if (outcome === "settled" || outcome === "no_goal" || outcome === "schedule_inactive") {
+          perSchedule.push({ schedule_id: cur.id, outcome, cycles });
+          break;
+        }
+        cur = updatedSchedule;
+      }
     }
 
-    return new Response(
-      JSON.stringify({ processed, skipped, settled, missed, dedup, triggeredBy, perSchedule, total: (schedules ?? []).length }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  } catch (err) {
+    if (isBackfill) backfillMeta = { cycles_total: perSchedule.reduce((a, p) => a + (p.cycles ?? 1), 0) };
+
+    return respond(200, { processed, skipped, settled, missed, dedup, triggeredBy, perSchedule, total: scheduleCount, mode: isBackfill ? "backfill" : "tick" });
+  } catch (err: any) {
     console.error("process-auto-save error:", err);
-    return jsonError(500, "INTERNAL_ERROR", "Internal server error");
+    errorCode = errorCode ?? "INTERNAL_ERROR";
+    errorMessage = errorMessage ?? (err?.message ?? "Internal server error");
+    return respond(500, { error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+  } finally {
+    // Best-effort structured log
+    try {
+      if (logClient) {
+        await logClient.rpc("log_cron_invocation", {
+          p_function: "process-auto-save",
+          p_triggered_by: triggeredBy,
+          p_auth_method: authMethod,
+          p_status_code: statusCode,
+          p_processed: processed,
+          p_skipped: skipped,
+          p_settled: settled,
+          p_missed: missed,
+          p_dedup: dedup,
+          p_schedule_count: scheduleCount,
+          p_duration_ms: Date.now() - startedAt,
+          p_request_id: requestId,
+          p_error_code: errorCode,
+          p_error_message: errorMessage,
+          p_meta: backfillMeta,
+        });
+      }
+    } catch (e) {
+      console.error("log_cron_invocation failed:", e);
+    }
   }
 });
