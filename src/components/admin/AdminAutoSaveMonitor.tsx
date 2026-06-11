@@ -225,6 +225,16 @@ export default function AdminAutoSaveMonitor() {
   const lastRun = runLogs[0]?.created_at;
 
   return (
+  return (
+    <Tabs defaultValue="schedules" className="w-full">
+      <TabsList className="mb-3">
+        <TabsTrigger value="schedules">Schedules</TabsTrigger>
+        <TabsTrigger value="health">Health</TabsTrigger>
+        <TabsTrigger value="logs">Logs</TabsTrigger>
+      </TabsList>
+      <TabsContent value="health"><AdminCronHealthTab /></TabsContent>
+      <TabsContent value="logs"><AdminCronLogsTab /></TabsContent>
+      <TabsContent value="schedules">
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
