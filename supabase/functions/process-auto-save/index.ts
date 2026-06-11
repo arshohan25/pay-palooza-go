@@ -53,6 +53,23 @@ function checkForceRateLimit(actor: string, scope: string): { ok: boolean; retry
   return { ok: true, retryAfterMs: 0 };
 }
 
+// Cache the vault-stored cron secret across warm invocations to avoid an extra DB hit per call.
+let cachedVaultCronSecret: string | null = null;
+let cachedVaultCronSecretAt = 0;
+const VAULT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function getVaultCronSecret(adminClient: ReturnType<typeof createClient>): Promise<string> {
+  const now = Date.now();
+  if (cachedVaultCronSecret && now - cachedVaultCronSecretAt < VAULT_CACHE_TTL_MS) {
+    return cachedVaultCronSecret;
+  }
+  const { data, error } = await adminClient.rpc("get_autosave_cron_secret");
+  if (error || !data || typeof data !== "string") return "";
+  cachedVaultCronSecret = data;
+  cachedVaultCronSecretAt = now;
+  return data;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -60,7 +77,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const cronSecret = Deno.env.get("ADMIN_METRICS_CRON_SECRET") ?? "";
+    const envCronSecret = Deno.env.get("ADMIN_METRICS_CRON_SECRET") ?? "";
 
     if (!serviceKey || !anonKey) {
       return jsonError(500, "MISCONFIGURED", "Server is missing required configuration");
@@ -69,12 +86,20 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization") ?? "";
     const cronHeader = req.headers.get("x-cron-secret") ?? "";
 
-    // Cron auth: require a configured secret AND constant-time match.
-    // A bearer header MUST NOT be used to escalate to cron privileges.
-    const isCron =
-      cronSecret.length >= 16 &&
-      cronHeader.length > 0 &&
-      safeEq(cronHeader, cronSecret);
+    // Cron auth: accept either the env-var secret OR the vault-stored secret.
+    // Constant-time match; bearer header MUST NOT escalate to cron privileges.
+    const adminClientForAuth = createClient(supabaseUrl, serviceKey);
+    let isCron = false;
+    if (cronHeader.length >= 16) {
+      if (envCronSecret.length >= 16 && safeEq(cronHeader, envCronSecret)) {
+        isCron = true;
+      } else {
+        const vaultSecret = await getVaultCronSecret(adminClientForAuth);
+        if (vaultSecret.length >= 16 && safeEq(cronHeader, vaultSecret)) {
+          isCron = true;
+        }
+      }
+    }
 
     const hasBearer = authHeader.startsWith("Bearer ") && authHeader.length > 20;
 

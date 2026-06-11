@@ -6564,6 +6564,7 @@ export type Database = {
         Args: { p_phone: string }
         Returns: string
       }
+      get_autosave_cron_secret: { Args: never; Returns: string }
       get_blocked_user_profiles: {
         Args: { p_user_ids: string[] }
         Returns: {
