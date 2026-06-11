@@ -1364,6 +1364,84 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_alert_state: {
+        Row: {
+          alert_count: number
+          last_alerted_at: string
+          schedule_id: string
+        }
+        Insert: {
+          alert_count?: number
+          last_alerted_at?: string
+          schedule_id: string
+        }
+        Update: {
+          alert_count?: number
+          last_alerted_at?: string
+          schedule_id?: string
+        }
+        Relationships: []
+      }
+      cron_invocation_log: {
+        Row: {
+          auth_method: string
+          created_at: string
+          dedup: number
+          duration_ms: number | null
+          error_code: string | null
+          error_message: string | null
+          function_name: string
+          id: string
+          meta: Json | null
+          missed: number
+          processed: number
+          request_id: string | null
+          schedule_count: number
+          settled: number
+          skipped: number
+          status_code: number
+          triggered_by: string
+        }
+        Insert: {
+          auth_method: string
+          created_at?: string
+          dedup?: number
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          function_name: string
+          id?: string
+          meta?: Json | null
+          missed?: number
+          processed?: number
+          request_id?: string | null
+          schedule_count?: number
+          settled?: number
+          skipped?: number
+          status_code: number
+          triggered_by: string
+        }
+        Update: {
+          auth_method?: string
+          created_at?: string
+          dedup?: number
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          meta?: Json | null
+          missed?: number
+          processed?: number
+          request_id?: string | null
+          schedule_count?: number
+          settled?: number
+          skipped?: number
+          status_code?: number
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       deleted_users: {
         Row: {
           avatar_url: string | null
@@ -6583,6 +6661,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_cron_health_snapshot: { Args: never; Returns: Json }
       get_data_quality_samples: {
         Args: { p_check: string; p_limit?: number; p_offset?: number }
         Returns: Json
@@ -6720,6 +6799,26 @@ export type Database = {
       is_push_enabled: {
         Args: { p_category: string; p_user_id: string }
         Returns: boolean
+      }
+      log_cron_invocation: {
+        Args: {
+          p_auth_method: string
+          p_dedup?: number
+          p_duration_ms?: number
+          p_error_code?: string
+          p_error_message?: string
+          p_function: string
+          p_meta?: Json
+          p_missed?: number
+          p_processed?: number
+          p_request_id?: string
+          p_schedule_count?: number
+          p_settled?: number
+          p_skipped?: number
+          p_status_code: number
+          p_triggered_by: string
+        }
+        Returns: string
       }
       lookup_easypay_user_by_phone: {
         Args: { p_phone: string }
