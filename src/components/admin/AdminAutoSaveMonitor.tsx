@@ -225,7 +225,6 @@ export default function AdminAutoSaveMonitor() {
   const lastRun = runLogs[0]?.created_at;
 
   return (
-  return (
     <Tabs defaultValue="schedules" className="w-full">
       <TabsList className="mb-3">
         <TabsTrigger value="schedules">Schedules</TabsTrigger>
@@ -462,5 +461,7 @@ export default function AdminAutoSaveMonitor() {
         </SheetContent>
       </Sheet>
     </div>
+      </TabsContent>
+    </Tabs>
   );
 }
