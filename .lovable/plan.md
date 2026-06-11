@@ -1,48 +1,97 @@
-## Problem
+## Goal
 
-The "Next 6/1/2026" and "Next 5/6/2026" dates you circled are **stale due-dates in the past** (today is June 11, 2026). Daily DPS plans should have advanced their `next_run_at` every day — but they haven't been processed since they were created.
+Build a Cron Health admin page for the savings/DPS cron, add structured request logs, an on-demand backfill button with progress, automatic retries on 401/5xx, and a stall alert when `next_run_at` stops advancing for 24h.
 
-## Root cause
+There is already an `AdminAutoSaveMonitor` tab — we extend it rather than create a separate page so admins have one home for DPS health.
 
-The `process-auto-save` edge function runs on a `*/15 * * * *` cron job, but the cron job is being **rejected as Unauthorized** every time it fires.
+## What gets built
 
-The edge function accepts two auth modes:
-1. **Cron mode** — requires header `x-cron-secret` matching `ADMIN_METRICS_CRON_SECRET`
-2. **User mode** — requires a Bearer token whose JWT has a `sub` claim
+### 1. New table: `cron_invocation_log`
 
-The current cron job sends only `Authorization: Bearer <anon-key>` and **no `x-cron-secret`**. The function takes the "user" path, calls `auth.getClaims()` on the anon JWT, finds no `sub` claim, and returns `401 UNAUTHORIZED`.
+Append-only audit of every `process-auto-save` request (and any cron callers we add later).
 
-Confirmation: DB shows `next_run_at` stuck at past dates (e.g. one daily plan from May 5 still at `2026-05-06`, total_paid=2 after 37 days). No "processed" logs from the function either — only boot/shutdown.
+Columns (besides id/created_at):
+- `function_name` — e.g. `process-auto-save`
+- `triggered_by` — `cron` | `user` | `admin`
+- `auth_method` — `vault_secret` | `env_secret` | `bearer_user` | `bearer_admin` | `none`
+- `status_code` — 200 / 401 / 4xx / 5xx
+- `processed`, `skipped`, `settled`, `missed`, `dedup` — counters from the run
+- `schedule_count` — total schedules considered
+- `duration_ms`
+- `error_code`, `error_message` — null on success
+- `request_id` — incoming `x-request-id` or generated UUID
+- `caller_ip` — best-effort
 
-The same bug affects:
-- DPS auto-collection (missed installments aren't recorded)
-- Plan settlement when `ends_at` is reached
-- "Next run" date display (always shows the original creation+1 day)
+RLS: admin-only SELECT; service_role full access. Indexes on `(function_name, created_at desc)` and `(status_code, created_at desc)`.
 
-The "Collect now" button works because it's invoked by the logged-in user (valid Bearer token, valid `sub`).
+### 2. Edge function changes (`process-auto-save`)
 
-## Fix
+- Log a row into `cron_invocation_log` at end of every invocation (success and failure).
+- Surface `auth_method` in the log: vault vs env-var vs user bearer vs admin bearer.
+- Include `X-Request-Id` echo in response headers.
+- Add a new mode `body.mode = "backfill"` (admin or cron only) that runs the schedule loop up to N=10 cycles for any plan whose `next_run_at` is more than 24h overdue, instead of one cycle. Returns per-schedule cycle counts.
 
-Update the cron job to send the `x-cron-secret` header so the function recognizes it as a cron invocation.
+### 3. New edge function: `cron-health-snapshot`
 
-### Steps
+GET endpoint, admin-only. Returns a single JSON snapshot used by the UI:
+- Per-schedule rows: `id`, `user_phone`, `frequency`, `next_run_at`, `last_run_at`, `is_active`, `settled`, `total_paid`, `total_installments`, `hours_since_advance`, `is_stalled` (true when `next_run_at < now() - 24h AND is_active`), `last_outcome` from `dps_run_log`.
+- Function-level stats (last 24h / 7d): success count, 401 count, 5xx count, last successful run time, last error.
+- Cron job entries from `cron.job` for `phase4-process-auto-save` and `phase4-dps-reminder` (active flag, schedule expression, last result from `cron.job_run_details`).
 
-1. **Verify the cron secret exists** — read `ADMIN_METRICS_CRON_SECRET` from edge function secrets. If unset or shorter than 16 chars, generate one and store it.
-2. **Replace the `phase4-process-auto-save` cron job** so its `net.http_post` headers include:
-   ```
-   x-cron-secret: <ADMIN_METRICS_CRON_SECRET>
-   ```
-   (The Authorization Bearer can stay or be removed — `isCron` takes priority.)
-3. **Also patch `phase4-dps-reminder`** if its function uses the same cron-secret pattern (will check while migrating).
-4. **Backfill stale schedules**: manually invoke `process-auto-save` once with `force=true` (admin) so the three currently-overdue plans catch up and `next_run_at` moves to today/tomorrow. Without this, users will still see stale dates until the next natural cycle.
-5. **Verify**: tail `process-auto-save` logs after the next 15-minute tick to confirm `processed`/`settled`/`missed` counters increment, and re-query `savings_auto_save` to confirm `next_run_at` is in the future.
+### 4. New edge function: `cron-stall-alert`
 
-### Files / surfaces touched
+Runs every 6 hours via pg_cron. Detects active schedules where `next_run_at < now() - interval '24 hours' AND is_active`. For each new stall (not already alerted within 24h):
+- Inserts a row into `admin_notifications` (already exists).
+- Sends a transactional email to admin recipients via the existing transactional-email infra (template `cron-stall-alert`, scaffolded if not present).
+- Optional webhook: if env `CRON_ALERT_WEBHOOK_URL` is set, POSTs a JSON payload `{ stalled: [...], detected_at }`.
 
-- One DB migration to recreate the two cron jobs with the `x-cron-secret` header. No app code changes.
-- One manual edge-function call to backfill overdue schedules.
+A small `cron_alert_state` table tracks `(schedule_id, last_alerted_at)` to dedupe alerts.
 
-### Out of scope
+### 5. Automatic retries on 401/5xx
 
-- No UI changes — the dates render correctly once the backend advances `next_run_at`.
-- No changes to `process-auto-save` auth logic (it's correct; the cron job was just calling it wrong).
+Add a new pg_cron job `phase4-process-auto-save-retry` running every 5 minutes that checks `cron_invocation_log`: if the most recent `process-auto-save` row for `function_name='process-auto-save'` has `status_code IN (401, 500..599)` AND no successful row exists within the last 20 minutes, re-invoke `process-auto-save` (same vault-secret cron header).
+
+Retry is capped: skipped if 3 consecutive retry rows already exist within the last hour.
+
+### 6. UI — extend `AdminAutoSaveMonitor`
+
+New segmented sub-tabs at the top: `Schedules`, `Health`, `Logs`.
+
+- **Schedules** — keep existing table; add columns: `Hours since advance`, `Stalled badge` (red), `Backfill` row action.
+- **Health**:
+  - 4 stat cards: Last successful run (relative time), 401s last 24h, 5xx last 24h, Stalled schedules count.
+  - Mini chart: success vs error counts per hour for last 24h (Recharts BarChart, reuses pattern from `AdminBankReconciliation`).
+  - Cron job status panel: active flag, schedule expression, last cron.job_run_details row per job.
+  - "Trigger backfill now" button (admin only): calls `process-auto-save` with `{ mode: "backfill", force: true }`. Shows in-flight spinner, then a result panel listing per-schedule outcome chips (collected / missed / settled / skipped) with cycle counts.
+- **Logs**:
+  - Filter: status (all / 200 / 401 / 5xx), triggered_by, date range (default 7d).
+  - Paginated table from `cron_invocation_log`: timestamp, triggered_by, auth_method, status, counters, duration, error.
+  - CSV export for the current filter.
+
+Realtime: subscribe to `postgres_changes` on `cron_invocation_log` so the Logs tab and Health stats update without refresh (matches the project's zero-refresh policy).
+
+### 7. Tests
+
+- Vitest for the new `cron-health-snapshot` JSON shape (mock supabase client).
+- Unit test that `process-auto-save` writes a log row with the correct `auth_method` for each auth path.
+- Unit test for the stall detector (24h boundary).
+
+## Out of scope
+
+- Push notifications for admins (already covered by `admin_notifications` + existing center).
+- Per-user UI for missed payments (already in SavingsPage).
+- Retry policy beyond cron auth/transport failures — application-level retries (insufficient balance) stay as `missed` in `dps_missed_payments`.
+
+## Files & surfaces
+
+- New: `supabase/functions/cron-health-snapshot/index.ts`, `supabase/functions/cron-stall-alert/index.ts`
+- Edited: `supabase/functions/process-auto-save/index.ts` (logging + backfill mode)
+- Migration: `cron_invocation_log`, `cron_alert_state`, indexes, RLS, GRANTs, RPC `get_cron_health_snapshot()` (if we keep it DB-side instead of EF — TBD during impl, EF is preferred since it joins cron.* tables)
+- Insert: schedule `phase4-process-auto-save-retry` (`*/5 * * * *`) and `phase4-cron-stall-alert` (`0 */6 * * *`)
+- New UI: `src/components/admin/AdminCronHealthTab.tsx`, `src/components/admin/AdminCronLogsTab.tsx`, `src/components/admin/CronBackfillSheet.tsx`
+- Edited UI: `src/components/admin/AdminAutoSaveMonitor.tsx` — wraps the three sub-tabs
+- Optional: scaffold transactional email `cron-stall-alert` if the user wants email alerts (requires email domain — confirmed in checks before scaffolding).
+
+## Open question (one)
+
+Email alerts require an email domain set up via Lovable Emails. If it isn't configured yet, I'll default to the webhook path and inserting `admin_notifications` rows; you can add the email path later by setting up a sender domain. Want me to also kick off email setup as part of this build, or stick with webhook + in-app notifications for now?
