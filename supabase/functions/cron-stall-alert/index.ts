@@ -74,6 +74,10 @@ Deno.serve(async (req) => {
   const detectedAt = new Date().toISOString();
   const newlyAlerted: any[] = [];
 
+  // Resolve a system admin to attribute notifications to (admin_notifications.admin_id is NOT NULL)
+  const { data: anAdmin } = await admin.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
+  const systemAdminId = anAdmin?.user_id ?? null;
+
   for (const s of stalledList) {
     // Dedupe: skip if alerted within last 24h
     const { data: prior } = await admin.from("cron_alert_state").select("last_alerted_at, alert_count").eq("schedule_id", s.id).maybeSingle();
