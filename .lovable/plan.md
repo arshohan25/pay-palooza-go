@@ -1,70 +1,48 @@
-# Islamic Savings & DPS — Full Implementation Plan
+## Problem
 
-## Scope
+The "Next 6/1/2026" and "Next 5/6/2026" dates you circled are **stale due-dates in the past** (today is June 11, 2026). Daily DPS plans should have advanced their `next_run_at` every day — but they haven't been processed since they were created.
 
-Close all gaps from the audit: small backend fixes plus the entire missing frontend module. I'll keep existing working code untouched (RPCs, edge function, current Investment Hub screens) and only add what's missing or correcting what deviates from spec.
+## Root cause
 
-## Part A — Backend fixes (1 migration)
+The `process-auto-save` edge function runs on a `*/15 * * * *` cron job, but the cron job is being **rejected as Unauthorized** every time it fires.
 
-1. **Drop overloaded RPC signatures** (`buy_gold`, `sell_gold`, `buy_stock`, `sell_stock`) so PostgREST resolves a single function. Keep the newest, correct version of each.
-2. **`process-auto-save` final-installment settlement**: when `total_paid + 1 == total_installments`, set `settled = true, is_active = false` on the schedule (edge function edit, not migration).
-3. **3-month DPS lock-in**: add a guard inside `cancel_goal` / a new helper so DPS-linked goals raise an error if cancelled before 90 days from creation. Goal lock-in stays 60 days for non-DPS goals.
+The edge function accepts two auth modes:
+1. **Cron mode** — requires header `x-cron-secret` matching `ADMIN_METRICS_CRON_SECRET`
+2. **User mode** — requires a Bearer token whose JWT has a `sub` claim
 
-## Part B — Frontend module
+The current cron job sends only `Authorization: Bearer <anon-key>` and **no `x-cron-secret`**. The function takes the "user" path, calls `auth.getClaims()` on the anon JWT, finds no `sub` claim, and returns `401 UNAUTHORIZED`.
 
-New files:
+Confirmation: DB shows `next_run_at` stuck at past dates (e.g. one daily plan from May 5 still at `2026-05-06`, total_paid=2 after 37 days). No "processed" logs from the function either — only boot/shutdown.
 
-```
-src/lib/savingsReturns.ts          // STRATEGY_RETURNS, FREQ_BONUS, getEstReturn (6% cap),
-                                   // calcCompoundProfit, calcDpsEstimate
-src/hooks/use-savings.ts           // goals, deposits, schedules, missed payments
-                                   // + realtime channels on all 6 tables
-src/components/savings/
-  SavingsHome.tsx                  // hub: balance, goals grid, DPS list, gold/stock cards
-  GoalsList.tsx + GoalDetail.tsx   // create, deposit, withdraw, cancel (60-day)
-  DpsList.tsx + DpsDetail.tsx      // create plan, timeline, repay missed, collect-now
-  DpsCreateFlow.tsx                // amount, frequency, duration, strategy picker
-  GoldHome.tsx + GoldBuySheet.tsx + GoldSellSheet.tsx
-  StocksHome.tsx + StockBuySheet.tsx + StockSellSheet.tsx
-  shared/
-    SavingsPinInput.tsx
-    DpsTimeline.tsx
-    GoalDepositTimeline.tsx
-    EstimatedReturnsCard.tsx
-    StrategyPicker.tsx
-    ReconciliationPanel.tsx
-    TermsSheet.tsx
-    DeleteConfirmSheet.tsx
-    InstallmentDetailDialog.tsx
-```
+The same bug affects:
+- DPS auto-collection (missed installments aren't recorded)
+- Plan settlement when `ends_at` is reached
+- "Next run" date display (always shows the original creation+1 day)
 
-Behaviour:
+The "Collect now" button works because it's invoked by the logged-in user (valid Bearer token, valid `sub`).
 
-- **Realtime**: subscribe to `savings_goals`, `savings_deposits`, `savings_auto_save`, `dps_run_log`, `dps_missed_payments`, `gold_holdings`, `stock_holdings` filtered by `user_id`. Zero-refresh.
-- **First DPS installment** deducted at plan creation via `savings_deposit` RPC before `INSERT INTO savings_auto_save`.
-- **Lock-in checks** surfaced in UI (60-day goal, 90-day DPS) before opening cancel sheet.
-- **Live prices**: change polling interval in `use-gold-price.ts` and `use-stock-prices.ts` from 30 s → 5 min; persist to DB on each poll via a small RPC update on existing holdings.
-- **PIN + SlideToConfirm**: every money-moving action (buy/sell/cancel/withdraw/repay/collect-now) goes through `SavingsPinInput → verifyPin → SlideToConfirm`, with terms checkbox where the spec requires it.
-- **Plan.md fix**: also resolve the two issues already noted in `.lovable/plan.md` (Total Deposited derivation, Collect Now PIN gate) — these fall inside the new DpsDetail screen.
+## Fix
 
-## Part C — Wiring
+Update the cron job to send the `x-cron-secret` header so the function recognizes it as a cron invocation.
 
-- Add `/savings` route in `src/App.tsx` (lazy-loaded `SavingsHome`).
-- Replace the existing Investment Hub entry point on the dashboard to navigate to `/savings` (keep old screens accessible via deep link until parity is verified, then remove in a follow-up).
+### Steps
 
-## Out of scope
+1. **Verify the cron secret exists** — read `ADMIN_METRICS_CRON_SECRET` from edge function secrets. If unset or shorter than 16 chars, generate one and store it.
+2. **Replace the `phase4-process-auto-save` cron job** so its `net.http_post` headers include:
+   ```
+   x-cron-secret: <ADMIN_METRICS_CRON_SECRET>
+   ```
+   (The Authorization Bearer can stay or be removed — `isCron` takes priority.)
+3. **Also patch `phase4-dps-reminder`** if its function uses the same cron-secret pattern (will check while migrating).
+4. **Backfill stale schedules**: manually invoke `process-auto-save` once with `force=true` (admin) so the three currently-overdue plans catch up and `next_run_at` moves to today/tomorrow. Without this, users will still see stale dates until the next natural cycle.
+5. **Verify**: tail `process-auto-save` logs after the next 15-minute tick to confirm `processed`/`settled`/`missed` counters increment, and re-query `savings_auto_save` to confirm `next_run_at` is in the future.
 
-- No changes to admin panels, notifications schema, or auth.
-- No new Supabase tables — all 7 already exist.
-- I will NOT touch `src/integrations/supabase/{client,types}.ts` or `.env`.
+### Files / surfaces touched
 
-## Order of execution
+- One DB migration to recreate the two cron jobs with the `x-cron-secret` header. No app code changes.
+- One manual edge-function call to backfill overdue schedules.
 
-1. Migration (Part A.1 + A.3) — wait for approval.
-2. Edit `process-auto-save` (A.2).
-3. Build `savingsReturns.ts` + `use-savings.ts`.
-4. Build shared components.
-5. Build screens top-down (Home → Goals → DPS → Gold → Stocks).
-6. Wire route, swap dashboard entry, verify build.
+### Out of scope
 
-This is a large change (~15–20 files). I'll batch writes in parallel where possible.
+- No UI changes — the dates render correctly once the backend advances `next_run_at`.
+- No changes to `process-auto-save` auth logic (it's correct; the cron job was just calling it wrong).
