@@ -95,7 +95,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   const { t } = useI18n();
   const runningMonthStart = useMemo(() => startOfMonth(new Date()), []);
   const runningMonthEnd = useMemo(() => endOfDay(new Date()), []);
-  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions(undefined, undefined, {
+  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions(100, undefined, {
     from: runningMonthStart.toISOString(),
     to: runningMonthEnd.toISOString(),
   });
