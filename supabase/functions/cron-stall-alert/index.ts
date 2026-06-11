@@ -94,16 +94,19 @@ Deno.serve(async (req) => {
     }, { onConflict: "schedule_id" });
 
     // In-app admin notification
-    try {
-      await admin.from("admin_notifications").insert({
-        title: "⚠️ DPS schedule stalled",
-        message: `Schedule ${s.id.substring(0, 8)} (${s.frequency}, ৳${s.amount}) next_run_at hasn't advanced for 24h+.`,
-        severity: "warning",
-        category: "cron_health",
-        metadata: { schedule_id: s.id, next_run_at: s.next_run_at, user_id: s.user_id },
-      });
-    } catch (e) {
-      console.error("admin_notifications insert failed:", e);
+    if (systemAdminId) {
+      try {
+        await admin.from("admin_notifications").insert({
+          admin_id: systemAdminId,
+          title: "⚠️ DPS schedule stalled",
+          body: `Schedule ${s.id.substring(0, 8)} (${s.frequency}, ৳${s.amount}) next_run_at hasn't advanced for 24h+.`,
+          category: "cron_health",
+          target_roles: ["admin"],
+          metadata: { schedule_id: s.id, next_run_at: s.next_run_at, user_id: s.user_id },
+        });
+      } catch (e) {
+        console.error("admin_notifications insert failed:", e);
+      }
     }
 
     newlyAlerted.push(s);
