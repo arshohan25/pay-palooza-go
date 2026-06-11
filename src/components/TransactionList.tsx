@@ -272,7 +272,7 @@ const USER_TYPES = new Set(["send", "receive", "payment", "recharge", "addmoney"
 
 const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
   const { t } = useI18n();
-  const { transactions: rawTransactions, loading } = useTransactions(5, refreshKey);
+  const { transactions: rawTransactions, loading } = useTransactions(100, refreshKey);
   const transactions = rawTransactions.filter((tx) => USER_TYPES.has(tx.type));
   const [selectedTx, setSelectedTx] = useState<DbTransaction | null>(null);
 
