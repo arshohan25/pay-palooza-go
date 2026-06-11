@@ -8,8 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Coins, Clock, CheckCircle, RefreshCw, AlertTriangle, Play, History, Search, Repeat, X } from "lucide-react";
 import { toast } from "sonner";
+import AdminCronHealthTab from "@/components/admin/AdminCronHealthTab";
+import AdminCronLogsTab from "@/components/admin/AdminCronLogsTab";
 
 type Schedule = any;
 type RunLog = {
