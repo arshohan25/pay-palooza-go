@@ -247,9 +247,9 @@ export default function OrderDetailPage() {
                 <Truck className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-muted-foreground">Tracking: <span className="font-semibold text-foreground">{order.tracking_number}</span></span>
                 {trackingUrl && (
-                  <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="ml-auto text-primary flex items-center gap-1 font-semibold hover:underline">
+                  <SafeExternalLink href={trackingUrl} className="ml-auto text-primary flex items-center gap-1 font-semibold hover:underline">
                     Track <ExternalLink className="w-3 h-3" />
-                  </a>
+                  </SafeExternalLink>
                 )}
               </div>
             )}
