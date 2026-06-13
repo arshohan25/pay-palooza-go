@@ -893,7 +893,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {/* Cash Out Charge Toggle — reduced visual weight */}
                 <button
                   onClick={handleCashOutChargeToggle}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-[0.98] ${
+                  disabled={amtNum > 0 && amtNum < MIN_CASH_OUT_AMOUNT}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 ${
                     addCashOutCharge
                       ? "border-primary/40 bg-primary/5"
                       : "border-border bg-card"
@@ -902,6 +903,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   <Banknote size={16} className={addCashOutCharge ? "text-primary" : "text-muted-foreground"} />
                   <div className="flex-1 text-left">
                     <p className="text-xs font-medium text-foreground">Add Cash Out Charge (1.19%)</p>
+                    {amtNum > 0 && amtNum < MIN_CASH_OUT_AMOUNT && (
+                      <p className="text-[10px] text-destructive mt-0.5">Minimum ৳{MIN_CASH_OUT_AMOUNT} required</p>
+                    )}
                   </div>
                   <div className={`w-9 h-5 rounded-full transition-colors relative ${addCashOutCharge ? "bg-primary" : "bg-muted"}`}>
                     <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${addCashOutCharge ? "translate-x-4" : "translate-x-0.5"}`} />
