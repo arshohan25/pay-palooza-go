@@ -123,9 +123,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
 
   const handleNotifClick = (n: DbNotification) => {
     markRead(n.id);
-    if (RICH_CATEGORIES.includes(n.category)) {
-      setDetailNotif(n);
-    }
+    setDetailNotif(n);
   };
 
   const meta = detailNotif?.metadata as any;
