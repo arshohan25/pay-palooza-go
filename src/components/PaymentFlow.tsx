@@ -845,7 +845,52 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
               </div>
             )}
 
-            {/* ── STEP 3: PIN ── */}
+            {/* ── STEP 3: Review (summary before PIN) ── */}
+            {step === "review" && (
+              <div className="px-4 pt-6 pb-32 space-y-5">
+                <div className="text-center space-y-1">
+                  <p className="text-sm text-muted-foreground">{t("paying")}</p>
+                  <p className="text-4xl font-extrabold text-foreground">৳{amtNum.toLocaleString()}</p>
+                </div>
+
+                <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
+                  <div className={`${merchant?.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold shrink-0`}>
+                    {merchant?.initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-foreground text-sm truncate">{merchant?.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{merchant?.merchantId} · {merchant?.category}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-card border border-border p-4 space-y-2.5 text-sm">
+                  <p className="font-semibold text-foreground">Payment Summary</p>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t("amount")}</span>
+                    <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
+                  </div>
+                  {couponDiscount > 0 && pendingCoupon && (
+                    <CouponSummaryLine code={pendingCoupon.code} discount={couponDiscount} />
+                  )}
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t("fee")}</span>
+                    <span className="text-primary font-semibold">{t("free")}</span>
+                  </div>
+                  <div className="h-px bg-border" />
+                  <div className="flex justify-between font-bold text-foreground">
+                    <span>{t("total")}</span>
+                    <span>৳{effectiveAmount.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <Button className="w-full h-12 gradient-payment border-0 text-white font-semibold text-base rounded-xl" onClick={handleReviewContinue}>
+                  Confirm & Enter PIN
+                </Button>
+                <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>Edit Amount</Button>
+              </div>
+            )}
+
+            {/* ── STEP 4: PIN ── */}
             {step === "pin" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="text-center space-y-1">
