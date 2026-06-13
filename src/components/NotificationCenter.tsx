@@ -346,66 +346,110 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
         )}
       </AnimatePresence>
 
-      {/* ── Detail Popup Card — z-index above panel ── */}
-      <Dialog open={!!detailNotif} onOpenChange={(o) => { if (!o) setDetailNotif(null); }}>
-        <DialogPortal>
-          <DialogOverlay className="z-[90]" />
-          <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden z-[100] fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%]">
-          {detailNotif && (
-            <>
-              {hasImage && (
-                <div className="w-full h-40 bg-muted overflow-hidden">
-                  <img
-                    src={meta.image_url}
-                    alt={detailNotif.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                </div>
-              )}
+      {/* ── Detail View — semi full-screen bottom sheet ── */}
+      <AnimatePresence>
+        {detailNotif && (
+          <>
+            <motion.div
+              key="detail-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[95] bg-black/50 backdrop-blur-sm"
+              onClick={() => setDetailNotif(null)}
+            />
+            <motion.div
+              key="detail-sheet"
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 320, damping: 34 }}
+              className="fixed inset-x-0 bottom-0 z-[100] h-[92vh] bg-background rounded-t-3xl shadow-float flex flex-col overflow-hidden"
+            >
+              {/* Drag handle + close */}
+              <div className="relative shrink-0 pt-3 pb-2">
+                <div className="mx-auto h-1.5 w-12 rounded-full bg-muted" />
+                <button
+                  onClick={() => setDetailNotif(null)}
+                  className="absolute top-2.5 right-4 w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-              <div className="p-5 space-y-4">
-                <DialogHeader>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                      detailNotif.category === "coupon" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" :
-                      detailNotif.category === "cashback" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" :
-                      detailNotif.category === "offer" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" :
-                      detailNotif.category === "update" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" :
-                      detailNotif.category === "promo" || detailNotif.category === "promotion" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" :
-                      "bg-muted text-muted-foreground"
-                    }`}>
-                      {detailNotif.category}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatDistanceToNow(new Date(detailNotif.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                  <DialogTitle className="text-lg leading-tight">{detailNotif.title}</DialogTitle>
-                  <DialogDescription className="text-sm text-muted-foreground leading-relaxed mt-1">
-                    {detailNotif.body}
-                  </DialogDescription>
-                </DialogHeader>
-
-                {hasCoupon && (
-                  <div className="flex items-center gap-2 p-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5">
-                    <Gift size={18} className="text-primary shrink-0" />
-                    <span className="font-mono font-bold text-foreground tracking-wider flex-1">{meta.coupon_code}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 gap-1 text-xs"
-                      onClick={() => {
-                        navigator.clipboard.writeText(meta.coupon_code);
-                        toast.success("Coupon code copied!");
-                      }}
-                    >
-                      <Copy size={12} /> Copy
-                    </Button>
+              <div className="flex-1 overflow-y-auto">
+                {hasImage && (
+                  <div className="w-full h-56 bg-muted overflow-hidden">
+                    <img
+                      src={meta.image_url}
+                      alt={detailNotif.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
                   </div>
                 )}
 
-                <div className="flex flex-col gap-2">
+                <div className="px-5 pt-5 pb-6 space-y-5">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                        detailNotif.category === "coupon" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" :
+                        detailNotif.category === "cashback" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" :
+                        detailNotif.category === "offer" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" :
+                        detailNotif.category === "update" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" :
+                        detailNotif.category === "promo" || detailNotif.category === "promotion" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {detailNotif.category}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatDistanceToNow(new Date(detailNotif.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                    <h2 className="text-xl font-bold leading-tight text-foreground">{detailNotif.title}</h2>
+                    <p className="text-sm text-muted-foreground leading-relaxed mt-2 whitespace-pre-wrap">
+                      {detailNotif.body}
+                    </p>
+                  </div>
+
+                  {hasCoupon && (
+                    <div className="flex items-center gap-2 p-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5">
+                      <Gift size={18} className="text-primary shrink-0" />
+                      <span className="font-mono font-bold text-foreground tracking-wider flex-1">{meta.coupon_code}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 gap-1 text-xs"
+                        onClick={() => {
+                          navigator.clipboard.writeText(meta.coupon_code);
+                          toast.success("Coupon code copied!");
+                        }}
+                      >
+                        <Copy size={12} /> Copy
+                      </Button>
+                    </div>
+                  )}
+
+                  {(txnRef || (detailFulfillment && meta?.tracking_number)) && (
+                    <div className="rounded-xl border border-border/60 bg-muted/30 p-3 space-y-1.5">
+                      {txnRef && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Reference</span>
+                          <span className="font-mono text-[11px] text-foreground truncate">{String(txnRef)}</span>
+                        </div>
+                      )}
+                      {detailFulfillment && meta?.tracking_number && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Tracking</span>
+                          <span className="font-mono text-[11px] text-foreground truncate">{String(meta.tracking_number)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sticky action footer */}
+              {(detailsTarget || hasAction) && (
+                <div className="shrink-0 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-border/60 bg-background/95 backdrop-blur flex flex-col gap-2">
                   {detailsTarget && (
                     <Button
                       className="w-full gap-2 min-h-11"
@@ -428,29 +472,11 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                     </Button>
                   )}
                 </div>
-
-                {(txnRef || (detailFulfillment && meta?.tracking_number)) && (
-                  <div className="rounded-xl border border-border/60 bg-muted/30 p-3 space-y-1.5">
-                    {txnRef && (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Reference</span>
-                        <span className="font-mono text-[11px] text-foreground truncate">{String(txnRef)}</span>
-                      </div>
-                    )}
-                    {detailFulfillment && meta?.tracking_number && (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Tracking</span>
-                        <span className="font-mono text-[11px] text-foreground truncate">{String(meta.tracking_number)}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </DialogContent>
-        </DialogPortal>
-      </Dialog>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }
