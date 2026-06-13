@@ -725,7 +725,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       className="w-full h-12 gradient-cashout border-0 text-white font-semibold text-base"
                       onClick={handleAmountContinue}
                     >
-                      {t("continueToPIN")}
+                      Review Cash Out
                     </Button>
                   </motion.div>
                 )}
