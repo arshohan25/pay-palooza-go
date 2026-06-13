@@ -917,11 +917,18 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                         {fee === 0 ? <span className="text-primary font-semibold">{t("free")}</span> : `৳${fee}`}
                       </span>
                     </div>
-                    {fee > 0 && (
-                      <p className="text-[11px] text-muted-foreground text-right">
-                        ৳{amtNum.toLocaleString()} + ৳{fee} fee ({feeFromBalance >= fee ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
-                      </p>
-                    )}
+                    <div className="flex justify-between text-xs text-muted-foreground/70">
+                      <span>Fee source</span>
+                      <span className="text-primary font-medium">
+                        {fee === 0
+                          ? "—"
+                          : feeFromBalance >= fee
+                          ? "From your balance"
+                          : feeFromBalance > 0
+                          ? `৳${feeFromBalance.toFixed(2)} balance + ৳${feeFromAmount} from amount`
+                          : "Deducted from amount"}
+                      </span>
+                    </div>
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground text-base">
                       <span>{t("totalFromBalance")}</span>
