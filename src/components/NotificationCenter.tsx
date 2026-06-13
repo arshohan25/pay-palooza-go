@@ -123,15 +123,24 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
 
   const handleNotifClick = (n: DbNotification) => {
     markRead(n.id);
-    if (RICH_CATEGORIES.includes(n.category)) {
-      setDetailNotif(n);
-    }
+    setDetailNotif(n);
   };
 
   const meta = detailNotif?.metadata as any;
   const hasCoupon = meta?.coupon_code;
   const hasImage = meta?.image_url;
   const hasAction = meta?.action_url;
+  const fulfillmentOrderId = meta?.order_id;
+  const txnRef = meta?.tx_reference || meta?.transaction_id;
+  const detailFulfillment = detailNotif ? isFulfillment(detailNotif) : false;
+  const isTxnCategory = detailNotif ? ["transaction", "payment", "transfer", "cashback"].includes(detailNotif.category) : false;
+  const isSavingsCategory = detailNotif ? ["savings", "savings_reminder"].includes(detailNotif.category) : false;
+  const fallbackTarget: { label: string; url: string } | null =
+    hasAction ? null :
+    detailFulfillment && fulfillmentOrderId ? { label: "View order", url: `/orders/${fulfillmentOrderId}` } :
+    isTxnCategory ? { label: "View in history", url: "/transactions" } :
+    isSavingsCategory ? { label: "Open savings", url: "/savings" } :
+    null;
 
   return (
     <>
@@ -345,7 +354,8 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                       detailNotif.category === "cashback" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" :
                       detailNotif.category === "offer" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" :
                       detailNotif.category === "update" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" :
-                      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                      detailNotif.category === "promo" || detailNotif.category === "promotion" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" :
+                      "bg-muted text-muted-foreground"
                     }`}>
                       {detailNotif.category}
                     </span>
@@ -385,18 +395,49 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                       setDetailNotif(null);
                       onClose();
                       if (FLOW_FEATURES.has(url)) {
-                        // Dispatch custom event for Index page flow-based features
                         window.dispatchEvent(new CustomEvent("open-feature", { detail: url }));
                       } else if (url.startsWith("/")) {
                         navigate(url);
                       } else {
-                        window.open(url, "_blank");
+                        window.open(url, "_blank", "noopener,noreferrer");
                       }
                     }}
                   >
                     <ExternalLink size={14} />
                     {meta.action_label || "Learn More"}
                   </Button>
+                )}
+
+                {!hasAction && fallbackTarget && (
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => {
+                      const url = fallbackTarget.url;
+                      setDetailNotif(null);
+                      onClose();
+                      navigate(url);
+                    }}
+                  >
+                    <ExternalLink size={14} />
+                    {fallbackTarget.label}
+                  </Button>
+                )}
+
+                {(txnRef || (detailFulfillment && meta?.tracking_number)) && (
+                  <div className="rounded-xl border border-border/60 bg-muted/30 p-3 space-y-1.5">
+                    {txnRef && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Reference</span>
+                        <span className="font-mono text-[11px] text-foreground truncate">{String(txnRef)}</span>
+                      </div>
+                    )}
+                    {detailFulfillment && meta?.tracking_number && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Tracking</span>
+                        <span className="font-mono text-[11px] text-foreground truncate">{String(meta.tracking_number)}</span>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </>
