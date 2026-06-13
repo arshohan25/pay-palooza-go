@@ -395,18 +395,49 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                       setDetailNotif(null);
                       onClose();
                       if (FLOW_FEATURES.has(url)) {
-                        // Dispatch custom event for Index page flow-based features
                         window.dispatchEvent(new CustomEvent("open-feature", { detail: url }));
                       } else if (url.startsWith("/")) {
                         navigate(url);
                       } else {
-                        window.open(url, "_blank");
+                        window.open(url, "_blank", "noopener,noreferrer");
                       }
                     }}
                   >
                     <ExternalLink size={14} />
                     {meta.action_label || "Learn More"}
                   </Button>
+                )}
+
+                {!hasAction && fallbackTarget && (
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => {
+                      const url = fallbackTarget.url;
+                      setDetailNotif(null);
+                      onClose();
+                      navigate(url);
+                    }}
+                  >
+                    <ExternalLink size={14} />
+                    {fallbackTarget.label}
+                  </Button>
+                )}
+
+                {(txnRef || (detailFulfillment && meta?.tracking_number)) && (
+                  <div className="rounded-xl border border-border/60 bg-muted/30 p-3 space-y-1.5">
+                    {txnRef && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Reference</span>
+                        <span className="font-mono text-[11px] text-foreground truncate">{String(txnRef)}</span>
+                      </div>
+                    )}
+                    {detailFulfillment && meta?.tracking_number && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Tracking</span>
+                        <span className="font-mono text-[11px] text-foreground truncate">{String(meta.tracking_number)}</span>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </>
