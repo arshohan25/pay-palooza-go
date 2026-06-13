@@ -397,6 +397,10 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       <span className="text-sm text-muted-foreground">Service Charge (1%)</span>
                       <span className="text-sm font-bold text-destructive">−৳{fee.toLocaleString()}</span>
                     </div>
+                    <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+                      <span className="text-xs text-muted-foreground/70">Fee source</span>
+                      <span className="text-xs text-primary font-medium">From your balance</span>
+                    </div>
                     <div className="flex items-center justify-between p-4 bg-muted/50">
                       <span className="text-sm font-bold text-foreground">Total Deduction</span>
                       <span className="text-base font-extrabold text-foreground">৳{totalDeduction.toLocaleString()}</span>
