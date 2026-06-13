@@ -217,11 +217,9 @@ export default function AdminVendorKycReview() {
                     ].map(d => {
                       const url = docUrls[d.key];
                       return (
-                        <a
+                        <ExternalLink
                           key={d.key}
-                          href={url || "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          href={url || ""}
                           className={`block rounded-lg border p-2 text-xs ${url ? "hover:bg-muted/50" : "opacity-50 pointer-events-none"}`}
                         >
                           {url ? (
@@ -233,7 +231,7 @@ export default function AdminVendorKycReview() {
                           )}
                           <p className="text-foreground font-medium">{d.label}</p>
                           <p className="text-[10px] text-muted-foreground">{url ? "Click to view" : "Not uploaded"}</p>
-                        </a>
+                        </ExternalLink>
                       );
                     })}
                   </div>
