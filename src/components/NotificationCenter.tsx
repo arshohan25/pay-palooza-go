@@ -354,7 +354,8 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                       detailNotif.category === "cashback" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" :
                       detailNotif.category === "offer" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" :
                       detailNotif.category === "update" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" :
-                      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                      detailNotif.category === "promo" || detailNotif.category === "promotion" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" :
+                      "bg-muted text-muted-foreground"
                     }`}>
                       {detailNotif.category}
                     </span>
