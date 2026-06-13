@@ -59,6 +59,26 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+        shariah: {
+          DEFAULT: "hsl(var(--shariah-brand))",
+          foreground: "hsl(var(--shariah-brand-foreground))",
+          accent: "hsl(var(--shariah-accent))",
+          "accent-foreground": "hsl(var(--shariah-accent-foreground))",
+          green: {
+            50: "hsl(var(--shariah-green-50))",
+            100: "hsl(var(--shariah-green-100))",
+            300: "hsl(var(--shariah-green-300))",
+            600: "hsl(var(--shariah-green-600))",
+            800: "hsl(var(--shariah-green-800))",
+            900: "hsl(var(--shariah-green-900))",
+          },
+          gold: {
+            100: "hsl(var(--shariah-gold-100))",
+            300: "hsl(var(--shariah-gold-300))",
+            500: "hsl(var(--shariah-gold-500))",
+            700: "hsl(var(--shariah-gold-700))",
+            900: "hsl(var(--shariah-gold-900))",
+          },
         },
       },
       borderRadius: {
