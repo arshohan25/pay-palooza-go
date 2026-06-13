@@ -249,9 +249,13 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
       goTo("account");
       return;
     }
+    if (step === "review") {
+      goTo("bill");
+      return;
+    }
     if (step === "pin") {
       setPin("");
-      goTo("bill");
+      goTo("review");
     }
   };
 
