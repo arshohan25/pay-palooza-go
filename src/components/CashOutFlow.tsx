@@ -732,7 +732,56 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
               </div>
             )}
 
-            {/* ── STEP 3: PIN ── */}
+            {/* ── STEP 3: Review (summary before PIN) ── */}
+            {step === "review" && (
+              <div className="px-4 pt-6 pb-32 space-y-5">
+                <div className="text-center space-y-1">
+                  <p className="text-sm text-muted-foreground">{t("cashingOut")}</p>
+                  <p className="text-4xl font-extrabold text-foreground">৳{parseFloat(amount).toLocaleString()}</p>
+                </div>
+
+                <div className="rounded-2xl bg-card border border-border shadow-card p-4 flex items-center gap-3">
+                  <div className={`${agent?.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0`}>
+                    <Store size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-foreground text-sm truncate">{agent?.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{agent?.agentId}{agent?.address ? ` · ${agent.address}` : ""}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-card border border-border p-4 space-y-2.5 text-sm">
+                  <p className="font-semibold text-foreground">Transaction Summary</p>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t("cashOutAmount")}</span>
+                    <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Fee ({FEE_LABEL})</span>
+                    <span className="text-destructive font-medium">− ৳{fee}</span>
+                  </div>
+                  {couponDiscount > 0 && pendingCoupon && (
+                    <CouponSummaryLine code={pendingCoupon.code} discount={couponDiscount} />
+                  )}
+                  <div className="h-px bg-border" />
+                  <div className="flex justify-between font-bold text-foreground">
+                    <span>{t("youReceive")}</span>
+                    <span className="text-primary">৳{parseFloat(receive).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground/70">
+                    <span>Total from balance</span>
+                    <span>৳{totalFromBalance.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <Button className="w-full h-12 gradient-cashout border-0 text-white font-semibold text-base rounded-xl" onClick={handleReviewContinue}>
+                  Confirm & Enter PIN
+                </Button>
+                <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>Edit Amount</Button>
+              </div>
+            )}
+
+            {/* ── STEP 4: PIN ── */}
             {step === "pin" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="text-center space-y-1">
