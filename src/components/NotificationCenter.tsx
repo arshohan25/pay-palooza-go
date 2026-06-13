@@ -127,20 +127,38 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
   };
 
   const meta = detailNotif?.metadata as any;
-  const hasCoupon = meta?.coupon_code;
-  const hasImage = meta?.image_url;
-  const hasAction = meta?.action_url;
+  const hasCoupon = !!meta?.coupon_code;
+  const hasImage = !!meta?.image_url;
+  const rawActionUrl = typeof meta?.action_url === "string" ? meta.action_url.trim() : "";
+  const hasAction = rawActionUrl.length > 0;
   const fulfillmentOrderId = meta?.order_id;
   const txnRef = meta?.tx_reference || meta?.transaction_id;
   const detailFulfillment = detailNotif ? isFulfillment(detailNotif) : false;
   const isTxnCategory = detailNotif ? ["transaction", "payment", "transfer", "cashback"].includes(detailNotif.category) : false;
   const isSavingsCategory = detailNotif ? ["savings", "savings_reminder"].includes(detailNotif.category) : false;
-  const fallbackTarget: { label: string; url: string } | null =
-    hasAction ? null :
-    detailFulfillment && fulfillmentOrderId ? { label: "View order", url: `/orders/${fulfillmentOrderId}` } :
-    isTxnCategory ? { label: "View in history", url: "/transactions" } :
-    isSavingsCategory ? { label: "Open savings", url: "/savings" } :
+  const detailsTarget: { label: string; url: string; icon: LucideIcon } | null =
+    detailFulfillment && fulfillmentOrderId ? { label: "View order", url: `/orders/${fulfillmentOrderId}`, icon: Truck } :
+    isTxnCategory ? { label: "View in history", url: "/transactions", icon: ArrowDownLeft } :
+    isSavingsCategory ? { label: "Open savings", url: "/savings", icon: Coins } :
     null;
+
+  const openUrl = (url: string) => {
+    const trimmed = url.trim();
+    setDetailNotif(null);
+    onClose();
+    setTimeout(() => {
+      const token = trimmed.replace(/^\//, "");
+      if (FLOW_FEATURES.has(token)) {
+        window.dispatchEvent(new CustomEvent("open-feature", { detail: token }));
+      } else if (trimmed.startsWith("/")) {
+        navigate(trimmed);
+      } else if (/^https?:\/\//i.test(trimmed)) {
+        window.open(trimmed, "_blank", "noopener,noreferrer");
+      } else {
+        window.dispatchEvent(new CustomEvent("open-feature", { detail: token }));
+      }
+    }, 50);
+  };
 
   return (
     <>
