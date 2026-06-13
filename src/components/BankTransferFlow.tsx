@@ -82,8 +82,8 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
     haptics.medium();
     if (step === "bank") { onClose(); return; }
     if (step === "amount") { goTo("bank"); return; }
-    if (step === "pin") { setPin(""); setPinError(""); setPinVerified(false); goTo("amount"); return; }
-    if (step === "confirm") { goTo("pin"); return; }
+    if (step === "confirm") { goTo("amount"); return; }
+    if (step === "pin") { setPin(""); setPinError(""); setPinVerified(false); goTo("confirm"); return; }
   };
 
   const handleBankContinue = () => {
@@ -98,6 +98,10 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
     if (val < 30) { setError("Minimum withdrawal is ৳30."); return; }
     if (val > 50000) { setError("Maximum withdrawal is ৳50,000."); return; }
+    goTo("confirm");
+  };
+
+  const handleConfirmContinue = () => {
     goTo("pin");
   };
 
@@ -109,18 +113,6 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       const valid = await verifyPin(pin);
       if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setSubmitting(false); return; }
       setPinVerified(true);
-      goTo("confirm");
-    } catch (e: any) {
-      setPinError(e.message || "Verification failed.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleSlideConfirm = async () => {
-    if (!pinVerified) return;
-    setSubmitting(true);
-    try {
       const result = await submitWithdraw({
         amount: parsedAmount,
         bank_name: bankName,
@@ -135,14 +127,15 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       setDirection(1);
       setStep("success");
     } catch (e: any) {
-      setError(e.message || "Failed to submit request.");
-      goTo("pin");
-      setPinVerified(false);
+      setPinError(e.message || "Failed to submit request.");
       setPin("");
+      setPinVerified(false);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleSlideConfirm = handlePinSubmit;
 
   const selectedBank = BANGLADESH_BANKS.find(b => b.name === bankName);
 
