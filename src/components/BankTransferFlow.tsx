@@ -25,8 +25,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type Step = "bank" | "amount" | "pin" | "confirm" | "success";
-const STEPS: Step[] = ["bank", "amount", "pin", "confirm"];
+type Step = "bank" | "amount" | "confirm" | "pin" | "success";
+const STEPS: Step[] = ["bank", "amount", "confirm", "pin"];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
 
 const slideVariants = {
