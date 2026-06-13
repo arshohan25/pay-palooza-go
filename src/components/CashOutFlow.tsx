@@ -317,8 +317,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
     if (val < 30) { setError("Minimum cash out amount is ৳30."); return; }
     if (val > 50000) { setError("Maximum cash out per day is ৳50,000."); return; }
-    goTo("pin");
+    goTo("review");
   };
+
+  const handleReviewContinue = () => goTo("pin");
 
   const [processing, setProcessing] = useState(false);
   const handlePinConfirm = async () => {
