@@ -33,7 +33,7 @@ import FeatureGuard from "@/components/FeatureGuard";
 import CouponBanner from "@/components/CouponBanner";
 import CouponSummaryLine from "@/components/CouponSummaryLine";
 
-type Step = "type" | "account" | "bill" | "pin" | "success";
+type Step = "type" | "account" | "bill" | "review" | "pin" | "success";
 
 interface BillType {
   id: string;
