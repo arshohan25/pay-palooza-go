@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShieldCheck, Eye, Check, X, RefreshCw, FileText, User, Building2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { format } from "date-fns";
+import { ExternalLink } from "@/components/ExternalLink";
 
 type StatusFilter = "pending" | "approved" | "rejected";
 
