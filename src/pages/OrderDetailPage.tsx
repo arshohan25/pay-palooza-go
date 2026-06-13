@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ExternalLink as SafeExternalLink } from "@/components/ExternalLink";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useOrderNotifications } from "@/hooks/use-order-notifications";
@@ -246,9 +247,9 @@ export default function OrderDetailPage() {
                 <Truck className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-muted-foreground">Tracking: <span className="font-semibold text-foreground">{order.tracking_number}</span></span>
                 {trackingUrl && (
-                  <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="ml-auto text-primary flex items-center gap-1 font-semibold hover:underline">
+                  <SafeExternalLink href={trackingUrl} className="ml-auto text-primary flex items-center gap-1 font-semibold hover:underline">
                     Track <ExternalLink className="w-3 h-3" />
-                  </a>
+                  </SafeExternalLink>
                 )}
               </div>
             )}

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/lib/i18n";
+import { ExternalLink } from "@/components/ExternalLink";
 
 interface FundRequest {
   id: string;
@@ -150,9 +151,9 @@ const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
                           </div>
                         )}
                         {r.proof_url && (
-                          <a href={r.proof_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline">
+                          <ExternalLink href={r.proof_url} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline">
                             <ImageIcon size={12} /> View Proof
-                          </a>
+                          </ExternalLink>
                         )}
                       </div>
                     </motion.div>
