@@ -136,11 +136,12 @@ const generateTxnId = () => {
   return value;
 };
 
-const STEPS: Step[] = ["type", "account", "bill", "pin"];
+const STEPS: Step[] = ["type", "account", "bill", "review", "pin"];
 const STEP_LABELS: Record<Step, string> = {
   type: "Bill Type",
   account: "Account",
   bill: "Details",
+  review: "Review",
   pin: "PIN",
   success: "Done",
 };
