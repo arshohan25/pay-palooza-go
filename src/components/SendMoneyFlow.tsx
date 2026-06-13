@@ -164,6 +164,39 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
+  const formatAmountInput = (value: number) => {
+    if (!Number.isFinite(value) || value <= 0) return "";
+    return parseFloat(value.toFixed(2)).toString();
+  };
+
+  const getAmountWithCashOutCharge = (baseAmount: number) => {
+    if (baseAmount <= 0) return 0;
+    return parseFloat((baseAmount + calcCashOutFee(baseAmount)).toFixed(2));
+  };
+
+  const getBaseAmountFromTotal = (totalAmount: number) => {
+    if (totalAmount <= 0) return 0;
+    let low = 0;
+    let high = totalAmount;
+    for (let i = 0; i < 24; i++) {
+      const mid = (low + high) / 2;
+      const gross = getAmountWithCashOutCharge(mid);
+      if (gross > totalAmount) high = mid;
+      else low = mid;
+    }
+    return parseFloat(low.toFixed(2));
+  };
+
+  const handleCashOutChargeToggle = () => {
+    const current = parseFloat(amount) || 0;
+    const nextEnabled = !addCashOutCharge;
+    if (current > 0) {
+      setAmount(formatAmountInput(nextEnabled ? getAmountWithCashOutCharge(current) : getBaseAmountFromTotal(current)));
+    }
+    setAddCashOutCharge(nextEnabled);
+    haptics.light();
+    setError("");
+  };
   
 
   useEffect(() => {
@@ -537,8 +570,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     requestLocation().catch(() => {});
     haptics.success();
     txnTime.current = new Date();
-    const cashOutExtra = addCashOutCharge ? calcCashOutFee(amtVal) : 0;
-    const actualSendAmount = parseFloat((amtVal + cashOutExtra).toFixed(2));
+    const actualSendAmount = parseFloat(amtVal.toFixed(2));
     const feeVal = calcFee("send", actualSendAmount);
     try {
       await transferMoney({
@@ -564,8 +596,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
   const BALANCE = getBalance();
   const amtNum = parseFloat(amount) || 0;
-  const cashOutExtra = addCashOutCharge ? calcCashOutFee(amtNum) : 0;
-  const sendAmount = parseFloat((amtNum + cashOutExtra).toFixed(2));
+  const cashOutBaseAmount = addCashOutCharge ? getBaseAmountFromTotal(amtNum) : amtNum;
+  const cashOutExtra = addCashOutCharge && amtNum > 0 ? parseFloat((amtNum - cashOutBaseAmount).toFixed(2)) : 0;
+  const sendAmount = amtNum;
   const fee    = calcFee("send", sendAmount);
   const feeFromBalance = Math.min(fee, BALANCE);
   const feeFromAmount  = parseFloat((fee - feeFromBalance).toFixed(2));
@@ -796,21 +829,11 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       type="text"
                       inputMode="decimal"
                       placeholder="0"
-                      value={addCashOutCharge && amtNum > 0 ? sendAmount.toString() : amount}
+                      value={amount}
                       onChange={(e) => {
                         let v = e.target.value;
                         if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
-                        if (addCashOutCharge && v !== "" && !isNaN(parseFloat(v))) {
-                          // Treat typed value as the total (base + charge); back-calc base
-                          const typed = parseFloat(v);
-                          // Cash-out fee rate ~1.85%; back-calc base = total / (1 + rate)
-                          const guess = typed / 1.0185;
-                          const fee = calcCashOutFee(guess);
-                          const base = Math.max(0, parseFloat((typed - fee).toFixed(2)));
-                          setAmount(base.toString());
-                        } else {
-                          setAmount(v);
-                        }
+                        setAmount(v);
                         setError("");
                       }}
                       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
@@ -822,7 +845,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                   {addCashOutCharge && amtNum > 0 && cashOutExtra > 0 && (
                     <p className="text-[11px] text-muted-foreground">
-                      Base ৳{amtNum.toLocaleString()} + Cash Out Charge ৳{cashOutExtra.toFixed(2)} = ৳{sendAmount.toLocaleString()}
+                      Base ৳{cashOutBaseAmount.toLocaleString()} + Cash Out Charge ৳{cashOutExtra.toFixed(2)} = ৳{sendAmount.toLocaleString()}
                     </p>
                   )}
                   {error && (
@@ -837,9 +860,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     {QUICK_AMOUNTS.map((q) => (
                       <button
                         key={q}
-                        onClick={() => setAmount(String(q))}
+                        onClick={() => setAmount(addCashOutCharge ? formatAmountInput(getAmountWithCashOutCharge(q)) : String(q))}
                         className={`px-4 py-2 rounded-full text-sm font-semibold border whitespace-nowrap transition-all active:scale-95 shrink-0 ${
-                          amount === String(q)
+                          amount === (addCashOutCharge ? formatAmountInput(getAmountWithCashOutCharge(q)) : String(q))
                             ? "gradient-send text-white border-transparent"
                             : "bg-card border-border text-foreground hover:border-primary/50"
                         }`}
@@ -862,7 +885,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
                 {/* Cash Out Charge Toggle — reduced visual weight */}
                 <button
-                  onClick={() => { setAddCashOutCharge(!addCashOutCharge); haptics.light(); }}
+                  onClick={handleCashOutChargeToggle}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-[0.98] ${
                     addCashOutCharge
                       ? "border-primary/40 bg-primary/5"
