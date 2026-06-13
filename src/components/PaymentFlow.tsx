@@ -44,7 +44,7 @@ import CouponBanner from "@/components/CouponBanner";
 import CouponSummaryLine from "@/components/CouponSummaryLine";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = "merchant" | "amount" | "pin" | "success";
+type Step = "merchant" | "amount" | "review" | "pin" | "success";
 
 interface Merchant {
   id: string;
@@ -60,10 +60,11 @@ interface Merchant {
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000, 2000];
 
 // ─── Step config ─────────────────────────────────────────────────────────────
-const STEPS: Step[] = ["merchant", "amount", "pin"];
+const STEPS: Step[] = ["merchant", "amount", "review", "pin"];
 const STEP_LABELS: Record<Step, string> = {
   merchant: "Merchant",
   amount:   "Amount",
+  review:   "Review",
   pin:      "PIN",
   success:  "Done",
 };
@@ -216,7 +217,8 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     haptics.medium();
     if (step === "merchant") { onClose(); return; }
     if (step === "amount")   { goTo("merchant"); return; }
-    if (step === "pin")      { setPin(""); goTo("amount"); return; }
+    if (step === "review")   { goTo("amount"); return; }
+    if (step === "pin")      { setPin(""); goTo("review"); return; }
   };
 
   const handleSelectMerchant = (m: Merchant) => {
@@ -396,8 +398,10 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
     if (val < 1) { setError("Minimum payment is ৳1."); return; }
     // No maximum limit for payments
-    goTo("pin");
+    goTo("review");
   };
+
+  const handleReviewContinue = () => goTo("pin");
 
   const [processing, setProcessing] = useState(false);
   const handlePinConfirm = async () => {
@@ -834,14 +838,59 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                 {amtNum > 0 && effectiveAmount <= getBalance() && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                     <Button className="w-full h-12 gradient-payment border-0 text-white font-semibold text-base" onClick={handleAmountContinue}>
-                      {t("continueToPIN")}
+                      Review Payment
                     </Button>
                   </motion.div>
                 )}
               </div>
             )}
 
-            {/* ── STEP 3: PIN ── */}
+            {/* ── STEP 3: Review (summary before PIN) ── */}
+            {step === "review" && (
+              <div className="px-4 pt-6 pb-32 space-y-5">
+                <div className="text-center space-y-1">
+                  <p className="text-sm text-muted-foreground">{t("paying")}</p>
+                  <p className="text-4xl font-extrabold text-foreground">৳{amtNum.toLocaleString()}</p>
+                </div>
+
+                <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
+                  <div className={`${merchant?.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold shrink-0`}>
+                    {merchant?.initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-foreground text-sm truncate">{merchant?.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{merchant?.merchantId} · {merchant?.category}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-card border border-border p-4 space-y-2.5 text-sm">
+                  <p className="font-semibold text-foreground">Payment Summary</p>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t("amount")}</span>
+                    <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
+                  </div>
+                  {couponDiscount > 0 && pendingCoupon && (
+                    <CouponSummaryLine code={pendingCoupon.code} discount={couponDiscount} />
+                  )}
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t("fee")}</span>
+                    <span className="text-primary font-semibold">{t("free")}</span>
+                  </div>
+                  <div className="h-px bg-border" />
+                  <div className="flex justify-between font-bold text-foreground">
+                    <span>{t("total")}</span>
+                    <span>৳{effectiveAmount.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <Button className="w-full h-12 gradient-payment border-0 text-white font-semibold text-base rounded-xl" onClick={handleReviewContinue}>
+                  Confirm & Enter PIN
+                </Button>
+                <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>Edit Amount</Button>
+              </div>
+            )}
+
+            {/* ── STEP 4: PIN ── */}
             {step === "pin" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="text-center space-y-1">

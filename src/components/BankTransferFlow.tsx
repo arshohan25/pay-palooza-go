@@ -25,8 +25,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type Step = "bank" | "amount" | "pin" | "confirm" | "success";
-const STEPS: Step[] = ["bank", "amount", "pin", "confirm"];
+type Step = "bank" | "amount" | "confirm" | "pin" | "success";
+const STEPS: Step[] = ["bank", "amount", "confirm", "pin"];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
 
 const slideVariants = {
@@ -82,8 +82,8 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
     haptics.medium();
     if (step === "bank") { onClose(); return; }
     if (step === "amount") { goTo("bank"); return; }
-    if (step === "pin") { setPin(""); setPinError(""); setPinVerified(false); goTo("amount"); return; }
-    if (step === "confirm") { goTo("pin"); return; }
+    if (step === "confirm") { goTo("amount"); return; }
+    if (step === "pin") { setPin(""); setPinError(""); setPinVerified(false); goTo("confirm"); return; }
   };
 
   const handleBankContinue = () => {
@@ -98,6 +98,10 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
     if (val < 30) { setError("Minimum withdrawal is ৳30."); return; }
     if (val > 50000) { setError("Maximum withdrawal is ৳50,000."); return; }
+    goTo("confirm");
+  };
+
+  const handleConfirmContinue = () => {
     goTo("pin");
   };
 
@@ -109,18 +113,6 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       const valid = await verifyPin(pin);
       if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setSubmitting(false); return; }
       setPinVerified(true);
-      goTo("confirm");
-    } catch (e: any) {
-      setPinError(e.message || "Verification failed.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleSlideConfirm = async () => {
-    if (!pinVerified) return;
-    setSubmitting(true);
-    try {
       const result = await submitWithdraw({
         amount: parsedAmount,
         bank_name: bankName,
@@ -135,14 +127,15 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       setDirection(1);
       setStep("success");
     } catch (e: any) {
-      setError(e.message || "Failed to submit request.");
-      goTo("pin");
-      setPinVerified(false);
+      setPinError(e.message || "Failed to submit request.");
       setPin("");
+      setPinVerified(false);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleSlideConfirm = handlePinSubmit;
 
   const selectedBank = BANGLADESH_BANKS.find(b => b.name === bankName);
 
@@ -352,7 +345,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                 </div>
               )}
 
-              {/* PIN step — now before confirm */}
+              {/* PIN step — final confirmation after summary */}
               {step === "pin" && (
                 <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
                   <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -387,12 +380,12 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     onClick={handlePinSubmit}
                     disabled={submitting || pin.length !== 4}
                   >
-                    {submitting ? "Verifying…" : "Verify PIN"}
+                    {submitting ? "Processing…" : "Confirm Withdrawal"}
                   </Button>
                 </div>
               )}
 
-              {/* Confirm step — now after PIN, with SlideToConfirm */}
+              {/* Review/Summary step — right after amount entry */}
               {step === "confirm" && (
                 <div className="space-y-6">
                   <div className="text-center space-y-1">
@@ -430,7 +423,13 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     </p>
                   </div>
 
-                  <SlideToConfirm onConfirm={handleSlideConfirm} label={submitting ? "Processing…" : "Slide to Confirm"} disabled={submitting} />
+                  <Button
+                    className="w-full h-12 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold text-base rounded-xl"
+                    onClick={handleConfirmContinue}
+                  >
+                    Confirm & Enter PIN
+                  </Button>
+                  <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>Edit Amount</Button>
                 </div>
               )}
 
