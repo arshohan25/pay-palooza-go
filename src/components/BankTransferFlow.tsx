@@ -423,7 +423,13 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     </p>
                   </div>
 
-                  <SlideToConfirm onConfirm={handleSlideConfirm} label={submitting ? "Processing…" : "Slide to Confirm"} disabled={submitting} />
+                  <Button
+                    className="w-full h-12 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold text-base rounded-xl"
+                    onClick={handleConfirmContinue}
+                  >
+                    Confirm & Enter PIN
+                  </Button>
+                  <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>Edit Amount</Button>
                 </div>
               )}
 
