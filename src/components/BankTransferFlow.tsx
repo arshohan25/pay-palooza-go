@@ -380,7 +380,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     onClick={handlePinSubmit}
                     disabled={submitting || pin.length !== 4}
                   >
-                    {submitting ? "Verifying…" : "Verify PIN"}
+                    {submitting ? "Processing…" : "Confirm Withdrawal"}
                   </Button>
                 </div>
               )}
