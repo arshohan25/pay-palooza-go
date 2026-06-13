@@ -187,9 +187,16 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     return parseFloat(low.toFixed(2));
   };
 
+  const MIN_CASH_OUT_AMOUNT = 10;
+
   const handleCashOutChargeToggle = () => {
     const current = parseFloat(amount) || 0;
     const nextEnabled = !addCashOutCharge;
+    if (nextEnabled && current < MIN_CASH_OUT_AMOUNT) {
+      setError(`Minimum amount ৳${MIN_CASH_OUT_AMOUNT} required to add Cash Out Charge.`);
+      haptics.error?.();
+      return;
+    }
     if (current > 0) {
       setAmount(formatAmountInput(nextEnabled ? getAmountWithCashOutCharge(current) : getBaseAmountFromTotal(current)));
     }
