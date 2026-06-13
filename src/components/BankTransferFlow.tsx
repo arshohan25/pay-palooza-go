@@ -345,7 +345,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                 </div>
               )}
 
-              {/* PIN step — now before confirm */}
+              {/* PIN step — final confirmation after summary */}
               {step === "pin" && (
                 <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
                   <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
