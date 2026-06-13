@@ -606,6 +606,10 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                     <span>Service Fee</span>
                     <span className="text-primary font-semibold">Free</span>
                   </div>
+                  <div className="flex justify-between text-xs text-muted-foreground/70">
+                    <span>Fee source</span>
+                    <span className="text-primary font-medium">From your balance</span>
+                  </div>
                   <div className="h-px bg-border" />
                   <div className="flex justify-between font-bold text-foreground">
                     <span>Total</span>
