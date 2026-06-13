@@ -796,12 +796,28 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       type="text"
                       inputMode="decimal"
                       placeholder="0"
-                      value={amount}
-                      onChange={(e) => { const v = e.target.value; if (v === "" || /^\d*\.?\d*$/.test(v)) { setAmount(v); setError(""); } }}
+                      value={addCashOutCharge && amtNum > 0 ? sendAmount.toString() : amount}
+                      onChange={(e) => {
+                        let v = e.target.value;
+                        if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                        if (addCashOutCharge && v !== "" && !isNaN(parseFloat(v))) {
+                          // Treat typed value as the total (base + charge); back-calc base
+                          const typed = parseFloat(v);
+                          // Cash-out fee rate ~1.85%; back-calc base = total / (1 + rate)
+                          const guess = typed / 1.0185;
+                          const fee = calcCashOutFee(guess);
+                          const base = Math.max(0, parseFloat((typed - fee).toFixed(2)));
+                          setAmount(base.toString());
+                        } else {
+                          setAmount(v);
+                        }
+                        setError("");
+                      }}
                       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                       autoFocus
                       className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
+
 
                   </div>
                   {addCashOutCharge && amtNum > 0 && cashOutExtra > 0 && (
