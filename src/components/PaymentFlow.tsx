@@ -838,7 +838,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                 {amtNum > 0 && effectiveAmount <= getBalance() && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                     <Button className="w-full h-12 gradient-payment border-0 text-white font-semibold text-base" onClick={handleAmountContinue}>
-                      {t("continueToPIN")}
+                      Review Payment
                     </Button>
                   </motion.div>
                 )}
