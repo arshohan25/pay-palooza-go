@@ -343,7 +343,9 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
       animate={{ y: 0 }}
       exit={{ y: "100%" }}
       transition={{ type: "spring", stiffness: 500, damping: 40 }}
-      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto"
+      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md sm:max-w-xl mx-auto"
+      role="dialog"
+      aria-modal="true"
     >
       {step !== "success" && (
         <motion.div
