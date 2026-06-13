@@ -141,7 +141,7 @@ export function useTransactions(limit?: number, refreshKey?: number, options: Tr
       if (!userId) return;
 
       const channel = supabase
-        .channel("txn-realtime")
+        .channel(`txn-realtime-${userId}-${limit ?? "all"}`)
         .on(
           "postgres_changes",
           {
