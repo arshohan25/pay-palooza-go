@@ -232,7 +232,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     haptics.medium();
     if (step === "agent") { onClose(); return; }
     if (step === "amount") { goTo("agent"); return; }
-    if (step === "pin") { setPin(""); goTo("amount"); return; }
+    if (step === "review") { goTo("amount"); return; }
+    if (step === "pin") { setPin(""); goTo("review"); return; }
   };
 
   const displayAgents = nearbyAgents.length > 0 ? nearbyAgents : recentAgents;
