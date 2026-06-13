@@ -398,8 +398,10 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
     if (val < 1) { setError("Minimum payment is ৳1."); return; }
     // No maximum limit for payments
-    goTo("pin");
+    goTo("review");
   };
+
+  const handleReviewContinue = () => goTo("pin");
 
   const [processing, setProcessing] = useState(false);
   const handlePinConfirm = async () => {
