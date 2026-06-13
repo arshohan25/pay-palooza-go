@@ -608,27 +608,32 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       animate={{ y: 0 }}
       exit={{ y: "100%" }}
       transition={{ type: "spring", stiffness: 500, damping: 40 }}
-      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md sm:max-w-xl mx-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="send-money-title">
       {/* ─── Header ─── */}
       {step !== "success" && (
         <div className="gradient-send px-4 pt-3 pb-3">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={goBack}
-              className="w-9 h-9 rounded-full bg-primary-foreground/15 flex items-center justify-center active:scale-95 transition-transform shrink-0"
+              aria-label="Go back"
+              className="w-10 h-10 rounded-full bg-primary-foreground/15 flex items-center justify-center active:scale-95 transition-transform shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/70"
             >
-              <ChevronLeft size={20} className="text-primary-foreground" />
+              <ChevronLeft size={20} className="text-primary-foreground" aria-hidden="true" />
             </button>
             <div className="flex-1 text-center">
-              <h1 className="text-lg font-bold text-primary-foreground tracking-tight">
+              <h1 id="send-money-title" className="text-lg font-bold text-primary-foreground tracking-tight">
                 {t("flowSendMoney")}
               </h1>
               {step === "recipient" && (
                 <p className="text-xs text-primary-foreground/70 mt-0.5">Secure & Instant Transfer</p>
               )}
             </div>
-            {step !== "recipient" && <div className="w-9" />}
-            {step === "recipient" && <div className="w-9" />}
+            {step !== "recipient" && <div className="w-10" />}
+            {step === "recipient" && <div className="w-10" />}
           </div>
         </div>
       )}

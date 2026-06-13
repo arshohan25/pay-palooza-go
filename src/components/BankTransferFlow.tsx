@@ -149,21 +149,36 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   return (
     <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
       transition={{ type: "spring", stiffness: 500, damping: 40 }}
-      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md sm:max-w-xl mx-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bank-transfer-title">
 
       {step !== "success" && (
         <motion.div className="bg-gradient-to-b from-blue-500 to-indigo-600 px-4 pt-3 pb-3 text-primary-foreground"
           initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
           <div className="flex items-center gap-3 mb-2">
-            <button onClick={goBack} className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0">
-              <ChevronLeft size={20} />
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label="Go back"
+              className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <ChevronLeft size={20} aria-hidden="true" />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight">{t("flowBankTransfer")}</h1>
+              <h1 id="bank-transfer-title" className="text-xl font-extrabold tracking-tight">{t("flowBankTransfer")}</h1>
               <p className="text-xs text-white/70 mt-0.5">Withdraw to bank account</p>
             </div>
           </div>
-          <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
+          <div
+            className="h-1.5 rounded-full bg-white/20 overflow-hidden"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={STEPS.length}
+            aria-valuenow={stepIndex + 1}
+            aria-label={`Step ${stepIndex + 1} of ${STEPS.length}`}
+          >
             <motion.div className="h-full bg-white rounded-full"
               animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
           </div>
