@@ -41,7 +41,7 @@ import CouponBanner from "@/components/CouponBanner";
 import CouponSummaryLine from "@/components/CouponSummaryLine";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Step = "agent" | "amount" | "pin" | "success";
+type Step = "agent" | "amount" | "review" | "pin" | "success";
 
 interface Agent {
   id: string;
@@ -56,10 +56,11 @@ interface Agent {
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
 
-const STEPS: Step[] = ["agent", "amount", "pin"];
+const STEPS: Step[] = ["agent", "amount", "review", "pin"];
 const STEP_LABELS: Record<Step, string> = {
   agent: "Agent",
   amount: "Amount",
+  review: "Review",
   pin: "PIN",
   success: "Done",
 };
