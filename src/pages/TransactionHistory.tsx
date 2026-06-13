@@ -95,10 +95,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   const { t } = useI18n();
   const runningMonthStart = useMemo(() => startOfMonth(new Date()), []);
   const runningMonthEnd = useMemo(() => endOfDay(new Date()), []);
-  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions(100, undefined, {
-    from: runningMonthStart.toISOString(),
-    to: runningMonthEnd.toISOString(),
-  });
+  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions(100, undefined);
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
   const [search, setSearch]       = useState("");
   const [dateFrom, setDateFrom]   = useState<Date | undefined>(startOfMonth(new Date()));
