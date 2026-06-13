@@ -127,20 +127,38 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
   };
 
   const meta = detailNotif?.metadata as any;
-  const hasCoupon = meta?.coupon_code;
-  const hasImage = meta?.image_url;
-  const hasAction = meta?.action_url;
+  const hasCoupon = !!meta?.coupon_code;
+  const hasImage = !!meta?.image_url;
+  const rawActionUrl = typeof meta?.action_url === "string" ? meta.action_url.trim() : "";
+  const hasAction = rawActionUrl.length > 0;
   const fulfillmentOrderId = meta?.order_id;
   const txnRef = meta?.tx_reference || meta?.transaction_id;
   const detailFulfillment = detailNotif ? isFulfillment(detailNotif) : false;
   const isTxnCategory = detailNotif ? ["transaction", "payment", "transfer", "cashback"].includes(detailNotif.category) : false;
   const isSavingsCategory = detailNotif ? ["savings", "savings_reminder"].includes(detailNotif.category) : false;
-  const fallbackTarget: { label: string; url: string } | null =
-    hasAction ? null :
-    detailFulfillment && fulfillmentOrderId ? { label: "View order", url: `/orders/${fulfillmentOrderId}` } :
-    isTxnCategory ? { label: "View in history", url: "/transactions" } :
-    isSavingsCategory ? { label: "Open savings", url: "/savings" } :
+  const detailsTarget: { label: string; url: string; icon: LucideIcon } | null =
+    detailFulfillment && fulfillmentOrderId ? { label: "View order", url: `/orders/${fulfillmentOrderId}`, icon: Truck } :
+    isTxnCategory ? { label: "View in history", url: "/transactions", icon: ArrowDownLeft } :
+    isSavingsCategory ? { label: "Open savings", url: "/savings", icon: Coins } :
     null;
+
+  const openUrl = (url: string) => {
+    const trimmed = url.trim();
+    setDetailNotif(null);
+    onClose();
+    setTimeout(() => {
+      const token = trimmed.replace(/^\//, "");
+      if (FLOW_FEATURES.has(token)) {
+        window.dispatchEvent(new CustomEvent("open-feature", { detail: token }));
+      } else if (trimmed.startsWith("/")) {
+        navigate(trimmed);
+      } else if (/^https?:\/\//i.test(trimmed)) {
+        window.open(trimmed, "_blank", "noopener,noreferrer");
+      } else {
+        window.dispatchEvent(new CustomEvent("open-feature", { detail: token }));
+      }
+    }, 50);
+  };
 
   return (
     <>
@@ -387,41 +405,29 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                   </div>
                 )}
 
-                {hasAction && (
-                  <Button
-                    className="w-full gap-2"
-                    onClick={() => {
-                      const url = meta.action_url as string;
-                      setDetailNotif(null);
-                      onClose();
-                      if (FLOW_FEATURES.has(url)) {
-                        window.dispatchEvent(new CustomEvent("open-feature", { detail: url }));
-                      } else if (url.startsWith("/")) {
-                        navigate(url);
-                      } else {
-                        window.open(url, "_blank", "noopener,noreferrer");
-                      }
-                    }}
-                  >
-                    <ExternalLink size={14} />
-                    {meta.action_label || "Learn More"}
-                  </Button>
-                )}
-
-                {!hasAction && fallbackTarget && (
-                  <Button
-                    className="w-full gap-2"
-                    onClick={() => {
-                      const url = fallbackTarget.url;
-                      setDetailNotif(null);
-                      onClose();
-                      navigate(url);
-                    }}
-                  >
-                    <ExternalLink size={14} />
-                    {fallbackTarget.label}
-                  </Button>
-                )}
+                <div className="flex flex-col gap-2">
+                  {detailsTarget && (
+                    <Button
+                      className="w-full gap-2 min-h-11"
+                      onClick={() => openUrl(detailsTarget.url)}
+                      aria-label={detailsTarget.label}
+                    >
+                      <detailsTarget.icon size={14} />
+                      {detailsTarget.label}
+                    </Button>
+                  )}
+                  {hasAction && (
+                    <Button
+                      variant={detailsTarget ? "outline" : "default"}
+                      className="w-full gap-2 min-h-11"
+                      onClick={() => openUrl(rawActionUrl)}
+                      aria-label={meta.action_label || "Learn more"}
+                    >
+                      <ExternalLink size={14} />
+                      {meta.action_label || "Learn More"}
+                    </Button>
+                  )}
+                </div>
 
                 {(txnRef || (detailFulfillment && meta?.tracking_number)) && (
                   <div className="rounded-xl border border-border/60 bg-muted/30 p-3 space-y-1.5">
