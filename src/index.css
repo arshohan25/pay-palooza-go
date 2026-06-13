@@ -78,13 +78,15 @@ input[type="number"] {
     --gradient-shariah: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
 
     /* ── Gradient palette ── */
-    --gradient-primary: linear-gradient(135deg, hsl(162 72% 40%), hsl(174 68% 28%));
-    --gradient-hero: linear-gradient(150deg, hsl(162 72% 38%) 0%, hsl(178 62% 26%) 60%, hsl(192 55% 22%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(187 100% 42%), hsl(197 100% 35%));
-    --gradient-send: linear-gradient(135deg, hsl(330 80% 55%), hsl(340 75% 45%));
-    --gradient-cashout: linear-gradient(135deg, hsl(122 38% 50%), hsl(134 52% 30%));
-    --gradient-payment: linear-gradient(135deg, hsl(291 64% 44%), hsl(300 60% 35%));
-    --gradient-addmoney: linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%));
+    /* All money-flow gradients use Shariah brand (green #0F5B1D + gold #FFD600).
+       Each flow keeps a distinct shade for visual hierarchy. */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
+    --gradient-hero: linear-gradient(150deg, hsl(var(--shariah-green-600)) 0%, hsl(var(--shariah-green-800)) 60%, hsl(var(--shariah-green-900)) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(var(--shariah-gold-500)), hsl(var(--shariah-gold-700)));
+    --gradient-send: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
+    --gradient-cashout: linear-gradient(135deg, hsl(var(--shariah-green-800)), hsl(var(--shariah-green-900)));
+    --gradient-payment: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-gold-700)));
+    --gradient-addmoney: linear-gradient(135deg, hsl(var(--shariah-green-300)), hsl(var(--shariah-green-600)));
     --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.15), hsl(0 0% 100% / 0.05));
 
     /* ── Shadows ── */
