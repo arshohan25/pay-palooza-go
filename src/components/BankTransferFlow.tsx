@@ -385,7 +385,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                 </div>
               )}
 
-              {/* Confirm step — now after PIN, with SlideToConfirm */}
+              {/* Review/Summary step — right after amount entry */}
               {step === "confirm" && (
                 <div className="space-y-6">
                   <div className="text-center space-y-1">
