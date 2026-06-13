@@ -130,6 +130,17 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
   const hasCoupon = meta?.coupon_code;
   const hasImage = meta?.image_url;
   const hasAction = meta?.action_url;
+  const fulfillmentOrderId = meta?.order_id;
+  const txnRef = meta?.tx_reference || meta?.transaction_id;
+  const detailFulfillment = detailNotif ? isFulfillment(detailNotif) : false;
+  const isTxnCategory = detailNotif ? ["transaction", "payment", "transfer", "cashback"].includes(detailNotif.category) : false;
+  const isSavingsCategory = detailNotif ? ["savings", "savings_reminder"].includes(detailNotif.category) : false;
+  const fallbackTarget: { label: string; url: string } | null =
+    hasAction ? null :
+    detailFulfillment && fulfillmentOrderId ? { label: "View order", url: `/orders/${fulfillmentOrderId}` } :
+    isTxnCategory ? { label: "View in history", url: "/transactions" } :
+    isSavingsCategory ? { label: "Open savings", url: "/savings" } :
+    null;
 
   return (
     <>
