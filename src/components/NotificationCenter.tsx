@@ -405,41 +405,29 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                   </div>
                 )}
 
-                {hasAction && (
-                  <Button
-                    className="w-full gap-2"
-                    onClick={() => {
-                      const url = meta.action_url as string;
-                      setDetailNotif(null);
-                      onClose();
-                      if (FLOW_FEATURES.has(url)) {
-                        window.dispatchEvent(new CustomEvent("open-feature", { detail: url }));
-                      } else if (url.startsWith("/")) {
-                        navigate(url);
-                      } else {
-                        window.open(url, "_blank", "noopener,noreferrer");
-                      }
-                    }}
-                  >
-                    <ExternalLink size={14} />
-                    {meta.action_label || "Learn More"}
-                  </Button>
-                )}
-
-                {!hasAction && fallbackTarget && (
-                  <Button
-                    className="w-full gap-2"
-                    onClick={() => {
-                      const url = fallbackTarget.url;
-                      setDetailNotif(null);
-                      onClose();
-                      navigate(url);
-                    }}
-                  >
-                    <ExternalLink size={14} />
-                    {fallbackTarget.label}
-                  </Button>
-                )}
+                <div className="flex flex-col gap-2">
+                  {detailsTarget && (
+                    <Button
+                      className="w-full gap-2 min-h-11"
+                      onClick={() => openUrl(detailsTarget.url)}
+                      aria-label={detailsTarget.label}
+                    >
+                      <detailsTarget.icon size={14} />
+                      {detailsTarget.label}
+                    </Button>
+                  )}
+                  {hasAction && (
+                    <Button
+                      variant={detailsTarget ? "outline" : "default"}
+                      className="w-full gap-2 min-h-11"
+                      onClick={() => openUrl(rawActionUrl)}
+                      aria-label={meta.action_label || "Learn more"}
+                    >
+                      <ExternalLink size={14} />
+                      {meta.action_label || "Learn More"}
+                    </Button>
+                  )}
+                </div>
 
                 {(txnRef || (detailFulfillment && meta?.tracking_number)) && (
                   <div className="rounded-xl border border-border/60 bg-muted/30 p-3 space-y-1.5">
