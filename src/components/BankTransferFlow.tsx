@@ -313,11 +313,6 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                         onChange={e => { const v = e.target.value; if (v === "" || /^\d*\.?\d*$/.test(v)) { setAmount(v); setError(""); } }}
                         className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40" />
                     </div>
-                    {parsedAmount > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        1% charge: ৳{fee.toLocaleString()} · Total deduction: ৳{totalDeduction.toLocaleString()}
-                      </p>
-                    )}
                     {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
                   </div>
                   <div className="grid grid-cols-3 gap-2">

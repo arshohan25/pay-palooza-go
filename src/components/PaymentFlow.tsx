@@ -811,26 +811,8 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   </SheetContent>
                 </Sheet>
 
-                {amtNum > 0 && (
-                  <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-sm">
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>{t("paymentAmount")}</span>
-                      <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
-                    </div>
-                    {couponDiscount > 0 && pendingCoupon && (
-                      <CouponSummaryLine code={pendingCoupon.code} discount={couponDiscount} />
-                    )}
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>{t("fee")}</span>
-                      <span className="text-primary font-semibold">{t("free")}</span>
-                    </div>
-                    <div className="h-px bg-border" />
-                    <div className="flex justify-between font-bold text-foreground">
-                      <span>{t("total")}</span>
-                      <span>৳{effectiveAmount.toLocaleString()}</span>
-                    </div>
-                  </div>
-                )}
+
+
 
                 {amtNum > 0 && effectiveAmount > getBalance() && (
                   <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
