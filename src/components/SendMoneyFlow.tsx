@@ -856,43 +856,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                 </button>
 
-                {amtNum > 0 && (
-                  <div className="rounded-xl bg-muted/50 border border-border p-3.5 space-y-2 text-sm">
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>{t("amount")}</span>
-                      <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
-                    </div>
-                    {addCashOutCharge && cashOutExtra > 0 && (
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Cash Out Charge</span>
-                        <span className="text-foreground font-medium">+ ৳{cashOutExtra.toLocaleString()}</span>
-                      </div>
-                    )}
-                    {addCashOutCharge && cashOutExtra > 0 && (
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Total Send</span>
-                        <span className="text-foreground font-medium">৳{sendAmount.toLocaleString()}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>{t("serviceFee")}</span>
-                      <span className="text-foreground font-medium">
-                        {fee === 0 ? <span className="text-primary font-semibold">{t("free")}</span> : `৳${fee}`}
-                      </span>
-                    </div>
-                    {fee > 0 && (
-                      <div className="flex justify-between text-xs text-muted-foreground/70">
-                        <span>{t("feeSource")}</span>
-                        <span>{feeFromBalance >= fee ? t("fromYourBalance") : feeFromBalance > 0 ? `৳${feeFromBalance} balance + ৳${feeFromAmount} from amount` : t("deductedFromAmount")}</span>
-                      </div>
-                    )}
-                    <div className="h-px bg-border" />
-                    <div className="flex justify-between font-bold text-foreground">
-                      <span>{t("totalFromBalance")}</span>
-                      <span>৳{totalFromBalance.toLocaleString()}</span>
-                    </div>
-                  </div>
-                )}
+
+
 
                 {amtNum > 0 && totalFromBalance > BALANCE && (
                   <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>

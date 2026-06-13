@@ -558,25 +558,6 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                       )}
                     </div>
 
-                    <div className="rounded-2xl border border-border divide-y divide-border bg-muted/30 overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-3 text-sm">
-                        <span className="text-muted-foreground">Bill Amount</span>
-                        <span className="font-bold text-foreground">৳{(parseFloat(billAmount) || 0).toLocaleString()}</span>
-                      </div>
-                      {pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0 && (
-                        <div className="px-4 py-3">
-                          <CouponSummaryLine code={pendingCoupon.code} discount={calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0)} />
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between px-4 py-3 text-sm">
-                        <span className="text-muted-foreground">Fee</span>
-                        <span className="font-bold text-foreground">Free</span>
-                      </div>
-                      <div className="flex items-center justify-between px-4 py-3 text-sm">
-                        <span className="text-muted-foreground">Total</span>
-                        <span className="font-extrabold text-lg text-foreground">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
