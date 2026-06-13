@@ -587,11 +587,55 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                       setError("Enter a valid bill amount.");
                       return;
                     }
-                    goTo("pin");
+                    goTo("review");
                   }}
                 >
-                  {t("continue")}
+                  Review Payment
                 </Button>
+              </div>
+            )}
+
+            {step === "review" && billType && provider && (
+              <div className="px-4 pt-6 pb-32 space-y-5">
+                <div className="text-center space-y-1">
+                  <p className="text-sm text-muted-foreground">Paying</p>
+                  <p className="text-4xl font-extrabold text-foreground">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</p>
+                </div>
+
+                <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
+                  <div className={`${billType.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0`}>
+                    <billType.icon size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-foreground text-sm truncate">{provider.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{billType.accountLabel}: {accountNo}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-card border border-border p-4 space-y-2.5 text-sm">
+                  <p className="font-semibold text-foreground">Bill Summary</p>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Bill Amount</span>
+                    <span className="text-foreground font-medium">৳{(parseFloat(billAmount) || 0).toLocaleString()}</span>
+                  </div>
+                  {pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0 && (
+                    <CouponSummaryLine code={pendingCoupon.code} discount={calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0)} />
+                  )}
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Service Fee</span>
+                    <span className="text-primary font-semibold">Free</span>
+                  </div>
+                  <div className="h-px bg-border" />
+                  <div className="flex justify-between font-bold text-foreground">
+                    <span>Total</span>
+                    <span>৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <Button className="w-full h-12 gradient-primary border-0 text-white font-semibold text-base rounded-xl" onClick={() => goTo("pin")}>
+                  Confirm & Enter PIN
+                </Button>
+                <Button variant="ghost" className="w-full" onClick={() => goTo("bill")}>Edit Amount</Button>
               </div>
             )}
 
