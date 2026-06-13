@@ -59,6 +59,24 @@ input[type="number"] {
     --send: 330 80% 55%;
     --send-foreground: 0 0% 100%;
 
+    /* ── Shariah brand palette (from logo: #0F5B1D green + #FFD600 gold) ── */
+    --shariah-green-50: 130 30% 93%;
+    --shariah-green-100: 130 32% 83%;
+    --shariah-green-300: 130 40% 40%;
+    --shariah-green-600: 130 72% 21%;   /* #0F5B1D — primary brand */
+    --shariah-green-800: 130 73% 13%;
+    --shariah-green-900: 130 75% 7%;
+    --shariah-gold-100: 50 100% 84%;
+    --shariah-gold-300: 50 100% 68%;
+    --shariah-gold-500: 50 100% 50%;    /* #FFD600 — accent */
+    --shariah-gold-700: 49 90% 38%;     /* #B8990A — AA on white */
+    --shariah-gold-900: 49 100% 21%;
+    --shariah-brand: var(--shariah-green-600);
+    --shariah-brand-foreground: 0 0% 100%;
+    --shariah-accent: var(--shariah-gold-500);
+    --shariah-accent-foreground: var(--shariah-green-900);
+    --gradient-shariah: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
+
     /* ── Gradient palette ── */
     --gradient-primary: linear-gradient(135deg, hsl(162 72% 40%), hsl(174 68% 28%));
     --gradient-hero: linear-gradient(150deg, hsl(162 72% 38%) 0%, hsl(178 62% 26%) 60%, hsl(192 55% 22%) 100%);
