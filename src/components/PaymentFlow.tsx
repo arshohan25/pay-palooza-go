@@ -44,7 +44,7 @@ import CouponBanner from "@/components/CouponBanner";
 import CouponSummaryLine from "@/components/CouponSummaryLine";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = "merchant" | "amount" | "pin" | "success";
+type Step = "merchant" | "amount" | "review" | "pin" | "success";
 
 interface Merchant {
   id: string;
@@ -60,10 +60,11 @@ interface Merchant {
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000, 2000];
 
 // ─── Step config ─────────────────────────────────────────────────────────────
-const STEPS: Step[] = ["merchant", "amount", "pin"];
+const STEPS: Step[] = ["merchant", "amount", "review", "pin"];
 const STEP_LABELS: Record<Step, string> = {
   merchant: "Merchant",
   amount:   "Amount",
+  review:   "Review",
   pin:      "PIN",
   success:  "Done",
 };
