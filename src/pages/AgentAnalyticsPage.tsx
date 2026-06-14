@@ -127,7 +127,7 @@ const AgentAnalyticsPage = () => {
   return (
     <div className="min-h-screen bg-background pb-8">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-background border-b border-border/40 px-4 py-3">
+      <div className="sticky top-0 z-20 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow px-4 py-3">
         <div className="flex items-center gap-3 max-w-lg mx-auto">
           <Button variant="ghost" size="icon" className="shrink-0 rounded-xl" onClick={() => navigate("/agent")}>
             <ArrowLeft size={18} />
