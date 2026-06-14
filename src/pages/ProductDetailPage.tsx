@@ -266,20 +266,20 @@ export default function ProductDetailPage() {
       />
       {/* ── Sticky header ── */}
       <motion.div
-        className={cn("sticky top-0 z-50 backdrop-blur-xl border-b flex items-center justify-between px-3 py-2.5 transition-colors duration-300",
-          headerOpaque ? "bg-card/90 border-border/50" : "bg-transparent border-transparent")}
+        className="sticky top-0 z-50 gradient-primary border-b border-primary-foreground/10 shadow-card flex items-center gap-2 px-3 py-2.5"
         initial={false}
       >
         {(() => {
-          const iconBtn = headerOpaque
-            ? "rounded-full text-foreground"
-            : "rounded-full bg-black/40 text-white hover:bg-black/55 hover:text-white backdrop-blur-md";
+          const iconBtn = "rounded-full text-primary-foreground hover:bg-white/15 hover:text-primary-foreground";
           return (
             <>
               <Button variant="ghost" size="icon" className={iconBtn} onClick={() => navigate(-1)}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-1.5">
+              <h1 className="flex-1 min-w-0 text-[15px] font-semibold text-primary-foreground truncate">
+                {product?.name ?? "Product"}
+              </h1>
+              <div className="flex items-center gap-1">
                 <motion.div whileTap={{ scale: 0.75 }} className="relative">
                   <Button variant="ghost" size="icon" className={iconBtn} onClick={() => toggleWishlist(product.id)}>
                     <AnimatePresence mode="wait">
