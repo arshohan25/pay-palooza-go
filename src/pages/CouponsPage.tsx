@@ -180,7 +180,7 @@ export default function CouponsPage() {
         path="/coupons"
       />
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-background/70 backdrop-blur-2xl border-b border-border/20">
+      <div className="sticky top-0 z-40 gradient-hero text-primary-foreground backdrop-blur-2xl border-b border-primary/30 shadow-glow">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <button
