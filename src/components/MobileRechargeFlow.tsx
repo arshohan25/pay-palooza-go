@@ -496,7 +496,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     showTxnToast({
       type: "Live Recharge",
       amount: `৳${finalPrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
-      gradient: "gradient-accent",
+      gradient: "gradient-primary",
     });
     setDirection(1);
     setStep("success");
