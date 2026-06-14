@@ -152,7 +152,7 @@ const TAG_COLORS: Record<string, string> = {
   Hot:     "bg-red-500 text-white",
   Limited: "bg-amber-500 text-white",
   New:     "bg-blue-500 text-white",
-  Popular: "bg-emerald-500 text-white",
+  Popular: "bg-primary text-primary-foreground",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -496,7 +496,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     showTxnToast({
       type: "Live Recharge",
       amount: `৳${finalPrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
-      gradient: "gradient-accent",
+      gradient: "gradient-primary",
     });
     setDirection(1);
     setStep("success");
@@ -504,7 +504,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   const headerBg = operator
     ? `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})`
-    : "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))";
+    : "linear-gradient(135deg, hsl(152 73% 39%), hsl(152 75% 29%))";
 
   return (
     <motion.div
@@ -686,7 +686,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     whileTap={{ scale: 0.97 }}
                     onClick={handleNumberContinue}
                     className="w-full h-13 rounded-2xl text-white font-bold text-base shadow-lg flex items-center justify-center gap-2 transition-all"
-                    style={{ background: selectedPack ? (operator ? `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` : "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))") : "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))", minHeight: 52 }}
+                    style={{ background: selectedPack ? (operator ? `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` : "linear-gradient(135deg, hsl(152 73% 39%), hsl(152 75% 29%))") : "linear-gradient(135deg, hsl(152 73% 39%), hsl(152 75% 29%))", minHeight: 52 }}
                   >
                     {selectedPack ? `Continue with ${selectedPack.name}` : "Continue"}
                     <ChevronRight size={18} />
@@ -1166,7 +1166,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 <SlideToConfirm
                   onConfirm={handlePinConfirm}
                   label="Slide to Recharge"
-                  gradient="gradient-accent"
+                  gradient="gradient-primary"
                   disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
                   icon={Smartphone}
@@ -1300,7 +1300,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
         receipt={{
           title: "Recharge Successful",
           amount: `৳${effectivePrice}`,
-          gradient: "gradient-accent",
+          gradient: "gradient-primary",
           txnId: txnId.current,
           rows: [
             { label: "Number",   value: formatPhone(phone) },
