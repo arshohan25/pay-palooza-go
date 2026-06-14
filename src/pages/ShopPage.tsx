@@ -408,15 +408,15 @@ export default function ShopPage() {
           </div>
         </div>
         {/* Trust Bar */}
-        <div className="flex items-center justify-center gap-6 py-1.5 px-4 border-t border-border/20">
+        <div className="flex items-center justify-center gap-6 py-1.5 px-4 border-t border-primary-foreground/15">
           {[
             { icon: ShieldCheck, label: "Safe Payment" },
             { icon: Truck, label: "Fast Delivery" },
             { icon: RotateCcw, label: "Free Return" },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="flex items-center gap-1">
-              <Icon className="w-3 h-3 text-primary/70" />
-              <span className="text-[9px] font-medium text-muted-foreground">{label}</span>
+              <Icon className="w-3 h-3 text-primary-foreground/85" />
+              <span className="text-[9px] font-semibold text-primary-foreground/90">{label}</span>
             </div>
           ))}
         </div>

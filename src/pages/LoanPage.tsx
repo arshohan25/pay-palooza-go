@@ -354,30 +354,30 @@ const LoanPage = () => {
                     <div className="flex items-start justify-between">
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-white/[0.12] flex items-center justify-center backdrop-blur-sm">
+                          <div className="w-7 h-7 rounded-lg bg-white/[0.18] flex items-center justify-center backdrop-blur-sm">
                             <Gauge className="w-3.5 h-3.5 text-white" />
                           </div>
-                          <span className="text-white/50 text-[10px] font-semibold tracking-widest uppercase">Trust Score</span>
+                          <span className="text-white/80 text-[10px] font-semibold tracking-widest uppercase">Trust Score</span>
                         </div>
 
                         {eligibilityLoading ? (
                           <div className="flex items-center gap-2 pt-2">
-                            <Loader2 className="w-4 h-4 animate-spin text-white/40" />
-                            <span className="text-white/40 text-xs">Analyzing...</span>
+                            <Loader2 className="w-4 h-4 animate-spin text-white/70" />
+                            <span className="text-white/70 text-xs">Analyzing...</span>
                           </div>
                         ) : (
                           <>
                             <div className="flex items-baseline gap-2">
                               <span className="text-[46px] font-black text-white leading-none tabular-nums">{eligibility?.score ?? 0}</span>
                               <div className="flex flex-col">
-                                <span className="text-white/40 text-sm font-medium">/100</span>
+                                <span className="text-white/70 text-sm font-medium">/100</span>
                                 <span className="text-[10px] font-semibold" style={{ color: scoreColor }}>{scoreGrade}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 mt-1">
-                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.08]">
-                                <Target className="w-3 h-3 text-emerald-400" />
-                                <span className="text-[10px] text-white/60 font-medium">
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.15]">
+                                <Target className="w-3 h-3 text-emerald-300" />
+                                <span className="text-[10px] text-white/85 font-medium">
                                   Max: <span className="text-white font-bold">৳{(eligibility?.maxAmount ?? 0).toLocaleString()}</span>
                                 </span>
                               </div>
@@ -390,7 +390,7 @@ const LoanPage = () => {
                       {!eligibilityLoading && eligibility && (
                         <div className="relative w-[88px] h-[88px]">
                           <svg className="w-full h-full -rotate-90" viewBox="0 0 88 88">
-                            <circle cx="44" cy="44" r="37" fill="none" stroke="white" strokeOpacity="0.06" strokeWidth="5.5" />
+                            <circle cx="44" cy="44" r="37" fill="none" stroke="white" strokeOpacity="0.15" strokeWidth="5.5" />
                             <circle cx="44" cy="44" r="37" fill="none"
                               stroke={scoreColor}
                               strokeWidth="5.5" strokeLinecap="round"
@@ -401,10 +401,10 @@ const LoanPage = () => {
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
                             {eligibility.eligible
-                              ? <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                              : <AlertTriangle className="w-6 h-6 text-amber-400" />
+                              ? <ShieldCheck className="w-6 h-6 text-emerald-300" />
+                              : <AlertTriangle className="w-6 h-6 text-amber-300" />
                             }
-                            <span className="text-[9px] text-white/50 font-semibold mt-0.5">
+                            <span className="text-[9px] text-white/80 font-semibold mt-0.5">
                               {eligibility.eligible ? "Eligible" : "Building"}
                             </span>
                           </div>
@@ -416,12 +416,12 @@ const LoanPage = () => {
                     {!eligibilityLoading && eligibility && (
                       <div className="mt-4 grid grid-cols-5 gap-1.5">
                         {eligibility.checks.map((check, i) => (
-                          <div key={i} className="flex flex-col items-center gap-1 px-1 py-2 rounded-xl bg-white/[0.06]">
-                            <div className={check.passed ? "text-emerald-400" : "text-white/20"}>{check.icon}</div>
-                            <span className="text-[8px] text-white/40 font-medium text-center leading-tight">{check.label}</span>
+                          <div key={i} className="flex flex-col items-center gap-1 px-1 py-2 rounded-xl bg-white/[0.14]">
+                            <div className={check.passed ? "text-emerald-300" : "text-white/50"}>{check.icon}</div>
+                            <span className="text-[8px] text-white/85 font-semibold text-center leading-tight">{check.label}</span>
                             {check.passed
-                              ? <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                              : <XCircle className="w-3 h-3 text-white/15" />
+                              ? <CheckCircle2 className="w-3 h-3 text-emerald-300" />
+                              : <XCircle className="w-3 h-3 text-white/40" />
                             }
                           </div>
                         ))}
