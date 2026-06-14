@@ -504,7 +504,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   const headerBg = operator
     ? `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})`
-    : "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))";
+    : "linear-gradient(135deg, hsl(152 73% 39%), hsl(152 75% 29%))";
 
   return (
     <motion.div
