@@ -291,11 +291,11 @@ export default function ShopCheckoutPage() {
     <div className="min-h-screen bg-background pb-28">
       {/* Header */}
       <div className="sticky top-0 z-40 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow px-4 py-3 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-base font-bold text-foreground">Checkout</h1>
-        <span className="text-xs text-muted-foreground ml-auto">{count} items</span>
+        <h1 className="text-base font-bold text-primary-foreground">Checkout</h1>
+        <span className="text-xs text-primary-foreground/80 ml-auto">{count} items</span>
       </div>
 
       <div className="px-4 pt-4 space-y-4">
