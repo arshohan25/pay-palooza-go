@@ -3386,7 +3386,7 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
                     <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total Deduction</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
                   </div>
                 )}
-                <Button onClick={goToPin} disabled={quotaRemaining <= 0 || dailyRemaining <= 0} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(162 72% 38%), hsl(174 68% 28%))" }}>
+                <Button onClick={goToPin} disabled={quotaRemaining <= 0 || dailyRemaining <= 0} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(152 73% 39%), hsl(152 75% 29%))" }}>
                   {quotaRemaining <= 0 ? "Quota Exhausted" : dailyRemaining <= 0 ? "Limit Reached" : "Continue → Enter PIN"}
                 </Button>
               </motion.div>

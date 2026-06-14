@@ -1364,7 +1364,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                     <div className="relative">
                       {/* Main icon box — soft teal/green rounded square */}
                       <div className="w-[72px] h-[72px] rounded-2xl bg-gradient-to-br from-[hsl(170,55%,92%)] to-[hsl(160,45%,84%)] flex items-center justify-center shadow-[0_6px_24px_rgba(0,0,0,0.12)]">
-                        <ShieldCheck size={38} strokeWidth={2} className="text-[hsl(162,72%,38%)]" />
+                        <ShieldCheck size={38} strokeWidth={2} className="text-[hsl(152,73%,39%)]" />
                       </div>
                       {/* Pink badge */}
                       <motion.div
