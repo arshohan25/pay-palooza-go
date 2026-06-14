@@ -104,8 +104,8 @@ input[type="number"] {
     --sidebar-foreground: 222 20% 28%;
     --sidebar-primary: 152 73% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 123 35% 95%;
-    --sidebar-accent-foreground: 123 42% 30%;
+    --sidebar-accent: 152 35% 95%;
+    --sidebar-accent-foreground: 152 42% 30%;
     --sidebar-border: 220 14% 90%;
     --sidebar-ring: 152 73% 39%;
   }
