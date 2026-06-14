@@ -1160,7 +1160,7 @@ export default function AdminDashboard() {
       {/* ═══ Main column ═══ */}
       <div className={`flex-1 flex flex-col lg:ml-56 min-w-0 transition-[margin] duration-300 ${showActivityFeed && !isMobile ? "lg:mr-72" : ""}`}>
         {/* Top header */}
-        <header className="sticky top-0 z-30 bg-card border-b border-border">
+        <header className="sticky top-0 z-30 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow">
           <div className="flex items-center justify-between px-4 lg:px-6 py-3">
             <div className="flex items-center gap-2">
               {/* Mobile only: back + hamburger */}
