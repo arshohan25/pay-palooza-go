@@ -30,11 +30,11 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
         transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
         className="flex items-center justify-between py-1"
       >
-        {/* Left — Logout */}
+        {/* Left — Logout (branded) */}
         <motion.button
           whileTap={{ scale: 0.88 }}
           onClick={onSignOut}
-          className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-destructive/10 border border-destructive/20 shadow-card text-destructive hover:bg-destructive/20 hover:shadow-elevated transition-all duration-150 tap-target"
+          className="flex items-center gap-2 px-3 py-2 rounded-2xl gradient-primary border border-primary/30 shadow-glow text-primary-foreground hover:shadow-glow-lg transition-all duration-150 tap-target"
           aria-label="Sign out"
         >
           <LogOut size={15} strokeWidth={2} />
@@ -47,7 +47,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
           <motion.button
             whileTap={{ scale: 0.88 }}
             onClick={toggleTheme}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target overflow-hidden"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-primary/10 border border-primary/25 shadow-card flex items-center justify-center text-primary hover:bg-primary/15 hover:shadow-elevated transition-all duration-150 tap-target overflow-hidden"
             aria-label="Toggle dark mode"
           >
             <AnimatePresence mode="wait" initial={false}>
@@ -69,7 +69,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
           {/* Search */}
           <motion.button
             whileTap={{ scale: 0.90 }}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-primary/10 border border-primary/25 shadow-card flex items-center justify-center text-primary hover:bg-primary/15 hover:shadow-elevated transition-all duration-150 tap-target"
             aria-label="Search"
           >
             <Search size={17} strokeWidth={2} />
@@ -79,7 +79,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
           <motion.button
             whileTap={{ scale: 0.90 }}
             onClick={() => setShowNotif(true)}
-            className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target"
+            className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-2xl gradient-primary border border-primary/30 shadow-glow flex items-center justify-center text-primary-foreground hover:shadow-glow-lg transition-all duration-150 tap-target"
             aria-label="Notifications"
           >
             <Bell size={17} strokeWidth={2} />
@@ -91,7 +91,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
                   transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                  className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 gradient-send text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-background"
+                  className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-accent text-accent-foreground text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-background"
                 >
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </motion.span>
