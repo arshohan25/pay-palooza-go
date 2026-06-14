@@ -80,7 +80,7 @@ export default function CareersPage() {
         path="/careers"
         jsonLd={{ "@context": "https://schema.org", "@type": "CollectionPage", name: "EasyPay Careers", url: "https://pay-palooza-go.lovable.app/careers" }}
       />
-      <div className="sticky top-0 z-40 bg-card border-b border-border px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-40 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow px-4 py-3 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
