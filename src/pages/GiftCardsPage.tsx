@@ -142,7 +142,7 @@ const GiftCardsPage = () => {
         path="/giftcards"
       />
       {/* Header */}
-      <div className="sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b border-border/50">
+      <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur-xl border-b border-primary/30 shadow-glow">
         <div className="px-4 py-3 flex items-center gap-3">
           <motion.button whileTap={{ scale: 0.9 }} onClick={() => navigate(-1)}
             className="w-9 h-9 rounded-full bg-muted/60 backdrop-blur flex items-center justify-center ring-1 ring-border/30">
