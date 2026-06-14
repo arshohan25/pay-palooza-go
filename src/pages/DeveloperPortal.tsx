@@ -149,7 +149,7 @@ export default function DeveloperPortal() {
         path="/developers"
       />
       {/* Nav */}
-      <header className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50">
+      <header className="border-b border-primary/30 gradient-hero text-primary-foreground shadow-glow backdrop-blur sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link to="/" className="font-bold text-lg text-primary">EasyPay</Link>
           <nav className="flex items-center gap-4 text-sm">

@@ -142,7 +142,7 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-20">
-        <div className="sticky top-0 z-40 bg-card border-b border-border flex items-center gap-3 px-4 py-3">
+        <div className="sticky top-0 z-40 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow flex items-center gap-3 px-4 py-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
           <Skeleton className="h-6 w-32" />
         </div>
@@ -185,17 +185,17 @@ export default function OrderDetailPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-card border-b border-border flex items-center gap-3 px-4 py-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+      <div className="sticky top-0 z-40 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow flex items-center gap-3 px-4 py-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-primary-foreground hover:bg-white/10">
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-base font-bold text-foreground truncate">{order.order_num}</h1>
-          <p className="text-[11px] text-muted-foreground">
+          <h1 className="text-base font-bold text-primary-foreground truncate">{order.order_num}</h1>
+          <p className="text-[11px] text-primary-foreground/80">
             {new Date(order.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
           </p>
         </div>
-        <Badge variant="outline" className={`shrink-0 ${isCancelled ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
+        <Badge variant="outline" className={`shrink-0 border-white/30 ${isCancelled ? "bg-destructive/20 text-destructive-foreground" : "bg-white/15 text-primary-foreground"}`}>
           {isCancelled ? "Cancelled" : STATUS_STEPS[currentStepIdx]?.label ?? order.status}
         </Badge>
       </div>

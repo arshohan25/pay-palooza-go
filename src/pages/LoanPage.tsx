@@ -268,7 +268,7 @@ const LoanPage = () => {
         path="/loan"
       />
       {/* Header */}
-      <div className="sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b border-border/40">
+      <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur-xl border-b border-primary/30 shadow-glow">
         <div className="px-4 py-3 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-muted/50 flex items-center justify-center active:scale-95 transition-transform">
             <ArrowLeft className="w-5 h-5 text-foreground" />

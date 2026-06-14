@@ -218,7 +218,7 @@ const DonationsPage = () => {
         path="/donations"
       />
       {/* Minimal Header */}
-      <div className="sticky top-0 z-30 bg-background/70 backdrop-blur-xl">
+      <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur-xl border-b border-primary/30 shadow-glow">
         <div className="flex items-center gap-3 px-5 py-4 max-w-md mx-auto">
           <button
             onClick={() => step === "cause" ? navigate(-1) : resetFlow()}
