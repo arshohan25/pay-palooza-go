@@ -34,7 +34,7 @@ input[type="number"] {
     --popover: 0 0% 100%;
     --popover-foreground: 222 30% 9%;
 
-    --primary: 123 40% 44%;
+    --primary: 152 73% 39%;
     --primary-foreground: 0 0% 100%;
 
 
@@ -52,7 +52,7 @@ input[type="number"] {
 
     --border: 220 16% 88%;
     --input: 220 16% 88%;
-    --ring: 123 40% 44%;
+    --ring: 152 73% 39%;
 
     --radius: 1rem;
 
@@ -61,12 +61,12 @@ input[type="number"] {
     --send-foreground: 0 0% 100%;
 
     /* ── Shariah brand palette (from logo: #0F5B1D green + #FFD600 gold) ── */
-    --shariah-green-50: 123 40% 95%;
-    --shariah-green-100: 123 40% 87%;
-    --shariah-green-300: 123 40% 60%;
-    --shariah-green-600: 123 40% 44%;   /* #449d48 — brand primary */
-    --shariah-green-800: 123 42% 34%;
-    --shariah-green-900: 123 44% 24%;
+    --shariah-green-50: 152 60% 95%;
+    --shariah-green-100: 152 65% 87%;
+    --shariah-green-300: 152 70% 60%;
+    --shariah-green-600: 152 73% 39%;   /* #1aa77d — brand primary */
+    --shariah-green-800: 152 75% 29%;
+    --shariah-green-900: 152 78% 19%;
     --shariah-gold-100: 50 100% 84%;
     --shariah-gold-300: 50 100% 68%;
     --shariah-gold-500: 50 100% 50%;    /* #FFD600 — accent */
@@ -95,19 +95,19 @@ input[type="number"] {
     --shadow-card: 0 2px 12px -2px hsl(220 25% 10% / 0.06), 0 1px 3px hsl(220 25% 10% / 0.04);
     --shadow-elevated: 0 8px 32px -6px hsl(220 25% 10% / 0.10), 0 2px 8px hsl(220 25% 10% / 0.04);
     --shadow-float: 0 16px 48px -12px hsl(220 25% 10% / 0.15), 0 4px 16px hsl(220 25% 10% / 0.06);
-    --shadow-glow: 0 0 0 1px hsl(123 40% 44% / 0.08), 0 4px 24px -4px hsl(123 40% 44% / 0.28);
-    --shadow-glow-lg: 0 0 0 1px hsl(123 40% 44% / 0.10), 0 8px 40px -8px hsl(123 40% 44% / 0.35);
+    --shadow-glow: 0 0 0 1px hsl(152 73% 39% / 0.08), 0 4px 24px -4px hsl(152 73% 39% / 0.28);
+    --shadow-glow-lg: 0 0 0 1px hsl(152 73% 39% / 0.10), 0 8px 40px -8px hsl(152 73% 39% / 0.35);
     --shadow-inner: inset 0 1px 3px hsl(220 25% 10% / 0.06);
 
     /* ── Sidebar ── */
     --sidebar-background: 0 0% 99%;
     --sidebar-foreground: 222 20% 28%;
-    --sidebar-primary: 123 40% 44%;
+    --sidebar-primary: 152 73% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 123 35% 95%;
     --sidebar-accent-foreground: 123 42% 30%;
     --sidebar-border: 220 14% 90%;
-    --sidebar-ring: 123 40% 44%;
+    --sidebar-ring: 152 73% 39%;
   }
 
   .dark {
@@ -117,7 +117,7 @@ input[type="number"] {
     --card-foreground: 210 22% 94%;
     --popover: 222 22% 11%;
     --popover-foreground: 210 22% 94%;
-    --primary: 123 40% 50%;
+    --primary: 152 73% 45%;
     --primary-foreground: 0 0% 100%;
     --secondary: 222 18% 16%;
     --secondary-foreground: 210 22% 94%;
@@ -129,7 +129,7 @@ input[type="number"] {
     --destructive-foreground: 210 40% 98%;
     --border: 222 18% 18%;
     --input: 222 18% 18%;
-    --ring: 123 40% 50%;
+    --ring: 152 73% 45%;
 
     --gradient-primary: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
     --gradient-hero: linear-gradient(150deg, hsl(var(--shariah-green-600)) 0%, hsl(var(--shariah-green-800)) 60%, hsl(var(--shariah-green-900)) 100%);
@@ -141,17 +141,17 @@ input[type="number"] {
     --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.18), 0 1px 3px hsl(0 0% 0% / 0.12);
     --shadow-elevated: 0 8px 32px -6px hsl(0 0% 0% / 0.28), 0 2px 8px hsl(0 0% 0% / 0.12);
     --shadow-float: 0 16px 48px -12px hsl(0 0% 0% / 0.36), 0 4px 16px hsl(0 0% 0% / 0.16);
-    --shadow-glow: 0 0 0 1px hsl(123 40% 50% / 0.12), 0 4px 24px -4px hsl(123 40% 50% / 0.32);
-    --shadow-glow-lg: 0 0 0 1px hsl(123 40% 50% / 0.15), 0 8px 40px -8px hsl(123 40% 50% / 0.40);
+    --shadow-glow: 0 0 0 1px hsl(152 73% 45% / 0.12), 0 4px 24px -4px hsl(152 73% 45% / 0.32);
+    --shadow-glow-lg: 0 0 0 1px hsl(152 73% 45% / 0.15), 0 8px 40px -8px hsl(152 73% 45% / 0.40);
 
     --sidebar-background: 222 22% 9%;
     --sidebar-foreground: 210 18% 78%;
-    --sidebar-primary: 123 40% 50%;
+    --sidebar-primary: 152 73% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 123 35% 15%;
-    --sidebar-accent-foreground: 123 45% 65%;
+    --sidebar-accent: 152 35% 15%;
+    --sidebar-accent-foreground: 152 45% 65%;
     --sidebar-border: 222 18% 16%;
-    --sidebar-ring: 123 40% 50%;
+    --sidebar-ring: 152 73% 45%;
   }
 }
 
