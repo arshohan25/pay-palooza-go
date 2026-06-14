@@ -1300,7 +1300,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
         receipt={{
           title: "Recharge Successful",
           amount: `৳${effectivePrice}`,
-          gradient: "gradient-accent",
+          gradient: "gradient-primary",
           txnId: txnId.current,
           rows: [
             { label: "Number",   value: formatPhone(phone) },
