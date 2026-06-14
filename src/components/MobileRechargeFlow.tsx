@@ -152,7 +152,7 @@ const TAG_COLORS: Record<string, string> = {
   Hot:     "bg-red-500 text-white",
   Limited: "bg-amber-500 text-white",
   New:     "bg-blue-500 text-white",
-  Popular: "bg-emerald-500 text-white",
+  Popular: "bg-primary text-primary-foreground",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
