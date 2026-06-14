@@ -375,7 +375,7 @@ export default function ShopPage() {
         jsonLd={{ "@context": "https://schema.org", "@type": "CollectionPage", name: "EasyPay Shop", url: "https://pay-palooza-go.lovable.app/shop" }}
       />
       {/* ── Sticky Header ── */}
-      <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/30">
+      <div className="sticky top-0 z-40 gradient-hero text-primary-foreground backdrop-blur-md border-b border-primary/30 shadow-glow">
         <div className="flex items-center gap-2.5 px-4 py-3">
           <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-8 w-8" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4.5 h-4.5" />
