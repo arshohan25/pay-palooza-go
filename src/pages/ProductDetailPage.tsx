@@ -266,30 +266,39 @@ export default function ProductDetailPage() {
       />
       {/* ── Sticky header ── */}
       <motion.div
-        className={cn("sticky top-0 z-50 backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-3 py-2.5 transition-colors duration-300",
-          headerOpaque ? "bg-card/90" : "bg-card/0")}
+        className={cn("sticky top-0 z-50 backdrop-blur-xl border-b flex items-center justify-between px-3 py-2.5 transition-colors duration-300",
+          headerOpaque ? "bg-card/90 border-border/50" : "bg-transparent border-transparent")}
         initial={false}
       >
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex items-center gap-0.5">
-          <motion.div whileTap={{ scale: 0.75 }} className="relative">
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => toggleWishlist(product.id)}>
-              <AnimatePresence mode="wait">
-                <motion.div key={isWishlisted(product.id) ? "filled" : "empty"}
-                  initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 25 }}>
-                  <Heart className={cn("w-5 h-5 transition-colors", isWishlisted(product.id) ? "fill-destructive text-destructive" : "")} />
+        {(() => {
+          const iconBtn = headerOpaque
+            ? "rounded-full text-foreground"
+            : "rounded-full bg-black/40 text-white hover:bg-black/55 hover:text-white backdrop-blur-md";
+          return (
+            <>
+              <Button variant="ghost" size="icon" className={iconBtn} onClick={() => navigate(-1)}>
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex items-center gap-1.5">
+                <motion.div whileTap={{ scale: 0.75 }} className="relative">
+                  <Button variant="ghost" size="icon" className={iconBtn} onClick={() => toggleWishlist(product.id)}>
+                    <AnimatePresence mode="wait">
+                      <motion.div key={isWishlisted(product.id) ? "filled" : "empty"}
+                        initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 25 }}>
+                        <Heart className={cn("w-5 h-5 transition-colors", isWishlisted(product.id) ? "fill-destructive text-destructive" : "")} />
+                      </motion.div>
+                    </AnimatePresence>
+                  </Button>
                 </motion.div>
-              </AnimatePresence>
-            </Button>
-          </motion.div>
-          <Button variant="ghost" size="icon" className="rounded-full"><Share2 className="w-5 h-5" /></Button>
-          <Button variant="ghost" size="icon" className="rounded-full relative" onClick={() => navigate("/shop/checkout")}>
-            <ShoppingCart className="w-5 h-5" />
-          </Button>
-        </div>
+                <Button variant="ghost" size="icon" className={iconBtn}><Share2 className="w-5 h-5" /></Button>
+                <Button variant="ghost" size="icon" className={cn(iconBtn, "relative")} onClick={() => navigate("/shop/checkout")}>
+                  <ShoppingCart className="w-5 h-5" />
+                </Button>
+              </div>
+            </>
+          );
+        })()}
       </motion.div>
 
       {/* ── Image carousel ── */}
