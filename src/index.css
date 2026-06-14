@@ -60,12 +60,12 @@ input[type="number"] {
     --send-foreground: 0 0% 100%;
 
     /* ── Shariah brand palette (from logo: #0F5B1D green + #FFD600 gold) ── */
-    --shariah-green-50: 140 45% 95%;
-    --shariah-green-100: 140 50% 87%;
-    --shariah-green-300: 142 55% 55%;
-    --shariah-green-600: 142 60% 42%;   /* lighter brand green */
-    --shariah-green-800: 142 55% 32%;
-    --shariah-green-900: 142 50% 22%;
+    --shariah-green-50: 123 40% 95%;
+    --shariah-green-100: 123 40% 87%;
+    --shariah-green-300: 123 40% 60%;
+    --shariah-green-600: 123 40% 44%;   /* #449d48 — brand primary */
+    --shariah-green-800: 123 42% 34%;
+    --shariah-green-900: 123 44% 24%;
     --shariah-gold-100: 50 100% 84%;
     --shariah-gold-300: 50 100% 68%;
     --shariah-gold-500: 50 100% 50%;    /* #FFD600 — accent */
