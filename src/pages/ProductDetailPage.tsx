@@ -266,7 +266,7 @@ export default function ProductDetailPage() {
       />
       {/* ── Sticky header ── */}
       <motion.div
-        className="sticky top-0 z-50 gradient-primary border-b border-primary-foreground/10 shadow-card flex items-center gap-2 px-3 py-2.5"
+        className="sticky top-0 z-50 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow flex items-center gap-2 px-3 py-2.5"
         initial={false}
       >
         {(() => {
