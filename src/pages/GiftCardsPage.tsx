@@ -186,12 +186,7 @@ const GiftCardsPage = () => {
                 <p className="text-sm font-bold text-foreground tracking-tight mb-2">Select Category</p>
                 <Select value={brand} onValueChange={setBrand}>
                   <SelectTrigger className="w-full rounded-2xl h-12 bg-muted/30 ring-1 ring-border/30 text-sm font-semibold backdrop-blur">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 ring-1 ring-border/20">
-                        <img src={selectedBrand.img} alt="" className="w-full h-full object-cover" />
-                      </div>
-                      <SelectValue placeholder="Choose a category" />
-                    </div>
+                    <SelectValue placeholder="Choose a category" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl max-h-[320px]">
                     {BRANDS.map(b => (
