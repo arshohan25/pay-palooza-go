@@ -6,7 +6,7 @@ import {
   ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, Landmark, TrendingUp,
   Calendar, Banknote, Sparkles, ChevronRight, ShieldCheck, AlertTriangle,
   TrendingDown, CreditCard, ShoppingBag, Wallet, FileText, ChevronDown,
-  Percent, ArrowUpRight, Info, PiggyBank, BarChart3, RefreshCw, Target,
+  Percent, ArrowUpRight, Info, BarChart3, RefreshCw, Target,
   CircleDollarSign, BadgeCheck, Timer, ArrowDownRight, Receipt, Star,
   Gauge, Shield, Eye, EyeOff, DollarSign, CalendarClock, Ban, Heart,
   HandCoins, Scale, AlertCircle, Lock
