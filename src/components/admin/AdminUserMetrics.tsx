@@ -5,7 +5,7 @@ import {
   Users, UserCheck, UserX, UserPlus, Activity, Clock, ShieldCheck, ShieldAlert,
   Smartphone, Wallet, ArrowLeftRight, Send, Banknote, Receipt, CreditCard,
   Phone, Zap, ShoppingBag, Gift, Ticket, Star, TrendingUp, AlertTriangle,
-  Lock, Fingerprint, Bell, Heart, PiggyBank, Coins, type LucideIcon
+  Lock, Fingerprint, Bell, Heart, Coins, type LucideIcon
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
