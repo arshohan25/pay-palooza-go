@@ -237,51 +237,56 @@ const GiftCardsPage = () => {
                 </Select>
               </div>
 
-              {/* Preview Card with real image */}
-              <motion.div layout className="relative overflow-hidden rounded-[19px] h-[210px] shadow-xl">
-                {/* Real category image background */}
-                <img src={selectedBrand.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                {/* Dark gradient overlay for text */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/20" />
-                {/* Glossy shine */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/15 via-transparent to-transparent pointer-events-none" />
+              {/* Preview Card — modern premium */}
+              <motion.div layout className="relative overflow-hidden rounded-[22px] h-[220px] shadow-2xl ring-1 ring-black/5">
+                {/* Background image */}
+                <img src={selectedBrand.img} alt="" className="absolute inset-0 w-full h-full object-cover scale-105" />
+                {/* Deep cinematic gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/40 to-black/70" />
+                {/* Soft top sheen */}
+                <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                {/* Subtle grain via radial highlight */}
+                <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 blur-3xl pointer-events-none" />
 
                 <div className="relative z-10 p-5 h-full flex flex-col text-white">
-                  {/* Top */}
+                  {/* Top row */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-80">GIFT CARD</span>
-                      {brand === "all" && (
-                        <span className="text-[8px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full backdrop-blur-sm">UNIVERSAL</span>
-                      )}
+                      <div className="w-7 h-7 rounded-lg bg-white/15 backdrop-blur-md ring-1 ring-white/20 flex items-center justify-center">
+                        <selectedBrand.icon className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <div className="leading-tight">
+                        <p className="text-[9px] font-bold tracking-[0.25em] uppercase opacity-70">Gift Card</p>
+                        <p className="text-[11px] font-semibold tracking-tight">{selectedBrand.name}</p>
+                      </div>
                     </div>
-                    <img src="/icons/easypay-logo.webp" alt="EasyPay" className="h-7 object-contain brightness-0 invert" />
+                    <img src="/icons/easypay-logo.webp" alt="EasyPay" className="h-6 object-contain brightness-0 invert opacity-90" />
                   </div>
 
-                  {/* Chip */}
-                  <div className="mt-5 mb-4">
-                    <svg width="45" height="34" viewBox="0 0 45 34" fill="none">
-                      <rect x="0.5" y="0.5" width="44" height="33" rx="5" fill="#d4a853" stroke="#c4963f" />
-                      <line x1="0" y1="12" x2="45" y2="12" stroke="#c4963f" strokeWidth="0.7" />
-                      <line x1="0" y1="22" x2="45" y2="22" stroke="#c4963f" strokeWidth="0.7" />
-                      <line x1="15" y1="0" x2="15" y2="34" stroke="#c4963f" strokeWidth="0.7" />
-                      <line x1="30" y1="0" x2="30" y2="34" stroke="#c4963f" strokeWidth="0.7" />
-                    </svg>
+                  {/* Denomination — hero */}
+                  <div className="mt-auto">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.2em] opacity-60">Value</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[22px] font-light opacity-80">৳</span>
+                      <span className="text-5xl font-bold tracking-tight drop-shadow-lg tabular-nums">{denomination.toLocaleString()}</span>
+                    </div>
                   </div>
 
-                  {/* Card number */}
-                  <p className="text-[15px] font-mono tracking-[0.25em] opacity-90">•••• •••• •••• ••••</p>
-
-                  {/* Bottom */}
-                  <div className="flex items-end justify-between mt-auto pt-2">
-                    <p className="text-2xl font-bold drop-shadow-lg">৳{denomination.toLocaleString()}</p>
-                    <div className="text-right">
-                      <p className="text-xs font-semibold opacity-90 drop-shadow">{selectedBrand.name}</p>
-                      {brand === "all" && <p className="text-[9px] opacity-60">{BRANDS.length - 1} categories</p>}
+                  {/* Bottom row */}
+                  <div className="mt-3 flex items-end justify-between border-t border-white/15 pt-3">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.18em] opacity-55">Valid Thru</p>
+                      <p className="text-[11px] font-semibold tabular-nums tracking-wider">12 / 27</p>
                     </div>
+                    {brand === "all" ? (
+                      <span className="text-[9px] font-bold bg-white/15 backdrop-blur-md px-2 py-1 rounded-md ring-1 ring-white/20 uppercase tracking-wider">Universal</span>
+                    ) : (
+                      <p className="text-[10px] font-medium opacity-70 tracking-wider uppercase">Premium</p>
+                    )}
                   </div>
                 </div>
               </motion.div>
+
 
               {/* Purchase */}
               <motion.div whileTap={{ scale: 0.98 }}>
