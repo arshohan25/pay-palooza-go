@@ -241,13 +241,14 @@ const GiftCardsPage = () => {
               <motion.div layout className="relative overflow-hidden rounded-[22px] h-[220px] shadow-2xl ring-1 ring-black/5">
                 {/* Background image */}
                 <img src={selectedBrand.img} alt="" className="absolute inset-0 w-full h-full object-cover scale-105" />
-                {/* Brand-tinted cinematic gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${selectedBrand.color} opacity-75 mix-blend-multiply`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/20" />
+                {/* Unified professional overlay — consistent across all categories */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/85 via-slate-900/70 to-slate-950/90" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 via-transparent to-primary/10 mix-blend-overlay" />
                 {/* Soft top sheen */}
-                <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
-                {/* Radial highlight */}
-                <div className={`absolute -top-16 -right-16 w-56 h-56 rounded-full bg-gradient-to-br ${selectedBrand.color} opacity-40 blur-3xl pointer-events-none`} />
+                <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                {/* Brand primary glow */}
+                <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/40 opacity-50 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-24 -left-16 w-56 h-56 rounded-full bg-white/10 blur-3xl pointer-events-none" />
 
 
                 <div className="relative z-10 p-5 h-full flex flex-col text-white">
