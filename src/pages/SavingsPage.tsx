@@ -854,18 +854,25 @@ const SavingsPage = () => {
       <Seo title="Islamic Savings & DPS" description="Sharia-compliant savings, DPS, gold, and stocks." path="/savings" />
 
       {/* Header */}
-      <div className="sticky top-0 z-10 gradient-hero text-primary-foreground backdrop-blur-xl border-b border-primary/30 shadow-glow">
-        <div className="flex items-center gap-3 p-4">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-muted">
+      <div className="sticky top-0 z-10 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow">
+        <div className="flex items-center gap-3 px-4 pt-4 pb-4">
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Go back"
+            className="w-10 h-10 -ml-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center active:scale-95 transition-transform"
+          >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1">
-            <h1 className="text-base font-semibold">Islamic Savings</h1>
-            <p className="text-[11px] text-muted-foreground">Sharia-compliant · Mudarabah</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold tracking-tight leading-tight">Islamic Savings</h1>
+            <div className="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20">
+              <Sparkles className="w-3 h-3 fill-primary-foreground/40" />
+              <span className="text-[10px] font-medium tracking-wide text-primary-foreground/95">Sharia-compliant · Mudarabah</span>
+            </div>
           </div>
-          <Sparkles className="w-5 h-5 text-primary" />
         </div>
       </div>
+
 
       <div className="p-4 space-y-4">
         {/* Portfolio summary */}
