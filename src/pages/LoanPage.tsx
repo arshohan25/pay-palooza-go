@@ -604,7 +604,7 @@ const LoanPage = () => {
               {activeLoans.length === 0 ? (
                 <div className="mx-4 rounded-[20px] bg-card ring-1 ring-border/40 p-10 text-center">
                   <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-muted/40">
-                    <PiggyBank className="w-7 h-7 text-muted-foreground/40" />
+                    <HandCoins className="w-7 h-7 text-muted-foreground/40" />
                   </div>
                   <p className="text-sm font-bold text-foreground">No Active Loans</p>
                   <p className="text-xs text-muted-foreground mt-1">Apply for Qard Hasan to see it here</p>
