@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/use-cart";
+import type { CartItem } from "@/components/shop/CartDrawer";
 import { useAuth } from "@/hooks/use-auth";
 import { getBalance, onBalanceChange } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
