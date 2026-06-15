@@ -241,12 +241,14 @@ const GiftCardsPage = () => {
               <motion.div layout className="relative overflow-hidden rounded-[22px] h-[220px] shadow-2xl ring-1 ring-black/5">
                 {/* Background image */}
                 <img src={selectedBrand.img} alt="" className="absolute inset-0 w-full h-full object-cover scale-105" />
-                {/* Deep cinematic gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/40 to-black/70" />
+                {/* Brand-tinted cinematic gradient */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${selectedBrand.color} opacity-75 mix-blend-multiply`} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/20" />
                 {/* Soft top sheen */}
-                <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
-                {/* Subtle grain via radial highlight */}
-                <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+                <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
+                {/* Radial highlight */}
+                <div className={`absolute -top-16 -right-16 w-56 h-56 rounded-full bg-gradient-to-br ${selectedBrand.color} opacity-40 blur-3xl pointer-events-none`} />
+
 
                 <div className="relative z-10 p-5 h-full flex flex-col text-white">
                   {/* Top row */}
