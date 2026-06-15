@@ -1,4 +1,4 @@
-const CACHE_VERSION = "15";
+const CACHE_VERSION = "16";
 const CACHE_VERSION_KEY = "app_cache_version";
 const CACHE_RECOVERY_PARAM = "cache_recovery";
 const CACHE_BUST_PARAM = "cache_bust";
