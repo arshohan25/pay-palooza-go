@@ -145,15 +145,15 @@ const GiftCardsPage = () => {
       <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur-xl border-b border-primary/30 shadow-glow">
         <div className="px-4 py-3 flex items-center gap-3">
           <motion.button whileTap={{ scale: 0.9 }} onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full bg-muted/60 backdrop-blur flex items-center justify-center ring-1 ring-border/30">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
+            className="w-9 h-9 rounded-full bg-white/15 backdrop-blur flex items-center justify-center ring-1 ring-white/20">
+            <ArrowLeft className="w-5 h-5 text-primary-foreground" />
           </motion.button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-foreground tracking-tight">Gift Cards</h1>
-            <p className="text-[10px] text-muted-foreground">Send joy, share happiness</p>
+            <h1 className="text-lg font-bold text-primary-foreground tracking-tight">Gift Cards</h1>
+            <p className="text-[10px] text-primary-foreground/80">Send joy, share happiness</p>
           </div>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-            <Gift className="w-4 h-4 text-primary" />
+          <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center ring-1 ring-white/20">
+            <Gift className="w-4 h-4 text-primary-foreground" />
           </div>
         </div>
       </div>
