@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, MapPin, Wallet, CreditCard, ShoppingCart, Package,
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/use-cart";
+import type { CartItem } from "@/components/shop/CartDrawer";
 import { useAuth } from "@/hooks/use-auth";
 import { getBalance, onBalanceChange } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
@@ -59,8 +60,18 @@ interface DeliveryZone {
 
 export default function ShopCheckoutPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
-  const { items, clearCart, total: subtotal, count } = useCart();
+  const cart = useCart();
+
+  // Buy Now: a single product passed via navigation state bypasses the cart entirely.
+  const buyNowItem = (location.state as any)?.buyNowItem as CartItem | undefined;
+  const isBuyNow = !!buyNowItem;
+
+  const items: CartItem[] = isBuyNow ? [buyNowItem!] : cart.items;
+  const subtotal = isBuyNow ? buyNowItem!.price * buyNowItem!.qty : cart.total;
+  const count = isBuyNow ? buyNowItem!.qty : cart.count;
+  const clearCart = isBuyNow ? () => {} : cart.clearCart;
 
   const [walletBalance, setWalletBalance] = useState(getBalance());
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);

@@ -659,7 +659,12 @@ export default function ProductDetailPage() {
         </motion.div>
         <motion.div whileTap={{ scale: 0.96 }} className="flex-1 min-w-0">
           <Button size="lg" className="w-full rounded-xl h-11 text-sm font-bold"
-            onClick={() => { handleAddToCart(); navigate("/shop/checkout"); }} disabled={product.stock <= 0}>
+            onClick={() => {
+              if (product.stock <= 0) return;
+              navigate("/shop/checkout", {
+                state: { buyNowItem: { ...product, qty: 1 } },
+              });
+            }} disabled={product.stock <= 0}>
             Buy Now
           </Button>
         </motion.div>
