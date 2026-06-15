@@ -222,9 +222,9 @@ const DonationsPage = () => {
         <div className="flex items-center gap-3 px-5 py-4 max-w-md mx-auto">
           <button
             onClick={() => step === "cause" ? navigate(-1) : resetFlow()}
-            className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center active:scale-90 transition-transform"
+            className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center active:scale-90 transition-transform"
           >
-            <ArrowLeft size={16} className="text-foreground" />
+            <ArrowLeft size={16} className="text-primary-foreground" />
           </button>
           <h1 className="text-base font-semibold text-primary-foreground tracking-tight">Donations</h1>
         </div>

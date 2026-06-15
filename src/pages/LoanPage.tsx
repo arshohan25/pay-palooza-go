@@ -270,12 +270,12 @@ const LoanPage = () => {
       {/* Header */}
       <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur-xl border-b border-primary/30 shadow-glow">
         <div className="px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-muted/50 flex items-center justify-center active:scale-95 transition-transform">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
+          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
+            <ArrowLeft className="w-5 h-5 text-primary-foreground" />
           </button>
           <div className="flex-1">
             <h1 className="text-base font-bold text-primary-foreground">Qard Hasan</h1>
-            <p className="text-[10px] text-muted-foreground">Interest-Free · Sharia Compliant</p>
+            <p className="text-[10px] text-primary-foreground/80">Interest-Free · Sharia Compliant</p>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10">
             <Heart className="w-3 h-3 text-emerald-500" />
