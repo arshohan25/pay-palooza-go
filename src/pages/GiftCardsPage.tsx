@@ -149,7 +149,7 @@ const GiftCardsPage = () => {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </motion.button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-foreground tracking-tight">Gift Cards</h1>
+            <h1 className="text-lg font-bold text-primary-foreground tracking-tight">Gift Cards</h1>
             <p className="text-[10px] text-muted-foreground">Send joy, share happiness</p>
           </div>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">

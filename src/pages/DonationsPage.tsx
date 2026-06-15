@@ -226,7 +226,7 @@ const DonationsPage = () => {
           >
             <ArrowLeft size={16} className="text-foreground" />
           </button>
-          <h1 className="text-base font-semibold text-foreground tracking-tight">Donations</h1>
+          <h1 className="text-base font-semibold text-primary-foreground tracking-tight">Donations</h1>
         </div>
       </div>
 

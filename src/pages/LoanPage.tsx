@@ -274,7 +274,7 @@ const LoanPage = () => {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-bold text-foreground">Qard Hasan</h1>
+            <h1 className="text-base font-bold text-primary-foreground">Qard Hasan</h1>
             <p className="text-[10px] text-muted-foreground">Interest-Free · Sharia Compliant</p>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10">
