@@ -259,7 +259,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         aria-labelledby="add-money-title">
 
         {step !== "success" && (
-          <motion.div className="bg-gradient-to-b from-emerald-500 to-green-600 px-4 pt-3 pb-3 text-primary-foreground"
+          <motion.div className="gradient-primary px-4 pt-3 pb-3 text-primary-foreground"
             initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
             <div className="flex items-center gap-3 mb-2">
               <button
@@ -309,7 +309,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     <div className="grid grid-cols-3 gap-2">
                       {QUICK_AMOUNTS.map(q => (
                         <button key={q} onClick={() => setAmount(String(q))}
-                          className={`py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 ${amount === String(q) ? "bg-gradient-to-b from-emerald-500 to-green-600 text-white border-transparent" : "bg-card border-border text-foreground hover:border-primary/50"}`}>
+                          className={`py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 ${amount === String(q) ? "gradient-primary text-white border-transparent" : "bg-card border-border text-foreground hover:border-primary/50"}`}>
                           ৳{q.toLocaleString()}
                         </button>
                       ))}
@@ -319,7 +319,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     )}
                     {parseFloat(amount) > 0 && parseFloat(amount) <= 100000 && (
                       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-                        <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold" onClick={handleAmountContinue}>Continue</Button>
+                        <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={handleAmountContinue}>Continue</Button>
                       </motion.div>
                     )}
                   </div>
@@ -345,7 +345,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       </div>
                       {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
                     </div>
-                    <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold" onClick={handleSourceContinue}>Continue</Button>
+                    <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={handleSourceContinue}>Continue</Button>
                   </div>
                 )}
 
@@ -389,7 +389,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       )}
                     </div>
 
-                    <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold" onClick={() => goTo("proof")}>
+                    <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={() => goTo("proof")}>
                       I've Sent the Money
                     </Button>
                   </div>
@@ -456,7 +456,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
                     {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
 
-                    <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold"
+                    <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                       onClick={handleProofContinue}>
                       Continue
                     </Button>
@@ -492,7 +492,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     />
                     {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}
                     <Button
-                      className="w-full max-w-xs h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold"
+                      className="w-full max-w-xs h-11 gradient-primary border-0 text-white font-semibold"
                       onClick={handlePinSubmit}
                       disabled={submitting || pin.length !== 4}
                     >
