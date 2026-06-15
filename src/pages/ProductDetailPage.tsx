@@ -661,9 +661,11 @@ export default function ProductDetailPage() {
           <Button size="lg" className="w-full rounded-xl h-11 text-sm font-bold"
             onClick={() => {
               if (product.stock <= 0) return;
-              navigate("/shop/checkout", {
-                state: { buyNowItem: { ...product, qty: 1 } },
-              });
+              const item = { ...product, qty: Math.max(1, qty) };
+              try {
+                sessionStorage.setItem("easypay_buy_now", JSON.stringify(item));
+              } catch {}
+              navigate("/shop/checkout", { state: { buyNowItem: item } });
             }} disabled={product.stock <= 0}>
             Buy Now
           </Button>
