@@ -277,35 +277,36 @@ const LoanPage = () => {
             <h1 className="text-base font-bold text-primary-foreground">Qard Hasan</h1>
             <p className="text-[10px] text-primary-foreground/80">Interest-Free · Sharia Compliant</p>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10">
-            <Heart className="w-3 h-3 text-emerald-500" />
-            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Halal</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20">
+            <Heart className="w-3 h-3 text-primary-foreground fill-primary-foreground/40" />
+            <span className="text-[11px] font-semibold text-primary-foreground tracking-wide">Halal</span>
           </div>
         </div>
 
         {/* Tab Bar */}
-        <div className="px-4 pb-2 flex gap-1">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeTab === tab.key
-                  ? "text-primary-foreground"
-                  : "text-muted-foreground bg-muted/30 hover:bg-muted/50"
-              }`}
-              style={activeTab === tab.key ? { background: "var(--gradient-primary)" } : undefined}
-            >
-              {tab.label}
-              {tab.count !== undefined && tab.count > 0 && (
-                <span className={`ml-1 text-[9px] px-1.5 py-0.5 rounded-full ${
-                  activeTab === tab.key ? "bg-white/20" : "bg-primary/10 text-primary"
-                }`}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="px-4 pb-3">
+          <div className="flex gap-1 p-1 rounded-2xl bg-black/15 backdrop-blur-md border border-white/10">
+            {tabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  activeTab === tab.key
+                    ? "bg-white text-primary shadow-md"
+                    : "text-primary-foreground/80 hover:text-primary-foreground"
+                }`}
+              >
+                {tab.label}
+                {tab.count !== undefined && tab.count > 0 && (
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                    activeTab === tab.key ? "bg-primary/10 text-primary" : "bg-white/20 text-primary-foreground"
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
