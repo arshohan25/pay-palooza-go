@@ -59,8 +59,18 @@ interface DeliveryZone {
 
 export default function ShopCheckoutPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
-  const { items, clearCart, total: subtotal, count } = useCart();
+  const cart = useCart();
+
+  // Buy Now: a single product passed via navigation state bypasses the cart entirely.
+  const buyNowItem = (location.state as any)?.buyNowItem as CartItem | undefined;
+  const isBuyNow = !!buyNowItem;
+
+  const items: CartItem[] = isBuyNow ? [buyNowItem!] : cart.items;
+  const subtotal = isBuyNow ? buyNowItem!.price * buyNowItem!.qty : cart.total;
+  const count = isBuyNow ? buyNowItem!.qty : cart.count;
+  const clearCart = isBuyNow ? () => {} : cart.clearCart;
 
   const [walletBalance, setWalletBalance] = useState(getBalance());
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
