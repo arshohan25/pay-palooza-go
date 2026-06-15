@@ -148,7 +148,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       aria-labelledby="bank-transfer-title">
 
       {step !== "success" && (
-        <motion.div className="bg-gradient-to-b from-blue-500 to-indigo-600 px-4 pt-3 pb-3 text-primary-foreground"
+        <motion.div className="gradient-primary px-4 pt-3 pb-3 text-primary-foreground"
           initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
           <div className="flex items-center gap-3 mb-2">
             <button
@@ -288,14 +288,14 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     </div>
                   </div>
                   {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
-                  <Button className="w-full h-11 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold" onClick={handleBankContinue}>{t("continue")}</Button>
+                  <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={handleBankContinue}>{t("continue")}</Button>
                 </div>
               )}
 
               {step === "amount" && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
-                    <div className="bg-gradient-to-b from-blue-500 to-indigo-600 w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0"><Landmark size={20} /></div>
+                    <div className="gradient-primary w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0"><Landmark size={20} /></div>
                     <div>
                       <p className="text-xs text-muted-foreground">{t("transferringTo")}</p>
                       <p className="text-sm font-bold text-foreground">{bankName}</p>
@@ -318,7 +318,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                   <div className="grid grid-cols-3 gap-2">
                     {QUICK_AMOUNTS.map(q => (
                       <button key={q} onClick={() => setAmount(String(q))}
-                        className={`py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 ${amount === String(q) ? "bg-gradient-to-b from-blue-500 to-indigo-600 text-white border-transparent" : "bg-card border-border text-foreground hover:border-primary/50"}`}>
+                        className={`py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 ${amount === String(q) ? "gradient-primary text-white border-transparent" : "bg-card border-border text-foreground hover:border-primary/50"}`}>
                         ৳{q.toLocaleString()}
                       </button>
                     ))}
@@ -331,7 +331,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                   )}
                   {parsedAmount > 0 && totalDeduction <= getBalance() && parsedAmount <= 50000 && (
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-                      <Button className="w-full h-11 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold"
+                      <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                         onClick={handleAmountContinue}>
                         Continue
                       </Button>
@@ -371,7 +371,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                   </div>
                   {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}
                   <Button
-                    className="w-full max-w-xs h-11 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold"
+                    className="w-full max-w-xs h-11 gradient-primary border-0 text-white font-semibold"
                     onClick={handlePinSubmit}
                     disabled={submitting || pin.length !== 4}
                   >
@@ -408,7 +408,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border">
-                    <div className="bg-gradient-to-b from-blue-500 to-indigo-600 w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0"><Landmark size={18} /></div>
+                    <div className="gradient-primary w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0"><Landmark size={18} /></div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-foreground truncate">{bankName}</p>
                       <p className="text-xs text-muted-foreground">{accountNumber} · {accountHolder}</p>
@@ -423,7 +423,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                   </div>
 
                   <Button
-                    className="w-full h-12 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold text-base rounded-xl"
+                    className="w-full h-12 gradient-primary border-0 text-white font-semibold text-base rounded-xl"
                     onClick={handleConfirmContinue}
                   >
                     Confirm & Enter PIN
