@@ -65,13 +65,27 @@ export default function ShopCheckoutPage() {
   const cart = useCart();
 
   // Buy Now: a single product passed via navigation state bypasses the cart entirely.
-  const buyNowItem = (location.state as any)?.buyNowItem as CartItem | undefined;
+  // Capture once on mount so re-renders / state-loss don't drop the item.
+  // Fall back to sessionStorage in case the navigation state was cleared (e.g. refresh, lazy-load race).
+  const [buyNowItem] = useState<CartItem | undefined>(() => {
+    const fromState = (location.state as any)?.buyNowItem as CartItem | undefined;
+    if (fromState) {
+      try { sessionStorage.setItem("easypay_buy_now", JSON.stringify(fromState)); } catch {}
+      return fromState;
+    }
+    try {
+      const raw = sessionStorage.getItem("easypay_buy_now");
+      return raw ? (JSON.parse(raw) as CartItem) : undefined;
+    } catch { return undefined; }
+  });
   const isBuyNow = !!buyNowItem;
 
   const items: CartItem[] = isBuyNow ? [buyNowItem!] : cart.items;
   const subtotal = isBuyNow ? buyNowItem!.price * buyNowItem!.qty : cart.total;
   const count = isBuyNow ? buyNowItem!.qty : cart.count;
-  const clearCart = isBuyNow ? () => {} : cart.clearCart;
+  const clearCart = isBuyNow
+    ? () => { try { sessionStorage.removeItem("easypay_buy_now"); } catch {} }
+    : cart.clearCart;
 
   const [walletBalance, setWalletBalance] = useState(getBalance());
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
@@ -88,12 +102,13 @@ export default function ShopCheckoutPage() {
   const [orderId, setOrderId] = useState("");
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
 
-  // Redirect if cart is empty and not showing success
+  // Redirect if cart is empty and not showing success (skip for Buy Now)
   useEffect(() => {
+    if (isBuyNow) return;
     if (items.length === 0 && !success) {
       navigate("/shop", { replace: true });
     }
-  }, [items.length, success, navigate]);
+  }, [items.length, success, navigate, isBuyNow]);
 
   // Listen to balance changes
   useEffect(() => {
