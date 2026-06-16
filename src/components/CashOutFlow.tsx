@@ -371,6 +371,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     showTxnToast({ type: "Cash Out", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-cashout" });
     setDirection(1);
     setStep("success");
+    import("@/lib/activityTracker").then(({ activityTracker }) =>
+      activityTracker.transaction("cashout_success", { amount: amtVal, fee: feeNum, txn_id: txnId.current })
+    );
   };
 
   const FEE_LABEL = getFeeLabel("cashout");
