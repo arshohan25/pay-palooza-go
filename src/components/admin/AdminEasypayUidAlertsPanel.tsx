@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -15,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 interface AlertRow {
@@ -73,19 +75,26 @@ export default function AdminEasypayUidAlertsPanel() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("open");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [limit, setLimit] = useState(200);
+  const [hasMore, setHasMore] = useState(false);
+  // Resolve dialog state
+  const [resolveTarget, setResolveTarget] = useState<AlertRow | null>(null);
+  const [resolveNote, setResolveNote] = useState("");
 
-  const load = async () => {
+  const load = async (nextLimit = limit) => {
     setLoading(true);
     const { data } = await supabase
       .from("easypay_uid_access_alerts" as any)
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(200);
-    setRows((data as any) || []);
+      .limit(nextLimit + 1);
+    const arr = (data as any[]) || [];
+    setHasMore(arr.length > nextLimit);
+    setRows(arr.slice(0, nextLimit));
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(limit); /* eslint-disable-next-line */ }, [limit]);
 
   useEffect(() => {
     if (!live) return;
@@ -96,7 +105,7 @@ export default function AdminEasypayUidAlertsPanel() {
         { event: "INSERT", schema: "public", table: "easypay_uid_access_alerts" },
         (payload) => {
           const row = payload.new as AlertRow;
-          setRows((prev) => [row, ...prev].slice(0, 200));
+          setRows((prev) => [row, ...prev].slice(0, limit));
           toast.error(`Unauthorized EasyPay UID access attempt`, {
             description: `${row.rpc_name} · ${row.actor_role || "anonymous"}`,
           });
@@ -113,32 +122,32 @@ export default function AdminEasypayUidAlertsPanel() {
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [live]);
+  }, [live, limit]);
 
-  const toggleResolved = async (row: AlertRow, e?: React.MouseEvent) => {
+  const openResolve = (row: AlertRow, e?: React.MouseEvent) => {
     e?.stopPropagation();
+    setResolveTarget(row);
+    setResolveNote(row.resolved_note || "");
+  };
+
+  const performResolve = async (row: AlertRow, resolve: boolean, note: string | null) => {
     setBusyId(row.id);
-    const nowResolving = !row.resolved_at;
-    const { data: userData } = await supabase.auth.getUser();
-    const patch = nowResolving
-      ? { resolved_at: new Date().toISOString(), resolved_by: userData.user?.id ?? null }
-      : { resolved_at: null, resolved_by: null, resolved_note: null };
-    const { data, error } = await supabase
-      .from("easypay_uid_access_alerts" as any)
-      .update(patch)
-      .eq("id", row.id)
-      .select()
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("resolve_easypay_uid_alert" as any, {
+      _id: row.id,
+      _resolve: resolve,
+      _note: note,
+    });
     setBusyId(null);
     if (error) {
-      toast.error(nowResolving ? "Failed to resolve" : "Failed to reopen");
+      toast.error(resolve ? "Failed to resolve" : "Failed to reopen");
       return;
     }
-    if (data) {
-      setRows((prev) => prev.map((r) => (r.id === row.id ? (data as any) : r)));
-      setSelected((s) => (s && s.id === row.id ? (data as any) : s));
+    const updated = (Array.isArray(data) ? data[0] : data) as AlertRow | null;
+    if (updated) {
+      setRows((prev) => prev.map((r) => (r.id === row.id ? updated : r)));
+      setSelected((s) => (s && s.id === row.id ? updated : s));
     }
-    toast.success(nowResolving ? "Alert resolved" : "Alert reopened");
+    toast.success(resolve ? "Alert resolved" : "Alert reopened");
   };
 
   const filtered = useMemo(() => {
@@ -180,7 +189,7 @@ export default function AdminEasypayUidAlertsPanel() {
                 <Radio className={`h-3.5 w-3.5 ${live ? "animate-pulse" : ""}`} />
                 {live ? "Live" : "Paused"}
               </Button>
-              <Button size="icon" variant="outline" onClick={load} className="rounded-full">
+              <Button size="icon" variant="outline" onClick={() => load(limit)} className="rounded-full">
                 <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
             </div>
@@ -271,7 +280,7 @@ export default function AdminEasypayUidAlertsPanel() {
                           variant={isResolved ? "outline" : "default"}
                           className="shrink-0 h-7 gap-1 rounded-full text-[11px] px-2.5"
                           disabled={busyId === r.id}
-                          onClick={(e) => toggleResolved(r, e)}
+                          onClick={(e) => (r.resolved_at ? performResolve(r, false, null) : openResolve(r, e))}
                         >
                           {isResolved ? (
                             <><Undo2 className="h-3 w-3" /> Reopen</>
@@ -287,6 +296,13 @@ export default function AdminEasypayUidAlertsPanel() {
               {!loading && filtered.length === 0 && (
                 <div className="p-10 text-center text-sm text-muted-foreground">
                   {rows.length === 0 ? "No unauthorized attempts logged." : "No alerts match your filters."}
+                </div>
+              )}
+              {!loading && hasMore && (
+                <div className="p-3 flex justify-center">
+                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => setLimit((l) => l + 200)}>
+                    Load more
+                  </Button>
                 </div>
               )}
             </div>
@@ -361,7 +377,7 @@ export default function AdminEasypayUidAlertsPanel() {
                     variant={selected.resolved_at ? "outline" : "default"}
                     className="gap-1.5 rounded-full"
                     disabled={busyId === selected.id}
-                    onClick={() => toggleResolved(selected)}
+                    onClick={() => selected.resolved_at ? performResolve(selected, false, null) : openResolve(selected)}
                   >
                     {selected.resolved_at ? (
                       <><Undo2 className="h-3.5 w-3.5" /> Reopen alert</>
@@ -373,6 +389,41 @@ export default function AdminEasypayUidAlertsPanel() {
               </>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resolve-with-note dialog */}
+      <Dialog open={!!resolveTarget} onOpenChange={(o) => { if (!o) setResolveTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              Resolve alert
+            </DialogTitle>
+            <DialogDescription>
+              Add a short note (optional) documenting your investigation. This is appended to the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={resolveNote}
+            onChange={(e) => setResolveNote(e.target.value)}
+            placeholder="e.g. False positive — internal QA testing"
+            className="min-h-[90px]"
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setResolveTarget(null)}>Cancel</Button>
+            <Button
+              disabled={busyId === resolveTarget?.id}
+              onClick={async () => {
+                if (!resolveTarget) return;
+                await performResolve(resolveTarget, true, resolveNote || null);
+                setResolveTarget(null);
+                setResolveNote("");
+              }}
+            >
+              <Check className="h-4 w-4 mr-1" /> Mark resolved
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { ChevronLeft, Loader2, User as UserIcon, Phone, Mail, Wallet, ShieldCheck, Calendar, Hash } from "lucide-react";
-import { fetchUserByEasypayUid } from "@/hooks/use-admin";
-import { useAdmin } from "@/hooks/use-admin";
+import { useParams, useNavigate } from "react-router-dom";
+import { ChevronLeft, Loader2, User as UserIcon, Phone, Mail, Wallet, ShieldCheck, Calendar, Hash, ShieldOff, UserX, History } from "lucide-react";
+import { fetchUserByEasypayUid, toggleUserStatus, softDeleteUser } from "@/hooks/use-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,28 +12,54 @@ import { toast } from "sonner";
 export default function AdminUserProfilePage() {
   const { uid } = useParams<{ uid: string }>();
   const navigate = useNavigate();
-  const { isAdmin, loading: adminLoading } = useAdmin();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState(false);
 
-  useEffect(() => {
+  const reload = async () => {
     if (!uid) return;
     setLoading(true);
-    fetchUserByEasypayUid(uid)
-      .then((p) => {
-        if (!p) toast.error(`No user found for ${uid}`);
-        setProfile(p);
-      })
-      .catch((e) => toast.error(e?.message || "Failed to load user"))
-      .finally(() => setLoading(false));
-  }, [uid]);
+    try {
+      const p = await fetchUserByEasypayUid(uid);
+      if (!p) toast.error(`No user found for ${uid}`);
+      setProfile(p);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to load user");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (adminLoading) {
-    return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
-  }
-  if (!isAdmin) {
-    return <div className="p-10 text-center text-muted-foreground">Admin access required.</div>;
-  }
+  useEffect(() => { reload(); /* eslint-disable-next-line */ }, [uid]);
+
+  const handleToggleStatus = async () => {
+    if (!profile?.user_id) return;
+    setActing(true);
+    try {
+      const next = await toggleUserStatus(profile.user_id, profile.status || "active");
+      toast.success(next === "suspended" ? "User suspended" : "User reactivated");
+      setProfile((p: any) => ({ ...p, status: next }));
+    } catch (e: any) {
+      toast.error(e?.message || "Action failed");
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const handleSoftDelete = async () => {
+    if (!profile?.user_id) return;
+    if (!confirm(`Soft-delete ${profile.name || profile.phone}? This is reversible from the Deleted Users panel.`)) return;
+    setActing(true);
+    try {
+      await softDeleteUser(profile.user_id);
+      toast.success("User deactivated");
+      await reload();
+    } catch (e: any) {
+      toast.error(e?.message || "Soft delete failed");
+    } finally {
+      setActing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,6 +119,37 @@ export default function AdminUserProfilePage() {
                   value={profile.created_at ? `${new Date(profile.created_at).toLocaleDateString()} (${formatDistanceToNowStrict(new Date(profile.created_at), { addSuffix: true })})` : "—"}
                 />
                 <Info icon={ShieldCheck} label="EasyPay UID" value={profile.easypay_uid} mono />
+              </div>
+            )}
+            {profile && (
+              <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
+                <Button
+                  size="sm"
+                  variant={profile.status === "suspended" ? "default" : "destructive"}
+                  disabled={acting}
+                  onClick={handleToggleStatus}
+                  className="gap-1.5 rounded-full"
+                >
+                  {profile.status === "suspended" ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
+                  {profile.status === "suspended" ? "Reactivate" : "Suspend"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate(`/admin#transactions`)}
+                  className="gap-1.5 rounded-full"
+                >
+                  <History className="w-4 h-4" /> View transactions
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={acting}
+                  onClick={handleSoftDelete}
+                  className="gap-1.5 rounded-full text-rose-600 hover:text-rose-700 ml-auto"
+                >
+                  <UserX className="w-4 h-4" /> Soft delete
+                </Button>
               </div>
             )}
           </CardContent>

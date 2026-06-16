@@ -1,38 +1,18 @@
-import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRoles } from "@/hooks/use-user-roles";
 
+const ADMIN_ROLES = new Set([
+  "admin", "compliance", "finance", "support", "operations",
+  "marketing", "hr", "audit", "risk", "developer", "manager",
+]);
+
+/**
+ * Admin-side role check. Delegates to the cached `useUserRoles` hook
+ * (single source of truth) so it cannot diverge from <RoleGuard /> route guards.
+ */
 export function useAdmin() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
-
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .in("role", ["admin","compliance","finance","support","operations","marketing","hr","audit","risk","developer","manager"]);
-
-      setIsAdmin((data?.length ?? 0) > 0);
-      setLoading(false);
-    };
-
-    check();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      check();
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
+  const { roles, loading } = useUserRoles();
+  const isAdmin = roles.some((r) => ADMIN_ROLES.has(r as string));
   return { isAdmin, loading };
 }
 
@@ -131,6 +111,17 @@ export async function fetchUserByEasypayUid(uid: string) {
   const { data, error } = await supabase.rpc("admin_get_user_by_easypay_uid" as any, { _uid: uid });
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
+  // Audit also recorded server-side inside the RPC; mirror client-side for completeness
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id,
+      action: "lookup_by_easypay_uid",
+      entity_type: "user",
+      entity_id: row?.user_id ?? null,
+      details: { requested_uid: uid, found: !!row },
+    }).then();
+  }
   return row || null;
 }
 
@@ -168,6 +159,16 @@ export async function toggleUserStatus(userId: string, currentStatus: string) {
     .update({ status: newStatus })
     .eq("user_id", userId);
   if (error) throw error;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id,
+      action: newStatus === "suspended" ? "suspend_user" : "reactivate_user",
+      entity_type: "user",
+      entity_id: userId,
+      details: { from: currentStatus, to: newStatus },
+    }).then();
+  }
   return newStatus;
 }
 
@@ -282,10 +283,11 @@ export async function bulkSoftDeleteUsers(userIds: string[]) {
 }
 
 export function exportUsersCSV(users: any[]) {
-  const headers = ["Name", "Phone", "Balance", "KYC Status", "Status", "Created At"];
+  const headers = ["Name", "Phone", "EasyPay UID", "Balance", "KYC Status", "Status", "Created At"];
   const rows = users.map(u => [
     u.name || "",
     u.phone || "",
+    u.easypay_uid || "",
     u.balance?.toString() || "0",
     u.kyc_status || "not_started",
     u.status || "active",
@@ -302,13 +304,14 @@ export function exportUsersCSV(users: any[]) {
 }
 
 export async function fetchUserDetails(userId: string) {
-  const [profileRes, rolesRes, kycRes, txnRes, overridesRes, globalLimitsRes] = await Promise.all([
+  const [profileRes, rolesRes, kycRes, txnRes, overridesRes, globalLimitsRes, uidRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("user_roles").select("role, created_at").eq("user_id", userId),
     supabase.from("kyc_verifications").select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
     supabase.from("user_limit_overrides").select("*").eq("target_user_id", userId).eq("is_active", true),
     supabase.from("transaction_limits").select("*").eq("is_active", true),
+    supabase.rpc("admin_get_easypay_uids" as any, { _user_ids: [userId] }),
   ]);
 
   // Audit log: record admin viewing user profile
@@ -326,8 +329,12 @@ export async function fetchUserDetails(userId: string) {
     }).then(); // fire-and-forget
   }
 
+  const easypayUid = Array.isArray(uidRes.data) && uidRes.data.length > 0
+    ? (uidRes.data[0] as any).easypay_uid
+    : null;
+
   return {
-    profile: profileRes.data,
+    profile: profileRes.data ? { ...profileRes.data, easypay_uid: easypayUid } : null,
     roles: rolesRes.data ?? [],
     kyc: kycRes.data,
     transactions: txnRes.data ?? [],
