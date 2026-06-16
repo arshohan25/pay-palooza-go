@@ -283,10 +283,11 @@ export async function bulkSoftDeleteUsers(userIds: string[]) {
 }
 
 export function exportUsersCSV(users: any[]) {
-  const headers = ["Name", "Phone", "Balance", "KYC Status", "Status", "Created At"];
+  const headers = ["Name", "Phone", "EasyPay UID", "Balance", "KYC Status", "Status", "Created At"];
   const rows = users.map(u => [
     u.name || "",
     u.phone || "",
+    u.easypay_uid || "",
     u.balance?.toString() || "0",
     u.kyc_status || "not_started",
     u.status || "active",
@@ -303,13 +304,14 @@ export function exportUsersCSV(users: any[]) {
 }
 
 export async function fetchUserDetails(userId: string) {
-  const [profileRes, rolesRes, kycRes, txnRes, overridesRes, globalLimitsRes] = await Promise.all([
+  const [profileRes, rolesRes, kycRes, txnRes, overridesRes, globalLimitsRes, uidRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("user_roles").select("role, created_at").eq("user_id", userId),
     supabase.from("kyc_verifications").select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
     supabase.from("user_limit_overrides").select("*").eq("target_user_id", userId).eq("is_active", true),
     supabase.from("transaction_limits").select("*").eq("is_active", true),
+    supabase.rpc("admin_get_easypay_uids" as any, { _user_ids: [userId] }),
   ]);
 
   // Audit log: record admin viewing user profile
@@ -327,8 +329,12 @@ export async function fetchUserDetails(userId: string) {
     }).then(); // fire-and-forget
   }
 
+  const easypayUid = Array.isArray(uidRes.data) && uidRes.data.length > 0
+    ? (uidRes.data[0] as any).easypay_uid
+    : null;
+
   return {
-    profile: profileRes.data,
+    profile: profileRes.data ? { ...profileRes.data, easypay_uid: easypayUid } : null,
     roles: rolesRes.data ?? [],
     kyc: kycRes.data,
     transactions: txnRes.data ?? [],
