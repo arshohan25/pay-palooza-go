@@ -1160,39 +1160,43 @@ export default function AdminDashboard() {
       {/* ═══ Main column ═══ */}
       <div className={`flex-1 flex flex-col lg:ml-56 min-w-0 transition-[margin] duration-300 ${showActivityFeed && !isMobile ? "lg:mr-72" : ""}`}>
         {/* Top header */}
-        <header className="sticky top-0 z-30 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow">
-          <div className="flex items-center justify-between px-4 lg:px-6 py-3">
-            <div className="flex items-center gap-2">
+        <header className="sticky top-0 z-30 gradient-hero text-primary-foreground border-b border-white/10 shadow-glow-lg backdrop-blur-xl relative overflow-hidden">
+          {/* Decorative glow orbs */}
+          <div className="pointer-events-none absolute -top-12 -left-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 right-1/3 w-56 h-56 rounded-full bg-primary-glow/20 blur-3xl" />
+
+          <div className="relative flex items-center justify-between px-4 lg:px-6 py-3">
+            <div className="flex items-center gap-2 min-w-0">
               {/* Mobile only: back + hamburger */}
-              <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 lg:hidden">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 lg:hidden text-primary-foreground hover:bg-white/15">
                 <ChevronLeft className="w-5 h-5" />
               </Button>
               <div className="flex items-center gap-2.5 lg:hidden">
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
                   <ShieldAlert className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <h1 className="font-bold text-foreground text-base">Admin</h1>
+                <h1 className="font-bold text-primary-foreground text-base tracking-tight">Admin</h1>
               </div>
               {/* Desktop: section label */}
-              <span className="hidden lg:block text-base font-bold text-foreground">
+              <span className="hidden lg:block text-lg font-bold text-primary-foreground tracking-tight truncate">
                 {activeTab === "overview" ? `${getGreeting()}, ${displayName || "Admin"}` : (ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview")}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative hidden lg:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-foreground/60 z-10" />
                 <Input
                   placeholder="Search users, transactions…"
-                  className="pl-10 w-64"
+                  className="pl-10 w-64 h-9 rounded-full bg-white/95 dark:bg-white/10 backdrop-blur-md border-white/30 text-foreground dark:text-primary-foreground placeholder:text-muted-foreground/70 shadow-sm focus-visible:ring-2 focus-visible:ring-white/40"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                 />
               </div>
               <div className="relative lg:hidden flex-1 max-w-[160px]">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary-foreground/60 z-10" />
                 <Input
                   placeholder="Search…"
-                  className="pl-8 h-8 text-xs"
+                  className="pl-8 h-8 text-xs rounded-full bg-white/95 dark:bg-white/10 backdrop-blur-md border-white/30 text-foreground dark:text-primary-foreground placeholder:text-muted-foreground/70"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                 />
@@ -1200,19 +1204,19 @@ export default function AdminDashboard() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-default ${
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold cursor-default backdrop-blur-md border transition-all ${
                       wsStatus === "connected"
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                        ? "bg-emerald-400/20 border-emerald-300/40 text-white"
                         : wsStatus === "connecting"
-                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                        : "bg-destructive/10 text-destructive"
+                        ? "bg-amber-400/20 border-amber-300/40 text-white"
+                        : "bg-red-400/20 border-red-300/40 text-white"
                     }`}>
                       <span className="relative flex h-2 w-2">
                         {wsStatus === "connected" && (
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
                         )}
                         <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                          wsStatus === "connected" ? "bg-emerald-500" : wsStatus === "connecting" ? "bg-amber-500" : "bg-destructive"
+                          wsStatus === "connected" ? "bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.9)]" : wsStatus === "connecting" ? "bg-amber-300" : "bg-red-300"
                         }`} />
                       </span>
                       {wsStatus === "connected" ? "Live" : wsStatus === "connecting" ? "Connecting…" : "Offline"}
@@ -1227,41 +1231,41 @@ export default function AdminDashboard() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing} className="h-7 w-7 md:h-9 md:w-9">
-                <RefreshCw className={`w-3.5 h-3.5 md:w-4 md:h-4 ${refreshing ? "animate-spin" : ""}`} />
+              <Button variant="ghost" size="icon" onClick={loadData} disabled={refreshing} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-primary-foreground backdrop-blur-md transition-all hover:scale-105">
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               </Button>
               <Button
-                variant={showActivityFeed ? "default" : "outline"}
+                variant="ghost"
                 size="icon"
                 onClick={() => setShowActivityFeed(v => !v)}
                 title="Activity Feed"
-                className="h-7 w-7 md:h-9 md:w-9"
+                className={`h-9 w-9 rounded-full border backdrop-blur-md text-primary-foreground transition-all hover:scale-105 ${showActivityFeed ? "bg-white/30 border-white/40 shadow-glow" : "bg-white/10 hover:bg-white/20 border-white/20"}`}
               >
-                <Radio className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                <Radio className="w-4 h-4" />
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
                 title="Toggle theme"
-                className="h-7 w-7 md:h-9 md:w-9"
+                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-primary-foreground backdrop-blur-md transition-all hover:scale-105"
               >
-                {resolvedTheme === "dark" ? <Sun className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Moon className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+                {resolvedTheme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
             </div>
           </div>
 
           {/* Mobile: Active section label + hamburger */}
-          <div className="flex lg:hidden items-center gap-2 px-4 pb-2">
+          <div className="relative flex lg:hidden items-center gap-2 px-4 pb-3">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-lg shrink-0"
+              className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 text-primary-foreground backdrop-blur-md shrink-0"
               onClick={() => setShowNavMenu(true)}
             >
               <Menu className="w-4 h-4" />
             </Button>
-            <span className="text-sm font-semibold text-foreground">
+            <span className="text-sm font-semibold text-primary-foreground tracking-tight truncate">
               {activeTab === "overview" ? `${getGreeting()}, ${displayName || "Admin"}` : (ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview")}
             </span>
           </div>
