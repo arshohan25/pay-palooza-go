@@ -1846,6 +1846,9 @@ export default function AdminDashboard() {
         {/* ═══ TRANSACTION MONITORING ═══ */}
         {activeTab === "transactions" && <AdminActivityMonitor />}
 
+        {/* ═══ USER ACTIVITY (taps / screens / qr / txn / auth) ═══ */}
+        {activeTab === "user_activity" && <AdminUserActivityPanel />}
+
         {/* ═══ CHARGEBACK HISTORY ═══ */}
         {activeTab === "chargebacks" && <AdminChargebackHistory />}
 
