@@ -923,7 +923,7 @@ export default function AdminDashboard() {
   if (!isAdmin) return null;
 
   const filteredUsers = users.filter(u => {
-    if (searchQuery && !(u.phone?.includes(searchQuery) || u.name?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
+    if (searchQuery && !(u.phone?.includes(searchQuery) || u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || u.easypay_uid?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
     if (!metricFilter) return true;
     const k = metricFilter.key;
     if (k === "active") return (u.status || "active") === "active";
