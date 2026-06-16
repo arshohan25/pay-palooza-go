@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNowStrict } from "date-fns";
 import {
@@ -45,6 +46,7 @@ interface Props {
 }
 
 export default function AdminUserActivityPanel({ userId }: Props) {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(true);
@@ -204,11 +206,19 @@ export default function AdminUserActivityPanel({ userId }: Props) {
                   animate={{ opacity: 1, y: 0 }}
                   className="p-3 hover:bg-muted/40 transition"
                 >
-                  <button
-                    type="button"
-                    onClick={() => setExpanded(isOpen ? null : r.id)}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (r.easypay_uid) {
+                        navigate(`/admin/users/${r.easypay_uid}`);
+                      } else {
+                        setExpanded(isOpen ? null : r.id);
+                      }
+                    }}
                     className="w-full text-left flex items-start gap-3"
                     data-track="off"
+                    title={r.easypay_uid ? `Open ${r.easypay_uid}` : "Toggle details"}
                   >
                     <div className={`shrink-0 h-9 w-9 rounded-xl border flex items-center justify-center ${meta.color}`}>
                       <Icon className="h-4 w-4" />
@@ -233,7 +243,7 @@ export default function AdminUserActivityPanel({ userId }: Props) {
                           </span>
                         )}
                         {r.easypay_uid && (
-                          <code className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-foreground">
+                          <code className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary">
                             {r.easypay_uid}
                           </code>
                         )}
@@ -241,8 +251,16 @@ export default function AdminUserActivityPanel({ userId }: Props) {
                         {r.ip_address && <span>· {r.ip_address}</span>}
                       </div>
                     </div>
-                    {isOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setExpanded(isOpen ? null : r.id); }}
+                      className="p-1 rounded hover:bg-muted"
+                      aria-label="Toggle details"
+                      data-track="off"
+                    >
+                      {isOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    </button>
+                  </div>
                   {isOpen && (
                     <div className="mt-2 ml-12 text-[11px] rounded-lg bg-muted/60 p-2 overflow-x-auto">
                       <pre className="whitespace-pre-wrap break-all">
