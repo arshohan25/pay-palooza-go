@@ -61,6 +61,7 @@ import AdminPermissions from "@/components/admin/AdminPermissions";
 import AdminTreasury from "@/components/admin/AdminTreasury";
 import AdminWebhookLog from "@/components/admin/AdminWebhookLog";
 import AdminActivityFeed from "@/components/admin/AdminActivityFeed";
+import AdminUserActivityPanel from "@/components/admin/AdminUserActivityPanel";
 import AdminApiHub from "@/components/admin/AdminApiHub";
 import AdminBillerConfig from "@/components/admin/AdminBillerConfig";
 import AdminAuditLogViewer from "@/components/admin/AdminAuditLogViewer";
