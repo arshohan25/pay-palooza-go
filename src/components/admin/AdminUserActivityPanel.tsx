@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -55,6 +55,7 @@ export default function AdminUserActivityPanel({ userId }: Props) {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [phoneMap, setPhoneMap] = useState<Record<string, string>>({});
+  const fetchedIdsRef = useRef<Set<string>>(new Set());
 
   const load = async () => {
     setLoading(true);
@@ -92,25 +93,29 @@ export default function AdminUserActivityPanel({ userId }: Props) {
     return () => { supabase.removeChannel(channel); };
   }, [live, userId]);
 
-  // Look up phone numbers for global view
+  // Look up phone numbers for global view (uses a ref to avoid effect re-runs on phoneMap change)
   useEffect(() => {
     if (userId) return;
     const ids = Array.from(new Set(rows.map((r) => r.user_id))).filter(
-      (id) => !(id in phoneMap)
+      (id) => !fetchedIdsRef.current.has(id)
     );
     if (ids.length === 0) return;
+    ids.forEach((id) => fetchedIdsRef.current.add(id));
     supabase
       .from("profiles")
-      .select("id, phone, full_name")
-      .in("id", ids)
+      .select("user_id, phone, name")
+      .in("user_id", ids)
       .then(({ data }) => {
-        const next = { ...phoneMap };
-        (data || []).forEach((p: any) => {
-          next[p.id] = p.full_name || p.phone || p.id.slice(0, 8);
+        if (!data || data.length === 0) return;
+        setPhoneMap((prev) => {
+          const next = { ...prev };
+          (data as any[]).forEach((p) => {
+            next[p.user_id] = p.name || p.phone || String(p.user_id).slice(0, 8);
+          });
+          return next;
         });
-        setPhoneMap(next);
       });
-  }, [rows, userId, phoneMap]);
+  }, [rows, userId]);
 
   const filtered = useMemo(() => {
     const uidQ = uidFilter.trim().toUpperCase();
