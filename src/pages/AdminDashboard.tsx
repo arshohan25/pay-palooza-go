@@ -497,6 +497,7 @@ export default function AdminDashboard() {
   const [merchants, setMerchants] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userSearchScope, setUserSearchScope] = useState<"all" | "uid">("all");
   const [refreshing, setRefreshing] = useState(false);
   const [userSubTab, setUserSubTab] = useState<"users" | "agents" | "merchants">("users");
   const [metricFilter, setMetricFilter] = useState<{ key: string; label: string } | null>(null);
@@ -923,7 +924,14 @@ export default function AdminDashboard() {
   if (!isAdmin) return null;
 
   const filteredUsers = users.filter(u => {
-    if (searchQuery && !(u.phone?.includes(searchQuery) || u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || u.easypay_uid?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
+      if (userSearchScope === "uid") {
+        if (!u.easypay_uid?.toLowerCase().includes(q)) return false;
+      } else if (!(u.phone?.includes(searchQuery) || u.name?.toLowerCase().includes(q) || u.easypay_uid?.toLowerCase().includes(q))) {
+        return false;
+      }
+    }
     if (!metricFilter) return true;
     const k = metricFilter.key;
     if (k === "active") return (u.status || "active") === "active";
