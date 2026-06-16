@@ -85,9 +85,9 @@ input[type="number"] {
     --gradient-hero: linear-gradient(150deg, hsl(var(--shariah-green-600)) 0%, hsl(var(--shariah-green-800)) 60%, hsl(var(--shariah-green-900)) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(var(--shariah-gold-500)), hsl(var(--shariah-gold-700)));
     --gradient-send: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
-    --gradient-cashout: linear-gradient(135deg, hsl(var(--shariah-green-800)), hsl(var(--shariah-green-900)));
-    --gradient-payment: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-gold-700)));
-    --gradient-addmoney: linear-gradient(135deg, hsl(var(--shariah-green-300)), hsl(var(--shariah-green-600)));
+    --gradient-cashout: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
+    --gradient-payment: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
+    --gradient-addmoney: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
     --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.15), hsl(0 0% 100% / 0.05));
 
     /* ── Shadows ── */
@@ -134,9 +134,9 @@ input[type="number"] {
     --gradient-primary: linear-gradient(135deg, hsl(165 60% 16%) 0%, hsl(175 70% 8%) 100%);
     --gradient-hero: radial-gradient(130% 150% at 0% 0%, hsl(152 75% 22%) 0%, hsl(165 80% 10%) 50%, hsl(180 90% 5%) 100%);
     --gradient-send: linear-gradient(135deg, hsl(152 60% 22%), hsl(165 75% 10%));
-    --gradient-cashout: linear-gradient(135deg, hsl(165 75% 12%), hsl(180 85% 6%));
-    --gradient-payment: linear-gradient(135deg, hsl(152 55% 22%), hsl(36 65% 30%));
-    --gradient-addmoney: linear-gradient(135deg, hsl(152 55% 32%), hsl(165 70% 14%));
+    --gradient-cashout: linear-gradient(135deg, hsl(152 60% 22%), hsl(165 75% 10%));
+    --gradient-payment: linear-gradient(135deg, hsl(152 60% 22%), hsl(165 75% 10%));
+    --gradient-addmoney: linear-gradient(135deg, hsl(152 60% 22%), hsl(165 75% 10%));
     --gradient-accent: linear-gradient(135deg, hsl(var(--shariah-gold-500)), hsl(var(--shariah-gold-700)));
     --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.50), 0 1px 3px hsl(0 0% 0% / 0.35);
     --shadow-elevated: 0 8px 32px -6px hsl(0 0% 0% / 0.60), 0 2px 8px hsl(0 0% 0% / 0.35);
