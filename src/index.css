@@ -131,18 +131,18 @@ input[type="number"] {
     --input: 222 18% 18%;
     --ring: 152 73% 45%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(152 65% 28%) 0%, hsl(160 70% 18%) 100%);
-    --gradient-hero: radial-gradient(120% 140% at 0% 0%, hsl(152 70% 32% / 0.95) 0%, hsl(160 72% 18%) 45%, hsl(170 80% 10%) 100%);
-    --gradient-send: linear-gradient(135deg, hsl(152 65% 30%), hsl(160 72% 18%));
-    --gradient-cashout: linear-gradient(135deg, hsl(160 72% 18%), hsl(170 80% 10%));
-    --gradient-payment: linear-gradient(135deg, hsl(152 60% 28%), hsl(36 70% 38%));
-    --gradient-addmoney: linear-gradient(135deg, hsl(152 60% 40%), hsl(160 70% 22%));
+    --gradient-primary: linear-gradient(135deg, hsl(165 60% 16%) 0%, hsl(175 70% 8%) 100%);
+    --gradient-hero: radial-gradient(130% 150% at 0% 0%, hsl(152 75% 22%) 0%, hsl(165 80% 10%) 50%, hsl(180 90% 5%) 100%);
+    --gradient-send: linear-gradient(135deg, hsl(152 60% 22%), hsl(165 75% 10%));
+    --gradient-cashout: linear-gradient(135deg, hsl(165 75% 12%), hsl(180 85% 6%));
+    --gradient-payment: linear-gradient(135deg, hsl(152 55% 22%), hsl(36 65% 30%));
+    --gradient-addmoney: linear-gradient(135deg, hsl(152 55% 32%), hsl(165 70% 14%));
     --gradient-accent: linear-gradient(135deg, hsl(var(--shariah-gold-500)), hsl(var(--shariah-gold-700)));
-    --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.40), 0 1px 3px hsl(0 0% 0% / 0.30);
-    --shadow-elevated: 0 8px 32px -6px hsl(0 0% 0% / 0.55), 0 2px 8px hsl(0 0% 0% / 0.30);
-    --shadow-float: 0 16px 48px -12px hsl(0 0% 0% / 0.65), 0 4px 16px hsl(0 0% 0% / 0.35);
-    --shadow-glow: 0 0 0 1px hsl(152 73% 55% / 0.18), 0 4px 28px -4px hsl(152 80% 40% / 0.45);
-    --shadow-glow-lg: 0 0 0 1px hsl(152 73% 55% / 0.22), 0 12px 50px -10px hsl(152 85% 45% / 0.55);
+    --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.50), 0 1px 3px hsl(0 0% 0% / 0.35);
+    --shadow-elevated: 0 8px 32px -6px hsl(0 0% 0% / 0.60), 0 2px 8px hsl(0 0% 0% / 0.35);
+    --shadow-float: 0 16px 48px -12px hsl(0 0% 0% / 0.70), 0 4px 16px hsl(0 0% 0% / 0.40);
+    --shadow-glow: 0 0 0 1px hsl(152 90% 50% / 0.25), 0 6px 32px -4px hsl(152 95% 45% / 0.50);
+    --shadow-glow-lg: 0 0 0 1px hsl(152 90% 55% / 0.30), 0 16px 56px -10px hsl(152 95% 50% / 0.60);
 
     --sidebar-background: 222 22% 9%;
     --sidebar-foreground: 210 18% 78%;
