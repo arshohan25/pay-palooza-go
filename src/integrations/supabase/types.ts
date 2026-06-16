@@ -1930,6 +1930,9 @@ export type Database = {
           id: string
           ip_address: string | null
           payload: Json
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_note: string | null
           rpc_name: string
           user_agent: string | null
         }
@@ -1940,6 +1943,9 @@ export type Database = {
           id?: string
           ip_address?: string | null
           payload?: Json
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_note?: string | null
           rpc_name: string
           user_agent?: string | null
         }
@@ -1950,6 +1956,9 @@ export type Database = {
           id?: string
           ip_address?: string | null
           payload?: Json
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_note?: string | null
           rpc_name?: string
           user_agent?: string | null
         }
