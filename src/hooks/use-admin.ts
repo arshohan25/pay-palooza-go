@@ -1,38 +1,18 @@
-import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRoles } from "@/hooks/use-user-roles";
 
+const ADMIN_ROLES = new Set([
+  "admin", "compliance", "finance", "support", "operations",
+  "marketing", "hr", "audit", "risk", "developer", "manager",
+]);
+
+/**
+ * Admin-side role check. Delegates to the cached `useUserRoles` hook
+ * (single source of truth) so it cannot diverge from <RoleGuard /> route guards.
+ */
 export function useAdmin() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
-
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .in("role", ["admin","compliance","finance","support","operations","marketing","hr","audit","risk","developer","manager"]);
-
-      setIsAdmin((data?.length ?? 0) > 0);
-      setLoading(false);
-    };
-
-    check();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      check();
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
+  const { roles, loading } = useUserRoles();
+  const isAdmin = roles.some((r) => ADMIN_ROLES.has(r as string));
   return { isAdmin, loading };
 }
 
