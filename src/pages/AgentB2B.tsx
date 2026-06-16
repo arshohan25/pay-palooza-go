@@ -241,7 +241,9 @@ const AgentB2B = () => {
                   <button key={a} onClick={() => setAmount(String(a))} className="px-3 py-2 rounded-xl text-xs font-bold bg-muted text-muted-foreground press-effect hover:bg-primary/10 hover:text-primary transition-colors">৳{fmt(a)}</button>
                 ))}
               </div>
-              <Button onClick={() => { if (transferType === "agent" && phoneValidation.triggerShake()) return; setStep("confirm"); }} disabled={(transferType === "agent" ? !phoneValidation.isValid : !distributorInfo) || !amount || Number(amount) < 10} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold">Continue</Button>
+              {((transferType === "agent" ? phoneValidation.isValid : !!distributorInfo) && !!amount && Number(amount) >= 10) && (
+                <Button onClick={() => { if (transferType === "agent" && phoneValidation.triggerShake()) return; setStep("confirm"); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in">Continue</Button>
+              )}
             </Card>
           </motion.div>
         )}
