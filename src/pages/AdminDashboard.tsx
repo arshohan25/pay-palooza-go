@@ -1577,6 +1577,7 @@ export default function AdminDashboard() {
                                 </div>
                               </div>
                               <p className="text-xs text-muted-foreground">{user.phone}</p>
+                              <p className="text-[10px] font-mono text-muted-foreground mt-0.5">UID: {user.easypay_uid || "—"}</p>
                               <p className="text-sm font-semibold text-foreground mt-1">৳{parseFloat(user.balance).toLocaleString()}</p>
                             </div>
                           </div>
