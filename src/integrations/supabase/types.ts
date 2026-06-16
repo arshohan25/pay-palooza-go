@@ -4754,6 +4754,7 @@ export type Database = {
           created_at: string
           deactivated_at: string | null
           deactivated_by: string | null
+          easypay_uid: string | null
           email: string | null
           id: string
           kyc_exempt: boolean
@@ -4772,6 +4773,7 @@ export type Database = {
           created_at?: string
           deactivated_at?: string | null
           deactivated_by?: string | null
+          easypay_uid?: string | null
           email?: string | null
           id?: string
           kyc_exempt?: boolean
@@ -4790,6 +4792,7 @@ export type Database = {
           created_at?: string
           deactivated_at?: string | null
           deactivated_by?: string | null
+          easypay_uid?: string | null
           email?: string | null
           id?: string
           kyc_exempt?: boolean
