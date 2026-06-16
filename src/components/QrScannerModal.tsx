@@ -207,6 +207,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
 
   const handleSelectOcrResult = (result: string) => {
     setDetected(true);
+    trackScan("multi", result);
     setTimeout(() => { onScan(result); onClose(); }, 600);
   };
 
