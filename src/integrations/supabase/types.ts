@@ -6042,6 +6042,7 @@ export type Database = {
         Row: {
           created_at: string
           device_fingerprint: string | null
+          easypay_uid: string | null
           event_name: string
           event_type: string
           id: string
@@ -6056,6 +6057,7 @@ export type Database = {
         Insert: {
           created_at?: string
           device_fingerprint?: string | null
+          easypay_uid?: string | null
           event_name: string
           event_type: string
           id?: string
@@ -6070,6 +6072,7 @@ export type Database = {
         Update: {
           created_at?: string
           device_fingerprint?: string | null
+          easypay_uid?: string | null
           event_name?: string
           event_type?: string
           id?: string
@@ -6562,6 +6565,28 @@ export type Database = {
           p_target_phone: string
         }
         Returns: Json
+      }
+      admin_get_easypay_uids: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          easypay_uid: string
+          user_id: string
+        }[]
+      }
+      admin_get_user_by_easypay_uid: {
+        Args: { _uid: string }
+        Returns: {
+          avatar_url: string
+          balance: number
+          created_at: string
+          easypay_uid: string
+          email: string
+          kyc_status: string
+          name: string
+          phone: string
+          status: string
+          user_id: string
+        }[]
       }
       admin_reject_fund_request: {
         Args: { p_admin_note?: string; p_request_id: string }

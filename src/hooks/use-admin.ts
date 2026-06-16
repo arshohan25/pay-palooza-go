@@ -89,9 +89,9 @@ export async function fetchAllUsers(limit = 50) {
 
   const users = data ?? [];
 
-  // Fetch KYC statuses for all users
   const userIds = users.map((u: any) => u.user_id);
   let kycMap: Record<string, string> = {};
+  let uidMap: Record<string, string> = {};
   if (userIds.length > 0) {
     const { data: kycData } = await supabase
       .from("kyc_verifications")
@@ -100,15 +100,19 @@ export async function fetchAllUsers(limit = 50) {
     if (kycData) {
       kycMap = Object.fromEntries(kycData.map((k: any) => [k.user_id, k.status]));
     }
+    // EasyPay UIDs are admin-only — fetched via SECURITY DEFINER RPC, never via direct column read.
+    const { data: uidData } = await supabase.rpc("admin_get_easypay_uids" as any, { _user_ids: userIds });
+    if (uidData) {
+      uidMap = Object.fromEntries((uidData as any[]).map((u: any) => [u.user_id, u.easypay_uid]));
+    }
   }
 
-  // Attach kyc_status to each user
   const enriched = users.map((u: any) => ({
     ...u,
+    easypay_uid: uidMap[u.user_id] ?? null,
     kyc_status: u.kyc_exempt ? "exempt" : (kycMap[u.user_id] || "not_started"),
   }));
 
-  // Audit log: record admin viewing user list
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.user) {
     supabase.from("audit_logs").insert({
@@ -117,10 +121,17 @@ export async function fetchAllUsers(limit = 50) {
       entity_type: "user_list",
       entity_id: session.user.id,
       details: { count: enriched.length },
-    }).then(); // fire-and-forget
+    }).then();
   }
 
   return enriched;
+}
+
+export async function fetchUserByEasypayUid(uid: string) {
+  const { data, error } = await supabase.rpc("admin_get_user_by_easypay_uid" as any, { _uid: uid });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row || null;
 }
 
 export async function fetchFraudAlerts(limit = 50) {

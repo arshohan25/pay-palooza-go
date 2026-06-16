@@ -26,6 +26,7 @@ interface ActivityRow {
   device_fingerprint: string | null;
   user_agent: string | null;
   ip_address: string | null;
+  easypay_uid: string | null;
   created_at: string;
 }
 
@@ -48,6 +49,7 @@ export default function AdminUserActivityPanel({ userId }: Props) {
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(true);
   const [search, setSearch] = useState("");
+  const [uidFilter, setUidFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [phoneMap, setPhoneMap] = useState<Record<string, string>>({});
@@ -109,18 +111,21 @@ export default function AdminUserActivityPanel({ userId }: Props) {
   }, [rows, userId, phoneMap]);
 
   const filtered = useMemo(() => {
+    const uidQ = uidFilter.trim().toUpperCase();
     return rows.filter((r) => {
       if (typeFilter !== "all" && r.event_type !== typeFilter) return false;
+      if (uidQ && !(r.easypay_uid || "").toUpperCase().includes(uidQ)) return false;
       if (!search) return true;
       const s = search.toLowerCase();
       return (
         r.event_name.toLowerCase().includes(s) ||
         (r.target || "").toLowerCase().includes(s) ||
         (r.route || "").toLowerCase().includes(s) ||
+        (r.easypay_uid || "").toLowerCase().includes(s) ||
         (phoneMap[r.user_id] || "").toLowerCase().includes(s)
       );
     });
-  }, [rows, typeFilter, search, phoneMap]);
+  }, [rows, typeFilter, search, uidFilter, phoneMap]);
 
   return (
     <div className="space-y-3">
@@ -136,6 +141,17 @@ export default function AdminUserActivityPanel({ userId }: Props) {
             data-track="off"
           />
         </div>
+        {!userId && (
+          <div className="relative w-[170px]">
+            <Input
+              placeholder="EP UID…"
+              value={uidFilter}
+              onChange={(e) => setUidFilter(e.target.value)}
+              className="rounded-full font-mono text-xs uppercase"
+              data-track="off"
+            />
+          </div>
+        )}
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[140px] rounded-full" data-track="off">
             <Filter className="h-3.5 w-3.5 mr-1" />
@@ -215,6 +231,11 @@ export default function AdminUserActivityPanel({ userId }: Props) {
                             <UserIcon className="h-3 w-3" />
                             {phoneMap[r.user_id] || r.user_id.slice(0, 8)}
                           </span>
+                        )}
+                        {r.easypay_uid && (
+                          <code className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-foreground">
+                            {r.easypay_uid}
+                          </code>
                         )}
                         {r.route && <span className="truncate">· {r.route}</span>}
                         {r.ip_address && <span>· {r.ip_address}</span>}

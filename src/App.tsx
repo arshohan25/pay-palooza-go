@@ -17,6 +17,7 @@ import { retryLazyImport } from "@/lib/cacheReset";
 
 const Index = lazy(() => retryLazyImport(() => import("./pages/Index")));
 const AdminDashboard = lazy(() => retryLazyImport(() => import("./pages/AdminDashboard")));
+const AdminUserProfilePage = lazy(() => import("./pages/AdminUserProfilePage"));
 const AgentDashboard = lazy(() => import("./pages/AgentDashboard"));
 const AgentCashIn = lazy(() => import("./pages/AgentCashIn"));
 const AgentB2B = lazy(() => import("./pages/AgentB2B"));
@@ -112,6 +113,7 @@ const App = () => (
                     </Route>
 
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
+                    <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]}><AdminUserProfilePage /></RoleGuard>} />
 
                     <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} />}>
                       <Route index element={<AgentDashboard />} />

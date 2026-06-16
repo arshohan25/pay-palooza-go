@@ -497,6 +497,7 @@ export default function AdminDashboard() {
   const [merchants, setMerchants] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userSearchScope, setUserSearchScope] = useState<"all" | "uid">("all");
   const [refreshing, setRefreshing] = useState(false);
   const [userSubTab, setUserSubTab] = useState<"users" | "agents" | "merchants">("users");
   const [metricFilter, setMetricFilter] = useState<{ key: string; label: string } | null>(null);
@@ -923,7 +924,14 @@ export default function AdminDashboard() {
   if (!isAdmin) return null;
 
   const filteredUsers = users.filter(u => {
-    if (searchQuery && !(u.phone?.includes(searchQuery) || u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || u.easypay_uid?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
+      if (userSearchScope === "uid") {
+        if (!u.easypay_uid?.toLowerCase().includes(q)) return false;
+      } else if (!(u.phone?.includes(searchQuery) || u.name?.toLowerCase().includes(q) || u.easypay_uid?.toLowerCase().includes(q))) {
+        return false;
+      }
+    }
     if (!metricFilter) return true;
     const k = metricFilter.key;
     if (k === "active") return (u.status || "active") === "active";
@@ -1395,11 +1403,41 @@ export default function AdminDashboard() {
             {/* Users sub-tab */}
             {userSubTab === "users" && (
               <Card className="border-0 shadow-[var(--shadow-card)]">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 flex-wrap">
                   <CardTitle className="text-base">All Users</CardTitle>
-                  <div className="md:hidden relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input placeholder="Search…" className="pl-10 w-48" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                  <div className="flex items-center gap-2 flex-1 sm:flex-none sm:ml-auto">
+                    <select
+                      value={userSearchScope}
+                      onChange={(e) => setUserSearchScope(e.target.value as "all" | "uid")}
+                      className="h-9 rounded-md border border-input bg-background px-2 text-xs"
+                      aria-label="Search scope"
+                    >
+                      <option value="all">All fields</option>
+                      <option value="uid">EP UID only</option>
+                    </select>
+                    <div className="relative flex-1 sm:w-48">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder={userSearchScope === "uid" ? "EP00000001…" : "Search…"}
+                        className="pl-10 w-full"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && userSearchScope === "uid" && searchQuery.trim()) {
+                            navigate(`/admin/users/${encodeURIComponent(searchQuery.trim().toUpperCase())}`);
+                          }
+                        }}
+                      />
+                    </div>
+                    {userSearchScope === "uid" && searchQuery.trim() && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => navigate(`/admin/users/${encodeURIComponent(searchQuery.trim().toUpperCase())}`)}
+                      >
+                        Open
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
 
@@ -1456,7 +1494,7 @@ export default function AdminDashboard() {
                                 />
                               </td>
                               <td className="px-4 py-3 font-medium text-foreground">{user.name || "—"}</td>
-                              <td className="px-4 py-3"><code className="text-xs font-mono px-2 py-0.5 rounded bg-muted text-foreground">{user.easypay_uid || "—"}</code></td>
+                              <td className="px-4 py-3">{user.easypay_uid ? (<button onClick={() => navigate(`/admin/users/${user.easypay_uid}`)} className="text-xs font-mono px-2 py-0.5 rounded bg-muted hover:bg-primary/10 hover:text-primary text-foreground transition" title="Open admin profile">{user.easypay_uid}</button>) : <code className="text-xs font-mono px-2 py-0.5 rounded bg-muted text-foreground">—</code>}</td>
                               <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>
                               <td className="px-4 py-3 font-semibold text-foreground">৳{parseFloat(user.balance).toLocaleString()}</td>
                               <td className="px-4 py-3">
@@ -1577,7 +1615,7 @@ export default function AdminDashboard() {
                                 </div>
                               </div>
                               <p className="text-xs text-muted-foreground">{user.phone}</p>
-                              <p className="text-[10px] font-mono text-muted-foreground mt-0.5">UID: {user.easypay_uid || "—"}</p>
+                              <p className="text-[10px] font-mono text-muted-foreground mt-0.5">UID: {user.easypay_uid ? (<button onClick={() => navigate(`/admin/users/${user.easypay_uid}`)} className="underline hover:text-primary">{user.easypay_uid}</button>) : "—"}</p>
                               <p className="text-sm font-semibold text-foreground mt-1">৳{parseFloat(user.balance).toLocaleString()}</p>
                             </div>
                           </div>
