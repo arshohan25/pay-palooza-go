@@ -206,8 +206,9 @@ export default function AdminUserActivityPanel({ userId }: Props) {
                   animate={{ opacity: 1, y: 0 }}
                   className="p-3 hover:bg-muted/40 transition"
                 >
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => {
                       if (r.easypay_uid) {
                         navigate(`/admin/users/${r.easypay_uid}`);
@@ -258,7 +259,7 @@ export default function AdminUserActivityPanel({ userId }: Props) {
                       data-track="off"
                     >
                       {isOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                    </button>
+                  </div>
                   </button>
                   {isOpen && (
                     <div className="mt-2 ml-12 text-[11px] rounded-lg bg-muted/60 p-2 overflow-x-auto">
