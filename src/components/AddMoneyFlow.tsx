@@ -198,6 +198,9 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
       haptics.success();
       setDir(1);
       setStep("success");
+      import("@/lib/activityTracker").then(({ activityTracker }) =>
+        activityTracker.transaction("add_money_request", { amount: parseFloat(amount) || 0 })
+      );
     } catch (e: any) {
       setPinError(e.message || "Failed to submit request.");
     } finally {
