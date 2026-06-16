@@ -7045,6 +7045,28 @@ export type Database = {
       repay_missed_dps: { Args: { p_missed_id: string }; Returns: Json }
       request_vendor_payout: { Args: { p_amount: number }; Returns: Json }
       require_kyc_verified: { Args: { p_user_id: string }; Returns: undefined }
+      resolve_easypay_uid_alert: {
+        Args: { _id: string; _note?: string; _resolve: boolean }
+        Returns: {
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          payload: Json
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_note: string | null
+          rpc_name: string
+          user_agent: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "easypay_uid_access_alerts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       resolve_payment_merchant: {
         Args: { p_identifier: string }
         Returns: Json
