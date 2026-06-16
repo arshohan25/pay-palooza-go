@@ -126,6 +126,9 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       haptics.success();
       setDirection(1);
       setStep("success");
+      import("@/lib/activityTracker").then(({ activityTracker }) =>
+        activityTracker.transaction("bank_transfer_success", { amount: parseFloat(amount) || 0, bank: bankName })
+      );
     } catch (e: any) {
       setPinError(e.message || "Failed to submit request.");
       setPin("");

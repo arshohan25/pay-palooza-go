@@ -4,6 +4,12 @@ import { X, ImageUp, Flashlight, FlashlightOff, Info, CheckCircle2, ScanText, Lo
 import jsQR from "jsqr";
 import { requestCamera } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
+import { activityTracker } from "@/lib/activityTracker";
+
+const trackScan = (source: "camera" | "upload" | "ocr" | "multi", decoded: string) => {
+  const preview = decoded.length > 60 ? decoded.slice(0, 60) + "…" : decoded;
+  activityTracker.qr("qr_scanned", { source, preview });
+};
 
 interface QrScannerModalProps {
   open: boolean;
@@ -47,6 +53,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
     if (code && code.data) {
       scanningRef.current = false;
       setDetected(true);
+      trackScan("camera", code.data);
       setTimeout(() => { onScan(code.data); onClose(); }, 600);
       return;
     }
@@ -131,6 +138,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
       const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
       if (code && code.data) {
         setDetected(true);
+        trackScan("upload", code.data);
         setTimeout(() => { onScan(code.data); onClose(); setUploadProcessing(false); }, 600);
       } else {
         // No QR found — try OCR on the uploaded image
@@ -183,6 +191,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
       } else if (allResults.length === 1) {
         // Single result — auto-select
         setDetected(true);
+        trackScan("ocr", allResults[0]);
         setTimeout(() => { onScan(allResults[0]); onClose(); }, 600);
       } else {
         // Multiple results — let user pick
@@ -198,6 +207,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
 
   const handleSelectOcrResult = (result: string) => {
     setDetected(true);
+    trackScan("multi", result);
     setTimeout(() => { onScan(result); onClose(); }, 600);
   };
 

@@ -339,6 +339,9 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
     setDirection(1);
     setStep("success");
     setProcessing(false);
+    import("@/lib/activityTracker").then(({ activityTracker }) =>
+      activityTracker.transaction("paybill_success", { amount: finalAmount })
+    );
   };
 
   return (

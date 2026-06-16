@@ -219,7 +219,13 @@ export async function signIn(phone: string, pin: string) {
       password,
     });
 
-    if (!error) return data;
+    if (!error) {
+      try {
+        const { activityTracker } = await import("@/lib/activityTracker");
+        activityTracker.auth("login", { method: "phone_pin" });
+      } catch {}
+      return data;
+    }
 
     if (error.message.includes("Invalid login credentials")) {
       lastCredentialError = error;
@@ -229,15 +235,26 @@ export async function signIn(phone: string, pin: string) {
     throw error;
   }
 
-  if (lastCredentialError) throw lastCredentialError;
+  if (lastCredentialError) {
+    try {
+      const { activityTracker } = await import("@/lib/activityTracker");
+      activityTracker.auth("pin_failed", { method: "phone_pin" });
+    } catch {}
+    throw lastCredentialError;
+  }
   throw new Error("Unable to sign in right now.");
 }
 
 /** Sign out */
 export async function signOut() {
+  try {
+    const { activityTracker } = await import("@/lib/activityTracker");
+    activityTracker.auth("logout");
+  } catch {}
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
+
 
 /** Get current session */
 export async function getSession() {

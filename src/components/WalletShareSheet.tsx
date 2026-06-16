@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "@/hooks/use-toast";
+import { activityTracker } from "@/lib/activityTracker";
 
 interface WalletShareSheetProps {
   open: boolean;
@@ -26,6 +27,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
     if (!open || !canvasRef.current) return;
     const payload = JSON.stringify({ walletId, name: userName, app: "EasyPay" });
     renderQrWithLogo(canvasRef.current, payload, 220).catch(console.error);
+    activityTracker.qr("qr_opened", { kind: "wallet_share", walletId });
   }, [open, userId, userName]);
 
   const handleCopy = async () => {
@@ -39,6 +41,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 2200);
+    activityTracker.qr("qr_shared", { channel: "copy", walletId });
   };
 
   const handleShare = async () => {
@@ -47,6 +50,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
     try {
       if (navigator.share) {
         await navigator.share({ title: "My EasyPay Wallet", text });
+        activityTracker.qr("qr_shared", { channel: "system_share", walletId });
         return;
       }
     } catch { /* share failed or blocked in iframe */ }
@@ -67,6 +71,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
       link.download = `easypay-qr-${walletId}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
+      activityTracker.qr("qr_shared", { channel: "download", walletId });
     } catch (e) { console.error(e); }
     finally { setDownloading(false); }
   };
