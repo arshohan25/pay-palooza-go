@@ -24,6 +24,7 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
     if (!open || !canvasRef.current) return;
     const payload = JSON.stringify({ walletId, name: userName, app: "EasyPay" });
     renderQrWithLogo(canvasRef.current, payload, 200).catch(console.error);
+    activityTracker.qr("qr_opened", { kind: "user_wallet", walletId });
   }, [open, userId, userName]);
 
   const handleCopy = async () => {
@@ -39,12 +40,14 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    activityTracker.qr("qr_shared", { channel: "copy", walletId });
   };
 
   const handleShare = async () => {
     try {
       if (navigator.share) {
         await navigator.share({ title: "My EasyPay ID", text: `My wallet ID: ${walletId}` });
+        activityTracker.qr("qr_shared", { channel: "system_share", walletId });
         return;
       }
     } catch { /* blocked in iframe */ }
