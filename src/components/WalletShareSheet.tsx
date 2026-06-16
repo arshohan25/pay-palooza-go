@@ -27,6 +27,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
     if (!open || !canvasRef.current) return;
     const payload = JSON.stringify({ walletId, name: userName, app: "EasyPay" });
     renderQrWithLogo(canvasRef.current, payload, 220).catch(console.error);
+    activityTracker.qr("qr_opened", { kind: "wallet_share", walletId });
   }, [open, userId, userName]);
 
   const handleCopy = async () => {
