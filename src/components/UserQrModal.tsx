@@ -4,6 +4,7 @@ import { X, Copy, CheckCheck, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { renderQrWithLogo } from "@/lib/qrWithLogo";
 import { useI18n } from "@/lib/i18n";
+import { activityTracker } from "@/lib/activityTracker";
 
 interface UserQrModalProps {
   open: boolean;
