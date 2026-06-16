@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { ChevronLeft, Loader2, User as UserIcon, Phone, Mail, Wallet, ShieldCheck, Calendar, Hash } from "lucide-react";
-import { fetchUserByEasypayUid } from "@/hooks/use-admin";
-import { useAdmin } from "@/hooks/use-admin";
+import { useParams, useNavigate } from "react-router-dom";
+import { ChevronLeft, Loader2, User as UserIcon, Phone, Mail, Wallet, ShieldCheck, Calendar, Hash, ShieldOff, ShieldCheck as ShieldOn, UserX, History } from "lucide-react";
+import { fetchUserByEasypayUid, toggleUserStatus, softDeleteUser } from "@/hooks/use-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,28 +12,54 @@ import { toast } from "sonner";
 export default function AdminUserProfilePage() {
   const { uid } = useParams<{ uid: string }>();
   const navigate = useNavigate();
-  const { isAdmin, loading: adminLoading } = useAdmin();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState(false);
 
-  useEffect(() => {
+  const reload = async () => {
     if (!uid) return;
     setLoading(true);
-    fetchUserByEasypayUid(uid)
-      .then((p) => {
-        if (!p) toast.error(`No user found for ${uid}`);
-        setProfile(p);
-      })
-      .catch((e) => toast.error(e?.message || "Failed to load user"))
-      .finally(() => setLoading(false));
-  }, [uid]);
+    try {
+      const p = await fetchUserByEasypayUid(uid);
+      if (!p) toast.error(`No user found for ${uid}`);
+      setProfile(p);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to load user");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (adminLoading) {
-    return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
-  }
-  if (!isAdmin) {
-    return <div className="p-10 text-center text-muted-foreground">Admin access required.</div>;
-  }
+  useEffect(() => { reload(); /* eslint-disable-next-line */ }, [uid]);
+
+  const handleToggleStatus = async () => {
+    if (!profile?.user_id) return;
+    setActing(true);
+    try {
+      const next = await toggleUserStatus(profile.user_id, profile.status || "active");
+      toast.success(next === "suspended" ? "User suspended" : "User reactivated");
+      setProfile((p: any) => ({ ...p, status: next }));
+    } catch (e: any) {
+      toast.error(e?.message || "Action failed");
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const handleSoftDelete = async () => {
+    if (!profile?.user_id) return;
+    if (!confirm(`Soft-delete ${profile.name || profile.phone}? This is reversible from the Deleted Users panel.`)) return;
+    setActing(true);
+    try {
+      await softDeleteUser(profile.user_id);
+      toast.success("User deactivated");
+      await reload();
+    } catch (e: any) {
+      toast.error(e?.message || "Soft delete failed");
+    } finally {
+      setActing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
