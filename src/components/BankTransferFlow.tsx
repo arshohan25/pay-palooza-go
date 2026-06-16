@@ -151,7 +151,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       aria-labelledby="bank-transfer-title">
 
       {step !== "success" && (
-        <motion.div className="gradient-primary px-4 pt-3 pb-3 text-primary-foreground"
+        <motion.div className="gradient-send px-4 pt-3 pb-3 text-primary-foreground"
           initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
           <div className="flex items-center gap-3 mb-2">
             <button
