@@ -252,6 +252,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "bulk_actions", label: "Bulk Actions", icon: ClipboardCheck },
       { id: "team", label: "Team", icon: Users },
       { id: "team_activity", label: "Team Activity", icon: Activity },
+      { id: "user_activity", label: "User Activity", icon: Activity },
     ],
   },
   {
