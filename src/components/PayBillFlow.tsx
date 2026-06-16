@@ -498,12 +498,14 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                   )}
                 </div>
 
-                <Button
-                  className="w-full h-11 gradient-primary border-0 text-white font-semibold"
-                  onClick={handleAccountContinue}
-                >
-                  {t("fetchBill")}
-                </Button>
+                {accountNo.trim() && (
+                  <Button
+                    className="w-full h-11 gradient-primary border-0 text-white font-semibold animate-fade-in"
+                    onClick={handleAccountContinue}
+                  >
+                    {t("fetchBill")}
+                  </Button>
+                )}
               </div>
             )}
 
