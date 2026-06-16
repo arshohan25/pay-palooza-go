@@ -111,6 +111,17 @@ export async function fetchUserByEasypayUid(uid: string) {
   const { data, error } = await supabase.rpc("admin_get_user_by_easypay_uid" as any, { _uid: uid });
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
+  // Audit also recorded server-side inside the RPC; mirror client-side for completeness
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id,
+      action: "lookup_by_easypay_uid",
+      entity_type: "user",
+      entity_id: row?.user_id ?? null,
+      details: { requested_uid: uid, found: !!row },
+    }).then();
+  }
   return row || null;
 }
 
