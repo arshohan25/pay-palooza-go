@@ -365,7 +365,7 @@ const PayPage = () => {
       haptics.success();
       playPaymentSuccess();
       import("@/lib/activityTracker").then(({ activityTracker }) =>
-        activityTracker.transaction("send_money_success", { amount: parseFloat(amount) || 0, txn_id: result.txn_id })
+        activityTracker.transaction("send_money_success", { amount: amountParam, txn_id: result.txn_id })
       );
     } catch (err: any) {
       setErrorMsg(err.message || "Payment failed");
