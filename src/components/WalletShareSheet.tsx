@@ -41,6 +41,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 2200);
+    activityTracker.qr("qr_shared", { channel: "copy", walletId });
   };
 
   const handleShare = async () => {
@@ -49,6 +50,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
     try {
       if (navigator.share) {
         await navigator.share({ title: "My EasyPay Wallet", text });
+        activityTracker.qr("qr_shared", { channel: "system_share", walletId });
         return;
       }
     } catch { /* share failed or blocked in iframe */ }
