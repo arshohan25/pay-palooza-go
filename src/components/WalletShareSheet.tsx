@@ -71,6 +71,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
       link.download = `easypay-qr-${walletId}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
+      activityTracker.qr("qr_shared", { channel: "download", walletId });
     } catch (e) { console.error(e); }
     finally { setDownloading(false); }
   };
