@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "@/hooks/use-toast";
+import { activityTracker } from "@/lib/activityTracker";
 
 interface WalletShareSheetProps {
   open: boolean;
