@@ -1922,6 +1922,39 @@ export type Database = {
           },
         ]
       }
+      easypay_uid_access_alerts: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          payload: Json
+          rpc_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          payload?: Json
+          rpc_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          payload?: Json
+          rpc_name?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       feature_locks: {
         Row: {
           created_at: string
@@ -6892,6 +6925,10 @@ export type Database = {
           p_triggered_by: string
         }
         Returns: string
+      }
+      log_easypay_uid_access_attempt: {
+        Args: { _payload: Json; _rpc: string }
+        Returns: undefined
       }
       log_user_activity: { Args: { _events: Json }; Returns: number }
       lookup_easypay_user_by_phone: {
