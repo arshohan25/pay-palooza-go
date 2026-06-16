@@ -496,9 +496,14 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                       <AlertCircle size={12} /> {error}
                     </p>
                   )}
+                  {!error && accountNo.trim().length > 0 && accountNo.trim().length < 4 && (
+                    <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in">
+                      <AlertCircle size={12} /> {billType.accountLabel} must be at least 4 digits.
+                    </p>
+                  )}
                 </div>
 
-                {accountNo.trim() && (
+                {provider && accountNo.trim().length >= 4 && (
                   <Button
                     className="w-full h-11 gradient-primary border-0 text-white font-semibold animate-fade-in"
                     onClick={handleAccountContinue}

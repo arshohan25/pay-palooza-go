@@ -282,6 +282,9 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input type="text" placeholder="e.g. 1234567890123" value={accountNumber} onChange={e => { setAccountNumber(e.target.value); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
                     </div>
+                    {accountNumber.trim().length > 0 && accountNumber.trim().length < 8 && (
+                      <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> Account number must be at least 8 digits.</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-foreground">{t("accountHolderName")}</label>
@@ -289,9 +292,12 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input type="text" placeholder="e.g. Mohammad Ali" value={accountHolder} onChange={e => { setAccountHolder(e.target.value); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
                     </div>
+                    {accountHolder.trim().length > 0 && accountHolder.trim().length < 2 && (
+                      <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> Enter the account holder's name.</p>
+                    )}
                   </div>
                   {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
-                  {accountNumber.trim() && accountHolder.trim() && (
+                  {bankName && accountNumber.trim().length >= 8 && accountHolder.trim().length >= 2 && (
                     <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold animate-fade-in" onClick={handleBankContinue}>{t("continue")}</Button>
                   )}
                 </div>
