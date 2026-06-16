@@ -280,7 +280,7 @@ export default function AdminEasypayUidAlertsPanel() {
                           variant={isResolved ? "outline" : "default"}
                           className="shrink-0 h-7 gap-1 rounded-full text-[11px] px-2.5"
                           disabled={busyId === r.id}
-                          onClick={(e) => toggleResolved(r, e)}
+                          onClick={(e) => (r.resolved_at ? performResolve(r, false, null) : openResolve(r, e))}
                         >
                           {isResolved ? (
                             <><Undo2 className="h-3 w-3" /> Reopen</>
@@ -296,6 +296,13 @@ export default function AdminEasypayUidAlertsPanel() {
               {!loading && filtered.length === 0 && (
                 <div className="p-10 text-center text-sm text-muted-foreground">
                   {rows.length === 0 ? "No unauthorized attempts logged." : "No alerts match your filters."}
+                </div>
+              )}
+              {!loading && hasMore && (
+                <div className="p-3 flex justify-center">
+                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => setLimit((l) => l + 200)}>
+                    Load more
+                  </Button>
                 </div>
               )}
             </div>
@@ -370,7 +377,7 @@ export default function AdminEasypayUidAlertsPanel() {
                     variant={selected.resolved_at ? "outline" : "default"}
                     className="gap-1.5 rounded-full"
                     disabled={busyId === selected.id}
-                    onClick={() => toggleResolved(selected)}
+                    onClick={() => selected.resolved_at ? performResolve(selected, false, null) : openResolve(selected)}
                   >
                     {selected.resolved_at ? (
                       <><Undo2 className="h-3.5 w-3.5" /> Reopen alert</>
