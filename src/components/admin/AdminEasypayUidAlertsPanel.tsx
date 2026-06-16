@@ -189,7 +189,7 @@ export default function AdminEasypayUidAlertsPanel() {
                 <Radio className={`h-3.5 w-3.5 ${live ? "animate-pulse" : ""}`} />
                 {live ? "Live" : "Paused"}
               </Button>
-              <Button size="icon" variant="outline" onClick={load} className="rounded-full">
+              <Button size="icon" variant="outline" onClick={() => load(limit)} className="rounded-full">
                 <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
             </div>
