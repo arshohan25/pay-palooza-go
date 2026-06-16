@@ -191,6 +191,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
       } else if (allResults.length === 1) {
         // Single result — auto-select
         setDetected(true);
+        trackScan("ocr", allResults[0]);
         setTimeout(() => { onScan(allResults[0]); onClose(); }, 600);
       } else {
         // Multiple results — let user pick
