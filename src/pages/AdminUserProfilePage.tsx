@@ -121,6 +121,37 @@ export default function AdminUserProfilePage() {
                 <Info icon={ShieldCheck} label="EasyPay UID" value={profile.easypay_uid} mono />
               </div>
             )}
+            {profile && (
+              <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
+                <Button
+                  size="sm"
+                  variant={profile.status === "suspended" ? "default" : "destructive"}
+                  disabled={acting}
+                  onClick={handleToggleStatus}
+                  className="gap-1.5 rounded-full"
+                >
+                  {profile.status === "suspended" ? <ShieldOn className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
+                  {profile.status === "suspended" ? "Reactivate" : "Suspend"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate(`/admin#transactions`)}
+                  className="gap-1.5 rounded-full"
+                >
+                  <History className="w-4 h-4" /> View transactions
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={acting}
+                  onClick={handleSoftDelete}
+                  className="gap-1.5 rounded-full text-rose-600 hover:text-rose-700 ml-auto"
+                >
+                  <UserX className="w-4 h-4" /> Soft delete
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
