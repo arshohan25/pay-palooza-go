@@ -138,6 +138,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
       const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
       if (code && code.data) {
         setDetected(true);
+        trackScan("upload", code.data);
         setTimeout(() => { onScan(code.data); onClose(); setUploadProcessing(false); }, 600);
       } else {
         // No QR found — try OCR on the uploaded image
