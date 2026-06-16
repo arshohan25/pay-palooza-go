@@ -6035,6 +6035,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_logs: {
+        Row: {
+          created_at: string
+          device_fingerprint: string | null
+          event_name: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json
+          route: string | null
+          session_id: string | null
+          target: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint?: string | null
+          event_name: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          route?: string | null
+          session_id?: string | null
+          target?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string | null
+          event_name?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          route?: string | null
+          session_id?: string | null
+          target?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_feature_overrides: {
         Row: {
           created_at: string
@@ -6820,6 +6865,7 @@ export type Database = {
         }
         Returns: string
       }
+      log_user_activity: { Args: { _events: Json }; Returns: number }
       lookup_easypay_user_by_phone: {
         Args: { p_phone: string }
         Returns: {

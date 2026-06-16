@@ -61,6 +61,7 @@ import AdminPermissions from "@/components/admin/AdminPermissions";
 import AdminTreasury from "@/components/admin/AdminTreasury";
 import AdminWebhookLog from "@/components/admin/AdminWebhookLog";
 import AdminActivityFeed from "@/components/admin/AdminActivityFeed";
+import AdminUserActivityPanel from "@/components/admin/AdminUserActivityPanel";
 import AdminApiHub from "@/components/admin/AdminApiHub";
 import AdminBillerConfig from "@/components/admin/AdminBillerConfig";
 import AdminAuditLogViewer from "@/components/admin/AdminAuditLogViewer";
@@ -252,6 +253,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "bulk_actions", label: "Bulk Actions", icon: ClipboardCheck },
       { id: "team", label: "Team", icon: Users },
       { id: "team_activity", label: "Team Activity", icon: Activity },
+      { id: "user_activity", label: "User Activity", icon: Activity },
     ],
   },
   {
@@ -1844,6 +1846,9 @@ export default function AdminDashboard() {
 
         {/* ═══ TRANSACTION MONITORING ═══ */}
         {activeTab === "transactions" && <AdminActivityMonitor />}
+
+        {/* ═══ USER ACTIVITY (taps / screens / qr / txn / auth) ═══ */}
+        {activeTab === "user_activity" && <AdminUserActivityPanel />}
 
         {/* ═══ CHARGEBACK HISTORY ═══ */}
         {activeTab === "chargebacks" && <AdminChargebackHistory />}
