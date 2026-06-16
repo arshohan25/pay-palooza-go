@@ -1494,7 +1494,7 @@ export default function AdminDashboard() {
                                 />
                               </td>
                               <td className="px-4 py-3 font-medium text-foreground">{user.name || "—"}</td>
-                              <td className="px-4 py-3"><code className="text-xs font-mono px-2 py-0.5 rounded bg-muted text-foreground">{user.easypay_uid || "—"}</code></td>
+                              <td className="px-4 py-3">{user.easypay_uid ? (<button onClick={() => navigate(`/admin/users/${user.easypay_uid}`)} className="text-xs font-mono px-2 py-0.5 rounded bg-muted hover:bg-primary/10 hover:text-primary text-foreground transition" title="Open admin profile">{user.easypay_uid}</button>) : <code className="text-xs font-mono px-2 py-0.5 rounded bg-muted text-foreground">—</code>}</td>
                               <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>
                               <td className="px-4 py-3 font-semibold text-foreground">৳{parseFloat(user.balance).toLocaleString()}</td>
                               <td className="px-4 py-3">
@@ -1615,7 +1615,7 @@ export default function AdminDashboard() {
                                 </div>
                               </div>
                               <p className="text-xs text-muted-foreground">{user.phone}</p>
-                              <p className="text-[10px] font-mono text-muted-foreground mt-0.5">UID: {user.easypay_uid || "—"}</p>
+                              <p className="text-[10px] font-mono text-muted-foreground mt-0.5">UID: {user.easypay_uid ? (<button onClick={() => navigate(`/admin/users/${user.easypay_uid}`)} className="underline hover:text-primary">{user.easypay_uid}</button>) : "—"}</p>
                               <p className="text-sm font-semibold text-foreground mt-1">৳{parseFloat(user.balance).toLocaleString()}</p>
                             </div>
                           </div>
