@@ -149,7 +149,7 @@ const AgentBankTransfer = () => {
       <motion.header
         initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="gradient-hero px-4 pt-3 pb-3 sticky top-0 z-30"
+        className="gradient-send px-4 pt-3 pb-3 sticky top-0 z-30"
       >
         <div className="max-w-xl mx-auto flex items-center gap-3">
           <button onClick={() => step === "select" ? navigate("/agent") : reset()} className="tap-target text-primary-foreground/80 hover:text-primary-foreground">
