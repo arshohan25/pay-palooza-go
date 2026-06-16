@@ -131,18 +131,18 @@ input[type="number"] {
     --input: 222 18% 18%;
     --ring: 152 73% 45%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
-    --gradient-hero: linear-gradient(150deg, hsl(var(--shariah-green-600)) 0%, hsl(var(--shariah-green-800)) 60%, hsl(var(--shariah-green-900)) 100%);
-    --gradient-send: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
-    --gradient-cashout: linear-gradient(135deg, hsl(var(--shariah-green-800)), hsl(var(--shariah-green-900)));
-    --gradient-payment: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-gold-700)));
-    --gradient-addmoney: linear-gradient(135deg, hsl(var(--shariah-green-300)), hsl(var(--shariah-green-600)));
+    --gradient-primary: linear-gradient(135deg, hsl(152 65% 28%) 0%, hsl(160 70% 18%) 100%);
+    --gradient-hero: radial-gradient(120% 140% at 0% 0%, hsl(152 70% 32% / 0.95) 0%, hsl(160 72% 18%) 45%, hsl(170 80% 10%) 100%);
+    --gradient-send: linear-gradient(135deg, hsl(152 65% 30%), hsl(160 72% 18%));
+    --gradient-cashout: linear-gradient(135deg, hsl(160 72% 18%), hsl(170 80% 10%));
+    --gradient-payment: linear-gradient(135deg, hsl(152 60% 28%), hsl(36 70% 38%));
+    --gradient-addmoney: linear-gradient(135deg, hsl(152 60% 40%), hsl(160 70% 22%));
     --gradient-accent: linear-gradient(135deg, hsl(var(--shariah-gold-500)), hsl(var(--shariah-gold-700)));
-    --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.18), 0 1px 3px hsl(0 0% 0% / 0.12);
-    --shadow-elevated: 0 8px 32px -6px hsl(0 0% 0% / 0.28), 0 2px 8px hsl(0 0% 0% / 0.12);
-    --shadow-float: 0 16px 48px -12px hsl(0 0% 0% / 0.36), 0 4px 16px hsl(0 0% 0% / 0.16);
-    --shadow-glow: 0 0 0 1px hsl(152 73% 45% / 0.12), 0 4px 24px -4px hsl(152 73% 45% / 0.32);
-    --shadow-glow-lg: 0 0 0 1px hsl(152 73% 45% / 0.15), 0 8px 40px -8px hsl(152 73% 45% / 0.40);
+    --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.40), 0 1px 3px hsl(0 0% 0% / 0.30);
+    --shadow-elevated: 0 8px 32px -6px hsl(0 0% 0% / 0.55), 0 2px 8px hsl(0 0% 0% / 0.30);
+    --shadow-float: 0 16px 48px -12px hsl(0 0% 0% / 0.65), 0 4px 16px hsl(0 0% 0% / 0.35);
+    --shadow-glow: 0 0 0 1px hsl(152 73% 55% / 0.18), 0 4px 28px -4px hsl(152 80% 40% / 0.45);
+    --shadow-glow-lg: 0 0 0 1px hsl(152 73% 55% / 0.22), 0 12px 50px -10px hsl(152 85% 45% / 0.55);
 
     --sidebar-background: 222 22% 9%;
     --sidebar-foreground: 210 18% 78%;
