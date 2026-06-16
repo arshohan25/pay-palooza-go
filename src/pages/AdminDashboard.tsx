@@ -62,6 +62,7 @@ import AdminTreasury from "@/components/admin/AdminTreasury";
 import AdminWebhookLog from "@/components/admin/AdminWebhookLog";
 import AdminActivityFeed from "@/components/admin/AdminActivityFeed";
 import AdminUserActivityPanel from "@/components/admin/AdminUserActivityPanel";
+import AdminEasypayUidAlertsPanel from "@/components/admin/AdminEasypayUidAlertsPanel";
 import AdminApiHub from "@/components/admin/AdminApiHub";
 import AdminBillerConfig from "@/components/admin/AdminBillerConfig";
 import AdminAuditLogViewer from "@/components/admin/AdminAuditLogViewer";
@@ -1889,7 +1890,12 @@ export default function AdminDashboard() {
         {activeTab === "transactions" && <AdminActivityMonitor />}
 
         {/* ═══ USER ACTIVITY (taps / screens / qr / txn / auth) ═══ */}
-        {activeTab === "user_activity" && <AdminUserActivityPanel />}
+        {activeTab === "user_activity" && (
+          <div className="space-y-4">
+            <AdminEasypayUidAlertsPanel />
+            <AdminUserActivityPanel />
+          </div>
+        )}
 
         {/* ═══ CHARGEBACK HISTORY ═══ */}
         {activeTab === "chargebacks" && <AdminChargebackHistory />}
