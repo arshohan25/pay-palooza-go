@@ -1403,11 +1403,41 @@ export default function AdminDashboard() {
             {/* Users sub-tab */}
             {userSubTab === "users" && (
               <Card className="border-0 shadow-[var(--shadow-card)]">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 flex-wrap">
                   <CardTitle className="text-base">All Users</CardTitle>
-                  <div className="md:hidden relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input placeholder="Search…" className="pl-10 w-48" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                  <div className="flex items-center gap-2 flex-1 sm:flex-none sm:ml-auto">
+                    <select
+                      value={userSearchScope}
+                      onChange={(e) => setUserSearchScope(e.target.value as "all" | "uid")}
+                      className="h-9 rounded-md border border-input bg-background px-2 text-xs"
+                      aria-label="Search scope"
+                    >
+                      <option value="all">All fields</option>
+                      <option value="uid">EP UID only</option>
+                    </select>
+                    <div className="relative flex-1 sm:w-48">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder={userSearchScope === "uid" ? "EP00000001…" : "Search…"}
+                        className="pl-10 w-full"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && userSearchScope === "uid" && searchQuery.trim()) {
+                            navigate(`/admin/users/${encodeURIComponent(searchQuery.trim().toUpperCase())}`);
+                          }
+                        }}
+                      />
+                    </div>
+                    {userSearchScope === "uid" && searchQuery.trim() && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => navigate(`/admin/users/${encodeURIComponent(searchQuery.trim().toUpperCase())}`)}
+                      >
+                        Open
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
 
