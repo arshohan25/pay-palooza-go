@@ -451,6 +451,9 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     showTxnToast({ type: "Payment", amount: `৳${effectiveAmtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-payment" });
     setDirection(1);
     setStep("success");
+    import("@/lib/activityTracker").then(({ activityTracker }) =>
+      activityTracker.transaction("payment_success", { amount: effectiveAmtVal, txn_id: txnId.current })
+    );
   };
 
   const amtNum = parseFloat(amount) || 0;
