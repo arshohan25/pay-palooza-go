@@ -53,6 +53,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
     if (code && code.data) {
       scanningRef.current = false;
       setDetected(true);
+      trackScan("camera", code.data);
       setTimeout(() => { onScan(code.data); onClose(); }, 600);
       return;
     }
