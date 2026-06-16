@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Loader2, User as UserIcon, Phone, Mail, Wallet, ShieldCheck, Calendar, Hash, ShieldOff, ShieldCheck as ShieldOn, UserX, History } from "lucide-react";
+import { ChevronLeft, Loader2, User as UserIcon, Phone, Mail, Wallet, ShieldCheck, Calendar, Hash, ShieldOff, UserX, History } from "lucide-react";
 import { fetchUserByEasypayUid, toggleUserStatus, softDeleteUser } from "@/hooks/use-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -130,7 +130,7 @@ export default function AdminUserProfilePage() {
                   onClick={handleToggleStatus}
                   className="gap-1.5 rounded-full"
                 >
-                  {profile.status === "suspended" ? <ShieldOn className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
+                  {profile.status === "suspended" ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
                   {profile.status === "suspended" ? "Reactivate" : "Suspend"}
                 </Button>
                 <Button
