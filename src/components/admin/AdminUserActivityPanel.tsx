@@ -141,6 +141,17 @@ export default function AdminUserActivityPanel({ userId }: Props) {
             data-track="off"
           />
         </div>
+        {!userId && (
+          <div className="relative w-[170px]">
+            <Input
+              placeholder="EP UID…"
+              value={uidFilter}
+              onChange={(e) => setUidFilter(e.target.value)}
+              className="rounded-full font-mono text-xs uppercase"
+              data-track="off"
+            />
+          </div>
+        )}
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[140px] rounded-full" data-track="off">
             <Filter className="h-3.5 w-3.5 mr-1" />
@@ -220,6 +231,11 @@ export default function AdminUserActivityPanel({ userId }: Props) {
                             <UserIcon className="h-3 w-3" />
                             {phoneMap[r.user_id] || r.user_id.slice(0, 8)}
                           </span>
+                        )}
+                        {r.easypay_uid && (
+                          <code className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-foreground">
+                            {r.easypay_uid}
+                          </code>
                         )}
                         {r.route && <span className="truncate">· {r.route}</span>}
                         {r.ip_address && <span>· {r.ip_address}</span>}
