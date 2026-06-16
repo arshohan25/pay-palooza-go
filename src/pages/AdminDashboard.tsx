@@ -1435,6 +1435,7 @@ export default function AdminDashboard() {
                             />
                           </th>
                           <th className="text-left px-4 py-3 font-medium">Name</th>
+                          <th className="text-left px-4 py-3 font-medium">EasyPay UID</th>
                           <th className="text-left px-4 py-3 font-medium">Phone</th>
                           <th className="text-left px-4 py-3 font-medium">Balance</th>
                           <th className="text-left px-4 py-3 font-medium">KYC</th>
@@ -1455,6 +1456,7 @@ export default function AdminDashboard() {
                                 />
                               </td>
                               <td className="px-4 py-3 font-medium text-foreground">{user.name || "—"}</td>
+                              <td className="px-4 py-3"><code className="text-xs font-mono px-2 py-0.5 rounded bg-muted text-foreground">{user.easypay_uid || "—"}</code></td>
                               <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>
                               <td className="px-4 py-3 font-semibold text-foreground">৳{parseFloat(user.balance).toLocaleString()}</td>
                               <td className="px-4 py-3">
