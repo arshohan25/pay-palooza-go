@@ -492,12 +492,14 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <AlertCircle size={12} /> {error}
                     </p>
                   )}
-                  <Button
-                    className="w-full h-11 gradient-cashout border-0 text-white font-semibold"
-                    onClick={handleAgentIdContinue}
-                  >
-                    {t("continue")}
-                  </Button>
+                  {agentIdInput.trim() && (
+                    <Button
+                      className="w-full h-11 gradient-cashout border-0 text-white font-semibold animate-fade-in"
+                      onClick={handleAgentIdContinue}
+                    >
+                      {t("continue")}
+                    </Button>
+                  )}
                 </div>
 
                 {/* Divider */}

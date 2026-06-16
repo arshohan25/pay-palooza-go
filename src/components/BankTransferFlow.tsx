@@ -291,7 +291,9 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     </div>
                   </div>
                   {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
-                  <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={handleBankContinue}>{t("continue")}</Button>
+                  {accountNumber.trim() && accountHolder.trim() && (
+                    <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold animate-fade-in" onClick={handleBankContinue}>{t("continue")}</Button>
+                  )}
                 </div>
               )}
 

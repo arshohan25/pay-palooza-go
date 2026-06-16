@@ -548,12 +548,14 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
                   )}
-                  <Button
-                    className="w-full h-11 gradient-payment border-0 text-white font-semibold"
-                    onClick={handleMerchantIdContinue}
-                  >
-                    {t("continue")}
-                  </Button>
+                  {merchantIdInput.trim() && (
+                    <Button
+                      className="w-full h-11 gradient-payment border-0 text-white font-semibold animate-fade-in"
+                      onClick={handleMerchantIdContinue}
+                    >
+                      {t("continue")}
+                    </Button>
+                  )}
                 </div>
 
                 {/* Divider */}
