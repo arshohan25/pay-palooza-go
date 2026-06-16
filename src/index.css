@@ -85,9 +85,9 @@ input[type="number"] {
     --gradient-hero: linear-gradient(150deg, hsl(var(--shariah-green-600)) 0%, hsl(var(--shariah-green-800)) 60%, hsl(var(--shariah-green-900)) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(var(--shariah-gold-500)), hsl(var(--shariah-gold-700)));
     --gradient-send: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
-    --gradient-cashout: linear-gradient(135deg, hsl(var(--shariah-green-800)), hsl(var(--shariah-green-900)));
-    --gradient-payment: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-gold-700)));
-    --gradient-addmoney: linear-gradient(135deg, hsl(var(--shariah-green-300)), hsl(var(--shariah-green-600)));
+    --gradient-cashout: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
+    --gradient-payment: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
+    --gradient-addmoney: linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)));
     --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.15), hsl(0 0% 100% / 0.05));
 
     /* ── Shadows ── */
