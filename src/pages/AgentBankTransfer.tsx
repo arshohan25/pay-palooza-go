@@ -282,13 +282,14 @@ const AgentBankTransfer = () => {
                   ))}
                 </div>
 
-                <Button
-                  onClick={() => setStep("pin")}
-                  disabled={!amount || Number(amount) < 10}
-                  className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold"
-                >
-                  Continue
-                </Button>
+                {amount && Number(amount) >= 10 && (
+                  <Button
+                    onClick={() => setStep("pin")}
+                    className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in"
+                  >
+                    Continue
+                  </Button>
+                )}
               </Card>
             </motion.div>
           )}

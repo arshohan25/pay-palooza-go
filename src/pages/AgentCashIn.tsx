@@ -180,9 +180,11 @@ const AgentCashIn = () => {
                   </button>
                 ))}
               </div>
-              <Button onClick={() => { if (phoneValidation.triggerShake()) return; setStep("confirm"); }} disabled={!phoneValidation.isValid || !amount || Number(amount) < 10} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold">
-                Continue
-              </Button>
+              {phoneValidation.isValid && amount && Number(amount) >= 10 && (
+                <Button onClick={() => { if (phoneValidation.triggerShake()) return; setStep("confirm"); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in">
+                  Continue
+                </Button>
+              )}
             </Card>
           </motion.div>
         )}
