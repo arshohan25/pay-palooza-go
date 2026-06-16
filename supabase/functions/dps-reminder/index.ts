@@ -59,10 +59,10 @@ Deno.serve(async (req) => {
         hour12: true,
       });
 
-      const title = "🔔 DPS Installment Due Tomorrow";
+      const title = "DPS Installment Scheduled";
       const body = needsMore
         ? `Your DPS installment of ৳${Number(schedule.amount).toLocaleString()} is due tomorrow. You need ৳${Math.ceil(shortfall).toLocaleString()} more in your wallet. Please top up to avoid missing a payment.`
-        : `Your DPS installment of ৳${Number(schedule.amount).toLocaleString()} will be auto-collected tomorrow. Your wallet balance is sufficient.`;
+        : `Your DPS installment of ৳${Number(schedule.amount).toLocaleString()} will be auto-collected tomorrow. Please ensure your wallet has sufficient funds to complete the payment.`;
 
       await supabase.from("notifications").insert({
         user_id: schedule.user_id,
