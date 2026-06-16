@@ -1,13 +1,20 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNowStrict } from "date-fns";
-import { ShieldAlert, Radio, RefreshCw, User as UserIcon } from "lucide-react";
+import { ShieldAlert, Radio, RefreshCw, User as UserIcon, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface AlertRow {
   id: string;
