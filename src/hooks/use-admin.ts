@@ -159,6 +159,16 @@ export async function toggleUserStatus(userId: string, currentStatus: string) {
     .update({ status: newStatus })
     .eq("user_id", userId);
   if (error) throw error;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id,
+      action: newStatus === "suspended" ? "suspend_user" : "reactivate_user",
+      entity_type: "user",
+      entity_id: userId,
+      details: { from: currentStatus, to: newStatus },
+    }).then();
+  }
   return newStatus;
 }
 
