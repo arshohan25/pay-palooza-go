@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -15,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 interface AlertRow {
@@ -73,19 +75,26 @@ export default function AdminEasypayUidAlertsPanel() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("open");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [limit, setLimit] = useState(200);
+  const [hasMore, setHasMore] = useState(false);
+  // Resolve dialog state
+  const [resolveTarget, setResolveTarget] = useState<AlertRow | null>(null);
+  const [resolveNote, setResolveNote] = useState("");
 
-  const load = async () => {
+  const load = async (nextLimit = limit) => {
     setLoading(true);
     const { data } = await supabase
       .from("easypay_uid_access_alerts" as any)
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(200);
-    setRows((data as any) || []);
+      .limit(nextLimit + 1);
+    const arr = (data as any[]) || [];
+    setHasMore(arr.length > nextLimit);
+    setRows(arr.slice(0, nextLimit));
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(limit); /* eslint-disable-next-line */ }, [limit]);
 
   useEffect(() => {
     if (!live) return;
@@ -96,7 +105,7 @@ export default function AdminEasypayUidAlertsPanel() {
         { event: "INSERT", schema: "public", table: "easypay_uid_access_alerts" },
         (payload) => {
           const row = payload.new as AlertRow;
-          setRows((prev) => [row, ...prev].slice(0, 200));
+          setRows((prev) => [row, ...prev].slice(0, limit));
           toast.error(`Unauthorized EasyPay UID access attempt`, {
             description: `${row.rpc_name} · ${row.actor_role || "anonymous"}`,
           });
@@ -113,32 +122,32 @@ export default function AdminEasypayUidAlertsPanel() {
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [live]);
+  }, [live, limit]);
 
-  const toggleResolved = async (row: AlertRow, e?: React.MouseEvent) => {
+  const openResolve = (row: AlertRow, e?: React.MouseEvent) => {
     e?.stopPropagation();
+    setResolveTarget(row);
+    setResolveNote(row.resolved_note || "");
+  };
+
+  const performResolve = async (row: AlertRow, resolve: boolean, note: string | null) => {
     setBusyId(row.id);
-    const nowResolving = !row.resolved_at;
-    const { data: userData } = await supabase.auth.getUser();
-    const patch = nowResolving
-      ? { resolved_at: new Date().toISOString(), resolved_by: userData.user?.id ?? null }
-      : { resolved_at: null, resolved_by: null, resolved_note: null };
-    const { data, error } = await supabase
-      .from("easypay_uid_access_alerts" as any)
-      .update(patch)
-      .eq("id", row.id)
-      .select()
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("resolve_easypay_uid_alert" as any, {
+      _id: row.id,
+      _resolve: resolve,
+      _note: note,
+    });
     setBusyId(null);
     if (error) {
-      toast.error(nowResolving ? "Failed to resolve" : "Failed to reopen");
+      toast.error(resolve ? "Failed to resolve" : "Failed to reopen");
       return;
     }
-    if (data) {
-      setRows((prev) => prev.map((r) => (r.id === row.id ? (data as any) : r)));
-      setSelected((s) => (s && s.id === row.id ? (data as any) : s));
+    const updated = (Array.isArray(data) ? data[0] : data) as AlertRow | null;
+    if (updated) {
+      setRows((prev) => prev.map((r) => (r.id === row.id ? updated : r)));
+      setSelected((s) => (s && s.id === row.id ? updated : s));
     }
-    toast.success(nowResolving ? "Alert resolved" : "Alert reopened");
+    toast.success(resolve ? "Alert resolved" : "Alert reopened");
   };
 
   const filtered = useMemo(() => {
