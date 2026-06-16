@@ -391,6 +391,41 @@ export default function AdminEasypayUidAlertsPanel() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Resolve-with-note dialog */}
+      <Dialog open={!!resolveTarget} onOpenChange={(o) => { if (!o) setResolveTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              Resolve alert
+            </DialogTitle>
+            <DialogDescription>
+              Add a short note (optional) documenting your investigation. This is appended to the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={resolveNote}
+            onChange={(e) => setResolveNote(e.target.value)}
+            placeholder="e.g. False positive — internal QA testing"
+            className="min-h-[90px]"
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setResolveTarget(null)}>Cancel</Button>
+            <Button
+              disabled={busyId === resolveTarget?.id}
+              onClick={async () => {
+                if (!resolveTarget) return;
+                await performResolve(resolveTarget, true, resolveNote || null);
+                setResolveTarget(null);
+                setResolveNote("");
+              }}
+            >
+              <Check className="h-4 w-4 mr-1" /> Mark resolved
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
