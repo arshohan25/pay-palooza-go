@@ -397,7 +397,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   if (cashOutLock.locked) {
     return (
       <FeatureLockedOverlay
-        featureName="Cash Out"
+        featureName={t("flowCashOut")}
         reason={cashOutLock.reason}
         expiresAt={cashOutLock.expiresAt}
         onClose={onClose}
