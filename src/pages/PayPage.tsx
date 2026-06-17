@@ -385,7 +385,7 @@ const PayPage = () => {
         }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Payment failed");
+      if (!res.ok) throw new Error(result.error || t("ppPaymentFailedMsg"));
       setSuccessTxnId(result.txn_id || `TXN${Date.now().toString(36).toUpperCase()}`);
       setSuccessTime(new Date());
       setStep("success");
@@ -396,7 +396,7 @@ const PayPage = () => {
         activityTracker.transaction("send_money_success", { amount: amountParam, txn_id: result.txn_id })
       );
     } catch (err: any) {
-      setErrorMsg(err.message || "Payment failed");
+      setErrorMsg(err.message || t("ppPaymentFailedMsg"));
       setPin("");
       if (err.message?.toLowerCase().includes("pin")) setStep("pin");
       else { setStep("error"); }
