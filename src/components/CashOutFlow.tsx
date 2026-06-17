@@ -855,56 +855,56 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   className="w-full rounded-2xl bg-card border border-border shadow-elevated p-4 text-sm space-y-3"
                 >
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Agent</span>
+                    <span>{t("agent")}</span>
                     <span className="text-foreground font-medium">{agent?.name}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Agent ID</span>
+                    <span>{t("coAgentId")}</span>
                     <span className="text-foreground font-medium">{agent?.agentId}</span>
                   </div>
                    <div className="flex justify-between text-muted-foreground">
-                    <span>Amount</span>
+                    <span>{t("coAmount")}</span>
                     <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                   </div>
                   {couponDiscount > 0 && pendingCoupon && (
                     <CouponSummaryLine code={pendingCoupon.code} discount={couponDiscount} />
                   )}
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Fee ({FEE_LABEL})</span>
+                    <span>{t("coFee")} ({FEE_LABEL})</span>
                     <span className="text-foreground font-medium">৳{fee}</span>
                   </div>
                   {feeNum > 0 && (
                     <p className="text-[11px] text-muted-foreground text-right">
-                      ৳{parseFloat(amount).toLocaleString()} + ৳{fee} fee ({feeFromBalance >= feeNum ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                      ৳{parseFloat(amount).toLocaleString()} + ৳{fee} {t("coFee").toLowerCase()} ({feeFromBalance >= feeNum ? t("coFromBalanceShort") : feeFromBalance > 0 ? t("coBalancePlusAmountShort") : t("coFromAmountShort")})
                     </p>
                   )}
                   {feeFromAmount > 0 && (
                     <div className="flex justify-between text-muted-foreground">
-                      <span>You Received</span>
+                      <span>{t("youReceived")}</span>
                       <span className="font-semibold text-primary">৳{parseFloat(receive).toLocaleString()}</span>
                     </div>
                   )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between font-bold text-foreground">
-                      <span>Total Deducted</span>
+                      <span>{t("coTotalDeducted")}</span>
                       <span>৳{(Math.max(0, parseFloat(amount) - couponDiscount) + feeNum).toLocaleString()}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Date</span>
+                    <span>{t("coDate")}</span>
                     <span className="text-foreground font-medium">
-                      {txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                      {txnTime.current.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" })}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Time</span>
+                    <span>{t("coTime")}</span>
                     <span className="text-foreground font-medium">
-                      {txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                      {txnTime.current.toLocaleTimeString(timeLocale, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
                     </span>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="flex justify-between font-bold text-foreground">
-                    <span>Transaction ID</span>
+                    <span>{t("coTransactionId")}</span>
                     <span className="text-primary">{txnId.current}</span>
                   </div>
                 </motion.div>
