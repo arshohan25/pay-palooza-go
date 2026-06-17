@@ -125,7 +125,7 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
               className="w-full rounded-xl font-semibold text-[11px] h-7 shadow-none"
               onClick={() => onUse(coupon)}
             >
-              Redeem
+              {t("redeem")}
             </Button>
           </div>
         </div>
