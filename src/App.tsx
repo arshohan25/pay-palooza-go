@@ -56,6 +56,7 @@ const GiftCardsPage = lazy(() => import("./pages/GiftCardsPage"));
 const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
 const SavingsPage = lazy(() => import("./pages/SavingsPage"));
+const RecipientHarness = lazy(() => import("./pages/RecipientHarness"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -145,6 +146,12 @@ const App = () => (
                     <Route path="/install" element={<RoleInstallPage />} />
                     <Route path="/install/:role" element={<RoleInstallPage />} />
                     <Route path="/developers" element={<DeveloperPortal />} />
+                    {import.meta.env.DEV && (
+                      <Route
+                        path="/__test/recipient-harness"
+                        element={<RecipientHarness />}
+                      />
+                    )}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
