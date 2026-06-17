@@ -16,6 +16,7 @@ import {
  *   I18N_BN_IGNORE_PATTERNS      extra regex sources stripped pre-scan
  *   I18N_BN_WORD_PATTERN         override the "what is a word" regex
  *   I18N_BN_MIN_WORD_LEN         minimum token length to flag (default 3)
+ *   I18N_BN_DEBUG=1              print per-text trace + offender summary
  *
  * Numeric formats (IDs, prices, dates, phones, UUIDs, JWTs, URLs) and
  * user-specific tokens (#ORDER-123, TXN_…, file paths) are stripped
