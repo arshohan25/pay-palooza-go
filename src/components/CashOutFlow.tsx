@@ -936,7 +936,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       </div>
                       {ratingValue > 0 && (
                         <Textarea
-                          placeholder="How was your experience? (optional)"
+                          placeholder={t("coExperiencePlaceholder")}
                           value={ratingComment}
                           onChange={(e) => setRatingComment(e.target.value)}
                           className="text-sm resize-none h-16"
