@@ -1140,6 +1140,9 @@ const translations = {
   loanNotEligibleYet: { en: "You are not eligible yet", bn: "আপনি এখনো যোগ্য নন" },
   loanAcceptTerms: { en: "Please accept the terms", bn: "অনুগ্রহ করে শর্তাবলী মেনে নিন" },
   loanKycRequired: { en: "Please complete KYC verification to use this feature.", bn: "এই ফিচার ব্যবহারে কেওয়াইসি যাচাই সম্পন্ন করুন।" },
+  loanSeoTitle: { en: "Qard Hasan Loan – Sharia-Compliant Micro Loans | EasyPay", bn: "কারদ-হাসান ঋণ – শরিয়াহ্‌সম্মত ক্ষুদ্র ঋণ | EasyPay" },
+  loanSeoDesc: { en: "Apply for interest-free Qard Hasan micro-loans through EasyPay. Transparent flat fee, instant disbursal to your wallet.", bn: "EasyPay-এর মাধ্যমে সুদমুক্ত কারদ-হাসান ক্ষুদ্র ঋণের জন্য আবেদন করুন। স্বচ্ছ ফ্ল্যাট ফি, ওয়ালেটে তাৎক্ষণিক বিতরণ।" },
+  loanOutstanding: { en: "Outstanding", bn: "বকেয়া" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
