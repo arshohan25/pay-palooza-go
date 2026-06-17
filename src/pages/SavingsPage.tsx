@@ -433,21 +433,21 @@ function DpsTab() {
   return (
     <div className="space-y-3">
       <Button onClick={() => { setCreateOpen(true); if (eligibleGoals.length && !goalId) setGoalId(eligibleGoals[0].id); }} className="w-full h-12 rounded-[19px]">
-        <Plus className="w-4 h-4 mr-2" />New DPS Plan
+        <Plus className="w-4 h-4 mr-2" />{t("savNewDpsPlan")}
       </Button>
 
       {missed.length > 0 && (
         <div className="rounded-[19px] bg-amber-500/10 border border-amber-500/30 p-4 space-y-2">
           <div className="flex items-center gap-2 text-amber-500 text-sm font-semibold">
-            <AlertCircle className="w-4 h-4" />Missed installments ({missed.length})
+            <AlertCircle className="w-4 h-4" />{t("savMissedInstallments")} ({missed.length})
           </div>
           {missed.map(m => (
             <div key={m.id} className="flex items-center justify-between text-sm bg-card/60 rounded-[14px] p-2.5">
               <div>
                 <div className="font-medium">৳{Number(m.amount).toLocaleString()}</div>
-                <div className="text-xs text-muted-foreground">Due {new Date(m.due_date).toLocaleDateString()}</div>
+                <div className="text-xs text-muted-foreground">{t("savDue")} {new Date(m.due_date).toLocaleDateString()}</div>
               </div>
-              <Button size="sm" onClick={() => setRepayMissed(m)} className="rounded-full">Repay</Button>
+              <Button size="sm" onClick={() => setRepayMissed(m)} className="rounded-full">{t("savRepay")}</Button>
             </div>
           ))}
         </div>
@@ -456,19 +456,20 @@ function DpsTab() {
       {activePlans.length === 0 && (
         <div className="text-center py-10 text-sm text-muted-foreground">
           <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
-          No DPS plans yet.
+          {t("savNoDpsPlans")}
         </div>
       )}
 
       {activePlans.map(p => {
         const goal = goals.find(g => g.id === p.goal_id);
         const pctPlan = p.total_installments ? ((p.total_paid ?? 0) / p.total_installments) * 100 : 0;
+        const freqLabel = p.frequency === "daily" ? t("savDailyLabel") : p.frequency === "weekly" ? t("savWeeklyLabel") : t("savMonthlyLabel");
         return (
           <motion.div key={p.id} layout className="rounded-[19px] bg-card border border-border p-4 space-y-3">
             <div className="flex items-start justify-between">
               <div className="min-w-0">
                 <div className="text-sm font-semibold truncate">{goal?.emoji} {goal?.name ?? "—"}</div>
-                <div className="text-xs text-muted-foreground capitalize">{p.frequency} · ৳{Number(p.amount).toLocaleString()}/cycle</div>
+                <div className="text-xs text-muted-foreground">{freqLabel} · ৳{Number(p.amount).toLocaleString()}{t("savPerCycle")}</div>
               </div>
               <div className="text-right">
                 <div className="text-sm font-semibold">{p.total_paid ?? 0}/{p.total_installments ?? "∞"}</div>
@@ -478,9 +479,9 @@ function DpsTab() {
             <Progress value={pctPlan} className="h-1" />
             <div className="flex gap-2 text-xs">
               <Button size="sm" variant="secondary" className="rounded-full" onClick={() => setCollectPlan(p)}>
-                <RefreshCw className="w-3 h-3 mr-1" />Collect now
+                <RefreshCw className="w-3 h-3 mr-1" />{t("savCollectNow")}
               </Button>
-              <span className="ml-auto text-muted-foreground self-center">Next {new Date(p.next_run_at).toLocaleDateString()}</span>
+              <span className="ml-auto text-muted-foreground self-center">{t("savNextDate")} {new Date(p.next_run_at).toLocaleDateString()}</span>
             </div>
           </motion.div>
         );
