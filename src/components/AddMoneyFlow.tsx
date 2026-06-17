@@ -170,8 +170,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   };
 
   const handleProofContinue = () => {
-    if (!txnId.trim() && !proofFile) { setError("Provide a Transaction ID or upload proof."); return; }
-    if (duplicateTxnWarning) { setError("Please use a different Transaction ID — this one was already submitted."); return; }
+    if (!txnId.trim() && !proofFile) { setError(t("amProvideProof")); return; }
+    if (duplicateTxnWarning) { setError(t("amDuplicateBlock")); return; }
     setPin("");
     setPinError("");
     goTo("pin");
