@@ -88,6 +88,7 @@ const App = () => (
             <FestivalBodyEffect />
             <Toaster />
             <Sonner />
+            <MissingTranslationsBanner />
             <BrowserRouter>
               <MerchantSessionWatchdog />
               <LazyLoadErrorBoundary>
