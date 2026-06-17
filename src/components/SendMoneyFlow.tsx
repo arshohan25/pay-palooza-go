@@ -669,7 +669,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {t("flowSendMoney")}
               </h1>
               {step === "recipient" && (
-                <p className="text-xs text-primary-foreground/70 mt-0.5">Secure & Instant Transfer</p>
+                <p className="text-xs text-primary-foreground/70 mt-0.5">{t("secureInstantTransfer")}</p>
               )}
             </div>
             {step !== "recipient" && <div className="w-10" />}
