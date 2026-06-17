@@ -790,12 +790,57 @@ export const translationsMap = translations;
 /** Dev-only registry of keys requested but missing in current language. */
 const missingKeys = new Set<string>();
 const warnedKeys = new Set<string>();
+/** key::lang -> Set of source file references (e.g. "src/pages/AccountPage.tsx:123") */
+const missingSources = new Map<string, Set<string>>();
+type Listener = () => void;
+const listeners = new Set<Listener>();
+
+export interface MissingTranslationEntry {
+  key: string;
+  lang: Lang;
+  sources: string[];
+}
+
 export function getMissingTranslationKeys(): string[] {
   return Array.from(missingKeys);
 }
+
+export function getMissingTranslations(): MissingTranslationEntry[] {
+  return Array.from(missingKeys).map((id) => {
+    const [key, lang] = id.split("::") as [string, Lang];
+    return { key, lang, sources: Array.from(missingSources.get(id) ?? []) };
+  });
+}
+
+export function subscribeMissingTranslations(fn: Listener): () => void {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
+
 export function resetMissingTranslationKeys(): void {
   missingKeys.clear();
   warnedKeys.clear();
+  missingSources.clear();
+  listeners.forEach((l) => l());
+}
+
+/** Parse a stack trace and return the first frame inside src/ that isn't i18n.tsx itself. */
+function inferCallerSource(): string | null {
+  try {
+    const stack = new Error().stack;
+    if (!stack) return null;
+    for (const line of stack.split("\n")) {
+      const m = line.match(/\/src\/([^)\s:]+\.(?:tsx?|jsx?)):(\d+):\d+/);
+      if (!m) continue;
+      if (m[1].endsWith("lib/i18n.tsx")) continue;
+      return `src/${m[1]}:${m[2]}`;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
 }
 
 interface I18nContextValue {
@@ -823,11 +868,29 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       const value = entry?.[lang];
       if (!value) {
         const id = `${String(key)}::${lang}`;
+        const isNew = !missingKeys.has(id);
         missingKeys.add(id);
-        if (import.meta.env.DEV && !warnedKeys.has(id)) {
-          warnedKeys.add(id);
-          // eslint-disable-next-line no-console
-          console.warn(`[i18n] Missing translation for "${String(key)}" (lang=${lang})`);
+        if (import.meta.env.DEV) {
+          const src = inferCallerSource();
+          if (src) {
+            let set = missingSources.get(id);
+            if (!set) {
+              set = new Set();
+              missingSources.set(id, set);
+            }
+            set.add(src);
+          }
+          if (!warnedKeys.has(id)) {
+            warnedKeys.add(id);
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[i18n] Missing translation for "${String(key)}" (lang=${lang})${src ? ` at ${src}` : ""}`
+            );
+          }
+          if (isNew) {
+            // Defer to avoid render-phase setState in subscribers.
+            queueMicrotask(() => listeners.forEach((l) => l()));
+          }
         }
         // Visible fallback so QA can spot gaps in the UI
         return `⟦${String(key)}⟧`;
