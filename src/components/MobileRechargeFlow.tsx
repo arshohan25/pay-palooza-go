@@ -403,7 +403,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   const customAmountNum = customAmount ? parseInt(customAmount, 10) : 0;
   const effectivePrice  = customAmountNum > 0 ? customAmountNum : 0;
-  const effectiveName   = selectedPack ? selectedPack.name : "Custom Recharge";
+  const effectiveName   = selectedPack ? selectedPack.name : t("mrCustomRecharge");
 
   // Amount → PIN
   const handleAmountContinue = () => {
