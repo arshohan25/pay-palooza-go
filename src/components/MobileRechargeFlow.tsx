@@ -783,7 +783,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         }`}
                       >
                         <Flame size={14} className={offerType === "drive" ? "text-amber-500" : ""} />
-                        ⚡ Drive
+                        ⚡ {t("mrDrive")}
                       </button>
                     )}
                     <button
@@ -793,7 +793,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       }`}
                     >
                       <Package size={14} className={offerType === "regular" ? "text-primary" : ""} />
-                      Regular
+                      {t("mrRegular")}
+
                     </button>
                   </div>
 
