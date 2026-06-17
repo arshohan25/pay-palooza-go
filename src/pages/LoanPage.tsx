@@ -72,6 +72,8 @@ type TabType = "apply" | "active" | "history";
 
 const LoanPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
+  const statusConfig = useMemo(() => getStatusConfig(t), [t]);
   const { user } = useAuth();
   const futureFeatures = useFutureFeatures();
   void futureFeatures.visibility.future_easypay_score;
