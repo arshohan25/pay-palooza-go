@@ -340,9 +340,9 @@ const LoanPage = () => {
                     <Scale className="w-5 h-5 text-emerald-500" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-foreground">100% Interest-Free (Riba-Free)</p>
+                    <p className="text-xs font-bold text-foreground">{t("loanInterestFreeTitle")}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
-                      Qard Hasan — a benevolent loan with only a one-time flat {SERVICE_FEE_PERCENT}% service fee. No compounding, no hidden charges, fully Sharia compliant.
+                      {t("loanInterestFreeDescPrefix")} {SERVICE_FEE_PERCENT}% {t("loanInterestFreeDescSuffix")}
                     </p>
                   </div>
                 </div>
