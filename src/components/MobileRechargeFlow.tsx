@@ -1308,13 +1308,14 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     className="w-full h-12 rounded-2xl text-white font-bold shadow-lg"
                     style={{ background: `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` }}
                   >
-                    Done
+                    {t("done")}
                   </motion.button>
                   <button
                     onClick={() => setShowShare(true)}
                     className="w-full h-12 rounded-2xl border border-border bg-card text-foreground font-semibold text-sm"
                   >
-                    Share Receipt
+                    {t("shareReceipt")}
+
                   </button>
                 </motion.div>
               </div>
