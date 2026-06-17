@@ -521,7 +521,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     setValidating(false);
 
     if (!validationResult.exists) {
-      setError("This number is not registered on EasyPay.");
+      setError(t("smNotRegistered"));
       return;
     }
 
