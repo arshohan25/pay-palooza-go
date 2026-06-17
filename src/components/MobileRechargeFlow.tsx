@@ -762,7 +762,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 <div className="px-4 pt-2 pb-2 flex items-center justify-between gap-3 shrink-0">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="min-w-0">
-                      <p className="text-[10px] text-muted-foreground leading-none">Recharging</p>
+                      <p className="text-[10px] text-muted-foreground leading-none">{t("recharging")}</p>
                       <p className="text-sm font-bold text-foreground truncate">{formatPhone(phone)}</p>
                     </div>
                   </div>
