@@ -973,7 +973,7 @@ const LoanPage = () => {
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[88vh] overflow-y-auto">
           <SheetHeader className="text-left mb-3">
             <SheetTitle className="flex items-center gap-2 text-base">
-              <HandCoins className="w-5 h-5 text-primary" /> Repay Qard Hasan
+              <HandCoins className="w-5 h-5 text-primary" /> {t("loanRepayQardHasan")}
             </SheetTitle>
           </SheetHeader>
           {repayLoan && (() => {
