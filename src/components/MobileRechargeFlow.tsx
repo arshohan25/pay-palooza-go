@@ -1103,11 +1103,11 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
                 {/* Continue to PIN */}
                 {customAmountNum > 0 && customAmountNum > getBalance() && (
-                  <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                  <p className="text-center text-sm text-destructive font-medium">{t("mrInsufficientBalance")}</p>
                 )}
                 {customAmountNum > 0 && customAmountNum <= getBalance() && (customAmountNum < 20 || customAmountNum > 1000) && (
                   <p className="text-center text-sm text-destructive font-medium">
-                    {customAmountNum < 20 ? "Minimum recharge ৳20" : "Maximum recharge ৳1,000"}
+                    {customAmountNum < 20 ? t("mrMinRecharge20") : t("mrMaxRecharge1000")}
                   </p>
                 )}
                 {customAmountNum >= 20 && customAmountNum <= 1000 && customAmountNum <= getBalance() && (
@@ -1120,7 +1120,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     className="w-full h-14 rounded-2xl text-white font-bold text-base shadow-lg flex items-center justify-center gap-2"
                     style={{ background: `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` }}
                   >
-                    Continue · ৳{customAmountNum}
+                    {t("continue")} · ৳{fmtAmt(customAmountNum)}
+
                     <ChevronRight size={18} />
                   </motion.button>
                 )}
