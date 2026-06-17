@@ -784,7 +784,19 @@ const translations = {
   loadingPayment: { en: "Loading payment…", bn: "পেমেন্ট লোড হচ্ছে…" },
 } as const;
 
-type TranslationKey = keyof typeof translations;
+export type TranslationKey = keyof typeof translations;
+export const translationsMap = translations;
+
+/** Dev-only registry of keys requested but missing in current language. */
+const missingKeys = new Set<string>();
+const warnedKeys = new Set<string>();
+export function getMissingTranslationKeys(): string[] {
+  return Array.from(missingKeys);
+}
+export function resetMissingTranslationKeys(): void {
+  missingKeys.clear();
+  warnedKeys.clear();
+}
 
 interface I18nContextValue {
   lang: Lang;
@@ -806,7 +818,22 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: TranslationKey) => translations[key]?.[lang] ?? key,
+    (key: TranslationKey) => {
+      const entry = (translations as Record<string, { en: string; bn: string } | undefined>)[key as string];
+      const value = entry?.[lang];
+      if (!value) {
+        const id = `${String(key)}::${lang}`;
+        missingKeys.add(id);
+        if (import.meta.env.DEV && !warnedKeys.has(id)) {
+          warnedKeys.add(id);
+          // eslint-disable-next-line no-console
+          console.warn(`[i18n] Missing translation for "${String(key)}" (lang=${lang})`);
+        }
+        // Visible fallback so QA can spot gaps in the UI
+        return `⟦${String(key)}⟧`;
+      }
+      return value;
+    },
     [lang]
   );
 
