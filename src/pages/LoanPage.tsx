@@ -909,7 +909,7 @@ const LoanPage = () => {
             <div className="space-y-4 pb-4">
               {[
                 { title: t("loanTerm1Title"), text: t("loanTerm1") },
-                { title: t("loanTerm2Title"), text: `${t("loanTerm2Prefix")} ${SERVICE_FEE_PERCENT}% ${t("loanTerm2Suffix").replace(/^.*one-time service fee/, "one-time service fee")}` },
+                { title: t("loanTerm2Title"), text: `${t("loanTerm2Prefix")} ${SERVICE_FEE_PERCENT}% ${t("loanTerm2Suffix")}` },
                 { title: t("loanTerm3Title"), text: t("loanTerm3") },
                 { title: t("loanTerm4Title"), text: t("loanTerm4") },
                 { title: t("loanTerm5Title"), text: t("loanTerm5") },
