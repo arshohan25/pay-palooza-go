@@ -221,7 +221,10 @@ const PinInput = ({ pin, onChange, error, accentColor }: PinInputProps) => (
 interface MobileRechargeFlowProps { onClose: () => void; }
 
 const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const numLocale = lang === "bn" ? "bn-BD" : "en-BD";
+  const fmtAmt = (n: number, opts?: Intl.NumberFormatOptions) => n.toLocaleString(numLocale, opts);
+
   const [step, setStep]               = useState<Step>("number");
   const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("recharge"));
   const [direction, setDirection]     = useState(1);
