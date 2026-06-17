@@ -1067,7 +1067,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                   {matchedBy === "wallet" ? (
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Wallet ID</span><span className="text-foreground font-medium">{resolvedWalletId}</span>
+                      <span>{t("walletIdLabel")}</span><span className="text-foreground font-medium">{resolvedWalletId}</span>
                     </div>
                   ) : (
                     <div className="flex justify-between text-muted-foreground">
