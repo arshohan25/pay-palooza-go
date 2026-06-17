@@ -637,12 +637,12 @@ const PayPage = () => {
               >
                 <div className="divide-y divide-border/30">
                   {[
-                    { label: "Amount", value: `৳${fmt(amountParam)}`, bold: true },
-                    { label: "Merchant", value: merchant?.business_name || "" },
-                    ...(refParam ? [{ label: "Reference", value: refParam }] : []),
-                    ...(description ? [{ label: "Note", value: description }] : []),
-                    { label: "Date", value: successTime ? formatDateTime(successTime) : "—" },
-                    { label: "Fee", value: "Free", accent: true },
+                    { label: t("ppRowAmount"), value: `৳${fmt(amountParam, locale)}`, bold: true },
+                    { label: t("ppRowMerchant"), value: merchant?.business_name || "" },
+                    ...(refParam ? [{ label: t("ppRowReference"), value: refParam }] : []),
+                    ...(description ? [{ label: t("ppRowNote"), value: description }] : []),
+                    { label: t("ppRowDate"), value: successTime ? formatDateTime(successTime, locale) : "—" },
+                    { label: t("ppRowFee"), value: t("ppFreeValue"), accent: true },
                   ].map((row, i) => (
                     <div key={row.label} className={`flex justify-between items-center px-4 py-2.5 ${i % 2 === 1 ? "bg-muted/20" : ""}`}>
                       <span className="text-[11px] text-muted-foreground/60">{row.label}</span>
