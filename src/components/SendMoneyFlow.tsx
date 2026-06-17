@@ -754,10 +754,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {contactsFiltered.length > 0 && (
                   <div>
                     <div className="px-4 py-2.5 flex items-center justify-between mt-1">
-                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">All Contacts</span>
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("smAllContacts")}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">{contactsFiltered.length}</span>
-                        <button onClick={handleSyncContacts} className="p-1 rounded-full hover:bg-muted transition-colors" title="Sync Contacts">
+                        <button onClick={handleSyncContacts} className="p-1 rounded-full hover:bg-muted transition-colors" title={t("smSyncContacts")}>
                           <RefreshCw size={14} className="text-muted-foreground" />
                         </button>
                       </div>
