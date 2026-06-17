@@ -101,17 +101,17 @@ const LoanPage = () => {
   const handleRepayLoan = async () => {
     if (!repayLoan) return;
     const amt = parseFloat(repayAmount);
-    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
-    if (repayPin.length < 4) { setRepayPinError("Enter your 4-digit PIN"); return; }
+    if (!amt || amt <= 0) { toast.error(t("loanEnterValidAmount")); return; }
+    if (repayPin.length < 4) { setRepayPinError(t("loanEnterPin4")); return; }
     setRepayProcessing(true); setRepayPinError("");
     const pinValid = await verifyPin(repayPin);
-    if (!pinValid) { setRepayPinError("Incorrect PIN"); setRepayPin(""); setRepayProcessing(false); return; }
+    if (!pinValid) { setRepayPinError(t("loanIncorrectPin")); setRepayPin(""); setRepayProcessing(false); return; }
     const { data, error } = await supabase.rpc("repay_loan_partial" as any, { p_loan_id: repayLoan.id, p_amount: amt });
-    if (error) { toast.error(error.message || "Repayment failed"); setRepayProcessing(false); return; }
+    if (error) { toast.error(error.message || t("loanRepayFailed")); setRepayProcessing(false); return; }
     haptics.success();
     const result = data as any;
-    if (result?.status === "repaid") toast.success("🎉 Loan fully settled!");
-    else toast.success(`✓ ৳${result?.paid?.toLocaleString()} repaid · ৳${result?.outstanding?.toLocaleString()} remaining`);
+    if (result?.status === "repaid") toast.success(t("loanFullSettleToast"));
+    else toast.success(`✓ ৳${result?.paid?.toLocaleString()} ${t("loanRepaidWord")} · ৳${result?.outstanding?.toLocaleString()} ${t("loanRemainingWord")}`);
     const { data: refreshed } = await supabase.from("loan_applications").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
     setApplications(refreshed || []);
     setRepayLoan(null); setRepayAmount(""); setRepayPin(""); setRepayProcessing(false);
@@ -119,10 +119,10 @@ const LoanPage = () => {
 
   useEffect(() => {
     if (!kycLoading && kycStatus !== "verified") {
-      toast.error("Please complete KYC verification to use this feature.");
+      toast.error(t("loanKycRequired"));
       navigate("/");
     }
-  }, [kycLoading, kycStatus, navigate]);
+  }, [kycLoading, kycStatus, navigate, t]);
 
   const amountNum = parseInt(amount) || 5000;
   const tenureNum = parseInt(tenure) || 90;
