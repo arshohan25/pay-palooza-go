@@ -569,7 +569,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const amtVal = parseFloat(amount) || 0;
     const limitCheck = await checkDailyLimit("send", amtVal);
     if (!limitCheck.allowed) {
-      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setError(t("smDailyLimitExceeded").replace("{used}", limitCheck.used.toLocaleString()).replace("{limit}", limitCheck.limit.toLocaleString()));
       setProcessing(false);
       return;
     }
