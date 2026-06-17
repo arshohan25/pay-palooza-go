@@ -574,14 +574,14 @@ const PayPage = () => {
                 <div className="w-10 h-10 rounded-xl bg-primary/8 border border-primary/15 flex items-center justify-center mx-auto mb-2">
                   <Lock className="w-4.5 h-4.5 text-primary" />
                 </div>
-                <p className="text-sm font-bold text-foreground">Enter your PIN</p>
-                <p className="text-[11px] text-muted-foreground/60 mt-1">4-digit security PIN</p>
+                <p className="text-sm font-bold text-foreground">{t("ppEnterYourPin")}</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1">{t("ppFourDigitSecPin")}</p>
               </div>
               <PinInput value={pin} onChange={setPin} />
               {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
               <button onClick={() => { setStep("otp"); setPin(""); setErrorMsg(""); }}
                 className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground py-1 active:scale-[0.97] transition-all">
-                <ArrowLeft size={12} /> Back
+                <ArrowLeft size={12} /> {t("ppBack")}
               </button>
             </motion.div>
           )}
