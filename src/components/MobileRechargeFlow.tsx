@@ -990,10 +990,11 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <div className="flex items-center gap-2">
                         {calcCashback(selectedPack) > 0 && (
                           <span className="text-[11px] font-bold text-amber-600 flex items-center gap-0.5">
-                            <Coins size={10} />+৳{calcCashback(selectedPack)}
+                            <Coins size={10} />+৳{fmtAmt(calcCashback(selectedPack))}
                           </span>
                         )}
-                        <span className="font-extrabold text-foreground">৳{selectedPack.price}</span>
+                        <span className="font-extrabold text-foreground">৳{fmtAmt(selectedPack.price)}</span>
+
                       </div>
                     </div>
                   )}
