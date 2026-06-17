@@ -741,7 +741,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {recentFiltered.length > 0 && (
                   <div>
                     <div className="px-4 py-2 flex items-center gap-2">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent</span>
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("smRecent")}</span>
                       <div className="flex-1 h-px bg-border" />
                     </div>
                     {recentFiltered.slice(0, 4).map((c) => (
