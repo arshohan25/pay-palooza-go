@@ -796,7 +796,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       className="w-full h-12 text-base font-semibold rounded-xl gradient-send border-0 text-white"
                       onClick={handleManualSend}
                     >
-                      Continue
+                      {t("continue")}
                     </Button>
                   </div>
                 )}
