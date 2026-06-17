@@ -57,6 +57,7 @@ const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
 const SavingsPage = lazy(() => import("./pages/SavingsPage"));
 const RecipientHarness = lazy(() => import("./pages/RecipientHarness"));
+const CashOutHarness = lazy(() => import("./pages/CashOutHarness"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
