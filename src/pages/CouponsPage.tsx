@@ -192,7 +192,7 @@ export default function CouponsPage() {
             >
               <ArrowLeft className="w-[18px] h-[18px] text-foreground" />
             </button>
-            <h1 className="text-[16px] font-bold text-foreground tracking-tight">Coupons</h1>
+            <h1 className="text-[16px] font-bold text-foreground tracking-tight">{t("coupons")}</h1>
           </div>
           <div className="flex items-center gap-1.5 text-muted-foreground/60">
             <Ticket className="w-3.5 h-3.5" />
