@@ -729,9 +729,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       <Send size={16} className="text-[hsl(330_80%_55%)]" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-semibold text-foreground">Send to {inputVal.trim()}</p>
+                      <p className="text-sm font-semibold text-foreground">{t("smSendToPrefix")} {inputVal.trim()}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {manualRecipientType === "phone" ? "Mobile number" : "Wallet ID"}
+                        {manualRecipientType === "phone" ? t("mobileNumber") : t("walletIdLabel")}
                       </p>
                     </div>
                   </div>
