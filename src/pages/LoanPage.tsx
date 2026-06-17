@@ -192,8 +192,8 @@ const LoanPage = () => {
   }, [user, checkEligibility]);
 
   const handleApply = () => {
-    if (!user) { toast.error("Please sign in first"); return; }
-    if (!eligibility?.eligible) { toast.error("You are not eligible yet"); return; }
+    if (!user) { toast.error(t("giftCardsSignInFirst")); return; }
+    if (!eligibility?.eligible) { toast.error(t("loanNotEligibleYet")); return; }
     setTermsAccepted(false);
     setLoanPin("");
     setLoanPinError("");
@@ -201,11 +201,11 @@ const LoanPage = () => {
   };
 
   const handleConfirmLoan = async () => {
-    if (!termsAccepted) { toast.error("Please accept the terms"); return; }
-    if (loanPin.length < 4) { setLoanPinError("Enter your 4-digit PIN"); return; }
+    if (!termsAccepted) { toast.error(t("loanAcceptTerms")); return; }
+    if (loanPin.length < 4) { setLoanPinError(t("loanEnterPin4")); return; }
     setSubmitting(true); setLoanPinError("");
     const pinValid = await verifyPin(loanPin);
-    if (!pinValid) { setLoanPinError("Incorrect PIN. Please try again."); setLoanPin(""); setSubmitting(false); return; }
+    if (!pinValid) { setLoanPinError(t("loanIncorrectPinRetry")); setLoanPin(""); setSubmitting(false); return; }
     setTermsOpen(false);
     const { error } = await supabase.rpc("apply_loan", {
       p_amount: amountNum,
@@ -213,10 +213,10 @@ const LoanPage = () => {
       p_interest_rate: SERVICE_FEE_PERCENT,
       p_emi_amount: calc.monthlyPayment,
     });
-    if (error) toast.error("Failed to submit application");
+    if (error) toast.error(t("loanSubmitFailed"));
     else {
       haptics.success();
-      toast.success("Qard Hasan application submitted!");
+      toast.success(t("loanSubmittedToast"));
       const { data } = await supabase.from("loan_applications").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
       setApplications(data || []);
       setActiveTab("active");
@@ -228,7 +228,7 @@ const LoanPage = () => {
   const activeLoans = applications.filter(a => ["disbursed", "approved", "pending"].includes(a.status));
   const historyLoans = applications.filter(a => ["repaid", "rejected"].includes(a.status));
   const scoreColor = !eligibility ? "hsl(var(--primary))" : eligibility.score >= 80 ? "hsl(142, 71%, 45%)" : eligibility.score >= 60 ? "hsl(36, 95%, 55%)" : "hsl(0, 74%, 55%)";
-  const scoreGrade = !eligibility ? "—" : eligibility.score >= 80 ? "Excellent" : eligibility.score >= 60 ? "Good" : eligibility.score >= 40 ? "Fair" : "Building";
+  const scoreGrade = !eligibility ? "—" : eligibility.score >= 80 ? t("loanGradeExcellent") : eligibility.score >= 60 ? t("loanGradeGood") : eligibility.score >= 40 ? t("loanGradeFair") : t("loanGradeBuilding");
 
   const getLoanProgress = (app: any) => {
     const startDate = new Date(app.applied_at || app.created_at);
