@@ -903,9 +903,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 >
                   <Banknote size={16} className={addCashOutCharge ? "text-primary" : "text-muted-foreground"} />
                   <div className="flex-1 text-left">
-                    <p className="text-xs font-medium text-foreground">Add Cash Out Charge (1.19%)</p>
+                    <p className="text-xs font-medium text-foreground">{t("smCashOutToggle")}</p>
                     {amtNum > 0 && amtNum < MIN_CASH_OUT_AMOUNT && (
-                      <p className="text-[10px] text-destructive mt-0.5">Minimum ৳{MIN_CASH_OUT_AMOUNT} required</p>
+                      <p className="text-[10px] text-destructive mt-0.5">{t("smMinAmountRequired").replace("{amt}", String(MIN_CASH_OUT_AMOUNT))}</p>
                     )}
                   </div>
                   <div className={`w-9 h-5 rounded-full transition-colors relative ${addCashOutCharge ? "bg-primary" : "bg-muted"}`}>
