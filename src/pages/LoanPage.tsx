@@ -936,7 +936,7 @@ const LoanPage = () => {
 
             {termsAccepted && (
               <div className="space-y-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground text-center">Enter PIN to Confirm</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground text-center">{t("loanEnterPinToConfirm")}</p>
                 <div className="flex justify-center gap-3">
                   {[0, 1, 2, 3].map((i) => (
                     <motion.div key={i} animate={{ scale: loanPin.length > i ? 1.15 : 1 }}
