@@ -511,7 +511,7 @@ const PayPage = () => {
                 className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-muted-foreground hover:text-primary active:scale-[0.97] transition-all"
               >
                 <QrCode size={14} />
-                Show QR Code
+                {t("ppShowQrCode")}
               </button>
             </motion.div>
           )}
