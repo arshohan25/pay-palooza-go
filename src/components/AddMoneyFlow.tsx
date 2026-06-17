@@ -240,10 +240,14 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
             }
           }
         }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    })();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [step, submittedRequestId]);
 
   const trackingSteps = [
