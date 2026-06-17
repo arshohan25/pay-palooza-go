@@ -575,11 +575,11 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
                     {trackingStatus === "pending" && (
                       <p className="text-xs text-muted-foreground mt-2">
-                        ⏱ Usually processed within 15 minutes. You'll be notified when done.
+                        {t("amProcessingHint")}
                       </p>
                     )}
 
-                    <Button className="mt-4 w-full max-w-xs" onClick={onClose}>Done</Button>
+                    <Button className="mt-4 w-full max-w-xs" onClick={onClose}>{t("amDone")}</Button>
                   </div>
                 )}
               </motion.div>
