@@ -26,15 +26,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 import AiRewardBanner from "@/components/AiRewardBanner";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 const AMOUNTS = [1000, 2000, 3000, 5000, 10000, 15000, 25000, 50000];
-const TENURES = [
-  { days: 30, label: "1 Month" },
-  { days: 60, label: "2 Months" },
-  { days: 90, label: "3 Months" },
-  { days: 180, label: "6 Months" },
-  { days: 270, label: "9 Months" },
-  { days: 365, label: "1 Year" },
+const TENURES: { days: number; labelKey: TranslationKey }[] = [
+  { days: 30, labelKey: "loan1Month" },
+  { days: 60, labelKey: "loan2Months" },
+  { days: 90, labelKey: "loan3Months" },
+  { days: 180, labelKey: "loan6Months" },
+  { days: 270, labelKey: "loan9Months" },
+  { days: 365, labelKey: "loan1Year" },
 ];
 
 // Flat one-time service fee — NOT interest. Sharia-compliant.
@@ -59,18 +60,20 @@ interface EligibilityResult {
   }[];
 }
 
-const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string; bg: string }> = {
-  pending: { icon: <Clock className="w-3.5 h-3.5" />, color: "text-amber-500", label: "Under Review", bg: "bg-amber-500/10" },
-  approved: { icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: "text-emerald-500", label: "Approved", bg: "bg-emerald-500/10" },
-  rejected: { icon: <XCircle className="w-3.5 h-3.5" />, color: "text-destructive", label: "Rejected", bg: "bg-destructive/10" },
-  disbursed: { icon: <Banknote className="w-3.5 h-3.5" />, color: "text-blue-500", label: "Active", bg: "bg-blue-500/10" },
-  repaid: { icon: <BadgeCheck className="w-3.5 h-3.5" />, color: "text-muted-foreground", label: "Settled", bg: "bg-muted" },
-};
+const getStatusConfig = (t: (k: TranslationKey) => string): Record<string, { icon: React.ReactNode; color: string; label: string; bg: string }> => ({
+  pending: { icon: <Clock className="w-3.5 h-3.5" />, color: "text-amber-500", label: t("loanStatusUnderReview"), bg: "bg-amber-500/10" },
+  approved: { icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: "text-emerald-500", label: t("loanStatusApproved"), bg: "bg-emerald-500/10" },
+  rejected: { icon: <XCircle className="w-3.5 h-3.5" />, color: "text-destructive", label: t("loanStatusRejected"), bg: "bg-destructive/10" },
+  disbursed: { icon: <Banknote className="w-3.5 h-3.5" />, color: "text-blue-500", label: t("loanStatusActive"), bg: "bg-blue-500/10" },
+  repaid: { icon: <BadgeCheck className="w-3.5 h-3.5" />, color: "text-muted-foreground", label: t("loanStatusSettled"), bg: "bg-muted" },
+});
 
 type TabType = "apply" | "active" | "history";
 
 const LoanPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
+  const statusConfig = useMemo(() => getStatusConfig(t), [t]);
   const { user } = useAuth();
   const futureFeatures = useFutureFeatures();
   void futureFeatures.visibility.future_easypay_score;
@@ -98,17 +101,17 @@ const LoanPage = () => {
   const handleRepayLoan = async () => {
     if (!repayLoan) return;
     const amt = parseFloat(repayAmount);
-    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
-    if (repayPin.length < 4) { setRepayPinError("Enter your 4-digit PIN"); return; }
+    if (!amt || amt <= 0) { toast.error(t("loanEnterValidAmount")); return; }
+    if (repayPin.length < 4) { setRepayPinError(t("loanEnterPin4")); return; }
     setRepayProcessing(true); setRepayPinError("");
     const pinValid = await verifyPin(repayPin);
-    if (!pinValid) { setRepayPinError("Incorrect PIN"); setRepayPin(""); setRepayProcessing(false); return; }
+    if (!pinValid) { setRepayPinError(t("loanIncorrectPin")); setRepayPin(""); setRepayProcessing(false); return; }
     const { data, error } = await supabase.rpc("repay_loan_partial" as any, { p_loan_id: repayLoan.id, p_amount: amt });
-    if (error) { toast.error(error.message || "Repayment failed"); setRepayProcessing(false); return; }
+    if (error) { toast.error(error.message || t("loanRepayFailed")); setRepayProcessing(false); return; }
     haptics.success();
     const result = data as any;
-    if (result?.status === "repaid") toast.success("🎉 Loan fully settled!");
-    else toast.success(`✓ ৳${result?.paid?.toLocaleString()} repaid · ৳${result?.outstanding?.toLocaleString()} remaining`);
+    if (result?.status === "repaid") toast.success(t("loanFullSettleToast"));
+    else toast.success(`✓ ৳${result?.paid?.toLocaleString()} ${t("loanRepaidWord")} · ৳${result?.outstanding?.toLocaleString()} ${t("loanRemainingWord")}`);
     const { data: refreshed } = await supabase.from("loan_applications").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
     setApplications(refreshed || []);
     setRepayLoan(null); setRepayAmount(""); setRepayPin(""); setRepayProcessing(false);
@@ -116,10 +119,10 @@ const LoanPage = () => {
 
   useEffect(() => {
     if (!kycLoading && kycStatus !== "verified") {
-      toast.error("Please complete KYC verification to use this feature.");
+      toast.error(t("loanKycRequired"));
       navigate("/");
     }
-  }, [kycLoading, kycStatus, navigate]);
+  }, [kycLoading, kycStatus, navigate, t]);
 
   const amountNum = parseInt(amount) || 5000;
   const tenureNum = parseInt(tenure) || 90;
@@ -158,18 +161,18 @@ const LoanPage = () => {
     const shoppingCount = txns.filter(t => t.type === "payment").length;
 
     const checks = [
-      { label: "Account Age", passed: accountAgeDays >= MIN_ACCOUNT_AGE_DAYS, current: `${accountAgeDays} days`, required: `${MIN_ACCOUNT_AGE_DAYS}+ days`, icon: <Calendar className="w-4 h-4" />, weight: 25 },
-      { label: "Transactions", passed: totalTxns >= MIN_TOTAL_TXNS, current: `${totalTxns}`, required: `${MIN_TOTAL_TXNS}+`, icon: <TrendingUp className="w-4 h-4" />, weight: 25 },
-      { label: "Add Money", passed: addMoneyTotal >= MIN_ADD_MONEY_AMOUNT, current: `৳${addMoneyTotal.toLocaleString()}`, required: `৳${MIN_ADD_MONEY_AMOUNT.toLocaleString()}+`, icon: <Wallet className="w-4 h-4" />, weight: 20 },
-      { label: "Payments", passed: paymentCount >= MIN_PAYMENT_COUNT, current: `${paymentCount}`, required: `${MIN_PAYMENT_COUNT}+`, icon: <CreditCard className="w-4 h-4" />, weight: 15 },
-      { label: "Shopping", passed: shoppingCount >= 2, current: `${shoppingCount}`, required: "2+", icon: <ShoppingBag className="w-4 h-4" />, weight: 15 },
+      { label: t("loanCheckAccountAge"), passed: accountAgeDays >= MIN_ACCOUNT_AGE_DAYS, current: `${accountAgeDays} ${t("loanAgeUnit")}`, required: `${MIN_ACCOUNT_AGE_DAYS}+ ${t("loanAgeUnit")}`, icon: <Calendar className="w-4 h-4" />, weight: 25 },
+      { label: t("loanCheckTransactions"), passed: totalTxns >= MIN_TOTAL_TXNS, current: `${totalTxns}`, required: `${MIN_TOTAL_TXNS}+`, icon: <TrendingUp className="w-4 h-4" />, weight: 25 },
+      { label: t("loanCheckAddMoney"), passed: addMoneyTotal >= MIN_ADD_MONEY_AMOUNT, current: `৳${addMoneyTotal.toLocaleString()}`, required: `৳${MIN_ADD_MONEY_AMOUNT.toLocaleString()}+`, icon: <Wallet className="w-4 h-4" />, weight: 20 },
+      { label: t("loanCheckPayments"), passed: paymentCount >= MIN_PAYMENT_COUNT, current: `${paymentCount}`, required: `${MIN_PAYMENT_COUNT}+`, icon: <CreditCard className="w-4 h-4" />, weight: 15 },
+      { label: t("loanCheckShopping"), passed: shoppingCount >= 2, current: `${shoppingCount}`, required: "2+", icon: <ShoppingBag className="w-4 h-4" />, weight: 15 },
     ];
     const score = checks.reduce((acc, c) => acc + (c.passed ? c.weight : 0), 0);
     const passedCount = checks.filter(c => c.passed).length;
     const maxAmount = score >= 80 ? 50000 : score >= 60 ? 25000 : score >= 40 ? 10000 : 5000;
     setEligibility({ eligible: passedCount >= 4, score, checks, maxAmount });
     setEligibilityLoading(false);
-  }, [user]);
+  }, [user, t]);
 
   useEffect(() => {
     if (!user) return;
@@ -189,8 +192,8 @@ const LoanPage = () => {
   }, [user, checkEligibility]);
 
   const handleApply = () => {
-    if (!user) { toast.error("Please sign in first"); return; }
-    if (!eligibility?.eligible) { toast.error("You are not eligible yet"); return; }
+    if (!user) { toast.error(t("giftCardsSignInFirst")); return; }
+    if (!eligibility?.eligible) { toast.error(t("loanNotEligibleYet")); return; }
     setTermsAccepted(false);
     setLoanPin("");
     setLoanPinError("");
@@ -198,11 +201,11 @@ const LoanPage = () => {
   };
 
   const handleConfirmLoan = async () => {
-    if (!termsAccepted) { toast.error("Please accept the terms"); return; }
-    if (loanPin.length < 4) { setLoanPinError("Enter your 4-digit PIN"); return; }
+    if (!termsAccepted) { toast.error(t("loanAcceptTerms")); return; }
+    if (loanPin.length < 4) { setLoanPinError(t("loanEnterPin4")); return; }
     setSubmitting(true); setLoanPinError("");
     const pinValid = await verifyPin(loanPin);
-    if (!pinValid) { setLoanPinError("Incorrect PIN. Please try again."); setLoanPin(""); setSubmitting(false); return; }
+    if (!pinValid) { setLoanPinError(t("loanIncorrectPinRetry")); setLoanPin(""); setSubmitting(false); return; }
     setTermsOpen(false);
     const { error } = await supabase.rpc("apply_loan", {
       p_amount: amountNum,
@@ -210,10 +213,10 @@ const LoanPage = () => {
       p_interest_rate: SERVICE_FEE_PERCENT,
       p_emi_amount: calc.monthlyPayment,
     });
-    if (error) toast.error("Failed to submit application");
+    if (error) toast.error(t("loanSubmitFailed"));
     else {
       haptics.success();
-      toast.success("Qard Hasan application submitted!");
+      toast.success(t("loanSubmittedToast"));
       const { data } = await supabase.from("loan_applications").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
       setApplications(data || []);
       setActiveTab("active");
@@ -225,7 +228,7 @@ const LoanPage = () => {
   const activeLoans = applications.filter(a => ["disbursed", "approved", "pending"].includes(a.status));
   const historyLoans = applications.filter(a => ["repaid", "rejected"].includes(a.status));
   const scoreColor = !eligibility ? "hsl(var(--primary))" : eligibility.score >= 80 ? "hsl(142, 71%, 45%)" : eligibility.score >= 60 ? "hsl(36, 95%, 55%)" : "hsl(0, 74%, 55%)";
-  const scoreGrade = !eligibility ? "—" : eligibility.score >= 80 ? "Excellent" : eligibility.score >= 60 ? "Good" : eligibility.score >= 40 ? "Fair" : "Building";
+  const scoreGrade = !eligibility ? "—" : eligibility.score >= 80 ? t("loanGradeExcellent") : eligibility.score >= 60 ? t("loanGradeGood") : eligibility.score >= 40 ? t("loanGradeFair") : t("loanGradeBuilding");
 
   const getLoanProgress = (app: any) => {
     const startDate = new Date(app.applied_at || app.created_at);
@@ -255,9 +258,9 @@ const LoanPage = () => {
   };
 
   const tabs: { key: TabType; label: string; count?: number }[] = [
-    { key: "apply", label: "Apply" },
-    { key: "active", label: "Active", count: activeLoans.length },
-    { key: "history", label: "History", count: historyLoans.length },
+    { key: "apply", label: t("loanApplyTab") },
+    { key: "active", label: t("loanActiveTab"), count: activeLoans.length },
+    { key: "history", label: t("loanHistoryTab"), count: historyLoans.length },
   ];
 
   return (
@@ -274,12 +277,12 @@ const LoanPage = () => {
             <ArrowLeft className="w-5 h-5 text-primary-foreground" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-bold text-primary-foreground">Qard Hasan</h1>
-            <p className="text-[10px] text-primary-foreground/80">Interest-Free · Sharia Compliant</p>
+            <h1 className="text-base font-bold text-primary-foreground">{t("loanQardHasan")}</h1>
+            <p className="text-[10px] text-primary-foreground/80">{t("loanTagline")}</p>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20">
             <Heart className="w-3 h-3 text-primary-foreground fill-primary-foreground/40" />
-            <span className="text-[11px] font-semibold text-primary-foreground tracking-wide">Halal</span>
+            <span className="text-[11px] font-semibold text-primary-foreground tracking-wide">{t("loanHalal")}</span>
           </div>
         </div>
 
@@ -337,9 +340,9 @@ const LoanPage = () => {
                     <Scale className="w-5 h-5 text-emerald-500" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-foreground">100% Interest-Free (Riba-Free)</p>
+                    <p className="text-xs font-bold text-foreground">{t("loanInterestFreeTitle")}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
-                      Qard Hasan — a benevolent loan with only a one-time flat {SERVICE_FEE_PERCENT}% service fee. No compounding, no hidden charges, fully Sharia compliant.
+                      {t("loanInterestFreeDescPrefix")} {SERVICE_FEE_PERCENT}% {t("loanInterestFreeDescSuffix")}
                     </p>
                   </div>
                 </div>
@@ -358,13 +361,13 @@ const LoanPage = () => {
                           <div className="w-7 h-7 rounded-lg bg-white/[0.18] flex items-center justify-center backdrop-blur-sm">
                             <Gauge className="w-3.5 h-3.5 text-white" />
                           </div>
-                          <span className="text-white/80 text-[10px] font-semibold tracking-widest uppercase">Trust Score</span>
+                          <span className="text-white/80 text-[10px] font-semibold tracking-widest uppercase">{t("loanTrustScore")}</span>
                         </div>
 
                         {eligibilityLoading ? (
                           <div className="flex items-center gap-2 pt-2">
                             <Loader2 className="w-4 h-4 animate-spin text-white/70" />
-                            <span className="text-white/70 text-xs">Analyzing...</span>
+                            <span className="text-white/70 text-xs">{t("loanAnalyzing")}</span>
                           </div>
                         ) : (
                           <>
@@ -379,7 +382,7 @@ const LoanPage = () => {
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.15]">
                                 <Target className="w-3 h-3 text-emerald-300" />
                                 <span className="text-[10px] text-white/85 font-medium">
-                                  Max: <span className="text-white font-bold">৳{(eligibility?.maxAmount ?? 0).toLocaleString()}</span>
+                                  {t("loanMaxLabel")} <span className="text-white font-bold">৳{(eligibility?.maxAmount ?? 0).toLocaleString()}</span>
                                 </span>
                               </div>
                             </div>
@@ -495,11 +498,11 @@ const LoanPage = () => {
                           </div>
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl">
-                          {TENURES.map(t => (
-                            <SelectItem key={t.days} value={t.days.toString()} className="rounded-xl">
+                          {TENURES.map(tn => (
+                            <SelectItem key={tn.days} value={tn.days.toString()} className="rounded-xl">
                               <div className="flex items-center gap-3">
-                                <span className="font-bold">{t.label}</span>
-                                <span className="text-[10px] text-muted-foreground">({t.days} days)</span>
+                                <span className="font-bold">{t(tn.labelKey)}</span>
+                                <span className="text-[10px] text-muted-foreground">({tn.days} {t("loanDaysLabel")})</span>
                               </div>
                             </SelectItem>
                           ))}
