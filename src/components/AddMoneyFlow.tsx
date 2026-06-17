@@ -21,13 +21,14 @@ type Step = "amount" | "source" | "send_to" | "proof" | "pin" | "success";
 const STEPS: Step[] = ["amount", "source", "send_to", "proof", "pin"];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
 
-const SOURCE_OPTIONS = [
-  { id: "bank_transfer", label: "Bank Transfer", icon: Landmark, color: "bg-blue-500" },
-  { id: "bkash", label: "bKash", icon: Wallet, color: "bg-[#E2136E]" },
-  { id: "nagad", label: "Nagad", icon: Wallet, color: "bg-[#F6921E]" },
-  { id: "rocket", label: "Rocket", icon: Wallet, color: "bg-[#8B2F8B]" },
-  { id: "upay", label: "Upay", icon: Wallet, color: "bg-[#00A859]" },
-  { id: "card", label: "Card / Other", icon: CreditCard, color: "bg-slate-600" },
+type SourceId = "bank_transfer" | "bkash" | "nagad" | "rocket" | "upay" | "card";
+const SOURCE_OPTIONS: { id: SourceId; labelKey: string; icon: any; color: string }[] = [
+  { id: "bank_transfer", labelKey: "amSourceBank", icon: Landmark, color: "bg-blue-500" },
+  { id: "bkash", labelKey: "amSourceBkash", icon: Wallet, color: "bg-[#E2136E]" },
+  { id: "nagad", labelKey: "amSourceNagad", icon: Wallet, color: "bg-[#F6921E]" },
+  { id: "rocket", labelKey: "amSourceRocket", icon: Wallet, color: "bg-[#8B2F8B]" },
+  { id: "upay", labelKey: "amSourceUpay", icon: Wallet, color: "bg-[#00A859]" },
+  { id: "card", labelKey: "amSourceCard", icon: CreditCard, color: "bg-slate-600" },
 ];
 
 // TxnID validation patterns per provider
