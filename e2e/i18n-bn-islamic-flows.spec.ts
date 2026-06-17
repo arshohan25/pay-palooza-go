@@ -83,17 +83,17 @@ async function collectVisibleText(locator: Locator): Promise<string[]> {
   return out;
 }
 
-async function assertNoEnglish(
-  _page: Page,
+function assertNoEnglish(
+  report: DebugReport,
   routeName: string,
   context: string,
   texts: string[],
 ) {
   const offenders: string[] = [];
   for (const raw of texts) {
-    const hits = findEnglish(raw, detector);
-    if (hits.length) {
-      offenders.push(`"${raw.slice(0, 80)}" → [${hits.join(", ")}]`);
+    const result = report.record(`${routeName} › ${context}`, raw);
+    if (result.offenders.length) {
+      offenders.push(`"${raw.slice(0, 80)}" → [${result.offenders.join(", ")}]`);
     }
   }
   expect(
