@@ -407,8 +407,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   // Amount → PIN
   const handleAmountContinue = () => {
-    if (!customAmount || customAmountNum < 20) { setError("Enter a valid amount (min ৳20)."); return; }
-    if (customAmountNum > 1000) { setError("Maximum amount is ৳1,000."); return; }
+    if (!customAmount || customAmountNum < 20) { setError(t("mrErrValidAmountMin")); return; }
+    if (customAmountNum > 1000) { setError(t("mrErrMaxAmount")); return; }
+
     goTo("pin");
   };
 
