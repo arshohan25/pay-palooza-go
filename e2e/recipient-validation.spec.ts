@@ -43,9 +43,9 @@ test.describe("recipient validation harness", () => {
     await expect(page.getByTestId("error")).toHaveCount(0);
     await expect(cont).toBeEnabled();
 
-    // 4. Clear -> invalid empty after blur surfaces the required message.
+    // 4. Clear -> blur surfaces the required message.
     await input.fill("");
-    await input.blur();
+    await input.evaluate((el: HTMLInputElement) => el.blur());
     await expect(page.getByTestId("error")).toBeVisible();
     await expect(cont).toBeDisabled();
   });
