@@ -382,7 +382,7 @@ const LoanPage = () => {
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.15]">
                                 <Target className="w-3 h-3 text-emerald-300" />
                                 <span className="text-[10px] text-white/85 font-medium">
-                                  Max: <span className="text-white font-bold">৳{(eligibility?.maxAmount ?? 0).toLocaleString()}</span>
+                                  {t("loanMaxLabel")} <span className="text-white font-bold">৳{(eligibility?.maxAmount ?? 0).toLocaleString()}</span>
                                 </span>
                               </div>
                             </div>
