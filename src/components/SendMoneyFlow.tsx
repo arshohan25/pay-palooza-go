@@ -975,15 +975,15 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       </span>
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground/70">
-                      <span>Fee source</span>
+                      <span>{t("feeSource")}</span>
                       <span className="text-primary font-medium">
                         {fee === 0
                           ? "—"
                           : feeFromBalance >= fee
-                          ? "From your balance"
+                          ? t("fromYourBalance")
                           : feeFromBalance > 0
-                          ? `৳${feeFromBalance.toFixed(2)} balance + ৳${feeFromAmount} from amount`
-                          : "Deducted from amount"}
+                          ? t("smBalancePlusAmount").replace("{bal}", feeFromBalance.toFixed(2)).replace("{amt}", String(feeFromAmount))
+                          : t("deductedFromAmount")}
                       </span>
                     </div>
                     <div className="h-px bg-border" />
