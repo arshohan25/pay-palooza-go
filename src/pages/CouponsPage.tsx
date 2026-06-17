@@ -231,8 +231,8 @@ export default function CouponsPage() {
               <Ticket className="w-7 h-7 text-muted-foreground/20" />
             </div>
             <div className="text-center space-y-1">
-              <p className="text-[14px] text-foreground/70 font-medium">No coupons yet</p>
-              <p className="text-[12px] text-muted-foreground/50">We'll notify you when new offers arrive</p>
+              <p className="text-[14px] text-foreground/70 font-medium">{t("noCouponsYet")}</p>
+              <p className="text-[12px] text-muted-foreground/50">{t("noCouponsDesc")}</p>
             </div>
           </motion.div>
         ) : (
