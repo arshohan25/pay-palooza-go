@@ -236,7 +236,7 @@ const DonationsPage = () => {
           >
             <ArrowLeft size={16} className="text-primary-foreground" />
           </button>
-          <h1 className="text-base font-semibold text-primary-foreground tracking-tight">Donations</h1>
+          <h1 className="text-base font-semibold text-primary-foreground tracking-tight">{t("donations")}</h1>
         </div>
       </div>
 
@@ -245,16 +245,16 @@ const DonationsPage = () => {
           {/* iOS-style segmented control */}
           <TabsList className="w-full bg-muted/40 rounded-xl p-1 h-auto gap-0 mb-5">
             <TabsTrigger value="donate" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
-              Donate
+              {t("donate")}
             </TabsTrigger>
             <TabsTrigger value="recurring" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
-              Recurring
+              {t("recurringTab")}
             </TabsTrigger>
             <TabsTrigger value="history" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
-              History
+              {t("history")}
             </TabsTrigger>
             <TabsTrigger value="leaderboard" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
-              Top
+              {t("topTab")}
             </TabsTrigger>
           </TabsList>
 
@@ -270,12 +270,14 @@ const DonationsPage = () => {
                     <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1, ...spring }}>
                       <Heart size={20} className="text-primary mx-auto mb-2 opacity-60" />
                     </motion.div>
-                    <h2 className="text-2xl font-extrabold text-foreground tracking-tight relative">Choose a Cause</h2>
-                    <p className="text-sm text-muted-foreground mt-1.5 relative">Your generosity changes lives</p>
+                    <h2 className="text-2xl font-extrabold text-foreground tracking-tight relative">{t("chooseCause")}</h2>
+                    <p className="text-sm text-muted-foreground mt-1.5 relative">{t("generosityChanges")}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    {CAUSES.map((cause, i) => (
+                    {CAUSES.map((cause, i) => {
+                      const i18nCause = CAUSE_I18N[cause.id] ?? { name: cause.name, desc: cause.desc };
+                      return (
                       <motion.button
                         key={cause.id}
                         initial={{ opacity: 0, y: 24 }}
@@ -290,16 +292,17 @@ const DonationsPage = () => {
                           <cause.icon size={26} />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-foreground leading-tight">{cause.name}</p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">{cause.desc}</p>
+                          <p className="text-sm font-semibold text-foreground leading-tight">{i18nCause.name}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{i18nCause.desc}</p>
                           {causeFunds[cause.name] && (
                             <p className="text-[10px] text-primary font-medium mt-1">
-                              ৳{Number(causeFunds[cause.name].total_raised).toLocaleString()} raised
+                              ৳{Number(causeFunds[cause.name].total_raised).toLocaleString()} {t("raisedSuffix")}
                             </p>
                           )}
                         </div>
                       </motion.button>
-                    ))}
+                    );
+                    })}
                   </div>
                 </motion.div>
               )}
