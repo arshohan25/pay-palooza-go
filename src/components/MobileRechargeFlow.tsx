@@ -1218,8 +1218,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ type: "spring", stiffness: 280, damping: 22, delay: 0.15 }}
                   >
-                    <p className="text-sm font-semibold text-white/80 mb-1">Recharge Successful!</p>
-                    <p className="text-5xl font-extrabold">৳{effectivePrice}</p>
+                    <p className="text-sm font-semibold text-white/80 mb-1">{t("rechargeSuccessful")}</p>
+                    <p className="text-5xl font-extrabold">৳{fmtAmt(effectivePrice)}</p>
                     <p className="text-white/70 text-sm mt-2">{operator.name} · {formatPhone(phone)}</p>
                     {calcCashback(selectedPack, effectivePrice) > 0 && (
                       <motion.div
@@ -1229,7 +1229,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         className="mt-3 inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5"
                       >
                         <Coins size={14} className="text-amber-300" />
-                        <span className="text-sm font-bold">৳{calcCashback(selectedPack, effectivePrice)} cashback earned!</span>
+                        <span className="text-sm font-bold">৳{fmtAmt(calcCashback(selectedPack, effectivePrice))} {t("mrCashbackEarned")}</span>
+
                       </motion.div>
                     )}
                   </motion.div>
