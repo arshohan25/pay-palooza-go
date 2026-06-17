@@ -159,7 +159,9 @@ const OtpInput = ({ value, onChange, length = 6 }: { value: string; onChange: (v
 /* ─── QR Modal ───────────────────────────────────────────────── */
 const QrModal = ({
   open, onClose, qrDataUrl, merchantName, amount,
-}: { open: boolean; onClose: () => void; qrDataUrl: string | null; merchantName: string; amount: number }) => (
+}: { open: boolean; onClose: () => void; qrDataUrl: string | null; merchantName: string; amount: number }) => {
+  const { t } = useI18n();
+  return (
   <AnimatePresence>
     {open && (
       <motion.div
@@ -186,7 +188,7 @@ const QrModal = ({
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-3 ring-2 ring-primary/10">
               <Store className="w-7 h-7 text-primary" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">Scan to Pay</h3>
+            <h3 className="text-lg font-bold text-foreground">{t("ppScanToPay")}</h3>
             {merchantName && <p className="text-xs text-muted-foreground mt-0.5">{merchantName}</p>}
             {amount > 0 && (
               <p className="text-3xl font-extrabold text-foreground mt-1">
@@ -198,7 +200,7 @@ const QrModal = ({
           <div className="p-6 space-y-5">
             <div className="bg-white rounded-2xl p-4 mx-auto w-fit shadow-lg">
               {qrDataUrl ? (
-                <img src={qrDataUrl} alt="Payment QR" className="w-64 h-64" style={{ imageRendering: "pixelated" }} />
+                <img src={qrDataUrl} alt={t("ppPaymentQrAlt")} className="w-64 h-64" style={{ imageRendering: "pixelated" }} />
               ) : (
                 <div className="w-64 h-64 flex items-center justify-center">
                   <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -207,18 +209,19 @@ const QrModal = ({
               )}
             </div>
             <p className="text-center text-sm text-muted-foreground">
-              Open <span className="font-semibold text-foreground">EasyPay</span> app → Scan QR
+              {t("ppOpenAppScan")}
             </p>
           </div>
 
           <div className="px-6 pb-5 pt-2 text-center border-t border-border/20">
-            <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
+            <p className="text-[10px] text-muted-foreground/60">{t("poweredByEasyPay")}</p>
           </div>
         </motion.div>
       </motion.div>
     )}
   </AnimatePresence>
-);
+  );
+};
 
 /* ─── Gradient Mesh Background ───────────────────────────────── */
 const GradientMesh = () => (
