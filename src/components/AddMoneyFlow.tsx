@@ -485,8 +485,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       </div>
                     </motion.div>
                     <div className="text-center space-y-1">
-                      <h2 className="text-xl font-bold text-foreground">Confirm with PIN</h2>
-                      <p className="text-sm text-muted-foreground">Enter your 4-digit PIN to submit</p>
+                      <h2 className="text-xl font-bold text-foreground">{t("amConfirmPin")}</h2>
+                      <p className="text-sm text-muted-foreground">{t("amEnter4Pin")}</p>
                     </div>
                     <div className="flex justify-center gap-3">
                       {[0, 1, 2, 3].map(i => (
@@ -510,7 +510,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       onClick={handlePinSubmit}
                       disabled={submitting || pin.length !== 4}
                     >
-                      {submitting ? "Verifying…" : "Confirm & Submit"}
+                      {submitting ? t("amVerifying") : t("amConfirmSubmit")}
                     </Button>
                   </div>
                 )}
