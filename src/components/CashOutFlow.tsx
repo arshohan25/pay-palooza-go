@@ -293,7 +293,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
   const handleAgentIdContinue = async () => {
     const trimmed = agentIdInput.trim();
-    if (trimmed.length < 5) { setError("Enter a valid Agent ID."); return; }
+    if (trimmed.length < 5) { setError(t("coEnterValidAgentId")); return; }
 
     setValidating(true);
     setError("");
@@ -301,7 +301,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setValidating(false);
 
     if (!validation.exists) {
-      setError("Agent not found. Please enter a valid Agent ID or phone.");
+      setError(t("coAgentNotFound"));
       return;
     }
 
