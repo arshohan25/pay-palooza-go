@@ -744,6 +744,44 @@ const translations = {
     en: "No reason was provided. Please contact support for details.",
     bn: "কোনো কারণ দেওয়া হয়নি। বিস্তারিত জানতে সাপোর্টে যোগাযোগ করুন।",
   },
+
+  // ─── Donations Page ───
+  donations: { en: "Donations", bn: "অনুদান" },
+  donate: { en: "Donate", bn: "অনুদান দিন" },
+  chooseCause: { en: "Choose a Cause", bn: "একটি কারণ বেছে নিন" },
+  generosityChanges: { en: "Your generosity changes lives", bn: "আপনার দান জীবন বদলায়" },
+  recurringTab: { en: "Recurring", bn: "নিয়মিত" },
+  topTab: { en: "Top", bn: "শীর্ষ" },
+  changeCause: { en: "Change cause", bn: "কারণ পরিবর্তন" },
+  raisedSuffix: { en: "raised", bn: "সংগৃহীত" },
+  causeEducation: { en: "Education", bn: "শিক্ষা" },
+  causeEducationDesc: { en: "Support students in need", bn: "অভাবী শিক্ষার্থীদের সহায়তা" },
+  causeDisaster: { en: "Disaster Relief", bn: "দুর্যোগ সহায়তা" },
+  causeDisasterDesc: { en: "Help communities rebuild", bn: "সম্প্রদায়কে পুনর্নির্মাণে সাহায্য" },
+  causeHealthcare: { en: "Healthcare", bn: "স্বাস্থ্যসেবা" },
+  causeHealthcareDesc: { en: "Access to medical care", bn: "চিকিৎসা সেবা প্রদান" },
+  causeWater: { en: "Clean Water", bn: "পরিষ্কার পানি" },
+  causeWaterDesc: { en: "Safe drinking water for all", bn: "সবার জন্য নিরাপদ পানীয় জল" },
+  causeFood: { en: "Food Security", bn: "খাদ্য নিরাপত্তা" },
+  causeFoodDesc: { en: "Fight hunger together", bn: "একসাথে ক্ষুধার বিরুদ্ধে লড়াই" },
+  causeOrphan: { en: "Orphan Support", bn: "এতিম সহায়তা" },
+  causeOrphanDesc: { en: "A better future for children", bn: "শিশুদের জন্য উজ্জ্বল ভবিষ্যৎ" },
+
+  // ─── Coupons Page ───
+  coupons: { en: "Coupons", bn: "কুপন" },
+  noCouponsYet: { en: "No coupons yet", bn: "এখনো কোনো কুপন নেই" },
+  noCouponsDesc: { en: "We'll notify you when new offers arrive", bn: "নতুন অফার এলে আমরা জানাবো" },
+  redeem: { en: "Redeem", bn: "ব্যবহার করুন" },
+  expiredLabel: { en: "Expired", bn: "মেয়াদ শেষ" },
+  endsTomorrow: { en: "Ends tomorrow", bn: "আগামীকাল শেষ" },
+  daysLeftSuffix: { en: "days left", bn: "দিন বাকি" },
+  daysRemainingSuffix: { en: "d remaining", bn: "দিন বাকি" },
+
+  // ─── PayPage error state ───
+  merchantNotFound: { en: "Merchant Not Found", bn: "মার্চেন্ট পাওয়া যায়নি" },
+  merchantNotFoundDescPrefix: { en: "The merchant code", bn: "মার্চেন্ট কোড" },
+  merchantNotFoundDescSuffix: { en: "could not be resolved.", bn: "সমাধান করা যায়নি।" },
+  loadingPayment: { en: "Loading payment…", bn: "পেমেন্ট লোড হচ্ছে…" },
 } as const;
 
 type TranslationKey = keyof typeof translations;

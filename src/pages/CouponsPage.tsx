@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
@@ -42,6 +43,7 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
   coupon: Coupon; index: number; copiedId: string | null;
   onCopy: (c: Coupon) => void; onUse: (c: Coupon) => void;
 }) {
+  const { t } = useI18n();
   const isCopied = copiedId === coupon.id;
   const flow = coupon.applicable_flow || "shop";
   const flowInfo = FLOW_MAP[flow] || FLOW_MAP.shop;
@@ -52,10 +54,10 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
   const getDaysLeft = (expiresAt: string) => {
     const diff = new Date(expiresAt).getTime() - Date.now();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-    if (days <= 0) return "Expired";
-    if (days === 1) return "Ends tomorrow";
-    if (days <= 7) return `${days} days left`;
-    return `${days}d remaining`;
+    if (days <= 0) return t("expiredLabel");
+    if (days === 1) return t("endsTomorrow");
+    if (days <= 7) return `${days} ${t("daysLeftSuffix")}`;
+    return `${days}${t("daysRemainingSuffix")}`;
   };
 
   return (
@@ -123,7 +125,7 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
               className="w-full rounded-xl font-semibold text-[11px] h-7 shadow-none"
               onClick={() => onUse(coupon)}
             >
-              Redeem
+              {t("redeem")}
             </Button>
           </div>
         </div>
@@ -134,6 +136,7 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
 
 export default function CouponsPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -189,7 +192,7 @@ export default function CouponsPage() {
             >
               <ArrowLeft className="w-[18px] h-[18px] text-foreground" />
             </button>
-            <h1 className="text-[16px] font-bold text-foreground tracking-tight">Coupons</h1>
+            <h1 className="text-[16px] font-bold text-foreground tracking-tight">{t("coupons")}</h1>
           </div>
           <div className="flex items-center gap-1.5 text-muted-foreground/60">
             <Ticket className="w-3.5 h-3.5" />
@@ -228,8 +231,8 @@ export default function CouponsPage() {
               <Ticket className="w-7 h-7 text-muted-foreground/20" />
             </div>
             <div className="text-center space-y-1">
-              <p className="text-[14px] text-foreground/70 font-medium">No coupons yet</p>
-              <p className="text-[12px] text-muted-foreground/50">We'll notify you when new offers arrive</p>
+              <p className="text-[14px] text-foreground/70 font-medium">{t("noCouponsYet")}</p>
+              <p className="text-[12px] text-muted-foreground/50">{t("noCouponsDesc")}</p>
             </div>
           </motion.div>
         ) : (
