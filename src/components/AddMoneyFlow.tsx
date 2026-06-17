@@ -123,7 +123,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setError("File must be under 5MB."); return; }
+    if (file.size > 5 * 1024 * 1024) { setError(t("amFileTooLarge")); return; }
     setProofFile(file);
     setProofPreview(URL.createObjectURL(file));
     setError("");
