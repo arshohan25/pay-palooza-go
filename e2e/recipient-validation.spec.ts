@@ -43,11 +43,13 @@ test.describe("recipient validation harness", () => {
     await expect(page.getByTestId("error")).toHaveCount(0);
     await expect(cont).toBeEnabled();
 
-    // 4. Clear -> blur surfaces the required message.
+    // 4. Clear -> empty: Continue disabled again, no inline error
+    //    (the schema intentionally suppresses errors for empty input so
+    //    the field stays clean until the user starts typing).
     await input.fill("");
     await input.evaluate((el: HTMLInputElement) => el.blur());
-    await expect(page.getByTestId("error")).toBeVisible();
     await expect(cont).toBeDisabled();
+    await expect(page.getByTestId("error")).toHaveCount(0);
   });
 
   test("phone: must start with 01 and be 11 digits", async ({ page }) => {
