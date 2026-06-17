@@ -41,7 +41,7 @@ export function useAiRewards(rewardType?: string) {
     fetch();
 
     const channel = supabase
-      .channel(`ai-rewards-${rewardType || "all"}`)
+      .channel(`ai-rewards-${user.id}-${rewardType || "all"}`)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
