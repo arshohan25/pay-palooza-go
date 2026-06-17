@@ -143,7 +143,9 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
 interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; }
 
 const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProps) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const dateLocale = lang === "bn" ? "bn-BD" : "en-GB";
+  const timeLocale = lang === "bn" ? "bn-BD" : "en-US";
   const { isLocked } = useFeatureLocks();
   const { calcFee, calcCashOutFee, loading: feeLoading } = useFeeConfig();
   const sendLock = isLocked("send_money");
