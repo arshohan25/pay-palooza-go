@@ -53,8 +53,9 @@ const STEP_INDEX: Record<string, number> = { phone: 0, otp: 1, pin: 2 };
 
 /* ─── Segmented Step Bar ────────────────────────────────────── */
 const StepBar = ({ current }: { current: string }) => {
+  const { t } = useI18n();
   const idx = STEP_INDEX[current] ?? -1;
-  const labels = ["Phone", "Verify", "PIN"];
+  const labels = [t("ppStepPhone"), t("ppStepVerify"), t("ppStepPin")];
   return (
     <div className="mb-6 px-2">
       <div className="flex items-center gap-1">
