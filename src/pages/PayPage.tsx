@@ -379,7 +379,7 @@ const PayPage = () => {
           pin,
           recipient_phone: merchant.phone,
           amount: amountParam,
-          description: description || `Payment to ${merchant.business_name}`,
+          description: description || `${t("ppPaymentTo")} ${merchant.business_name}`,
           reference: safeReference || null,
           merchant_id: merchant.id || null,
         }),
