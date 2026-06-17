@@ -43,8 +43,17 @@ const spring = { type: "spring" as const, stiffness: 500, damping: 32 };
 
 const DonationsPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { user } = useAuth();
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
+  const CAUSE_I18N: Record<string, { name: string; desc: string }> = {
+    education: { name: t("causeEducation"), desc: t("causeEducationDesc") },
+    disaster: { name: t("causeDisaster"), desc: t("causeDisasterDesc") },
+    healthcare: { name: t("causeHealthcare"), desc: t("causeHealthcareDesc") },
+    water: { name: t("causeWater"), desc: t("causeWaterDesc") },
+    food: { name: t("causeFood"), desc: t("causeFoodDesc") },
+    orphan: { name: t("causeOrphan"), desc: t("causeOrphanDesc") },
+  };
   const [step, setStep] = useState<Step>("cause");
   const [selectedCause, setSelectedCause] = useState<typeof CAUSES[0] | null>(null);
   const [amount, setAmount] = useState("");
