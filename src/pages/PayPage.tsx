@@ -9,6 +9,28 @@ import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
 import QRCode from "qrcode";
+import { useI18n } from "@/lib/i18n";
+
+const NotFoundView = ({ merchantCode, onHome }: { merchantCode: string; onHome: () => void }) => {
+  const { t } = useI18n();
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <GradientMesh />
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-sm bg-card/90 backdrop-blur-2xl border border-border/20 rounded-3xl p-8 text-center space-y-4 shadow-2xl shadow-primary/5">
+        <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+          <XCircle className="w-7 h-7 text-destructive/70" />
+        </div>
+        <h2 className="text-lg font-bold text-foreground">{t("merchantNotFound")}</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {t("merchantNotFoundDescPrefix")} "<span className="font-mono font-semibold text-foreground/70">{merchantCode}</span>" {t("merchantNotFoundDescSuffix")}
+        </p>
+        <Button variant="outline" onClick={onHome} className="rounded-2xl mt-2 h-11 px-6">{t("goHome")}</Button>
+      </motion.div>
+    </div>
+  );
+};
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
