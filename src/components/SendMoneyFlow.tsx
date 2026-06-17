@@ -550,8 +550,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
     if (!amount || isNaN(val) || val <= 0) { setError(t("enterValidAmount")); return; }
-    if (val < 0.01)  { setError("Minimum send amount is ৳0.01."); return; }
-    if (val > 50000) { setError("Maximum send per day is ৳50,000."); return; }
+    if (val < 0.01)  { setError(t("smMinSendAmount")); return; }
+    if (val > 50000) { setError(t("smMaxSendDay")); return; }
     goTo("confirm");
   };
 
