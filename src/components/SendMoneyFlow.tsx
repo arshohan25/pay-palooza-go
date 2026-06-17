@@ -1018,7 +1018,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 <div className="text-center space-y-1">
                   <p className="text-sm text-muted-foreground">{t("sending")}</p>
                   <p className="text-4xl font-extrabold text-foreground">৳{amtNum.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">to <span className="font-semibold text-foreground">{recipient?.name}</span></p>
+                  <p className="text-xs text-muted-foreground">{t("smTo")} <span className="font-semibold text-foreground">{recipient?.name}</span></p>
                 </div>
 
                 <div className="rounded-xl bg-muted/40 border border-border p-3 flex justify-between text-sm">
