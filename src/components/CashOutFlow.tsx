@@ -700,10 +700,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
 
                 {parseFloat(amount) > 0 && totalFromBalance > BALANCE && (
-                  <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                  <p className="text-center text-sm text-destructive font-medium">{t("coInsufficientBalance")}</p>
                 )}
                 {parseFloat(amount) > 0 && totalFromBalance <= BALANCE && parseFloat(amount) > 35000 && (
-                  <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳35,000)</p>
+                  <p className="text-center text-sm text-destructive font-medium">{t("coExceedsDailyLimit")}</p>
                 )}
                 {parseFloat(amount) > 0 && totalFromBalance <= BALANCE && parseFloat(amount) <= 35000 && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
@@ -711,7 +711,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       className="w-full h-12 gradient-cashout border-0 text-white font-semibold text-base"
                       onClick={handleAmountContinue}
                     >
-                      Review Cash Out
+                      {t("coReviewCashOut")}
                     </Button>
                   </motion.div>
                 )}
