@@ -311,7 +311,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                 {step === "amount" && (
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">Enter Amount</label>
+                      <label className="text-sm font-semibold text-foreground">{t("amEnterAmount")}</label>
                       <div className="relative flex items-center">
                         <span className="absolute left-4 text-2xl font-bold text-muted-foreground">৳</span>
                         <input type="text" inputMode="decimal" placeholder="0" value={amount}
@@ -329,11 +329,11 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       ))}
                     </div>
                     {parseFloat(amount) > 0 && parseFloat(amount) > 100000 && (
-                      <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳100,000)</p>
+                      <p className="text-center text-sm text-destructive font-medium">{t("amExceedsDaily")}</p>
                     )}
                     {parseFloat(amount) > 0 && parseFloat(amount) <= 100000 && (
                       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-                        <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={handleAmountContinue}>Continue</Button>
+                        <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={handleAmountContinue}>{t("amContinue")}</Button>
                       </motion.div>
                     )}
                   </div>
