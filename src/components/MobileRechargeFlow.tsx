@@ -663,12 +663,13 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   {storedContacts.length === 0 ? null : (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Contacts</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("mrContacts")}</p>
                         <button
                           onClick={handleSyncContacts}
                           disabled={syncingContacts}
                           className="p-1.5 rounded-lg hover:bg-muted active:scale-95 transition-all"
-                          title="Sync contacts"
+                          title={t("mrSyncContacts")}
+
                         >
                           <RefreshCw size={14} className={`text-muted-foreground ${syncingContacts ? "animate-spin" : ""}`} />
                         </button>
