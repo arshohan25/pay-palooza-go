@@ -529,17 +529,17 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       </div>
                     </motion.div>
                     <h2 className="text-xl font-bold text-foreground">
-                      {trackingStatus === "approved" ? "Request Approved! ✅" :
-                       trackingStatus === "rejected" ? "Request Rejected" :
-                       "Request Submitted"}
+                      {trackingStatus === "approved" ? t("amStatusApprovedTitle") :
+                       trackingStatus === "rejected" ? t("amStatusRejectedTitle") :
+                       t("amStatusSubmittedTitle")}
                     </h2>
                     <p className="text-sm text-muted-foreground max-w-xs">
                       {trackingStatus === "approved" ? (
-                        <>৳{parseFloat(amount).toLocaleString()} has been added to your wallet.</>
+                        <>{t("amApprovedBody").replace("{amt}", `৳${parseFloat(amount).toLocaleString()}`)}</>
                       ) : trackingStatus === "rejected" ? (
-                        <>Your add money request of ৳{parseFloat(amount).toLocaleString()} was rejected. Check notifications for details.</>
+                        <>{t("amRejectedBody").replace("{amt}", `৳${parseFloat(amount).toLocaleString()}`)}</>
                       ) : (
-                        <>Your add money request of <span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span> is pending approval.</>
+                        <>{t("amPendingBodyPrefix")} <span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span> {t("amPendingBodySuffix")}</>
                       )}
                     </p>
 
