@@ -685,7 +685,7 @@ const PayPage = () => {
                     onClick={() => { window.location.href = redirectParam; }}
                     className="rounded-2xl h-11 font-semibold gap-2 w-full"
                   >
-                    <ExternalLink size={15} /> Return to Merchant
+                    <ExternalLink size={15} /> {t("ppReturnToMerchant")}
                   </Button>
                 )}
                 <Button
@@ -693,7 +693,7 @@ const PayPage = () => {
                   onClick={() => navigate("/")}
                   className="rounded-2xl h-11 font-semibold gap-2 w-full"
                 >
-                  <Home size={15} /> Go Home
+                  <Home size={15} /> {t("ppGoHome")}
                 </Button>
               </motion.div>
             </motion.div>
