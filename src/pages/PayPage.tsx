@@ -239,6 +239,7 @@ const GradientMesh = () => (
 const PayPage = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const merchantCode = params.get("merchant") || "";
   const refParam = params.get("ref") || "";
