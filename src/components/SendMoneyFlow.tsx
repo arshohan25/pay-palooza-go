@@ -143,7 +143,9 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
 interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; }
 
 const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProps) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const dateLocale = lang === "bn" ? "bn-BD" : "en-GB";
+  const timeLocale = lang === "bn" ? "bn-BD" : "en-US";
   const { isLocked } = useFeatureLocks();
   const { calcFee, calcCashOutFee, loading: feeLoading } = useFeeConfig();
   const sendLock = isLocked("send_money");
@@ -193,7 +195,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const current = parseFloat(amount) || 0;
     const nextEnabled = !addCashOutCharge;
     if (nextEnabled && current < MIN_CASH_OUT_AMOUNT) {
-      setError(`Minimum amount ৳${MIN_CASH_OUT_AMOUNT} required to add Cash Out Charge.`);
+      setError(t("smMinCashoutChargeReq").replace("{amt}", String(MIN_CASH_OUT_AMOUNT)));
       haptics.error?.();
       return;
     }
@@ -261,7 +263,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       const result = await validateRecipientExists(prefilledPhone);
       setValidating(false);
       if (!result.exists) {
-        setError("This number is not registered on EasyPay.");
+        setError(t("smNotRegistered"));
         return;
       }
       setResolvedPhone(result.phone || prefilledPhone);
@@ -415,7 +417,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const result = await validateRecipientExists(c.phone);
     setValidating(false);
     if (!result.exists) {
-      setError("This number is not registered on EasyPay.");
+      setError(t("smNotRegistered"));
       return;
     }
     const updated = { ...c, name: result.name || c.name };
@@ -475,7 +477,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     setValidating(false);
 
     if (!result.exists) {
-      setError(type === "walletId" ? "Wallet ID not found on EasyPay." : "This number is not registered on EasyPay.");
+      setError(type === "walletId" ? t("smWalletNotFound") : t("smNotRegistered"));
       return;
     }
 
@@ -496,7 +498,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         : normalizePhone(val).slice(-2);
       setRecipient({
         id: "custom",
-        name: result.name || (type === "walletId" ? `Wallet ${val}` : normalizePhone(val)),
+        name: result.name || (type === "walletId" ? `${t("smWalletPrefix")} ${val}` : normalizePhone(val)),
         phone: result.phone || normalizePhone(val),
         initials,
         gradient: "gradient-send",
@@ -521,7 +523,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     setValidating(false);
 
     if (!validationResult.exists) {
-      setError("This number is not registered on EasyPay.");
+      setError(t("smNotRegistered"));
       return;
     }
 
@@ -538,7 +540,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         : result.slice(-2);
       setRecipient({
         id: "qr",
-        name: validationResult.name || (type === "walletId" ? `Wallet ${result}` : result),
+        name: validationResult.name || (type === "walletId" ? `${t("smWalletPrefix")} ${result}` : result),
         phone: validationResult.phone || result,
         initials,
         gradient: "gradient-send",
@@ -550,8 +552,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
     if (!amount || isNaN(val) || val <= 0) { setError(t("enterValidAmount")); return; }
-    if (val < 0.01)  { setError("Minimum send amount is ৳0.01."); return; }
-    if (val > 50000) { setError("Maximum send per day is ৳50,000."); return; }
+    if (val < 0.01)  { setError(t("smMinSendAmount")); return; }
+    if (val > 50000) { setError(t("smMaxSendDay")); return; }
     goTo("confirm");
   };
 
@@ -564,12 +566,12 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     setProcessing(true);
 
     const pinValid = await verifyPin(pin);
-    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+    if (!pinValid) { setError(t("incorrectPin")); setPin(""); setProcessing(false); return; }
 
     const amtVal = parseFloat(amount) || 0;
     const limitCheck = await checkDailyLimit("send", amtVal);
     if (!limitCheck.allowed) {
-      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setError(t("smDailyLimitExceeded").replace("{used}", limitCheck.used.toLocaleString()).replace("{limit}", limitCheck.limit.toLocaleString()));
       setProcessing(false);
       return;
     }
@@ -590,11 +592,11 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (note || "") + (resolvedWalletId ? ` [Wallet: ${resolvedWalletId}]` : ""),
       });
       onSuccess?.(actualSendAmount);
-      showTxnToast({ type: "Send Money", amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
+      showTxnToast({ type: t("flowSendMoney"), amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
       setDirection(1);
       setStep("success");
     } catch (err: any) {
-      setError(err?.message || "Transaction failed. Please try again.");
+      setError(err?.message || t("smTransactionFailed"));
       setPin("");
       setProcessing(false);
       return;
@@ -615,7 +617,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   if (sendLock.locked) {
     return (
       <FeatureLockedOverlay
-        featureName="Send Money"
+        featureName={t("flowSendMoney")}
         reason={sendLock.reason}
         expiresAt={sendLock.expiresAt}
         onClose={onClose}
@@ -659,7 +661,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
             <button
               type="button"
               onClick={goBack}
-              aria-label="Go back"
+              aria-label={t("smGoBack")}
               className="w-10 h-10 rounded-full bg-primary-foreground/15 flex items-center justify-center active:scale-95 transition-transform shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/70"
             >
               <ChevronLeft size={20} className="text-primary-foreground" aria-hidden="true" />
@@ -669,7 +671,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {t("flowSendMoney")}
               </h1>
               {step === "recipient" && (
-                <p className="text-xs text-primary-foreground/70 mt-0.5">Secure & Instant Transfer</p>
+                <p className="text-xs text-primary-foreground/70 mt-0.5">{t("secureInstantTransfer")}</p>
               )}
             </div>
             {step !== "recipient" && <div className="w-10" />}
@@ -702,7 +704,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     <input
                       type="text"
                       inputMode="text"
-                      placeholder="Name or Number or Wallet ID"
+                      placeholder={t("smNameNumberWallet")}
                       value={inputVal}
                       onChange={(e) => handleInputChange(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
@@ -729,9 +731,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       <Send size={16} className="text-[hsl(330_80%_55%)]" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-semibold text-foreground">Send to {inputVal.trim()}</p>
+                      <p className="text-sm font-semibold text-foreground">{t("smSendToPrefix")} {inputVal.trim()}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {manualRecipientType === "phone" ? "Mobile number" : "Wallet ID"}
+                        {manualRecipientType === "phone" ? t("mobileNumber") : t("walletIdLabel")}
                       </p>
                     </div>
                   </div>
@@ -741,7 +743,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {recentFiltered.length > 0 && (
                   <div>
                     <div className="px-4 py-2 flex items-center gap-2">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent</span>
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("smRecent")}</span>
                       <div className="flex-1 h-px bg-border" />
                     </div>
                     {recentFiltered.slice(0, 4).map((c) => (
@@ -754,10 +756,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {contactsFiltered.length > 0 && (
                   <div>
                     <div className="px-4 py-2.5 flex items-center justify-between mt-1">
-                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">All Contacts</span>
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("smAllContacts")}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">{contactsFiltered.length}</span>
-                        <button onClick={handleSyncContacts} className="p-1 rounded-full hover:bg-muted transition-colors" title="Sync Contacts">
+                        <button onClick={handleSyncContacts} className="p-1 rounded-full hover:bg-muted transition-colors" title={t("smSyncContacts")}>
                           <RefreshCw size={14} className="text-muted-foreground" />
                         </button>
                       </div>
@@ -783,8 +785,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     >
                       <Users className="w-7 h-7 text-muted-foreground" />
                     </motion.div>
-                    <p className="text-sm font-semibold text-foreground">No contacts found</p>
-                    <p className="text-xs text-muted-foreground mt-1">Enter a number or import from your phone</p>
+                    <p className="text-sm font-semibold text-foreground">{t("smNoContacts")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("smImportContacts")}</p>
                   </motion.div>
                 )}
 
@@ -796,7 +798,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       className="w-full h-12 text-base font-semibold rounded-xl gradient-send border-0 text-white"
                       onClick={handleManualSend}
                     >
-                      Continue
+                      {t("continue")}
                     </Button>
                   </div>
                 )}
@@ -853,7 +855,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                   {addCashOutCharge && amtNum > 0 && cashOutExtra > 0 && (
                     <p className="text-[11px] text-muted-foreground">
-                      Base ৳{cashOutBaseAmount.toLocaleString()} + Cash Out Charge ৳{cashOutExtra.toFixed(2)} = ৳{sendAmount.toLocaleString()}
+                      {t("smBaseBreakdown").replace("{base}", cashOutBaseAmount.toLocaleString()).replace("{extra}", cashOutExtra.toFixed(2)).replace("{total}", sendAmount.toLocaleString())}
                     </p>
                   )}
                   {error && (
@@ -884,7 +886,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">{t("noteOptional")}</label>
                   <input
-                    placeholder="What's it for?"
+                    placeholder={t("smWhatsFor")}
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     className="w-full px-3 h-10 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/60"
@@ -903,9 +905,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 >
                   <Banknote size={16} className={addCashOutCharge ? "text-primary" : "text-muted-foreground"} />
                   <div className="flex-1 text-left">
-                    <p className="text-xs font-medium text-foreground">Add Cash Out Charge (1.19%)</p>
+                    <p className="text-xs font-medium text-foreground">{t("smCashOutToggle")}</p>
                     {amtNum > 0 && amtNum < MIN_CASH_OUT_AMOUNT && (
-                      <p className="text-[10px] text-destructive mt-0.5">Minimum ৳{MIN_CASH_OUT_AMOUNT} required</p>
+                      <p className="text-[10px] text-destructive mt-0.5">{t("smMinAmountRequired").replace("{amt}", String(MIN_CASH_OUT_AMOUNT))}</p>
                     )}
                   </div>
                   <div className={`w-9 h-5 rounded-full transition-colors relative ${addCashOutCharge ? "bg-primary" : "bg-muted"}`}>
@@ -917,10 +919,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
 
                 {amtNum > 0 && totalFromBalance > BALANCE && (
-                  <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                  <p className="text-center text-sm text-destructive font-medium">{t("insufficientBalance")}</p>
                 )}
                 {amtNum > 0 && totalFromBalance <= BALANCE && amtNum > 50000 && (
-                  <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳50,000)</p>
+                  <p className="text-center text-sm text-destructive font-medium">{t("smExceedsDailyLimit")}</p>
                 )}
                 {amtNum > 0 && totalFromBalance <= BALANCE && amtNum <= 50000 && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
@@ -975,15 +977,15 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       </span>
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground/70">
-                      <span>Fee source</span>
+                      <span>{t("feeSource")}</span>
                       <span className="text-primary font-medium">
                         {fee === 0
                           ? "—"
                           : feeFromBalance >= fee
-                          ? "From your balance"
+                          ? t("fromYourBalance")
                           : feeFromBalance > 0
-                          ? `৳${feeFromBalance.toFixed(2)} balance + ৳${feeFromAmount} from amount`
-                          : "Deducted from amount"}
+                          ? t("smBalancePlusAmount").replace("{bal}", feeFromBalance.toFixed(2)).replace("{amt}", String(feeFromAmount))
+                          : t("deductedFromAmount")}
                       </span>
                     </div>
                     <div className="h-px bg-border" />
@@ -1018,7 +1020,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 <div className="text-center space-y-1">
                   <p className="text-sm text-muted-foreground">{t("sending")}</p>
                   <p className="text-4xl font-extrabold text-foreground">৳{amtNum.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">to <span className="font-semibold text-foreground">{recipient?.name}</span></p>
+                  <p className="text-xs text-muted-foreground">{t("smTo")} <span className="font-semibold text-foreground">{recipient?.name}</span></p>
                 </div>
 
                 <div className="rounded-xl bg-muted/40 border border-border p-3 flex justify-between text-sm">
@@ -1054,7 +1056,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-2">
                   <h2 className="text-2xl font-extrabold text-foreground">{t("moneySent")}</h2>
                   <p className="text-muted-foreground text-sm">
-                    ৳{amtNum.toLocaleString()} sent to{" "}
+                    ৳{amtNum.toLocaleString()} {t("smSentTo")}{" "}
                     <span className="font-semibold text-foreground">{recipient?.name}</span>
                   </p>
                 </motion.div>
@@ -1067,7 +1069,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                   {matchedBy === "wallet" ? (
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Wallet ID</span><span className="text-foreground font-medium">{resolvedWalletId}</span>
+                      <span>{t("walletIdLabel")}</span><span className="text-foreground font-medium">{resolvedWalletId}</span>
                     </div>
                   ) : (
                     <div className="flex justify-between text-muted-foreground">
@@ -1083,7 +1085,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                   {fee > 0 && (
                     <p className="text-[11px] text-muted-foreground text-right">
-                      ৳{amtNum.toLocaleString()} + ৳{fee} fee ({feeFromBalance >= fee ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                      {t("smFeeBreakdown").replace("{amt}", amtNum.toLocaleString()).replace("{fee}", String(fee)).replace("{source}", feeFromBalance >= fee ? t("smFromBalanceShort") : feeFromBalance > 0 ? t("smBalancePlusAmtShort") : t("smFromAmountShort"))}
                     </p>
                   )}
                   {feeFromAmount > 0 && (
@@ -1095,13 +1097,13 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("date")}</span>
                     <span className="text-foreground font-medium">
-                      {txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                      {txnTime.current.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" })}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("time")}</span>
                     <span className="text-foreground font-medium">
-                      {txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                      {txnTime.current.toLocaleTimeString(timeLocale, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
                     </span>
                   </div>
                   <div className="h-px bg-border" />
@@ -1138,17 +1140,17 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         open={showShare}
         onClose={() => setShowShare(false)}
         receipt={{
-          title: "Money Sent",
+          title: t("moneySent"),
           amount: `৳${amtNum.toLocaleString()}`,
           gradient: "gradient-send",
           txnId: txnId.current,
           rows: [
-            { label: "Recipient", value: recipient?.name ?? "" },
-            { label: matchedBy === "wallet" ? "Wallet ID" : "Mobile / Wallet", value: matchedBy === "wallet" ? resolvedWalletId : (recipient?.phone ?? "") },
-            { label: "Amount", value: `৳${amtNum.toLocaleString()}` },
-            { label: "Fee", value: fee === 0 ? "Free" : `৳${fee}` },
-            { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
-            { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+            { label: t("recipient"), value: recipient?.name ?? "" },
+            { label: matchedBy === "wallet" ? t("walletIdLabel") : t("mobileWallet"), value: matchedBy === "wallet" ? resolvedWalletId : (recipient?.phone ?? "") },
+            { label: t("amount"), value: `৳${amtNum.toLocaleString()}` },
+            { label: t("fee"), value: fee === 0 ? t("free") : `৳${fee}` },
+            { label: t("date"), value: txnTime.current.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: t("time"), value: txnTime.current.toLocaleTimeString(timeLocale, { hour: "2-digit", minute: "2-digit", hour12: true }) },
           ],
         }}
       />
