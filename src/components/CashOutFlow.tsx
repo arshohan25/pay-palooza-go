@@ -843,7 +843,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 >
                   <h2 className="text-2xl font-extrabold text-foreground">{t("cashOutSuccessful")}</h2>
                   <p className="text-muted-foreground text-sm">
-                    ৳{parseFloat(amount).toLocaleString()} cashed out at{" "}
+                    {t("coCashedOutAt").replace("{amt}", `৳${parseFloat(amount).toLocaleString()}`)}{" "}
                     <span className="font-semibold text-foreground">{agent?.name}</span>
                   </p>
                 </motion.div>
