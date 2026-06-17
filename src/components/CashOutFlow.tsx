@@ -737,26 +737,26 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 </div>
 
                 <div className="rounded-2xl bg-card border border-border p-4 space-y-2.5 text-sm">
-                  <p className="font-semibold text-foreground">Transaction Summary</p>
+                  <p className="font-semibold text-foreground">{t("coTransactionSummary")}</p>
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("cashOutAmount")}</span>
                     <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Fee ({FEE_LABEL})</span>
+                    <span>{t("coFee")} ({FEE_LABEL})</span>
                     <span className="text-destructive font-medium">− ৳{fee}</span>
                   </div>
                   {couponDiscount > 0 && pendingCoupon && (
                     <CouponSummaryLine code={pendingCoupon.code} discount={couponDiscount} />
                   )}
                   <div className="flex justify-between text-xs text-muted-foreground/70">
-                    <span>Fee source</span>
+                    <span>{t("coFeeSource")}</span>
                     <span className="text-primary font-medium">
                       {feeFromBalance >= feeNum
-                        ? "From your balance"
+                        ? t("coFeeFromBalance")
                         : feeFromBalance > 0
-                        ? `৳${feeFromBalance.toFixed(2)} balance + ৳${feeFromAmount} from amount`
-                        : "Deducted from amount"}
+                        ? t("coFeeBalancePlusAmount").replace("{bal}", feeFromBalance.toFixed(2)).replace("{amt}", String(feeFromAmount))
+                        : t("coFeeDeductedFromAmount")}
                     </span>
                   </div>
                   <div className="h-px bg-border" />
@@ -765,15 +765,15 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <span className="text-primary">৳{parseFloat(receive).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground/70">
-                    <span>Total from balance</span>
+                    <span>{t("coTotalFromBalance")}</span>
                     <span>৳{totalFromBalance.toLocaleString()}</span>
                   </div>
                 </div>
 
                 <Button className="w-full h-12 gradient-cashout border-0 text-white font-semibold text-base rounded-xl" onClick={handleReviewContinue}>
-                  Confirm & Enter PIN
+                  {t("coConfirmEnterPin")}
                 </Button>
-                <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>Edit Amount</Button>
+                <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>{t("coEditAmount")}</Button>
               </div>
             )}
 
