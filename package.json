@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:i18n": "vitest run src/test/i18n-bn.test.tsx",
+    "test:e2e": "playwright test",
+    "i18n:audit": "node scripts/i18n-audit.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

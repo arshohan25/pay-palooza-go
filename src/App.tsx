@@ -13,6 +13,7 @@ import RoleGuardLayout from "@/components/RoleGuardLayout";
 import RoleGuard from "@/components/RoleGuard";
 import MerchantSessionWatchdog from "@/components/MerchantSessionWatchdog";
 import LazyLoadErrorBoundary from "@/components/LazyLoadErrorBoundary";
+import MissingTranslationsBanner from "@/components/MissingTranslationsBanner";
 import { retryLazyImport } from "@/lib/cacheReset";
 
 const Index = lazy(() => retryLazyImport(() => import("./pages/Index")));
@@ -87,6 +88,7 @@ const App = () => (
             <FestivalBodyEffect />
             <Toaster />
             <Sonner />
+            <MissingTranslationsBanner />
             <BrowserRouter>
               <MerchantSessionWatchdog />
               <LazyLoadErrorBoundary>
