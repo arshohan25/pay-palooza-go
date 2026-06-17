@@ -554,7 +554,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     }}
                     className="w-full flex items-center gap-2 p-2.5 rounded-xl bg-primary/5 border border-primary/20 text-xs text-primary font-medium"
                   >
-                    <MapPin size={14} /> Enable location to find nearby agents
+                    <MapPin size={14} /> {t("coEnableLocation")}
                   </button>
                 )}
 
