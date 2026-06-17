@@ -57,7 +57,8 @@ const slideVariants = {
 interface AddMoneyFlowProps { onClose: () => void; }
 
 const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const dateLocale = lang === "bn" ? "bn-BD" : "en-GB";
   const { requests, submitAddMoney, uploadProof } = useFundRequests();
   const [step, setStep] = useState<Step>("amount");
   const [direction, setDir] = useState(1);
