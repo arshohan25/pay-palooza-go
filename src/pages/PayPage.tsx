@@ -32,13 +32,13 @@ const NotFoundView = ({ merchantCode, onHome }: { merchantCode: string; onHome: 
   );
 };
 
-const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
+const fmt = (n: number, locale = "en-BD") => new Intl.NumberFormat(locale).format(n);
 
 type Step = "loading" | "ready" | "phone" | "otp" | "pin" | "processing" | "success" | "error" | "not_found";
 
-const formatDateTime = (d: Date) => {
-  return d.toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" }) +
-    " · " + d.toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" });
+const formatDateTime = (d: Date, locale = "en-BD") => {
+  return d.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" }) +
+    " · " + d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 };
 
 interface MerchantInfo {
@@ -53,8 +53,9 @@ const STEP_INDEX: Record<string, number> = { phone: 0, otp: 1, pin: 2 };
 
 /* ─── Segmented Step Bar ────────────────────────────────────── */
 const StepBar = ({ current }: { current: string }) => {
+  const { t } = useI18n();
   const idx = STEP_INDEX[current] ?? -1;
-  const labels = ["Phone", "Verify", "PIN"];
+  const labels = [t("ppStepPhone"), t("ppStepVerify"), t("ppStepPin")];
   return (
     <div className="mb-6 px-2">
       <div className="flex items-center gap-1">
@@ -158,7 +159,9 @@ const OtpInput = ({ value, onChange, length = 6 }: { value: string; onChange: (v
 /* ─── QR Modal ───────────────────────────────────────────────── */
 const QrModal = ({
   open, onClose, qrDataUrl, merchantName, amount,
-}: { open: boolean; onClose: () => void; qrDataUrl: string | null; merchantName: string; amount: number }) => (
+}: { open: boolean; onClose: () => void; qrDataUrl: string | null; merchantName: string; amount: number }) => {
+  const { t } = useI18n();
+  return (
   <AnimatePresence>
     {open && (
       <motion.div
@@ -185,7 +188,7 @@ const QrModal = ({
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-3 ring-2 ring-primary/10">
               <Store className="w-7 h-7 text-primary" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">Scan to Pay</h3>
+            <h3 className="text-lg font-bold text-foreground">{t("ppScanToPay")}</h3>
             {merchantName && <p className="text-xs text-muted-foreground mt-0.5">{merchantName}</p>}
             {amount > 0 && (
               <p className="text-3xl font-extrabold text-foreground mt-1">
@@ -197,7 +200,7 @@ const QrModal = ({
           <div className="p-6 space-y-5">
             <div className="bg-white rounded-2xl p-4 mx-auto w-fit shadow-lg">
               {qrDataUrl ? (
-                <img src={qrDataUrl} alt="Payment QR" className="w-64 h-64" style={{ imageRendering: "pixelated" }} />
+                <img src={qrDataUrl} alt={t("ppPaymentQrAlt")} className="w-64 h-64" style={{ imageRendering: "pixelated" }} />
               ) : (
                 <div className="w-64 h-64 flex items-center justify-center">
                   <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -206,18 +209,19 @@ const QrModal = ({
               )}
             </div>
             <p className="text-center text-sm text-muted-foreground">
-              Open <span className="font-semibold text-foreground">EasyPay</span> app → Scan QR
+              {t("ppOpenAppScan")}
             </p>
           </div>
 
           <div className="px-6 pb-5 pt-2 text-center border-t border-border/20">
-            <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
+            <p className="text-[10px] text-muted-foreground/60">{t("poweredByEasyPay")}</p>
           </div>
         </motion.div>
       </motion.div>
     )}
   </AnimatePresence>
-);
+  );
+};
 
 /* ─── Gradient Mesh Background ───────────────────────────────── */
 const GradientMesh = () => (
@@ -239,7 +243,8 @@ const GradientMesh = () => (
 const PayPage = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const locale = lang === "bn" ? "bn-BD" : "en-BD";
 
   const merchantCode = params.get("merchant") || "";
   const refParam = params.get("ref") || "";
@@ -271,7 +276,7 @@ const PayPage = () => {
         });
         if (error) {
           console.error("resolve_payment_merchant RPC error:", error);
-          setErrorMsg("Could not connect to payment service. Please try again.");
+          setErrorMsg(t("ppCouldNotConnect"));
           setStep("error");
           return;
         }
@@ -288,7 +293,7 @@ const PayPage = () => {
         setStep("ready");
       } catch (e) {
         console.error("resolve_payment_merchant exception:", e);
-        setErrorMsg("Something went wrong. Please try again.");
+        setErrorMsg(t("ppSomethingWrong"));
         setStep("error");
       }
     })();
@@ -314,7 +319,7 @@ const PayPage = () => {
   const handleSendOtp = useCallback(async () => {
     const cleanPhone = phone.replace(/\D/g, "");
     if (!/^01[3-9]\d{8}$/.test(cleanPhone)) {
-      setErrorMsg("Enter a valid 11-digit number");
+      setErrorMsg(t("ppValidNumber"));
       haptics.error();
       return;
     }
@@ -329,12 +334,12 @@ const PayPage = () => {
         body: JSON.stringify({ phone: cleanPhone, purpose: "payment" }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to send OTP");
+      if (!res.ok) throw new Error(result.error || t("ppFailedSendOtp"));
       if (result.dev_otp) setDevOtp(result.dev_otp);
       setStep("otp");
       haptics.success();
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to send OTP");
+      setErrorMsg(err.message || t("ppFailedSendOtp"));
       setStep("phone");
       haptics.error();
     }
@@ -374,13 +379,13 @@ const PayPage = () => {
           pin,
           recipient_phone: merchant.phone,
           amount: amountParam,
-          description: description || `Payment to ${merchant.business_name}`,
+          description: description || `${t("ppPaymentTo")} ${merchant.business_name}`,
           reference: safeReference || null,
           merchant_id: merchant.id || null,
         }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Payment failed");
+      if (!res.ok) throw new Error(result.error || t("ppPaymentFailedMsg"));
       setSuccessTxnId(result.txn_id || `TXN${Date.now().toString(36).toUpperCase()}`);
       setSuccessTime(new Date());
       setStep("success");
@@ -391,7 +396,7 @@ const PayPage = () => {
         activityTracker.transaction("send_money_success", { amount: amountParam, txn_id: result.txn_id })
       );
     } catch (err: any) {
-      setErrorMsg(err.message || "Payment failed");
+      setErrorMsg(err.message || t("ppPaymentFailedMsg"));
       setPin("");
       if (err.message?.toLowerCase().includes("pin")) setStep("pin");
       else { setStep("error"); }
@@ -472,15 +477,15 @@ const PayPage = () => {
           {amountParam > 0 && (
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }}
               className="mt-4 inline-flex items-baseline gap-1.5">
-              <span className="text-3xl font-extrabold text-foreground tracking-tight">৳{fmt(amountParam)}</span>
+              <span className="text-3xl font-extrabold text-foreground tracking-tight">৳{fmt(amountParam, locale)}</span>
               <span className="text-[10px] font-semibold text-muted-foreground/50 bg-muted/50 px-1.5 py-0.5 rounded-full">BDT</span>
             </motion.div>
           )}
 
           {(refParam || noteParam) && (
             <div className="mt-2 flex flex-col items-center gap-0.5">
-              {refParam && <p className="text-[10px] text-muted-foreground/50 font-mono">Ref: {refParam}</p>}
-              {noteParam && <p className="text-[10px] text-muted-foreground/50 font-mono">Note: {noteParam}</p>}
+              {refParam && <p className="text-[10px] text-muted-foreground/50 font-mono">{t("ppRefLabel")}: {refParam}</p>}
+              {noteParam && <p className="text-[10px] text-muted-foreground/50 font-mono">{t("ppNoteLabel")}: {noteParam}</p>}
             </div>
           )}
 
@@ -498,7 +503,7 @@ const PayPage = () => {
                 className="w-full rounded-2xl h-12 text-sm font-bold shadow-lg shadow-primary/20 active:scale-[0.97] transition-transform"
               >
                 <Shield size={16} className="mr-2" />
-                Pay with Phone & PIN
+                {t("ppPayWithPhonePin")}
               </Button>
 
               <button
@@ -506,7 +511,7 @@ const PayPage = () => {
                 className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-muted-foreground hover:text-primary active:scale-[0.97] transition-all"
               >
                 <QrCode size={14} />
-                Show QR Code
+                {t("ppShowQrCode")}
               </button>
             </motion.div>
           )}
@@ -518,8 +523,8 @@ const PayPage = () => {
               className="px-6 pb-6 space-y-4 text-center">
               <StepBar current="phone" />
               <div className="text-center">
-                <p className="text-sm font-bold text-foreground">Enter your phone number</p>
-                <p className="text-[11px] text-muted-foreground/60 mt-1">We'll send a verification code</p>
+                <p className="text-sm font-bold text-foreground">{t("ppEnterPhone")}</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1">{t("ppWellSendCode")}</p>
               </div>
               <div>
                 <input type="tel" inputMode="numeric" maxLength={11} value={phone}
@@ -530,11 +535,11 @@ const PayPage = () => {
               </div>
               {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
               <Button onClick={handleSendOtp} disabled={phone.length < 11} className="w-full rounded-2xl h-11 font-bold active:scale-[0.97] transition-transform">
-                Send OTP
+                {t("sendOtp")}
               </Button>
               <button onClick={() => { setStep("ready"); setErrorMsg(""); }}
                 className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground py-1 active:scale-[0.97] transition-all">
-                <ArrowLeft size={12} /> Back
+                <ArrowLeft size={12} /> {t("ppBack")}
               </button>
             </motion.div>
           )}
@@ -546,15 +551,15 @@ const PayPage = () => {
               className="px-6 pb-6 space-y-5 text-center">
               <StepBar current="otp" />
               <div className="text-center">
-                <p className="text-sm font-bold text-foreground">Enter verification code</p>
-                <p className="text-[11px] text-muted-foreground/60 mt-1">Sent to {phone}</p>
+                <p className="text-sm font-bold text-foreground">{t("ppEnterVerificationCode")}</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1">{t("ppSentTo")} {phone}</p>
               </div>
               <OtpInput value={otp} onChange={setOtp} />
-              {devOtp && <p className="text-[10px] text-center text-muted-foreground/40 font-mono">Dev OTP: {devOtp}</p>}
+              {devOtp && <p className="text-[10px] text-center text-muted-foreground/40 font-mono">{t("ppDevOtp")}: {devOtp}</p>}
               {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
               <button onClick={() => { setStep("phone"); setOtp(""); setErrorMsg(""); }}
                 className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground py-1 active:scale-[0.97] transition-all">
-                <ArrowLeft size={12} /> Change number
+                <ArrowLeft size={12} /> {t("ppChangeNumber")}
               </button>
             </motion.div>
           )}
@@ -569,14 +574,14 @@ const PayPage = () => {
                 <div className="w-10 h-10 rounded-xl bg-primary/8 border border-primary/15 flex items-center justify-center mx-auto mb-2">
                   <Lock className="w-4.5 h-4.5 text-primary" />
                 </div>
-                <p className="text-sm font-bold text-foreground">Enter your PIN</p>
-                <p className="text-[11px] text-muted-foreground/60 mt-1">4-digit security PIN</p>
+                <p className="text-sm font-bold text-foreground">{t("ppEnterYourPin")}</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1">{t("ppFourDigitSecPin")}</p>
               </div>
               <PinInput value={pin} onChange={setPin} />
               {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
               <button onClick={() => { setStep("otp"); setPin(""); setErrorMsg(""); }}
                 className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground py-1 active:scale-[0.97] transition-all">
-                <ArrowLeft size={12} /> Back
+                <ArrowLeft size={12} /> {t("ppBack")}
               </button>
             </motion.div>
           )}
@@ -598,7 +603,7 @@ const PayPage = () => {
                   <Lock size={16} className="text-primary/70" />
                 </div>
               </div>
-              <p className="text-xs font-semibold text-muted-foreground/60 tracking-wide">Processing payment…</p>
+              <p className="text-xs font-semibold text-muted-foreground/60 tracking-wide">{t("ppProcessingPayment")}</p>
             </motion.div>
           )}
 
@@ -619,8 +624,8 @@ const PayPage = () => {
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-foreground">Payment Successful!</h2>
-                <p className="text-xs text-muted-foreground/60 mt-1">৳{fmt(amountParam)} paid to {merchant?.business_name}</p>
+                <h2 className="text-lg font-bold text-foreground">{t("paymentSuccessful")}</h2>
+                <p className="text-xs text-muted-foreground/60 mt-1">৳{fmt(amountParam, locale)} {t("ppPaidTo")} {merchant?.business_name}</p>
               </div>
 
               {/* Receipt Card */}
@@ -632,12 +637,12 @@ const PayPage = () => {
               >
                 <div className="divide-y divide-border/30">
                   {[
-                    { label: "Amount", value: `৳${fmt(amountParam)}`, bold: true },
-                    { label: "Merchant", value: merchant?.business_name || "" },
-                    ...(refParam ? [{ label: "Reference", value: refParam }] : []),
-                    ...(description ? [{ label: "Note", value: description }] : []),
-                    { label: "Date", value: successTime ? formatDateTime(successTime) : "—" },
-                    { label: "Fee", value: "Free", accent: true },
+                    { label: t("ppRowAmount"), value: `৳${fmt(amountParam, locale)}`, bold: true },
+                    { label: t("ppRowMerchant"), value: merchant?.business_name || "" },
+                    ...(refParam ? [{ label: t("ppRowReference"), value: refParam }] : []),
+                    ...(description ? [{ label: t("ppRowNote"), value: description }] : []),
+                    { label: t("ppRowDate"), value: successTime ? formatDateTime(successTime, locale) : "—" },
+                    { label: t("ppRowFee"), value: t("ppFreeValue"), accent: true },
                   ].map((row, i) => (
                     <div key={row.label} className={`flex justify-between items-center px-4 py-2.5 ${i % 2 === 1 ? "bg-muted/20" : ""}`}>
                       <span className="text-[11px] text-muted-foreground/60">{row.label}</span>
@@ -650,7 +655,7 @@ const PayPage = () => {
                 {/* Transaction ID chip */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/30 bg-muted/30">
                   <div className="min-w-0">
-                    <p className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Transaction ID</p>
+                    <p className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-semibold">{t("ppTransactionIdLabel")}</p>
                     <p className="text-[11px] font-mono font-bold text-primary break-all mt-0.5 leading-snug">{successTxnId || "—"}</p>
                   </div>
                   <motion.button
@@ -680,7 +685,7 @@ const PayPage = () => {
                     onClick={() => { window.location.href = redirectParam; }}
                     className="rounded-2xl h-11 font-semibold gap-2 w-full"
                   >
-                    <ExternalLink size={15} /> Return to Merchant
+                    <ExternalLink size={15} /> {t("ppReturnToMerchant")}
                   </Button>
                 )}
                 <Button
@@ -688,7 +693,7 @@ const PayPage = () => {
                   onClick={() => navigate("/")}
                   className="rounded-2xl h-11 font-semibold gap-2 w-full"
                 >
-                  <Home size={15} /> Go Home
+                  <Home size={15} /> {t("ppGoHome")}
                 </Button>
               </motion.div>
             </motion.div>
@@ -701,12 +706,12 @@ const PayPage = () => {
               <div className="w-14 h-14 rounded-full bg-destructive/8 border border-destructive/15 flex items-center justify-center mx-auto shadow-[0_0_20px_-4px_hsl(var(--destructive)/0.2)]">
                 <XCircle className="w-7 h-7 text-destructive/70" />
               </div>
-              <h2 className="text-lg font-bold text-foreground">Payment Failed</h2>
-              <p className="text-sm text-muted-foreground/60 leading-relaxed">{errorMsg || "Something went wrong"}</p>
+              <h2 className="text-lg font-bold text-foreground">{t("ppPaymentFailed")}</h2>
+              <p className="text-sm text-muted-foreground/60 leading-relaxed">{errorMsg || t("ppSomethingWentWrong")}</p>
               <Button variant="outline"
                 onClick={() => { setStep("ready"); setPin(""); setOtp(""); setErrorMsg(""); }}
                 className="rounded-2xl h-11 px-6 font-semibold">
-                Try Again
+                {t("tryAgain")}
               </Button>
             </motion.div>
           )}
@@ -717,7 +722,7 @@ const PayPage = () => {
           <div className="h-px bg-gradient-to-r from-transparent via-border/30 to-transparent mb-3" />
           <div className="flex items-center justify-center gap-1.5">
             <Shield size={10} className="text-muted-foreground/30" />
-            <p className="text-[10px] text-muted-foreground/30 font-medium tracking-wide">Secured by EasyPay</p>
+            <p className="text-[10px] text-muted-foreground/30 font-medium tracking-wide">{t("ppSecuredBy")}</p>
           </div>
         </div>
       </motion.div>
