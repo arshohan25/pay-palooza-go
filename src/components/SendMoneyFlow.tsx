@@ -1140,17 +1140,17 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         open={showShare}
         onClose={() => setShowShare(false)}
         receipt={{
-          title: "Money Sent",
+          title: t("moneySent"),
           amount: `৳${amtNum.toLocaleString()}`,
           gradient: "gradient-send",
           txnId: txnId.current,
           rows: [
-            { label: "Recipient", value: recipient?.name ?? "" },
-            { label: matchedBy === "wallet" ? "Wallet ID" : "Mobile / Wallet", value: matchedBy === "wallet" ? resolvedWalletId : (recipient?.phone ?? "") },
-            { label: "Amount", value: `৳${amtNum.toLocaleString()}` },
-            { label: "Fee", value: fee === 0 ? "Free" : `৳${fee}` },
-            { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
-            { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+            { label: t("recipient"), value: recipient?.name ?? "" },
+            { label: matchedBy === "wallet" ? t("walletIdLabel") : t("mobileWallet"), value: matchedBy === "wallet" ? resolvedWalletId : (recipient?.phone ?? "") },
+            { label: t("amount"), value: `৳${amtNum.toLocaleString()}` },
+            { label: t("fee"), value: fee === 0 ? t("free") : `৳${fee}` },
+            { label: t("date"), value: txnTime.current.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: t("time"), value: txnTime.current.toLocaleTimeString(timeLocale, { hour: "2-digit", minute: "2-digit", hour12: true }) },
           ],
         }}
       />
