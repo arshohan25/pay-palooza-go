@@ -602,7 +602,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
                 {/* Phone input + continue */}
                 <div className="space-y-3">
-                  <label className="text-sm font-semibold text-foreground">{selectedPack ? "Enter recipient number" : "Mobile Number"}</label>
+                  <label className="text-sm font-semibold text-foreground">{selectedPack ? t("mrEnterRecipientNumber") : t("mrMobileNumber")}</label>
                   <div className="relative">
                     <Smartphone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
