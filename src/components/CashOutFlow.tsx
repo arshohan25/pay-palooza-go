@@ -575,7 +575,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   {loadingNearby ? (
                     <div className="flex flex-col items-center py-8">
                       <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
-                      <p className="text-xs text-muted-foreground">Finding nearby agents…</p>
+                      <p className="text-xs text-muted-foreground">{t("coFindingNearby")}</p>
                     </div>
                   ) : displayAgents.length === 0 ? (
                     <motion.div
