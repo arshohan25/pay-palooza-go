@@ -478,7 +478,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       type="text"
-                      placeholder="e.g. AGT-10234"
+                      placeholder={t("coAgentIdPlaceholder")}
                       value={agentIdInput}
                       onChange={(e) => { setAgentIdInput(e.target.value); setError(""); }}
                       className="pl-9 pr-12 h-12 text-base bg-card border-border uppercase"
