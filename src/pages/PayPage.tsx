@@ -319,7 +319,7 @@ const PayPage = () => {
   const handleSendOtp = useCallback(async () => {
     const cleanPhone = phone.replace(/\D/g, "");
     if (!/^01[3-9]\d{8}$/.test(cleanPhone)) {
-      setErrorMsg("Enter a valid 11-digit number");
+      setErrorMsg(t("ppValidNumber"));
       haptics.error();
       return;
     }
