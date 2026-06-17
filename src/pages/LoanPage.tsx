@@ -277,12 +277,12 @@ const LoanPage = () => {
             <ArrowLeft className="w-5 h-5 text-primary-foreground" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-bold text-primary-foreground">Qard Hasan</h1>
-            <p className="text-[10px] text-primary-foreground/80">Interest-Free · Sharia Compliant</p>
+            <h1 className="text-base font-bold text-primary-foreground">{t("loanQardHasan")}</h1>
+            <p className="text-[10px] text-primary-foreground/80">{t("loanTagline")}</p>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20">
             <Heart className="w-3 h-3 text-primary-foreground fill-primary-foreground/40" />
-            <span className="text-[11px] font-semibold text-primary-foreground tracking-wide">Halal</span>
+            <span className="text-[11px] font-semibold text-primary-foreground tracking-wide">{t("loanHalal")}</span>
           </div>
         </div>
 
