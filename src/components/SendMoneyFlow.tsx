@@ -917,10 +917,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
 
                 {amtNum > 0 && totalFromBalance > BALANCE && (
-                  <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                  <p className="text-center text-sm text-destructive font-medium">{t("insufficientBalance")}</p>
                 )}
                 {amtNum > 0 && totalFromBalance <= BALANCE && amtNum > 50000 && (
-                  <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳50,000)</p>
+                  <p className="text-center text-sm text-destructive font-medium">{t("smExceedsDailyLimit")}</p>
                 )}
                 {amtNum > 0 && totalFromBalance <= BALANCE && amtNum <= 50000 && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
