@@ -1244,60 +1244,61 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   className="flex-1 px-4 py-6 space-y-4"
                 >
                   <div className="rounded-2xl bg-card border border-border shadow-sm p-4 space-y-3 text-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Receipt</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("mrReceipt")}</p>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Transaction ID</span>
+                      <span>{t("mrTransactionId")}</span>
                       <span className="font-mono font-bold text-foreground text-xs">{txnId.current}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Date & Time</span>
+                      <span>{t("mrDateTime")}</span>
                       <span className="font-semibold text-foreground text-xs">
-                        {txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}{" "}
-                        {txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                        {txnTime.current.toLocaleDateString(numLocale, { day: "2-digit", month: "short", year: "numeric" })}{" "}
+                        {txnTime.current.toLocaleTimeString(numLocale, { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Number</span>
+                      <span>{t("mrNumber")}</span>
                       <span className="font-semibold text-foreground">{formatPhone(phone)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Operator</span>
+                      <span>{t("mrOperator")}</span>
                       <span className="font-semibold text-foreground">{operator.name}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Pack</span>
-                      <span className="font-semibold text-foreground">{selectedPack ? selectedPack.name : "Custom"}</span>
+                      <span>{t("mrPack")}</span>
+                      <span className="font-semibold text-foreground">{selectedPack ? selectedPack.name : t("mrCustom")}</span>
                     </div>
                     {selectedPack && (
                       <>
                         <div className="flex justify-between text-muted-foreground">
-                          <span>Details</span>
+                          <span>{t("mrDetails")}</span>
                           <span className="font-semibold text-foreground text-right max-w-[55%]">{selectedPack.details}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
-                          <span>Validity</span>
+                          <span>{t("mrValidity")}</span>
                           <span className="font-semibold text-foreground">{selectedPack.validity}</span>
                         </div>
                         {calcCashback(selectedPack, effectivePrice) > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Drive Cashback (2%)</span>
-                            <span className="font-bold text-amber-600">+৳{calcCashback(selectedPack, effectivePrice)}</span>
+                            <span className="text-muted-foreground">{t("mrDriveCashback2")}</span>
+                            <span className="font-bold text-amber-600">+৳{fmtAmt(calcCashback(selectedPack, effectivePrice))}</span>
                           </div>
                         )}
                       </>
                     )}
                      <div className="flex justify-between text-muted-foreground">
-                      <span>Service fee</span>
-                      <span className="font-semibold text-primary">Free</span>
+                      <span>{t("mrServiceFee")}</span>
+                      <span className="font-semibold text-primary">{t("mrFree")}</span>
                     </div>
                     {pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 && (
                       <CouponSummaryLine code={pendingCoupon.code} discount={calcCouponDiscount(pendingCoupon, effectivePrice)} />
                     )}
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
-                      <span>Deducted from balance</span>
-                      <span>৳{Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0))}</span>
+                      <span>{t("mrDeductedFromBalance")}</span>
+                      <span>৳{fmtAmt(Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0)))}</span>
+
                     </div>
                   </div>
 
