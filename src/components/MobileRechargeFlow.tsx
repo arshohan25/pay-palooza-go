@@ -1008,7 +1008,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       color: selectedPack ? "white" : "hsl(var(--muted-foreground))"
                     }}
                   >
-                    {selectedPack ? `Continue · ৳${selectedPack.price}` : "Select a Pack"}
+                    {selectedPack ? `${t("continue")} · ৳${fmtAmt(selectedPack.price)}` : t("mrSelectAPack")}
                     {selectedPack && <ChevronRight size={18} />}
                   </motion.button>
                 </div>
