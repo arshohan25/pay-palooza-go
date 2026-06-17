@@ -832,7 +832,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                               style={active ? { background: operator.brandColor } : {}}
                             >
                               <Icon size={11} />
-                              {cat.label}
+                              {t(cat.labelKey)}
                             </button>
                           );
                         })}
