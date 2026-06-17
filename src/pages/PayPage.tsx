@@ -603,7 +603,7 @@ const PayPage = () => {
                   <Lock size={16} className="text-primary/70" />
                 </div>
               </div>
-              <p className="text-xs font-semibold text-muted-foreground/60 tracking-wide">Processing payment…</p>
+              <p className="text-xs font-semibold text-muted-foreground/60 tracking-wide">{t("ppProcessingPayment")}</p>
             </motion.div>
           )}
 
