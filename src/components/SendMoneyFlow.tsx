@@ -1054,7 +1054,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-2">
                   <h2 className="text-2xl font-extrabold text-foreground">{t("moneySent")}</h2>
                   <p className="text-muted-foreground text-sm">
-                    ৳{amtNum.toLocaleString()} sent to{" "}
+                    ৳{amtNum.toLocaleString()} {t("smSentTo")}{" "}
                     <span className="font-semibold text-foreground">{recipient?.name}</span>
                   </p>
                 </motion.div>
