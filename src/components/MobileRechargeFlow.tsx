@@ -738,7 +738,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                           {!driveHidden && (
                             <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full">
                               <Coins size={9} />
-                              Drive
+                              {t("mrDrive")}
+
                             </div>
                           )}
                           <ChevronRight size={14} className="text-muted-foreground" />
