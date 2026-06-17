@@ -916,7 +916,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   className="w-full rounded-2xl bg-card border border-border shadow-card p-4 space-y-3"
                 >
                   <p className="text-sm font-semibold text-foreground text-center">
-                    {ratingSubmitted ? "Thanks for your feedback! ✨" : "Rate this agent"}
+                    {ratingSubmitted ? t("coThanksFeedback") : t("coRateAgent")}
                   </p>
                   {!ratingSubmitted ? (
                     <>
