@@ -1,0 +1,2606 @@
+
+i18n audit — 6255 candidate hardcoded strings in 267 files
+
+▸ src/pages/MerchantDashboard.tsx  (243)
+    L396 [jsx-text]  Login required
+    L397 [jsx-text]  Go to Login
+    L433 [jsx-text]  Logout
+    L483 [jsx-text]  Available Balance
+    L493 [jsx-text]  Tap to see balance
+    L710 [jsx-text]  More Options
+    L779 [jsx-text]  Sign out?
+    L782 [jsx-text]  You'll return to the merchant login screen.
+    L793 [jsx-text]  Please wait
+    L893 [jsx-text]  Application under review — we'll notify you once approved
+    … +233 more
+▸ src/components/admin/AdminLEARequest.tsx  (206)
+    L98 [jsx-text]  [k, val])) as Record
+    L330 [jsx-text]  row.top
+    L331 [jsx-text]  yOffset && point
+    L333 [jsx-text]  row.top
+    L344 [jsx-text]  segment.startPx && segment.endPx
+    L358 [jsx-text]  mmOffset + 8 && row.top
+    L374 [jsx-text]  = 0 && row.bottom
+    L559 [jsx-text]  Review readiness and internal audit note before creating the official PDF.
+    L571 [jsx-text]  Phone
+    L572 [jsx-text]  Report ID
+    … +196 more
+▸ src/components/admin/AdminCommandIntelligence.tsx  (194)
+    L138 [jsx-text]  How this score was calculated
+    L139 [jsx-text]  Active factors are included in the current user score.
+    L154 [jsx-text]  Final score capped at 100
+    L157 [jsx-text]  Labels: 80+ Investigation Required, 60+ Restricted, 42+ High Risk, 25+ Watchlist, below 25 Low Ri...
+    L224 [jsx-text]  Audit logged
+    L224 [jsx-text]  Evidence fields
+    L224 [jsx-text]  Supporting records
+    L225 [jsx-text]  Close
+    L310 [jsx-text]  Refresh
+    L315 [jsx-text]  Risk Score
+    … +184 more
+▸ src/pages/AdminDashboard.tsx  (152)
+    L606 [jsx-text]  ; monthly: Record
+    L1147 [jsx-text]  Admin
+    L1157 [jsx-text]  Sign out
+    L1180 [jsx-text]  Admin
+    L1228 [jsx-text]  Channel:
+    L1228 [jsx-text]  admin-heartbeat
+    L1229 [jsx-text]  Last connected:
+    L1231 [jsx-text]  Reconnect attempt:
+    L1280 [jsx-text]  Navigation
+    L1313 [jsx-text]  Recent Transactions
+    … +142 more
+▸ src/components/admin/AdminAdvanceForFuture.tsx  (112)
+    L598 [jsx-text]  Preview
+    L640 [jsx-text]  features.reduce
+    L648 [jsx-text]  Selected feature summary
+    L680 [jsx-text]  Preview candidate
+    L701 [jsx-text]  Secure
+    L701 [jsx-text]  Live gated
+    L706 [jsx-text]  Hidden items are not rendered in this app preview.
+    L758 [jsx-text]  Advance for Future
+    L759 [jsx-text]  15-item strategic roadmap with phase and Top 7 one-click launch controls.
+    L783 [jsx-text]  Loading future controls…
+    … +102 more
+▸ src/components/admin/AdminMerchantManagement.tsx  (108)
+    L453 [jsx-text]  Total
+    L461 [jsx-text]  Active
+    L469 [jsx-text]  Pending
+    L477 [jsx-text]  Suspended
+    L493 [jsx-text]  All Status
+    L494 [jsx-text]  Pending
+    L495 [jsx-text]  Active
+    L496 [jsx-text]  Suspended
+    L502 [jsx-text]  All Categories
+    L507 [jsx-text]  Export
+    … +98 more
+▸ src/pages/DeveloperPortal.tsx  (107)
+    L152 [jsx-text]  EasyPay
+    L154 [jsx-text]  Quick Start
+    L155 [jsx-text]  Partners
+    L156 [jsx-text]  API Reference
+    L158 [jsx-text]  Back to App
+    L166 [jsx-text]  Developer Documentation
+    L167 [jsx-text]  Build with
+    L168 [jsx-text]  EasyPay
+    L170 [jsx-text]  Accept payments, connect banking rails, integrate MFS providers, and manage transactions with our...
+    L174 [jsx-text]  Quick Start
+    … +97 more
+▸ src/components/MerchantApiTab.tsx  (100)
+    L432 [jsx-text]  = 200 && l.status_code
+    L445 [jsx-text]  = 200 && l.status_code
+    L610 [jsx-text]  Done
+    L611 [jsx-text]  Attention
+    L627 [jsx-text]  API Access
+    L636 [jsx-text]  Live
+    L641 [jsx-text]  Test
+    L656 [jsx-text]  Request API Access
+    L664 [jsx-text]  Request API Access
+    L665 [jsx-text]  Submit a request to the admin team. They will review and generate API keys for you.
+    … +90 more
+▸ src/components/admin/AdminAgentHub.tsx  (94)
+    L45 [jsx-text]  Agent Management Hub
+    L49 [jsx-text]  Agents
+    L51 [jsx-text]  Wallets
+    L52 [jsx-text]  Comm.
+    L53 [jsx-text]  Areas
+    L54 [jsx-text]  Settle
+    L55 [jsx-text]  Ratings
+    L244 [jsx-text]  Activate
+    L245 [jsx-text]  Hold
+    L246 [jsx-text]  Suspend
+    … +84 more
+▸ src/pages/SuperDistributorDashboard.tsx  (90)
+    L246 [jsx-text]  Login required
+    L247 [jsx-text]  Go to Login
+    L255 [jsx-text]  Super Distributor Access Required
+    L256 [jsx-text]  This dashboard is restricted to super distributors.
+    L257 [jsx-text]  Back to Home
+    L316 [jsx-text]  Transaction History
+    L364 [jsx-text]  Super Distributor
+    L379 [jsx-text]  Master Float Pool
+    L390 [jsx-text]  Today's Volume
+    L444 [jsx-text]  7-Day Volume
+    … +80 more
+▸ src/components/admin/AdminNotificationSender.tsx  (89)
+    L446 [jsx-text]  Compose Notification
+    L452 [jsx-text]  Category
+    L470 [jsx-text]  Title
+    L474 [jsx-text]  Body
+    L481 [jsx-text]  Target Roles
+    L501 [jsx-text]  Target Area
+    L511 [jsx-text]  Target User Activity
+    L530 [jsx-text]  Priority
+    L540 [jsx-text]  Auto-Expire
+    L558 [jsx-text]  Optional Extras
+    … +79 more
+▸ src/components/admin/AdminTeamManagement.tsx  (84)
+    L243 [jsx-text]  Preset:
+    L259 [jsx-text]  Clone from:
+    L275 [jsx-text]  Grant All View
+    L278 [jsx-text]  Full Access
+    L281 [jsx-text]  Revoke All
+    L315 [jsx-text]  Section
+    L652 [jsx-text]  Members
+    L653 [jsx-text]  Access Matrix
+    L654 [jsx-text]  Dashboard
+    L655 [jsx-text]  Activity Log
+    … +74 more
+▸ src/pages/AgentRegister.tsx  (83)
+    L327 [jsx-text]  Register Customer
+    L383 [jsx-text]  Customer Phone
+    L384 [jsx-text]  Enter the customer's mobile number to begin registration
+    L387 [jsx-text]  Phone Number
+    L397 [jsx-text]  Sending OTP...
+    L397 [jsx-text]  Send OTP
+    L401 [jsx-text]  OTP will be sent to the customer's phone
+    L415 [jsx-text]  Verify OTP
+    L416 [jsx-text]  Enter the 6-digit code sent to
+    L420 [jsx-text]  Dev Mode OTP
+    … +73 more
+▸ src/components/admin/AdminMarketingTools.tsx  (79)
+    L289 [jsx-text]  Marketing Tools
+    L291 [jsx-text]  Manage promo codes, cashback rules, and campaigns
+    L317 [jsx-text]  Active Promos
+    L318 [jsx-text]  Total Redemptions
+    L319 [jsx-text]  Active Cashback
+    L320 [jsx-text]  Campaigns
+    L332 [jsx-text]  New Promo
+    L341 [jsx-text]  Code
+    L342 [jsx-text]  Discount
+    L343 [jsx-text]  Min Amount
+    … +69 more
+▸ src/pages/SavingsPage.tsx  (75)
+    L74 [jsx-text]  Enter your 4-digit PIN
+    L89 [jsx-text]  Promise
+    L221 [jsx-text]  Create New Goal
+    L226 [jsx-text]  No savings goals yet. Create your first goal.
+    L258 [jsx-text]  Deposit
+    L262 [jsx-text]  Withdraw
+    L280 [jsx-text]  New Savings Goal
+    L293 [jsx-text]  Continue
+    L305 [jsx-text]  Target
+    L306 [jsx-text]  Opening deposit
+    … +65 more
+▸ src/pages/LoanPage.tsx  (73)
+    L276 [jsx-text]  Qard Hasan
+    L277 [jsx-text]  Interest-Free · Sharia Compliant
+    L281 [jsx-text]  Halal
+    L339 [jsx-text]  100% Interest-Free (Riba-Free)
+    L360 [jsx-text]  Trust Score
+    L366 [jsx-text]  Analyzing...
+    L380 [jsx-text]  Max:
+    L443 [jsx-text]  Configure Qard Hasan
+    L444 [jsx-text]  Select amount & repayment period
+    L450 [jsx-text]  Loan Amount
+    … +63 more
+▸ src/pages/InboxPage.tsx  (69)
+    L275 [jsx-text]  : msg.status === "delivered" ?
+    L304 [jsx-text]  React
+    L308 [jsx-text]  Copy
+    L312 [jsx-text]  Forward
+    L316 [jsx-text]  Delete for me
+    L339 [jsx-text]  Forward to…
+    L346 [jsx-text]  : c.avatarUrl ?
+    L393 [jsx-text]  Money Sent
+    L400 [jsx-text]  View Receipt →
+    L413 [jsx-text]  Order Tracking
+    … +59 more
+▸ src/pages/DistributorDashboard.tsx  (68)
+    L278 [jsx-text]  Login required
+    L279 [jsx-text]  Go to Login
+    L287 [jsx-text]  Distributor Access Required
+    L288 [jsx-text]  You need a distributor role to access this dashboard.
+    L289 [jsx-text]  Back to Home
+    L387 [jsx-text]  Float Balance
+    L399 [jsx-text]  Tap to see balance
+    L468 [jsx-text]  7-Day Volume
+    L494 [jsx-text]  Network Health
+    L501 [jsx-text]  Review
+    … +58 more
+▸ src/components/admin/AdminUserPerformanceTracker.tsx  (68)
+    L204 [jsx-text]  r.created_at
+    L219 [jsx-text]  r.expires_at && new Date(r.expires_at)
+    L222 [jsx-text]  Revoked
+    L223 [jsx-text]  Claimed
+    L224 [jsx-text]  Expired
+    L225 [jsx-text]  Active
+    L264 [jsx-text]  sortKey === k ? (sortAsc ?
+    L338 [jsx-text]  User Performance & Rewards
+    L339 [jsx-text]  Refresh
+    L357 [jsx-text]  Performance
+    … +58 more
+▸ src/components/admin/AdminSecurityCenter.tsx  (65)
+    L28 [jsx-text]  Security Center
+    L32 [jsx-text]  Sessions
+    L33 [jsx-text]  Devices
+    L34 [jsx-text]  IP Whitelist
+    L91 [jsx-text]  Terminate All Team
+    L98 [jsx-text]  User
+    L99 [jsx-text]  Type
+    L101 [jsx-text]  Time
+    L102 [jsx-text]  Action
+    L121 [jsx-text]  No login sessions recorded
+    … +55 more
+▸ src/components/admin/AdminSystemSettings.tsx  (64)
+    L20 [jsx-text]  System Settings
+    L24 [jsx-text]  App Config
+    L25 [jsx-text]  Currency
+    L26 [jsx-text]  Fee Rules
+    L27 [jsx-text]  Txn Rules
+    L28 [jsx-text]  Maint.
+    L29 [jsx-text]  Banks
+    L129 [jsx-text]  Total Features
+    L130 [jsx-text]  Enabled
+    L131 [jsx-text]  Disabled
+    … +54 more
+▸ src/components/admin/AdminRiskControl.tsx  (58)
+    L79 [jsx-text]  Loading agents…
+    L101 [jsx-text]  Business
+    L102 [jsx-text]  Territory
+    L103 [jsx-text]  Float Util.
+    L104 [jsx-text]  Risk
+    L105 [jsx-text]  Actions
+    L120 [jsx-text]  View
+    L132 [jsx-text]  No agents found
+    L139 [jsx-text]  Agent Details
+    L143 [jsx-text]  Business
+    … +48 more
+▸ src/components/admin/AdminAutoSaveMonitor.tsx  (52)
+    L219 [jsx-text]  s.next_run_at && new Date(s.next_run_at).getTime()
+    L227 [jsx-text]  Schedules
+    L228 [jsx-text]  Health
+    L229 [jsx-text]  Logs
+    L237 [jsx-text]  DPS Operations Monitor
+    L241 [jsx-text]  Refresh
+    L252 [jsx-text]  Active
+    L257 [jsx-text]  Settled
+    L262 [jsx-text]  Missed today
+    L267 [jsx-text]  Due in 24h
+    … +42 more
+▸ src/components/admin/AdminSettlements.tsx  (47)
+    L204 [jsx-text]  Settlement System
+    L206 [jsx-text]  Manage merchant & agent batch settlements
+    L209 [jsx-text]  Export
+    L210 [jsx-text]  New Settlement
+    L216 [jsx-text]  Total Settlements
+    L217 [jsx-text]  Pending Payout
+    L218 [jsx-text]  Completed
+    L219 [jsx-text]  This Month
+    L227 [jsx-text]  All Types
+    L228 [jsx-text]  Merchant
+    … +37 more
+▸ src/components/admin/AdminCommissionSetup.tsx  (46)
+    L64 [jsx-text]  Commission & Charge Engine
+    L66 [jsx-text]  Hierarchical commission management: Agent → Distributor → Master Distributor → Company
+    L71 [jsx-text]  Rules
+    L72 [jsx-text]  Tiers
+    L73 [jsx-text]  Logs
+    L74 [jsx-text]  Calc
+    L174 [jsx-text]  Type
+    L175 [jsx-text]  Agent
+    L176 [jsx-text]  Dist.
+    L177 [jsx-text]  M.Dist.
+    … +36 more
+▸ src/components/merchant/MerchantStaffTab.tsx  (46)
+    L57 [jsx-text]  Promise
+    L58 [jsx-text]  Promise
+    L59 [jsx-text]  Promise
+    L175 [jsx-text]  Owner-only permissions will be stripped
+    L195 [jsx-text]  Built-in
+    L204 [jsx-text]  My presets
+    L214 [jsx-text]  + Save current as preset…
+    L246 [jsx-text]  Manage custom
+    L307 [jsx-text]  0 && checked && (
+    L308 [jsx-text]  + view
+    … +36 more
+▸ src/components/MobileRechargeFlow.tsx  (44)
+    L565 [jsx-text]  Selected pack
+    L608 [jsx-text]  Detected operator
+    L618 [jsx-text]  Unknown operator
+    L635 [jsx-text]  Contacts
+    L667 [jsx-text]  No matching contacts
+    L690 [jsx-text]  Browse Package & Special Offer
+    L708 [jsx-text]  Drive
+    L730 [jsx-text]  Recharging
+    L750 [jsx-text]  ⚡ Drive
+    L760 [jsx-text]  Regular
+    … +34 more
+▸ src/components/admin/AdminFloatManagement.tsx  (44)
+    L27 [jsx-text]  Float Management
+    L31 [jsx-text]  Master
+    L32 [jsx-text]  Gateway
+    L33 [jsx-text]  Merchant
+    L34 [jsx-text]  Agent
+    L83 [jsx-text]  Type
+    L84 [jsx-text]  Amount
+    L85 [jsx-text]  Balance After
+    L86 [jsx-text]  Time
+    L99 [jsx-text]  No ledger entries
+    … +34 more
+▸ src/components/admin/AdminGiftCardManagement.tsx  (44)
+    L174 [jsx-text]  Issue Card
+    L175 [jsx-text]  Bulk Generate
+    L179 [jsx-text]  Gift Cards
+    L185 [jsx-text]  Code
+    L186 [jsx-text]  Brand
+    L187 [jsx-text]  Denomination
+    L188 [jsx-text]  Status
+    L189 [jsx-text]  Purchaser
+    L190 [jsx-text]  Recipient
+    L191 [jsx-text]  Created
+    … +34 more
+▸ src/components/admin/AdminWalletSystem.tsx  (44)
+    L20 [jsx-text]  Wallet System
+    L24 [jsx-text]  Overview
+    L25 [jsx-text]  Users
+    L26 [jsx-text]  Agents
+    L27 [jsx-text]  Merchants
+    L28 [jsx-text]  Freeze
+    L29 [jsx-text]  Adjust
+    L151 [jsx-text]  Name
+    L152 [jsx-text]  Phone
+    L153 [jsx-text]  Balance
+    … +34 more
+▸ src/components/admin/AdminApiKeys.tsx  (43)
+    L260 [jsx-text]  Total Keys
+    L278 [jsx-text]  Active
+    L296 [jsx-text]  Revoked
+    L310 [jsx-text]  Merchant
+    L311 [jsx-text]  API Key
+    L312 [jsx-text]  Env
+    L313 [jsx-text]  Status
+    L314 [jsx-text]  Permissions
+    L315 [jsx-text]  Created
+    L316 [jsx-text]  Actions
+    … +33 more
+▸ src/components/MerchantApplicationFlow.tsx  (41)
+    L148 [jsx-text]  Become a Merchant
+    L156 [jsx-text]  ) : existing && (existing.status === "pending" || existing.status === "approved") ? (
+    L164 [jsx-text]  Previous Application Rejected
+    L166 [jsx-text]  You can submit a new application below.
+    L171 [jsx-text]  Fields marked with * are required
+    L175 [jsx-text]  Business Information
+    L177 [jsx-text]  Business Name *
+    L181 [jsx-text]  Category *
+    L193 [jsx-text]  No category found.
+    L209 [jsx-text]  Other (type your own)
+    … +31 more
+▸ src/components/admin/AdminAdvancedReports.tsx  (41)
+    L81 [jsx-text]  Advanced Reports
+    L118 [jsx-text]  Total Transactions
+    L119 [jsx-text]  Total Volume
+    L120 [jsx-text]  Avg per Day
+    L121 [jsx-text]  Avg Amount
+    L125 [jsx-text]  Daily Volume
+    L142 [jsx-text]  Breakdown by Type
+    L147 [jsx-text]  Type
+    L148 [jsx-text]  Count
+    L149 [jsx-text]  Volume
+    … +31 more
+▸ src/components/admin/AdminDistributorManagement.tsx  (41)
+    L200 [jsx-text]  Total
+    L204 [jsx-text]  Active
+    L208 [jsx-text]  On Hold
+    L212 [jsx-text]  Suspended
+    L218 [jsx-text]  Distributors
+    L220 [jsx-text]  Create
+    L229 [jsx-text]  Activate
+    L230 [jsx-text]  Hold
+    L231 [jsx-text]  Suspend
+    L244 [jsx-text]  Business
+    … +31 more
+▸ src/components/admin/AdminEcommerceHub.tsx  (41)
+    L126 [jsx-text]  Total Products
+    L130 [jsx-text]  Active
+    L133 [jsx-text]  (p.stock ?? 0)
+    L134 [jsx-text]  Low Stock
+    L139 [jsx-text]  Loading products…
+    L139 [jsx-text]  ) : filtered.length === 0 ? (
+    L141 [jsx-text]  No products found
+    L161 [jsx-text]  Save
+    L162 [jsx-text]  Cancel
+    L226 [jsx-text]  Loading stores…
+    … +31 more
+▸ src/components/admin/AdminDisputeResolution.tsx  (40)
+    L142 [jsx-text]  Dispute Resolution
+    L149 [jsx-text]  Create Dispute
+    L153 [jsx-text]  All Disputes
+    L154 [jsx-text]  Open
+    L155 [jsx-text]  Under Review
+    L156 [jsx-text]  Resolved
+    L157 [jsx-text]  Rejected
+    L169 [jsx-text]  Subject
+    L170 [jsx-text]  Status
+    L171 [jsx-text]  Txn ID
+    … +30 more
+▸ src/pages/AgentBankTransfer.tsx  (39)
+    L161 [jsx-text]  Bank Transfer
+    L199 [jsx-text]  Saved Accounts
+    L201 [jsx-text]  Add Bank
+    L208 [jsx-text]  No saved bank accounts
+    L210 [jsx-text]  Add Your First Bank
+    L287 [jsx-text]  Continue
+    L304 [jsx-text]  Enter Your PIN
+    L336 [jsx-text]  Back
+    L350 [jsx-text]  Bank
+    L351 [jsx-text]  Account
+    … +29 more
+▸ src/components/KycFlow.tsx  (39)
+    L164 [jsx-text]  TAP TO ZOOM
+    L458 [jsx-text]  Retake
+    L464 [jsx-text]  Crop
+    L1185 [jsx-text]  KYC Verified ✓
+    L1186 [jsx-text]  Your identity has been successfully verified. You have full access to all features.
+    L1190 [jsx-text]  Done
+    L1205 [jsx-text]  Under Review
+    L1206 [jsx-text]  Your KYC submission is being reviewed. We'll notify you once it's approved.
+    L1210 [jsx-text]  Close
+    L1225 [jsx-text]  Verification Rejected
+    … +29 more
+▸ src/components/MerchantProductsTab.tsx  (39)
+    L124 [jsx-text]  No match found
+    L131 [jsx-text]  ＋ Add Custom Category
+    L149 [jsx-text]  Add
+    L423 [jsx-text]  Add
+    L455 [jsx-text]  ) : filtered.length === 0 ? (
+    L467 [jsx-text]  Add First Product
+    L568 [jsx-text]  Primary
+    L601 [jsx-text]  Product Video (optional)
+    L620 [jsx-text]  Invalid video URL. Supports YouTube & Vimeo.
+    L627 [jsx-text]  (fallback)
+    … +29 more
+▸ src/components/admin/AdminLimitManager.tsx  (38)
+    L90 [jsx-text]  : role === "merchant" ?
+    L101 [jsx-text]  Type
+    L102 [jsx-text]  Period
+    L104 [jsx-text]  Max Txns
+    L159 [jsx-text]  Max Txns
+    L357 [jsx-text]  Click Edit to increase or decrease any limit. Custom overrides are highlighted.
+    L367 [jsx-text]  Type
+    L368 [jsx-text]  Period
+    L370 [jsx-text]  Max Txns
+    L371 [jsx-text]  Source
+    … +28 more
+▸ src/components/admin/AdminProfileEditor.tsx  (38)
+    L248 [jsx-text]  Edit User Profile
+    L249 [jsx-text]  Modify profile, agent, merchant, or distributor details. All changes are audited.
+    L265 [jsx-text]  Profile
+    L282 [jsx-text]  Agent
+    L283 [jsx-text]  Agent
+    L303 [jsx-text]  Merchant
+    L304 [jsx-text]  Merchant
+    L314 [jsx-text]  Bank Details
+    L333 [jsx-text]  Distributor
+    L334 [jsx-text]  Distributor
+    … +28 more
+▸ src/components/admin/AdminRechargePackManager.tsx  (38)
+    L119 [jsx-text]  Drive
+    L338 [jsx-text]  Recharge Pack Manager
+    L347 [jsx-text]  Drive
+    L351 [jsx-text]  Add Pack
+    L361 [jsx-text]  All Operators
+    L368 [jsx-text]  All Types
+    L369 [jsx-text]  Drive
+    L370 [jsx-text]  Regular
+    L403 [jsx-text]  No packs found
+    L404 [jsx-text]  Recharge packs will appear here
+    … +28 more
+▸ src/components/admin/AdminOrderManagement.tsx  (37)
+    L334 [jsx-text]  All Statuses
+    L380 [jsx-text]  Clear
+    L409 [jsx-text]  Order #
+    L410 [jsx-text]  Customer
+    L411 [jsx-text]  Items
+    L412 [jsx-text]  Total
+    L413 [jsx-text]  Status
+    L414 [jsx-text]  Date
+    L415 [jsx-text]  Actions
+    L447 [jsx-text]  View
+    … +27 more
+▸ src/components/admin/AdminSmartRouting.tsx  (37)
+    L192 [jsx-text]  Smart Routing & Payment Links
+    L218 [jsx-text]  Routing Priority
+    L219 [jsx-text]  Transactions route to the highest-priority enabled gateway. Lower number = higher priority.
+    L229 [jsx-text]  Priority
+    L230 [jsx-text]  Gateway
+    L231 [jsx-text]  Provider
+    L232 [jsx-text]  Status
+    L233 [jsx-text]  Action
+    L267 [jsx-text]  Routing Rules
+    L290 [jsx-text]  Create Link
+    … +27 more
+▸ src/components/admin/AdminSupportDashboard.tsx  (36)
+    L595 [jsx-text]  No support agents are currently available.
+    L685 [jsx-text]  Assign
+    L722 [jsx-text]  typing...
+    L752 [jsx-text]  Escalate
+    L764 [jsx-text]  Resolve
+    L773 [jsx-text]  Close
+    L787 [jsx-text]  Reopen
+    L796 [jsx-text]  Close
+    L809 [jsx-text]  Reopen
+    L878 [jsx-text]  No messages in this conversation
+    … +26 more
+▸ src/pages/AgentDashboard.tsx  (33)
+    L202 [jsx-text]  Login required
+    L203 [jsx-text]  Go to Login
+    L211 [jsx-text]  Agent Access Required
+    L212 [jsx-text]  Contact your distributor or admin for agent access.
+    L213 [jsx-text]  Back to Home
+    L299 [jsx-text]  Float Balance
+    L316 [jsx-text]  Tap to see balance
+    L393 [jsx-text]  Agent Commission
+    L394 [jsx-text]  0.49% Cash In/Out · 0.019% Bill Pay
+    L398 [jsx-text]  Total earned
+    … +23 more
+▸ src/components/admin/AdminInsuranceManagement.tsx  (33)
+    L65 [jsx-text]  0 && diff
+    L157 [jsx-text]  Create Policy
+    L161 [jsx-text]  Insurance Policies
+    L167 [jsx-text]  User
+    L168 [jsx-text]  Plan
+    L169 [jsx-text]  Type
+    L170 [jsx-text]  Premium
+    L171 [jsx-text]  Coverage
+    L172 [jsx-text]  Duration
+    L173 [jsx-text]  Status
+    … +23 more
+▸ src/components/admin/AdminRevenueDashboard.tsx  (33)
+    L14 [jsx-text]  Revenue Dashboard
+    L18 [jsx-text]  Total Revenue
+    L19 [jsx-text]  Commission
+    L20 [jsx-text]  Charges
+    L21 [jsx-text]  Profit
+    L65 [jsx-text]  Revenue Breakdown
+    L118 [jsx-text]  Txn Type
+    L119 [jsx-text]  Amount
+    L120 [jsx-text]  Fee
+    L121 [jsx-text]  Company
+    … +23 more
+▸ src/components/admin/AdminWebhookLog.tsx  (33)
+    L130 [jsx-text]  Webhook / IPN Event Log
+    L133 [jsx-text]  Live
+    L145 [jsx-text]  All Providers
+    L147 [jsx-text]  Nagad
+    L148 [jsx-text]  AsthaPay
+    L156 [jsx-text]  All Status
+    L157 [jsx-text]  Pending
+    L158 [jsx-text]  Completed
+    L159 [jsx-text]  Failed
+    L164 [jsx-text]  Live
+    … +23 more
+▸ src/components/BankTransferFlow.tsx  (32)
+    L169 [jsx-text]  Withdraw to bank account
+    L235 [jsx-text]  Choose a bank…
+    L257 [jsx-text]  No banks found
+    L345 [jsx-text]  getBalance() && (
+    L346 [jsx-text]  Insufficient balance
+    L348 [jsx-text]  0 && totalDeduction
+    L351 [jsx-text]  0 && totalDeduction
+    L354 [jsx-text]  Continue
+    L369 [jsx-text]  Enter Your PIN
+    L406 [jsx-text]  Withdrawal Summary
+    … +22 more
+▸ src/components/admin/AdminFestivalThemes.tsx  (32)
+    L482 [jsx-text]  Festival Themes
+    L483 [jsx-text]  Full-app seasonal theming — colors, gradients, particles
+    L485 [jsx-text]  New Theme
+    L489 [jsx-text]  Loading…
+    L489 [jsx-text]  ) : themes.length === 0 ? (
+    L491 [jsx-text]  No festival themes yet. Create one to get started!
+    L515 [jsx-text]  Full Palette
+    L541 [jsx-text]  Basic
+    L545 [jsx-text]  Preview
+    L550 [jsx-text]  Preset
+    … +22 more
+▸ src/components/admin/AdminMetricsSnapshots.tsx  (32)
+    L311 [jsx-text]  Processing:
+    L314 [jsx-text]  Last completed:
+    L322 [jsx-text]  No activity yet.
+    L327 [jsx-text]  ) : entry.tone === "error" ? (
+    L349 [jsx-text]  Loading snapshots…
+    L349 [jsx-text]  ) : !snapshot ? (
+    L351 [jsx-text]  No snapshot available for this date yet. Click
+    L352 [jsx-text]  Snapshot now
+    L352 [jsx-text]  to capture one.
+    L357 [jsx-text]  Headline totals
+    … +22 more
+▸ src/components/admin/AdminOperationsWall.tsx  (32)
+    L101 [jsx-text]  Critical
+    L102 [jsx-text]  Warning
+    L103 [jsx-text]  Healthy
+    L257 [jsx-text]  = start && t
+    L305 [jsx-text]  a.severity === "warning") || state.apiSuccessRate
+    L318 [jsx-text]  Operations Wall
+    L325 [jsx-text]  Real-time gateway health, transaction failures, and liquidity pressure in one command view.
+    L331 [jsx-text]  Resume
+    L331 [jsx-text]  Pause
+    L334 [jsx-text]  Refresh
+    … +22 more
+▸ src/components/admin/AdminCareersManager.tsx  (31)
+    L128 [jsx-text]  Post Job
+    L142 [jsx-text]  Full-time
+    L143 [jsx-text]  Part-time
+    L144 [jsx-text]  Contract
+    L149 [jsx-text]  Publish
+    L150 [jsx-text]  Cancel
+    L157 [jsx-text]  Loading…
+    L157 [jsx-text]  ) : jobs.length === 0 ? (
+    L159 [jsx-text]  No job listings yet
+    L184 [jsx-text]  Delete Job Listing?
+    … +21 more
+▸ src/components/admin/AdminChargebackHistory.tsx  (31)
+    L179 [jsx-text]  Chargeback History
+    L210 [jsx-text]  Short ID
+    L211 [jsx-text]  User
+    L212 [jsx-text]  Amount
+    L213 [jsx-text]  Status
+    L214 [jsx-text]  Reason
+    L215 [jsx-text]  Admin
+    L216 [jsx-text]  Date
+    L277 [jsx-text]  Transaction ID
+    L281 [jsx-text]  Target User
+    … +21 more
+▸ src/components/admin/AdminLoanManagement.tsx  (31)
+    L199 [jsx-text]  Create Loan
+    L203 [jsx-text]  Loan Applications
+    L209 [jsx-text]  User
+    L210 [jsx-text]  Amount
+    L211 [jsx-text]  Tenure
+    L213 [jsx-text]  Rate
+    L214 [jsx-text]  Status
+    L215 [jsx-text]  Applied
+    L216 [jsx-text]  Actions
+    L221 [jsx-text]  Loading…
+    … +21 more
+▸ src/components/admin/AdminLoyaltyPoints.tsx  (31)
+    L119 [jsx-text]  Loyalty Points
+    L120 [jsx-text]  Reward users with points for transactions
+    L123 [jsx-text]  Adjust
+    L124 [jsx-text]  Add Rule
+    L129 [jsx-text]  Total Rules
+    L130 [jsx-text]  Active
+    L138 [jsx-text]  Name
+    L139 [jsx-text]  Type
+    L140 [jsx-text]  Points
+    L141 [jsx-text]  Status
+    … +21 more
+▸ src/components/admin/AdminReferralManagement.tsx  (31)
+    L238 [jsx-text]  Referrals
+    L239 [jsx-text]  Rewards
+    L240 [jsx-text]  Devices
+    L258 [jsx-text]  Referrer
+    L259 [jsx-text]  Referee
+    L260 [jsx-text]  Code
+    L262 [jsx-text]  1st Txn
+    L263 [jsx-text]  5 Txns
+    L264 [jsx-text]  Rewarded
+    L265 [jsx-text]  Status
+    … +21 more
+▸ src/components/admin/AdminUserFeatureAccess.tsx  (31)
+    L238 [jsx-text]  — Default
+    L247 [jsx-text]  Apply
+    L250 [jsx-text]  Clear
+    L265 [jsx-text]  Feature
+    L304 [jsx-text]  — Default
+    L326 [jsx-text]  User Feature Access
+    L327 [jsx-text]  Override feature visibility per usage badge, role, or individual user
+    L335 [jsx-text]  By Badge
+    L338 [jsx-text]  By Role
+    L341 [jsx-text]  Individual
+    … +21 more
+▸ src/pages/CheckoutPage.tsx  (30)
+    L128 [jsx-text]  ) : isActive ? (
+    L194 [jsx-text]  ) : isActive ? (
+    L446 [jsx-text]  Amount to Pay
+    L461 [jsx-text]  Secured by EasyPay
+    L478 [jsx-text]  Loading payment...
+    L490 [jsx-text]  Session Expired
+    L491 [jsx-text]  Please request a new payment link from the merchant.
+    L492 [jsx-text]  Go Back
+    L504 [jsx-text]  Invalid Session
+    L505 [jsx-text]  This payment link is invalid or no longer available.
+    … +20 more
+▸ src/components/CashOutFlow.tsx  (30)
+    L550 [jsx-text]  Enable location to find nearby agents
+    L571 [jsx-text]  Finding nearby agents…
+    L572 [jsx-text]  ) : displayAgents.length === 0 ? (
+    L587 [jsx-text]  No agents found
+    L588 [jsx-text]  Enter an Agent ID above to continue
+    L695 [jsx-text]  BALANCE && (
+    L696 [jsx-text]  Insufficient balance
+    L698 [jsx-text]  0 && totalFromBalance
+    L701 [jsx-text]  0 && totalFromBalance
+    L706 [jsx-text]  Review Cash Out
+    … +20 more
+▸ src/components/PaymentFlow.tsx  (30)
+    L583 [jsx-text]  No recent merchants
+    L584 [jsx-text]  Your payment history will appear here
+    L753 [jsx-text]  ) : availableCoupons.length === 0 ? (
+    L821 [jsx-text]  getBalance() && (
+    L822 [jsx-text]  Insufficient balance
+    L824 [jsx-text]  0 && effectiveAmount
+    L826 [jsx-text]  Review Payment
+    L853 [jsx-text]  Payment Summary
+    L858 [jsx-text]  0 && pendingCoupon && (
+    L866 [jsx-text]  Fee source
+    … +20 more
+▸ src/components/admin/AdminApprovalTemplatePreview.tsx  (30)
+    L135 [jsx-text]  Template Preview
+    L136 [jsx-text]  notify-merchant-approval
+    L139 [jsx-text]  Live data
+    L144 [jsx-text]  Sample name
+    L150 [jsx-text]  Load from a real application
+    L157 [jsx-text]  Manual sample data
+    L167 [jsx-text]  Detach
+    L172 [jsx-text]  Recipient email:
+    L182 [jsx-text]  Test scenario
+    L199 [jsx-text]  Matched a real application
+    … +20 more
+▸ src/components/AddMoneyFlow.tsx  (29)
+    L282 [jsx-text]  Add Money
+    L283 [jsx-text]  Submit a deposit request for approval
+    L308 [jsx-text]  Enter Amount
+    L328 [jsx-text]  0 && parseFloat(amount)
+    L330 [jsx-text]  Continue
+    L339 [jsx-text]  How did you send the money?
+    L356 [jsx-text]  Continue
+    L363 [jsx-text]  Amount
+    L364 [jsx-text]  Source
+    L368 [jsx-text]  Send money to this account
+    … +19 more
+▸ src/components/admin/AdminActivityMonitor.tsx  (29)
+    L160 [jsx-text]  Activity Monitor
+    L227 [jsx-text]  Short ID
+    L228 [jsx-text]  Type
+    L229 [jsx-text]  Sender
+    L230 [jsx-text]  Receiver
+    L231 [jsx-text]  Amount
+    L232 [jsx-text]  Fee
+    L233 [jsx-text]  Commission
+    L234 [jsx-text]  Balance After
+    L235 [jsx-text]  Status
+    … +19 more
+▸ src/components/admin/AdminApiRequests.tsx  (29)
+    L174 [jsx-text]  API Access Management
+    L188 [jsx-text]  Generate Key
+    L221 [jsx-text]  ) : activeTab === "keys" ? (
+    L223 [jsx-text]  ) : activeTab === "logs" ? (
+    L225 [jsx-text]  ) : activeTab === "rate-limits" ? (
+    L227 [jsx-text]  ) : activeTab === "ip-whitelist" ? (
+    L229 [jsx-text]  ) : activeTab === "webhooks" ? (
+    L231 [jsx-text]  ) : activeTab === "sandbox" ? (
+    L233 [jsx-text]  ) : activeTab === "usage" ? (
+    L245 [jsx-text]  Pending
+    … +19 more
+▸ src/components/admin/AdminDonationFunds.tsx  (29)
+    L117 [jsx-text]  Donation Cause Funds
+    L120 [jsx-text]  Add Cause
+    L121 [jsx-text]  Refresh
+    L126 [jsx-text]  Total Raised
+    L127 [jsx-text]  Unallocated
+    L128 [jsx-text]  Total Donations
+    L132 [jsx-text]  ) : funds.length === 0 ? (
+    L134 [jsx-text]  No donations yet. Cause funds will appear here after the first donation.
+    L141 [jsx-text]  Cause
+    L142 [jsx-text]  Total Raised
+    … +19 more
+▸ src/pages/AgentB2B.tsx  (28)
+    L128 [jsx-text]  B2B Transfer
+    L129 [jsx-text]  Agent or Distributor
+    L152 [jsx-text]  Transfer Successful
+    L156 [jsx-text]  Amount
+    L157 [jsx-text]  Fee
+    L159 [jsx-text]  Total
+    L161 [jsx-text]  New Transfer
+    L162 [jsx-text]  Back to Dashboard
+    L164 [jsx-text]  ) : step === "confirm" ? (
+    L168 [jsx-text]  Confirm B2B Transfer
+    … +18 more
+▸ src/pages/PayPage.tsx  (28)
+    L101 [jsx-text]  ) : isActive ? (
+    L188 [jsx-text]  Scan to Pay
+    L208 [jsx-text]  Open
+    L209 [jsx-text]  EasyPay
+    L209 [jsx-text]  app → Scan QR
+    L214 [jsx-text]  Powered by EasyPay
+    L494 [jsx-text]  Pay with Phone & PIN
+    L502 [jsx-text]  Show QR Code
+    L515 [jsx-text]  Enter your phone number
+    L516 [jsx-text]  We'll send a verification code
+    … +18 more
+▸ src/components/admin/AdminBlacklistManager.tsx  (28)
+    L126 [jsx-text]  Blacklist / Watchlist
+    L127 [jsx-text]  Add Entry
+    L137 [jsx-text]  Phone
+    L138 [jsx-text]  IP Address
+    L139 [jsx-text]  Device
+    L147 [jsx-text]  Cancel
+    L172 [jsx-text]  Loading…
+    L172 [jsx-text]  ) : filtered.length === 0 ? (
+    L174 [jsx-text]  No blacklist entries found
+    L180 [jsx-text]  Type
+    … +18 more
+▸ src/components/admin/AdminComplaintManager.tsx  (28)
+    L86 [jsx-text]  Complaint Manager
+    L87 [jsx-text]  Refresh
+    L94 [jsx-text]  Open
+    L99 [jsx-text]  In Progress
+    L104 [jsx-text]  Resolved
+    L111 [jsx-text]  All
+    L112 [jsx-text]  Open
+    L113 [jsx-text]  In Progress
+    L114 [jsx-text]  Resolved
+    L118 [jsx-text]  Loading…
+    … +18 more
+▸ src/components/admin/AdminMerchantApplications.tsx  (28)
+    L155 [jsx-text]  Pending
+    L156 [jsx-text]  Approved
+    L157 [jsx-text]  Rejected
+    L170 [jsx-text]  Applications
+    L178 [jsx-text]  Templates
+    L191 [jsx-text]  Pending
+    L197 [jsx-text]  Approved
+    L203 [jsx-text]  Rejected
+    L217 [jsx-text]  All
+    L218 [jsx-text]  Pending
+    … +18 more
+▸ src/components/NotificationPreferences.tsx  (27)
+    L175 [jsx-text]  Notification preferences
+    L176 [jsx-text]  Choose which alerts buzz your device.
+    L209 [jsx-text]  ) : subscribed ? (
+    L271 [jsx-text]  Quiet hours
+    L272 [jsx-text]  Mute push during this window (Asia/Dhaka time). In-app alerts still appear.
+    L288 [jsx-text]  From
+    L313 [jsx-text]  Enable push above to start receiving alerts. Your category choices are saved either way.
+    L282 [attr]  Toggle quiet hours
+    L20 [toast]  Buzz when a new order arrives.
+    L21 [toast]  Settlement and payout confirmations.
+    … +17 more
+▸ src/components/admin/AdminDepositAccounts.tsx  (27)
+    L74 [jsx-text]  Deposit Accounts
+    L75 [jsx-text]  Numbers/accounts shown to users when adding money
+    L77 [jsx-text]  Add Account
+    L81 [jsx-text]  Loading…
+    L81 [jsx-text]  ) : accounts.length === 0 ? (
+    L83 [jsx-text]  No deposit accounts configured yet. Users won't see any destination numbers.
+    L89 [jsx-text]  Method
+    L90 [jsx-text]  Label
+    L91 [jsx-text]  Number / Account
+    L92 [jsx-text]  Holder
+    … +17 more
+▸ src/components/merchant/VariantsEditorSheet.tsx  (27)
+    L129 [jsx-text]  Add size/color/option choices. Base price:
+    L135 [jsx-text]  ) : variants.length === 0 ? (
+    L137 [jsx-text]  No variants yet — add one below.
+    L165 [jsx-text]  Price ±
+    L173 [jsx-text]  Stock
+    L189 [jsx-text]  Add variant
+    L192 [jsx-text]  Type
+    L197 [jsx-text]  Value
+    L209 [jsx-text]  Stock
+    L215 [jsx-text]  SKU (optional)
+    … +17 more
+▸ src/components/admin/AdminKycReview.tsx  (26)
+    L298 [jsx-text]  ) : records.length === 0 ? (
+    L304 [jsx-text]  No KYC records found
+    L305 [jsx-text]  KYC records will appear here
+    L349 [jsx-text]  KYC Review
+    L386 [jsx-text]  ⚠ Warning: Low Face Match
+    L401 [jsx-text]  ⚠ Warning: Duplicate NID
+    L402 [jsx-text]  Another account is already verified with this NID number. You may still approve if this is intent...
+    L412 [jsx-text]  Full Name
+    L416 [jsx-text]  NID Number
+    L420 [jsx-text]  Date of Birth
+    … +16 more
+▸ src/components/admin/AdminPushSetupWizard.tsx  (26)
+    L69 [jsx-text]  Web Push Setup
+    L71 [jsx-text]  Enable browser push so buyers get instant order updates and merchants get payout alerts.
+    L81 [jsx-text]  Run this on any machine with Node:
+    L89 [jsx-text]  You'll get a Public Key and a Private Key.
+    L93 [jsx-text]  Open
+    L93 [jsx-text]  Connectors → Lovable Cloud → Secrets
+    L107 [jsx-text]  Also add
+    L108 [jsx-text]  (Workspace Settings → Build Secrets) with the
+    L108 [jsx-text]  public key — it's needed in the browser to subscribe.
+    L114 [jsx-text]  This browser doesn't support web push. Try Chrome, Edge, or an installed PWA.
+    … +16 more
+▸ src/components/admin/AdminTreasury.tsx  (26)
+    L310 [jsx-text]  Platform Balance
+    L324 [jsx-text]  Total Earnings
+    L338 [jsx-text]  Commissions Paid
+    L352 [jsx-text]  Total Disbursed
+    L364 [jsx-text]  Send Treasury Funds
+    L421 [jsx-text]  Continue to PIN
+    L426 [jsx-text]  Sending
+    L442 [jsx-text]  Cancel
+    L459 [jsx-text]  Disbursement Successful
+    L473 [jsx-text]  Platform Treasury
+    … +16 more
+▸ src/pages/AgentCashIn.tsx  (25)
+    L90 [jsx-text]  Cash In
+    L91 [jsx-text]  Deposit to customer wallet
+    L120 [jsx-text]  Cash In Successful
+    L124 [jsx-text]  Amount
+    L125 [jsx-text]  Fee
+    L125 [jsx-text]  Free
+    L127 [jsx-text]  Commission earned
+    L129 [jsx-text]  New Transaction
+    L133 [jsx-text]  Back to Dashboard
+    L136 [jsx-text]  ) : step === "confirm" ? (
+    … +15 more
+▸ src/pages/ShopPage.tsx  (25)
+    L73 [jsx-text]  0 && product.stock
+    L76 [jsx-text]  Selling fast
+    L172 [jsx-text]  ⚡ Flash Sale
+    L180 [jsx-text]  Ends in
+    L326 [jsx-text]  p.price
+    L424 [jsx-text]  0 && !search.trim() && (
+    L438 [jsx-text]  0 && !search.trim() && selectedCategory === "All" && (
+    L447 [jsx-text]  0 && !search.trim() && selectedCategory === "All" && (
+    L451 [jsx-text]  New Arrivals
+    L466 [jsx-text]  0 && !search.trim() && selectedCategory === "All" && (
+    … +15 more
+▸ src/components/admin/AdminBannerManager.tsx  (25)
+    L249 [jsx-text]  Promo Banners
+    L251 [jsx-text]  Add
+    L255 [jsx-text]  Loading…
+    L255 [jsx-text]  ) : banners.length === 0 ? (
+    L257 [jsx-text]  No banners yet. Add your first promo banner above.
+    L321 [jsx-text]  Title (optional for media banners)
+    L325 [jsx-text]  Subtitle
+    L329 [jsx-text]  Badge Text
+    L335 [jsx-text]  Banner Media (Image / GIF / Video)
+    L341 [jsx-text]  Link Target
+    … +15 more
+▸ src/pages/DonationsPage.tsx  (24)
+    L319 [jsx-text]  Change cause
+    L324 [jsx-text]  Amount
+    L385 [jsx-text]  Donate anonymously
+    L393 [jsx-text]  Make this recurring
+    L445 [jsx-text]  Anonymous
+    L453 [jsx-text]  Enter your 4-digit PIN
+    L518 [jsx-text]  Thank You!
+    L519 [jsx-text]  You donated
+    L529 [jsx-text]  Anonymous
+    L545 [jsx-text]  Donate Again
+    … +14 more
+▸ src/components/admin/AdminBillerConfig.tsx  (24)
+    L219 [jsx-text]  Biller API Configs
+    L220 [jsx-text]  Manage utility biller integrations (Electricity, Water, Gas, Internet, TV)
+    L224 [jsx-text]  Add Biller
+    L258 [jsx-text]  Live
+    L262 [jsx-text]  Off
+    L266 [jsx-text]  Configured
+    L268 [jsx-text]  No Credentials
+    L276 [jsx-text]  Edit
+    L319 [jsx-text]  No biller API configs yet
+    L320 [jsx-text]  Click "Add Biller" to start
+    … +14 more
+▸ src/components/admin/AdminFeatureLocks.tsx  (24)
+    L218 [jsx-text]  Feature Locks
+    L224 [jsx-text]  Lock Feature
+    L230 [jsx-text]  Lock a Feature
+    L236 [jsx-text]  Target User
+    L282 [jsx-text]  Feature to Lock
+    L297 [jsx-text]  Duration
+    L320 [jsx-text]  Reason (optional)
+    L330 [jsx-text]  Cancel
+    L360 [jsx-text]  Active Feature Locks
+    L373 [jsx-text]  User
+    … +14 more
+▸ src/components/admin/AdminFraudAlerts.tsx  (24)
+    L320 [jsx-text]  Fraud Alerts
+    L471 [jsx-text]  Alert Context
+    L490 [jsx-text]  Resolution Notes
+    L508 [jsx-text]  Unassigned
+    L533 [jsx-text]  Investigate
+    L542 [jsx-text]  Resolve
+    L550 [jsx-text]  Dismiss
+    L558 [jsx-text]  Lock Account
+    L567 [jsx-text]  Delete
+    L572 [jsx-text]  Delete Alert
+    … +14 more
+▸ src/components/admin/AdminFundRequests.tsx  (24)
+    L152 [jsx-text]  Loading fund requests…
+    L162 [jsx-text]  Incoming MFS
+    L201 [jsx-text]  No requests found.
+    L227 [jsx-text]  Type:
+    L228 [jsx-text]  Amount:
+    L229 [jsx-text]  Source:
+    L230 [jsx-text]  TxnID:
+    L231 [jsx-text]  Bank:
+    L233 [jsx-text]  Holder:
+    L234 [jsx-text]  Date:
+    … +14 more
+▸ src/pages/GiftCardsPage.tsx  (23)
+    L133 [jsx-text]  card.status === "expired" || (card.expires_at && new Date(card.expires_at)
+    L152 [jsx-text]  Gift Cards
+    L153 [jsx-text]  Send joy, share happiness
+    L186 [jsx-text]  Select Category
+    L217 [jsx-text]  Universal Gift Card
+    L225 [jsx-text]  Select Amount
+    L262 [jsx-text]  Gift Card
+    L271 [jsx-text]  Value
+    L281 [jsx-text]  Valid Thru
+    L285 [jsx-text]  Universal
+    … +13 more
+▸ src/pages/OrderDetailPage.tsx  (23)
+    L206 [jsx-text]  Order Tracking
+    L247 [jsx-text]  Tracking:
+    L249 [jsx-text]  Track
+    L269 [jsx-text]  Order Cancelled
+    L270 [jsx-text]  Refund will be processed within 24 hours
+    L325 [jsx-text]  Payment Summary
+    L327 [jsx-text]  Subtotal
+    L332 [jsx-text]  Coupon Discount
+    L337 [jsx-text]  Delivery
+    L342 [jsx-text]  Total
+    … +13 more
+▸ src/pages/SuperDistributorCreateDistributor.tsx  (23)
+    L42 [jsx-text]  Login required
+    L43 [jsx-text]  Go to Login
+    L97 [jsx-text]  Distributor Created!
+    L99 [jsx-text]  A random PIN was generated. They should use "Forgot PIN" to set their own.
+    L103 [jsx-text]  Create Another
+    L105 [jsx-text]  Back to Dashboard
+    L122 [jsx-text]  Create Distributor
+    L134 [jsx-text]  New Distributor Account
+    L135 [jsx-text]  Create a new distribution hub in your network
+    L141 [jsx-text]  Phone Number *
+    … +13 more
+▸ src/components/admin/AdminApiLogs.tsx  (23)
+    L45 [jsx-text]  = 200 && l.status_code
+    L51 [jsx-text]  = 200 && code
+    L52 [jsx-text]  = 400 && code
+    L62 [jsx-text]  Total Requests
+    L66 [jsx-text]  Success Rate
+    L70 [jsx-text]  Avg Response
+    L74 [jsx-text]  Errors
+    L83 [jsx-text]  All Status
+    L84 [jsx-text]  2xx Success
+    L85 [jsx-text]  4xx Client
+    … +13 more
+▸ src/components/merchant/StaffAccessRequestsPanel.tsx  (23)
+    L105 [jsx-text]  Access Requests
+    L109 [jsx-text]  View all
+    L128 [jsx-text]  Grant
+    L163 [jsx-text]  Deny request?
+    L176 [jsx-text]  Cancel
+    L177 [jsx-text]  Deny
+    L236 [jsx-text]  Staff Access
+    L278 [jsx-text]  Wants
+    L287 [jsx-text]  Grant access
+    L290 [jsx-text]  Deny
+    … +13 more
+▸ src/components/admin/AdminGatewayConfig.tsx  (22)
+    L206 [jsx-text]  Payment Gateways
+    L207 [jsx-text]  Add, edit, remove & toggle payment providers
+    L211 [jsx-text]  Add Gateway
+    L238 [jsx-text]  Live
+    L242 [jsx-text]  Off
+    L246 [jsx-text]  Configured
+    L248 [jsx-text]  No Credentials
+    L253 [jsx-text]  Edit
+    L270 [jsx-text]  No payment gateways configured
+    L271 [jsx-text]  Add a gateway to get started
+    … +12 more
+▸ src/components/admin/AdminGlobalToggles.tsx  (22)
+    L286 [jsx-text]  ) : vis === 'disabled' ? (
+    L302 [jsx-text]  Disabled
+    L334 [jsx-text]  Global Feature Toggles
+    L336 [jsx-text]  Enable or disable features globally
+    L341 [jsx-text]  All On
+    L344 [jsx-text]  All Off
+    L347 [jsx-text]  Add
+    L412 [jsx-text]  No toggles yet
+    L413 [jsx-text]  Add a toggle to get started
+    L428 [jsx-text]  Section
+    … +12 more
+▸ src/components/admin/AdminReturnRequests.tsx  (22)
+    L106 [jsx-text]  Return Requests
+    L118 [jsx-text]  All Status
+    L119 [jsx-text]  Pending
+    L120 [jsx-text]  Approved
+    L121 [jsx-text]  Rejected
+    L122 [jsx-text]  Completed
+    L128 [jsx-text]  Loading...
+    L128 [jsx-text]  ) : filtered.length === 0 ? (
+    L130 [jsx-text]  No return requests found
+    L157 [jsx-text]  Delete Return Request
+    … +12 more
+▸ src/components/admin/MerchantLimitsTab.tsx  (22)
+    L170 [jsx-text]  No merchants found
+    L202 [jsx-text]  Effective Limits
+    L204 [jsx-text]  Override
+    L205 [jsx-text]  Reset All
+    L213 [jsx-text]  Type
+    L214 [jsx-text]  Period
+    L215 [jsx-text]  Max Amount
+    L216 [jsx-text]  Max Txns
+    L217 [jsx-text]  Source
+    L251 [jsx-text]  No limits configured
+    … +12 more
+▸ src/pages/DistributorCreateAgent.tsx  (21)
+    L96 [jsx-text]  Create Agent Account
+    L97 [jsx-text]  Register new agent in your network
+    L110 [jsx-text]  Agent Created!
+    L113 [jsx-text]  Account Created
+    L114 [jsx-text]  A random PIN has been generated. The agent must use "Forgot PIN" to set their own PIN.
+    L118 [jsx-text]  Create Another Agent
+    L121 [jsx-text]  Back to Dashboard
+    L130 [jsx-text]  Agent Registration
+    L134 [jsx-text]  Phone Number *
+    L140 [jsx-text]  Full Name *
+    … +11 more
+▸ src/pages/MerchantManagerLoginPage.tsx  (21)
+    L350 [jsx-text]  Store Manager Access
+    L353 [jsx-text]  Manager sign-in
+    L354 [jsx-text]  Access the store you've been added to.
+    L382 [jsx-text]  Use your own phone & PIN
+    L389 [jsx-text]  Sign up first
+    L391 [jsx-text]  , then ask the owner to add you.
+    L404 [jsx-text]  Account temporarily locked
+    L421 [jsx-text]  Incorrect PIN
+    L431 [jsx-text]  0 && attemptsRemaining
+    L442 [jsx-text]  Your mobile number
+    … +11 more
+▸ src/pages/ProductDetailPage.tsx  (21)
+    L219 [jsx-text]  Product not found
+    L305 [jsx-text]  50) goImg(dx
+    L363 [jsx-text]  product.price && (
+    L391 [jsx-text]  0 && product.stock
+    L395 [jsx-text]  Hurry up
+    L421 [jsx-text]  Visit Store
+    L495 [jsx-text]  Key Highlights
+    L534 [jsx-text]  Description
+    L535 [jsx-text]  Specifications
+    L545 [jsx-text]  Product Details
+    … +11 more
+▸ src/components/admin/AdminDpsAuditTrail.tsx  (21)
+    L215 [jsx-text]  DPS Audit Trail
+    L225 [jsx-text]  Refresh
+    L234 [jsx-text]  Export CSV
+    L244 [jsx-text]  Entries
+    L252 [jsx-text]  Collected
+    L260 [jsx-text]  Missed
+    L268 [jsx-text]  Skipped
+    L276 [jsx-text]  Credited
+    L318 [jsx-text]  Loading…
+    L318 [jsx-text]  ) : filtered.length === 0 ? (
+    … +11 more
+▸ src/components/admin/AdminEasypayUidAlertsPanel.tsx  (21)
+    L257 [jsx-text]  Resolved
+    L286 [jsx-text]  Reopen
+    L288 [jsx-text]  Resolve
+    L303 [jsx-text]  Load more
+    L320 [jsx-text]  Resolved
+    L325 [jsx-text]  Full metadata for this unauthorized EasyPay UID access attempt.
+    L339 [jsx-text]  Payload
+    L353 [jsx-text]  Copy JSON
+    L383 [jsx-text]  Reopen alert
+    L385 [jsx-text]  Mark resolved
+    … +11 more
+▸ src/components/admin/AdminFraudAutoRules.tsx  (21)
+    L163 [jsx-text]  Automated Fraud Rules
+    L168 [jsx-text]  New Rule
+    L174 [jsx-text]  Rules
+    L180 [jsx-text]  No auto-rules configured. Create your first rule above.
+    L192 [jsx-text]  Threshold:
+    L209 [jsx-text]  Delete Rule
+    L213 [jsx-text]  Cancel
+    L214 [jsx-text]  Delete
+    L233 [jsx-text]  Time
+    L234 [jsx-text]  Rule
+    … +11 more
+▸ src/components/merchant/MerchantRefundsTab.tsx  (21)
+    L176 [jsx-text]  Refund Management
+    L179 [jsx-text]  Issue Refund
+    L185 [jsx-text]  Total
+    L186 [jsx-text]  Pending
+    L187 [jsx-text]  Refunded
+    L203 [jsx-text]  Issue a refund from a delivered order
+    L239 [jsx-text]  Issue Refund
+    L244 [jsx-text]  Select Order
+    L250 [jsx-text]  ) : searchedOrders.length === 0 ? (
+    L252 [jsx-text]  No eligible delivered orders found
+    … +11 more
+▸ src/pages/TransactionHistory.tsx  (20)
+    L90 [jsx-text]  void; filterTypes?: TxCategory[]; agentView?: boolean; customLabels?: Record
+    L200 [jsx-text]  t.amount
+    L378 [jsx-text]  new Date() || (dateFrom ? d
+    L645 [jsx-text]  Pending
+    L646 [jsx-text]  ) : selectedTx.status === "failed" ? (
+    L650 [jsx-text]  Rejected
+    L655 [jsx-text]  Successful
+    L700 [jsx-text]  Transaction Amount
+    L704 [jsx-text]  Commission Earned
+    L711 [jsx-text]  Net Earned
+    … +10 more
+▸ src/components/SendMoneyFlow.tsx  (20)
+    L661 [jsx-text]  Secure & Instant Transfer
+    L733 [jsx-text]  Recent
+    L746 [jsx-text]  All Contacts
+    L775 [jsx-text]  No contacts found
+    L776 [jsx-text]  Enter a number or import from your phone
+    L787 [jsx-text]  Continue
+    L886 [jsx-text]  0 && amtNum
+    L895 [jsx-text]  Add Cash Out Charge (1.19%)
+    L896 [jsx-text]  0 && amtNum
+    L908 [jsx-text]  BALANCE && (
+    … +10 more
+▸ src/components/admin/AdminAiFraudDetection.tsx  (20)
+    L107 [jsx-text]  (a as any).sla_deadline && new Date((a as any).sla_deadline)
+    L210 [jsx-text]  AI Fraud Detection
+    L211 [jsx-text]  Beta
+    L214 [jsx-text]  Re-analyze
+    L249 [jsx-text]  Top Risk Users
+    L263 [jsx-text]  No risks detected
+    L276 [jsx-text]  User
+    L277 [jsx-text]  Risk Score
+    L278 [jsx-text]  Factors
+    L279 [jsx-text]  Volume
+    … +10 more
+▸ src/components/admin/AdminAuditLogViewer.tsx  (20)
+    L314 [jsx-text]  Audit Log
+    L317 [jsx-text]  Refresh
+    L325 [jsx-text]  From
+    L355 [jsx-text]  Category
+    L361 [jsx-text]  All categories
+    L365 [jsx-text]  Other
+    L371 [jsx-text]  Admin
+    L377 [jsx-text]  All admins
+    L386 [jsx-text]  Clear
+    L397 [jsx-text]  Date / Time
+    … +10 more
+▸ src/components/admin/AdminCronLogsTab.tsx  (20)
+    L103 [jsx-text]  All status
+    L113 [jsx-text]  All triggers
+    L114 [jsx-text]  Cron
+    L115 [jsx-text]  Retry
+    L116 [jsx-text]  Admin
+    L117 [jsx-text]  User
+    L123 [jsx-text]  Last 24h
+    L124 [jsx-text]  Last 7d
+    L125 [jsx-text]  Last 30d
+    L129 [jsx-text]  Refresh
+    … +10 more
+▸ src/components/admin/AdminDeliveryZones.tsx  (20)
+    L110 [jsx-text]  Add Zone
+    L125 [jsx-text]  No courier assigned
+    L129 [jsx-text]  Save
+    L130 [jsx-text]  Cancel
+    L137 [jsx-text]  Loading…
+    L137 [jsx-text]  ) : zones.length === 0 ? (
+    L139 [jsx-text]  No delivery zones yet
+    L175 [jsx-text]  This will permanently remove this delivery zone.
+    L178 [jsx-text]  Cancel
+    L179 [jsx-text]  Delete
+    … +10 more
+▸ src/components/admin/AdminGeoTracking.tsx  (20)
+    L90 [jsx-text]  Geo Transaction Tracking
+    L95 [jsx-text]  Today
+    L96 [jsx-text]  7 Days
+    L97 [jsx-text]  30 Days
+    L117 [jsx-text]  Active Territories
+    L118 [jsx-text]  Total Agents
+    L119 [jsx-text]  Top Area
+    L120 [jsx-text]  Avg Coverage
+    L124 [jsx-text]  Agent Distribution by Territory
+    L148 [jsx-text]  Territory
+    … +10 more
+▸ src/components/admin/AdminInvestmentPnL.tsx  (20)
+    L129 [jsx-text]  Investment P/L
+    L130 [jsx-text]  Live
+    L168 [jsx-text]  User
+    L169 [jsx-text]  Grams
+    L170 [jsx-text]  Avg / Cur
+    L171 [jsx-text]  Invested
+    L172 [jsx-text]  Value
+    L191 [jsx-text]  No gold holdings
+    L207 [jsx-text]  User
+    L208 [jsx-text]  Symbol
+    … +10 more
+▸ src/components/admin/AdminVendorKycReview.tsx  (20)
+    L120 [jsx-text]  Vendor KYC Review
+    L122 [jsx-text]  Refresh
+    L140 [jsx-text]  Loading…
+    L140 [jsx-text]  ) : merchants.length === 0 ? (
+    L164 [jsx-text]  Review
+    L176 [jsx-text]  Vendor KYC Application
+    L185 [jsx-text]  Owner
+    L198 [jsx-text]  Category:
+    L199 [jsx-text]  Trade License:
+    L200 [jsx-text]  Bank:
+    … +10 more
+▸ src/pages/ShopCheckoutPage.tsx  (19)
+    L248 [jsx-text]  Order Placed!
+    L264 [jsx-text]  Order Confirmed!
+    L265 [jsx-text]  Your order has been placed successfully
+    L269 [jsx-text]  Delivery Info
+    L272 [jsx-text]  Estimated 3-5 business days
+    L295 [jsx-text]  View Order
+    L301 [jsx-text]  Continue Shopping
+    L317 [jsx-text]  Checkout
+    L324 [jsx-text]  Delivery Address
+    L337 [jsx-text]  Payment Method
+    … +9 more
+▸ src/pages/TeamLoginPage.tsx  (19)
+    L215 [jsx-text]  Team Login
+    L216 [jsx-text]  Sign in with your team credentials
+    L224 [jsx-text]  Username
+    L239 [jsx-text]  Password
+    L260 [jsx-text]  Contact your administrator if you need credentials.
+    L270 [jsx-text]  Change Your Password
+    L273 [jsx-text]  For security, you must change your temporary password before continuing.
+    L280 [jsx-text]  New Password
+    L298 [jsx-text]  0 && newPassword.length
+    L299 [jsx-text]  Must be at least 8 characters
+    … +9 more
+▸ src/components/MerchantBusinessKycFlow.tsx  (19)
+    L115 [jsx-text]  Business KYC Application
+    L117 [jsx-text]  Submit your business documents for verification
+    L121 [jsx-text]  ) : !userKycOk ? (
+    L127 [jsx-text]  User KYC required first
+    L128 [jsx-text]  Please complete your personal KYC verification before applying as a vendor.
+    L131 [jsx-text]  ) : existing ? (
+    L136 [jsx-text]  Under Review
+    L137 [jsx-text]  Approved
+    L138 [jsx-text]  Rejected
+    L153 [jsx-text]  Business Name *
+    … +9 more
+▸ src/components/PayBillFlow.tsx  (19)
+    L444 [jsx-text]  Bill Type
+    L554 [jsx-text]  Enter Bill Amount
+    L587 [jsx-text]  Review Payment
+    L596 [jsx-text]  Paying
+    L611 [jsx-text]  Bill Summary
+    L613 [jsx-text]  Bill Amount
+    L620 [jsx-text]  Service Fee
+    L621 [jsx-text]  Free
+    L624 [jsx-text]  Fee source
+    L625 [jsx-text]  From your balance
+    … +9 more
+▸ src/components/admin/AdminChangelogManager.tsx  (19)
+    L118 [jsx-text]  Changelog / Release Notes
+    L119 [jsx-text]  New Entry
+    L132 [jsx-text]  Cancel
+    L138 [jsx-text]  Loading…
+    L138 [jsx-text]  ) : entries.length === 0 ? (
+    L140 [jsx-text]  No changelog entries yet
+    L180 [jsx-text]  Edit Changelog Entry
+    L189 [jsx-text]  Cancel
+    L190 [jsx-text]  Save Changes
+    L199 [jsx-text]  Delete Changelog Entry?
+    … +9 more
+▸ src/components/admin/TeamActivityDashboard.tsx  (19)
+    L169 [jsx-text]  Total Team
+    L173 [jsx-text]  Online Now
+    L177 [jsx-text]  Actions Today
+    L181 [jsx-text]  Open Tickets
+    L196 [jsx-text]  Team Performance
+    L202 [jsx-text]  Member
+    L203 [jsx-text]  Dept
+    L204 [jsx-text]  Status
+    L205 [jsx-text]  Today
+    L206 [jsx-text]  Week
+    … +9 more
+▸ src/pages/CareersPage.tsx  (18)
+    L87 [jsx-text]  Careers
+    L92 [jsx-text]  Join Our Team
+    L93 [jsx-text]  Help us build the future of digital finance in Bangladesh
+    L97 [jsx-text]  Loading openings…
+    L97 [jsx-text]  ) : jobs.length === 0 ? (
+    L101 [jsx-text]  No open positions right now
+    L102 [jsx-text]  Check back later for new opportunities
+    L166 [jsx-text]  Description
+    L173 [jsx-text]  Requirements
+    L180 [jsx-text]  Apply Now
+    … +8 more
+▸ src/components/admin/AdminBankReconciliation.tsx  (18)
+    L83 [jsx-text]  Bank Reconciliation
+    L115 [jsx-text]  Total Inflow
+    L119 [jsx-text]  Total Outflow
+    L123 [jsx-text]  Net Position
+    L127 [jsx-text]  Fees Earned
+    L132 [jsx-text]  Daily Inflow vs Outflow
+    L159 [jsx-text]  Recipient
+    L160 [jsx-text]  Amount
+    L161 [jsx-text]  Fee
+    L162 [jsx-text]  Date
+    … +8 more
+▸ src/components/admin/AdminChargeConfig.tsx  (18)
+    L151 [jsx-text]  Charge Configuration
+    L153 [jsx-text]  Manage transaction fees and service charges
+    L157 [jsx-text]  Add Charge
+    L166 [jsx-text]  Transaction Type
+    L175 [jsx-text]  Fee Type
+    L200 [jsx-text]  Active
+    L214 [jsx-text]  Type
+    L215 [jsx-text]  Fee
+    L216 [jsx-text]  Range
+    L217 [jsx-text]  Active
+    … +8 more
+▸ src/components/admin/AdminCommissionLedger.tsx  (18)
+    L36 [jsx-text]  Commission Ledger
+    L37 [jsx-text]  Refresh
+    L44 [jsx-text]  Total Fees
+    L49 [jsx-text]  Agent Share
+    L54 [jsx-text]  Distributor Share
+    L59 [jsx-text]  Company Share
+    L66 [jsx-text]  All Types
+    L71 [jsx-text]  Loading…
+    L71 [jsx-text]  : logs.length === 0 ? (
+    L72 [jsx-text]  No commission logs found
+    … +8 more
+▸ src/components/admin/AdminCourierProviders.tsx  (18)
+    L92 [jsx-text]  Add Courier
+    L104 [jsx-text]  Save
+    L105 [jsx-text]  Cancel
+    L112 [jsx-text]  Loading…
+    L112 [jsx-text]  ) : providers.length === 0 ? (
+    L114 [jsx-text]  No courier providers yet
+    L150 [jsx-text]  This will permanently remove this courier provider.
+    L153 [jsx-text]  Cancel
+    L154 [jsx-text]  Delete
+    L161 [jsx-text]  Edit Courier
+    … +8 more
+▸ src/components/admin/MerchantApplyTargeting.tsx  (18)
+    L138 [jsx-text]  Feature Visibility Mode
+    L147 [jsx-text]  Everyone
+    L149 [jsx-text]  All users can see &ldquo;Become a Merchant&rdquo;
+    L157 [jsx-text]  Targeted
+    L159 [jsx-text]  Only matching users by role, area, or individual selection
+    L167 [jsx-text]  Disabled
+    L169 [jsx-text]  No one can see &ldquo;Become a Merchant&rdquo;
+    L181 [jsx-text]  Allowed Roles
+    L184 [jsx-text]  Users with any of these roles can see the feature. Leave empty to skip role filtering.
+    L206 [jsx-text]  Allowed Areas / Territory Codes
+    … +8 more
+▸ src/components/merchant/MerchantCouponsTab.tsx  (18)
+    L143 [jsx-text]  Discount Coupons
+    L146 [jsx-text]  Create Coupon
+    L152 [jsx-text]  Total
+    L153 [jsx-text]  Active
+    L154 [jsx-text]  Used
+    L162 [jsx-text]  No coupons yet
+    L163 [jsx-text]  Create your first promo code to attract customers
+    L181 [jsx-text]  Expired
+    L216 [jsx-text]  Create Coupon
+    L220 [jsx-text]  Coupon Code
+    … +8 more
+▸ src/components/merchant/MerchantForgotPinSheet.tsx  (18)
+    L228 [jsx-text]  Enter the 6-digit code we sent to
+    L256 [jsx-text]  Registered mobile number
+    L276 [jsx-text]  Code will be sent to
+    L283 [jsx-text]  Anything we should know?
+    L284 [jsx-text]  (optional)
+    L297 [jsx-text]  ~15 min response
+    L301 [jsx-text]  OTP-protected
+    L312 [jsx-text]  Sending code...
+    L314 [jsx-text]  Send verification code
+    L318 [jsx-text]  By continuing, you agree to be contacted by EasyPay support for identity verification.
+    … +8 more
+▸ src/components/admin/AdminApiIpWhitelist.tsx  (17)
+    L83 [jsx-text]  Whitelisted IPs
+    L87 [jsx-text]  Keys with Whitelist
+    L95 [jsx-text]  Add IP
+    L98 [jsx-text]  Add IP to Whitelist
+    L101 [jsx-text]  Merchant
+    L108 [jsx-text]  IP Address
+    L112 [jsx-text]  Label (optional)
+    L125 [jsx-text]  Whitelist Enforcement per API Key
+    L147 [jsx-text]  Merchant
+    L148 [jsx-text]  IP Address
+    … +7 more
+▸ src/components/admin/AdminVendorPayouts.tsx  (17)
+    L82 [jsx-text]  Vendor Payouts
+    L84 [jsx-text]  Refresh
+    L90 [jsx-text]  Pending Requests
+    L94 [jsx-text]  Pending Amount
+    L113 [jsx-text]  Loading…
+    L113 [jsx-text]  ) : payouts.length === 0 ? (
+    L133 [jsx-text]  Review
+    L144 [jsx-text]  Payout Review
+    L152 [jsx-text]  to EasyPay Wallet
+    L159 [jsx-text]  Vendor available balance:
+    … +7 more
+▸ src/pages/AgentBillPay.tsx  (16)
+    L79 [jsx-text]  Bill Pay
+    L80 [jsx-text]  Utility bill payments
+    L93 [jsx-text]  Bill Paid Successfully
+    L95 [jsx-text]  Pay Another Bill
+    L96 [jsx-text]  Back to Dashboard
+    L98 [jsx-text]  ) : step === "form" ? (
+    L107 [jsx-text]  Account / Meter No
+    L120 [jsx-text]  Enter PIN
+    L124 [jsx-text]  Back
+    L109 [attr]  Enter account number
+    … +6 more
+▸ src/components/admin/AdminAnnouncementManager.tsx  (16)
+    L136 [jsx-text]  Platform Announcements
+    L139 [jsx-text]  New
+    L143 [jsx-text]  Loading…
+    L143 [jsx-text]  ) : items.length === 0 ? (
+    L145 [jsx-text]  No announcements yet
+    L161 [jsx-text]  Expired
+    L185 [jsx-text]  Title
+    L186 [jsx-text]  Message
+    L189 [jsx-text]  Type
+    L197 [jsx-text]  Priority
+    … +6 more
+▸ src/components/admin/AdminChargebackDialog.tsx  (16)
+    L86 [jsx-text]  Chargeback
+    L89 [jsx-text]  Deduct funds from a user's account. This action is recorded in the audit log.
+    L97 [jsx-text]  User
+    L101 [jsx-text]  Phone
+    L105 [jsx-text]  Balance
+    L110 [jsx-text]  Ref Txn
+    L129 [jsx-text]  target.balance && (
+    L136 [jsx-text]  Reason (required)
+    L146 [jsx-text]  Cancel
+    L147 [jsx-text]  Review Chargeback
+    … +6 more
+▸ src/components/admin/AdminDpsAlerts.tsx  (16)
+    L173 [jsx-text]  DPS Alerts — No-goal & misroute events
+    L176 [jsx-text]  Real-time notifications when schedules run without a linked goal. No funds are deducted on these ...
+    L181 [jsx-text]  Refresh
+    L189 [jsx-text]  Open alerts
+    L194 [jsx-text]  Resolved this session
+    L199 [jsx-text]  Total tracked
+    L204 [jsx-text]  Loading…
+    L204 [jsx-text]  ) : alerts.length === 0 ? (
+    L209 [jsx-text]  No DPS alerts
+    L210 [jsx-text]  Every schedule run has linked to a goal.
+    … +6 more
+▸ src/components/admin/AdminPinHistory.tsx  (16)
+    L92 [jsx-text]  PIN Change History
+    L94 [jsx-text]  Refresh
+    L103 [jsx-text]  Total
+    L108 [jsx-text]  Today
+    L113 [jsx-text]  Admin Resets
+    L118 [jsx-text]  Forgot PIN
+    L135 [jsx-text]  Loading…
+    L135 [jsx-text]  ) : filtered.length === 0 ? (
+    L137 [jsx-text]  No PIN change records found
+    L143 [jsx-text]  User
+    … +6 more
+▸ src/components/admin/AdminRechargeApiConnect.tsx  (16)
+    L165 [jsx-text]  Not Configured
+    L168 [jsx-text]  Connected
+    L171 [jsx-text]  Failed
+    L173 [jsx-text]  Configured
+    L187 [jsx-text]  Operator API Connect
+    L188 [jsx-text]  Configure real-time recharge APIs for each mobile operator
+    L223 [jsx-text]  Live
+    L227 [jsx-text]  Off
+    L239 [jsx-text]  Configure
+    L258 [jsx-text]  No operator configs found
+    … +6 more
+▸ src/pages/DynamicQrPage.tsx  (15)
+    L162 [jsx-text]  Session Not Found
+    L163 [jsx-text]  This payment session does not exist or has been removed.
+    L174 [jsx-text]  Something Went Wrong
+    L175 [jsx-text]  Could not load this payment session. Please try again.
+    L181 [jsx-text]  Retry
+    L217 [jsx-text]  Scan with
+    L218 [jsx-text]  EasyPay
+    L232 [jsx-text]  Waiting for payment…
+    L239 [jsx-text]  Pay with EasyPay
+    L251 [jsx-text]  Payment Received!
+    … +5 more
+▸ src/pages/RoleInstallPage.tsx  (15)
+    L111 [jsx-text]  Choose an App to Install
+    L155 [jsx-text]  What's included
+    L172 [jsx-text]  App Installed!
+    L173 [jsx-text]  Check your home screen
+    L174 [jsx-text]  ) : hasPrompt ? (
+    L189 [jsx-text]  Install Manually
+    L191 [jsx-text]  iPhone:
+    L191 [jsx-text]  Tap Share → "Add to Home Screen"
+    L194 [jsx-text]  Android:
+    L194 [jsx-text]  Tap ⋮ menu → "Install app"
+    … +5 more
+▸ src/components/admin/AdminSavingsManagement.tsx  (15)
+    L171 [jsx-text]  Total Savings
+    L177 [jsx-text]  Total Goals
+    L183 [jsx-text]  Active Auto-Saves
+    L197 [jsx-text]  ) : filtered.length === 0 ? (
+    L199 [jsx-text]  No savings data found
+    L281 [jsx-text]  No deposits yet
+    L298 [jsx-text]  Edit Goal
+    L298 [jsx-text]  Update goal name and target
+    L304 [jsx-text]  Cancel
+    L314 [jsx-text]  Close Goal
+    … +5 more
+▸ src/pages/SpendingInsightsPage.tsx  (14)
+    L347 [jsx-text]  From
+    L362 [jsx-text]  new Date() || (customFrom ? d
+    L372 [jsx-text]  Apply Range
+    L389 [jsx-text]  No transactions yet
+    L390 [jsx-text]  Your spending insights will appear here once you make transactions in the selected period.
+    L483 [jsx-text]  Budget vs Actual
+    L484 [jsx-text]  This month's spending against your limits
+    L501 [jsx-text]  Budget
+    L502 [jsx-text]  Actual
+    L504 [jsx-text]  Used
+    … +4 more
+▸ src/components/QrScannerModal.tsx  (14)
+    L281 [jsx-text]  Camera not available
+    L282 [jsx-text]  Use gallery upload below
+    L297 [jsx-text]  Reading number...
+    L302 [jsx-text]  1 && !detected && (
+    L304 [jsx-text]  Numbers found
+    L324 [jsx-text]  Tap to retry
+    L340 [jsx-text]  Detected!
+    L346 [jsx-text]  Scan QR code or tap "Read Number" to scan a phone number.
+    L366 [jsx-text]  Torch
+    L381 [jsx-text]  Read Number
+    … +4 more
+▸ src/components/admin/AdminApiUsageAnalytics.tsx  (14)
+    L54 [jsx-text]  = 200 && l.status_code
+    L72 [jsx-text]  = 200 && l.status_code
+    L73 [jsx-text]  = 400 && l.status_code
+    L110 [jsx-text]  Total Requests
+    L114 [jsx-text]  Success Rate
+    L118 [jsx-text]  Errors
+    L122 [jsx-text]  Avg Response
+    L127 [jsx-text]  Loading analytics...
+    L132 [jsx-text]  Daily Requests
+    L135 [jsx-text]  No data
+    … +4 more
+▸ src/components/admin/AdminDeviceManager.tsx  (14)
+    L69 [jsx-text]  Device Manager
+    L70 [jsx-text]  Refresh
+    L77 [jsx-text]  Total Devices
+    L82 [jsx-text]  Suspicious (3+)
+    L91 [jsx-text]  Loading…
+    L96 [jsx-text]  User
+    L97 [jsx-text]  Fingerprint
+    L98 [jsx-text]  Registered
+    L112 [jsx-text]  Multi-device
+    L133 [jsx-text]  Revoke Device?
+    … +4 more
+▸ src/components/MerchantStoreSettingsTab.tsx  (13)
+    L169 [jsx-text]  Store Name
+    L173 [jsx-text]  URL Slug
+    L180 [jsx-text]  Description
+    L187 [jsx-text]  Social Links
+    L208 [jsx-text]  Store Active
+    L209 [jsx-text]  Visible in marketplace when active
+    L156 [attr]  Banner
+    L181 [attr]  Tell customers about your store...
+    L85 [toast]  Upload failed
+    L110 [toast]  Store name required
+    … +3 more
+▸ src/components/ShopFlow.tsx  (13)
+    L802 [jsx-text]  Shop by Vendor
+    L806 [jsx-text]  All Vendors
+    L833 [jsx-text]  ) : filtered.length === 0 ? (
+    L853 [jsx-text]  0 && !p.badge &&
+    L860 [jsx-text]  Out of Stock
+    L1007 [jsx-text]  Out of stock
+    L1060 [jsx-text]  r.productId === detail.id).length === 0 && (
+    L1294 [jsx-text]  EasyPay Wallet
+    L1301 [jsx-text]  walletBalance && (
+    L1346 [jsx-text]  Confirm PIN
+    … +3 more
+▸ src/components/admin/AdminChatMonitor.tsx  (13)
+    L145 [jsx-text]  Total Chats
+    L156 [jsx-text]  Active
+    L167 [jsx-text]  Pending
+    L186 [jsx-text]  All Conversations
+    L210 [jsx-text]  View
+    L222 [jsx-text]  Delete Conversation?
+    L223 [jsx-text]  All messages and participant data will be permanently removed.
+    L226 [jsx-text]  Cancel
+    L227 [jsx-text]  Delete
+    L247 [jsx-text]  Messages
+    … +3 more
+▸ src/components/admin/AdminFlashSales.tsx  (13)
+    L112 [jsx-text]  s.is_active && new Date(s.starts_at)
+    L119 [jsx-text]  Flash Sales
+    L121 [jsx-text]  New Sale
+    L127 [jsx-text]  Loading…
+    L127 [jsx-text]  ) : sales.length === 0 ? (
+    L131 [jsx-text]  No flash sales yet
+    L170 [jsx-text]  Delete Flash Sale
+    L174 [jsx-text]  Cancel
+    L175 [jsx-text]  Delete
+    L200 [jsx-text]  Select product…
+    … +3 more
+▸ src/components/admin/AdminOtpMonitor.tsx  (13)
+    L43 [jsx-text]  OTP & PIN Monitor
+    L44 [jsx-text]  Refresh
+    L51 [jsx-text]  Today
+    L56 [jsx-text]  Last Hour
+    L61 [jsx-text]  Abuse Flags
+    L68 [jsx-text]  Abuse Detected
+    L79 [jsx-text]  Loading…
+    L79 [jsx-text]  : events.length === 0 ? (
+    L80 [jsx-text]  No OTP/PIN events found
+    L86 [jsx-text]  Action
+    … +3 more
+▸ src/components/admin/AdminPlatformThresholds.tsx  (13)
+    L181 [jsx-text]  Admin access required
+    L182 [jsx-text]  Only administrators can view or modify platform thresholds.
+    L198 [jsx-text]  Alert Thresholds
+    L199 [jsx-text]  Tune system-wide alert sensitivity without code changes.
+    L209 [jsx-text]  Settings
+    L212 [jsx-text]  Audit log
+    L220 [jsx-text]  ) : rows.length === 0 ? (
+    L223 [jsx-text]  No thresholds configured.
+    L309 [jsx-text]  Default
+    L330 [jsx-text]  Change history
+    … +3 more
+▸ src/components/admin/AdminPushDeliveryLogs.tsx  (13)
+    L106 [jsx-text]  Push Delivery Logs
+    L107 [jsx-text]  Real-time send status, opt-out skips, and failure reasons.
+    L113 [jsx-text]  Refresh
+    L125 [jsx-text]  Last 300
+    L143 [jsx-text]  Failed
+    L152 [jsx-text]  Opted out
+    L162 [jsx-text]  Failures per trigger
+    L181 [jsx-text]  Filter:
+    L201 [jsx-text]  All categories
+    L224 [jsx-text]  ) : filtered.length === 0 ? (
+    … +3 more
+▸ src/components/admin/AdminRechargeAnalytics.tsx  (13)
+    L114 [jsx-text]  Pack Popularity Analytics
+    L115 [jsx-text]  Which recharge packs customers use the most
+    L124 [jsx-text]  Last 7 days
+    L125 [jsx-text]  Last 30 days
+    L126 [jsx-text]  Last 90 days
+    L127 [jsx-text]  Last year
+    L137 [jsx-text]  Total Recharges
+    L143 [jsx-text]  Revenue
+    L149 [jsx-text]  Unique Packs
+    L155 [jsx-text]  Via Live API
+    … +3 more
+▸ src/components/admin/TeamOnboardingChecklist.tsx  (13)
+    L120 [jsx-text]  Onboarding Checklist
+    L143 [jsx-text]  Change Now
+    L148 [jsx-text]  Set Up
+    L162 [jsx-text]  Change Password
+    L163 [jsx-text]  Set a new secure password for your account.
+    L167 [jsx-text]  New Password
+    L186 [jsx-text]  Confirm Password
+    L207 [jsx-text]  Complete Profile
+    L208 [jsx-text]  Set up your display name.
+    L212 [jsx-text]  Display Name
+    … +3 more
+▸ src/components/merchant/FulfillmentSheet.tsx  (13)
+    L146 [jsx-text]  Fulfill Order
+    L149 [jsx-text]  Ship items together or in parts. Order status updates automatically.
+    L158 [jsx-text]  Overall progress
+    L164 [jsx-text]  f.status !== "delivered") && (
+    L222 [jsx-text]  Mark delivered
+    L243 [attr]  Tracking number (optional)
+    L90 [toast]  Enter quantity
+    L92 [toast]  Quantity adjusted by another update.
+    L107 [toast]  Failed
+    L108 [toast]  Item shipped
+    … +3 more
+▸ src/components/merchant/PinResetTicketChat.tsx  (13)
+    L441 [jsx-text]  EasyPay Support
+    L490 [jsx-text]  EasyPay · automated
+    L579 [jsx-text]  ) : msg.read_by_admin ? (
+    L596 [jsx-text]  0 && !atBottom && (
+    L629 [jsx-text]  ✓ Ticket resolved
+    L630 [jsx-text]  Try signing in with your new PIN.
+    L801 [jsx-text]  Promise
+    L579 [attr]  Sending
+    L581 [attr]  Delivered & read
+    L583 [attr]  Sent
+    … +3 more
+▸ src/components/shop/AddressManager.tsx  (13)
+    L133 [jsx-text]  Default
+    L161 [jsx-text]  Add New Address
+    L195 [jsx-text]  Full Name *
+    L199 [jsx-text]  Phone *
+    L203 [jsx-text]  Address Line *
+    L208 [jsx-text]  Area / Thana
+    L212 [jsx-text]  City *
+    L219 [jsx-text]  Set as default address
+    L224 [jsx-text]  Cancel
+    L196 [attr]  e.g. Karim Hossain
+    … +3 more
+▸ src/pages/AdminUserProfilePage.tsx  (12)
+    L69 [jsx-text]  Back to Users
+    L105 [jsx-text]  ) : !profile ? (
+    L107 [jsx-text]  No user matched EasyPay UID
+    L142 [jsx-text]  View transactions
+    L151 [jsx-text]  Soft delete
+    L161 [jsx-text]  Activity
+    L112 [attr]  Phone
+    L113 [attr]  Email
+    L114 [attr]  Balance
+    L115 [attr]  User ID
+    … +2 more
+▸ src/pages/CashOutHarness.tsx  (12)
+    L36 [jsx-text]  CashOut Harness
+    L41 [jsx-text]  Agent ID
+    L67 [jsx-text]  Continue
+    L76 [jsx-text]  Enter Amount
+    L77 [jsx-text]  Recipient:
+    L107 [jsx-text]  Continue
+    L115 [jsx-text]  Confirm Cash-Out
+    L116 [jsx-text]  Send
+    L148 [jsx-text]  Cash-Out Successful
+    L149 [jsx-text]  Sent
+    … +2 more
+▸ src/components/MerchantApiAccessStatusBanner.tsx  (12)
+    L231 [jsx-text]  Live updates interrupted
+    L241 [jsx-text]  Retry now
+    L292 [jsx-text]  Submit new API request
+    L298 [jsx-text]  Contact support
+    L308 [jsx-text]  Follow up in Live Chat
+    L343 [jsx-text]  Live
+    L351 [jsx-text]  Connecting
+    L363 [jsx-text]  Offline
+    L315 [attr]  Dismiss
+    L340 [attr]  Live updates connected
+    … +2 more
+▸ src/components/MerchantBulkUploadSheet.tsx  (12)
+    L174 [jsx-text]  Bulk Product Upload
+    L179 [jsx-text]  Download CSV Template
+    L188 [jsx-text]  Click to upload CSV
+    L189 [jsx-text]  name, price, category, stock, sku, brand
+    L194 [jsx-text]  0 && !imported && (
+    L201 [jsx-text]  !r.valid) &&
+    L225 [jsx-text]  Import Complete!
+    L226 [jsx-text]  Products are now in your catalog
+    L99 [toast]  Empty CSV
+    L112 [toast]  CSV must have 'name' and 'price' columns
+    … +2 more
+▸ src/components/admin/AdminApiWebhooks.tsx  (12)
+    L109 [jsx-text]  Configured
+    L118 [jsx-text]  Active
+    L127 [jsx-text]  No Webhook
+    L138 [jsx-text]  Merchant
+    L139 [jsx-text]  Webhook URL
+    L140 [jsx-text]  Status
+    L141 [jsx-text]  Test Result
+    L142 [jsx-text]  Actions
+    L147 [jsx-text]  Loading...
+    L147 [jsx-text]  ) : filtered.length === 0 ? (
+    … +2 more
+▸ src/components/admin/AdminIncomingMfs.tsx  (12)
+    L90 [jsx-text]  Loading incoming MFS payments…
+    L107 [jsx-text]  No incoming MFS payments yet.
+    L121 [jsx-text]  Matched
+    L121 [jsx-text]  Unmatched
+    L125 [jsx-text]  Amount:
+    L126 [jsx-text]  Sender:
+    L127 [jsx-text]  Date:
+    L131 [jsx-text]  Link to Request
+    L144 [jsx-text]  Link MFS Payment to Fund Request
+    L151 [jsx-text]  Cancel
+    … +2 more
+▸ src/components/merchant/RequestAccessSheet.tsx  (12)
+    L69 [jsx-text]  Request access
+    L75 [jsx-text]  You're requesting
+    L85 [jsx-text]  This permission isn't requestable. Ask your store owner directly.
+    L94 [jsx-text]  Request pending
+    L95 [jsx-text]  The owner has been notified. You'll get access as soon as they approve.
+    L97 [jsx-text]  Cancel
+    L105 [jsx-text]  Previous request denied
+    L107 [jsx-text]  You can ask again with more context below.
+    L115 [jsx-text]  You had this permission before — it may have been revoked. Send another request to ask for it again.
+    L124 [jsx-text]  Add a note (optional)
+    … +2 more
+▸ src/pages/MerchantLoginPage.tsx  (11)
+    L470 [jsx-text]  Account temporarily locked
+    L493 [jsx-text]  Incorrect PIN
+    L565 [jsx-text]  4-digit PIN
+    L600 [jsx-text]  ) : loading ? (
+    L603 [jsx-text]  Signing in...
+    L659 [jsx-text]  Forgot PIN?
+    L661 [jsx-text]  Reset securely
+    L677 [jsx-text]  New here? Apply as a merchant
+    L686 [jsx-text]  Manage a store as staff? Manager login
+    L536 [attr]  Device locked to this merchant account
+    … +1 more
+▸ src/components/AgentMenuDrawer.tsx  (11)
+    L224 [jsx-text]  Change Avatar
+    L229 [jsx-text]  ) : profile.avatar_url ? (
+    L243 [jsx-text]  Customer KYC Status
+    L251 [jsx-text]  Customers Onboarded
+    L258 [jsx-text]  Registered
+    L263 [jsx-text]  KYC Verified
+    L267 [jsx-text]  Detailed customer KYC tracking will be available soon.
+    L278 [jsx-text]  Notification Preferences
+    L150 [attr]  Avatar
+    L229 [attr]  Preview
+    … +1 more
+▸ src/components/BiometricAuth.tsx  (11)
+    L130 [jsx-text]  EasyPay
+    L131 [jsx-text]  Secure your account to continue
+    L169 [jsx-text]  Touch the sensor to authenticate
+    L188 [jsx-text]  Use PIN
+    L207 [jsx-text]  Enter your PIN
+    L208 [jsx-text]  Demo PIN is
+    L239 [jsx-text]  Use biometrics instead
+    L262 [jsx-text]  Authenticated!
+    L263 [jsx-text]  Opening your wallet…
+    L276 [jsx-text]  Protected by end-to-end encryption
+    … +1 more
+▸ src/components/FundRequestHistory.tsx  (11)
+    L73 [jsx-text]  My Fund Requests
+    L79 [jsx-text]  ) : requests.length === 0 ? (
+    L83 [jsx-text]  No requests yet
+    L84 [jsx-text]  Your deposit & withdrawal requests will appear here
+    L149 [jsx-text]  Admin Note
+    L155 [jsx-text]  View Proof
+    L133 [attr]  Method
+    L136 [attr]  Bank
+    L139 [attr]  Account
+    L142 [attr]  Holder
+    … +1 more
+▸ src/components/admin/AdminAiAgent.tsx  (11)
+    L184 [jsx-text]  AI User Agent
+    L185 [jsx-text]  Smart monitoring & automated engagement recommendations
+    L268 [jsx-text]  Chat with AI Agent
+    L277 [jsx-text]  Ask me about user engagement, campaign ideas, loan eligibility, or risk patterns.
+    L365 [jsx-text]  AI-Powered User Intelligence
+    L373 [jsx-text]  Start Analysis
+    L383 [jsx-text]  Analyzing user data & generating recommendations…
+    L415 [jsx-text]  Key Insights
+    L479 [jsx-text]  Smart Recommendations
+    L583 [jsx-text]  User Highlights
+    … +1 more
+▸ src/components/admin/AdminLiquidityPrediction.tsx  (11)
+    L104 [jsx-text]  Liquidity Prediction
+    L105 [jsx-text]  AI-Powered
+    L110 [jsx-text]  7-Day Forecast
+    L111 [jsx-text]  14-Day Forecast
+    L112 [jsx-text]  30-Day Forecast
+    L134 [jsx-text]  Current Balance
+    L138 [jsx-text]  Total Earnings
+    L142 [jsx-text]  Total Disbursed
+    L155 [jsx-text]  30-Day Cash Flow
+    L174 [jsx-text]  Balance Forecast
+    … +1 more
+▸ src/components/admin/AdminMfsMonitor.tsx  (11)
+    L80 [jsx-text]  MFS Operations Monitor
+    L83 [jsx-text]  Refresh
+    L95 [jsx-text]  Today's Txns
+    L101 [jsx-text]  Total Volume
+    L107 [jsx-text]  Active Types
+    L127 [jsx-text]  Total Txns
+    L131 [jsx-text]  Volume
+    L135 [jsx-text]  Today
+    L139 [jsx-text]  Fees Earned
+    L146 [jsx-text]  Volume Share
+    … +1 more
+▸ src/components/admin/AdminOverviewCharts.tsx  (11)
+    L209 [jsx-text]  Transaction Volume & Count
+    L215 [jsx-text]  Cumulative Volume (6 Months)
+    L221 [jsx-text]  Transaction Type Breakdown
+    L227 [jsx-text]  Revenue & Fees Trend
+    L233 [jsx-text]  User Signups (14 Days)
+    L239 [jsx-text]  Active Hours (Today)
+    L245 [jsx-text]  Success vs Failed Ratio
+    L251 [jsx-text]  Agent & Merchant Growth
+    L294 [jsx-text]  Analytics
+    L298 [jsx-text]  Reset layout
+    … +1 more
+▸ src/components/admin/AdminUserActivityPanel.tsx  (11)
+    L166 [jsx-text]  All events
+    L167 [jsx-text]  Taps
+    L168 [jsx-text]  Screens
+    L170 [jsx-text]  Transactions
+    L171 [jsx-text]  Auth
+    L172 [jsx-text]  Custom
+    L193 [jsx-text]  ● streaming
+    L289 [jsx-text]  No activity yet.
+    L142 [attr]  Search event, target, route…
+    L152 [attr]  EP UID…
+    … +1 more
+▸ src/components/admin/AdminUserFeedback.tsx  (11)
+    L76 [jsx-text]  Average Rating
+    L82 [jsx-text]  Total Responses
+    L87 [jsx-text]  Distribution
+    L104 [jsx-text]  Recent Feedback
+    L108 [jsx-text]  Loading…
+    L108 [jsx-text]  ) : feedback.length === 0 ? (
+    L110 [jsx-text]  No feedback received yet
+    L131 [jsx-text]  Delete Feedback?
+    L132 [jsx-text]  This feedback entry will be permanently removed.
+    L135 [jsx-text]  Cancel
+    … +1 more
+▸ src/components/admin/AdminVendorCommissionManager.tsx  (11)
+    L88 [jsx-text]  Vendor Commissions
+    L90 [jsx-text]  Refresh
+    L99 [jsx-text]  Loading…
+    L99 [jsx-text]  ) : filtered.length === 0 ? (
+    L101 [jsx-text]  No approved vendors
+    L112 [jsx-text]  Manage
+    L127 [jsx-text]  Default Commission Rate (%)
+    L136 [jsx-text]  Per-Category Overrides
+    L139 [jsx-text]  No overrides yet — default rate applies to all categories.
+    L95 [attr]  Search vendors…
+    … +1 more
+▸ src/components/merchant/MerchantPayoutsTab.tsx  (11)
+    L92 [jsx-text]  Available to Withdraw
+    L102 [jsx-text]  Pending
+    L103 [jsx-text]  Lifetime Earned
+    L104 [jsx-text]  Withdrawn
+    L107 [jsx-text]  Withdraw to EasyPay Wallet
+    L116 [jsx-text]  Withdrawal History
+    L119 [jsx-text]  No withdrawals yet.
+    L147 [jsx-text]  Recent Earnings
+    L169 [jsx-text]  Withdraw to EasyPay Wallet
+    L172 [jsx-text]  Available balance
+    … +1 more
+▸ src/pages/AccountPage.tsx  (10)
+    L505 [jsx-text]  EasyPay v1.0.0 · Built with ❤️
+    L281 [attr]  Profile
+    L336 [attr]  Become a Merchant
+    L357 [attr]  Theme
+    L369 [attr]  Icon Size
+    L381 [attr]  Grid Layout
+    L393 [attr]  Compact Mode
+    L404 [attr]  Rearrange Quick Actions
+    L428 [attr]  My Rewards
+    L486 [attr]  Blocked Users
+▸ src/pages/InsurancePage.tsx  (10)
+    L112 [jsx-text]  Coverage Amount
+    L115 [jsx-text]  Premium
+    L116 [jsx-text]  Duration
+    L119 [jsx-text]  Benefits
+    L139 [jsx-text]  Browse Plans
+    L140 [jsx-text]  My Policies
+    L166 [jsx-text]  Tap to view details →
+    L176 [jsx-text]  ) : policies.length === 0 ? (
+    L178 [jsx-text]  No active policies
+    L95 [attr]  Micro Insurance – Affordable Coverage | EasyPay
+▸ src/pages/MerchantSupportPage.tsx  (10)
+    L157 [jsx-text]  PIN reset · Tap to reopen chat
+    L168 [jsx-text]  ) : !authChecked ? (
+    L172 [jsx-text]  ) : userId ? (
+    L181 [jsx-text]  Sign in to continue your support chat
+    L184 [jsx-text]  You'll need to sign in to your EasyPay account so we can chat with you securely.
+    L188 [jsx-text]  Forgot your PIN? Use the "Forgot PIN" option on the merchant login.
+    L195 [jsx-text]  Sign in to EasyPay
+    L202 [jsx-text]  Back to merchant login
+    L106 [attr]  Back
+    L128 [attr]  Open chat
+▸ src/components/DynamicQrPaySheet.tsx  (10)
+    L119 [jsx-text]  Pay with EasyPay
+    L148 [jsx-text]  Amount to Pay
+    L155 [jsx-text]  Confirm & Pay
+    L166 [jsx-text]  Enter your PIN
+    L186 [jsx-text]  ) : i === pin.length ? (
+    L233 [jsx-text]  Processing payment…
+    L243 [jsx-text]  Payment Successful!
+    L245 [jsx-text]  Done
+    L253 [jsx-text]  Payment Failed
+    L255 [jsx-text]  Close
+▸ src/components/NotificationCenter.tsx  (10)
+    L194 [jsx-text]  !n.read) && (
+    L197 [jsx-text]  Mark filter
+    L252 [jsx-text]  0 && filter === "all" && (
+    L311 [jsx-text]  Tap for details
+    L316 [jsx-text]  View order →
+    L423 [jsx-text]  Copy
+    L432 [jsx-text]  Reference
+    L438 [jsx-text]  Tracking
+    L325 [attr]  Mark as read
+    L369 [attr]  Close
+▸ src/components/admin/AdminApiRateLimits.tsx  (10)
+    L66 [jsx-text]  Total Keys
+    L70 [jsx-text]  Custom Limits
+    L74 [jsx-text]  Active Keys
+    L83 [jsx-text]  Merchant
+    L84 [jsx-text]  API Key
+    L85 [jsx-text]  Status
+    L86 [jsx-text]  Rate Limit
+    L91 [jsx-text]  Loading...
+    L91 [jsx-text]  ) : filtered.length === 0 ? (
+    L93 [jsx-text]  No API keys found
+▸ src/components/admin/AdminCronHealthTab.tsx  (10)
+    L85 [jsx-text]  Loading cron health…
+    L95 [jsx-text]  Cron health
+    L102 [jsx-text]  Refresh
+    L116 [jsx-text]  Last successful run
+    L131 [jsx-text]  Stalled schedules
+    L140 [jsx-text]  Invocations per hour (24h)
+    L147 [jsx-text]  No invocations in the last 24 hours.
+    L172 [jsx-text]  Backfill result
+    L189 [jsx-text]  No schedules were overdue by more than 24h.
+    L212 [jsx-text]  last:
+▸ src/components/admin/AdminRealtimeMonitor.tsx  (10)
+    L136 [jsx-text]  Real-time Monitor
+    L143 [jsx-text]  Resume
+    L143 [jsx-text]  Pause
+    L149 [jsx-text]  Active Users
+    L153 [jsx-text]  Today's Txns
+    L157 [jsx-text]  Today's Volume
+    L161 [jsx-text]  Live Events
+    L167 [jsx-text]  Transaction Rate (5-min intervals)
+    L184 [jsx-text]  Paused
+    L203 [jsx-text]  Waiting for live events…
+▸ src/components/admin/AdminRechargeLog.tsx  (10)
+    L109 [jsx-text]  Showing
+    L115 [jsx-text]  Via Live API
+    L121 [jsx-text]  Local Record
+    L127 [jsx-text]  Cashback Given
+    L175 [jsx-text]  ) : filtered.length === 0 ? (
+    L181 [jsx-text]  No recharge transactions found
+    L182 [jsx-text]  Recharge history will appear here
+    L250 [jsx-text]  = limit && (
+    L252 [jsx-text]  Load more
+    L137 [attr]  Search ID, phone, pack…
+▸ src/pages/CustomerOrdersPage.tsx  (9)
+    L51 [jsx-text]  My Orders
+    L61 [jsx-text]  Please log in to see your orders
+    L62 [jsx-text]  Log In
+    L63 [jsx-text]  ) : orders.length === 0 ? (
+    L67 [jsx-text]  No orders yet
+    L68 [jsx-text]  Start Shopping
+    L111 [jsx-text]  Invoice
+    L123 [jsx-text]  Rate & Review
+    L137 [jsx-text]  Write a Review
+▸ src/components/MerchantAnalyticsTab.tsx  (9)
+    L150 [jsx-text]  Period:
+    L169 [jsx-text]  Shop Sales
+    L190 [jsx-text]  Top Products
+    L209 [jsx-text]  Daily Net Earnings
+    L230 [jsx-text]  API Payments
+    L253 [jsx-text]  Session Status
+    L280 [jsx-text]  Daily Sessions
+    L299 [jsx-text]  Daily API Revenue
+    L318 [jsx-text]  No sales data in this period.
+▸ src/components/VendorOnboardingChecklist.tsx  (9)
+    L280 [jsx-text]  Onboarding
+    L282 [jsx-text]  Become a Vendor in 5 steps
+    L283 [jsx-text]  Next:
+    L390 [jsx-text]  You're fully onboarded — your dashboard is ready.
+    L23 [toast]  Verify your identity
+    L24 [toast]  Submit business application
+    L25 [toast]  Get approved by our team
+    L26 [toast]  Add settlement bank account
+    L27 [toast]  Turn on order notifications
+▸ src/components/admin/AdminApiAccessRequests.tsx  (9)
+    L163 [jsx-text]  All
+    L201 [jsx-text]  Review
+    L206 [jsx-text]  Revoke
+    L210 [jsx-text]  Re-review
+    L229 [jsx-text]  Review API Access Request
+    L236 [jsx-text]  Merchant message
+    L249 [jsx-text]  Reject
+    L252 [jsx-text]  Grant Access
+    L243 [attr]  Optional note for the merchant…
+▸ src/components/admin/AdminRechargeImportExport.tsx  (9)
+    L167 [jsx-text]  Bulk Import / Export
+    L168 [jsx-text]  Download all packs as CSV or upload new packs in bulk
+    L181 [jsx-text]  Export Packs
+    L182 [jsx-text]  Download all recharge packs as a CSV file
+    L200 [jsx-text]  Import Packs
+    L201 [jsx-text]  Upload a CSV to add new packs in bulk
+    L228 [jsx-text]  CSV Format
+    L229 [jsx-text]  Required columns:
+    L236 [jsx-text]  Optional: type, sub_category, badge, tag, highlight, cashback, sort_order, is_active
+▸ src/components/admin/AdminUserSessions.tsx  (9)
+    L47 [jsx-text]  Recent Logins
+    L51 [jsx-text]  Devices
+    L55 [jsx-text]  Suspicious
+    L61 [jsx-text]  Multi-Device Alerts
+    L77 [jsx-text]  Login History
+    L85 [jsx-text]  User ID
+    L86 [jsx-text]  Action
+    L87 [jsx-text]  Time
+    L92 [jsx-text]  No login events
+▸ src/components/admin/LimitAuditTab.tsx  (9)
+    L182 [jsx-text]  All Actions
+    L191 [jsx-text]  Live
+    L193 [jsx-text]  Paused
+    L208 [jsx-text]  Date/Time
+    L209 [jsx-text]  Admin
+    L210 [jsx-text]  Action
+    L211 [jsx-text]  Details
+    L234 [jsx-text]  No limit audit entries found
+    L180 [attr]  All Actions
+▸ src/pages/AgentAnalyticsPage.tsx  (8)
+    L135 [jsx-text]  Analytics
+    L184 [jsx-text]  Trend
+    L186 [jsx-text]  No data
+    L212 [jsx-text]  Commission by Type
+    L214 [jsx-text]  No commission data
+    L233 [jsx-text]  Peak Hours
+    L246 [jsx-text]  Breakdown
+    L249 [jsx-text]  No transactions
+▸ src/pages/AuthPage.tsx  (8)
+    L203 [jsx-text]  ) : active ? (
+    L980 [jsx-text]  ) : isSubmitting ? (
+    L1103 [jsx-text]  GP · Robi · BL · Airtel · Teletalk
+    L1239 [jsx-text]  ) : isSubmitting ? (
+    L310 [attr]  01XXXXXXXXX
+    L332 [attr]  e.g. Tanvir Hasan
+    L818 [attr]  EasyPay
+    L932 [attr]  EasyPay
+▸ src/components/DeviceOtpStep.tsx  (8)
+    L14 [jsx-text]  void | Promise
+    L15 [jsx-text]  void | Promise
+    L68 [jsx-text]  Verify this device
+    L71 [jsx-text]  We sent a 6-digit code to
+    L108 [jsx-text]  Dev OTP:
+    L121 [jsx-text]  Verifying...
+    L125 [jsx-text]  Verify code
+    L149 [jsx-text]  Cancel
+▸ src/components/MerchantInbox.tsx  (8)
+    L241 [jsx-text]  Product Chat
+    L251 [jsx-text]  ) : uiMessages.length === 0 ? (
+    L257 [jsx-text]  No messages yet
+    L258 [jsx-text]  Start the conversation with your customer
+    L373 [jsx-text]  Customer Messages
+    L420 [jsx-text]  ) : filteredChats.length === 0 ? (
+    L346 [attr]  Reply to customer...
+    L388 [attr]  Search customers...
+▸ src/components/SupportChat.tsx  (8)
+    L349 [jsx-text]  Address the points above in your message before resubmitting.
+    L365 [jsx-text]  🔐 This chat is end-to-end encrypted with AES-256-GCM. Messages are encrypted before leaving your...
+    L368 [jsx-text]  Security System
+    L450 [jsx-text]  No messages yet
+    L451 [jsx-text]  Start a secure conversation!
+    L419 [attr]  Delete message
+    L466 [attr]  Type an encrypted message...
+    L88 [toast]  Screenshots are monitored in encrypted chats.
+▸ src/components/admin/AdminApiSandbox.tsx  (8)
+    L107 [jsx-text]  API Sandbox
+    L109 [jsx-text]  Test merchant API calls directly from the admin panel
+    L115 [jsx-text]  API Key
+    L130 [jsx-text]  Action
+    L146 [jsx-text]  Request Body (JSON)
+    L167 [jsx-text]  Response
+    L169 [jsx-text]  = 200 && response.status
+    L12 [toast]  Test payment
+▸ src/components/admin/AdminUserMetrics.tsx  (8)
+    L74 [jsx-text]  Click ↗
+    L93 [jsx-text]  loading ? (
+    L193 [toast]  👥 User Base
+    L204 [toast]  📊 Activity & Engagement
+    L215 [toast]  🔐 KYC & Verification
+    L226 [toast]  💸 Feature Usage (30d)
+    L243 [toast]  🎁 Rewards & Marketing
+    L254 [toast]  🛡️ Risk & Safety
+▸ src/components/admin/UserLockDialog.tsx  (8)
+    L145 [jsx-text]  Lock Features
+    L152 [jsx-text]  Target
+    L159 [jsx-text]  Features to Lock
+    L204 [jsx-text]  Grayed features are already locked
+    L211 [jsx-text]  Duration
+    L234 [jsx-text]  Reason (optional)
+    L245 [jsx-text]  Cancel
+    L236 [attr]  e.g. Suspicious activity, compliance review…
+▸ src/components/OnboardingSlides.tsx  (7)
+    L277 [jsx-text]  Skip
+    L289 [jsx-text]  📳 Shake to skip
+    L418 [jsx-text]  Get Started
+    L428 [jsx-text]  Next
+    L26 [toast]  Send Money Instantly
+    L48 [toast]  Pay Bills with Ease
+    L70 [toast]  Earn Cashback & Rewards
+▸ src/components/TransactionList.tsx  (7)
+    L187 [jsx-text]  Drive Cashback
+    L188 [jsx-text]  ) : tx.status === "pending" ? (
+    L192 [jsx-text]  Pending
+    L193 [jsx-text]  ) : tx.status === "failed" ? (
+    L197 [jsx-text]  Rejected
+    L289 [jsx-text]  ) : transactions.length === 0 ? (
+    L305 [jsx-text]  Your transactions will appear here
+▸ src/components/shop/FilterDrawer.tsx  (7)
+    L74 [jsx-text]  Filters
+    L102 [jsx-text]  Minimum Rating
+    L124 [jsx-text]  Brand
+    L143 [jsx-text]  Clear All
+    L146 [jsx-text]  Apply Filters
+    L84 [attr]  Min
+    L92 [attr]  Max
+▸ src/components/BlockedUsersPage.tsx  (6)
+    L69 [jsx-text]  Blocked Users
+    L70 [jsx-text]  Manage users you've blocked from messaging
+    L82 [jsx-text]  ) : blockedIds.length === 0 ? (
+    L88 [jsx-text]  No blocked users
+    L89 [jsx-text]  Users you block from chat will appear here
+    L135 [jsx-text]  Unblock
+▸ src/components/MerchantApiAccessGate.tsx  (6)
+    L147 [jsx-text]  API Integration
+    L148 [jsx-text]  Locked by default. Request access to generate API keys, configure webhooks, and integrate EasyPay...
+    L227 [jsx-text]  Open Live Chat to follow up
+    L233 [jsx-text]  You can submit a new request after
+    L235 [jsx-text]  Contact support
+    L245 [jsx-text]  You'll be taken to support chat with a prefilled template you can edit.
+▸ src/components/RoleDashboardCards.tsx  (6)
+    L70 [jsx-text]  Your Dashboards
+    L21 [toast]  Users, transactions & fraud alerts
+    L29 [toast]  Cash-in, cash-out & float management
+    L37 [toast]  QR payments, settlements & MDR
+    L45 [toast]  Agent network & float distribution
+    L53 [toast]  Regional operations & oversight
+▸ src/components/admin/AdminApiHub.tsx  (6)
+    L170 [jsx-text]  Connected
+    L171 [jsx-text]  Disabled
+    L172 [jsx-text]  Not Configured
+    L188 [jsx-text]  API Hub
+    L194 [jsx-text]  Refresh
+    L228 [attr]  Configure
+▸ src/components/admin/AdminBankListManager.tsx  (6)
+    L74 [jsx-text]  Platform Bank List
+    L80 [jsx-text]  Add New Bank
+    L124 [jsx-text]  No banks found
+    L82 [attr]  Bank name
+    L83 [attr]  Code
+    L94 [attr]  Search banks...
+▸ src/components/admin/AdminInventoryAlerts.tsx  (6)
+    L55 [jsx-text]  Low Stock Products
+    L57 [jsx-text]  Threshold:
+    L69 [jsx-text]  Loading…
+    L69 [jsx-text]  ) : products.length === 0 ? (
+    L73 [jsx-text]  No products below threshold
+    L98 [jsx-text]  Save
+▸ src/components/admin/AdminPinResetQueue.tsx  (6)
+    L169 [jsx-text]  PIN Reset Queue
+    L175 [jsx-text]  ) : requests.length === 0 ? (
+    L177 [jsx-text]  No requests yet.
+    L212 [jsx-text]  Select a ticket to view the conversation.
+    L222 [jsx-text]  Resolve
+    L230 [jsx-text]  Submitted note:
+▸ src/components/admin/AdminSystemHealth.tsx  (6)
+    L131 [jsx-text]  : s === "warn" ?
+    L143 [jsx-text]  System
+    L156 [jsx-text]  Recent Errors
+    L162 [jsx-text]  No recent errors 🎉
+    L187 [jsx-text]  Reset layout
+    L45 [attr]  Drag to reorder
+▸ src/components/ui/sidebar.tsx  (6)
+    L214 [jsx-text]  , React.ComponentProps
+    L232 [jsx-text]  Toggle Sidebar
+    L282 [jsx-text]  , React.ComponentProps
+    L309 [jsx-text]  , React.ComponentProps
+    L247 [attr]  Toggle Sidebar
+    L250 [attr]  Toggle Sidebar
+▸ src/pages/AgentTransactionHistory.tsx  (5)
+    L41 [jsx-text]  Login required
+    L42 [jsx-text]  Go to Login
+    L67 [jsx-text]  Agent Transactions
+    L81 [jsx-text]  Earnings Summary
+    L82 [jsx-text]  Cash In/Out: 0.49% · Bill Pay: 0.019%
+▸ src/pages/Index.tsx  (5)
+    L325 [jsx-text]  Refreshing…
+    L342 [jsx-text]  ) : kycStatus === "rejected" ? (
+    L428 [jsx-text]  Coming soon
+    L504 [attr]  EasyPay – Mobile Financial Services Bangladesh
+    L557 [attr]  Scan & Pay
+▸ src/components/FeatureLockedOverlay.tsx  (5)
+    L30 [jsx-text]  Feature Restricted
+    L56 [jsx-text]  This feature has been temporarily restricted on your account by an administrator.
+    L62 [jsx-text]  Reason
+    L79 [jsx-text]  Contact support if you believe this is an error.
+    L89 [jsx-text]  Go Back
+▸ src/components/MerchantOrdersTab.tsx  (5)
+    L85 [jsx-text]  No orders yet
+    L86 [jsx-text]  Orders from your shop will appear here
+    L112 [jsx-text]  = 0 && STATUS_FLOW.indexOf(order.status)
+    L169 [jsx-text]  Fulfill / Update Shipment
+    L76 [toast]  Update failed
+▸ src/components/PushOptInPrompt.tsx  (5)
+    L62 [jsx-text]  Stay in the loop
+    L63 [jsx-text]  Get instant alerts when your orders ship, payouts land, and offers drop.
+    L71 [jsx-text]  Not now
+    L30 [toast]  Notifications enabled 🔔
+    L33 [toast]  Couldn't enable
+▸ src/components/QuickActions.tsx  (5)
+    L448 [jsx-text]  Reset order
+    L534 [jsx-text]  More Services
+    L584 [jsx-text]  Soon
+    L404 [toast]  This feature has been disabled by the system. Please try again later.
+    L554 [toast]  This feature has been disabled by the system. Please try again later.
+▸ src/components/SideNav.tsx  (5)
+    L41 [jsx-text]  EasyPay
+    L82 [jsx-text]  0 && !isActive && (
+    L94 [jsx-text]  0 && !isActive && (
+    L110 [jsx-text]  0 && !isActive && (
+    L39 [attr]  EasyPay
+▸ src/components/admin/AdminEcommerceStats.tsx  (5)
+    L69 [jsx-text]  Overview
+    L91 [jsx-text]  Top Selling Products
+    L93 [jsx-text]  Loading…
+    L93 [jsx-text]  ) : topProducts.length === 0 ? (
+    L95 [jsx-text]  No order data yet
+▸ src/components/admin/AdminPermissions.tsx  (5)
+    L133 [jsx-text]  Export
+    L145 [jsx-text]  Name
+    L146 [jsx-text]  Phone
+    L150 [jsx-text]  Last Updated
+    L127 [attr]  Search by name or phone…
+▸ src/components/merchant/MerchantCustomersTab.tsx  (5)
+    L77 [jsx-text]  Customer Directory
+    L85 [jsx-text]  Total Customers
+    L91 [jsx-text]  Lifetime Value
+    L97 [jsx-text]  Avg Order
+    L107 [attr]  Search customers…
+▸ src/components/ui/pagination.tsx  (5)
+    L52 [jsx-text]  Previous
+    L59 [jsx-text]  Next
+    L68 [jsx-text]  More pages
+    L50 [attr]  Go to previous page
+    L58 [attr]  Go to next page
+▸ src/pages/WishlistPage.tsx  (4)
+    L47 [jsx-text]  Wishlist
+    L56 [jsx-text]  ) : products.length === 0 ? (
+    L60 [jsx-text]  Your wishlist is empty
+    L61 [jsx-text]  Browse Products
+▸ src/components/AppHeader.tsx  (4)
+    L38 [attr]  Sign out
+    L51 [attr]  Toggle dark mode
+    L73 [attr]  Search
+    L83 [attr]  Notifications
+▸ src/components/BalanceCard.tsx  (4)
+    L122 [attr]  Show QR Code
+    L130 [attr]  Copy Wallet ID
+    L203 [attr]  Add Money
+    L228 [attr]  Share QR / Wallet ID
+▸ src/components/BudgetManager.tsx  (4)
+    L59 [jsx-text]  Monthly Budgets
+    L67 [jsx-text]  Add
+    L96 [jsx-text]  Save
+    L105 [jsx-text]  No budgets set. Tap Add to create one.
+▸ src/components/admin/AdminAgentLeaderboard.tsx  (4)
+    L70 [jsx-text]  Agent Leaderboard
+    L82 [jsx-text]  Loading…
+    L82 [jsx-text]  ) : sorted.length === 0 ? (
+    L84 [jsx-text]  No active agents found
+▸ src/components/admin/TeamActivityLog.tsx  (4)
+    L151 [jsx-text]  All Members
+    L171 [jsx-text]  ) : logs.length === 0 ? (
+    L176 [jsx-text]  No activity found for the selected filters
+    L149 [attr]  All Members
+▸ src/pages/CouponsPage.tsx  (3)
+    L155 [jsx-text]  c.usage_limit == null || (c.used_count ?? 0)
+    L221 [jsx-text]  ) : coupons.length === 0 ? (
+    L181 [attr]  Coupons & Promotions – EasyPay
+▸ src/pages/RecipientHarness.tsx  (3)
+    L22 [jsx-text]  Recipient Harness
+    L23 [jsx-text]  Kind:&nbsp;
+    L75 [jsx-text]  Continue
+▸ src/pages/VendorStorePage.tsx  (3)
+    L95 [jsx-text]  Store not found
+    L146 [jsx-text]  No products found
+    L133 [attr]  Search this store...
+▸ src/components/AiRewardBanner.tsx  (3)
+    L15 [jsx-text]  Promise
+    L37 [jsx-text]  AI Recommended
+    L38 [jsx-text]  Smart
+▸ src/components/InstallPrompt.tsx  (3)
+    L136 [jsx-text]  ) : stage === "done" ? (
+    L181 [jsx-text]  Install
+    L188 [attr]  Dismiss
+▸ src/components/LazyLoadErrorBoundary.tsx  (3)
+    L79 [jsx-text]  Recovering…
+    L110 [jsx-text]  Reload app
+    L117 [jsx-text]  Try again
+▸ src/components/ProfileEditFlow.tsx  (3)
+    L539 [jsx-text]  Support — Email Change Request
+    L40 [attr]  Profile
+    L431 [attr]  your@email.com
+▸ src/components/admin/AdminActivityFeed.tsx  (3)
+    L154 [jsx-text]  Activity Feed
+    L173 [jsx-text]  Clear
+    L222 [jsx-text]  Events will appear here in real time
+▸ src/components/admin/AdminDataExport.tsx  (3)
+    L60 [jsx-text]  Data Export Center
+    L64 [jsx-text]  Entity
+    L73 [jsx-text]  From
+▸ src/components/admin/AdminNavReorder.tsx  (3)
+    L162 [jsx-text]  Rearrange Navigation
+    L163 [jsx-text]  Drag groups or items to reorder. Changes persist across sessions.
+    L182 [jsx-text]  Save
+▸ src/components/admin/AdminReporting.tsx  (3)
+    L113 [jsx-text]  Daily Transaction Volume
+    L141 [jsx-text]  Daily Txn Count
+    L159 [jsx-text]  Volume by Type
+▸ src/components/shop/CartDrawer.tsx  (3)
+    L47 [jsx-text]  Your cart is empty
+    L81 [jsx-text]  Total
+    L84 [jsx-text]  Proceed to Checkout
+▸ src/components/shop/WriteReviewForm.tsx  (3)
+    L82 [jsx-text]  Write a Review
+    L112 [attr]  Review title (optional)
+    L119 [attr]  Tell others about your experience...
+▸ src/components/ui/form.tsx  (3)
+    L13 [jsx-text]  = FieldPath
+    L22 [jsx-text]  = FieldPath
+    L85 [jsx-text]  , React.ComponentPropsWithoutRef
+▸ src/components/ui/input-otp.tsx  (3)
+    L7 [jsx-text]  , React.ComponentPropsWithoutRef
+    L19 [jsx-text]  , React.ComponentPropsWithoutRef
+    L56 [jsx-text]  , React.ComponentPropsWithoutRef
+▸ src/pages/MyTicketsPage.tsx  (2)
+    L242 [jsx-text]  ) : tickets.length === 0 ? (
+    L374 [attr]  e.g. Email change request
+▸ src/pages/NotFound.tsx  (2)
+    L15 [jsx-text]  Oops! Page not found
+    L16 [jsx-text]  Return to Home
+▸ src/components/PermissionGate.tsx  (2)
+    L22 [jsx-text]  Promise
+    L93 [jsx-text]  Not Now
+▸ src/components/WalletShareSheet.tsx  (2)
+    L119 [jsx-text]  EasyPay
+    L52 [toast]  My EasyPay Wallet
+▸ src/components/shop/ProductCard.tsx  (2)
+    L75 [jsx-text]  Out of Stock
+    L92 [jsx-text]  product.price && (
+▸ src/components/shop/ProductReviews.tsx  (2)
+    L65 [jsx-text]  No reviews yet. Be the first to review this product!
+    L79 [jsx-text]  ✓ Verified
+▸ src/components/ui/carousel.tsx  (2)
+    L189 [jsx-text]  Previous slide
+    L217 [jsx-text]  Next slide
+▸ src/components/ui/toggle-group.tsx  (2)
+    L15 [jsx-text]  & VariantProps
+    L26 [jsx-text]  & VariantProps
+▸ src/pages/ReferPage.tsx  (1)
+    L78 [toast]  EasyPay Referral
+▸ src/components/ExternalLink.tsx  (1)
+    L67 [jsx-text]  (opens in new tab)
+▸ src/components/MerchantInventoryAlerts.tsx  (1)
+    L43 [jsx-text]  i.stock
+▸ src/components/MoreSheet.tsx  (1)
+    L80 [jsx-text]  More Services
+▸ src/components/ProductImage.tsx  (1)
+    L13 [attr]  Product
+▸ src/components/PromoSlider.tsx  (1)
+    L138 [jsx-text]  ) : hasMedia ? (
+▸ src/components/Seo.tsx  (1)
+    L9 [jsx-text]  | Record
+▸ src/components/SlideToConfirm.tsx  (1)
+    L23 [attr]  Slide to Confirm
+▸ src/components/UserQrModal.tsx  (1)
+    L49 [toast]  My EasyPay ID
+▸ src/components/admin/RealtimeUpdateIndicator.tsx  (1)
+    L22 [jsx-text]  Data synced just now
+▸ src/components/shop/SearchAutocomplete.tsx  (1)
+    L66 [attr]  Search products, brands, stores...
+▸ src/components/ui/alert.tsx  (1)
+    L23 [jsx-text]  & VariantProps
+▸ src/components/ui/badge.tsx  (1)
+    L23 [jsx-text]  , VariantProps
+▸ src/components/ui/breadcrumb.tsx  (1)
+    L77 [jsx-text]  More
+▸ src/components/ui/dialog.tsx  (1)
+    L47 [jsx-text]  Close
+▸ src/components/ui/label.tsx  (1)
+    L11 [jsx-text]  & VariantProps
+▸ src/components/ui/sheet.tsx  (1)
+    L64 [jsx-text]  Close
+▸ src/components/ui/sonner.tsx  (1)
+    L17 [toast]  group-[.toast]:text-muted-foreground
+▸ src/components/ui/toast.tsx  (1)
+    L42 [jsx-text]  & VariantProps
+▸ src/components/ui/toggle.tsx  (1)
+    L30 [jsx-text]  & VariantProps
+
+Top files account for the bulk of work. Use --json for the full machine-readable list.
+
