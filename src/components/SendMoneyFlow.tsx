@@ -415,7 +415,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const result = await validateRecipientExists(c.phone);
     setValidating(false);
     if (!result.exists) {
-      setError("This number is not registered on EasyPay.");
+      setError(t("smNotRegistered"));
       return;
     }
     const updated = { ...c, name: result.name || c.name };
