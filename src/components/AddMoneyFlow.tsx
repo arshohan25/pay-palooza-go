@@ -32,19 +32,10 @@ const SOURCE_OPTIONS: { id: SourceId; labelKey: string; icon: any; color: string
 ];
 
 // TxnID validation patterns per provider
-const TXNID_PATTERNS: Record<string, { regex: RegExp; hint: string }> = {
-  bkash: {
-    regex: /^[A-Za-z0-9]{10}$/,
-    hint: "bKash TxnID is 10 alphanumeric characters (e.g., ABC1234XYZ)",
-  },
-  nagad: {
-    regex: /^\d{8,15}$/,
-    hint: "Nagad TxnID is 8-15 digits (e.g., 12345678901)",
-  },
-  rocket: {
-    regex: /^R?\d{8,15}$/i,
-    hint: "Rocket TxnID starts with 'R' followed by digits (e.g., R12345678)",
-  },
+const TXNID_PATTERNS: Record<string, { regex: RegExp; hintKey: string }> = {
+  bkash: { regex: /^[A-Za-z0-9]{10}$/, hintKey: "amHintBkash" },
+  nagad: { regex: /^\d{8,15}$/, hintKey: "amHintNagad" },
+  rocket: { regex: /^R?\d{8,15}$/i, hintKey: "amHintRocket" },
 };
 
 const slideVariants = {
