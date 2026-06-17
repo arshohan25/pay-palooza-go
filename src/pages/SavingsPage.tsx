@@ -628,11 +628,11 @@ function GoldTab() {
 
   const handleSubmit = async () => {
     const g = parseFloat(grams);
-    if (!(g > 0)) throw new Error("Enter grams");
+    if (!(g > 0)) throw new Error(t("savEnterGrams"));
     const rpc = mode === "buy" ? "buy_gold" : "sell_gold";
     const { error } = await supabase.rpc(rpc, { p_grams: g, p_price_per_gram: price, p_karat: karat });
     if (error) throw error;
-    toast.success(mode === "buy" ? `Bought ${g}g ${karat}` : `Sold ${g}g ${karat}`);
+    toast.success(mode === "buy" ? `${t("savBoughtPrefix")} ${g}g ${karat}` : `${t("savSoldPrefix")} ${g}g ${karat}`);
     setGrams(""); reload();
   };
 
@@ -640,7 +640,7 @@ function GoldTab() {
     <div className="space-y-3">
       <div className="rounded-[19px] bg-gradient-to-br from-amber-500/20 to-yellow-600/10 border border-amber-500/30 p-4">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2"><Coins className="w-4 h-4 text-amber-500" /><span className="text-sm font-semibold">Live Gold Price</span></div>
+          <div className="flex items-center gap-2"><Coins className="w-4 h-4 text-amber-500" /><span className="text-sm font-semibold">{t("savLiveGoldPrice")}</span></div>
           <button onClick={refresh} className="text-xs text-muted-foreground flex items-center gap-1">
             {priceLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
             {updatedAt ? new Date(updatedAt).toLocaleTimeString() : "—"}
@@ -659,10 +659,10 @@ function GoldTab() {
 
       {holding && (
         <div className="rounded-[19px] bg-card border border-border p-4 text-sm">
-          <div className="text-xs text-muted-foreground mb-1">Your {holding.karat} holdings</div>
-          <div className="flex justify-between"><span>Grams</span><span className="font-semibold">{Number(holding.grams).toFixed(3)}g</span></div>
-          <div className="flex justify-between"><span>Avg buy</span><span>৳{Number(holding.avg_buy_price).toLocaleString()}/g</span></div>
-          <div className="flex justify-between"><span>Current value</span><span className="font-semibold text-amber-500">৳{(Number(holding.grams) * price).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+          <div className="text-xs text-muted-foreground mb-1">{t("savYourHoldings")} {holding.karat} {t("savHoldingsSuffix")}</div>
+          <div className="flex justify-between"><span>{t("savGramsLabel")}</span><span className="font-semibold">{Number(holding.grams).toFixed(3)}g</span></div>
+          <div className="flex justify-between"><span>{t("savAvgBuy")}</span><span>৳{Number(holding.avg_buy_price).toLocaleString()}/g</span></div>
+          <div className="flex justify-between"><span>{t("savCurrentValue")}</span><span className="font-semibold text-amber-500">৳{(Number(holding.grams) * price).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
         </div>
       )}
 
@@ -670,32 +670,32 @@ function GoldTab() {
         <div className="grid grid-cols-2 gap-2">
           {(["buy","sell"] as const).map(m => (
             <button key={m} onClick={() => setMode(m)}
-              className={`h-10 rounded-[14px] text-sm font-semibold capitalize ${mode === m ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-              {m}
+              className={`h-10 rounded-[14px] text-sm font-semibold ${mode === m ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+              {m === "buy" ? t("savBuyAction") : t("savSellAction")}
             </button>
           ))}
         </div>
-        <Input type="number" inputMode="decimal" placeholder="Grams" value={grams} onChange={e => setGrams(e.target.value)} className="rounded-[14px]" />
+        <Input type="number" inputMode="decimal" placeholder={t("savGramsPlaceholder")} value={grams} onChange={e => setGrams(e.target.value)} className="rounded-[14px]" />
         <div className="text-xs space-y-1 bg-muted/40 rounded-[14px] p-3">
-          <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>৳{subtotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Fee (1.5%)</span><span>৳{fee.toLocaleString()}</span></div>
-          <div className="flex justify-between font-semibold pt-1 border-t border-border/60"><span>{mode === "buy" ? "You pay" : "You receive"}</span><span>৳{Math.round(total).toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">{t("savSubtotal")}</span><span>৳{subtotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">{t("savFeeLabel")}</span><span>৳{fee.toLocaleString()}</span></div>
+          <div className="flex justify-between font-semibold pt-1 border-t border-border/60"><span>{mode === "buy" ? t("savYouPay") : t("savYouReceive")}</span><span>৳{Math.round(total).toLocaleString()}</span></div>
         </div>
         <Button className="w-full rounded-[14px]" disabled={!(parseFloat(grams) > 0)} onClick={() => setConfirmOpen(true)}>
-          {mode === "buy" ? "Buy gold" : "Sell gold"}
+          {mode === "buy" ? t("savBuyGold") : t("savSellGold")}
         </Button>
       </div>
 
       <ConfirmSheet open={confirmOpen} onClose={() => setConfirmOpen(false)}
-        title={`${mode === "buy" ? "Buy" : "Sell"} ${grams}g ${karat}`}
+        title={`${mode === "buy" ? t("savBuyAction") : t("savSellAction")} ${grams}g ${karat}`}
         summary={
           <>
-            <div className="flex justify-between"><span className="text-muted-foreground">Price/g</span><span>৳{price.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Fee 1.5%</span><span>৳{fee.toLocaleString()}</span></div>
-            <div className="flex justify-between font-semibold"><span>{mode === "buy" ? "You pay" : "You receive"}</span><span>৳{Math.round(total).toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savPriceLabel")}</span><span>৳{price.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savFee15")}</span><span>৳{fee.toLocaleString()}</span></div>
+            <div className="flex justify-between font-semibold"><span>{mode === "buy" ? t("savYouPay") : t("savYouReceive")}</span><span>৳{Math.round(total).toLocaleString()}</span></div>
           </>
         }
-        requireTerms termsText="I accept that gold trades follow Sharia (Bai-as-Salam) and prices fluctuate. No guaranteed return."
+        requireTerms termsText={t("savGoldTerms")}
         onConfirm={handleSubmit} />
     </div>
   );
