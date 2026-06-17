@@ -784,7 +784,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   <p className="text-sm text-muted-foreground">{t("cashingOut")}</p>
                   <p className="text-4xl font-extrabold text-foreground">৳{parseFloat(amount).toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">
-                    at <span className="font-semibold text-foreground">{agent?.name}</span>
+                    {t("coAt")} <span className="font-semibold text-foreground">{agent?.name}</span>
                   </p>
                 </div>
 
