@@ -116,7 +116,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     haptics.light();
-    toast.success("Copied!");
+    toast.success(t("amCopied"));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
