@@ -930,7 +930,7 @@ const LoanPage = () => {
             <label className="flex items-start gap-3 cursor-pointer">
               <Checkbox checked={termsAccepted} onCheckedChange={(v) => setTermsAccepted(v === true)} className="mt-0.5" />
               <span className="text-[11px] text-muted-foreground leading-relaxed">
-                I agree to the <span className="text-foreground font-semibold">Qard Hasan Terms</span>, including the {SERVICE_FEE_PERCENT}% service fee and repayment policies. I understand this loan is interest-free.
+                {t("loanAgreeTermsPrefix")} <span className="text-foreground font-semibold">{t("loanAgreeTermsMiddle")}</span> {t("loanAgreeTermsSuffix")}
               </span>
             </label>
 
