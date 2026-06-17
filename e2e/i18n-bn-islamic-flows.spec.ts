@@ -1,13 +1,21 @@
 import { test, expect, type Page, type Locator } from "@playwright/test";
+import { buildDetector, findEnglish, type DetectorConfig } from "./utils/english-detector";
 
 /**
  * End-to-end check that every Islamic flow renders in Bangla when
  * lang=bn is set. Asserts no English words appear in visible headings,
  * tabs, buttons, toasts, or form validation messages.
  *
- * Brand names, currency codes, and short tokens (≤2 chars, e.g. "Tk")
- * are whitelisted because they are intentionally rendered in Latin
- * script even in Bangla locale.
+ * The English detector is configurable via env (see
+ * e2e/utils/english-detector.ts):
+ *   I18N_BN_WHITELIST            extra whole-word allow-list
+ *   I18N_BN_IGNORE_PATTERNS      extra regex sources stripped pre-scan
+ *   I18N_BN_WORD_PATTERN         override the "what is a word" regex
+ *   I18N_BN_MIN_WORD_LEN         minimum token length to flag (default 3)
+ *
+ * Numeric formats (IDs, prices, dates, phones, UUIDs, JWTs, URLs) and
+ * user-specific tokens (#ORDER-123, TXN_…, file paths) are stripped
+ * before the scan so they don't masquerade as English copy.
  */
 
 const ROUTES: Array<{ path: string; name: string }> = [
@@ -17,33 +25,12 @@ const ROUTES: Array<{ path: string; name: string }> = [
   { path: "/giftcards", name: "Gift Cards" },
 ];
 
-// Brand / proper-noun / unit allow-list. Compared case-insensitively as
-// whole tokens. Anything matching is stripped before the English check.
-const WHITELIST = new Set<string>([
-  // Currency / units
-  "tk", "bdt", "usd", "eur", "gbp", "sar", "aed", "kg", "g", "ml", "l",
-  "pcs", "qr", "id", "pin", "otp", "kyc", "sms", "api", "url", "pdf",
-  "ok", "vat", "gst", "sku", "gps", "nid", "ai",
-  // Gift card brands (Latin-only by design)
-  "amazon", "netflix", "spotify", "google", "play", "apple", "itunes",
-  "uber", "eats", "starbucks", "nike", "adidas", "zara", "h&m", "ikea",
-  "pathao", "foodpanda", "daraz", "chaldal", "shohoz", "bkash", "nagad",
-  "rocket", "upay", "tap", "visa", "mastercard", "amex",
-  // Donation / cause partners commonly shown by brand
-  "unicef", "unhcr", "brac", "asha", "as-sunnah", "quantum",
-  // Islamic terms transliterated (acceptable Romanized form when shown)
-  "qard", "hasan", "zakat", "sadaqah", "dps", "halal",
-  // App / platform
-  "easypay", "lovable", "pwa",
-]);
-
-const ENGLISH_WORD = /[A-Za-z][A-Za-z'&]{2,}/g;
+const detector: DetectorConfig = buildDetector();
 
 async function setBangla(page: Page) {
   await page.addInitScript(() => {
     try {
       window.localStorage.setItem("mfs_ui_lang", "bn");
-      // Bypass first-launch onboarding slides so protected routes render.
       window.localStorage.setItem("mfs_onboarding_completed", "1");
       window.localStorage.setItem("mfs_has_authenticated", "1");
     } catch {
@@ -52,11 +39,6 @@ async function setBangla(page: Page) {
   });
 }
 
-/**
- * Seed a Supabase session into localStorage when one is provided via env
- * (E2E_SUPABASE_STORAGE_KEY + E2E_SUPABASE_SESSION_JSON, or the Lovable
- * sandbox equivalents). Routes under test require an authenticated user.
- */
 async function seedSession(page: Page) {
   const key =
     process.env.E2E_SUPABASE_STORAGE_KEY ??
@@ -84,12 +66,6 @@ async function freezeUi(page: Page) {
   });
 }
 
-function stripWhitelisted(text: string): string {
-  return text.replace(ENGLISH_WORD, (word) =>
-    WHITELIST.has(word.toLowerCase()) ? "" : word,
-  );
-}
-
 async function collectVisibleText(locator: Locator): Promise<string[]> {
   const handles = await locator.elementHandles();
   const out: string[] = [];
@@ -103,17 +79,16 @@ async function collectVisibleText(locator: Locator): Promise<string[]> {
 }
 
 async function assertNoEnglish(
-  page: Page,
+  _page: Page,
   routeName: string,
   context: string,
   texts: string[],
 ) {
   const offenders: string[] = [];
   for (const raw of texts) {
-    const stripped = stripWhitelisted(raw);
-    const matches = stripped.match(ENGLISH_WORD);
-    if (matches && matches.length) {
-      offenders.push(`"${raw.slice(0, 80)}" → [${matches.join(", ")}]`);
+    const hits = findEnglish(raw, detector);
+    if (hits.length) {
+      offenders.push(`"${raw.slice(0, 80)}" → [${hits.join(", ")}]`);
     }
   }
   expect(
