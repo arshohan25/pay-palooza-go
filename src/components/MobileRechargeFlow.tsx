@@ -696,7 +696,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                           </button>
                         ))}
                         {filteredStoredContacts.length === 0 && (
-                          <p className="text-xs text-muted-foreground text-center py-3">No matching contacts</p>
+                          <p className="text-xs text-muted-foreground text-center py-3">{t("mrNoMatchingContacts")}</p>
                         )}
                       </div>
                     </div>
