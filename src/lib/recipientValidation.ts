@@ -18,7 +18,8 @@ export type RecipientKind =
   | "merchantId"     // Merchant payment ID
   | "billAccount"    // Utility / bill pay account no.
   | "bankAccount"    // Bank account number
-  | "accountHolder"; // Account holder name
+  | "accountHolder"  // Account holder name
+  | "demoService";   // Example template — copy this entry when adding a new flow
 
 interface RecipientRule {
   /** Minimum acceptable length after trim() / digit-strip. */
