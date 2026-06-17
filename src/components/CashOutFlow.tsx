@@ -805,7 +805,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   </div>
                   {feeNum > 0 && (
                     <p className="text-[11px] text-muted-foreground text-right">
-                      ৳{parseFloat(amount).toLocaleString()} + ৳{fee} fee ({feeFromBalance >= feeNum ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                      ৳{parseFloat(amount).toLocaleString()} + ৳{fee} {t("coFee").toLowerCase()} ({feeFromBalance >= feeNum ? t("coFromBalanceShort") : feeFromBalance > 0 ? t("coBalancePlusAmountShort") : t("coFromAmountShort")})
                     </p>
                   )}
                 </div>
