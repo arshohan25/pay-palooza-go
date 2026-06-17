@@ -182,11 +182,16 @@ Deno.serve(async (req) => {
       })
       .eq("id", session.id);
 
-    // 9. Trigger webhook (fire & forget)
+    // 9. Trigger webhook (fire & forget) — auth with service-role so the webhook can reject anonymous callers.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     fetch(`${supabaseUrl}/functions/v1/merchant-payment-webhook`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceKey}`,
+        "x-internal-secret": serviceKey,
+      },
       body: JSON.stringify({ session_id: session.id }),
     }).catch(() => {});
 
