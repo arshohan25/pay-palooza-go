@@ -853,7 +853,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                   {addCashOutCharge && amtNum > 0 && cashOutExtra > 0 && (
                     <p className="text-[11px] text-muted-foreground">
-                      Base ৳{cashOutBaseAmount.toLocaleString()} + Cash Out Charge ৳{cashOutExtra.toFixed(2)} = ৳{sendAmount.toLocaleString()}
+                      {t("smBaseBreakdown").replace("{base}", cashOutBaseAmount.toLocaleString()).replace("{extra}", cashOutExtra.toFixed(2)).replace("{total}", sendAmount.toLocaleString())}
                     </p>
                   )}
                   {error && (
