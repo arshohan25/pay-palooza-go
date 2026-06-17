@@ -277,7 +277,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setValidating(false);
 
     if (!validation.exists) {
-      setError("Agent not found. Please enter a valid Agent ID or phone.");
+      setError(t("coAgentNotFound"));
       return;
     }
 
