@@ -72,7 +72,8 @@ type TabType = "apply" | "active" | "history";
 
 const LoanPage = () => {
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const dateLocale = lang === "bn" ? "bn-BD" : "en-US";
   const statusConfig = useMemo(() => getStatusConfig(t), [t]);
   const { user } = useAuth();
   const futureFeatures = useFutureFeatures();
@@ -266,8 +267,8 @@ const LoanPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Seo
-        title="Qard Hasan Loan – Sharia-Compliant Micro Loans | EasyPay"
-        description="Apply for interest-free Qard Hasan micro-loans through EasyPay. Transparent flat fee, instant disbursal to your wallet."
+        title={t("loanSeoTitle")}
+        description={t("loanSeoDesc")}
         path="/loan"
       />
       {/* Header */}
@@ -409,7 +410,7 @@ const LoanPage = () => {
                               : <AlertTriangle className="w-6 h-6 text-amber-300" />
                             }
                             <span className="text-[9px] text-white/80 font-semibold mt-0.5">
-                              {eligibility.eligible ? "Eligible" : "Building"}
+                              {eligibility.eligible ? t("loanEligibleChip") : t("loanBuildingChip")}
                             </span>
                           </div>
                         </div>
@@ -444,14 +445,14 @@ const LoanPage = () => {
                         <HandCoins className="w-4 h-4 text-primary-foreground" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-foreground">Configure Qard Hasan</p>
-                        <p className="text-[10px] text-muted-foreground">Select amount & repayment period</p>
+                        <p className="text-sm font-bold text-foreground">{t("loanConfigure")}</p>
+                        <p className="text-[10px] text-muted-foreground">{t("loanConfigureSub")}</p>
                       </div>
                     </div>
 
                     {/* Amount Dropdown */}
                     <div className="space-y-2">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Loan Amount</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{t("loanAmountLabel")}</label>
                       <Select value={amount} onValueChange={setAmount}>
                         <SelectTrigger className="w-full h-14 rounded-2xl bg-muted/30 border-border/40 px-4">
                           <div className="flex items-center gap-3">
@@ -459,8 +460,8 @@ const LoanPage = () => {
                               <Banknote className="w-4 h-4 text-primary" />
                             </div>
                             <div className="text-left">
-                              <p className="text-[9px] text-muted-foreground font-medium">Amount</p>
-                              <SelectValue placeholder="Select amount" />
+                              <p className="text-[9px] text-muted-foreground font-medium">{t("loanAmountShort")}</p>
+                              <SelectValue placeholder={t("loanAmountSelect")} />
                             </div>
                           </div>
                         </SelectTrigger>
@@ -470,10 +471,10 @@ const LoanPage = () => {
                               <div className="flex items-center justify-between gap-4">
                                 <span className="font-bold">৳{a.toLocaleString()}</span>
                                 <span className="text-[9px] text-muted-foreground">
-                                  Fee: ৳{Math.round(a * SERVICE_FEE_PERCENT / 100).toLocaleString()}
+                                  {t("loanFeeShort")} ৳{Math.round(a * SERVICE_FEE_PERCENT / 100).toLocaleString()}
                                 </span>
                                 {eligibility && a > eligibility.maxAmount && (
-                                  <span className="text-[9px] text-destructive font-medium">Over limit</span>
+                                  <span className="text-[9px] text-destructive font-medium">{t("loanOverLimit")}</span>
                                 )}
                               </div>
                             </SelectItem>
@@ -484,7 +485,7 @@ const LoanPage = () => {
 
                     {/* Duration Dropdown */}
                     <div className="space-y-2">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Repayment Period</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{t("loanRepaymentPeriod")}</label>
                       <Select value={tenure} onValueChange={setTenure}>
                         <SelectTrigger className="w-full h-14 rounded-2xl bg-muted/30 border-border/40 px-4">
                           <div className="flex items-center gap-3">
@@ -492,8 +493,8 @@ const LoanPage = () => {
                               <CalendarClock className="w-4 h-4 text-primary" />
                             </div>
                             <div className="text-left">
-                              <p className="text-[9px] text-muted-foreground font-medium">Duration</p>
-                              <SelectValue placeholder="Select duration" />
+                              <p className="text-[9px] text-muted-foreground font-medium">{t("loanDuration")}</p>
+                              <SelectValue placeholder={t("loanDurationSelect")} />
                             </div>
                           </div>
                         </SelectTrigger>
@@ -516,10 +517,10 @@ const LoanPage = () => {
                   <div className="p-5">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Monthly Installment</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{t("loanMonthlyInstallment")}</p>
                         <div className="flex items-baseline gap-1 mt-1">
                           <span className="text-[34px] font-black text-foreground leading-none tabular-nums">৳{calc.monthlyPayment.toLocaleString()}</span>
-                          <span className="text-xs text-muted-foreground font-medium">/mo</span>
+                          <span className="text-xs text-muted-foreground font-medium">{t("loanPerMo")}</span>
                         </div>
                       </div>
                       <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "var(--gradient-primary)" }}>
@@ -529,10 +530,10 @@ const LoanPage = () => {
 
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { label: "Loan Amount", value: `৳${calc.loanAmount.toLocaleString()}`, icon: <DollarSign className="w-3 h-3" />, highlight: false },
-                        { label: `Service Fee (${SERVICE_FEE_PERCENT}%)`, value: `৳${calc.serviceFee.toLocaleString()}`, icon: <Receipt className="w-3 h-3" />, highlight: false },
-                        { label: "Total Payable", value: `৳${calc.totalPayable.toLocaleString()}`, icon: <Banknote className="w-3 h-3" />, highlight: true },
-                        { label: "Installments", value: `${calc.installments} months`, icon: <Calendar className="w-3 h-3" />, highlight: false },
+                        { label: t("loanLoanAmountChip"), value: `৳${calc.loanAmount.toLocaleString()}`, icon: <DollarSign className="w-3 h-3" />, highlight: false },
+                        { label: `${t("loanServiceFee")} (${SERVICE_FEE_PERCENT}%)`, value: `৳${calc.serviceFee.toLocaleString()}`, icon: <Receipt className="w-3 h-3" />, highlight: false },
+                        { label: t("loanTotalPayable"), value: `৳${calc.totalPayable.toLocaleString()}`, icon: <Banknote className="w-3 h-3" />, highlight: true },
+                        { label: t("loanInstallmentsChip"), value: `${calc.installments} ${t("loanMonthsSuffix")}`, icon: <Calendar className="w-3 h-3" />, highlight: false },
                       ].map((item, i) => (
                         <div key={i} className={`p-3 rounded-xl ${item.highlight ? "bg-primary/[0.06] ring-1 ring-primary/15" : "bg-muted/30"}`}>
                           <div className="flex items-center gap-1.5 mb-1">
@@ -548,7 +549,7 @@ const LoanPage = () => {
                     <div className="mt-3 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-500/[0.04] ring-1 ring-emerald-500/10">
                       <Heart className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
                       <span className="text-[10px] text-muted-foreground">
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">0% Interest</span> — Only a flat ৳{calc.serviceFee.toLocaleString()} service fee · Auto-debit from wallet
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">{t("loanZeroInterest")}</span> — {t("loanZeroInterestDescPrefix")} ৳{calc.serviceFee.toLocaleString()} {t("loanZeroInterestDescSuffix")}
                       </span>
                     </div>
                   </div>
@@ -558,9 +559,9 @@ const LoanPage = () => {
               {/* ── Features ── */}
               <div className="mx-4 grid grid-cols-3 gap-2">
                 {[
-                  { icon: <Heart className="w-4 h-4" />, label: "Zero\nInterest", color: "text-emerald-500" },
-                  { icon: <Shield className="w-4 h-4" />, label: "Sharia\nCompliant", color: "text-blue-500" },
-                  { icon: <RefreshCw className="w-4 h-4" />, label: "Flexible\nRepayment", color: "text-amber-500" },
+                  { icon: <Heart className="w-4 h-4" />, label: t("loanFeatZero"), color: "text-emerald-500" },
+                  { icon: <Shield className="w-4 h-4" />, label: t("loanFeatSharia"), color: "text-blue-500" },
+                  { icon: <RefreshCw className="w-4 h-4" />, label: t("loanFeatFlexible"), color: "text-amber-500" },
                 ].map((f, i) => (
                   <div key={i} className="rounded-2xl bg-card ring-1 ring-border/40 p-3 flex flex-col items-center text-center gap-1.5">
                     <div className={`w-9 h-9 rounded-xl bg-muted/40 flex items-center justify-center ${f.color}`}>{f.icon}</div>
@@ -580,15 +581,15 @@ const LoanPage = () => {
                   {submitting ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : !eligibility?.eligible ? (
-                    <><TrendingDown className="w-4 h-4 mr-2" />Improve Score to Apply</>
+                    <><TrendingDown className="w-4 h-4 mr-2" />{t("loanImproveScore")}</>
                   ) : amountNum > (eligibility?.maxAmount ?? 0) ? (
-                    <><Ban className="w-4 h-4 mr-2" />Amount Exceeds Limit</>
+                    <><Ban className="w-4 h-4 mr-2" />{t("loanExceedsLimit")}</>
                   ) : (
-                    <><ArrowUpRight className="w-4 h-4 mr-1.5" />Apply for ৳{amountNum.toLocaleString()} Qard Hasan</>
+                    <><ArrowUpRight className="w-4 h-4 mr-1.5" />{t("loanApplyFor")} ৳{amountNum.toLocaleString()} {t("loanQardHasan")}</>
                   )}
                 </Button>
                 <p className="text-center text-[9px] text-muted-foreground/60 mt-2">
-                  No riba · One-time service fee only · Fully transparent
+                  {t("loanFooterNote")}
                 </p>
               </div>
             </motion.div>
@@ -609,10 +610,10 @@ const LoanPage = () => {
                   <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-muted/40">
                     <HandCoins className="w-7 h-7 text-muted-foreground/40" />
                   </div>
-                  <p className="text-sm font-bold text-foreground">No Active Loans</p>
-                  <p className="text-xs text-muted-foreground mt-1">Apply for Qard Hasan to see it here</p>
+                  <p className="text-sm font-bold text-foreground">{t("loanNoActive")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("loanNoActiveDesc")}</p>
                   <Button onClick={() => setActiveTab("apply")} variant="outline" className="mt-4 rounded-xl text-xs">
-                    <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />Apply Now
+                    <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />{t("loanApplyNow")}
                   </Button>
                 </div>
               ) : (
@@ -639,7 +640,7 @@ const LoanPage = () => {
                               <div>
                                 <span className="text-lg font-black text-foreground tabular-nums">৳{Number(app.amount).toLocaleString()}</span>
                                 <p className="text-[10px] text-muted-foreground">
-                                  {new Date(app.applied_at || app.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                  {new Date(app.applied_at || app.created_at).toLocaleDateString(dateLocale, { month: "short", day: "numeric", year: "numeric" })}
                                 </p>
                               </div>
                             </div>
@@ -654,7 +655,7 @@ const LoanPage = () => {
                               {/* Progress */}
                               <div>
                                 <div className="flex items-center justify-between mb-1.5">
-                                  <span className="text-[10px] text-muted-foreground font-medium">Settlement Progress</span>
+                                  <span className="text-[10px] text-muted-foreground font-medium">{t("loanSettlementProgress")}</span>
                                   <span className="text-[10px] font-bold text-primary">{lp.progress}%</span>
                                 </div>
                                 <div className="h-2.5 rounded-full bg-muted/40 overflow-hidden">
@@ -673,7 +674,7 @@ const LoanPage = () => {
                                 <div className="p-3 rounded-xl bg-emerald-500/[0.06] ring-1 ring-emerald-500/10">
                                   <div className="flex items-center gap-1.5 mb-1">
                                     <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">Repaid</span>
+                                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">{t("loanRepaidChip")}</span>
                                   </div>
                                   <p className="text-sm font-bold text-foreground tabular-nums">
                                     <button onClick={() => setShowBalance(!showBalance)} className="inline-flex items-center gap-1">
@@ -685,7 +686,7 @@ const LoanPage = () => {
                                 <div className="p-3 rounded-xl bg-amber-500/[0.06] ring-1 ring-amber-500/10">
                                   <div className="flex items-center gap-1.5 mb-1">
                                     <ArrowDownRight className="w-3 h-3 text-amber-500" />
-                                    <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium">Remaining</span>
+                                    <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium">{t("loanRemainingChip")}</span>
                                   </div>
                                   <p className="text-sm font-bold text-foreground tabular-nums">
                                     {showBalance ? `৳${lp.remaining.toLocaleString()}` : "৳•••••"}
@@ -698,22 +699,22 @@ const LoanPage = () => {
                                 <div className={`flex-1 p-3 rounded-xl ring-1 ${lp.isOverdue ? "bg-destructive/[0.06] ring-destructive/15" : "bg-muted/30 ring-border/20"}`}>
                                   <div className="flex items-center gap-1.5 mb-1">
                                     <Calendar className="w-3 h-3 text-muted-foreground" />
-                                    <span className="text-[9px] text-muted-foreground font-medium">Next Due</span>
+                                    <span className="text-[9px] text-muted-foreground font-medium">{t("loanNextDue")}</span>
                                   </div>
                                   <p className={`text-xs font-bold ${lp.isOverdue ? "text-destructive" : "text-foreground"}`}>
-                                    {lp.isOverdue ? "Overdue!" : `${lp.daysUntilDue} days`}
+                                    {lp.isOverdue ? t("loanOverdue") : `${lp.daysUntilDue} ${t("loanDaysSuffix")}`}
                                   </p>
                                   <p className="text-[9px] text-muted-foreground mt-0.5">
-                                    {lp.nextDueDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                    {lp.nextDueDate.toLocaleDateString(dateLocale, { month: "short", day: "numeric" })}
                                   </p>
                                 </div>
                                 <div className="flex-1 p-3 rounded-xl bg-muted/30 ring-1 ring-border/20">
                                   <div className="flex items-center gap-1.5 mb-1">
                                     <BarChart3 className="w-3 h-3 text-muted-foreground" />
-                                    <span className="text-[9px] text-muted-foreground font-medium">Installments</span>
+                                    <span className="text-[9px] text-muted-foreground font-medium">{t("loanInstallmentsList")}</span>
                                   </div>
                                   <p className="text-xs font-bold text-foreground">{lp.installmentsPaid}/{lp.totalInstallments}</p>
-                                  <p className="text-[9px] text-muted-foreground mt-0.5">completed</p>
+                                  <p className="text-[9px] text-muted-foreground mt-0.5">{t("loanCompleted")}</p>
                                 </div>
                               </div>
 
@@ -721,19 +722,19 @@ const LoanPage = () => {
                               <div className="p-3 rounded-xl bg-muted/20 ring-1 ring-border/20">
                                 <div className="flex items-center gap-1.5 mb-2">
                                   <Timer className="w-3.5 h-3.5 text-primary" />
-                                  <span className="text-[10px] font-semibold text-foreground">Settlement Details</span>
+                                  <span className="text-[10px] font-semibold text-foreground">{t("loanSettlementDetails")}</span>
                                 </div>
                                 <div className="grid grid-cols-3 gap-2">
                                   <div>
-                                    <p className="text-[9px] text-muted-foreground">Service Fee</p>
+                                    <p className="text-[9px] text-muted-foreground">{t("loanServiceFee")}</p>
                                     <p className="text-[11px] font-bold text-foreground">৳{lp.fee.toLocaleString()}</p>
                                   </div>
                                   <div>
-                                    <p className="text-[9px] text-muted-foreground">Total Due</p>
+                                    <p className="text-[9px] text-muted-foreground">{t("loanTotalDue")}</p>
                                     <p className="text-[11px] font-bold text-foreground">৳{lp.totalAmount.toLocaleString()}</p>
                                   </div>
                                   <div>
-                                    <p className="text-[9px] text-muted-foreground">Days Left</p>
+                                    <p className="text-[9px] text-muted-foreground">{t("loanDaysLeft")}</p>
                                     <p className="text-[11px] font-bold text-foreground">{Math.max(0, lp.totalDays - lp.elapsed)}</p>
                                   </div>
                                 </div>
@@ -742,7 +743,7 @@ const LoanPage = () => {
                               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/[0.04] ring-1 ring-emerald-500/10">
                                 <Heart className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
                                 <span className="text-[10px] text-muted-foreground">
-                                  <span className="font-bold text-emerald-600 dark:text-emerald-400">0% Interest</span> — Service fee ৳{lp.fee.toLocaleString()} already included
+                                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{t("loanZeroInterest")}</span> — {t("loanServiceFee")} ৳{lp.fee.toLocaleString()} {t("loanIncludedNote")}
                                 </span>
                               </div>
 
@@ -754,7 +755,7 @@ const LoanPage = () => {
                                   style={{ background: "var(--gradient-primary)" }}
                                 >
                                   <HandCoins className="w-4 h-4" />
-                                  Repay Loan · ৳{lp.remaining.toLocaleString()} due
+                                  {t("loanRepayLoanBtn")} · ৳{lp.remaining.toLocaleString()} {t("loanDueWord")}
                                 </button>
                               )}
                             </div>
@@ -763,14 +764,14 @@ const LoanPage = () => {
                           {app.status === "pending" && (
                             <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/[0.05] ring-1 ring-amber-500/10">
                               <Clock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 animate-pulse" />
-                              <span className="text-[10px] text-muted-foreground">Under review. Usually takes 1-2 business days.</span>
+                              <span className="text-[10px] text-muted-foreground">{t("loanUnderReviewNote")}</span>
                             </div>
                           )}
 
                           {app.status === "approved" && (
                             <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-500/[0.05] ring-1 ring-emerald-500/10">
                               <Sparkles className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                              <span className="text-[10px] text-muted-foreground">Approved! Funds will be disbursed to your wallet shortly.</span>
+                              <span className="text-[10px] text-muted-foreground">{t("loanApprovedNote")}</span>
                             </div>
                           )}
                         </div>
@@ -780,15 +781,15 @@ const LoanPage = () => {
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                               <Heart className="w-3 h-3 text-emerald-500" />
-                              0% Interest
+                              {t("loanZeroInterest")}
                             </div>
                             <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                               <Timer className="w-3 h-3" />
-                              {app.tenure_days}d
+                              {app.tenure_days} {t("loanDaysSuffix")}
                             </div>
                           </div>
                           <span className="text-[10px] text-muted-foreground font-medium">
-                            ৳{Number(app.emi_amount).toLocaleString()}/mo
+                            ৳{Number(app.emi_amount).toLocaleString()}{t("loanPerMo")}
                           </span>
                         </div>
                       </div>
@@ -818,8 +819,8 @@ const LoanPage = () => {
                   <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-muted/40">
                     <FileText className="w-7 h-7 text-muted-foreground/40" />
                   </div>
-                  <p className="text-sm font-bold text-foreground">No History Yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">Settled and rejected loans appear here</p>
+                  <p className="text-sm font-bold text-foreground">{t("loanNoHistory")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("loanNoHistoryDesc")}</p>
                 </div>
               ) : (
                 <>
@@ -827,7 +828,7 @@ const LoanPage = () => {
                     <div className="rounded-2xl bg-card ring-1 ring-border/40 p-4">
                       <div className="flex items-center gap-1.5 mb-2">
                         <BadgeCheck className="w-4 h-4 text-emerald-500" />
-                        <span className="text-[10px] text-muted-foreground font-medium">Total Settled</span>
+                        <span className="text-[10px] text-muted-foreground font-medium">{t("loanTotalSettled")}</span>
                       </div>
                       <p className="text-lg font-black text-foreground tabular-nums">
                         ৳{historyLoans.filter(a => a.status === "repaid").reduce((s, a) => s + Number(a.amount), 0).toLocaleString()}
@@ -836,10 +837,10 @@ const LoanPage = () => {
                     <div className="rounded-2xl bg-card ring-1 ring-border/40 p-4">
                       <div className="flex items-center gap-1.5 mb-2">
                         <Star className="w-4 h-4 text-amber-500" />
-                        <span className="text-[10px] text-muted-foreground font-medium">Completed</span>
+                        <span className="text-[10px] text-muted-foreground font-medium">{t("loanCompletedChip")}</span>
                       </div>
                       <p className="text-lg font-black text-foreground tabular-nums">
-                        {historyLoans.filter(a => a.status === "repaid").length} loans
+                        {historyLoans.filter(a => a.status === "repaid").length} {t("loanLoansSuffix")}
                       </p>
                     </div>
                   </div>
@@ -861,7 +862,7 @@ const LoanPage = () => {
                             </div>
                             <div>
                               <span className="text-base font-black text-foreground tabular-nums">৳{Number(app.amount).toLocaleString()}</span>
-                              <p className="text-[10px] text-muted-foreground">{app.tenure_days} days · 0% interest</p>
+                              <p className="text-[10px] text-muted-foreground">{app.tenure_days} {t("loanDaysSuffix")} · {t("loanZeroInterestShort")}</p>
                             </div>
                           </div>
                           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${sc.bg} ${sc.color}`}>
@@ -872,11 +873,11 @@ const LoanPage = () => {
                         <div className="flex items-center gap-4 mt-1">
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                             <Calendar className="w-3 h-3" />
-                            {new Date(app.applied_at || app.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            {new Date(app.applied_at || app.created_at).toLocaleDateString(dateLocale, { month: "short", day: "numeric", year: "numeric" })}
                           </div>
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                             <Banknote className="w-3 h-3" />
-                            ৳{Number(app.emi_amount).toLocaleString()}/mo
+                            ৳{Number(app.emi_amount).toLocaleString()}{t("loanPerMo")}
                           </div>
                         </div>
                         {app.notes && (
@@ -899,7 +900,7 @@ const LoanPage = () => {
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2 text-foreground text-sm">
                 <Scale className="w-4 h-4 text-primary" />
-                Qard Hasan Terms & Conditions
+                {t("loanTermsTitle")}
               </SheetTitle>
             </SheetHeader>
           </div>
@@ -907,15 +908,15 @@ const LoanPage = () => {
           <ScrollArea className="h-[45vh] px-5">
             <div className="space-y-4 pb-4">
               {[
-                { title: "1. Sharia Compliance", text: "This is a Qard Hasan (benevolent loan) — completely interest-free (riba-free). The borrower repays only the principal amount plus a one-time flat service fee." },
-                { title: "2. Service Fee", text: `A flat ${SERVICE_FEE_PERCENT}% one-time service fee of ৳${calc.serviceFee.toLocaleString()} is charged to cover administrative and operational costs. This fee does not compound or increase over time.` },
-                { title: "3. Repayment", text: "Equal monthly installments auto-deducted from your wallet. Maintain sufficient balance. 3 consecutive misses may result in account restrictions." },
-                { title: "4. No Penalty Interest", text: "Late payments do not accrue additional interest or riba. However, repeated defaults may affect your Trust Score and future eligibility." },
-                { title: "5. Eligibility", text: "Approval depends on Trust Score, transaction history, and KYC verification. EasyPay reserves the right to decline applications." },
-                { title: "6. Early Settlement", text: "Full early repayment is allowed at any time without penalty. Service fee remains unchanged regardless of early settlement." },
-                { title: "7. Default & Recovery", text: "On default: account restrictions, deductions from incoming funds, and Trust Score reduction. No additional interest or charges are levied." },
-                { title: "8. Data Privacy", text: "Transaction data is used solely for Trust Score calculation. No third-party sharing except as required by law." },
-                { title: "9. Governing Principle", text: "This agreement follows Islamic finance principles (Qard Hasan). Governed by laws of the People's Republic of Bangladesh." },
+                { title: t("loanTerm1Title"), text: t("loanTerm1") },
+                { title: t("loanTerm2Title"), text: `${t("loanTerm2Prefix")} ${SERVICE_FEE_PERCENT}% ${t("loanTerm2Suffix")}` },
+                { title: t("loanTerm3Title"), text: t("loanTerm3") },
+                { title: t("loanTerm4Title"), text: t("loanTerm4") },
+                { title: t("loanTerm5Title"), text: t("loanTerm5") },
+                { title: t("loanTerm6Title"), text: t("loanTerm6") },
+                { title: t("loanTerm7Title"), text: t("loanTerm7") },
+                { title: t("loanTerm8Title"), text: t("loanTerm8") },
+                { title: t("loanTerm9Title"), text: t("loanTerm9") },
               ].map((s, i) => (
                 <div key={i}>
                   <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wider mb-1">{s.title}</h4>
@@ -929,13 +930,13 @@ const LoanPage = () => {
             <label className="flex items-start gap-3 cursor-pointer">
               <Checkbox checked={termsAccepted} onCheckedChange={(v) => setTermsAccepted(v === true)} className="mt-0.5" />
               <span className="text-[11px] text-muted-foreground leading-relaxed">
-                I agree to the <span className="text-foreground font-semibold">Qard Hasan Terms</span>, including the {SERVICE_FEE_PERCENT}% service fee and repayment policies. I understand this loan is interest-free.
+                {t("loanAgreeTermsPrefix")} <span className="text-foreground font-semibold">{t("loanAgreeTermsMiddle")}</span> {t("loanAgreeTermsSuffix")}
               </span>
             </label>
 
             {termsAccepted && (
               <div className="space-y-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground text-center">Enter PIN to Confirm</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground text-center">{t("loanEnterPinToConfirm")}</p>
                 <div className="flex justify-center gap-3">
                   {[0, 1, 2, 3].map((i) => (
                     <motion.div key={i} animate={{ scale: loanPin.length > i ? 1.15 : 1 }}
@@ -958,7 +959,7 @@ const LoanPage = () => {
 
             <SlideToConfirm
               onConfirm={handleConfirmLoan}
-              label={submitting ? "Applying…" : `Slide to Apply ৳${amountNum.toLocaleString()}`}
+              label={submitting ? t("loanApplying") : `${t("loanSlideToApply")} ৳${amountNum.toLocaleString()}`}
               disabled={!termsAccepted || loanPin.length < 4 || submitting}
               pinComplete={loanPin.length === 4 && termsAccepted}
               icon={Lock}
@@ -972,7 +973,7 @@ const LoanPage = () => {
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[88vh] overflow-y-auto">
           <SheetHeader className="text-left mb-3">
             <SheetTitle className="flex items-center gap-2 text-base">
-              <HandCoins className="w-5 h-5 text-primary" /> Repay Qard Hasan
+              <HandCoins className="w-5 h-5 text-primary" /> {t("loanRepayQardHasan")}
             </SheetTitle>
           </SheetHeader>
           {repayLoan && (() => {
@@ -984,21 +985,21 @@ const LoanPage = () => {
               <div className="space-y-4 pb-4">
                 <div className="rounded-2xl bg-muted/30 ring-1 ring-border/40 p-4 grid grid-cols-3 gap-2">
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Total Due</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">{t("loanTotalDue")}</p>
                     <p className="text-sm font-bold text-foreground tabular-nums">৳{lp.totalAmount.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Repaid</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">{t("loanRepaidChip")}</p>
                     <p className="text-sm font-bold text-emerald-600 tabular-nums">৳{lp.paidAmount.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Outstanding</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">{t("loanOutstanding")}</p>
                     <p className="text-sm font-bold text-amber-600 tabular-nums">৳{lp.remaining.toLocaleString()}</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Repay Amount</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">{t("loanRepayAmount")}</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">৳</span>
                     <input
@@ -1011,22 +1012,22 @@ const LoanPage = () => {
                     <button
                       onClick={() => setRepayAmount(String(lp.remaining))}
                       className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[11px] font-bold"
-                    >Pay All</button>
+                    >{t("loanPayAll")}</button>
                   </div>
                   {amt > lp.remaining && (
-                    <p className="text-[11px] text-destructive mt-1.5 flex items-center gap-1"><AlertCircle size={11} /> Exceeds outstanding</p>
+                    <p className="text-[11px] text-destructive mt-1.5 flex items-center gap-1"><AlertCircle size={11} /> {t("loanExceedsOutstanding")}</p>
                   )}
                 </div>
 
                 {amt > 0 && amt <= lp.remaining && (
                   <div className="rounded-2xl bg-primary/[0.06] ring-1 ring-primary/15 p-3 space-y-1">
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Paying now</span><span className="font-bold text-foreground">৳{amt.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">After payment</span><span className={`font-bold ${isFull ? "text-emerald-600" : "text-foreground"}`}>{isFull ? "✓ Fully Settled" : `৳${newOutstanding.toLocaleString()} left`}</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">{t("loanPayingNow")}</span><span className="font-bold text-foreground">৳{amt.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">{t("loanAfterPayment")}</span><span className={`font-bold ${isFull ? "text-emerald-600" : "text-foreground"}`}>{isFull ? t("loanFullySettled") : `৳${newOutstanding.toLocaleString()} ${t("loanLeftSuffix")}`}</span></div>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Confirm with PIN</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{t("loanConfirmWithPin")}</label>
                   {repayPinError && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {repayPinError}</p>
                   )}
@@ -1041,7 +1042,7 @@ const LoanPage = () => {
 
                 <SlideToConfirm
                   onConfirm={handleRepayLoan}
-                  label={repayProcessing ? "Processing…" : `Slide to Repay ৳${amt.toLocaleString()}`}
+                  label={repayProcessing ? t("loanProcessing") : `${t("loanSlideToRepay")} ৳${amt.toLocaleString()}`}
                   disabled={repayProcessing || amt <= 0 || amt > lp.remaining || repayPin.length < 4}
                   pinComplete={repayPin.length === 4 && amt > 0 && amt <= lp.remaining}
                   icon={Lock}
