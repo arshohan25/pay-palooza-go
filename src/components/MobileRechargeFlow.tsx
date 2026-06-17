@@ -591,11 +591,12 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <Package size={18} className="text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground">Selected pack</p>
+                      <p className="text-xs text-muted-foreground">{t("mrSelectedPack")}</p>
                       <p className="text-sm font-bold text-foreground truncate">{selectedPack.name}</p>
                       <p className="text-xs text-muted-foreground">{selectedPack.details} · {selectedPack.validity}</p>
                     </div>
-                    <p className="text-base font-extrabold text-primary shrink-0">৳{selectedPack.price}</p>
+                    <p className="text-base font-extrabold text-primary shrink-0">৳{fmtAmt(selectedPack.price)}</p>
+
                   </motion.div>
                 )}
 
