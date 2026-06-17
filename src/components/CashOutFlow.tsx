@@ -591,8 +591,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       >
                         <Users className="w-7 h-7 text-muted-foreground" />
                       </motion.div>
-                      <p className="text-sm font-semibold text-foreground">No agents found</p>
-                      <p className="text-xs text-muted-foreground mt-1">Enter an Agent ID above to continue</p>
+                      <p className="text-sm font-semibold text-foreground">{t("coNoAgentsFound")}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("coEnterAgentAbove")}</p>
                     </motion.div>
                   ) : filteredAgents.map((a) => (
                     <button
