@@ -114,7 +114,9 @@ interface CashOutFlowProps {
 }
 
 const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const dateLocale = lang === "bn" ? "bn-BD" : "en-GB";
+  const timeLocale = lang === "bn" ? "bn-BD" : "en-US";
   const { isLocked } = useFeatureLocks();
   const { calcCashOutFee, getFeeLabel, getAgentCommission, loading: feeLoading } = useFeeConfig();
   const cashOutLock = isLocked("cash_out");
@@ -275,7 +277,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setValidating(false);
 
     if (!validation.exists) {
-      setError("Agent not found. Please enter a valid Agent ID or phone.");
+      setError(t("coAgentNotFound"));
       return;
     }
 
@@ -291,7 +293,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
   const handleAgentIdContinue = async () => {
     const trimmed = agentIdInput.trim();
-    if (trimmed.length < 5) { setError("Enter a valid Agent ID."); return; }
+    if (trimmed.length < 5) { setError(t("coEnterValidAgentId")); return; }
 
     setValidating(true);
     setError("");
@@ -299,7 +301,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setValidating(false);
 
     if (!validation.exists) {
-      setError("Agent not found. Please enter a valid Agent ID or phone.");
+      setError(t("coAgentNotFound"));
       return;
     }
 
@@ -315,9 +317,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
-    if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
-    if (val < 30) { setError("Minimum cash out amount is ৳30."); return; }
-    if (val > 50000) { setError("Maximum cash out per day is ৳50,000."); return; }
+    if (!amount || isNaN(val) || val <= 0) { setError(t("coEnterValidAmount")); return; }
+    if (val < 30) { setError(t("coMinCashOut")); return; }
+    if (val > 50000) { setError(t("coMaxCashOut")); return; }
     goTo("review");
   };
 
@@ -325,17 +327,17 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
   const [processing, setProcessing] = useState(false);
   const handlePinConfirm = async () => {
-    if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    if (pin.length < 4) { setError(t("coEnterPin")); return; }
     if (processing) return;
     setProcessing(true);
 
     const pinValid = await verifyPin(pin);
-    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+    if (!pinValid) { setError(t("coIncorrectPin")); setPin(""); setProcessing(false); return; }
 
     const amtVal = parseFloat(amount) || 0;
     const limitCheck = await checkDailyLimit("cashout", amtVal);
     if (!limitCheck.allowed) {
-      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setError(t("coDailyLimitUsed").replace("{used}", limitCheck.used.toLocaleString()).replace("{limit}", limitCheck.limit.toLocaleString()));
       setProcessing(false);
       return;
     }
@@ -360,7 +362,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         commission: commissionVal,
       });
     } catch (e: any) {
-      setError(e.message || "Cash out failed");
+      setError(e.message || t("coCashOutFailed"));
       setPin("");
       setProcessing(false);
       return;
@@ -395,7 +397,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   if (cashOutLock.locked) {
     return (
       <FeatureLockedOverlay
-        featureName="Cash Out"
+        featureName={t("flowCashOut")}
         reason={cashOutLock.reason}
         expiresAt={cashOutLock.expiresAt}
         onClose={onClose}
@@ -425,7 +427,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             <button
               type="button"
               onClick={goBack}
-              aria-label="Go back"
+              aria-label={t("coGoBack")}
               className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ChevronLeft size={20} aria-hidden="true" />
@@ -441,7 +443,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             aria-valuemin={0}
             aria-valuemax={STEPS.length}
             aria-valuenow={stepIndex + 1}
-            aria-label={`Step ${stepIndex + 1} of ${STEPS.length}`}
+            aria-label={t("coStepOf").replace("{n}", String(stepIndex + 1)).replace("{total}", String(STEPS.length))}
           >
             <motion.div
               className="h-full bg-white rounded-full shadow-[0_0_8px_2px_rgba(255,255,255,0.55)]"
@@ -476,7 +478,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       type="text"
-                      placeholder="e.g. AGT-10234"
+                      placeholder={t("coAgentIdPlaceholder")}
                       value={agentIdInput}
                       onChange={(e) => { setAgentIdInput(e.target.value); setError(""); }}
                       className="pl-9 pr-12 h-12 text-base bg-card border-border uppercase"
@@ -520,7 +522,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   <div className="flex-1 h-px bg-border" />
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                     <MapPin size={11} />
-                    {locationGranted && nearbyAgents.length > 0 ? t("nearbyAgents") : "Recent Agents"}
+                    {locationGranted && nearbyAgents.length > 0 ? t("nearbyAgents") : t("coRecentAgents")}
                   </span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
@@ -552,7 +554,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     }}
                     className="w-full flex items-center gap-2 p-2.5 rounded-xl bg-primary/5 border border-primary/20 text-xs text-primary font-medium"
                   >
-                    <MapPin size={14} /> Enable location to find nearby agents
+                    <MapPin size={14} /> {t("coEnableLocation")}
                   </button>
                 )}
 
@@ -560,7 +562,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search agent name or ID…"
+                      placeholder={t("coSearchPlaceholder")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9 bg-card border-border"
@@ -573,7 +575,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   {loadingNearby ? (
                     <div className="flex flex-col items-center py-8">
                       <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
-                      <p className="text-xs text-muted-foreground">Finding nearby agents…</p>
+                      <p className="text-xs text-muted-foreground">{t("coFindingNearby")}</p>
                     </div>
                   ) : displayAgents.length === 0 ? (
                     <motion.div
@@ -589,8 +591,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       >
                         <Users className="w-7 h-7 text-muted-foreground" />
                       </motion.div>
-                      <p className="text-sm font-semibold text-foreground">No agents found</p>
-                      <p className="text-xs text-muted-foreground mt-1">Enter an Agent ID above to continue</p>
+                      <p className="text-sm font-semibold text-foreground">{t("coNoAgentsFound")}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("coEnterAgentAbove")}</p>
                     </motion.div>
                   ) : filteredAgents.map((a) => (
                     <button
@@ -698,10 +700,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
 
                 {parseFloat(amount) > 0 && totalFromBalance > BALANCE && (
-                  <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                  <p className="text-center text-sm text-destructive font-medium">{t("coInsufficientBalance")}</p>
                 )}
                 {parseFloat(amount) > 0 && totalFromBalance <= BALANCE && parseFloat(amount) > 35000 && (
-                  <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳35,000)</p>
+                  <p className="text-center text-sm text-destructive font-medium">{t("coExceedsDailyLimit")}</p>
                 )}
                 {parseFloat(amount) > 0 && totalFromBalance <= BALANCE && parseFloat(amount) <= 35000 && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
@@ -709,7 +711,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       className="w-full h-12 gradient-cashout border-0 text-white font-semibold text-base"
                       onClick={handleAmountContinue}
                     >
-                      Review Cash Out
+                      {t("coReviewCashOut")}
                     </Button>
                   </motion.div>
                 )}
@@ -735,26 +737,26 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 </div>
 
                 <div className="rounded-2xl bg-card border border-border p-4 space-y-2.5 text-sm">
-                  <p className="font-semibold text-foreground">Transaction Summary</p>
+                  <p className="font-semibold text-foreground">{t("coTransactionSummary")}</p>
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("cashOutAmount")}</span>
                     <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Fee ({FEE_LABEL})</span>
+                    <span>{t("coFee")} ({FEE_LABEL})</span>
                     <span className="text-destructive font-medium">− ৳{fee}</span>
                   </div>
                   {couponDiscount > 0 && pendingCoupon && (
                     <CouponSummaryLine code={pendingCoupon.code} discount={couponDiscount} />
                   )}
                   <div className="flex justify-between text-xs text-muted-foreground/70">
-                    <span>Fee source</span>
+                    <span>{t("coFeeSource")}</span>
                     <span className="text-primary font-medium">
                       {feeFromBalance >= feeNum
-                        ? "From your balance"
+                        ? t("coFeeFromBalance")
                         : feeFromBalance > 0
-                        ? `৳${feeFromBalance.toFixed(2)} balance + ৳${feeFromAmount} from amount`
-                        : "Deducted from amount"}
+                        ? t("coFeeBalancePlusAmount").replace("{bal}", feeFromBalance.toFixed(2)).replace("{amt}", String(feeFromAmount))
+                        : t("coFeeDeductedFromAmount")}
                     </span>
                   </div>
                   <div className="h-px bg-border" />
@@ -763,15 +765,15 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <span className="text-primary">৳{parseFloat(receive).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground/70">
-                    <span>Total from balance</span>
+                    <span>{t("coTotalFromBalance")}</span>
                     <span>৳{totalFromBalance.toLocaleString()}</span>
                   </div>
                 </div>
 
                 <Button className="w-full h-12 gradient-cashout border-0 text-white font-semibold text-base rounded-xl" onClick={handleReviewContinue}>
-                  Confirm & Enter PIN
+                  {t("coConfirmEnterPin")}
                 </Button>
-                <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>Edit Amount</Button>
+                <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>{t("coEditAmount")}</Button>
               </div>
             )}
 
@@ -782,7 +784,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   <p className="text-sm text-muted-foreground">{t("cashingOut")}</p>
                   <p className="text-4xl font-extrabold text-foreground">৳{parseFloat(amount).toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">
-                    at <span className="font-semibold text-foreground">{agent?.name}</span>
+                    {t("coAt")} <span className="font-semibold text-foreground">{agent?.name}</span>
                   </p>
                 </div>
 
@@ -803,7 +805,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   </div>
                   {feeNum > 0 && (
                     <p className="text-[11px] text-muted-foreground text-right">
-                      ৳{parseFloat(amount).toLocaleString()} + ৳{fee} fee ({feeFromBalance >= feeNum ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                      ৳{parseFloat(amount).toLocaleString()} + ৳{fee} {t("coFee").toLowerCase()} ({feeFromBalance >= feeNum ? t("coFromBalanceShort") : feeFromBalance > 0 ? t("coBalancePlusAmountShort") : t("coFromAmountShort")})
                     </p>
                   )}
                 </div>
@@ -841,7 +843,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 >
                   <h2 className="text-2xl font-extrabold text-foreground">{t("cashOutSuccessful")}</h2>
                   <p className="text-muted-foreground text-sm">
-                    ৳{parseFloat(amount).toLocaleString()} cashed out at{" "}
+                    {t("coCashedOutAt").replace("{amt}", `৳${parseFloat(amount).toLocaleString()}`)}{" "}
                     <span className="font-semibold text-foreground">{agent?.name}</span>
                   </p>
                 </motion.div>
@@ -853,56 +855,56 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   className="w-full rounded-2xl bg-card border border-border shadow-elevated p-4 text-sm space-y-3"
                 >
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Agent</span>
+                    <span>{t("agent")}</span>
                     <span className="text-foreground font-medium">{agent?.name}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Agent ID</span>
+                    <span>{t("coAgentId")}</span>
                     <span className="text-foreground font-medium">{agent?.agentId}</span>
                   </div>
                    <div className="flex justify-between text-muted-foreground">
-                    <span>Amount</span>
+                    <span>{t("coAmount")}</span>
                     <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                   </div>
                   {couponDiscount > 0 && pendingCoupon && (
                     <CouponSummaryLine code={pendingCoupon.code} discount={couponDiscount} />
                   )}
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Fee ({FEE_LABEL})</span>
+                    <span>{t("coFee")} ({FEE_LABEL})</span>
                     <span className="text-foreground font-medium">৳{fee}</span>
                   </div>
                   {feeNum > 0 && (
                     <p className="text-[11px] text-muted-foreground text-right">
-                      ৳{parseFloat(amount).toLocaleString()} + ৳{fee} fee ({feeFromBalance >= feeNum ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                      ৳{parseFloat(amount).toLocaleString()} + ৳{fee} {t("coFee").toLowerCase()} ({feeFromBalance >= feeNum ? t("coFromBalanceShort") : feeFromBalance > 0 ? t("coBalancePlusAmountShort") : t("coFromAmountShort")})
                     </p>
                   )}
                   {feeFromAmount > 0 && (
                     <div className="flex justify-between text-muted-foreground">
-                      <span>You Received</span>
+                      <span>{t("youReceived")}</span>
                       <span className="font-semibold text-primary">৳{parseFloat(receive).toLocaleString()}</span>
                     </div>
                   )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between font-bold text-foreground">
-                      <span>Total Deducted</span>
+                      <span>{t("coTotalDeducted")}</span>
                       <span>৳{(Math.max(0, parseFloat(amount) - couponDiscount) + feeNum).toLocaleString()}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Date</span>
+                    <span>{t("coDate")}</span>
                     <span className="text-foreground font-medium">
-                      {txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                      {txnTime.current.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" })}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Time</span>
+                    <span>{t("coTime")}</span>
                     <span className="text-foreground font-medium">
-                      {txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                      {txnTime.current.toLocaleTimeString(timeLocale, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
                     </span>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="flex justify-between font-bold text-foreground">
-                    <span>Transaction ID</span>
+                    <span>{t("coTransactionId")}</span>
                     <span className="text-primary">{txnId.current}</span>
                   </div>
                 </motion.div>
@@ -914,7 +916,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   className="w-full rounded-2xl bg-card border border-border shadow-card p-4 space-y-3"
                 >
                   <p className="text-sm font-semibold text-foreground text-center">
-                    {ratingSubmitted ? "Thanks for your feedback! ✨" : "Rate this agent"}
+                    {ratingSubmitted ? t("coThanksFeedback") : t("coRateAgent")}
                   </p>
                   {!ratingSubmitted ? (
                     <>
@@ -934,7 +936,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       </div>
                       {ratingValue > 0 && (
                         <Textarea
-                          placeholder="How was your experience? (optional)"
+                          placeholder={t("coExperiencePlaceholder")}
                           value={ratingComment}
                           onChange={(e) => setRatingComment(e.target.value)}
                           className="text-sm resize-none h-16"
@@ -963,7 +965,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                             haptics.success();
                           }}
                         >
-                          {submittingRating ? "Submitting…" : "Submit Rating"}
+                          {submittingRating ? t("coSubmittingRating") : t("coSubmitRating")}
                         </Button>
                       )}
                     </>
@@ -1014,19 +1016,19 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         open={showShare}
         onClose={() => setShowShare(false)}
         receipt={{
-          title: "Cash Out Successful",
+          title: t("coCashOutSuccessTitle"),
           amount: `৳${parseFloat(amount || "0").toLocaleString()}`,
           gradient: "gradient-cashout",
           txnId: txnId.current,
           rows: [
-            { label: "Agent", value: agent?.name ?? "" },
-            { label: "Agent ID", value: agent?.agentId ?? "" },
-            { label: "Amount", value: `৳${parseFloat(amount || "0").toLocaleString()}` },
-            ...(couponDiscount > 0 ? [{ label: `🎟️ Coupon (${pendingCoupon?.code})`, value: `-৳${couponDiscount.toFixed(2)}` }] : []),
-            { label: `Fee (${FEE_LABEL})`, value: `৳${feeNum.toFixed(2)}` },
-            { label: "You Received", value: `৳${parseFloat(receive).toLocaleString()}` },
-            { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
-            { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+            { label: t("agent"), value: agent?.name ?? "" },
+            { label: t("coAgentId"), value: agent?.agentId ?? "" },
+            { label: t("coAmount"), value: `৳${parseFloat(amount || "0").toLocaleString()}` },
+            ...(couponDiscount > 0 ? [{ label: `🎟️ ${t("coCouponLabel")} (${pendingCoupon?.code})`, value: `-৳${couponDiscount.toFixed(2)}` }] : []),
+            { label: `${t("coFee")} (${FEE_LABEL})`, value: `৳${feeNum.toFixed(2)}` },
+            { label: t("youReceived"), value: `৳${parseFloat(receive).toLocaleString()}` },
+            { label: t("coDate"), value: txnTime.current.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: t("coTime"), value: txnTime.current.toLocaleTimeString(timeLocale, { hour: "2-digit", minute: "2-digit", hour12: true }) },
           ],
         }}
       />
