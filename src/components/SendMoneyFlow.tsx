@@ -1083,7 +1083,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                   {fee > 0 && (
                     <p className="text-[11px] text-muted-foreground text-right">
-                      ৳{amtNum.toLocaleString()} + ৳{fee} fee ({feeFromBalance >= fee ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                      {t("smFeeBreakdown").replace("{amt}", amtNum.toLocaleString()).replace("{fee}", String(fee)).replace("{source}", feeFromBalance >= fee ? t("smFromBalanceShort") : feeFromBalance > 0 ? t("smBalancePlusAmtShort") : t("smFromAmountShort"))}
                     </p>
                   )}
                   {feeFromAmount > 0 && (
