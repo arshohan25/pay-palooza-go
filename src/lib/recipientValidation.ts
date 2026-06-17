@@ -68,6 +68,19 @@ const RULES: Record<RecipientKind, RecipientRule> = {
     min: 2,
     emptyOrShortMessage: () => "Enter the account holder's name.",
   },
+  // ─────────────────────────────────────────────────────────────
+  // EXAMPLE TEMPLATE — copy this block when adding a new flow:
+  //   1. Add a new string to the `RecipientKind` union above.
+  //   2. Duplicate this entry, rename the key, tweak min/max/message.
+  //   3. Use it in your component via `validateRecipient("yourKind", value)`
+  //      or the `useRecipientField("yourKind", initial)` hook.
+  // ─────────────────────────────────────────────────────────────
+  demoService: {
+    min: 6,
+    max: 12,
+    digitsOnly: true,
+    emptyOrShortMessage: () => "Demo service ID must be 6–12 digits.",
+  },
 };
 
 export interface RecipientCheck {
