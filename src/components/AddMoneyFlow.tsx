@@ -101,14 +101,14 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
-    if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
-    if (val < 10) { setError("Minimum is ৳10."); return; }
-    if (val > 100000) { setError("Maximum is ৳1,00,000."); return; }
+    if (!amount || isNaN(val) || val <= 0) { setError(t("amEnterValidAmount")); return; }
+    if (val < 10) { setError(t("amMin")); return; }
+    if (val > 100000) { setError(t("amMax")); return; }
     goTo("source");
   };
 
   const handleSourceContinue = () => {
-    if (!source) { setError("Select a source."); return; }
+    if (!source) { setError(t("amSelectSource")); return; }
     goTo("send_to");
   };
 
