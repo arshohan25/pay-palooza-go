@@ -334,12 +334,12 @@ const PayPage = () => {
         body: JSON.stringify({ phone: cleanPhone, purpose: "payment" }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to send OTP");
+      if (!res.ok) throw new Error(result.error || t("ppFailedSendOtp"));
       if (result.dev_otp) setDevOtp(result.dev_otp);
       setStep("otp");
       haptics.success();
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to send OTP");
+      setErrorMsg(err.message || t("ppFailedSendOtp"));
       setStep("phone");
       haptics.error();
     }
