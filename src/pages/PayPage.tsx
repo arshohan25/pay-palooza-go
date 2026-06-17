@@ -706,12 +706,12 @@ const PayPage = () => {
               <div className="w-14 h-14 rounded-full bg-destructive/8 border border-destructive/15 flex items-center justify-center mx-auto shadow-[0_0_20px_-4px_hsl(var(--destructive)/0.2)]">
                 <XCircle className="w-7 h-7 text-destructive/70" />
               </div>
-              <h2 className="text-lg font-bold text-foreground">Payment Failed</h2>
-              <p className="text-sm text-muted-foreground/60 leading-relaxed">{errorMsg || "Something went wrong"}</p>
+              <h2 className="text-lg font-bold text-foreground">{t("ppPaymentFailed")}</h2>
+              <p className="text-sm text-muted-foreground/60 leading-relaxed">{errorMsg || t("ppSomethingWentWrong")}</p>
               <Button variant="outline"
                 onClick={() => { setStep("ready"); setPin(""); setOtp(""); setErrorMsg(""); }}
                 className="rounded-2xl h-11 px-6 font-semibold">
-                Try Again
+                {t("tryAgain")}
               </Button>
             </motion.div>
           )}
