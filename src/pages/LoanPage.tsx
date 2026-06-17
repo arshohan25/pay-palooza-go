@@ -985,15 +985,15 @@ const LoanPage = () => {
               <div className="space-y-4 pb-4">
                 <div className="rounded-2xl bg-muted/30 ring-1 ring-border/40 p-4 grid grid-cols-3 gap-2">
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Total Due</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">{t("loanTotalDue")}</p>
                     <p className="text-sm font-bold text-foreground tabular-nums">৳{lp.totalAmount.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Repaid</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">{t("loanRepaidChip")}</p>
                     <p className="text-sm font-bold text-emerald-600 tabular-nums">৳{lp.paidAmount.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Outstanding</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">{t("loanOutstanding")}</p>
                     <p className="text-sm font-bold text-amber-600 tabular-nums">৳{lp.remaining.toLocaleString()}</p>
                   </div>
                 </div>
