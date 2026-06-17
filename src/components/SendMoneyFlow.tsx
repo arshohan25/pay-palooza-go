@@ -783,8 +783,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     >
                       <Users className="w-7 h-7 text-muted-foreground" />
                     </motion.div>
-                    <p className="text-sm font-semibold text-foreground">No contacts found</p>
-                    <p className="text-xs text-muted-foreground mt-1">Enter a number or import from your phone</p>
+                    <p className="text-sm font-semibold text-foreground">{t("smNoContacts")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("smImportContacts")}</p>
                   </motion.div>
                 )}
 
