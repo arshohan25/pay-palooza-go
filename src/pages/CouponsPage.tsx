@@ -43,6 +43,7 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
   coupon: Coupon; index: number; copiedId: string | null;
   onCopy: (c: Coupon) => void; onUse: (c: Coupon) => void;
 }) {
+  const { t } = useI18n();
   const isCopied = copiedId === coupon.id;
   const flow = coupon.applicable_flow || "shop";
   const flowInfo = FLOW_MAP[flow] || FLOW_MAP.shop;
@@ -53,10 +54,10 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
   const getDaysLeft = (expiresAt: string) => {
     const diff = new Date(expiresAt).getTime() - Date.now();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-    if (days <= 0) return "Expired";
-    if (days === 1) return "Ends tomorrow";
-    if (days <= 7) return `${days} days left`;
-    return `${days}d remaining`;
+    if (days <= 0) return t("expiredLabel");
+    if (days === 1) return t("endsTomorrow");
+    if (days <= 7) return `${days} ${t("daysLeftSuffix")}`;
+    return `${days}${t("daysRemainingSuffix")}`;
   };
 
   return (
