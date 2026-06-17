@@ -361,13 +361,13 @@ const LoanPage = () => {
                           <div className="w-7 h-7 rounded-lg bg-white/[0.18] flex items-center justify-center backdrop-blur-sm">
                             <Gauge className="w-3.5 h-3.5 text-white" />
                           </div>
-                          <span className="text-white/80 text-[10px] font-semibold tracking-widest uppercase">Trust Score</span>
+                          <span className="text-white/80 text-[10px] font-semibold tracking-widest uppercase">{t("loanTrustScore")}</span>
                         </div>
 
                         {eligibilityLoading ? (
                           <div className="flex items-center gap-2 pt-2">
                             <Loader2 className="w-4 h-4 animate-spin text-white/70" />
-                            <span className="text-white/70 text-xs">Analyzing...</span>
+                            <span className="text-white/70 text-xs">{t("loanAnalyzing")}</span>
                           </div>
                         ) : (
                           <>
