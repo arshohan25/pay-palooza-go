@@ -484,8 +484,8 @@ const PayPage = () => {
 
           {(refParam || noteParam) && (
             <div className="mt-2 flex flex-col items-center gap-0.5">
-              {refParam && <p className="text-[10px] text-muted-foreground/50 font-mono">Ref: {refParam}</p>}
-              {noteParam && <p className="text-[10px] text-muted-foreground/50 font-mono">Note: {noteParam}</p>}
+              {refParam && <p className="text-[10px] text-muted-foreground/50 font-mono">{t("ppRefLabel")}: {refParam}</p>}
+              {noteParam && <p className="text-[10px] text-muted-foreground/50 font-mono">{t("ppNoteLabel")}: {noteParam}</p>}
             </div>
           )}
 
