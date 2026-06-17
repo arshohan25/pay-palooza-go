@@ -1194,7 +1194,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 />
                 <SlideToConfirm
                   onConfirm={handlePinConfirm}
-                  label="Slide to Recharge"
+                  label={t("mrSlideToRecharge")}
                   gradient="gradient-primary"
                   disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
