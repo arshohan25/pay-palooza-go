@@ -114,7 +114,9 @@ interface CashOutFlowProps {
 }
 
 const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const dateLocale = lang === "bn" ? "bn-BD" : "en-GB";
+  const timeLocale = lang === "bn" ? "bn-BD" : "en-US";
   const { isLocked } = useFeatureLocks();
   const { calcCashOutFee, getFeeLabel, getAgentCommission, loading: feeLoading } = useFeeConfig();
   const cashOutLock = isLocked("cash_out");
