@@ -26,6 +26,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 import AiRewardBanner from "@/components/AiRewardBanner";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 const AMOUNTS = [1000, 2000, 3000, 5000, 10000, 15000, 25000, 50000];
 const TENURES = [
