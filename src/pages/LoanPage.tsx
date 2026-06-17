@@ -60,13 +60,13 @@ interface EligibilityResult {
   }[];
 }
 
-const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string; bg: string }> = {
-  pending: { icon: <Clock className="w-3.5 h-3.5" />, color: "text-amber-500", label: "Under Review", bg: "bg-amber-500/10" },
-  approved: { icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: "text-emerald-500", label: "Approved", bg: "bg-emerald-500/10" },
-  rejected: { icon: <XCircle className="w-3.5 h-3.5" />, color: "text-destructive", label: "Rejected", bg: "bg-destructive/10" },
-  disbursed: { icon: <Banknote className="w-3.5 h-3.5" />, color: "text-blue-500", label: "Active", bg: "bg-blue-500/10" },
-  repaid: { icon: <BadgeCheck className="w-3.5 h-3.5" />, color: "text-muted-foreground", label: "Settled", bg: "bg-muted" },
-};
+const getStatusConfig = (t: (k: TranslationKey) => string): Record<string, { icon: React.ReactNode; color: string; label: string; bg: string }> => ({
+  pending: { icon: <Clock className="w-3.5 h-3.5" />, color: "text-amber-500", label: t("loanStatusUnderReview"), bg: "bg-amber-500/10" },
+  approved: { icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: "text-emerald-500", label: t("loanStatusApproved"), bg: "bg-emerald-500/10" },
+  rejected: { icon: <XCircle className="w-3.5 h-3.5" />, color: "text-destructive", label: t("loanStatusRejected"), bg: "bg-destructive/10" },
+  disbursed: { icon: <Banknote className="w-3.5 h-3.5" />, color: "text-blue-500", label: t("loanStatusActive"), bg: "bg-blue-500/10" },
+  repaid: { icon: <BadgeCheck className="w-3.5 h-3.5" />, color: "text-muted-foreground", label: t("loanStatusSettled"), bg: "bg-muted" },
+});
 
 type TabType = "apply" | "active" | "history";
 
