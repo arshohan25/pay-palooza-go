@@ -1090,7 +1090,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         className="px-3 py-1.5 rounded-xl text-xs font-bold border border-border bg-card text-foreground hover:border-primary/40 active:scale-95 transition-all"
                         style={customAmountNum === amt ? { borderColor: operator.brandColor, color: operator.brandColor } : {}}
                       >
-                        ৳{amt}
+                        ৳{fmtAmt(amt)}
                       </button>
                     ))}
                   </div>
