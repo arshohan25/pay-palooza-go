@@ -655,7 +655,7 @@ const PayPage = () => {
                 {/* Transaction ID chip */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/30 bg-muted/30">
                   <div className="min-w-0">
-                    <p className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Transaction ID</p>
+                    <p className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-semibold">{t("ppTransactionIdLabel")}</p>
                     <p className="text-[11px] font-mono font-bold text-primary break-all mt-0.5 leading-snug">{successTxnId || "—"}</p>
                   </div>
                   <motion.button
