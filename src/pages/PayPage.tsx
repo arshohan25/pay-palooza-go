@@ -523,8 +523,8 @@ const PayPage = () => {
               className="px-6 pb-6 space-y-4 text-center">
               <StepBar current="phone" />
               <div className="text-center">
-                <p className="text-sm font-bold text-foreground">Enter your phone number</p>
-                <p className="text-[11px] text-muted-foreground/60 mt-1">We'll send a verification code</p>
+                <p className="text-sm font-bold text-foreground">{t("ppEnterPhone")}</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1">{t("ppWellSendCode")}</p>
               </div>
               <div>
                 <input type="tel" inputMode="numeric" maxLength={11} value={phone}
