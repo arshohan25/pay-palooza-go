@@ -1,3 +1,4 @@
+import { validateRecipient } from "@/lib/recipientValidation";
 import { useState, useMemo } from "react";
 import FeatureGuard from "@/components/FeatureGuard";
 import { haptics } from "@/lib/haptics";
@@ -282,9 +283,12 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input type="text" placeholder="e.g. 1234567890123" value={accountNumber} onChange={e => { setAccountNumber(e.target.value); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
                     </div>
-                    {accountNumber.trim().length > 0 && accountNumber.trim().length < 8 && (
-                      <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> Account number must be at least 8 digits.</p>
-                    )}
+                    {(() => {
+                      const v = validateRecipient("bankAccount", accountNumber);
+                      return v.errorMessage ? (
+                        <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> {v.errorMessage}</p>
+                      ) : null;
+                    })()}
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-foreground">{t("accountHolderName")}</label>
@@ -292,12 +296,15 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input type="text" placeholder="e.g. Mohammad Ali" value={accountHolder} onChange={e => { setAccountHolder(e.target.value); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
                     </div>
-                    {accountHolder.trim().length > 0 && accountHolder.trim().length < 2 && (
-                      <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> Enter the account holder's name.</p>
-                    )}
+                    {(() => {
+                      const v = validateRecipient("accountHolder", accountHolder);
+                      return v.errorMessage ? (
+                        <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> {v.errorMessage}</p>
+                      ) : null;
+                    })()}
                   </div>
                   {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
-                  {bankName && accountNumber.trim().length >= 8 && accountHolder.trim().length >= 2 && (
+                  {bankName && validateRecipient("bankAccount", accountNumber).isValid && validateRecipient("accountHolder", accountHolder).isValid && (
                     <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold animate-fade-in" onClick={handleBankContinue}>{t("continue")}</Button>
                   )}
                 </div>
