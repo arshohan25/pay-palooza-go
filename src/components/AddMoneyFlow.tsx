@@ -178,12 +178,12 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   };
 
   const handlePinSubmit = async () => {
-    if (pin.length !== 4) { setPinError("Enter your 4-digit PIN."); return; }
+    if (pin.length !== 4) { setPinError(t("amEnterPin")); return; }
     setSubmitting(true);
     setPinError("");
     try {
       const valid = await verifyPin(pin);
-      if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setSubmitting(false); return; }
+      if (!valid) { setPinError(t("amIncorrectPin")); setPin(""); setSubmitting(false); return; }
       let proofUrl: string | undefined;
       if (proofFile) {
         proofUrl = await uploadProof(proofFile);
