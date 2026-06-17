@@ -193,7 +193,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const current = parseFloat(amount) || 0;
     const nextEnabled = !addCashOutCharge;
     if (nextEnabled && current < MIN_CASH_OUT_AMOUNT) {
-      setError(`Minimum amount ৳${MIN_CASH_OUT_AMOUNT} required to add Cash Out Charge.`);
+      setError(t("smMinCashoutChargeReq").replace("{amt}", String(MIN_CASH_OUT_AMOUNT)));
       haptics.error?.();
       return;
     }
