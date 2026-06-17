@@ -243,7 +243,8 @@ const GradientMesh = () => (
 const PayPage = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const locale = lang === "bn" ? "bn-BD" : "en-BD";
 
   const merchantCode = params.get("merchant") || "";
   const refParam = params.get("ref") || "";
