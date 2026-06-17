@@ -390,7 +390,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   // Packs → Number or Amount (drive pack + dummy phone → number entry first)
   const handlePackContinue = () => {
-    if (!selectedPack) { setError("Please select a pack to continue."); return; }
+    if (!selectedPack) { setError(t("mrErrSelectPack")); return; }
     if (isPhoneDummy) {
       // Clear dummy phone so user enters real number
       setPhone("");
