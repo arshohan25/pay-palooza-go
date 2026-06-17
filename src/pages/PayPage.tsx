@@ -722,7 +722,7 @@ const PayPage = () => {
           <div className="h-px bg-gradient-to-r from-transparent via-border/30 to-transparent mb-3" />
           <div className="flex items-center justify-center gap-1.5">
             <Shield size={10} className="text-muted-foreground/30" />
-            <p className="text-[10px] text-muted-foreground/30 font-medium tracking-wide">Secured by EasyPay</p>
+            <p className="text-[10px] text-muted-foreground/30 font-medium tracking-wide">{t("ppSecuredBy")}</p>
           </div>
         </div>
       </motion.div>
