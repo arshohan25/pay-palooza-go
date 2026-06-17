@@ -414,25 +414,25 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 flex gap-3">
                       <ShieldAlert size={20} className="text-destructive shrink-0 mt-0.5" />
                       <div className="space-y-1">
-                        <p className="text-sm font-bold text-destructive">⚠️ Warning</p>
+                        <p className="text-sm font-bold text-destructive">{t("amWarningTitle")}</p>
                         <p className="text-xs text-destructive/90 leading-relaxed">
-                          Submitting fake transaction details, forged screenshots, or fraudulent proof will result in <span className="font-bold">immediate and permanent account termination</span>. Legal action may be pursued. All submissions are verified.
+                          {t("amWarningBody")}
                         </p>
                       </div>
                     </div>
                     <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-1">
-                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span></div>
-                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Source</span><span className="font-medium text-foreground capitalize">{source?.replace("_", " ")}</span></div>
+                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("amAmountLabel")}</span><span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span></div>
+                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("amSourceLabel")}</span><span className="font-medium text-foreground">{(() => { const o = SOURCE_OPTIONS.find(x => x.id === source); return o ? t(o.labelKey as any) : source; })()}</span></div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">Transaction ID / Reference</label>
-                      <Input type="text" placeholder="e.g. TXN123456789" value={txnId}
+                      <label className="text-sm font-semibold text-foreground">{t("amTxnIdLabel")}</label>
+                      <Input type="text" placeholder={t("amTxnIdPlaceholder")} value={txnId}
                         onChange={(e) => { setTxnId(e.target.value); setError(""); validateTxnId(e.target.value); checkDuplicateTxnId(e.target.value); }}
                         className="h-12 bg-card border-border" />
                       {checkingDuplicate && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Loader2 size={12} className="animate-spin" />Checking for duplicates…
+                          <Loader2 size={12} className="animate-spin" />{t("amCheckingDuplicate")}
                         </p>
                       )}
                       {duplicateTxnWarning && (
@@ -448,20 +448,20 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       )}
                       {source && TXNID_PATTERNS[source] && !txnIdWarning && txnId.trim() && !duplicateTxnWarning && (
                         <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                          <CheckCircle2 size={12} />Format looks correct
+                          <CheckCircle2 size={12} />{t("amFormatOk")}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">Upload Receipt / Screenshot</label>
+                      <label className="text-sm font-semibold text-foreground">{t("amUploadReceipt")}</label>
                       <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-2xl border-2 border-dashed border-border bg-card hover:border-primary/50 cursor-pointer transition-colors">
                         {proofPreview ? (
                           <img src={proofPreview} alt="Proof" className="w-full max-h-48 object-contain rounded-lg" />
                         ) : (
                           <>
                             <Upload size={24} className="text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">Tap to upload (max 5MB)</span>
+                            <span className="text-xs text-muted-foreground">{t("amTapToUpload")}</span>
                           </>
                         )}
                         <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
@@ -472,7 +472,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
                     <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                       onClick={handleProofContinue}>
-                      Continue
+                      {t("amContinue")}
                     </Button>
                   </div>
                 )}
