@@ -31,30 +31,22 @@ async function creditUserBalance(
     return { success: true, alreadyCredited: true };
   }
 
-  const { data: currentProfile } = await supabaseAdmin
-    .from("profiles")
-    .select("balance")
-    .eq("user_id", userId)
-    .single();
-
-  if (!currentProfile) {
-    console.error(`creditUserBalance: profile not found for user ${userId}`);
+  // Atomic credit via SECURITY DEFINER RPC (no read-then-write race).
+  const { data: newBalance, error: creditErr } = await supabaseAdmin.rpc("credit_user_balance", {
+    p_user_id: userId,
+    p_amount: amount,
+  });
+  if (creditErr || newBalance == null) {
+    console.error(`creditUserBalance: RPC failed for user ${userId}`, creditErr);
     return { success: false };
   }
-
-  const newBalance = parseFloat(String(currentProfile.balance)) + amount;
-
-  await supabaseAdmin
-    .from("profiles")
-    .update({ balance: newBalance })
-    .eq("user_id", userId);
 
   await supabaseAdmin.from("transactions").insert({
     user_id: userId,
     type: "addmoney",
     amount,
     fee: 0,
-    balance_after: newBalance,
+    balance_after: Number(newBalance),
     description,
     reference,
     status: "completed",
