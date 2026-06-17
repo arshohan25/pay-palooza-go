@@ -29,14 +29,15 @@ import {
   STRATEGY_RETURNS, type Strategy, type Frequency,
   getEstReturn, calcDpsEstimate, goalLockDaysLeft, dpsLockDaysLeft,
 } from "@/lib/savingsReturns";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 type Tab = "goals" | "dps" | "gold" | "stocks";
 
 const EMOJIS = ["🎯","🏠","🚗","✈️","🎓","💍","📱","🎁","💼","🕌"];
-const FREQS: { value: Frequency; label: string }[] = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
+const FREQS: { value: Frequency; labelKey: TranslationKey }[] = [
+  { value: "daily", labelKey: "savDailyLabel" },
+  { value: "weekly", labelKey: "savWeeklyLabel" },
+  { value: "monthly", labelKey: "savMonthlyLabel" },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ function PinDots({ pin, error }: { pin: string; error?: string }) {
 }
 
 function PinPad({ pin, setPin, error }: { pin: string; setPin: (v: string) => void; error?: string }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-4">
       <PinDots pin={pin} error={error} />
@@ -72,7 +74,7 @@ function PinPad({ pin, setPin, error }: { pin: string; setPin: (v: string) => vo
         }}
         className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-[19px] focus:outline-none focus:border-primary"
         placeholder="••••" />
-      <p className="text-center text-xs text-muted-foreground">Enter your 4-digit PIN</p>
+      <p className="text-center text-xs text-muted-foreground">{t("savEnterPin")}</p>
     </div>
   );
 }
@@ -92,6 +94,7 @@ interface ConfirmSheetProps {
   gradient?: string;
 }
 function ConfirmSheet({ open, onClose, title, summary, warning, requireTerms, termsText, onConfirm, gradient = "gradient-primary" }: ConfirmSheetProps) {
+  const { t } = useI18n();
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [terms, setTerms] = useState(false);
@@ -102,17 +105,17 @@ function ConfirmSheet({ open, onClose, title, summary, warning, requireTerms, te
   }, [open]);
 
   const handleSlide = async () => {
-    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
-    if (requireTerms && !terms) { toast.error("Please accept the terms"); return; }
+    if (pin.length < 4) { setPinError(t("savEnterPinRequired")); return; }
+    if (requireTerms && !terms) { toast.error(t("savAcceptTerms")); return; }
     setProcessing(true);
     const valid = await verifyPin(pin);
-    if (!valid) { setPinError("Incorrect PIN"); setPin(""); setProcessing(false); haptics.error(); return; }
+    if (!valid) { setPinError(t("savIncorrectPin")); setPin(""); setProcessing(false); haptics.error(); return; }
     try {
       await onConfirm();
       haptics.success();
       onClose();
     } catch (e: any) {
-      toast.error(e?.message ?? "Operation failed");
+      toast.error(e?.message ?? t("savOperationFailed"));
       setProcessing(false);
     }
   };
@@ -135,7 +138,7 @@ function ConfirmSheet({ open, onClose, title, summary, warning, requireTerms, te
             {requireTerms && (
               <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
                 <Checkbox checked={terms} onCheckedChange={(v) => setTerms(!!v)} className="mt-0.5" />
-                <span>{termsText ?? "I accept the Islamic Savings terms — Mudarabah model, no guaranteed return, profit subject to market conditions."}</span>
+                <span>{termsText ?? t("savIslamicTerms")}</span>
               </label>
             )}
             <PinPad pin={pin} setPin={(v) => { setPin(v); setPinError(""); }} error={pinError} />
@@ -144,7 +147,7 @@ function ConfirmSheet({ open, onClose, title, summary, warning, requireTerms, te
               disabled={pin.length < 4 || processing || (!!requireTerms && !terms)}
               pinComplete={pin.length === 4}
               gradient={gradient}
-              label={processing ? "Processing…" : "Slide to confirm"}
+              label={processing ? t("savProcessing") : t("savSlideToConfirm")}
             />
           </div>
         </ScrollArea>
@@ -157,6 +160,7 @@ function ConfirmSheet({ open, onClose, title, summary, warning, requireTerms, te
 // Goals tab
 // ─────────────────────────────────────────────────────────────────────────────
 function GoalsTab() {
+  const { t } = useI18n();
   const { goals, plans, reload } = useSavings();
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
@@ -174,9 +178,9 @@ function GoalsTab() {
   const handleCreate = async () => {
     const tg = parseFloat(target);
     const od = parseFloat(openingDeposit || "0");
-    if (!name.trim() || !(tg > 0)) throw new Error("Enter a valid name and target");
+    if (!name.trim() || !(tg > 0)) throw new Error(t("savEnterValidName"));
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not signed in");
+    if (!user) throw new Error(t("savNotSignedIn"));
     const { data: goal, error } = await supabase.from("savings_goals")
       .insert({ user_id: user.id, name: name.trim(), emoji, target_amount: tg, saved_amount: 0 })
       .select().single();
@@ -185,7 +189,7 @@ function GoalsTab() {
       const { error: depErr } = await supabase.rpc("savings_deposit", { p_goal_id: goal.id, p_amount: od, p_source: "manual" });
       if (depErr) throw depErr;
     }
-    toast.success("Goal created");
+    toast.success(t("savGoalCreated"));
     setName(""); setTarget(""); setOpeningDeposit(""); setEmoji(EMOJIS[0]); setCreateOpen(false);
     reload();
   };
@@ -193,10 +197,10 @@ function GoalsTab() {
   const handleDeposit = async () => {
     if (!depositGoal) return;
     const amt = parseFloat(depositAmt);
-    if (!(amt > 0)) throw new Error("Enter an amount");
+    if (!(amt > 0)) throw new Error(t("savEnterAmount"));
     const { error } = await supabase.rpc("savings_deposit", { p_goal_id: depositGoal.id, p_amount: amt, p_source: "manual" });
     if (error) throw error;
-    toast.success(`৳${amt.toLocaleString()} deposited`);
+    toast.success(`৳${amt.toLocaleString()} ${t("savDeposited")}`);
     setDepositAmt(""); reload();
   };
 
@@ -204,7 +208,7 @@ function GoalsTab() {
     if (!cancelGoal) return;
     const { error } = await supabase.rpc("cancel_goal", { p_goal_id: cancelGoal.id });
     if (error) throw error;
-    toast.success("Goal cancelled");
+    toast.success(t("savGoalCancelled"));
     reload();
   };
 
@@ -212,7 +216,7 @@ function GoalsTab() {
     if (!withdrawGoal) return;
     const { error } = await supabase.rpc("withdraw_completed_goal", { p_goal_id: withdrawGoal.id });
     if (error) throw error;
-    toast.success("Withdrawn to wallet");
+    toast.success(t("savWithdrawnToWallet"));
     reload();
   };
 
@@ -221,13 +225,13 @@ function GoalsTab() {
   return (
     <div className="space-y-3">
       <Button onClick={() => setCreateOpen(true)} className="w-full h-12 rounded-[19px]">
-        <Plus className="w-4 h-4 mr-2" />Create New Goal
+        <Plus className="w-4 h-4 mr-2" />{t("savCreateNewGoal")}
       </Button>
 
       {activeGoals.length === 0 && (
         <div className="text-center py-10 text-sm text-muted-foreground">
           <Target className="w-10 h-10 mx-auto mb-2 opacity-40" />
-          No savings goals yet. Create your first goal.
+          {t("savNoGoalsYet")}
         </div>
       )}
 
@@ -258,18 +262,18 @@ function GoalsTab() {
               {g.status === "active" && (
                 <Button size="sm" variant="secondary" className="rounded-full"
                   onClick={() => { setDepositGoal(g); setDepositAmt(""); }}>
-                  <Plus className="w-3 h-3 mr-1" />Deposit
+                  <Plus className="w-3 h-3 mr-1" />{t("savDeposit")}
                 </Button>
               )}
               {g.status === "completed" && (
                 <Button size="sm" className="rounded-full" onClick={() => setWithdrawGoal(g)}>
-                  Withdraw
+                  {t("savWithdraw")}
                 </Button>
               )}
               {g.status === "active" && (
                 <Button size="sm" variant="ghost" className="rounded-full text-destructive"
                   onClick={() => setCancelGoal(g)} disabled={totalLock > 0}>
-                  {totalLock > 0 ? <><Lock className="w-3 h-3 mr-1" />{totalLock}d</> : "Cancel"}
+                  {totalLock > 0 ? <><Lock className="w-3 h-3 mr-1" />{totalLock}d</> : t("savCancel")}
                 </Button>
               )}
             </div>
@@ -280,7 +284,7 @@ function GoalsTab() {
       {/* Create goal sheet */}
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
         <SheetContent side="bottom" className="rounded-t-[19px]">
-          <SheetHeader><SheetTitle>New Savings Goal</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{t("savNewSavingsGoal")}</SheetTitle></SheetHeader>
           <div className="space-y-4 mt-4">
             <div className="flex gap-2 overflow-x-auto pb-1">
               {EMOJIS.map(e => (
@@ -288,57 +292,57 @@ function GoalsTab() {
                   className={`text-2xl w-12 h-12 rounded-full shrink-0 ${emoji === e ? "bg-primary/15 ring-2 ring-primary" : "bg-muted"}`}>{e}</button>
               ))}
             </div>
-            <Input placeholder="Goal name (e.g. Hajj Fund)" value={name} onChange={e => setName(e.target.value)} maxLength={40} className="rounded-[14px]" />
-            <Input type="number" inputMode="numeric" placeholder="Target amount (৳)" value={target} onChange={e => setTarget(e.target.value)} className="rounded-[14px]" />
-            <Input type="number" inputMode="numeric" placeholder="Opening deposit (optional)" value={openingDeposit} onChange={e => setOpeningDeposit(e.target.value)} className="rounded-[14px]" />
+            <Input placeholder={t("savGoalNamePlaceholder")} value={name} onChange={e => setName(e.target.value)} maxLength={40} className="rounded-[14px]" />
+            <Input type="number" inputMode="numeric" placeholder={t("savTargetAmount")} value={target} onChange={e => setTarget(e.target.value)} className="rounded-[14px]" />
+            <Input type="number" inputMode="numeric" placeholder={t("savOpeningDeposit")} value={openingDeposit} onChange={e => setOpeningDeposit(e.target.value)} className="rounded-[14px]" />
             <Button className="w-full rounded-[14px]"
               disabled={!name.trim() || !(parseFloat(target) > 0)}
               onClick={() => { setCreateOpen(false); setConfirmCreate(true); }}>
-              Continue
+              {t("savContinue")}
             </Button>
           </div>
         </SheetContent>
       </Sheet>
 
       <ConfirmSheet open={confirmCreate} onClose={() => setConfirmCreate(false)}
-        title="Confirm new goal"
+        title={t("savConfirmNewGoal")}
         summary={
           <>
             <div className="flex justify-between"><span>{emoji} {name}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Target</span><span>৳{parseFloat(target || "0").toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Opening deposit</span><span>৳{parseFloat(openingDeposit || "0").toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Lock-in</span><span>60 days</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savTarget")}</span><span>৳{parseFloat(target || "0").toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savOpeningDepositShort")}</span><span>৳{parseFloat(openingDeposit || "0").toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savLockIn")}</span><span>60 {t("savDays")}</span></div>
           </>
         }
         requireTerms onConfirm={handleCreate} />
 
       <ConfirmSheet open={!!depositGoal} onClose={() => setDepositGoal(null)}
-        title={`Deposit to ${depositGoal?.name ?? ""}`}
+        title={`${t("savDepositTo")} ${depositGoal?.name ?? ""}`}
         summary={
           <div className="space-y-3">
-            <Input type="number" inputMode="numeric" placeholder="Amount (৳)" value={depositAmt}
+            <Input type="number" inputMode="numeric" placeholder={t("savAmountField")} value={depositAmt}
               onChange={e => setDepositAmt(e.target.value)} className="rounded-[14px]" />
           </div>
         }
         onConfirm={handleDeposit} />
 
       <ConfirmSheet open={!!cancelGoal} onClose={() => setCancelGoal(null)}
-        title="Cancel goal"
-        warning="Your saved amount will be refunded to your wallet. This cannot be undone."
+        title={t("savCancelGoal")}
+        warning={t("savCancelWarning")}
         summary={
           <>
             <div className="flex justify-between"><span>{cancelGoal?.emoji} {cancelGoal?.name}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Refund</span><span>৳{Number(cancelGoal?.saved_amount ?? 0).toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savRefund")}</span><span>৳{Number(cancelGoal?.saved_amount ?? 0).toLocaleString()}</span></div>
           </>
         }
         onConfirm={handleCancel} />
 
       <ConfirmSheet open={!!withdrawGoal} onClose={() => setWithdrawGoal(null)}
-        title="Withdraw completed goal"
+        title={t("savWithdrawCompleted")}
         summary={
           <>
             <div className="flex justify-between"><span>{withdrawGoal?.emoji} {withdrawGoal?.name}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Withdraw to wallet</span><span>৳{Number(withdrawGoal?.saved_amount ?? 0).toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savWithdrawToWallet")}</span><span>৳{Number(withdrawGoal?.saved_amount ?? 0).toLocaleString()}</span></div>
           </>
         }
         onConfirm={handleWithdraw} />
@@ -350,6 +354,7 @@ function GoalsTab() {
 // DPS tab
 // ─────────────────────────────────────────────────────────────────────────────
 function DpsTab() {
+  const { t } = useI18n();
   const { goals, plans, missed, reload } = useSavings();
   const [createOpen, setCreateOpen] = useState(false);
   const [confirmCreate, setConfirmCreate] = useState(false);
@@ -520,7 +525,7 @@ function DpsTab() {
                     {FREQS.map(f => (
                       <button key={f.value} onClick={() => setFreq(f.value)}
                         className={`h-10 rounded-[14px] text-sm ${freq === f.value ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                        {f.label}
+                        {t(f.labelKey)}
                       </button>
                     ))}
                   </div>
@@ -605,6 +610,7 @@ function DpsTab() {
 // Gold tab
 // ─────────────────────────────────────────────────────────────────────────────
 function GoldTab() {
+  const { t } = useI18n();
   const { gold, reload } = useSavings();
   const { price22k, price24k, updatedAt, loading: priceLoading, refresh } = useGoldPrice();
   const [karat, setKarat] = useState<"22k" | "24k">(22 === 22 ? "22k" : "24k");
@@ -698,6 +704,7 @@ function GoldTab() {
 // Stocks tab
 // ─────────────────────────────────────────────────────────────────────────────
 function StocksTab() {
+  const { t } = useI18n();
   const { stocks: held, reload } = useSavings();
   const { stocks: live, refresh, updatedAt, loading: priceLoading } = useStockPrices();
   const [symbol, setSymbol] = useState<string>("");

@@ -129,10 +129,10 @@ const DonationsPage = () => {
 
   useEffect(() => {
     if (!kycLoading && kycStatus !== "verified") {
-      toast.error("Please complete KYC verification to use this feature.");
+      toast.error(t("giftCardsKycRequired"));
       navigate("/");
     }
-  }, [kycLoading, kycStatus, navigate]);
+  }, [kycLoading, kycStatus, navigate, t]);
 
   
 
@@ -140,8 +140,8 @@ const DonationsPage = () => {
 
   const handleAmountNext = () => {
     const num = parseFloat(amount);
-    if (!num || num < 10) { toast.error("Minimum donation is ৳10"); return; }
-    if (num > 100000) { toast.error("Maximum donation is ৳100,000"); return; }
+    if (!num || num < 10) { toast.error(t("donMinAmount")); return; }
+    if (num > 100000) { toast.error(t("donMaxAmount")); return; }
     setPin(""); setStep("pin");
   };
 
@@ -150,9 +150,8 @@ const DonationsPage = () => {
     setLoading(true);
     try {
       const valid = await verifyPin(pin);
-      if (!valid) { toast.error("Incorrect PIN"); setPin(""); setLoading(false); return; }
+      if (!valid) { toast.error(t("donIncorrectPin")); setPin(""); setLoading(false); return; }
       const num = parseFloat(amount);
-      const desc = `Donation: ${selectedCause!.name}${message ? ` — ${message}` : ""}`;
       const emoji = CAUSE_EMOJI[selectedCause!.name] || "❤️";
 
       const { error } = await supabase.rpc("process_donation" as any, {
@@ -167,17 +166,19 @@ const DonationsPage = () => {
       if (error) throw error;
 
       const now = new Date();
+      const i18nName = CAUSE_I18N[selectedCause!.id]?.name ?? selectedCause!.name;
+      const freqLabel = frequency === "weekly" ? t("donWeekly") : frequency === "yearly" ? t("donYearly") : t("donMonthly");
       setReceiptData({
-        title: "Donation Receipt",
+        title: t("donReceipt"),
         amount: `৳${num.toLocaleString()}`,
         gradient: `bg-gradient-to-r ${selectedCause!.gradient}`,
         rows: [
-          { label: "Cause", value: selectedCause!.name },
-          { label: "Amount", value: `৳${num.toLocaleString()}` },
-          { label: "Date", value: format(now, "dd MMM yyyy, hh:mm a") },
-          ...(isAnonymous ? [{ label: "Identity", value: "Anonymous" }] : []),
-          ...(isRecurring ? [{ label: "Recurring", value: frequency === "weekly" ? "Weekly" : frequency === "yearly" ? "Yearly" : "Monthly" }] : []),
-          ...(message ? [{ label: "Message", value: message }] : []),
+          { label: t("donCause"), value: i18nName },
+          { label: t("amount"), value: `৳${num.toLocaleString()}` },
+          { label: t("date"), value: format(now, "dd MMM yyyy, hh:mm a") },
+          ...(isAnonymous ? [{ label: t("donIdentity"), value: t("donAnonymousBadge") }] : []),
+          ...(isRecurring ? [{ label: t("donRecurringLabel"), value: freqLabel }] : []),
+          ...(message ? [{ label: t("donMessage"), value: message }] : []),
         ],
         txnId: `DON-${selectedCause!.id.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
       });
@@ -191,7 +192,7 @@ const DonationsPage = () => {
       fetchHistory();
       if (isRecurring) fetchRecurring();
     } catch (e: any) {
-      toast.error(e.message || "Donation failed");
+      toast.error(e.message || t("donFailed"));
       setPin("");
     } finally {
       setLoading(false);
@@ -201,13 +202,13 @@ const DonationsPage = () => {
   const toggleRecurringActive = async (id: string, currentActive: boolean) => {
     await supabase.from("recurring_donations").update({ is_active: !currentActive, updated_at: new Date().toISOString() }).eq("id", id);
     setRecurringList(prev => prev.map(r => r.id === id ? { ...r, is_active: !currentActive } : r));
-    toast.success(!currentActive ? "Schedule resumed" : "Schedule paused");
+    toast.success(!currentActive ? t("donScheduleResumed") : t("donSchedulePaused"));
   };
 
   const deleteRecurring = async (id: string) => {
     await supabase.from("recurring_donations").delete().eq("id", id);
     setRecurringList(prev => prev.filter(r => r.id !== id));
-    toast.success("Schedule deleted");
+    toast.success(t("donScheduleDeleted"));
   };
 
   const resetFlow = () => {
@@ -314,14 +315,14 @@ const DonationsPage = () => {
                    <div className="flex flex-col items-center gap-1">
                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${selectedCause.gradient} text-white text-sm font-medium`}>
                        <selectedCause.icon size={16} />
-                       {selectedCause.name}
+                       {CAUSE_I18N[selectedCause.id]?.name ?? selectedCause.name}
                      </div>
-                     <button onClick={() => { setStep("cause"); setSelectedCause(null); }} className="text-[11px] text-muted-foreground hover:text-primary transition-colors">Change cause</button>
+                     <button onClick={() => { setStep("cause"); setSelectedCause(null); }} className="text-[11px] text-muted-foreground hover:text-primary transition-colors">{t("changeCause")}</button>
                    </div>
 
                   {/* Single editable amount field */}
                   <div className="text-center py-6">
-                    <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] mb-3">Amount</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] mb-3">{t("donAmount")}</p>
                     <div className="flex items-center justify-center gap-1">
                       <span className="text-3xl font-medium text-muted-foreground/50">৳</span>
                       <input
@@ -360,13 +361,13 @@ const DonationsPage = () => {
                       onClick={() => setMsgExpanded(!msgExpanded)}
                       className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 mx-auto"
                     >
-                      {msgExpanded ? "Hide message" : "Add a message (optional)"}
+                      {msgExpanded ? t("donHideMessage") : t("donAddMessage")}
                     </button>
                     <AnimatePresence>
                       {msgExpanded && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2">
                           <textarea
-                            placeholder="Leave a kind note…"
+                            placeholder={t("donKindNote")}
                             value={message}
                             onChange={e => setMessage(e.target.value.slice(0, 200))}
                             rows={2}
@@ -382,7 +383,7 @@ const DonationsPage = () => {
                     <div className="flex items-center justify-between py-3 px-1">
                       <div className="flex items-center gap-2.5">
                         <EyeOff size={15} className="text-muted-foreground" />
-                        <span className="text-sm text-foreground">Donate anonymously</span>
+                        <span className="text-sm text-foreground">{t("donAnonymously")}</span>
                       </div>
                       <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} />
                     </div>
@@ -390,7 +391,7 @@ const DonationsPage = () => {
                     <div className="flex items-center justify-between py-3 px-1">
                       <div className="flex items-center gap-2.5">
                         <RefreshCw size={15} className="text-muted-foreground" />
-                        <span className="text-sm text-foreground">Make this recurring</span>
+                        <span className="text-sm text-foreground">{t("donMakeRecurring")}</span>
                       </div>
                       <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
                     </div>
@@ -411,7 +412,7 @@ const DonationsPage = () => {
                                   : "bg-muted/30 text-muted-foreground ring-1 ring-border/30"
                               }`}
                             >
-                              {f === "weekly" ? "Weekly" : f === "monthly" ? "Monthly" : "Yearly"}
+                              {f === "weekly" ? t("donWeekly") : f === "monthly" ? t("donMonthly") : t("donYearly")}
                             </button>
                           ))}
                         </div>
@@ -425,7 +426,7 @@ const DonationsPage = () => {
                     disabled={!amount || parseFloat(amount) < 10}
                     className={`w-full py-4 rounded-2xl font-bold text-base disabled:opacity-30 transition-all active:scale-[0.98] bg-gradient-to-r ${selectedCause.gradient} text-white shadow-xl shadow-black/10`}
                   >
-                    Continue — ৳{amount || "0"}
+                    {t("donContinue")} — ৳{amount || "0"}
                   </button>
                 </motion.div>
               )}
@@ -437,20 +438,20 @@ const DonationsPage = () => {
                   <div className="flex flex-col items-center gap-4">
                     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${selectedCause.gradient} text-white text-sm font-medium`}>
                       <selectedCause.icon size={15} />
-                      {selectedCause.name}
+                      {CAUSE_I18N[selectedCause.id]?.name ?? selectedCause.name}
                     </div>
                     <p className="text-4xl font-extrabold text-foreground tracking-tight">৳{parseFloat(amount).toLocaleString()}</p>
                     {(isAnonymous || isRecurring) && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {isAnonymous && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><EyeOff size={10} /> Anonymous</span>}
-                        {isRecurring && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><RefreshCw size={10} /> {frequency === "weekly" ? "Weekly" : frequency === "yearly" ? "Yearly" : "Monthly"}</span>}
+                        {isAnonymous && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><EyeOff size={10} /> {t("donAnonymousBadge")}</span>}
+                        {isRecurring && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><RefreshCw size={10} /> {frequency === "weekly" ? t("donWeekly") : frequency === "yearly" ? t("donYearly") : t("donMonthly")}</span>}
                       </div>
                     )}
                   </div>
 
                   {/* PIN Entry */}
                   <div onClick={() => pinRef.current?.focus()}>
-                    <p className="text-sm text-muted-foreground mb-5">Enter your 4-digit PIN</p>
+                    <p className="text-sm text-muted-foreground mb-5">{t("donEnterPin")}</p>
                     <div className="flex justify-center gap-3">
                       {[0, 1, 2, 3].map(i => (
                         <div
@@ -493,7 +494,7 @@ const DonationsPage = () => {
                     className={`w-full py-4 rounded-2xl font-bold text-base disabled:opacity-30 flex items-center justify-center gap-2 transition-all active:scale-[0.98] bg-gradient-to-r ${selectedCause.gradient} text-white shadow-xl shadow-black/10`}
                   >
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <Heart size={18} />}
-                    {loading ? "Processing…" : `Confirm ৳${parseFloat(amount).toLocaleString()}`}
+                    {loading ? t("donProcessing") : `${t("donConfirm")} ৳${parseFloat(amount).toLocaleString()}`}
                   </button>
                 </motion.div>
               )}
@@ -515,23 +516,23 @@ const DonationsPage = () => {
                   </div>
 
                   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="space-y-2">
-                    <p className="text-3xl font-extrabold text-foreground">Thank You!</p>
+                    <p className="text-3xl font-extrabold text-foreground">{t("donThankYou")}</p>
                     <p className="text-muted-foreground text-sm">
-                      You donated <span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span> to
+                      {t("donYouDonated")} <span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span> {t("donToWord")}
                     </p>
-                    <p className="text-lg font-semibold text-foreground">{selectedCause?.name}</p>
+                    <p className="text-lg font-semibold text-foreground">{selectedCause && (CAUSE_I18N[selectedCause.id]?.name ?? selectedCause.name)}</p>
                   </motion.div>
 
                   {(isAnonymous || isRecurring) && (
                     <div className="flex items-center justify-center gap-2">
                       {isAnonymous && (
                         <span className="text-xs ring-1 ring-border/40 text-muted-foreground px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <EyeOff size={11} /> Anonymous
+                          <EyeOff size={11} /> {t("donAnonymousBadge")}
                         </span>
                       )}
                       {isRecurring && (
                         <span className="text-xs ring-1 ring-primary/30 text-primary px-3 py-1.5 rounded-full flex items-center gap-1 font-medium">
-                          <RefreshCw size={11} /> {frequency === "weekly" ? "Weekly" : "Monthly"}
+                          <RefreshCw size={11} /> {frequency === "weekly" ? t("donWeekly") : t("donMonthly")}
                         </span>
                       )}
                     </div>
@@ -542,19 +543,19 @@ const DonationsPage = () => {
                       onClick={resetFlow}
                       className={`px-6 py-3 rounded-full font-semibold text-sm bg-gradient-to-r ${selectedCause?.gradient || "from-primary to-primary"} text-white shadow-lg active:scale-95 transition-transform flex items-center gap-1.5`}
                     >
-                      <Heart size={14} /> Donate Again
+                      <Heart size={14} /> {t("donDonateAgain")}
                     </button>
                     <button
                       onClick={() => navigate("/")}
                       className="px-5 py-3 rounded-full font-semibold text-sm ring-1 ring-border/40 text-foreground active:scale-95 transition-transform flex items-center gap-1.5 hover:bg-muted/30"
                     >
-                      <Home size={14} /> Home
+                      <Home size={14} /> {t("donHomeBtn")}
                     </button>
                     <button
                       onClick={() => setShareOpen(true)}
                       className="px-5 py-3 rounded-full font-semibold text-sm ring-1 ring-border/40 text-foreground active:scale-95 transition-transform flex items-center gap-1.5 hover:bg-muted/30"
                     >
-                      <Share2 size={14} /> Share
+                      <Share2 size={14} /> {t("donShareBtn")}
                     </button>
                   </div>
                 </motion.div>
@@ -571,8 +572,8 @@ const DonationsPage = () => {
                 <div className="w-14 h-14 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto mb-3">
                   <RefreshCw size={24} className="opacity-25" />
                 </div>
-                <p className="text-sm font-medium">No recurring donations</p>
-                <p className="text-xs mt-1 text-muted-foreground/60">Set one up in the Donate tab</p>
+                <p className="text-sm font-medium">{t("donNoRecurring")}</p>
+                <p className="text-xs mt-1 text-muted-foreground/60">{t("donSetupInTab")}</p>
               </div>
             ) : (
               <div className="space-y-2 mt-1">
@@ -593,8 +594,8 @@ const DonationsPage = () => {
                         <p className="text-sm font-semibold text-foreground truncate">{r.cause_name}</p>
                         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                           <CalendarClock size={11} />
-                          <span>{r.frequency === "weekly" ? "Weekly" : "Monthly"}</span>
-                          <span>· Next: {format(new Date(r.next_run_at), "dd MMM")}</span>
+                          <span>{r.frequency === "weekly" ? t("donWeekly") : t("donMonthly")}</span>
+                          <span>· {t("savNextDate")}: {format(new Date(r.next_run_at), "dd MMM")}</span>
                         </div>
                       </div>
                       <p className="text-sm font-bold text-foreground mr-1 tabular-nums">৳{r.amount}</p>
@@ -618,8 +619,8 @@ const DonationsPage = () => {
                 <div className="w-14 h-14 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto mb-3">
                   <Heart size={24} className="opacity-25" />
                 </div>
-                <p className="text-sm font-medium">No donations yet</p>
-                <p className="text-xs mt-1 text-muted-foreground/60">Your history will appear here</p>
+                <p className="text-sm font-medium">{t("donNoDonations")}</p>
+                <p className="text-xs mt-1 text-muted-foreground/60">{t("donHistoryHere")}</p>
               </div>
             ) : (
               <div className="space-y-2 mt-1">
@@ -655,7 +656,7 @@ const DonationsPage = () => {
                 onClick={() => { setLeaderboardCause(null); fetchLeaderboard(null); }}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${leaderboardCause === null ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground ring-1 ring-border/30"}`}
               >
-                All
+                {t("donAll")}
               </button>
               {CAUSES.map(c => (
                 <button
@@ -663,7 +664,7 @@ const DonationsPage = () => {
                   onClick={() => { setLeaderboardCause(c.name); fetchLeaderboard(c.name); }}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${leaderboardCause === c.name ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground ring-1 ring-border/30"}`}
                 >
-                  {CAUSE_EMOJI[c.name]} {c.name}
+                  {CAUSE_EMOJI[c.name]} {CAUSE_I18N[c.id]?.name ?? c.name}
                 </button>
               ))}
             </div>
@@ -675,7 +676,7 @@ const DonationsPage = () => {
                 <div className="w-14 h-14 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto mb-3">
                   <Trophy size={24} className="opacity-25" />
                 </div>
-                <p className="text-sm font-medium">No donations recorded yet</p>
+                <p className="text-sm font-medium">{t("donNoLeaderboard")}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -705,10 +706,10 @@ const DonationsPage = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-foreground truncate">
-                          {entry.donor_name === "Anonymous" ? "🕶️ Anonymous" : entry.donor_name}
+                          {entry.donor_name === "Anonymous" ? `🕶️ ${t("donAnonymousBadge")}` : entry.donor_name}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {entry.cause_name} · {entry.donation_count} donation{entry.donation_count > 1 ? "s" : ""}
+                          {CAUSE_I18N[CAUSES.find(c => c.name === entry.cause_name)?.id ?? ""]?.name ?? entry.cause_name} · {entry.donation_count} {entry.donation_count > 1 ? t("donDonationsSuffix") : t("donDonationSingular")}
                         </p>
                       </div>
                       <p className="text-sm font-bold text-primary tabular-nums">৳{entry.total_amount.toLocaleString()}</p>
