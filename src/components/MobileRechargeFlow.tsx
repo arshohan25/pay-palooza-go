@@ -1079,7 +1079,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <AlertCircle size={12} /> {error}
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground">Min ৳10 · Max ৳2,000</p>
+                  <p className="text-xs text-muted-foreground">{t("mrAmountMinMax")}</p>
 
                   {/* Quick amount pills */}
                   <div className="flex gap-2 flex-wrap pt-1">
