@@ -902,7 +902,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                                   </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-2 shrink-0">
-                                  <p className="text-xl font-extrabold text-foreground">৳{pack.price}</p>
+                                  <p className="text-xl font-extrabold text-foreground">৳{fmtAmt(pack.price)}</p>
                                   <div
                                     className="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
                                     style={sel
