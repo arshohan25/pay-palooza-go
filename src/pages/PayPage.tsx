@@ -551,15 +551,15 @@ const PayPage = () => {
               className="px-6 pb-6 space-y-5 text-center">
               <StepBar current="otp" />
               <div className="text-center">
-                <p className="text-sm font-bold text-foreground">Enter verification code</p>
-                <p className="text-[11px] text-muted-foreground/60 mt-1">Sent to {phone}</p>
+                <p className="text-sm font-bold text-foreground">{t("ppEnterVerificationCode")}</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1">{t("ppSentTo")} {phone}</p>
               </div>
               <OtpInput value={otp} onChange={setOtp} />
-              {devOtp && <p className="text-[10px] text-center text-muted-foreground/40 font-mono">Dev OTP: {devOtp}</p>}
+              {devOtp && <p className="text-[10px] text-center text-muted-foreground/40 font-mono">{t("ppDevOtp")}: {devOtp}</p>}
               {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
               <button onClick={() => { setStep("phone"); setOtp(""); setErrorMsg(""); }}
                 className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground py-1 active:scale-[0.97] transition-all">
-                <ArrowLeft size={12} /> Change number
+                <ArrowLeft size={12} /> {t("ppChangeNumber")}
               </button>
             </motion.div>
           )}
