@@ -12,20 +12,41 @@
  * without editing source:
  *   I18N_BN_WHITELIST            comma-sep extra whole-word allow-list
  *   I18N_BN_IGNORE_PATTERNS      comma-sep extra regex sources (flags: gi)
+ *                                "name=source" or just "source"
  *   I18N_BN_WORD_PATTERN         regex source for what counts as a "word"
  *                                (default: [A-Za-z][A-Za-z'&]{2,})
  *   I18N_BN_MIN_WORD_LEN         min length for a token to be flagged (default 3)
+ *   I18N_BN_DEBUG                "1" to print per-text trace + summary
  */
+
+export interface NamedPattern {
+  name: string;
+  re: RegExp;
+}
 
 export interface DetectorConfig {
   /** Whole-word allow-list, compared lowercased. */
   whitelist: Set<string>;
-  /** Regexes whose matches are stripped from input before scanning. */
-  ignorePatterns: RegExp[];
+  /** Named regexes whose matches are stripped from input before scanning. */
+  ignorePatterns: NamedPattern[];
   /** What counts as an English-looking word. Must be /g. */
   wordPattern: RegExp;
   /** Minimum length to be considered (after stripping). */
   minWordLen: number;
+  /** When true, callers should record/print debug traces. */
+  debug: boolean;
+}
+
+export interface InspectResult {
+  text: string;
+  /** Pattern name → matched substrings that were stripped. */
+  ignored: Record<string, string[]>;
+  /** Whitelisted whole-word tokens that were dropped. */
+  whitelisted: string[];
+  /** Tokens that triggered failure (real English copy). */
+  offenders: string[];
+  /** Residue after stripping, useful for eyeballing what survived. */
+  residue: string;
 }
 
 const DEFAULT_WHITELIST = [
