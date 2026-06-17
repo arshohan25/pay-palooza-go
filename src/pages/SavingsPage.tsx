@@ -724,8 +724,8 @@ function StocksTab() {
   const holding = held.find(h => h.symbol === symbol);
 
   const handleSubmit = async () => {
-    if (!selected) throw new Error("Pick a stock");
-    if (!(quantity > 0)) throw new Error("Enter quantity");
+    if (!selected) throw new Error(t("savPickStock"));
+    if (!(quantity > 0)) throw new Error(t("savEnterQuantity"));
     if (mode === "buy") {
       const { error } = await supabase.rpc("buy_stock", { p_symbol: selected.symbol, p_name: selected.name, p_quantity: quantity, p_price: price });
       if (error) throw error;
@@ -733,7 +733,7 @@ function StocksTab() {
       const { error } = await supabase.rpc("sell_stock", { p_symbol: selected.symbol, p_quantity: quantity, p_price: price });
       if (error) throw error;
     }
-    toast.success(`${mode === "buy" ? "Bought" : "Sold"} ${quantity} ${selected.symbol}`);
+    toast.success(`${mode === "buy" ? t("savBoughtPrefix") : t("savSoldPrefix")} ${quantity} ${selected.symbol}`);
     setQty(""); reload();
   };
 
@@ -741,7 +741,7 @@ function StocksTab() {
     <div className="space-y-3">
       <div className="rounded-[19px] bg-gradient-to-br from-blue-500/15 to-indigo-600/10 border border-blue-500/30 p-4">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2"><LineChart className="w-4 h-4 text-blue-500" /><span className="text-sm font-semibold">Halal Equities (DSE)</span></div>
+          <div className="flex items-center gap-2"><LineChart className="w-4 h-4 text-blue-500" /><span className="text-sm font-semibold">{t("savHalalEquities")}</span></div>
           <button onClick={refresh} className="text-xs text-muted-foreground flex items-center gap-1">
             {priceLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
             {updatedAt ? new Date(updatedAt).toLocaleTimeString() : "—"}
@@ -761,10 +761,10 @@ function StocksTab() {
 
       {holding && (
         <div className="rounded-[19px] bg-card border border-border p-4 text-sm">
-          <div className="text-xs text-muted-foreground mb-1">Your {holding.symbol} holdings</div>
-          <div className="flex justify-between"><span>Quantity</span><span className="font-semibold">{holding.quantity}</span></div>
-          <div className="flex justify-between"><span>Avg buy</span><span>৳{Number(holding.avg_buy_price).toLocaleString()}</span></div>
-          <div className="flex justify-between"><span>Current value</span><span className="font-semibold text-blue-500">৳{(Number(holding.quantity) * price).toLocaleString()}</span></div>
+          <div className="text-xs text-muted-foreground mb-1">{t("savYourHoldings")} {holding.symbol} {t("savHoldingsSuffix")}</div>
+          <div className="flex justify-between"><span>{t("savQuantity")}</span><span className="font-semibold">{holding.quantity}</span></div>
+          <div className="flex justify-between"><span>{t("savAvgBuy")}</span><span>৳{Number(holding.avg_buy_price).toLocaleString()}</span></div>
+          <div className="flex justify-between"><span>{t("savCurrentValue")}</span><span className="font-semibold text-blue-500">৳{(Number(holding.quantity) * price).toLocaleString()}</span></div>
         </div>
       )}
 
@@ -772,32 +772,32 @@ function StocksTab() {
         <div className="grid grid-cols-2 gap-2">
           {(["buy","sell"] as const).map(m => (
             <button key={m} onClick={() => setMode(m)}
-              className={`h-10 rounded-[14px] text-sm font-semibold capitalize ${mode === m ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-              {m}
+              className={`h-10 rounded-[14px] text-sm font-semibold ${mode === m ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+              {m === "buy" ? t("savBuyAction") : t("savSellAction")}
             </button>
           ))}
         </div>
-        <Input type="number" inputMode="numeric" placeholder={`Quantity (${selected?.symbol ?? "—"})`} value={qty} onChange={e => setQty(e.target.value)} className="rounded-[14px]" />
+        <Input type="number" inputMode="numeric" placeholder={`${t("savQuantity")} (${selected?.symbol ?? "—"})`} value={qty} onChange={e => setQty(e.target.value)} className="rounded-[14px]" />
         <div className="text-xs space-y-1 bg-muted/40 rounded-[14px] p-3">
-          <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>৳{subtotal.toLocaleString()}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Brokerage</span><span>৳{brok}</span></div>
-          <div className="flex justify-between font-semibold pt-1 border-t border-border/60"><span>{mode === "buy" ? "You pay" : "You receive"}</span><span>৳{total.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">{t("savSubtotal")}</span><span>৳{subtotal.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">{t("savBrokerage")}</span><span>৳{brok}</span></div>
+          <div className="flex justify-between font-semibold pt-1 border-t border-border/60"><span>{mode === "buy" ? t("savYouPay") : t("savYouReceive")}</span><span>৳{total.toLocaleString()}</span></div>
         </div>
         <Button className="w-full rounded-[14px]" disabled={!(quantity > 0) || !selected} onClick={() => setConfirmOpen(true)}>
-          {mode === "buy" ? "Buy stock" : "Sell stock"}
+          {mode === "buy" ? t("savBuyStock") : t("savSellStock")}
         </Button>
       </div>
 
       <ConfirmSheet open={confirmOpen} onClose={() => setConfirmOpen(false)}
-        title={`${mode === "buy" ? "Buy" : "Sell"} ${quantity} ${selected?.symbol}`}
+        title={`${mode === "buy" ? t("savBuyAction") : t("savSellAction")} ${quantity} ${selected?.symbol}`}
         summary={
           <>
-            <div className="flex justify-between"><span className="text-muted-foreground">Price</span><span>৳{price.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Brokerage</span><span>৳{brok}</span></div>
-            <div className="flex justify-between font-semibold"><span>{mode === "buy" ? "You pay" : "You receive"}</span><span>৳{total.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savPriceShort")}</span><span>৳{price.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savBrokerage")}</span><span>৳{brok}</span></div>
+            <div className="flex justify-between font-semibold"><span>{mode === "buy" ? t("savYouPay") : t("savYouReceive")}</span><span>৳{total.toLocaleString()}</span></div>
           </>
         }
-        requireTerms termsText="I confirm this is a Sharia-compliant DSE listing and accept that stock prices fluctuate."
+        requireTerms termsText={t("savStockTerms")}
         onConfirm={handleSubmit} />
     </div>
   );
