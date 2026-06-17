@@ -427,7 +427,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             <button
               type="button"
               onClick={goBack}
-              aria-label="Go back"
+              aria-label={t("coGoBack")}
               className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ChevronLeft size={20} aria-hidden="true" />
@@ -443,7 +443,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             aria-valuemin={0}
             aria-valuemax={STEPS.length}
             aria-valuenow={stepIndex + 1}
-            aria-label={`Step ${stepIndex + 1} of ${STEPS.length}`}
+            aria-label={t("coStepOf").replace("{n}", String(stepIndex + 1)).replace("{total}", String(STEPS.length))}
           >
             <motion.div
               className="h-full bg-white rounded-full shadow-[0_0_8px_2px_rgba(255,255,255,0.55)]"
