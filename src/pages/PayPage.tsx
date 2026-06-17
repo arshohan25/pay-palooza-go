@@ -411,7 +411,7 @@ const PayPage = () => {
             <motion.div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary"
               animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
           </div>
-          <p className="text-xs text-muted-foreground font-medium tracking-wide">Loading payment…</p>
+          <p className="text-xs text-muted-foreground font-medium tracking-wide">{t("loadingPayment")}</p>
         </motion.div>
       </div>
     );
