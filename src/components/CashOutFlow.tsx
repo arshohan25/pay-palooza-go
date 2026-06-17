@@ -327,17 +327,17 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
   const [processing, setProcessing] = useState(false);
   const handlePinConfirm = async () => {
-    if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    if (pin.length < 4) { setError(t("coEnterPin")); return; }
     if (processing) return;
     setProcessing(true);
 
     const pinValid = await verifyPin(pin);
-    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+    if (!pinValid) { setError(t("coIncorrectPin")); setPin(""); setProcessing(false); return; }
 
     const amtVal = parseFloat(amount) || 0;
     const limitCheck = await checkDailyLimit("cashout", amtVal);
     if (!limitCheck.allowed) {
-      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setError(t("coDailyLimitUsed", { used: limitCheck.used.toLocaleString(), limit: limitCheck.limit.toLocaleString() }));
       setProcessing(false);
       return;
     }
