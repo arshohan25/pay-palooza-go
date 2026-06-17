@@ -491,18 +491,18 @@ function DpsTab() {
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
         <SheetContent side="bottom" className="rounded-t-[19px] max-h-[90vh] overflow-hidden p-0">
           <ScrollArea className="max-h-[90vh]"><div className="p-5 space-y-4">
-            <SheetHeader><SheetTitle>New DPS Plan</SheetTitle></SheetHeader>
+            <SheetHeader><SheetTitle>{t("savNewDpsPlan")}</SheetTitle></SheetHeader>
 
             {eligibleGoals.length === 0 ? (
               <div className="text-sm text-muted-foreground bg-muted/40 rounded-[14px] p-3">
-                Create an active goal first to attach a DPS plan.
+                {t("savCreateActiveGoalFirst")}
               </div>
             ) : (
               <>
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Goal</label>
+                  <label className="text-xs text-muted-foreground">{t("savGoal")}</label>
                   <Select value={goalId} onValueChange={setGoalId}>
-                    <SelectTrigger className="rounded-[14px]"><SelectValue placeholder="Pick a goal" /></SelectTrigger>
+                    <SelectTrigger className="rounded-[14px]"><SelectValue placeholder={t("savPickGoal")} /></SelectTrigger>
                     <SelectContent>
                       {eligibleGoals.map(g => <SelectItem key={g.id} value={g.id}>{g.emoji} {g.name}</SelectItem>)}
                     </SelectContent>
@@ -511,17 +511,17 @@ function DpsTab() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs text-muted-foreground">Amount (৳)</label>
+                    <label className="text-xs text-muted-foreground">{t("savAmountField")}</label>
                     <Input type="number" inputMode="numeric" value={amount} onChange={e => setAmount(e.target.value)} className="rounded-[14px]" />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground">Installments</label>
+                    <label className="text-xs text-muted-foreground">{t("savInstallments")}</label>
                     <Input type="number" inputMode="numeric" value={installments} onChange={e => setInstallments(e.target.value)} className="rounded-[14px]" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs text-muted-foreground">Frequency</label>
+                  <label className="text-xs text-muted-foreground">{t("savFrequencyLabel")}</label>
                   <div className="grid grid-cols-3 gap-2 mt-1">
                     {FREQS.map(f => (
                       <button key={f.value} onClick={() => setFreq(f.value)}
@@ -533,7 +533,7 @@ function DpsTab() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-muted-foreground">Strategy</label>
+                  <label className="text-xs text-muted-foreground">{t("savStrategy")}</label>
                   <div className="grid grid-cols-2 gap-2 mt-1">
                     {(Object.keys(STRATEGY_RETURNS) as Strategy[]).map(s => (
                       <button key={s} onClick={() => setStrategy(s)}
@@ -547,22 +547,22 @@ function DpsTab() {
 
                 <div className="rounded-[14px] bg-emerald-500/10 border border-emerald-500/30 p-3 text-sm space-y-1">
                   <div className="flex items-center gap-1 text-emerald-500 font-semibold text-xs">
-                    <TrendingUp className="w-3 h-3" />Estimated (indicative)
+                    <TrendingUp className="w-3 h-3" />{t("savEstimatedIndicative")}
                   </div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">You deposit</span><span>৳{est.totalDeposited.toLocaleString()}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Est. profit</span><span className="text-emerald-500">+৳{est.profit.toLocaleString()}</span></div>
-                  <div className="flex justify-between font-semibold"><span>Total value</span><span>৳{est.totalValue.toLocaleString()}</span></div>
-                  <div className="text-[10px] text-muted-foreground">{(est.annualRate * 100).toFixed(2)}% annualised, capped at 6%. Not guaranteed.</div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t("savYouDeposit")}</span><span>৳{est.totalDeposited.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t("savEstProfit")}</span><span className="text-emerald-500">+৳{est.profit.toLocaleString()}</span></div>
+                  <div className="flex justify-between font-semibold"><span>{t("savTotalValue")}</span><span>৳{est.totalValue.toLocaleString()}</span></div>
+                  <div className="text-[10px] text-muted-foreground">{(est.annualRate * 100).toFixed(2)}% {t("savAnnualisedNote")}</div>
                 </div>
 
                 <div className="text-[11px] text-muted-foreground flex gap-1.5">
                   <Info className="w-3 h-3 shrink-0 mt-0.5"/>
-                  First installment deducted now. DPS plan locked for 90 days.
+                  {t("savFirstInstallmentNote")}
                 </div>
 
                 <Button className="w-full rounded-[14px]" disabled={!goalId || !(parseFloat(amount) > 0)}
                   onClick={() => { setCreateOpen(false); setConfirmCreate(true); }}>
-                  Continue
+                  {t("savContinue")}
                 </Button>
               </>
             )}
