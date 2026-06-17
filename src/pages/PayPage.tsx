@@ -535,11 +535,11 @@ const PayPage = () => {
               </div>
               {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
               <Button onClick={handleSendOtp} disabled={phone.length < 11} className="w-full rounded-2xl h-11 font-bold active:scale-[0.97] transition-transform">
-                Send OTP
+                {t("sendOtp")}
               </Button>
               <button onClick={() => { setStep("ready"); setErrorMsg(""); }}
                 className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground py-1 active:scale-[0.97] transition-all">
-                <ArrowLeft size={12} /> Back
+                <ArrowLeft size={12} /> {t("ppBack")}
               </button>
             </motion.div>
           )}
