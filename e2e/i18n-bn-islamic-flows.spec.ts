@@ -128,6 +128,7 @@ test.describe("i18n bn — Islamic flows have zero English in UI", () => {
   for (const { path, name } of ROUTES) {
     test(`${name} (${path}) renders fully in Bangla`, async ({ page }) => {
       await setBangla(page);
+      const hasSession = await seedSession(page);
 
       const consoleMissing: string[] = [];
       page.on("console", (msg) => {
@@ -139,6 +140,25 @@ test.describe("i18n bn — Islamic flows have zero English in UI", () => {
       await freezeUi(page);
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(400);
+
+      // If the app redirected away from the requested route (auth gate /
+      // onboarding) and no session was seeded, skip — the test cannot
+      // exercise the flow without authentication. Provide
+      // E2E_SUPABASE_STORAGE_KEY + E2E_SUPABASE_SESSION_JSON in CI.
+      const landed = new URL(page.url()).pathname;
+      if (landed !== path && !hasSession) {
+        test.skip(
+          true,
+          `[${name}] auth-gated route redirected to ${landed}; ` +
+            `set E2E_SUPABASE_STORAGE_KEY + E2E_SUPABASE_SESSION_JSON to run.`,
+        );
+        return;
+      }
+      expect(
+        landed,
+        `[${name}] expected to render ${path} but rendered ${landed}`,
+      ).toBe(path);
+
 
       // No missing-key fallbacks anywhere on the page.
       const fallbackCount = await page.locator("text=/⟦.*⟧/").count();
