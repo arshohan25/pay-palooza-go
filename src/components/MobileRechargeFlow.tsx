@@ -141,12 +141,13 @@ const OperatorLogo = ({ op, size = "md" }: { op: OperatorDef; size?: "xs" | "sm"
 // ─── Pack Data ────────────────────────────────────────────────────────────────
 // Pack data is now fetched from the database in the component below
 // ─── Sub-category config ──────────────────────────────────────────────────────
-const SUB_CATEGORIES: { id: SubCategory; label: string; icon: typeof Wifi }[] = [
-  { id: "internet",  label: "Internet",   icon: Wifi },
-  { id: "minutes",   label: "Minutes",    icon: Phone },
-  { id: "bundles",   label: "Bundles",    icon: Package },
-  { id: "callrates", label: "Call Rates", icon: PhoneCall },
+const SUB_CATEGORIES: { id: SubCategory; labelKey: "mrSubInternet" | "mrSubMinutes" | "mrSubBundles" | "mrSubCallRates"; icon: typeof Wifi }[] = [
+  { id: "internet",  labelKey: "mrSubInternet",  icon: Wifi },
+  { id: "minutes",   labelKey: "mrSubMinutes",   icon: Phone },
+  { id: "bundles",   labelKey: "mrSubBundles",   icon: Package },
+  { id: "callrates", labelKey: "mrSubCallRates", icon: PhoneCall },
 ];
+
 
 // ─── Tag badge colour map ─────────────────────────────────────────────────────
 const TAG_COLORS: Record<string, string> = {
@@ -220,7 +221,10 @@ const PinInput = ({ pin, onChange, error, accentColor }: PinInputProps) => (
 interface MobileRechargeFlowProps { onClose: () => void; }
 
 const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const numLocale = lang === "bn" ? "bn-BD" : "en-BD";
+  const fmtAmt = (n: number, opts?: Intl.NumberFormatOptions) => n.toLocaleString(numLocale, opts);
+
   const [step, setStep]               = useState<Step>("number");
   const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("recharge"));
   const [direction, setDirection]     = useState(1);
@@ -345,8 +349,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   // Step 1 → Step 2: Continue goes straight to amount (skip packs)
   const handleNumberContinue = () => {
     const digits = phone.replace(/\D/g, "");
-    if (digits.length !== 11) { setError("Enter an 11-digit mobile number."); return; }
-    if (!detectedOp) { setError("Unable to detect operator. Check the number."); return; }
+    if (digits.length !== 11) { setError(t("mrErr11Digit")); return; }
+    if (!detectedOp) { setError(t("mrErrDetectOp")); return; }
+
     setSelectedOp(detectedOp);
     setIsPhoneDummy(false);
     // If a pack is already selected (drive pack flow), go to amount
@@ -385,7 +390,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   // Packs → Number or Amount (drive pack + dummy phone → number entry first)
   const handlePackContinue = () => {
-    if (!selectedPack) { setError("Please select a pack to continue."); return; }
+    if (!selectedPack) { setError(t("mrErrSelectPack")); return; }
     if (isPhoneDummy) {
       // Clear dummy phone so user enters real number
       setPhone("");
@@ -398,12 +403,13 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   const customAmountNum = customAmount ? parseInt(customAmount, 10) : 0;
   const effectivePrice  = customAmountNum > 0 ? customAmountNum : 0;
-  const effectiveName   = selectedPack ? selectedPack.name : "Custom Recharge";
+  const effectiveName   = selectedPack ? selectedPack.name : t("mrCustomRecharge");
 
   // Amount → PIN
   const handleAmountContinue = () => {
-    if (!customAmount || customAmountNum < 20) { setError("Enter a valid amount (min ৳20)."); return; }
-    if (customAmountNum > 1000) { setError("Maximum amount is ৳1,000."); return; }
+    if (!customAmount || customAmountNum < 20) { setError(t("mrErrValidAmountMin")); return; }
+    if (customAmountNum > 1000) { setError(t("mrErrMaxAmount")); return; }
+
     goTo("pin");
   };
 
@@ -411,21 +417,22 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const [apiStatus, setApiStatus] = useState<string | null>(null);
 
   const handlePinConfirm = async () => {
-    if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    if (pin.length < 4) { setError(t("mrErrPin4")); return; }
     if (processing) return;
     setProcessing(true);
 
     // Verify PIN
     const pinValid = await verifyPin(pin);
-    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+    if (!pinValid) { setError(t("incorrectPin")); setPin(""); setProcessing(false); return; }
 
     // Check daily limit
     const limitCheck = await checkDailyLimit("recharge", effectivePrice);
     if (!limitCheck.allowed) {
-      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setError(`${t("mrErrDailyLimit")} ${t("mrErrUsedOf")} ৳${fmtAmt(limitCheck.used)} / ৳${fmtAmt(limitCheck.limit)} ${t("mrErrOfToday")}`);
       setProcessing(false);
       return;
     }
+
 
     // Silently capture location for fraud detection
     requestLocation().catch(() => {});
@@ -436,7 +443,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     // Try real-time API recharge if operator has it enabled
     let apiProcessed = false;
     if (operator) {
-      setApiStatus(`Processing via ${operator.name} API...`);
+      setApiStatus(`${t("mrProcessingViaApi")} ${operator.name} ${t("mrApiSuffix")}`);
       try {
         const { data, error: fnErr } = await supabase.functions.invoke("process-recharge", {
           body: {
@@ -450,18 +457,19 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
         if (!fnErr && data?.success) {
           apiProcessed = data?.api_available ?? false;
           if (apiProcessed) {
-            setApiStatus("Recharge confirmed by operator");
+            setApiStatus(t("mrConfirmedByOperator"));
           }
           // Server credited cashback — show toast from server response
           if (data?.cashback_amount > 0) {
             showTxnToast({
-              type: "Drive Cashback",
-              amount: `+৳${data.cashback_amount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+              type: t("mrToastDriveCashback"),
+              amount: `+৳${fmtAmt(data.cashback_amount, { minimumFractionDigits: 2 })}`,
               gradient: "bg-gradient-to-b from-amber-500 to-yellow-500",
             });
           }
         } else if (data?.api_available && !data?.success) {
-          setApiStatus("API error, recording locally");
+          setApiStatus(t("mrApiErrorLocal"));
+
         }
       } catch {
         // Edge function unreachable — fall back silently
@@ -470,12 +478,12 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     setApiStatus(null);
 
     if (!apiProcessed) {
-      toast.error("Recharge service unavailable. Please try again later.");
+      toast.error(t("mrServiceUnavailable"));
       setProcessing(false);
       return;
     }
 
-    const packDesc = selectedPack ? selectedPack.name : `Recharge ৳${effectivePrice}`;
+    const packDesc = selectedPack ? selectedPack.name : `${t("recharge")} ৳${effectivePrice}`;
 
     const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0;
     const finalPrice = Math.max(0, effectivePrice - couponDiscVal);
@@ -487,7 +495,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       recipientPhone: phone,
       recipientName: detectedOp?.name,
       reference: txnId.current,
-      description: packDesc + " [API]" + (pendingCoupon ? ` [Coupon: ${pendingCoupon.code}]` : ""),
+      description: packDesc + " [API]" + (pendingCoupon ? ` [${t("mrCouponPrefix")}: ${pendingCoupon.code}]` : ""),
     });
 
     if (pendingCoupon) {
@@ -495,10 +503,11 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       clearPendingCoupon();
     }
     showTxnToast({
-      type: "Live Recharge",
-      amount: `৳${finalPrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+      type: t("mrToastLiveRecharge"),
+      amount: `৳${fmtAmt(finalPrice, { minimumFractionDigits: 2 })}`,
       gradient: "gradient-primary",
     });
+
     setDirection(1);
     setStep("success");
   };
@@ -582,17 +591,18 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <Package size={18} className="text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground">Selected pack</p>
+                      <p className="text-xs text-muted-foreground">{t("mrSelectedPack")}</p>
                       <p className="text-sm font-bold text-foreground truncate">{selectedPack.name}</p>
                       <p className="text-xs text-muted-foreground">{selectedPack.details} · {selectedPack.validity}</p>
                     </div>
-                    <p className="text-base font-extrabold text-primary shrink-0">৳{selectedPack.price}</p>
+                    <p className="text-base font-extrabold text-primary shrink-0">৳{fmtAmt(selectedPack.price)}</p>
+
                   </motion.div>
                 )}
 
                 {/* Phone input + continue */}
                 <div className="space-y-3">
-                  <label className="text-sm font-semibold text-foreground">{selectedPack ? "Enter recipient number" : "Mobile Number"}</label>
+                  <label className="text-sm font-semibold text-foreground">{selectedPack ? t("mrEnterRecipientNumber") : t("mrMobileNumber")}</label>
                   <div className="relative">
                     <Smartphone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -625,7 +635,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                           <>
                             <OperatorLogo op={detectedOp} size="xs" />
                             <div className="flex-1">
-                              <p className="text-[10px] text-muted-foreground leading-none">Detected operator</p>
+                              <p className="text-[10px] text-muted-foreground leading-none">{t("detectedOperator")}</p>
                               <p className="text-sm font-bold text-foreground">{detectedOp.name}</p>
                             </div>
                             <CheckCircle2 size={18} className="text-primary shrink-0" />
@@ -635,7 +645,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                             <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0">
                               <Smartphone size={16} className="text-muted-foreground" />
                             </div>
-                            <p className="text-sm text-muted-foreground">Unknown operator</p>
+                            <p className="text-sm text-muted-foreground">{t("unknownOperator")}</p>
+
                           </>
                         )}
                       </motion.div>
@@ -652,12 +663,13 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   {storedContacts.length === 0 ? null : (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Contacts</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("mrContacts")}</p>
                         <button
                           onClick={handleSyncContacts}
                           disabled={syncingContacts}
                           className="p-1.5 rounded-lg hover:bg-muted active:scale-95 transition-all"
-                          title="Sync contacts"
+                          title={t("mrSyncContacts")}
+
                         >
                           <RefreshCw size={14} className={`text-muted-foreground ${syncingContacts ? "animate-spin" : ""}`} />
                         </button>
@@ -684,7 +696,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                           </button>
                         ))}
                         {filteredStoredContacts.length === 0 && (
-                          <p className="text-xs text-muted-foreground text-center py-3">No matching contacts</p>
+                          <p className="text-xs text-muted-foreground text-center py-3">{t("mrNoMatchingContacts")}</p>
                         )}
                       </div>
                     </div>
@@ -698,7 +710,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       className="w-full h-13 rounded-2xl text-white font-bold text-base shadow-lg flex items-center justify-center gap-2 transition-all animate-fade-in"
                       style={{ background: selectedPack ? (operator ? `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` : "linear-gradient(135deg, hsl(152 73% 39%), hsl(152 75% 29%))") : "linear-gradient(135deg, hsl(152 73% 39%), hsl(152 75% 29%))", minHeight: 52 }}
                     >
-                      {selectedPack ? `Continue with ${selectedPack.name}` : "Continue"}
+                      {selectedPack ? `${t("mrContinueWith")} ${selectedPack.name}` : t("continue")}
                       <ChevronRight size={18} />
                     </motion.button>
                   )}
@@ -707,7 +719,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 {/* Operator cards — hide when a pack is already selected */}
                 {!selectedPack && (
                 <div className="space-y-2.5">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Browse Package & Special Offer</p>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("mrBrowsePackages")}</p>
                   <div className="space-y-2">
                     {OPERATORS.map((op) => (
                       <motion.button
@@ -726,7 +738,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                           {!driveHidden && (
                             <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full">
                               <Coins size={9} />
-                              Drive
+                              {t("mrDrive")}
+
                             </div>
                           )}
                           <ChevronRight size={14} className="text-muted-foreground" />
@@ -749,7 +762,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 <div className="px-4 pt-2 pb-2 flex items-center justify-between gap-3 shrink-0">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="min-w-0">
-                      <p className="text-[10px] text-muted-foreground leading-none">Recharging</p>
+                      <p className="text-[10px] text-muted-foreground leading-none">{t("recharging")}</p>
                       <p className="text-sm font-bold text-foreground truncate">{formatPhone(phone)}</p>
                     </div>
                   </div>
@@ -770,7 +783,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         }`}
                       >
                         <Flame size={14} className={offerType === "drive" ? "text-amber-500" : ""} />
-                        ⚡ Drive
+                        ⚡ {t("mrDrive")}
                       </button>
                     )}
                     <button
@@ -780,7 +793,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       }`}
                     >
                       <Package size={14} className={offerType === "regular" ? "text-primary" : ""} />
-                      Regular
+                      {t("mrRegular")}
+
                     </button>
                   </div>
 
@@ -796,7 +810,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl px-3 py-2">
                           <Coins size={14} className="text-amber-600 shrink-0" />
                           <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
-                            Drive packs earn you cashback commission credited to your wallet.
+                            {t("mrDriveExplain")}
                           </p>
                         </div>
                       </motion.div>
@@ -827,7 +841,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                               style={active ? { background: operator.brandColor } : {}}
                             >
                               <Icon size={11} />
-                              {cat.label}
+                              {t(cat.labelKey)}
                             </button>
                           );
                         })}
@@ -882,13 +896,13 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                                     {calcCashback(pack) > 0 && (
                                       <span className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full">
                                         <Coins size={9} />
-                                        Earn ৳{calcCashback(pack)} cashback
+                                        {t("mrEarnCashback")} ৳{fmtAmt(calcCashback(pack))} {t("mrCashback")}
                                       </span>
                                     )}
                                   </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-2 shrink-0">
-                                  <p className="text-xl font-extrabold text-foreground">৳{pack.price}</p>
+                                  <p className="text-xl font-extrabold text-foreground">৳{fmtAmt(pack.price)}</p>
                                   <div
                                     className="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
                                     style={sel
@@ -938,7 +952,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                                 </p>
                               </div>
                               <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                <p className="text-lg font-extrabold text-foreground">৳{pack.price}</p>
+                                <p className="text-lg font-extrabold text-foreground">৳{fmtAmt(pack.price)}</p>
                                 <div
                                   className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
                                   style={sel
@@ -956,7 +970,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
                       {offerType === "regular" && regularPacks.length === 0 && (
                         <div className="py-12 text-center text-muted-foreground text-sm">
-                          No packs available in this category.
+                          {t("mrNoPacksInCategory")}
                         </div>
                       )}
                     </motion.div>
@@ -976,10 +990,11 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <div className="flex items-center gap-2">
                         {calcCashback(selectedPack) > 0 && (
                           <span className="text-[11px] font-bold text-amber-600 flex items-center gap-0.5">
-                            <Coins size={10} />+৳{calcCashback(selectedPack)}
+                            <Coins size={10} />+৳{fmtAmt(calcCashback(selectedPack))}
                           </span>
                         )}
-                        <span className="font-extrabold text-foreground">৳{selectedPack.price}</span>
+                        <span className="font-extrabold text-foreground">৳{fmtAmt(selectedPack.price)}</span>
+
                       </div>
                     </div>
                   )}
@@ -993,7 +1008,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       color: selectedPack ? "white" : "hsl(var(--muted-foreground))"
                     }}
                   >
-                    {selectedPack ? `Continue · ৳${selectedPack.price}` : "Select a Pack"}
+                    {selectedPack ? `${t("continue")} · ৳${fmtAmt(selectedPack.price)}` : t("mrSelectAPack")}
                     {selectedPack && <ChevronRight size={18} />}
                   </motion.button>
                 </div>
@@ -1024,7 +1039,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                             <span className="text-[11px] text-foreground font-semibold">{selectedPack.name}</span>
                             {calcCashback(selectedPack) > 0 && (
                               <span className="text-[11px] font-bold text-amber-600 flex items-center gap-1">
-                                <Coins size={9} /> Earn ৳{calcCashback(selectedPack)}
+                                <Coins size={9} /> {t("mrEarnCashback")} ৳{fmtAmt(calcCashback(selectedPack))}
                               </span>
                             )}
                           </div>
@@ -1036,8 +1051,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
                 {/* Amount input */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Recharge Amount</label>
-                  <p className="text-xs text-muted-foreground">Enter any amount between ৳10 and ৳2,000</p>
+                  <label className="text-sm font-semibold text-foreground">{t("mrRechargeAmount")}</label>
+                  <p className="text-xs text-muted-foreground">{t("mrAmountRangeHelp")}</p>
+
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">৳</span>
                     <input
@@ -1063,7 +1079,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <AlertCircle size={12} /> {error}
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground">Min ৳10 · Max ৳2,000</p>
+                  <p className="text-xs text-muted-foreground">{t("mrAmountMinMax")}</p>
 
                   {/* Quick amount pills */}
                   <div className="flex gap-2 flex-wrap pt-1">
@@ -1074,7 +1090,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         className="px-3 py-1.5 rounded-xl text-xs font-bold border border-border bg-card text-foreground hover:border-primary/40 active:scale-95 transition-all"
                         style={customAmountNum === amt ? { borderColor: operator.brandColor, color: operator.brandColor } : {}}
                       >
-                        ৳{amt}
+                        ৳{fmtAmt(amt)}
                       </button>
                     ))}
                   </div>
@@ -1087,11 +1103,11 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
                 {/* Continue to PIN */}
                 {customAmountNum > 0 && customAmountNum > getBalance() && (
-                  <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                  <p className="text-center text-sm text-destructive font-medium">{t("mrInsufficientBalance")}</p>
                 )}
                 {customAmountNum > 0 && customAmountNum <= getBalance() && (customAmountNum < 20 || customAmountNum > 1000) && (
                   <p className="text-center text-sm text-destructive font-medium">
-                    {customAmountNum < 20 ? "Minimum recharge ৳20" : "Maximum recharge ৳1,000"}
+                    {customAmountNum < 20 ? t("mrMinRecharge20") : t("mrMaxRecharge1000")}
                   </p>
                 )}
                 {customAmountNum >= 20 && customAmountNum <= 1000 && customAmountNum <= getBalance() && (
@@ -1104,7 +1120,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     className="w-full h-14 rounded-2xl text-white font-bold text-base shadow-lg flex items-center justify-center gap-2"
                     style={{ background: `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` }}
                   >
-                    Continue · ৳{customAmountNum}
+                    {t("continue")} · ৳{fmtAmt(customAmountNum)}
+
                     <ChevronRight size={18} />
                   </motion.button>
                 )}
@@ -1126,23 +1143,23 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         <p className="font-extrabold text-foreground">{effectiveName}</p>
                         <p className="text-xs text-muted-foreground">{operator.name} · {formatPhone(phone)}</p>
                       </div>
-                      <p className="text-xl font-extrabold text-foreground">৳{effectivePrice}</p>
+                      <p className="text-xl font-extrabold text-foreground">৳{fmtAmt(effectivePrice)}</p>
                     </div>
                     {selectedPack && (
                       <>
                         <div className="flex justify-between text-muted-foreground">
-                          <span>Details</span>
+                          <span>{t("mrDetails")}</span>
                           <span className="font-semibold text-foreground text-right max-w-[55%]">{selectedPack.details}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
-                          <span>Validity</span>
+                          <span>{t("mrValidity")}</span>
                           <span className="font-semibold text-foreground">{selectedPack.validity}</span>
                         </div>
                         {calcCashback(selectedPack, effectivePrice) > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Drive Cashback (2%)</span>
+                            <span className="text-muted-foreground">{t("mrDriveCashback2")}</span>
                             <span className="font-bold text-amber-600 flex items-center gap-1">
-                              <Coins size={11} /> +৳{calcCashback(selectedPack, effectivePrice)}
+                              <Coins size={11} /> +৳{fmtAmt(calcCashback(selectedPack, effectivePrice))}
                             </span>
                           </div>
                         )}
@@ -1152,21 +1169,22 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <CouponSummaryLine code={pendingCoupon.code} discount={calcCouponDiscount(pendingCoupon, effectivePrice)} />
                     )}
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Service fee</span>
-                      <span className="font-semibold text-primary">Free</span>
+                      <span>{t("mrServiceFee")}</span>
+                      <span className="font-semibold text-primary">{t("mrFree")}</span>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
-                      <span>Total from balance</span>
-                      <span>৳{Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0))}</span>
+                      <span>{t("totalFromBalance")}</span>
+                      <span>৳{fmtAmt(Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0)))}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* PIN entry */}
                 <div className="space-y-1 text-center">
-                  <p className="text-sm font-semibold text-foreground">Enter your 4-digit PIN</p>
-                  <p className="text-xs text-muted-foreground">Authorize this recharge</p>
+                  <p className="text-sm font-semibold text-foreground">{t("enterPin")}</p>
+                  <p className="text-xs text-muted-foreground">{t("mrAuthorizeRecharge")}</p>
+
                 </div>
                 <PinInput
                   pin={pin}
@@ -1176,7 +1194,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 />
                 <SlideToConfirm
                   onConfirm={handlePinConfirm}
-                  label="Slide to Recharge"
+                  label={t("mrSlideToRecharge")}
                   gradient="gradient-primary"
                   disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
@@ -1200,8 +1218,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ type: "spring", stiffness: 280, damping: 22, delay: 0.15 }}
                   >
-                    <p className="text-sm font-semibold text-white/80 mb-1">Recharge Successful!</p>
-                    <p className="text-5xl font-extrabold">৳{effectivePrice}</p>
+                    <p className="text-sm font-semibold text-white/80 mb-1">{t("rechargeSuccessful")}</p>
+                    <p className="text-5xl font-extrabold">৳{fmtAmt(effectivePrice)}</p>
                     <p className="text-white/70 text-sm mt-2">{operator.name} · {formatPhone(phone)}</p>
                     {calcCashback(selectedPack, effectivePrice) > 0 && (
                       <motion.div
@@ -1211,7 +1229,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         className="mt-3 inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5"
                       >
                         <Coins size={14} className="text-amber-300" />
-                        <span className="text-sm font-bold">৳{calcCashback(selectedPack, effectivePrice)} cashback earned!</span>
+                        <span className="text-sm font-bold">৳{fmtAmt(calcCashback(selectedPack, effectivePrice))} {t("mrCashbackEarned")}</span>
+
                       </motion.div>
                     )}
                   </motion.div>
@@ -1225,60 +1244,61 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   className="flex-1 px-4 py-6 space-y-4"
                 >
                   <div className="rounded-2xl bg-card border border-border shadow-sm p-4 space-y-3 text-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Receipt</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("mrReceipt")}</p>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Transaction ID</span>
+                      <span>{t("mrTransactionId")}</span>
                       <span className="font-mono font-bold text-foreground text-xs">{txnId.current}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Date & Time</span>
+                      <span>{t("mrDateTime")}</span>
                       <span className="font-semibold text-foreground text-xs">
-                        {txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}{" "}
-                        {txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                        {txnTime.current.toLocaleDateString(numLocale, { day: "2-digit", month: "short", year: "numeric" })}{" "}
+                        {txnTime.current.toLocaleTimeString(numLocale, { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Number</span>
+                      <span>{t("mrNumber")}</span>
                       <span className="font-semibold text-foreground">{formatPhone(phone)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Operator</span>
+                      <span>{t("mrOperator")}</span>
                       <span className="font-semibold text-foreground">{operator.name}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Pack</span>
-                      <span className="font-semibold text-foreground">{selectedPack ? selectedPack.name : "Custom"}</span>
+                      <span>{t("mrPack")}</span>
+                      <span className="font-semibold text-foreground">{selectedPack ? selectedPack.name : t("mrCustom")}</span>
                     </div>
                     {selectedPack && (
                       <>
                         <div className="flex justify-between text-muted-foreground">
-                          <span>Details</span>
+                          <span>{t("mrDetails")}</span>
                           <span className="font-semibold text-foreground text-right max-w-[55%]">{selectedPack.details}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
-                          <span>Validity</span>
+                          <span>{t("mrValidity")}</span>
                           <span className="font-semibold text-foreground">{selectedPack.validity}</span>
                         </div>
                         {calcCashback(selectedPack, effectivePrice) > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Drive Cashback (2%)</span>
-                            <span className="font-bold text-amber-600">+৳{calcCashback(selectedPack, effectivePrice)}</span>
+                            <span className="text-muted-foreground">{t("mrDriveCashback2")}</span>
+                            <span className="font-bold text-amber-600">+৳{fmtAmt(calcCashback(selectedPack, effectivePrice))}</span>
                           </div>
                         )}
                       </>
                     )}
                      <div className="flex justify-between text-muted-foreground">
-                      <span>Service fee</span>
-                      <span className="font-semibold text-primary">Free</span>
+                      <span>{t("mrServiceFee")}</span>
+                      <span className="font-semibold text-primary">{t("mrFree")}</span>
                     </div>
                     {pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 && (
                       <CouponSummaryLine code={pendingCoupon.code} discount={calcCouponDiscount(pendingCoupon, effectivePrice)} />
                     )}
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
-                      <span>Deducted from balance</span>
-                      <span>৳{Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0))}</span>
+                      <span>{t("mrDeductedFromBalance")}</span>
+                      <span>৳{fmtAmt(Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0)))}</span>
+
                     </div>
                   </div>
 
@@ -1288,13 +1308,14 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     className="w-full h-12 rounded-2xl text-white font-bold shadow-lg"
                     style={{ background: `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` }}
                   >
-                    Done
+                    {t("done")}
                   </motion.button>
                   <button
                     onClick={() => setShowShare(true)}
                     className="w-full h-12 rounded-2xl border border-border bg-card text-foreground font-semibold text-sm"
                   >
-                    Share Receipt
+                    {t("shareReceipt")}
+
                   </button>
                 </motion.div>
               </div>
@@ -1309,25 +1330,26 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
         open={showShare}
         onClose={() => setShowShare(false)}
         receipt={{
-          title: "Recharge Successful",
-          amount: `৳${effectivePrice}`,
+          title: t("mrShareSuccessTitle"),
+          amount: `৳${fmtAmt(effectivePrice)}`,
           gradient: "gradient-primary",
           txnId: txnId.current,
           rows: [
-            { label: "Number",   value: formatPhone(phone) },
-            { label: "Operator", value: operator?.name ?? "" },
-            { label: "Pack",     value: selectedPack ? selectedPack.name : "Custom" },
+            { label: t("mrNumber"),   value: formatPhone(phone) },
+            { label: t("mrOperator"), value: operator?.name ?? "" },
+            { label: t("mrPack"),     value: selectedPack ? selectedPack.name : t("mrCustom") },
             ...(selectedPack ? [
-              { label: "Details",  value: selectedPack.details },
-              { label: "Validity", value: selectedPack.validity },
-              ...(selectedPack.cashback ? [{ label: "Cashback", value: `+৳${selectedPack.cashback}` }] : []),
+              { label: t("mrDetails"),  value: selectedPack.details },
+              { label: t("mrValidity"), value: selectedPack.validity },
+              ...(selectedPack.cashback ? [{ label: t("mrCashback"), value: `+৳${fmtAmt(selectedPack.cashback)}` }] : []),
             ] : []),
-            ...(pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 ? [{ label: `🎟️ Coupon (${pendingCoupon.code})`, value: `-৳${calcCouponDiscount(pendingCoupon, effectivePrice).toFixed(2)}` }] : []),
-            { label: "Fee",      value: "Free" },
-            { label: "Deducted", value: `৳${Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0))}` },
-            { label: "Date",     value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
-            { label: "Time",     value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+            ...(pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 ? [{ label: `🎟️ ${t("mrCouponPrefix")} (${pendingCoupon.code})`, value: `-৳${fmtAmt(calcCouponDiscount(pendingCoupon, effectivePrice), { minimumFractionDigits: 2 })}` }] : []),
+            { label: t("mrServiceFee"), value: t("mrFree") },
+            { label: t("mrDeductedFromBalance"), value: `৳${fmtAmt(Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0)))}` },
+            { label: t("date"),     value: txnTime.current.toLocaleDateString(numLocale, { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: t("time"),     value: txnTime.current.toLocaleTimeString(numLocale, { hour: "2-digit", minute: "2-digit", hour12: true }) },
           ],
+
         }}
       />
     </motion.div>
