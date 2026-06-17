@@ -19,6 +19,8 @@ export default function CashOutHarness() {
   const recipient = useRecipientField("agentId");
   const [amount, setAmount] = useState("");
   const [amountTouched, setAmountTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [txnId, setTxnId] = useState<string | null>(null);
 
   const parsedAmount = useMemo(() => {
     const n = Number(amount.replace(/[^\d.]/g, ""));
@@ -116,11 +118,47 @@ export default function CashOutHarness() {
       )}
 
       {step === "confirm" && (
-        <div style={{ marginTop: 16 }}>
+        <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
           <h2 data-testid="confirm-heading">Confirm Cash-Out</h2>
           <p>
             Send <span data-testid="confirm-amount">৳{parsedAmount}</span> to{" "}
             <span data-testid="confirm-recipient">{recipient.normalized}</span>
+          </p>
+          <button
+            data-testid="confirm-submit"
+            disabled={submitting}
+            onClick={async () => {
+              setSubmitting(true);
+              // Simulate the async submit the real flow would do.
+              await new Promise((r) => setTimeout(r, 50));
+              const id =
+                "TXN-" + Math.random().toString(36).slice(2, 10).toUpperCase();
+              setTxnId(id);
+              setSubmitting(false);
+              setStep("success");
+            }}
+            style={{
+              padding: 10,
+              borderRadius: 6,
+              background: submitting ? "#94a3b8" : "#16a34a",
+              color: "white",
+              border: 0,
+            }}
+          >
+            {submitting ? "Submitting…" : "Submit"}
+          </button>
+        </div>
+      )}
+
+      {step === "success" && (
+        <div style={{ marginTop: 16 }} role="status">
+          <h2 data-testid="success-heading">Cash-Out Successful</h2>
+          <p>
+            Sent <span data-testid="success-amount">৳{parsedAmount}</span> to{" "}
+            <span data-testid="success-recipient">{recipient.normalized}</span>
+          </p>
+          <p>
+            Transaction ID: <span data-testid="success-txn">{txnId}</span>
           </p>
         </div>
       )}
