@@ -293,7 +293,7 @@ const PayPage = () => {
         setStep("ready");
       } catch (e) {
         console.error("resolve_payment_merchant exception:", e);
-        setErrorMsg("Something went wrong. Please try again.");
+        setErrorMsg(t("ppSomethingWrong"));
         setStep("error");
       }
     })();
