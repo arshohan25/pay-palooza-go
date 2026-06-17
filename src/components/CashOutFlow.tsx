@@ -965,7 +965,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                             haptics.success();
                           }}
                         >
-                          {submittingRating ? "Submitting…" : "Submit Rating"}
+                          {submittingRating ? t("coSubmittingRating") : t("coSubmitRating")}
                         </Button>
                       )}
                     </>
