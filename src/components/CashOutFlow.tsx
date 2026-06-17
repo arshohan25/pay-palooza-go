@@ -317,9 +317,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
-    if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
-    if (val < 30) { setError("Minimum cash out amount is ৳30."); return; }
-    if (val > 50000) { setError("Maximum cash out per day is ৳50,000."); return; }
+    if (!amount || isNaN(val) || val <= 0) { setError(t("coEnterValidAmount")); return; }
+    if (val < 30) { setError(t("coMinCashOut")); return; }
+    if (val > 50000) { setError(t("coMaxCashOut")); return; }
     goTo("review");
   };
 
