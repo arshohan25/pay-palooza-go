@@ -24,8 +24,8 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        // Allow CI/sandbox to point at a system-installed Chromium
-        // (Playwright's bundled browser is downloaded via `npx playwright install`).
+        // `Desktop Chrome` pins channel: "chrome"; clear it so executablePath wins.
+        channel: undefined,
         launchOptions: process.env.PLAYWRIGHT_CHROMIUM_PATH
           ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
           : undefined,
