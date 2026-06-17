@@ -1051,8 +1051,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
                 {/* Amount input */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Recharge Amount</label>
-                  <p className="text-xs text-muted-foreground">Enter any amount between ৳10 and ৳2,000</p>
+                  <label className="text-sm font-semibold text-foreground">{t("mrRechargeAmount")}</label>
+                  <p className="text-xs text-muted-foreground">{t("mrAmountRangeHelp")}</p>
+
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">৳</span>
                     <input
