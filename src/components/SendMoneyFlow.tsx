@@ -702,7 +702,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     <input
                       type="text"
                       inputMode="text"
-                      placeholder="Name or Number or Wallet ID"
+                      placeholder={t("smNameNumberWallet")}
                       value={inputVal}
                       onChange={(e) => handleInputChange(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
