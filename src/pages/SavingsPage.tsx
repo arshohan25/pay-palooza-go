@@ -571,35 +571,35 @@ function DpsTab() {
       </Sheet>
 
       <ConfirmSheet open={confirmCreate} onClose={() => setConfirmCreate(false)}
-        title="Confirm DPS plan"
+        title={t("savConfirmDpsPlan")}
         summary={
           <>
-            <div className="flex justify-between"><span className="text-muted-foreground">Goal</span><span>{goals.find(g => g.id === goalId)?.name}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Plan</span><span>৳{parseFloat(amount || "0").toLocaleString()} · {freq} · {installments}x</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">First installment now</span><span>৳{parseFloat(amount || "0").toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Est. total value</span><span className="text-emerald-500">৳{est.totalValue.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savGoal")}</span><span>{goals.find(g => g.id === goalId)?.name}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savPlanShort")}</span><span>৳{parseFloat(amount || "0").toLocaleString()} · {freq === "daily" ? t("savDailyLabel") : freq === "weekly" ? t("savWeeklyLabel") : t("savMonthlyLabel")} · {installments}x</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savFirstInstNow")}</span><span>৳{parseFloat(amount || "0").toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savEstTotalValue")}</span><span className="text-emerald-500">৳{est.totalValue.toLocaleString()}</span></div>
           </>
         }
-        warning="DPS plans are locked for 90 days. Missing installments increases your missed counter."
+        warning={t("savDpsLockWarning")}
         requireTerms onConfirm={handleCreatePlan} />
 
       <ConfirmSheet open={!!collectPlan} onClose={() => setCollectPlan(null)}
-        title="Collect installment now"
+        title={t("savCollectInstallmentNow")}
         summary={
           <>
-            <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span>৳{Number(collectPlan?.amount ?? 0).toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Goal</span><span>{goals.find(g => g.id === collectPlan?.goal_id)?.name}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savAmountField")}</span><span>৳{Number(collectPlan?.amount ?? 0).toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savGoal")}</span><span>{goals.find(g => g.id === collectPlan?.goal_id)?.name}</span></div>
           </>
         }
-        warning="If your wallet balance is insufficient, this run will be marked as missed."
+        warning={t("savCollectWarning")}
         onConfirm={handleCollect} />
 
       <ConfirmSheet open={!!repayMissed} onClose={() => setRepayMissed(null)}
-        title="Repay missed installment"
+        title={t("savRepayMissedInst")}
         summary={
           <>
-            <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span>৳{Number(repayMissed?.amount ?? 0).toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Due date</span><span>{repayMissed && new Date(repayMissed.due_date).toLocaleDateString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savAmountField")}</span><span>৳{Number(repayMissed?.amount ?? 0).toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("savDueDate")}</span><span>{repayMissed && new Date(repayMissed.due_date).toLocaleDateString()}</span></div>
           </>
         }
         onConfirm={handleRepay} />
