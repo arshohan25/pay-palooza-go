@@ -710,7 +710,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       className="w-full h-13 rounded-2xl text-white font-bold text-base shadow-lg flex items-center justify-center gap-2 transition-all animate-fade-in"
                       style={{ background: selectedPack ? (operator ? `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` : "linear-gradient(135deg, hsl(152 73% 39%), hsl(152 75% 29%))") : "linear-gradient(135deg, hsl(152 73% 39%), hsl(152 75% 29%))", minHeight: 52 }}
                     >
-                      {selectedPack ? `Continue with ${selectedPack.name}` : "Continue"}
+                      {selectedPack ? `${t("mrContinueWith")} ${selectedPack.name}` : t("continue")}
                       <ChevronRight size={18} />
                     </motion.button>
                   )}
