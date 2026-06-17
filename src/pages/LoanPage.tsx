@@ -498,11 +498,11 @@ const LoanPage = () => {
                           </div>
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl">
-                          {TENURES.map(t => (
-                            <SelectItem key={t.days} value={t.days.toString()} className="rounded-xl">
+                          {TENURES.map(tn => (
+                            <SelectItem key={tn.days} value={tn.days.toString()} className="rounded-xl">
                               <div className="flex items-center gap-3">
-                                <span className="font-bold">{t.label}</span>
-                                <span className="text-[10px] text-muted-foreground">({t.days} days)</span>
+                                <span className="font-bold">{t(tn.labelKey)}</span>
+                                <span className="text-[10px] text-muted-foreground">({tn.days} {t("loanDaysLabel")})</span>
                               </div>
                             </SelectItem>
                           ))}
