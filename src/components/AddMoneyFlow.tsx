@@ -235,10 +235,10 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
             setTrackingStatus(newStatus);
             if (newStatus === "approved") {
               haptics.success();
-              toast.success("Your add money request has been approved! ✅");
+              toast.success(t("amApprovedToast"));
             } else if (newStatus === "rejected") {
               haptics.error();
-              toast.error("Your add money request was rejected.");
+              toast.error(t("amRejectedToast"));
             }
           }
         }
