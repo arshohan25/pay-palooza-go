@@ -276,7 +276,7 @@ const PayPage = () => {
         });
         if (error) {
           console.error("resolve_payment_merchant RPC error:", error);
-          setErrorMsg("Could not connect to payment service. Please try again.");
+          setErrorMsg(t("ppCouldNotConnect"));
           setStep("error");
           return;
         }
