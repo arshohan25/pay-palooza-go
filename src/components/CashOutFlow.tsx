@@ -562,7 +562,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search agent name or ID…"
+                      placeholder={t("coSearchPlaceholder")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9 bg-card border-border"
