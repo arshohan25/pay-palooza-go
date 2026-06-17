@@ -959,7 +959,7 @@ const LoanPage = () => {
 
             <SlideToConfirm
               onConfirm={handleConfirmLoan}
-              label={submitting ? "Applying…" : `Slide to Apply ৳${amountNum.toLocaleString()}`}
+              label={submitting ? t("loanApplying") : `${t("loanSlideToApply")} ৳${amountNum.toLocaleString()}`}
               disabled={!termsAccepted || loanPin.length < 4 || submitting}
               pinComplete={loanPin.length === 4 && termsAccepted}
               icon={Lock}
