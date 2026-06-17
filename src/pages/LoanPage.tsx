@@ -258,9 +258,9 @@ const LoanPage = () => {
   };
 
   const tabs: { key: TabType; label: string; count?: number }[] = [
-    { key: "apply", label: "Apply" },
-    { key: "active", label: "Active", count: activeLoans.length },
-    { key: "history", label: "History", count: historyLoans.length },
+    { key: "apply", label: t("loanApplyTab") },
+    { key: "active", label: t("loanActiveTab"), count: activeLoans.length },
+    { key: "history", label: t("loanHistoryTab"), count: historyLoans.length },
   ];
 
   return (
