@@ -475,7 +475,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     setValidating(false);
 
     if (!result.exists) {
-      setError(type === "walletId" ? "Wallet ID not found on EasyPay." : "This number is not registered on EasyPay.");
+      setError(type === "walletId" ? t("smWalletNotFound") : t("smNotRegistered"));
       return;
     }
 
