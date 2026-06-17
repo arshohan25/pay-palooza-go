@@ -141,12 +141,13 @@ const OperatorLogo = ({ op, size = "md" }: { op: OperatorDef; size?: "xs" | "sm"
 // ─── Pack Data ────────────────────────────────────────────────────────────────
 // Pack data is now fetched from the database in the component below
 // ─── Sub-category config ──────────────────────────────────────────────────────
-const SUB_CATEGORIES: { id: SubCategory; label: string; icon: typeof Wifi }[] = [
-  { id: "internet",  label: "Internet",   icon: Wifi },
-  { id: "minutes",   label: "Minutes",    icon: Phone },
-  { id: "bundles",   label: "Bundles",    icon: Package },
-  { id: "callrates", label: "Call Rates", icon: PhoneCall },
+const SUB_CATEGORIES: { id: SubCategory; labelKey: "mrSubInternet" | "mrSubMinutes" | "mrSubBundles" | "mrSubCallRates"; icon: typeof Wifi }[] = [
+  { id: "internet",  labelKey: "mrSubInternet",  icon: Wifi },
+  { id: "minutes",   labelKey: "mrSubMinutes",   icon: Phone },
+  { id: "bundles",   labelKey: "mrSubBundles",   icon: Package },
+  { id: "callrates", labelKey: "mrSubCallRates", icon: PhoneCall },
 ];
+
 
 // ─── Tag badge colour map ─────────────────────────────────────────────────────
 const TAG_COLORS: Record<string, string> = {
