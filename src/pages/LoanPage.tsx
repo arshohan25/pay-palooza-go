@@ -29,13 +29,13 @@ import AiRewardBanner from "@/components/AiRewardBanner";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 const AMOUNTS = [1000, 2000, 3000, 5000, 10000, 15000, 25000, 50000];
-const TENURES = [
-  { days: 30, label: "1 Month" },
-  { days: 60, label: "2 Months" },
-  { days: 90, label: "3 Months" },
-  { days: 180, label: "6 Months" },
-  { days: 270, label: "9 Months" },
-  { days: 365, label: "1 Year" },
+const TENURES: { days: number; labelKey: TranslationKey }[] = [
+  { days: 30, labelKey: "loan1Month" },
+  { days: 60, labelKey: "loan2Months" },
+  { days: 90, labelKey: "loan3Months" },
+  { days: 180, labelKey: "loan6Months" },
+  { days: 270, labelKey: "loan9Months" },
+  { days: 365, labelKey: "loan1Year" },
 ];
 
 // Flat one-time service fee — NOT interest. Sharia-compliant.
