@@ -64,11 +64,31 @@ describe("recipientValidation", () => {
   });
 
   describe("bankAccount", () => {
-    it("accepts >= 8 digits (formatting stripped)", () => {
-      expect(validateRecipient("bankAccount", "1234-5678").isValid).toBe(true);
+    it("accepts exactly 13 digits", () => {
+      expect(validateRecipient("bankAccount", "1234567890123").isValid).toBe(true);
     });
-    it("rejects < 8 digits", () => {
-      expect(validateRecipient("bankAccount", "12345").isValid).toBe(false);
+    it("accepts exactly 17 digits", () => {
+      expect(validateRecipient("bankAccount", "12345678901234567").isValid).toBe(true);
+    });
+    it("rejects 12 digits", () => {
+      expect(validateRecipient("bankAccount", "123456789012").isValid).toBe(false);
+    });
+    it("rejects 14 digits", () => {
+      expect(validateRecipient("bankAccount", "12345678901234").isValid).toBe(false);
+    });
+    it("rejects 16 digits", () => {
+      expect(validateRecipient("bankAccount", "1234567890123456").isValid).toBe(false);
+    });
+    it("rejects 18 digits", () => {
+      expect(validateRecipient("bankAccount", "123456789012345678").isValid).toBe(false);
+    });
+    it("ignores formatting characters", () => {
+      expect(validateRecipient("bankAccount", "1234-5678-9012-3").isValid).toBe(true);
+    });
+    it("returns empty (no error) for empty input", () => {
+      const r = validateRecipient("bankAccount", "");
+      expect(r.isEmpty).toBe(true);
+      expect(r.errorMessage).toBe("");
     });
   });
 
