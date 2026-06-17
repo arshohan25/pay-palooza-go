@@ -161,18 +161,18 @@ const LoanPage = () => {
     const shoppingCount = txns.filter(t => t.type === "payment").length;
 
     const checks = [
-      { label: "Account Age", passed: accountAgeDays >= MIN_ACCOUNT_AGE_DAYS, current: `${accountAgeDays} days`, required: `${MIN_ACCOUNT_AGE_DAYS}+ days`, icon: <Calendar className="w-4 h-4" />, weight: 25 },
-      { label: "Transactions", passed: totalTxns >= MIN_TOTAL_TXNS, current: `${totalTxns}`, required: `${MIN_TOTAL_TXNS}+`, icon: <TrendingUp className="w-4 h-4" />, weight: 25 },
-      { label: "Add Money", passed: addMoneyTotal >= MIN_ADD_MONEY_AMOUNT, current: `৳${addMoneyTotal.toLocaleString()}`, required: `৳${MIN_ADD_MONEY_AMOUNT.toLocaleString()}+`, icon: <Wallet className="w-4 h-4" />, weight: 20 },
-      { label: "Payments", passed: paymentCount >= MIN_PAYMENT_COUNT, current: `${paymentCount}`, required: `${MIN_PAYMENT_COUNT}+`, icon: <CreditCard className="w-4 h-4" />, weight: 15 },
-      { label: "Shopping", passed: shoppingCount >= 2, current: `${shoppingCount}`, required: "2+", icon: <ShoppingBag className="w-4 h-4" />, weight: 15 },
+      { label: t("loanCheckAccountAge"), passed: accountAgeDays >= MIN_ACCOUNT_AGE_DAYS, current: `${accountAgeDays} ${t("loanAgeUnit")}`, required: `${MIN_ACCOUNT_AGE_DAYS}+ ${t("loanAgeUnit")}`, icon: <Calendar className="w-4 h-4" />, weight: 25 },
+      { label: t("loanCheckTransactions"), passed: totalTxns >= MIN_TOTAL_TXNS, current: `${totalTxns}`, required: `${MIN_TOTAL_TXNS}+`, icon: <TrendingUp className="w-4 h-4" />, weight: 25 },
+      { label: t("loanCheckAddMoney"), passed: addMoneyTotal >= MIN_ADD_MONEY_AMOUNT, current: `৳${addMoneyTotal.toLocaleString()}`, required: `৳${MIN_ADD_MONEY_AMOUNT.toLocaleString()}+`, icon: <Wallet className="w-4 h-4" />, weight: 20 },
+      { label: t("loanCheckPayments"), passed: paymentCount >= MIN_PAYMENT_COUNT, current: `${paymentCount}`, required: `${MIN_PAYMENT_COUNT}+`, icon: <CreditCard className="w-4 h-4" />, weight: 15 },
+      { label: t("loanCheckShopping"), passed: shoppingCount >= 2, current: `${shoppingCount}`, required: "2+", icon: <ShoppingBag className="w-4 h-4" />, weight: 15 },
     ];
     const score = checks.reduce((acc, c) => acc + (c.passed ? c.weight : 0), 0);
     const passedCount = checks.filter(c => c.passed).length;
     const maxAmount = score >= 80 ? 50000 : score >= 60 ? 25000 : score >= 40 ? 10000 : 5000;
     setEligibility({ eligible: passedCount >= 4, score, checks, maxAmount });
     setEligibilityLoading(false);
-  }, [user]);
+  }, [user, t]);
 
   useEffect(() => {
     if (!user) return;
