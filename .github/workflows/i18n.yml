@@ -1,0 +1,43 @@
+name: i18n
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  i18n:
+    name: i18n audit + bn tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run i18n audit (report only)
+        run: npm run i18n:audit
+        continue-on-error: true
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: i18n-audit-report
+          path: reports/
+          retention-days: 14
+
+      # The vitest suite asserts:
+      #   - every key has en + bn entries
+      #   - bn values contain Bangla characters
+      #   - key routes render Bangla and never show ⟦missing-key⟧ fallbacks
+      #   - the missing-translation detector records unknown keys
+      # If any of these fail, the build fails.
+      - name: Run i18n bn tests (fails build on missing keys)
+        run: npm run test:i18n
