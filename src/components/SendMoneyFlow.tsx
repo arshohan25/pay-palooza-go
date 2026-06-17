@@ -564,7 +564,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     setProcessing(true);
 
     const pinValid = await verifyPin(pin);
-    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+    if (!pinValid) { setError(t("incorrectPin")); setPin(""); setProcessing(false); return; }
 
     const amtVal = parseFloat(amount) || 0;
     const limitCheck = await checkDailyLimit("send", amtVal);
