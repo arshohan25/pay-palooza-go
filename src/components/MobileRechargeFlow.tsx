@@ -417,21 +417,22 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const [apiStatus, setApiStatus] = useState<string | null>(null);
 
   const handlePinConfirm = async () => {
-    if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    if (pin.length < 4) { setError(t("mrErrPin4")); return; }
     if (processing) return;
     setProcessing(true);
 
     // Verify PIN
     const pinValid = await verifyPin(pin);
-    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+    if (!pinValid) { setError(t("incorrectPin")); setPin(""); setProcessing(false); return; }
 
     // Check daily limit
     const limitCheck = await checkDailyLimit("recharge", effectivePrice);
     if (!limitCheck.allowed) {
-      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setError(`${t("mrErrDailyLimit")} ${t("mrErrUsedOf")} ৳${fmtAmt(limitCheck.used)} / ৳${fmtAmt(limitCheck.limit)} ${t("mrErrOfToday")}`);
       setProcessing(false);
       return;
     }
+
 
     // Silently capture location for fraud detection
     requestLocation().catch(() => {});
