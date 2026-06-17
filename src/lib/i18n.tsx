@@ -900,7 +900,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           }
           if (isNew) {
             // Defer to avoid render-phase setState in subscribers.
-            queueMicrotask(() => listeners.forEach((l) => l()));
+            queueMicrotask(notifyMissing);
           }
         }
         // Visible fallback so QA can spot gaps in the UI
