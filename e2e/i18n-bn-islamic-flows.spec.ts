@@ -1,5 +1,9 @@
 import { test, expect, type Page, type Locator } from "@playwright/test";
-import { buildDetector, findEnglish, type DetectorConfig } from "./utils/english-detector";
+import {
+  buildDetector,
+  DebugReport,
+  type DetectorConfig,
+} from "./utils/english-detector";
 
 /**
  * End-to-end check that every Islamic flow renders in Bangla when
