@@ -366,17 +366,17 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                 {step === "send_to" && (
                   <div className="space-y-6">
                     <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-1">
-                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span></div>
-                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Source</span><span className="font-medium text-foreground capitalize">{source?.replace("_", " ")}</span></div>
+                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("amAmountLabel")}</span><span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span></div>
+                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("amSourceLabel")}</span><span className="font-medium text-foreground">{(() => { const o = SOURCE_OPTIONS.find(x => x.id === source); return o ? t(o.labelKey as any) : source; })()}</span></div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">Send money to this account</label>
+                      <label className="text-sm font-semibold text-foreground">{t("amSendToAccount")}</label>
                       {depositLoading ? (
-                        <p className="text-sm text-muted-foreground">Loading accounts…</p>
+                        <p className="text-sm text-muted-foreground">{t("amLoadingAccounts")}</p>
                       ) : depositAccounts.length === 0 ? (
                         <div className="rounded-2xl border border-border bg-card p-4 text-center">
-                          <p className="text-sm text-muted-foreground">No deposit account configured for this method yet. Please contact support.</p>
+                          <p className="text-sm text-muted-foreground">{t("amNoDepositAccount")}</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -395,7 +395,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                                   {copiedId === acc.id ? <Check size={16} /> : <Copy size={16} />}
                                 </button>
                               </div>
-                              {acc.bank_name && <p className="text-xs text-muted-foreground">Bank: {acc.bank_name}</p>}
+                              {acc.bank_name && <p className="text-xs text-muted-foreground">{t("amBankLabel")}: {acc.bank_name}</p>}
                               {acc.instructions && <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">{acc.instructions}</p>}
                             </div>
                           ))}
@@ -404,7 +404,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     </div>
 
                     <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={() => goTo("proof")}>
-                      I've Sent the Money
+                      {t("amISentMoney")}
                     </Button>
                   </div>
                 )}
