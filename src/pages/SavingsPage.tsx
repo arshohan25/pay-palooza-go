@@ -808,6 +808,7 @@ function StocksTab() {
 // ─────────────────────────────────────────────────────────────────────────────
 const SavingsPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const { status: kyc, loading: kycLoading } = useKycStatus();
   const [walletBal, setWalletBal] = useState<number>(getBalance());
@@ -842,19 +843,19 @@ const SavingsPage = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center gap-3">
         <Lock className="w-10 h-10 text-muted-foreground" />
-        <div className="font-semibold">KYC required</div>
-        <p className="text-sm text-muted-foreground max-w-xs">Complete identity verification to unlock Islamic Savings, DPS, Gold, and Stocks.</p>
-        <Button onClick={() => navigate("/account")} className="rounded-[14px]">Go to KYC</Button>
-        <Button variant="ghost" onClick={() => navigate("/")}>Back</Button>
+        <div className="font-semibold">{t("savKycRequired")}</div>
+        <p className="text-sm text-muted-foreground max-w-xs">{t("savKycDescription")}</p>
+        <Button onClick={() => navigate("/account")} className="rounded-[14px]">{t("savGoToKyc")}</Button>
+        <Button variant="ghost" onClick={() => navigate("/")}>{t("savBack")}</Button>
       </div>
     );
   }
 
-  const TABS: { id: Tab; label: string; icon: any }[] = [
-    { id: "goals", label: "Goals", icon: Target },
-    { id: "dps",   label: "DPS",   icon: Calendar },
-    { id: "gold",  label: "Gold",  icon: Coins },
-    { id: "stocks",label: "Stocks",icon: LineChart },
+  const TABS: { id: Tab; labelKey: TranslationKey; icon: any }[] = [
+    { id: "goals", labelKey: "savGoalsLabel", icon: Target },
+    { id: "dps",   labelKey: "savDpsLabel",   icon: Calendar },
+    { id: "gold",  labelKey: "savGoldLabel",  icon: Coins },
+    { id: "stocks",labelKey: "savStocksLabel",icon: LineChart },
   ];
 
   return (
@@ -866,16 +867,16 @@ const SavingsPage = () => {
         <div className="flex items-center gap-3 px-4 pt-4 pb-4">
           <button
             onClick={() => navigate(-1)}
-            aria-label="Go back"
+            aria-label={t("back")}
             className="w-10 h-10 -ml-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center active:scale-95 transition-transform"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold tracking-tight leading-tight">Islamic Savings</h1>
+            <h1 className="text-lg font-bold tracking-tight leading-tight">{t("savIslamicSavings")}</h1>
             <div className="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20">
               <Sparkles className="w-3 h-3 fill-primary-foreground/40" />
-              <span className="text-[10px] font-medium tracking-wide text-primary-foreground/95">Sharia-compliant · Mudarabah</span>
+              <span className="text-[10px] font-medium tracking-wide text-primary-foreground/95">{t("savShariaMudarabah")}</span>
             </div>
           </div>
         </div>
@@ -885,29 +886,29 @@ const SavingsPage = () => {
       <div className="p-4 space-y-4">
         {/* Portfolio summary */}
         <div className="rounded-[19px] p-5 bg-gradient-to-br from-emerald-500/20 via-primary/10 to-blue-500/10 border border-primary/20">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><Wallet className="w-3 h-3" />Portfolio value</div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><Wallet className="w-3 h-3" />{t("savPortfolioValue")}</div>
           <div className="text-3xl font-bold">৳{Math.round(portfolioValue).toLocaleString()}</div>
           <div className="grid grid-cols-4 gap-2 mt-4 text-center">
-            <div><div className="text-xs text-muted-foreground">Goals</div><div className="text-sm font-semibold">{goals.filter(g => g.status === "active").length}</div></div>
-            <div><div className="text-xs text-muted-foreground">DPS</div><div className="text-sm font-semibold">{plans.filter(p => !p.settled).length}</div></div>
-            <div><div className="text-xs text-muted-foreground">Gold</div><div className="text-sm font-semibold">{gold.reduce((s,g) => s + Number(g.grams), 0).toFixed(1)}g</div></div>
-            <div><div className="text-xs text-muted-foreground">Stocks</div><div className="text-sm font-semibold">{stocks.length}</div></div>
+            <div><div className="text-xs text-muted-foreground">{t("savGoalsLabel")}</div><div className="text-sm font-semibold">{goals.filter(g => g.status === "active").length}</div></div>
+            <div><div className="text-xs text-muted-foreground">{t("savDpsLabel")}</div><div className="text-sm font-semibold">{plans.filter(p => !p.settled).length}</div></div>
+            <div><div className="text-xs text-muted-foreground">{t("savGoldLabel")}</div><div className="text-sm font-semibold">{gold.reduce((s,g) => s + Number(g.grams), 0).toFixed(1)}g</div></div>
+            <div><div className="text-xs text-muted-foreground">{t("savStocksLabel")}</div><div className="text-sm font-semibold">{stocks.length}</div></div>
           </div>
-          <div className="text-[10px] text-muted-foreground mt-3">Wallet balance: ৳{Number(walletBal ?? 0).toLocaleString()}</div>
+          <div className="text-[10px] text-muted-foreground mt-3">{t("savWalletBalance")}: ৳{Number(walletBal ?? 0).toLocaleString()}</div>
         </div>
 
         {/* Tabs */}
         <div className="grid grid-cols-4 gap-2">
-          {TABS.map(t => {
-            const Icon = t.icon;
-            const active = tab === t.id;
+          {TABS.map(tb => {
+            const Icon = tb.icon;
+            const active = tab === tb.id;
             return (
-              <button key={t.id} onClick={() => setTab(t.id)}
+              <button key={tb.id} onClick={() => setTab(tb.id)}
                 className={`h-14 rounded-[14px] flex flex-col items-center justify-center gap-0.5 text-xs ${
                   active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                 }`}>
                 <Icon className="w-4 h-4" />
-                <span>{t.label}</span>
+                <span>{t(tb.labelKey)}</span>
               </button>
             );
           })}
