@@ -362,7 +362,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         commission: commissionVal,
       });
     } catch (e: any) {
-      setError(e.message || "Cash out failed");
+      setError(e.message || t("coCashOutFailed"));
       setPin("");
       setProcessing(false);
       return;
