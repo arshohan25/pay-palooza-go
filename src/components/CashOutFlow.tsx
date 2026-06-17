@@ -1016,19 +1016,19 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         open={showShare}
         onClose={() => setShowShare(false)}
         receipt={{
-          title: "Cash Out Successful",
+          title: t("coCashOutSuccessTitle"),
           amount: `৳${parseFloat(amount || "0").toLocaleString()}`,
           gradient: "gradient-cashout",
           txnId: txnId.current,
           rows: [
-            { label: "Agent", value: agent?.name ?? "" },
-            { label: "Agent ID", value: agent?.agentId ?? "" },
-            { label: "Amount", value: `৳${parseFloat(amount || "0").toLocaleString()}` },
-            ...(couponDiscount > 0 ? [{ label: `🎟️ Coupon (${pendingCoupon?.code})`, value: `-৳${couponDiscount.toFixed(2)}` }] : []),
-            { label: `Fee (${FEE_LABEL})`, value: `৳${feeNum.toFixed(2)}` },
-            { label: "You Received", value: `৳${parseFloat(receive).toLocaleString()}` },
-            { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
-            { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+            { label: t("agent"), value: agent?.name ?? "" },
+            { label: t("coAgentId"), value: agent?.agentId ?? "" },
+            { label: t("coAmount"), value: `৳${parseFloat(amount || "0").toLocaleString()}` },
+            ...(couponDiscount > 0 ? [{ label: `🎟️ ${t("coCouponLabel")} (${pendingCoupon?.code})`, value: `-৳${couponDiscount.toFixed(2)}` }] : []),
+            { label: `${t("coFee")} (${FEE_LABEL})`, value: `৳${feeNum.toFixed(2)}` },
+            { label: t("youReceived"), value: `৳${parseFloat(receive).toLocaleString()}` },
+            { label: t("coDate"), value: txnTime.current.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: t("coTime"), value: txnTime.current.toLocaleTimeString(timeLocale, { hour: "2-digit", minute: "2-digit", hour12: true }) },
           ],
         }}
       />
