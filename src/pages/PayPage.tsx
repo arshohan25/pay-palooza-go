@@ -624,8 +624,8 @@ const PayPage = () => {
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-foreground">Payment Successful!</h2>
-                <p className="text-xs text-muted-foreground/60 mt-1">৳{fmt(amountParam)} paid to {merchant?.business_name}</p>
+                <h2 className="text-lg font-bold text-foreground">{t("paymentSuccessful")}</h2>
+                <p className="text-xs text-muted-foreground/60 mt-1">৳{fmt(amountParam, locale)} {t("ppPaidTo")} {merchant?.business_name}</p>
               </div>
 
               {/* Receipt Card */}
