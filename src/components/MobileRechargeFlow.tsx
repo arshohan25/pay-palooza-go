@@ -478,12 +478,12 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     setApiStatus(null);
 
     if (!apiProcessed) {
-      toast.error("Recharge service unavailable. Please try again later.");
+      toast.error(t("mrServiceUnavailable"));
       setProcessing(false);
       return;
     }
 
-    const packDesc = selectedPack ? selectedPack.name : `Recharge ৳${effectivePrice}`;
+    const packDesc = selectedPack ? selectedPack.name : `${t("recharge")} ৳${effectivePrice}`;
 
     const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0;
     const finalPrice = Math.max(0, effectivePrice - couponDiscVal);
@@ -495,7 +495,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       recipientPhone: phone,
       recipientName: detectedOp?.name,
       reference: txnId.current,
-      description: packDesc + " [API]" + (pendingCoupon ? ` [Coupon: ${pendingCoupon.code}]` : ""),
+      description: packDesc + " [API]" + (pendingCoupon ? ` [${t("mrCouponPrefix")}: ${pendingCoupon.code}]` : ""),
     });
 
     if (pendingCoupon) {
@@ -503,10 +503,11 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       clearPendingCoupon();
     }
     showTxnToast({
-      type: "Live Recharge",
-      amount: `৳${finalPrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+      type: t("mrToastLiveRecharge"),
+      amount: `৳${fmtAmt(finalPrice, { minimumFractionDigits: 2 })}`,
       gradient: "gradient-primary",
     });
+
     setDirection(1);
     setStep("success");
   };
