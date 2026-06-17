@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import { format } from "date-fns";
 import { fireSuccessConfetti } from "@/lib/confetti";
+import { useI18n } from "@/lib/i18n";
 
 const CAUSES = [
   { id: "education", name: "Education", icon: GraduationCap, gradient: "from-blue-500 to-indigo-600", desc: "Support students in need" },
