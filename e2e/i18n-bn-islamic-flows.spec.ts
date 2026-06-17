@@ -1,4 +1,5 @@
-import { test, expect, type Page, type Locator } from "@playwright/test";
+import type { Locator } from "@playwright/test";
+import { test, expect } from "./utils/i18n-fixtures";
 import {
   buildDetector,
   DebugReport,
@@ -7,20 +8,12 @@ import {
 
 /**
  * End-to-end check that every Islamic flow renders in Bangla when
- * lang=bn is set. Asserts no English words appear in visible headings,
- * tabs, buttons, toasts, or form validation messages.
+ * lang=bn is set. Uses the shared bnPage/gotoBn fixture so the seed
+ * setup (lang flag, onboarding flags, optional Supabase session,
+ * animation freeze, missing-translation console capture) stays
+ * consistent across every i18n spec.
  *
- * The English detector is configurable via env (see
- * e2e/utils/english-detector.ts):
- *   I18N_BN_WHITELIST            extra whole-word allow-list
- *   I18N_BN_IGNORE_PATTERNS      extra regex sources stripped pre-scan
- *   I18N_BN_WORD_PATTERN         override the "what is a word" regex
- *   I18N_BN_MIN_WORD_LEN         minimum token length to flag (default 3)
- *   I18N_BN_DEBUG=1              print per-text trace + offender summary
- *
- * Numeric formats (IDs, prices, dates, phones, UUIDs, JWTs, URLs) and
- * user-specific tokens (#ORDER-123, TXN_…, file paths) are stripped
- * before the scan so they don't masquerade as English copy.
+ * Detector knobs live in e2e/utils/english-detector.ts.
  */
 
 const ROUTES: Array<{ path: string; name: string }> = [
@@ -31,45 +24,6 @@ const ROUTES: Array<{ path: string; name: string }> = [
 ];
 
 const detector: DetectorConfig = buildDetector();
-
-async function setBangla(page: Page) {
-  await page.addInitScript(() => {
-    try {
-      window.localStorage.setItem("mfs_ui_lang", "bn");
-      window.localStorage.setItem("mfs_onboarding_completed", "1");
-      window.localStorage.setItem("mfs_has_authenticated", "1");
-    } catch {
-      /* ignore */
-    }
-  });
-}
-
-async function seedSession(page: Page) {
-  const key =
-    process.env.E2E_SUPABASE_STORAGE_KEY ??
-    process.env.LOVABLE_BROWSER_SUPABASE_STORAGE_KEY;
-  const session =
-    process.env.E2E_SUPABASE_SESSION_JSON ??
-    process.env.LOVABLE_BROWSER_SUPABASE_SESSION_JSON;
-  if (!key || !session) return false;
-  await page.addInitScript(
-    ([k, v]) => {
-      try {
-        window.localStorage.setItem(k as string, v as string);
-      } catch {
-        /* ignore */
-      }
-    },
-    [key, session],
-  );
-  return true;
-}
-
-async function freezeUi(page: Page) {
-  await page.addStyleTag({
-    content: `*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important;caret-color:transparent!important}`,
-  });
-}
 
 async function collectVisibleText(locator: Locator): Promise<string[]> {
   const handles = await locator.elementHandles();
@@ -106,28 +60,17 @@ test.describe("i18n bn — Islamic flows have zero English in UI", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   for (const { path, name } of ROUTES) {
-    test(`${name} (${path}) renders fully in Bangla`, async ({ page }, testInfo) => {
-      await setBangla(page);
-      const hasSession = await seedSession(page);
+    test(`${name} (${path}) renders fully in Bangla`, async (
+      { bnPage, gotoBn, bnContext, consoleMissing },
+      testInfo,
+    ) => {
       const report = new DebugReport(detector);
-
-      const consoleMissing: string[] = [];
-      page.on("console", (msg) => {
-        const t = msg.text();
-        if (/missing translation|⟦.*⟧/i.test(t)) consoleMissing.push(t);
-      });
-
-      await page.goto(path, { waitUntil: "networkidle" });
-      await freezeUi(page);
-      await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(400);
-
-      const landed = new URL(page.url()).pathname;
-      if (landed !== path) {
+      const { landed, redirected } = await gotoBn(path);
+      if (redirected) {
         test.skip(
           true,
           `[${name}] route ${path} redirected to ${landed}` +
-            (hasSession
+            (bnContext.hasSession
               ? " despite seeded session (device binding / KYC likely required)."
               : "; set E2E_SUPABASE_STORAGE_KEY + E2E_SUPABASE_SESSION_JSON to run."),
         );
@@ -135,7 +78,7 @@ test.describe("i18n bn — Islamic flows have zero English in UI", () => {
       }
 
       try {
-        const fallbackCount = await page.locator("text=/⟦.*⟧/").count();
+        const fallbackCount = await bnPage.locator("text=/⟦.*⟧/").count();
         expect(
           fallbackCount,
           `[${name}] no ⟦missing-key⟧ fallbacks should render`,
@@ -145,7 +88,7 @@ test.describe("i18n bn — Islamic flows have zero English in UI", () => {
           report,
           name,
           "headings (h1–h4)",
-          await collectVisibleText(page.locator("h1, h2, h3, h4")),
+          await collectVisibleText(bnPage.locator("h1, h2, h3, h4")),
         );
 
         assertNoEnglish(
@@ -153,7 +96,7 @@ test.describe("i18n bn — Islamic flows have zero English in UI", () => {
           name,
           "tabs",
           await collectVisibleText(
-            page.locator('[role="tab"], [data-state][data-orientation] [role="tab"]'),
+            bnPage.locator('[role="tab"], [data-state][data-orientation] [role="tab"]'),
           ),
         );
 
@@ -161,17 +104,17 @@ test.describe("i18n bn — Islamic flows have zero English in UI", () => {
           report,
           name,
           "buttons",
-          await collectVisibleText(page.locator('button, [role="button"]')),
+          await collectVisibleText(bnPage.locator('button, [role="button"]')),
         );
 
         assertNoEnglish(
           report,
           name,
           "labels",
-          await collectVisibleText(page.locator("label")),
+          await collectVisibleText(bnPage.locator("label")),
         );
 
-        const placeholders = await page
+        const placeholders = await bnPage
           .locator("input[placeholder], textarea[placeholder]")
           .evaluateAll((els) =>
             (els as (HTMLInputElement | HTMLTextAreaElement)[])
@@ -186,7 +129,7 @@ test.describe("i18n bn — Islamic flows have zero English in UI", () => {
           name,
           "aria-live regions",
           await collectVisibleText(
-            page.locator('[aria-live="polite"], [aria-live="assertive"], [role="status"], [role="alert"]'),
+            bnPage.locator('[aria-live="polite"], [aria-live="assertive"], [role="status"], [role="alert"]'),
           ),
         );
 
@@ -195,7 +138,7 @@ test.describe("i18n bn — Islamic flows have zero English in UI", () => {
           name,
           "toasts",
           await collectVisibleText(
-            page.locator('[data-sonner-toast], [role="status"] li, .toaster li'),
+            bnPage.locator('[data-sonner-toast], [role="status"] li, .toaster li'),
           ),
         );
 
@@ -204,8 +147,6 @@ test.describe("i18n bn — Islamic flows have zero English in UI", () => {
           `[${name}] no missing-translation console warnings`,
         ).toEqual([]);
       } finally {
-        // Always print when debug mode is on; print on failure even if
-        // debug is off so CI logs surface triage info automatically.
         const failed = testInfo.errors.length > 0 || report.hasOffenders();
         if (detector.debug || failed) {
           const summary = report.format(`${name} (${path})`);
