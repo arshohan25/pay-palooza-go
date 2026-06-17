@@ -970,7 +970,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
                       {offerType === "regular" && regularPacks.length === 0 && (
                         <div className="py-12 text-center text-muted-foreground text-sm">
-                          No packs available in this category.
+                          {t("mrNoPacksInCategory")}
                         </div>
                       )}
                     </motion.div>
