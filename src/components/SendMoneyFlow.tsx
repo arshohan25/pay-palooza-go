@@ -1097,13 +1097,13 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("date")}</span>
                     <span className="text-foreground font-medium">
-                      {txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                      {txnTime.current.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" })}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("time")}</span>
                     <span className="text-foreground font-medium">
-                      {txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                      {txnTime.current.toLocaleTimeString(timeLocale, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
                     </span>
                   </div>
                   <div className="h-px bg-border" />
