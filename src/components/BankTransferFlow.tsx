@@ -89,7 +89,8 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
 
   const handleBankContinue = () => {
     if (!bankName) { setError("Select a bank."); return; }
-    if (accountNumber.trim().length < 8) { setError("Enter a valid account number."); return; }
+    const acctCheck = validateRecipient("bankAccount", accountNumber);
+    if (!acctCheck.isValid) { setError(acctCheck.errorMessage || "Enter a valid account number."); return; }
     if (accountHolder.trim().length < 2) { setError("Enter account holder name."); return; }
     goTo("amount");
   };
@@ -281,7 +282,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     <label className="text-sm font-semibold text-foreground">{t("accountNumber")}</label>
                     <div className="relative">
                       <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="text" placeholder="e.g. 1234567890123" value={accountNumber} onChange={e => { setAccountNumber(e.target.value); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
+                      <Input type="text" inputMode="numeric" placeholder="e.g. 1234567890123" value={accountNumber} onChange={e => { const digits = e.target.value.replace(/\D/g, "").slice(0, 17); setAccountNumber(digits); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
                     </div>
                     {(() => {
                       const v = validateRecipient("bankAccount", accountNumber);

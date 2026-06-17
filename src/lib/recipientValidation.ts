@@ -60,9 +60,17 @@ const RULES: Record<RecipientKind, RecipientRule> = {
     emptyOrShortMessage: (label) => `${label ?? "Account"} must be at least 4 digits.`,
   },
   bankAccount: {
-    min: 8,
+    min: 13,
+    max: 17,
     digitsOnly: true,
-    emptyOrShortMessage: () => "Account number must be at least 8 digits.",
+    emptyOrShortMessage: () => "Account number must be exactly 13 or 17 digits.",
+    extra: (v) => {
+      const digits = v.replace(/\D/g, "");
+      if (digits.length > 0 && digits.length !== 13 && digits.length !== 17) {
+        return "Account number must be exactly 13 or 17 digits.";
+      }
+      return null;
+    },
   },
   accountHolder: {
     min: 2,
