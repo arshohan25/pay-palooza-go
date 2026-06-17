@@ -635,7 +635,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                           <>
                             <OperatorLogo op={detectedOp} size="xs" />
                             <div className="flex-1">
-                              <p className="text-[10px] text-muted-foreground leading-none">Detected operator</p>
+                              <p className="text-[10px] text-muted-foreground leading-none">{t("detectedOperator")}</p>
                               <p className="text-sm font-bold text-foreground">{detectedOp.name}</p>
                             </div>
                             <CheckCircle2 size={18} className="text-primary shrink-0" />
@@ -645,7 +645,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                             <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0">
                               <Smartphone size={16} className="text-muted-foreground" />
                             </div>
-                            <p className="text-sm text-muted-foreground">Unknown operator</p>
+                            <p className="text-sm text-muted-foreground">{t("unknownOperator")}</p>
+
                           </>
                         )}
                       </motion.div>
