@@ -204,7 +204,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         activityTracker.transaction("add_money_request", { amount: parseFloat(amount) || 0 })
       );
     } catch (e: any) {
-      setPinError(e.message || "Failed to submit request.");
+      setPinError(e.message || t("amSubmitFailed"));
     } finally {
       setSubmitting(false);
     }
