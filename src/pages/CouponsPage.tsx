@@ -136,6 +136,7 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
 
 export default function CouponsPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
