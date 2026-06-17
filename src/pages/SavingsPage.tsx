@@ -867,7 +867,7 @@ const SavingsPage = () => {
         <div className="flex items-center gap-3 px-4 pt-4 pb-4">
           <button
             onClick={() => navigate(-1)}
-            aria-label={t("back")}
+            aria-label={t("savBack")}
             className="w-10 h-10 -ml-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center active:scale-95 transition-transform"
           >
             <ArrowLeft className="w-5 h-5" />
