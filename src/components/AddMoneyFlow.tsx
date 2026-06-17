@@ -126,7 +126,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     if (!source || !TXNID_PATTERNS[source]) { setTxnIdWarning(""); return; }
     const pattern = TXNID_PATTERNS[source];
     if (!pattern.regex.test(value.trim())) {
-      setTxnIdWarning(pattern.hint);
+      setTxnIdWarning(t(pattern.hintKey as any));
     } else {
       setTxnIdWarning("");
     }
