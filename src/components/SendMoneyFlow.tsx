@@ -496,7 +496,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         : normalizePhone(val).slice(-2);
       setRecipient({
         id: "custom",
-        name: result.name || (type === "walletId" ? `Wallet ${val}` : normalizePhone(val)),
+        name: result.name || (type === "walletId" ? `${t("smWalletPrefix")} ${val}` : normalizePhone(val)),
         phone: result.phone || normalizePhone(val),
         initials,
         gradient: "gradient-send",
