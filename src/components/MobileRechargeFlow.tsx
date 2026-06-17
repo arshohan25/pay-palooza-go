@@ -457,18 +457,19 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
         if (!fnErr && data?.success) {
           apiProcessed = data?.api_available ?? false;
           if (apiProcessed) {
-            setApiStatus("Recharge confirmed by operator");
+            setApiStatus(t("mrConfirmedByOperator"));
           }
           // Server credited cashback — show toast from server response
           if (data?.cashback_amount > 0) {
             showTxnToast({
-              type: "Drive Cashback",
-              amount: `+৳${data.cashback_amount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+              type: t("mrToastDriveCashback"),
+              amount: `+৳${fmtAmt(data.cashback_amount, { minimumFractionDigits: 2 })}`,
               gradient: "bg-gradient-to-b from-amber-500 to-yellow-500",
             });
           }
         } else if (data?.api_available && !data?.success) {
-          setApiStatus("API error, recording locally");
+          setApiStatus(t("mrApiErrorLocal"));
+
         }
       } catch {
         // Edge function unreachable — fall back silently
