@@ -801,15 +801,20 @@ export interface MissingTranslationEntry {
   sources: string[];
 }
 
+let cachedSnapshot: MissingTranslationEntry[] = [];
+function rebuildSnapshot() {
+  cachedSnapshot = Array.from(missingKeys).map((id) => {
+    const [key, lang] = id.split("::") as [string, Lang];
+    return { key, lang, sources: Array.from(missingSources.get(id) ?? []) };
+  });
+}
+
 export function getMissingTranslationKeys(): string[] {
   return Array.from(missingKeys);
 }
 
 export function getMissingTranslations(): MissingTranslationEntry[] {
-  return Array.from(missingKeys).map((id) => {
-    const [key, lang] = id.split("::") as [string, Lang];
-    return { key, lang, sources: Array.from(missingSources.get(id) ?? []) };
-  });
+  return cachedSnapshot;
 }
 
 export function subscribeMissingTranslations(fn: Listener): () => void {
@@ -819,12 +824,18 @@ export function subscribeMissingTranslations(fn: Listener): () => void {
   };
 }
 
+function notifyMissing() {
+  rebuildSnapshot();
+  listeners.forEach((l) => l());
+}
+
 export function resetMissingTranslationKeys(): void {
   missingKeys.clear();
   warnedKeys.clear();
   missingSources.clear();
-  listeners.forEach((l) => l());
+  notifyMissing();
 }
+
 
 /** Parse a stack trace and return the first frame inside src/ that isn't i18n.tsx itself. */
 function inferCallerSource(): string | null {
@@ -889,7 +900,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           }
           if (isNew) {
             // Defer to avoid render-phase setState in subscribers.
-            queueMicrotask(() => listeners.forEach((l) => l()));
+            queueMicrotask(notifyMissing);
           }
         }
         // Visible fallback so QA can spot gaps in the UI
