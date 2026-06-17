@@ -1,3 +1,4 @@
+import { validateRecipient } from "@/lib/recipientValidation";
 import { useState, useRef, useEffect, forwardRef } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";

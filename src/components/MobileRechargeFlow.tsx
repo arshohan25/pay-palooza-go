@@ -1,3 +1,4 @@
+import { validateRecipient } from "@/lib/recipientValidation";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { fireSuccessConfetti } from "@/lib/confetti";

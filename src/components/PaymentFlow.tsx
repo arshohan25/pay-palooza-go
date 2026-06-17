@@ -1,3 +1,4 @@
+import { validateRecipient } from "@/lib/recipientValidation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { haptics } from "@/lib/haptics";
 import { requestLocation } from "@/lib/permissions";

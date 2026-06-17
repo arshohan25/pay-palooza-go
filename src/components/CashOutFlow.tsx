@@ -1,3 +1,4 @@
+import { validateRecipient } from "@/lib/recipientValidation";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFeeConfig } from "@/hooks/use-fee-config";
