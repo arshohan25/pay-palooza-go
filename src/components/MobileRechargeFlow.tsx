@@ -349,8 +349,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   // Step 1 → Step 2: Continue goes straight to amount (skip packs)
   const handleNumberContinue = () => {
     const digits = phone.replace(/\D/g, "");
-    if (digits.length !== 11) { setError("Enter an 11-digit mobile number."); return; }
-    if (!detectedOp) { setError("Unable to detect operator. Check the number."); return; }
+    if (digits.length !== 11) { setError(t("mrErr11Digit")); return; }
+    if (!detectedOp) { setError(t("mrErrDetectOp")); return; }
+
     setSelectedOp(detectedOp);
     setIsPhoneDummy(false);
     // If a pack is already selected (drive pack flow), go to amount
