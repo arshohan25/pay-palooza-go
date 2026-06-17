@@ -39,10 +39,24 @@ async function deliverWebhook(callbackUrl: string, payload: string, signature: s
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Internal-only: require shared service-role secret. Prevents anonymous
+  // callers from triggering webhook delivery or enumerating session_ids.
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const auth = req.headers.get("authorization") || "";
+  const headerSecret = req.headers.get("x-internal-secret") || "";
+  const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "";
+  if (bearer !== serviceKey && headerSecret !== serviceKey) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    serviceKey,
   );
+
 
   try {
     const { session_id } = await req.json();
