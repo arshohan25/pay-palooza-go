@@ -342,7 +342,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                 {step === "source" && (
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">How did you send the money?</label>
+                      <label className="text-sm font-semibold text-foreground">{t("amHowSent")}</label>
                       <div className="grid grid-cols-2 gap-2">
                         {SOURCE_OPTIONS.map(s => {
                           const Icon = s.icon;
@@ -351,7 +351,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                               className={`p-3 rounded-xl border text-left transition-all active:scale-95 ${source === s.id ? "border-primary bg-primary/10 shadow-card" : "border-border bg-card hover:border-primary/50"}`}>
                               <div className="flex items-center gap-2">
                                 <div className={`w-8 h-8 rounded-lg ${s.color} flex items-center justify-center text-white shrink-0`}><Icon size={16} /></div>
-                                <span className="text-xs font-semibold text-foreground">{s.label}</span>
+                                <span className="text-xs font-semibold text-foreground">{t(s.labelKey as any)}</span>
                               </div>
                             </button>
                           );
@@ -359,7 +359,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       </div>
                       {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
                     </div>
-                    <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={handleSourceContinue}>Continue</Button>
+                    <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={handleSourceContinue}>{t("amContinue")}</Button>
                   </div>
                 )}
 
