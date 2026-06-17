@@ -781,7 +781,6 @@ const translations = {
   merchantNotFound: { en: "Merchant Not Found", bn: "মার্চেন্ট পাওয়া যায়নি" },
   merchantNotFoundDescPrefix: { en: "The merchant code", bn: "মার্চেন্ট কোড" },
   merchantNotFoundDescSuffix: { en: "could not be resolved.", bn: "সমাধান করা যায়নি।" },
-  goHome: { en: "Go Home", bn: "হোমে যান" },
   loadingPayment: { en: "Loading payment…", bn: "পেমেন্ট লোড হচ্ছে…" },
 } as const;
 
