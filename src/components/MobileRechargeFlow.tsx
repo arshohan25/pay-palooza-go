@@ -719,7 +719,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 {/* Operator cards — hide when a pack is already selected */}
                 {!selectedPack && (
                 <div className="space-y-2.5">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Browse Package & Special Offer</p>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("mrBrowsePackages")}</p>
                   <div className="space-y-2">
                     {OPERATORS.map((op) => (
                       <motion.button
