@@ -1143,23 +1143,23 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         <p className="font-extrabold text-foreground">{effectiveName}</p>
                         <p className="text-xs text-muted-foreground">{operator.name} · {formatPhone(phone)}</p>
                       </div>
-                      <p className="text-xl font-extrabold text-foreground">৳{effectivePrice}</p>
+                      <p className="text-xl font-extrabold text-foreground">৳{fmtAmt(effectivePrice)}</p>
                     </div>
                     {selectedPack && (
                       <>
                         <div className="flex justify-between text-muted-foreground">
-                          <span>Details</span>
+                          <span>{t("mrDetails")}</span>
                           <span className="font-semibold text-foreground text-right max-w-[55%]">{selectedPack.details}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
-                          <span>Validity</span>
+                          <span>{t("mrValidity")}</span>
                           <span className="font-semibold text-foreground">{selectedPack.validity}</span>
                         </div>
                         {calcCashback(selectedPack, effectivePrice) > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Drive Cashback (2%)</span>
+                            <span className="text-muted-foreground">{t("mrDriveCashback2")}</span>
                             <span className="font-bold text-amber-600 flex items-center gap-1">
-                              <Coins size={11} /> +৳{calcCashback(selectedPack, effectivePrice)}
+                              <Coins size={11} /> +৳{fmtAmt(calcCashback(selectedPack, effectivePrice))}
                             </span>
                           </div>
                         )}
@@ -1169,21 +1169,22 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <CouponSummaryLine code={pendingCoupon.code} discount={calcCouponDiscount(pendingCoupon, effectivePrice)} />
                     )}
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Service fee</span>
-                      <span className="font-semibold text-primary">Free</span>
+                      <span>{t("mrServiceFee")}</span>
+                      <span className="font-semibold text-primary">{t("mrFree")}</span>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
-                      <span>Total from balance</span>
-                      <span>৳{Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0))}</span>
+                      <span>{t("totalFromBalance")}</span>
+                      <span>৳{fmtAmt(Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0)))}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* PIN entry */}
                 <div className="space-y-1 text-center">
-                  <p className="text-sm font-semibold text-foreground">Enter your 4-digit PIN</p>
-                  <p className="text-xs text-muted-foreground">Authorize this recharge</p>
+                  <p className="text-sm font-semibold text-foreground">{t("enterPin")}</p>
+                  <p className="text-xs text-muted-foreground">{t("mrAuthorizeRecharge")}</p>
+
                 </div>
                 <PinInput
                   pin={pin}
