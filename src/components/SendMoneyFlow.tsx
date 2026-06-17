@@ -659,7 +659,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
             <button
               type="button"
               onClick={goBack}
-              aria-label="Go back"
+              aria-label={t("smGoBack")}
               className="w-10 h-10 rounded-full bg-primary-foreground/15 flex items-center justify-center active:scale-95 transition-transform shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/70"
             >
               <ChevronLeft size={20} className="text-primary-foreground" aria-hidden="true" />
