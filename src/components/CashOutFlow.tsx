@@ -337,7 +337,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     const amtVal = parseFloat(amount) || 0;
     const limitCheck = await checkDailyLimit("cashout", amtVal);
     if (!limitCheck.allowed) {
-      setError(t("coDailyLimitUsed", { used: limitCheck.used.toLocaleString(), limit: limitCheck.limit.toLocaleString() }));
+      setError(t("coDailyLimitUsed").replace("{used}", limitCheck.used.toLocaleString()).replace("{limit}", limitCheck.limit.toLocaleString()));
       setProcessing(false);
       return;
     }
