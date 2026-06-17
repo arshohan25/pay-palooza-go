@@ -999,7 +999,7 @@ const LoanPage = () => {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Repay Amount</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">{t("loanRepayAmount")}</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">৳</span>
                     <input
@@ -1012,22 +1012,22 @@ const LoanPage = () => {
                     <button
                       onClick={() => setRepayAmount(String(lp.remaining))}
                       className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[11px] font-bold"
-                    >Pay All</button>
+                    >{t("loanPayAll")}</button>
                   </div>
                   {amt > lp.remaining && (
-                    <p className="text-[11px] text-destructive mt-1.5 flex items-center gap-1"><AlertCircle size={11} /> Exceeds outstanding</p>
+                    <p className="text-[11px] text-destructive mt-1.5 flex items-center gap-1"><AlertCircle size={11} /> {t("loanExceedsOutstanding")}</p>
                   )}
                 </div>
 
                 {amt > 0 && amt <= lp.remaining && (
                   <div className="rounded-2xl bg-primary/[0.06] ring-1 ring-primary/15 p-3 space-y-1">
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Paying now</span><span className="font-bold text-foreground">৳{amt.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">After payment</span><span className={`font-bold ${isFull ? "text-emerald-600" : "text-foreground"}`}>{isFull ? "✓ Fully Settled" : `৳${newOutstanding.toLocaleString()} left`}</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">{t("loanPayingNow")}</span><span className="font-bold text-foreground">৳{amt.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">{t("loanAfterPayment")}</span><span className={`font-bold ${isFull ? "text-emerald-600" : "text-foreground"}`}>{isFull ? t("loanFullySettled") : `৳${newOutstanding.toLocaleString()} ${t("loanLeftSuffix")}`}</span></div>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Confirm with PIN</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{t("loanConfirmWithPin")}</label>
                   {repayPinError && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {repayPinError}</p>
                   )}
@@ -1042,7 +1042,7 @@ const LoanPage = () => {
 
                 <SlideToConfirm
                   onConfirm={handleRepayLoan}
-                  label={repayProcessing ? "Processing…" : `Slide to Repay ৳${amt.toLocaleString()}`}
+                  label={repayProcessing ? t("loanProcessing") : `${t("loanSlideToRepay")} ৳${amt.toLocaleString()}`}
                   disabled={repayProcessing || amt <= 0 || amt > lp.remaining || repayPin.length < 4}
                   pinComplete={repayPin.length === 4 && amt > 0 && amt <= lp.remaining}
                   icon={Lock}
