@@ -351,7 +351,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const toStore: StoredContact[] = [];
     const newContacts: Contact[] = [];
     for (const entry of data) {
-      const name = entry.name?.[0] || t("unknown") || "Unknown";
+      const name = entry.name?.[0] || "Unknown";
       const tel = entry.tel?.[0];
       if (!tel) continue;
       const phone = normalizePhone(tel);
