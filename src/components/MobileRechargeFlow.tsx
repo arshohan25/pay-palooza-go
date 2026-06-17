@@ -602,11 +602,14 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       className="pl-9 h-12 text-base bg-card border-border tracking-wide"
                     />
                   </div>
-                  {phone.replace(/\D/g, "").length > 0 && phone.replace(/\D/g, "").length < 11 && (
-                    <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in">
-                      <AlertCircle size={12} /> Enter an 11-digit mobile number.
-                    </p>
-                  )}
+                  {(() => {
+                    const v = validateRecipient("phone", phone);
+                    return v.errorMessage ? (
+                      <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in">
+                        <AlertCircle size={12} /> {v.errorMessage}
+                      </p>
+                    ) : null;
+                  })()}
 
                   {/* Live operator detection badge */}
                   <AnimatePresence>

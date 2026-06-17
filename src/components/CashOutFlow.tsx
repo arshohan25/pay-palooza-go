@@ -492,19 +492,26 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <AlertCircle size={12} /> {error}
                     </p>
                   )}
-                  {!error && agentIdInput.trim().length > 0 && agentIdInput.trim().length < 5 && (
-                    <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in">
-                      <AlertCircle size={12} /> Agent ID must be at least 5 characters.
-                    </p>
-                  )}
-                  {agentIdInput.trim().length >= 5 && (
-                    <Button
-                      className="w-full h-11 gradient-cashout border-0 text-white font-semibold animate-fade-in"
-                      onClick={handleAgentIdContinue}
-                    >
-                      {t("continue")}
-                    </Button>
-                  )}
+                  {(() => {
+                    const v = validateRecipient("agentId", agentIdInput);
+                    return (
+                      <>
+                        {!error && v.errorMessage && (
+                          <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in">
+                            <AlertCircle size={12} /> {v.errorMessage}
+                          </p>
+                        )}
+                        {v.isValid && (
+                          <Button
+                            className="w-full h-11 gradient-cashout border-0 text-white font-semibold animate-fade-in"
+                            onClick={handleAgentIdContinue}
+                          >
+                            {t("continue")}
+                          </Button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Divider */}

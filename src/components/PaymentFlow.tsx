@@ -548,17 +548,24 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
                   )}
-                  {!error && merchantIdInput.trim().length > 0 && merchantIdInput.trim().length < 5 && (
-                    <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> Merchant ID must be at least 5 characters.</p>
-                  )}
-                  {merchantIdInput.trim().length >= 5 && (
-                    <Button
-                      className="w-full h-11 gradient-payment border-0 text-white font-semibold animate-fade-in"
-                      onClick={handleMerchantIdContinue}
-                    >
-                      {t("continue")}
-                    </Button>
-                  )}
+                  {(() => {
+                    const v = validateRecipient("merchantId", merchantIdInput);
+                    return (
+                      <>
+                        {!error && v.errorMessage && (
+                          <p className="text-xs text-destructive flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> {v.errorMessage}</p>
+                        )}
+                        {v.isValid && (
+                          <Button
+                            className="w-full h-11 gradient-payment border-0 text-white font-semibold animate-fade-in"
+                            onClick={handleMerchantIdContinue}
+                          >
+                            {t("continue")}
+                          </Button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Divider */}
