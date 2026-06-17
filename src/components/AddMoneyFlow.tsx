@@ -253,9 +253,9 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   }, [step, submittedRequestId]);
 
   const trackingSteps = [
-    { key: "pending", label: "Submitted", icon: Clock },
-    { key: "review", label: "Under Review", icon: Loader2 },
-    { key: "approved", label: "Approved", icon: CheckCircle2 },
+    { key: "pending", label: t("amSubmitted"), icon: Clock },
+    { key: "review", label: t("amUnderReview"), icon: Loader2 },
+    { key: "approved", label: t("amApproved"), icon: CheckCircle2 },
   ];
 
   const getTrackingIndex = () => {
