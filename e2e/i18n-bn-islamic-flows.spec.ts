@@ -43,10 +43,39 @@ async function setBangla(page: Page) {
   await page.addInitScript(() => {
     try {
       window.localStorage.setItem("mfs_ui_lang", "bn");
+      // Bypass first-launch onboarding slides so protected routes render.
+      window.localStorage.setItem("mfs_onboarding_completed", "1");
+      window.localStorage.setItem("mfs_has_authenticated", "1");
     } catch {
       /* ignore */
     }
   });
+}
+
+/**
+ * Seed a Supabase session into localStorage when one is provided via env
+ * (E2E_SUPABASE_STORAGE_KEY + E2E_SUPABASE_SESSION_JSON, or the Lovable
+ * sandbox equivalents). Routes under test require an authenticated user.
+ */
+async function seedSession(page: Page) {
+  const key =
+    process.env.E2E_SUPABASE_STORAGE_KEY ??
+    process.env.LOVABLE_BROWSER_SUPABASE_STORAGE_KEY;
+  const session =
+    process.env.E2E_SUPABASE_SESSION_JSON ??
+    process.env.LOVABLE_BROWSER_SUPABASE_SESSION_JSON;
+  if (!key || !session) return false;
+  await page.addInitScript(
+    ([k, v]) => {
+      try {
+        window.localStorage.setItem(k as string, v as string);
+      } catch {
+        /* ignore */
+      }
+    },
+    [key, session],
+  );
+  return true;
 }
 
 async function freezeUi(page: Page) {
