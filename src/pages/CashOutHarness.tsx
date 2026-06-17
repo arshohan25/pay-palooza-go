@@ -9,7 +9,7 @@ import { useRecipientField } from "@/hooks/use-recipient-field";
  *
  * Mounted at /__test/cashout-harness only in dev builds (see App.tsx).
  */
-type Step = "agent" | "amount" | "confirm";
+type Step = "agent" | "amount" | "confirm" | "success";
 
 const MIN_AMOUNT = 50;
 const MAX_AMOUNT = 25_000;
