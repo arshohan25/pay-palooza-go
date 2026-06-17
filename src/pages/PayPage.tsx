@@ -477,7 +477,7 @@ const PayPage = () => {
           {amountParam > 0 && (
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }}
               className="mt-4 inline-flex items-baseline gap-1.5">
-              <span className="text-3xl font-extrabold text-foreground tracking-tight">৳{fmt(amountParam)}</span>
+              <span className="text-3xl font-extrabold text-foreground tracking-tight">৳{fmt(amountParam, locale)}</span>
               <span className="text-[10px] font-semibold text-muted-foreground/50 bg-muted/50 px-1.5 py-0.5 rounded-full">BDT</span>
             </motion.div>
           )}
