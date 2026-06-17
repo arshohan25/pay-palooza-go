@@ -884,7 +884,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">{t("noteOptional")}</label>
                   <input
-                    placeholder="What's it for?"
+                    placeholder={t("smWhatsFor")}
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     className="w-full px-3 h-10 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/60"
