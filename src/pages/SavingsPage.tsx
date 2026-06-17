@@ -379,11 +379,11 @@ function DpsTab() {
   const handleCreatePlan = async () => {
     const amt = parseFloat(amount);
     const tot = parseInt(installments, 10);
-    if (!goalId) throw new Error("Pick a goal");
-    if (!(amt > 0) || !(tot > 0)) throw new Error("Enter valid amount and installments");
+    if (!goalId) throw new Error(t("savPickGoalErr"));
+    if (!(amt > 0) || !(tot > 0)) throw new Error(t("savValidAmountInst"));
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not signed in");
+    if (!user) throw new Error(t("savNotSignedIn"));
 
     // First installment deducted now
     const { error: depErr } = await supabase.rpc("savings_deposit", { p_goal_id: goalId, p_amount: amt, p_source: "manual" });
@@ -409,7 +409,7 @@ function DpsTab() {
       strategy,
     });
     if (planErr) throw planErr;
-    toast.success("DPS plan created");
+    toast.success(t("savDpsCreated"));
     setCreateOpen(false); setGoalId(""); setAmount("500"); setInstallments("12");
     reload();
   };
@@ -418,7 +418,7 @@ function DpsTab() {
     if (!collectPlan) return;
     const { error } = await supabase.functions.invoke("process-auto-save", { body: { schedule_id: collectPlan.id, force: false } });
     if (error) throw error;
-    toast.success("Installment processed");
+    toast.success(t("savInstallmentProcessed"));
     reload();
   };
 
@@ -426,7 +426,7 @@ function DpsTab() {
     if (!repayMissed) return;
     const { error } = await supabase.rpc("repay_missed_dps", { p_missed_id: repayMissed.id });
     if (error) throw error;
-    toast.success("Missed payment repaid");
+    toast.success(t("savMissedRepaid"));
     reload();
   };
 
