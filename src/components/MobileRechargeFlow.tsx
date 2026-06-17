@@ -1330,25 +1330,26 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
         open={showShare}
         onClose={() => setShowShare(false)}
         receipt={{
-          title: "Recharge Successful",
-          amount: `৳${effectivePrice}`,
+          title: t("mrShareSuccessTitle"),
+          amount: `৳${fmtAmt(effectivePrice)}`,
           gradient: "gradient-primary",
           txnId: txnId.current,
           rows: [
-            { label: "Number",   value: formatPhone(phone) },
-            { label: "Operator", value: operator?.name ?? "" },
-            { label: "Pack",     value: selectedPack ? selectedPack.name : "Custom" },
+            { label: t("mrNumber"),   value: formatPhone(phone) },
+            { label: t("mrOperator"), value: operator?.name ?? "" },
+            { label: t("mrPack"),     value: selectedPack ? selectedPack.name : t("mrCustom") },
             ...(selectedPack ? [
-              { label: "Details",  value: selectedPack.details },
-              { label: "Validity", value: selectedPack.validity },
-              ...(selectedPack.cashback ? [{ label: "Cashback", value: `+৳${selectedPack.cashback}` }] : []),
+              { label: t("mrDetails"),  value: selectedPack.details },
+              { label: t("mrValidity"), value: selectedPack.validity },
+              ...(selectedPack.cashback ? [{ label: t("mrCashback"), value: `+৳${fmtAmt(selectedPack.cashback)}` }] : []),
             ] : []),
-            ...(pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 ? [{ label: `🎟️ Coupon (${pendingCoupon.code})`, value: `-৳${calcCouponDiscount(pendingCoupon, effectivePrice).toFixed(2)}` }] : []),
-            { label: "Fee",      value: "Free" },
-            { label: "Deducted", value: `৳${Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0))}` },
-            { label: "Date",     value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
-            { label: "Time",     value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+            ...(pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 ? [{ label: `🎟️ ${t("mrCouponPrefix")} (${pendingCoupon.code})`, value: `-৳${fmtAmt(calcCouponDiscount(pendingCoupon, effectivePrice), { minimumFractionDigits: 2 })}` }] : []),
+            { label: t("mrServiceFee"), value: t("mrFree") },
+            { label: t("mrDeductedFromBalance"), value: `৳${fmtAmt(Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0)))}` },
+            { label: t("date"),     value: txnTime.current.toLocaleDateString(numLocale, { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: t("time"),     value: txnTime.current.toLocaleTimeString(numLocale, { hour: "2-digit", minute: "2-digit", hour12: true }) },
           ],
+
         }}
       />
     </motion.div>
