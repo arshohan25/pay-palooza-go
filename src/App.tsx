@@ -148,10 +148,16 @@ const App = () => (
                     <Route path="/install/:role" element={<RoleInstallPage />} />
                     <Route path="/developers" element={<DeveloperPortal />} />
                     {import.meta.env.DEV && (
-                      <Route
-                        path="/__test/recipient-harness"
-                        element={<RecipientHarness />}
-                      />
+                      <>
+                        <Route
+                          path="/__test/recipient-harness"
+                          element={<RecipientHarness />}
+                        />
+                        <Route
+                          path="/__test/cashout-harness"
+                          element={<CashOutHarness />}
+                        />
+                      </>
                     )}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
