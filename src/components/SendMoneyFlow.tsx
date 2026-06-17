@@ -615,7 +615,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   if (sendLock.locked) {
     return (
       <FeatureLockedOverlay
-        featureName="Send Money"
+        featureName={t("flowSendMoney")}
         reason={sendLock.reason}
         expiresAt={sendLock.expiresAt}
         onClose={onClose}
