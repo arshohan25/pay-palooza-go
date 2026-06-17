@@ -156,8 +156,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
           .neq("status", "rejected")
           .limit(1);
         if (data && data.length > 0) {
-          const date = new Date(data[0].created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-          setDuplicateTxnWarning(`This Transaction ID was already submitted on ${date} (${data[0].status}). Duplicate IDs may delay processing.`);
+          const date = new Date(data[0].created_at).toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" });
+          setDuplicateTxnWarning(t("amDuplicateInfo").replace("{date}", date).replace("{status}", data[0].status));
         } else {
           setDuplicateTxnWarning("");
         }
