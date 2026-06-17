@@ -522,7 +522,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   <div className="flex-1 h-px bg-border" />
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                     <MapPin size={11} />
-                    {locationGranted && nearbyAgents.length > 0 ? t("nearbyAgents") : "Recent Agents"}
+                    {locationGranted && nearbyAgents.length > 0 ? t("nearbyAgents") : t("coRecentAgents")}
                   </span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
