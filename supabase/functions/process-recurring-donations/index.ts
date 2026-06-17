@@ -26,14 +26,16 @@ Deno.serve(async (req) => {
     let skipped = 0;
 
     for (const schedule of schedules ?? []) {
-      // Check balance
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("balance")
-        .eq("user_id", schedule.user_id)
-        .single();
-
-      if (!profile || Number(profile.balance) < Number(schedule.amount)) {
+      // Atomic debit: prevents race-condition double-debit; throws on insufficient funds.
+      let newBalance: number;
+      try {
+        const { data: bal, error: debitErr } = await supabase.rpc("debit_user_balance", {
+          p_user_id: schedule.user_id,
+          p_amount: Number(schedule.amount),
+        });
+        if (debitErr) throw debitErr;
+        newBalance = Number(bal);
+      } catch (_e) {
         await supabase.from("notifications").insert({
           user_id: schedule.user_id,
           title: "Recurring Donation Skipped",
@@ -43,10 +45,6 @@ Deno.serve(async (req) => {
         skipped++;
         continue;
       }
-
-      // Deduct balance
-      const newBalance = Number(profile.balance) - Number(schedule.amount);
-      await supabase.from("profiles").update({ balance: newBalance }).eq("user_id", schedule.user_id);
 
       // Credit platform treasury
       const { data: treasury } = await supabase

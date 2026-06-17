@@ -263,14 +263,20 @@ Deno.serve(async (req) => {
         return { outcome: "no_goal", reason: "no goal", updatedSchedule: null };
       }
 
-      const { data: profile } = await supabase.from("profiles").select("balance").eq("user_id", schedule.user_id).single();
-
       const nextRun = new Date();
       if (schedule.frequency === "daily") nextRun.setDate(nextRun.getDate() + 1);
       else if (schedule.frequency === "weekly") nextRun.setDate(nextRun.getDate() + 7);
       else nextRun.setMonth(nextRun.getMonth() + 1);
 
-      if (!profile || Number(profile.balance) < Number(schedule.amount)) {
+      // Atomic debit; if it fails, treat as insufficient funds.
+      let newBalance: number | null = null;
+      const { data: debitedBal, error: debitErr } = await supabase.rpc("debit_user_balance", {
+        p_user_id: schedule.user_id,
+        p_amount: Number(schedule.amount),
+      });
+      if (!debitErr && debitedBal != null) newBalance = Number(debitedBal);
+
+      if (newBalance === null) {
         await supabase.from("dps_missed_payments").insert({
           schedule_id: schedule.id, user_id: schedule.user_id, amount: schedule.amount, due_date: new Date().toISOString(),
         });
@@ -292,15 +298,16 @@ Deno.serve(async (req) => {
 
       const { data: goal } = await supabase.from("savings_goals").select("*").eq("id", goalId).single();
       if (!goal || goal.status !== "active") {
+        // Refund the debit so we don't keep money against a no-longer-active goal.
+        await supabase.rpc("credit_user_balance", { p_user_id: schedule.user_id, p_amount: Number(schedule.amount) });
         await log("no_goal", "Goal not active", 0);
         return { outcome: "no_goal", reason: "goal inactive", updatedSchedule: null };
       }
 
-      const newBalance = Number(profile.balance) - Number(schedule.amount);
       const newSaved = Number(goal.saved_amount) + Number(schedule.amount);
       const completed = newSaved >= Number(goal.target_amount);
 
-      await supabase.from("profiles").update({ balance: newBalance }).eq("user_id", schedule.user_id);
+
       await supabase.from("savings_goals").update({
         saved_amount: newSaved, status: completed ? "completed" : "active", updated_at: new Date().toISOString(),
       }).eq("id", goalId);

@@ -6722,6 +6722,10 @@ export type Database = {
         }
         Returns: Json
       }
+      credit_user_balance: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: number
+      }
       credit_vendor_earnings: {
         Args: {
           p_category?: string
@@ -6730,6 +6734,10 @@ export type Database = {
           p_order_id: string
         }
         Returns: Json
+      }
+      debit_user_balance: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: number
       }
       decrement_variant_stock: {
         Args: { p_qty: number; p_variant_id: string }

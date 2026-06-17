@@ -31,30 +31,22 @@ async function creditUserBalance(
     return { success: true, alreadyCredited: true };
   }
 
-  const { data: currentProfile } = await supabaseAdmin
-    .from("profiles")
-    .select("balance")
-    .eq("user_id", userId)
-    .single();
-
-  if (!currentProfile) {
-    console.error(`creditUserBalance: profile not found for user ${userId}`);
+  // Atomic credit via SECURITY DEFINER RPC (no read-then-write race).
+  const { data: newBalance, error: creditErr } = await supabaseAdmin.rpc("credit_user_balance", {
+    p_user_id: userId,
+    p_amount: amount,
+  });
+  if (creditErr || newBalance == null) {
+    console.error(`creditUserBalance: RPC failed for user ${userId}`, creditErr);
     return { success: false };
   }
-
-  const newBalance = parseFloat(String(currentProfile.balance)) + amount;
-
-  await supabaseAdmin
-    .from("profiles")
-    .update({ balance: newBalance })
-    .eq("user_id", userId);
 
   await supabaseAdmin.from("transactions").insert({
     user_id: userId,
     type: "addmoney",
     amount,
     fee: 0,
-    balance_after: newBalance,
+    balance_after: Number(newBalance),
     description,
     reference,
     status: "completed",
@@ -215,68 +207,60 @@ async function handleNagadCallback(
   }
 
   if (status === "Success" || status === "000") {
-    // Idempotency gate: only process if session is still pending
-    if (session.status !== "completed") {
-      const { data: updatedSession } = await supabaseAdmin
+    // SECURITY: never trust the unsigned callback body for balance crediting.
+    // Verify server-to-server with Nagad before treating as paid.
+    let verified = false;
+    let verifyData: Record<string, unknown> | null = null;
+    try {
+      const nagadFnUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/nagad-payment`;
+      const verifyRes = await fetch(nagadFnUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        },
+        body: JSON.stringify({ action: "verify", sessionId: session.id }),
+      });
+      verifyData = await verifyRes.json().catch(() => null);
+      verified = verifyRes.ok && !!verifyData && (verifyData as any).success === true;
+    } catch (verifyErr) {
+      console.error("Nagad webhook: server-side verify failed", verifyErr);
+    }
+
+    if (!verified) {
+      console.warn("Nagad webhook: ignoring unverified Success callback", { sessionId: session.id, callbackData, verifyData });
+      // Stash callback metadata for audit, but do NOT credit.
+      await supabaseAdmin
         .from("payment_sessions")
         .update({
-          status: "completed",
-          provider_trx_id: (callbackData.issuerPaymentRefNo || paymentRefId) as string,
-          completed_at: new Date().toISOString(),
           metadata: {
             ...((session.metadata as Record<string, unknown>) || {}),
-            callback_data: callbackData,
+            unverified_callback: callbackData,
           },
         })
-        .eq("id", session.id)
-        .eq("status", "pending") // Only update if still pending
-        .select("id")
-        .maybeSingle();
-
-      if (updatedSession) {
-        // Credit user's balance with idempotency check
-        const creditResult = await creditUserBalance(
-          supabaseAdmin,
-          session.user_id as string,
-          parseFloat(String(session.amount)),
-          `Nagad Payment (Ref: ${paymentRefId || session.provider_payment_id})`,
-          session.id as string
-        );
-
-        // Debit treasury for this add-money
-        if (!creditResult.alreadyCredited && creditResult.success) {
-          try {
-            await supabaseAdmin.rpc("treasury_debit_for_addmoney", {
-              p_user_id: session.user_id as string,
-              p_amount: parseFloat(String(session.amount)),
-            });
-          } catch (treasuryErr) {
-            console.error("Treasury debit failed (non-blocking):", treasuryErr);
-          }
-        }
-
-        // Audit log
-        try {
-          await supabaseAdmin.from("audit_logs").insert({
-            actor_id: session.user_id as string,
-            action: "payment_credit_webhook",
-            entity_type: "payment_session",
-            entity_id: session.id as string,
-            details: {
-              provider: "nagad",
-              amount: session.amount,
-              ref_id: paymentRefId,
-              callback_data: callbackData,
-              already_credited: creditResult.alreadyCredited || false,
-            },
-          });
-        } catch (auditErr) {
-          console.error("Audit log insert failed:", auditErr);
-        }
-      } else {
-        console.log(`Nagad webhook: session ${session.id} already processed, skipping credit`);
+        .eq("id", session.id);
+    } else {
+      // Credit/idempotency handled inside the verify action. Just audit-log here.
+      try {
+        await supabaseAdmin.from("audit_logs").insert({
+          actor_id: session.user_id as string,
+          action: "payment_credit_webhook_verified",
+          entity_type: "payment_session",
+          entity_id: session.id as string,
+          details: {
+            provider: "nagad",
+            amount: session.amount,
+            ref_id: paymentRefId,
+            callback_data: callbackData,
+            verify_result: verifyData,
+          },
+        });
+      } catch (auditErr) {
+        console.error("Audit log insert failed:", auditErr);
       }
     }
+
   } else {
     await supabaseAdmin
       .from("payment_sessions")
