@@ -443,7 +443,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     // Try real-time API recharge if operator has it enabled
     let apiProcessed = false;
     if (operator) {
-      setApiStatus(`Processing via ${operator.name} API...`);
+      setApiStatus(`${t("mrProcessingViaApi")} ${operator.name} ${t("mrApiSuffix")}`);
       try {
         const { data, error: fnErr } = await supabase.functions.invoke("process-recharge", {
           body: {
