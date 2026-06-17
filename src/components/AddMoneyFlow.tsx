@@ -211,9 +211,14 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   // Real-time status tracking on success screen
   useEffect(() => {
     if (step !== "success" || !submittedRequestId) return;
-    
-    const channel = supabase
-      .channel(`fund-request-${submittedRequestId}`)
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled || !user) return;
+      channel = supabase
+        .channel(`fund-request-${user.id}-${submittedRequestId}`)
       .on(
         "postgres_changes",
         {
@@ -235,10 +240,14 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
             }
           }
         }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    })();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [step, submittedRequestId]);
 
   const trackingSteps = [

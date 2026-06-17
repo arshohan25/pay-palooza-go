@@ -245,7 +245,7 @@ export function useChat() {
     if (!user) return;
 
     const channel = supabase
-      .channel("chat-realtime-combined")
+      .channel(`chat-realtime-${user.id}`)
       .on(
         "postgres_changes",
         {
