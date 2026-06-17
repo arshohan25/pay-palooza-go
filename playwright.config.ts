@@ -20,7 +20,17 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        // Allow CI/sandbox to point at a system-installed Chromium
+        // (Playwright's bundled browser is downloaded via `npx playwright install`).
+        launchOptions: process.env.PLAYWRIGHT_CHROMIUM_PATH
+          ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
+          : undefined,
+      },
+    },
   ],
   webServer: process.env.E2E_NO_SERVER
     ? undefined
