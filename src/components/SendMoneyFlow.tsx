@@ -590,11 +590,11 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (note || "") + (resolvedWalletId ? ` [Wallet: ${resolvedWalletId}]` : ""),
       });
       onSuccess?.(actualSendAmount);
-      showTxnToast({ type: "Send Money", amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
+      showTxnToast({ type: t("flowSendMoney"), amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
       setDirection(1);
       setStep("success");
     } catch (err: any) {
-      setError(err?.message || "Transaction failed. Please try again.");
+      setError(err?.message || t("smTransactionFailed"));
       setPin("");
       setProcessing(false);
       return;
