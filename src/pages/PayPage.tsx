@@ -503,7 +503,7 @@ const PayPage = () => {
                 className="w-full rounded-2xl h-12 text-sm font-bold shadow-lg shadow-primary/20 active:scale-[0.97] transition-transform"
               >
                 <Shield size={16} className="mr-2" />
-                Pay with Phone & PIN
+                {t("ppPayWithPhonePin")}
               </Button>
 
               <button
