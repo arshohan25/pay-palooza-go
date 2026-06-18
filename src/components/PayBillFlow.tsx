@@ -561,14 +561,14 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                       </div>
                       <div>
                         <p className="text-xs text-white/75">{provider.name}</p>
-                        <p className="text-base font-extrabold">{billType.name} Bill</p>
+                        <p className="text-base font-extrabold">{t(billType.nameKey as never)} {t("pbBillSuffix")}</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="p-4 space-y-4">
                     <div className="rounded-2xl bg-muted/50 border border-border px-4 py-3">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">{billType.accountLabel}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">{t(billType.accountLabelKey as never)}</p>
                       <p className="text-base font-bold text-foreground mt-0.5">{accountNo}</p>
                     </div>
 
