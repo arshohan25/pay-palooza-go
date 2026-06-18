@@ -368,8 +368,8 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     <ShieldCheck size={32} className="text-primary" />
                   </div>
                   <div className="text-center space-y-1">
-                    <h2 className="text-lg font-bold text-foreground">Enter Your PIN</h2>
-                    <p className="text-sm text-muted-foreground">Confirm withdrawal of ৳{totalDeduction.toLocaleString()}</p>
+                    <h2 className="text-lg font-bold text-foreground">{t("btEnterYourPin")}</h2>
+                    <p className="text-sm text-muted-foreground">{t("btConfirmWithdrawalOf").replace("{amount}", fmt(totalDeduction))}</p>
                   </div>
                   <div className="flex gap-3">
                     {[0, 1, 2, 3].map(i => (
@@ -383,7 +383,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       type="password"
                       inputMode="numeric"
                       maxLength={4}
-                      placeholder="Enter 4-digit PIN"
+                      placeholder={t("btEnter4DigitPin")}
                       value={pin}
                       onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
                       className="text-center text-lg tracking-[0.5em] h-12 bg-card border-border"
@@ -396,7 +396,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     onClick={handlePinSubmit}
                     disabled={submitting || pin.length !== 4}
                   >
-                    {submitting ? "Processing…" : "Confirm Withdrawal"}
+                    {submitting ? t("btProcessing") : t("btConfirmWithdrawal")}
                   </Button>
                 </div>
               )}
