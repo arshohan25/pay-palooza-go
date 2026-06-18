@@ -39,11 +39,14 @@ type Step = "type" | "account" | "bill" | "review" | "pin" | "success";
 interface BillType {
   id: string;
   name: string;
+  nameKey: string;
   providers: Provider[];
   icon: typeof Zap;
   gradient: string;
   accountLabel: string;
+  accountLabelKey: string;
   accountPlaceholder: string;
+  placeholderKey: string;
   accountMaxLength: number;
 }
 
@@ -57,10 +60,13 @@ const BILL_TYPES: BillType[] = [
   {
     id: "electricity",
     name: "Electricity",
+    nameKey: "pbElectricity",
     icon: Zap,
     gradient: "gradient-accent",
     accountLabel: "Customer ID",
+    accountLabelKey: "pbAcctCustomerId",
     accountPlaceholder: "e.g. 1234567890",
+    placeholderKey: "pbAcctPlaceholderElec",
     accountMaxLength: 13,
     providers: [
       { id: "desco", name: "DESCO", short: "DE" },
@@ -72,10 +78,13 @@ const BILL_TYPES: BillType[] = [
   {
     id: "gas",
     name: "Gas",
+    nameKey: "pbGas",
     icon: Flame,
     gradient: "gradient-cashout",
     accountLabel: "Bill Account No.",
+    accountLabelKey: "pbAcctBillAccount",
     accountPlaceholder: "e.g. 01-123456-00",
+    placeholderKey: "pbAcctPlaceholderGas",
     accountMaxLength: 14,
     providers: [
       { id: "titas", name: "Titas Gas", short: "TG" },
@@ -86,10 +95,13 @@ const BILL_TYPES: BillType[] = [
   {
     id: "water",
     name: "Water",
+    nameKey: "pbWater",
     icon: Droplets,
     gradient: "gradient-payment",
     accountLabel: "Connection No.",
+    accountLabelKey: "pbAcctConnection",
     accountPlaceholder: "e.g. W-789012",
+    placeholderKey: "pbAcctPlaceholderWater",
     accountMaxLength: 12,
     providers: [
       { id: "wasa", name: "WASA (Dhaka)", short: "DW" },
@@ -100,10 +112,13 @@ const BILL_TYPES: BillType[] = [
   {
     id: "internet",
     name: "Internet",
+    nameKey: "pbInternet",
     icon: Wifi,
     gradient: "gradient-addmoney",
     accountLabel: "Account / User ID",
+    accountLabelKey: "pbAcctUserId",
     accountPlaceholder: "e.g. ISP-100234",
+    placeholderKey: "pbAcctPlaceholderNet",
     accountMaxLength: 15,
     providers: [
       { id: "link3", name: "Link3", short: "L3" },
@@ -115,10 +130,13 @@ const BILL_TYPES: BillType[] = [
   {
     id: "tv",
     name: "TV / Cable",
+    nameKey: "pbTvCable",
     icon: Tv2,
     gradient: "gradient-send",
     accountLabel: "Subscriber ID",
+    accountLabelKey: "pbAcctSubscriber",
     accountPlaceholder: "e.g. 5678901",
+    placeholderKey: "pbAcctPlaceholderTv",
     accountMaxLength: 12,
     providers: [
       { id: "dishtv", name: "Dish TV", short: "DT" },
@@ -203,7 +221,9 @@ interface PayBillFlowProps {
 }
 
 const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, ref) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const dateLocale = lang === "bn" ? "bn-BD" : "en-GB";
+  const timeLocale = lang === "bn" ? "bn-BD" : "en-US";
   const [step, setStep] = useState<Step>("type");
   const [direction, setDirection] = useState(1);
   const [billType, setBillType] = useState<BillType | null>(null);
@@ -269,13 +289,13 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
 
   const handleAccountContinue = () => {
     if (!provider) {
-      setError("Please select a provider.");
+      setError(t("pbErrSelectProvider"));
       return;
     }
 
     const trimmed = accountNo.trim();
     if (trimmed.length < 4) {
-      setError(`Enter a valid ${billType?.accountLabel ?? "account number"}.`);
+      setError(t("pbErrValidAccount").replace("{label}", billType ? t(billType.accountLabelKey as never) : t("pbAccountNo")));
       return;
     }
 
@@ -287,7 +307,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
 
   const handlePinConfirm = async () => {
     if (pin.length < 4) {
-      setError("Enter your 4-digit PIN.");
+      setError(t("pbErrEnterPin"));
       return;
     }
     if (processing) return;
@@ -296,7 +316,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
 
     const pinValid = await verifyPin(pin);
     if (!pinValid) {
-      setError("Incorrect PIN. Please try again.");
+      setError(t("pbErrIncorrectPin"));
       setPin("");
       setProcessing(false);
       return;
@@ -306,7 +326,9 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
     const limitCheck = await checkDailyLimit("paybill", dueAmount);
     if (!limitCheck.allowed) {
       setError(
-        `Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`
+        t("pbErrDailyLimit")
+          .replace("{used}", limitCheck.used.toLocaleString(dateLocale))
+          .replace("{limit}", limitCheck.limit.toLocaleString(dateLocale))
       );
       setProcessing(false);
       return;
@@ -332,8 +354,8 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
       clearPendingCoupon();
     }
     showTxnToast({
-      type: "Bill Payment",
-      amount: `৳${finalAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+      type: t("pbToastType"),
+      amount: `৳${finalAmount.toLocaleString(dateLocale, { minimumFractionDigits: 2 })}`,
       gradient: "gradient-primary",
     });
 
@@ -367,7 +389,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
             <button
               type="button"
               onClick={goBack}
-              aria-label="Go back"
+              aria-label={t("pbGoBack")}
               className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ChevronLeft size={20} aria-hidden="true" />
@@ -383,7 +405,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
             aria-valuemin={0}
             aria-valuemax={STEPS.length}
             aria-valuenow={stepIndex + 1}
-            aria-label={`Step ${stepIndex + 1} of ${STEPS.length}`}
+            aria-label={t("pbStepOf").replace("{current}", String(stepIndex + 1)).replace("{total}", String(STEPS.length))}
           >
             <motion.div
               className="h-full bg-white rounded-full shadow-[0_0_8px_2px_rgba(255,255,255,0.55)]"
@@ -422,7 +444,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                         <Icon size={22} strokeWidth={2} />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-bold text-foreground">{item.name}</p>
+                        <p className="text-sm font-bold text-foreground">{t(item.nameKey as never)}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {item.providers.map((providerItem) => providerItem.name).join(" · ")}
                         </p>
@@ -441,8 +463,8 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                     <billType.icon size={18} strokeWidth={2} />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Bill Type</p>
-                    <p className="text-sm font-bold text-foreground">{billType.name}</p>
+                    <p className="text-xs text-muted-foreground">{t("pbBillTypeLabel")}</p>
+                    <p className="text-sm font-bold text-foreground">{t(billType.nameKey as never)}</p>
                   </div>
                 </div>
 
@@ -476,11 +498,11 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">{billType.accountLabel}</label>
+                  <label className="text-sm font-semibold text-foreground">{t(billType.accountLabelKey as never)}</label>
                   <Input
                     type="text"
                     inputMode="numeric"
-                    placeholder={billType.accountPlaceholder}
+                    placeholder={t(billType.placeholderKey as never)}
                     value={accountNo}
                     maxLength={billType.accountMaxLength}
                     onChange={(event) => {
@@ -539,19 +561,19 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                       </div>
                       <div>
                         <p className="text-xs text-white/75">{provider.name}</p>
-                        <p className="text-base font-extrabold">{billType.name} Bill</p>
+                        <p className="text-base font-extrabold">{t(billType.nameKey as never)} {t("pbBillSuffix")}</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="p-4 space-y-4">
                     <div className="rounded-2xl bg-muted/50 border border-border px-4 py-3">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">{billType.accountLabel}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">{t(billType.accountLabelKey as never)}</p>
                       <p className="text-base font-bold text-foreground mt-0.5">{accountNo}</p>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">Enter Bill Amount</label>
+                      <label className="text-sm font-semibold text-foreground">{t("pbEnterBillAmount")}</label>
                       <Input
                         type="number"
                         inputMode="decimal"
@@ -562,7 +584,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                           setBillAmount(event.target.value);
                           setError("");
                         }}
-                        placeholder="e.g. 1250"
+                        placeholder={t("pbAmountPlaceholder")}
                         className="h-12 text-lg font-semibold"
                       />
                       {error && (
@@ -579,13 +601,13 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                   className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                   onClick={() => {
                     if ((parseFloat(billAmount) || 0) <= 0) {
-                      setError("Enter a valid bill amount.");
+                      setError(t("pbErrValidAmount"));
                       return;
                     }
                     goTo("review");
                   }}
                 >
-                  Review Payment
+                  {t("pbReviewPayment")}
                 </Button>
               </div>
             )}
@@ -593,8 +615,8 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
             {step === "review" && billType && provider && (
               <div className="px-4 pt-6 pb-32 space-y-5">
                 <div className="text-center space-y-1">
-                  <p className="text-sm text-muted-foreground">Paying</p>
-                  <p className="text-4xl font-extrabold text-foreground">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">{t("pbPaying")}</p>
+                  <p className="text-4xl font-extrabold text-foreground">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString(dateLocale)}</p>
                 </div>
 
                 <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
@@ -603,38 +625,38 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-foreground text-sm truncate">{provider.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{billType.accountLabel}: {accountNo}</p>
+                    <p className="text-xs text-muted-foreground truncate">{t(billType.accountLabelKey as never)}: {accountNo}</p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl bg-card border border-border p-4 space-y-2.5 text-sm">
-                  <p className="font-semibold text-foreground">Bill Summary</p>
+                  <p className="font-semibold text-foreground">{t("pbBillSummary")}</p>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Bill Amount</span>
-                    <span className="text-foreground font-medium">৳{(parseFloat(billAmount) || 0).toLocaleString()}</span>
+                    <span>{t("pbBillAmount")}</span>
+                    <span className="text-foreground font-medium">৳{(parseFloat(billAmount) || 0).toLocaleString(dateLocale)}</span>
                   </div>
                   {pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0 && (
                     <CouponSummaryLine code={pendingCoupon.code} discount={calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0)} />
                   )}
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Service Fee</span>
-                    <span className="text-primary font-semibold">Free</span>
+                    <span>{t("serviceFee")}</span>
+                    <span className="text-primary font-semibold">{t("pbFree")}</span>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground/70">
-                    <span>Fee source</span>
-                    <span className="text-primary font-medium">From your balance</span>
+                    <span>{t("feeSource")}</span>
+                    <span className="text-primary font-medium">{t("fromYourBalance")}</span>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="flex justify-between font-bold text-foreground">
-                    <span>Total</span>
-                    <span>৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</span>
+                    <span>{t("pbTotal")}</span>
+                    <span>৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString(dateLocale)}</span>
                   </div>
                 </div>
 
                 <Button className="w-full h-12 gradient-primary border-0 text-white font-semibold text-base rounded-xl" onClick={() => goTo("pin")}>
-                  Confirm & Enter PIN
+                  {t("pbConfirmEnterPin")}
                 </Button>
-                <Button variant="ghost" className="w-full" onClick={() => goTo("bill")}>Edit Amount</Button>
+                <Button variant="ghost" className="w-full" onClick={() => goTo("bill")}>{t("pbEditAmount")}</Button>
               </div>
             )}
 
@@ -644,9 +666,11 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                   <div className="mx-auto w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center text-white shadow-card">
                     <FileText size={24} />
                   </div>
-                  <h2 className="text-xl font-extrabold text-foreground">Confirm payment</h2>
+                  <h2 className="text-xl font-extrabold text-foreground">{t("pbConfirmPayment")}</h2>
                   <p className="text-sm text-muted-foreground">
-                    Enter your PIN to pay ৳{((parseFloat(billAmount) || 0) + fee).toLocaleString()} to {provider?.name}
+                    {t("pbEnterPinToPay")
+                      .replace("{amount}", ((parseFloat(billAmount) || 0) + fee).toLocaleString(dateLocale))
+                      .replace("{provider}", provider?.name ?? "")}
                   </p>
                 </div>
 
@@ -662,7 +686,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                 <SlideToConfirm
                   disabled={pin.length < 4 || processing}
                   onConfirm={handlePinConfirm}
-                  label={processing ? "Processing..." : `Slide to pay ৳${((parseFloat(billAmount) || 0) + fee).toLocaleString()}`}
+                  label={processing ? t("pbProcessing") : t("pbSlideToPay").replace("{amount}", ((parseFloat(billAmount) || 0) + fee).toLocaleString(dateLocale))}
                 />
               </div>
             )}
@@ -680,44 +704,44 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                       <CheckCircle2 className="w-10 h-10 text-primary" />
                     </motion.div>
                     <div>
-                      <h2 className="text-2xl font-extrabold text-foreground">Bill paid successfully</h2>
-                      <p className="text-sm text-muted-foreground mt-1">Your utility payment has been completed instantly.</p>
+                      <h2 className="text-2xl font-extrabold text-foreground">{t("pbBillPaidSuccess")}</h2>
+                      <p className="text-sm text-muted-foreground mt-1">{t("pbBillPaidSub")}</p>
                     </div>
                   </div>
 
                   <div className="rounded-3xl bg-card border border-border shadow-card overflow-hidden">
                     <div className={`${billType?.gradient ?? "gradient-primary"} p-5 text-white text-center`}>
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/75">Total Paid</p>
-                      <p className="text-4xl font-extrabold mt-1">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-white/75">{t("pbTotalPaid")}</p>
+                      <p className="text-4xl font-extrabold mt-1">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString(dateLocale)}</p>
                     </div>
 
                     <div className="p-4 divide-y divide-border/70">
                      {[
-                        { label: "Bill Type", value: `${billType?.name ?? ""} (${provider?.name ?? ""})` },
-                        { label: "Account No.", value: accountNo },
-                        { label: "Bill Amount", value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
+                        { label: t("pbBillTypeLabel"), value: `${billType ? t(billType.nameKey as never) : ""} (${provider?.name ?? ""})` },
+                        { label: t("pbAccountNo"), value: accountNo },
+                        { label: t("pbBillAmount"), value: `৳${(parseFloat(billAmount) || 0).toLocaleString(dateLocale)}` },
                         ...(pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0
-                          ? [{ label: `🎟️ Coupon (${pendingCoupon.code})`, value: `-৳${calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}` }]
+                          ? [{ label: t("pbCouponLabel").replace("{code}", pendingCoupon.code), value: `-৳${calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}` }]
                           : []),
-                        { label: "Fee", value: "Free" },
-                        { label: "Total Paid", value: `৳${Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}` },
+                        { label: t("pbFeeLabel"), value: t("pbFree") },
+                        { label: t("pbTotalPaid"), value: `৳${Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString(dateLocale)}` },
                         {
-                          label: "Date",
-                          value: txnTime.current.toLocaleDateString("en-GB", {
+                          label: t("pbDate"),
+                          value: txnTime.current.toLocaleDateString(dateLocale, {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
                           }),
                         },
                         {
-                          label: "Time",
-                          value: txnTime.current.toLocaleTimeString("en-US", {
+                          label: t("pbTime"),
+                          value: txnTime.current.toLocaleTimeString(timeLocale, {
                             hour: "2-digit",
                             minute: "2-digit",
                             hour12: true,
                           }),
                         },
-                        { label: "Transaction ID", value: txnId.current },
+                        { label: t("pbTxnId"), value: txnId.current },
                       ].map((row) => (
                         <div key={row.label} className="py-3 flex items-start justify-between gap-3">
                           <span className="text-sm text-muted-foreground">{row.label}</span>
@@ -751,30 +775,30 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
         open={showShare}
         onClose={() => setShowShare(false)}
         receipt={{
-          title: "Bill Payment Successful",
-          amount: `৳${(parseFloat(billAmount) || 0).toLocaleString()}`,
+          title: t("pbReceiptTitle"),
+          amount: `৳${(parseFloat(billAmount) || 0).toLocaleString(dateLocale)}`,
           gradient: billType?.gradient ?? "gradient-primary",
           txnId: txnId.current,
            rows: [
-            { label: "Bill Type", value: `${billType?.name ?? ""} (${provider?.name ?? ""})` },
-            { label: "Account No.", value: accountNo },
-            { label: "Bill Amount", value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
+            { label: t("pbBillTypeLabel"), value: `${billType ? t(billType.nameKey as never) : ""} (${provider?.name ?? ""})` },
+            { label: t("pbAccountNo"), value: accountNo },
+            { label: t("pbBillAmount"), value: `৳${(parseFloat(billAmount) || 0).toLocaleString(dateLocale)}` },
             ...(pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0
-              ? [{ label: `🎟️ Coupon (${pendingCoupon.code})`, value: `-৳${calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}` }]
+              ? [{ label: t("pbCouponLabel").replace("{code}", pendingCoupon.code), value: `-৳${calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}` }]
               : []),
-            { label: "Fee", value: "Free" },
-            { label: "Total Paid", value: `৳${Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}` },
+            { label: t("pbFeeLabel"), value: t("pbFree") },
+            { label: t("pbTotalPaid"), value: `৳${Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString(dateLocale)}` },
             {
-              label: "Date",
-              value: txnTime.current.toLocaleDateString("en-GB", {
+              label: t("pbDate"),
+              value: txnTime.current.toLocaleDateString(dateLocale, {
                 day: "2-digit",
                 month: "short",
                 year: "numeric",
               }),
             },
             {
-              label: "Time",
-              value: txnTime.current.toLocaleTimeString("en-US", {
+              label: t("pbTime"),
+              value: txnTime.current.toLocaleTimeString(timeLocale, {
                 hour: "2-digit",
                 minute: "2-digit",
                 hour12: true,
