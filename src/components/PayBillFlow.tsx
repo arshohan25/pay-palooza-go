@@ -286,13 +286,13 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
 
   const handleAccountContinue = () => {
     if (!provider) {
-      setError("Please select a provider.");
+      setError(t("pbErrSelectProvider"));
       return;
     }
 
     const trimmed = accountNo.trim();
     if (trimmed.length < 4) {
-      setError(`Enter a valid ${billType?.accountLabel ?? "account number"}.`);
+      setError(t("pbErrValidAccount").replace("{label}", billType ? t(billType.accountLabelKey as never) : t("pbAccountNo")));
       return;
     }
 
