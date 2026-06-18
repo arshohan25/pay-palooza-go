@@ -460,32 +460,32 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       <CheckCircle2 size={36} className="text-emerald-600" />
                     </div>
                   </motion.div>
-                  <h2 className="text-xl font-bold text-foreground">Withdrawal Submitted</h2>
+                  <h2 className="text-xl font-bold text-foreground">{t("btWithdrawalSubmitted")}</h2>
                   <p className="text-sm text-muted-foreground max-w-xs">
-                    ৳{resultData ? resultData.total_deducted.toLocaleString() : totalDeduction.toLocaleString()} has been deducted from your balance.
+                    {t("btDeductedFromBalance").replace("{total}", fmt(resultData ? resultData.total_deducted : totalDeduction))}
                   </p>
                   <div className="w-full max-w-xs rounded-2xl border border-border bg-card overflow-hidden text-left">
                     <div className="flex justify-between p-3 border-b border-border">
-                      <span className="text-xs text-muted-foreground">You'll Receive</span>
-                      <span className="text-sm font-bold text-foreground">৳{parsedAmount.toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground">{t("btYoullReceive")}</span>
+                      <span className="text-sm font-bold text-foreground">৳{fmt(parsedAmount)}</span>
                     </div>
                     <div className="flex justify-between p-3 border-b border-border">
-                      <span className="text-xs text-muted-foreground">Charge (1%)</span>
-                      <span className="text-sm font-bold text-destructive">৳{(resultData?.fee ?? fee).toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground">{t("btCharge1")}</span>
+                      <span className="text-sm font-bold text-destructive">৳{fmt(resultData?.fee ?? fee)}</span>
                     </div>
                     <div className="flex justify-between p-3 border-b border-border">
-                      <span className="text-xs text-muted-foreground">Bank</span>
+                      <span className="text-xs text-muted-foreground">{t("bank")}</span>
                       <span className="text-sm font-bold text-foreground">{bankName}</span>
                     </div>
                     <div className="flex justify-between p-3">
-                      <span className="text-xs text-muted-foreground">Status</span>
-                      <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-[10px] gap-1"><Clock size={10} />Pending Approval</Badge>
+                      <span className="text-xs text-muted-foreground">{t("btStatus")}</span>
+                      <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-[10px] gap-1"><Clock size={10} />{t("btPendingApproval")}</Badge>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground max-w-xs">
-                    If rejected, ৳{resultData ? resultData.total_deducted.toLocaleString() : totalDeduction.toLocaleString()} will be refunded to your wallet instantly.
+                    {t("btRefundNotice").replace("{total}", fmt(resultData ? resultData.total_deducted : totalDeduction))}
                   </p>
-                  <Button className="mt-4 w-full max-w-xs" onClick={onClose}>Done</Button>
+                  <Button className="mt-4 w-full max-w-xs" onClick={onClose}>{t("btDone")}</Button>
                 </div>
               )}
             </motion.div>
@@ -495,12 +495,12 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove saved account?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove the saved bank details.</AlertDialogDescription>
+            <AlertDialogTitle>{t("removeSavedAccount")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("btRemoveSavedAccountDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (deleteConfirmId) removeBank(deleteConfirmId); setDeleteConfirmId(null); }}>Remove</AlertDialogAction>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteConfirmId) removeBank(deleteConfirmId); setDeleteConfirmId(null); }}>{t("remove")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
