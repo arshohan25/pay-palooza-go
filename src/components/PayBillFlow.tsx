@@ -463,8 +463,8 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                     <billType.icon size={18} strokeWidth={2} />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Bill Type</p>
-                    <p className="text-sm font-bold text-foreground">{billType.name}</p>
+                    <p className="text-xs text-muted-foreground">{t("pbBillTypeLabel")}</p>
+                    <p className="text-sm font-bold text-foreground">{t(billType.nameKey as never)}</p>
                   </div>
                 </div>
 
