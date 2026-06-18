@@ -218,7 +218,9 @@ interface PayBillFlowProps {
 }
 
 const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, ref) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const dateLocale = lang === "bn" ? "bn-BD" : "en-GB";
+  const timeLocale = lang === "bn" ? "bn-BD" : "en-US";
   const [step, setStep] = useState<Step>("type");
   const [direction, setDirection] = useState(1);
   const [billType, setBillType] = useState<BillType | null>(null);
