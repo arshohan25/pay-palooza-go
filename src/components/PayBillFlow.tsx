@@ -307,7 +307,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
 
   const handlePinConfirm = async () => {
     if (pin.length < 4) {
-      setError("Enter your 4-digit PIN.");
+      setError(t("pbErrEnterPin"));
       return;
     }
     if (processing) return;
@@ -316,7 +316,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
 
     const pinValid = await verifyPin(pin);
     if (!pinValid) {
-      setError("Incorrect PIN. Please try again.");
+      setError(t("pbErrIncorrectPin"));
       setPin("");
       setProcessing(false);
       return;
@@ -326,7 +326,9 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
     const limitCheck = await checkDailyLimit("paybill", dueAmount);
     if (!limitCheck.allowed) {
       setError(
-        `Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`
+        t("pbErrDailyLimit")
+          .replace("{used}", limitCheck.used.toLocaleString(dateLocale))
+          .replace("{limit}", limitCheck.limit.toLocaleString(dateLocale))
       );
       setProcessing(false);
       return;
