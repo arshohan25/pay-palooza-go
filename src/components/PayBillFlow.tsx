@@ -498,11 +498,11 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">{billType.accountLabel}</label>
+                  <label className="text-sm font-semibold text-foreground">{t(billType.accountLabelKey as never)}</label>
                   <Input
                     type="text"
                     inputMode="numeric"
-                    placeholder={billType.accountPlaceholder}
+                    placeholder={t(billType.placeholderKey as never)}
                     value={accountNo}
                     maxLength={billType.accountMaxLength}
                     onChange={(event) => {
