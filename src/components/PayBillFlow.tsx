@@ -615,8 +615,8 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
             {step === "review" && billType && provider && (
               <div className="px-4 pt-6 pb-32 space-y-5">
                 <div className="text-center space-y-1">
-                  <p className="text-sm text-muted-foreground">Paying</p>
-                  <p className="text-4xl font-extrabold text-foreground">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">{t("pbPaying")}</p>
+                  <p className="text-4xl font-extrabold text-foreground">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString(dateLocale)}</p>
                 </div>
 
                 <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
@@ -625,38 +625,38 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-foreground text-sm truncate">{provider.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{billType.accountLabel}: {accountNo}</p>
+                    <p className="text-xs text-muted-foreground truncate">{t(billType.accountLabelKey as never)}: {accountNo}</p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl bg-card border border-border p-4 space-y-2.5 text-sm">
-                  <p className="font-semibold text-foreground">Bill Summary</p>
+                  <p className="font-semibold text-foreground">{t("pbBillSummary")}</p>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Bill Amount</span>
-                    <span className="text-foreground font-medium">৳{(parseFloat(billAmount) || 0).toLocaleString()}</span>
+                    <span>{t("pbBillAmount")}</span>
+                    <span className="text-foreground font-medium">৳{(parseFloat(billAmount) || 0).toLocaleString(dateLocale)}</span>
                   </div>
                   {pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0 && (
                     <CouponSummaryLine code={pendingCoupon.code} discount={calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0)} />
                   )}
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Service Fee</span>
-                    <span className="text-primary font-semibold">Free</span>
+                    <span>{t("serviceFee")}</span>
+                    <span className="text-primary font-semibold">{t("pbFree")}</span>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground/70">
-                    <span>Fee source</span>
-                    <span className="text-primary font-medium">From your balance</span>
+                    <span>{t("feeSource")}</span>
+                    <span className="text-primary font-medium">{t("fromYourBalance")}</span>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="flex justify-between font-bold text-foreground">
-                    <span>Total</span>
-                    <span>৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</span>
+                    <span>{t("pbTotal")}</span>
+                    <span>৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString(dateLocale)}</span>
                   </div>
                 </div>
 
                 <Button className="w-full h-12 gradient-primary border-0 text-white font-semibold text-base rounded-xl" onClick={() => goTo("pin")}>
-                  Confirm & Enter PIN
+                  {t("pbConfirmEnterPin")}
                 </Button>
-                <Button variant="ghost" className="w-full" onClick={() => goTo("bill")}>Edit Amount</Button>
+                <Button variant="ghost" className="w-full" onClick={() => goTo("bill")}>{t("pbEditAmount")}</Button>
               </div>
             )}
 
