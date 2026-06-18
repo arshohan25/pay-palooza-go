@@ -39,7 +39,9 @@ const slideVariants = {
 interface BankTransferFlowProps { onClose: () => void; }
 
 const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const numLocale = lang === "bn" ? "bn-BD" : "en-US";
+  const fmt = (n: number) => n.toLocaleString(numLocale);
   const { requests, submitWithdraw } = useFundRequests();
   const { accounts: savedBanks, save: saveBank, remove: removeBank } = useSavedBanks();
   const [step, setStep] = useState<Step>("bank");
