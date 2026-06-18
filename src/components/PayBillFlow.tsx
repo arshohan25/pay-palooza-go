@@ -354,8 +354,8 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
       clearPendingCoupon();
     }
     showTxnToast({
-      type: "Bill Payment",
-      amount: `৳${finalAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+      type: t("pbToastType"),
+      amount: `৳${finalAmount.toLocaleString(dateLocale, { minimumFractionDigits: 2 })}`,
       gradient: "gradient-primary",
     });
 
