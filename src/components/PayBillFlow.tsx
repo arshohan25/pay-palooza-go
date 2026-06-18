@@ -704,44 +704,44 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                       <CheckCircle2 className="w-10 h-10 text-primary" />
                     </motion.div>
                     <div>
-                      <h2 className="text-2xl font-extrabold text-foreground">Bill paid successfully</h2>
-                      <p className="text-sm text-muted-foreground mt-1">Your utility payment has been completed instantly.</p>
+                      <h2 className="text-2xl font-extrabold text-foreground">{t("pbBillPaidSuccess")}</h2>
+                      <p className="text-sm text-muted-foreground mt-1">{t("pbBillPaidSub")}</p>
                     </div>
                   </div>
 
                   <div className="rounded-3xl bg-card border border-border shadow-card overflow-hidden">
                     <div className={`${billType?.gradient ?? "gradient-primary"} p-5 text-white text-center`}>
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/75">Total Paid</p>
-                      <p className="text-4xl font-extrabold mt-1">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-white/75">{t("pbTotalPaid")}</p>
+                      <p className="text-4xl font-extrabold mt-1">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString(dateLocale)}</p>
                     </div>
 
                     <div className="p-4 divide-y divide-border/70">
                      {[
-                        { label: "Bill Type", value: `${billType?.name ?? ""} (${provider?.name ?? ""})` },
-                        { label: "Account No.", value: accountNo },
-                        { label: "Bill Amount", value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
+                        { label: t("pbBillTypeLabel"), value: `${billType ? t(billType.nameKey as never) : ""} (${provider?.name ?? ""})` },
+                        { label: t("pbAccountNo"), value: accountNo },
+                        { label: t("pbBillAmount"), value: `৳${(parseFloat(billAmount) || 0).toLocaleString(dateLocale)}` },
                         ...(pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0
-                          ? [{ label: `🎟️ Coupon (${pendingCoupon.code})`, value: `-৳${calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}` }]
+                          ? [{ label: t("pbCouponLabel").replace("{code}", pendingCoupon.code), value: `-৳${calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}` }]
                           : []),
-                        { label: "Fee", value: "Free" },
-                        { label: "Total Paid", value: `৳${Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}` },
+                        { label: t("pbFeeLabel"), value: t("pbFree") },
+                        { label: t("pbTotalPaid"), value: `৳${Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString(dateLocale)}` },
                         {
-                          label: "Date",
-                          value: txnTime.current.toLocaleDateString("en-GB", {
+                          label: t("pbDate"),
+                          value: txnTime.current.toLocaleDateString(dateLocale, {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
                           }),
                         },
                         {
-                          label: "Time",
-                          value: txnTime.current.toLocaleTimeString("en-US", {
+                          label: t("pbTime"),
+                          value: txnTime.current.toLocaleTimeString(timeLocale, {
                             hour: "2-digit",
                             minute: "2-digit",
                             hour12: true,
                           }),
                         },
-                        { label: "Transaction ID", value: txnId.current },
+                        { label: t("pbTxnId"), value: txnId.current },
                       ].map((row) => (
                         <div key={row.label} className="py-3 flex items-start justify-between gap-3">
                           <span className="text-sm text-muted-foreground">{row.label}</span>
