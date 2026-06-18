@@ -775,30 +775,30 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
         open={showShare}
         onClose={() => setShowShare(false)}
         receipt={{
-          title: "Bill Payment Successful",
-          amount: `৳${(parseFloat(billAmount) || 0).toLocaleString()}`,
+          title: t("pbReceiptTitle"),
+          amount: `৳${(parseFloat(billAmount) || 0).toLocaleString(dateLocale)}`,
           gradient: billType?.gradient ?? "gradient-primary",
           txnId: txnId.current,
            rows: [
-            { label: "Bill Type", value: `${billType?.name ?? ""} (${provider?.name ?? ""})` },
-            { label: "Account No.", value: accountNo },
-            { label: "Bill Amount", value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
+            { label: t("pbBillTypeLabel"), value: `${billType ? t(billType.nameKey as never) : ""} (${provider?.name ?? ""})` },
+            { label: t("pbAccountNo"), value: accountNo },
+            { label: t("pbBillAmount"), value: `৳${(parseFloat(billAmount) || 0).toLocaleString(dateLocale)}` },
             ...(pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0
-              ? [{ label: `🎟️ Coupon (${pendingCoupon.code})`, value: `-৳${calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}` }]
+              ? [{ label: t("pbCouponLabel").replace("{code}", pendingCoupon.code), value: `-৳${calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}` }]
               : []),
-            { label: "Fee", value: "Free" },
-            { label: "Total Paid", value: `৳${Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}` },
+            { label: t("pbFeeLabel"), value: t("pbFree") },
+            { label: t("pbTotalPaid"), value: `৳${Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString(dateLocale)}` },
             {
-              label: "Date",
-              value: txnTime.current.toLocaleDateString("en-GB", {
+              label: t("pbDate"),
+              value: txnTime.current.toLocaleDateString(dateLocale, {
                 day: "2-digit",
                 month: "short",
                 year: "numeric",
               }),
             },
             {
-              label: "Time",
-              value: txnTime.current.toLocaleTimeString("en-US", {
+              label: t("pbTime"),
+              value: txnTime.current.toLocaleTimeString(timeLocale, {
                 hour: "2-digit",
                 minute: "2-digit",
                 hour12: true,
