@@ -284,7 +284,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     <label className="text-sm font-semibold text-foreground">{t("accountNumber")}</label>
                     <div className="relative">
                       <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="text" inputMode="numeric" placeholder="e.g. 1234567890123" value={accountNumber} onChange={e => { const digits = e.target.value.replace(/\D/g, "").slice(0, 17); setAccountNumber(digits); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
+                      <Input type="text" inputMode="numeric" placeholder={t("btAcctPlaceholder")} value={accountNumber} onChange={e => { const digits = e.target.value.replace(/\D/g, "").slice(0, 17); setAccountNumber(digits); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
                     </div>
                     {(() => {
                       const v = validateRecipient("bankAccount", accountNumber);
@@ -297,7 +297,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     <label className="text-sm font-semibold text-foreground">{t("accountHolderName")}</label>
                     <div className="relative">
                       <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="text" placeholder="e.g. Mohammad Ali" value={accountHolder} onChange={e => { setAccountHolder(e.target.value); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
+                      <Input type="text" placeholder={t("btHolderPlaceholder")} value={accountHolder} onChange={e => { setAccountHolder(e.target.value); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
                     </div>
                     {(() => {
                       const v = validateRecipient("accountHolder", accountHolder);
