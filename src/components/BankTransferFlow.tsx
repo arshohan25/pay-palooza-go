@@ -39,7 +39,9 @@ const slideVariants = {
 interface BankTransferFlowProps { onClose: () => void; }
 
 const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const numLocale = lang === "bn" ? "bn-BD" : "en-US";
+  const fmt = (n: number) => n.toLocaleString(numLocale);
   const { requests, submitWithdraw } = useFundRequests();
   const { accounts: savedBanks, save: saveBank, remove: removeBank } = useSavedBanks();
   const [step, setStep] = useState<Step>("bank");
@@ -88,18 +90,18 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   };
 
   const handleBankContinue = () => {
-    if (!bankName) { setError("Select a bank."); return; }
+    if (!bankName) { setError(t("btErrSelectBank")); return; }
     const acctCheck = validateRecipient("bankAccount", accountNumber);
-    if (!acctCheck.isValid) { setError(acctCheck.errorMessage || "Enter a valid account number."); return; }
-    if (accountHolder.trim().length < 2) { setError("Enter account holder name."); return; }
+    if (!acctCheck.isValid) { setError(acctCheck.errorMessage || t("btErrValidAccount")); return; }
+    if (accountHolder.trim().length < 2) { setError(t("btErrAccountHolder")); return; }
     goTo("amount");
   };
 
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
-    if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
-    if (val < 30) { setError("Minimum withdrawal is ৳30."); return; }
-    if (val > 50000) { setError("Maximum withdrawal is ৳50,000."); return; }
+    if (!amount || isNaN(val) || val <= 0) { setError(t("btErrValidAmount")); return; }
+    if (val < 30) { setError(t("btErrMinAmount")); return; }
+    if (val > 50000) { setError(t("btErrMaxAmount")); return; }
     goTo("confirm");
   };
 
@@ -108,12 +110,12 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   };
 
   const handlePinSubmit = async () => {
-    if (pin.length !== 4) { setPinError("Enter your 4-digit PIN."); return; }
+    if (pin.length !== 4) { setPinError(t("btErrPin4")); return; }
     setSubmitting(true);
     setPinError("");
     try {
       const valid = await verifyPin(pin);
-      if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setSubmitting(false); return; }
+      if (!valid) { setPinError(t("btErrIncorrectPin")); setPin(""); setSubmitting(false); return; }
       setPinVerified(true);
       const result = await submitWithdraw({
         amount: parsedAmount,
@@ -132,7 +134,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
         activityTracker.transaction("bank_transfer_success", { amount: parseFloat(amount) || 0, bank: bankName })
       );
     } catch (e: any) {
-      setPinError(e.message || "Failed to submit request.");
+      setPinError(e.message || t("btErrSubmitFailed"));
       setPin("");
       setPinVerified(false);
     } finally {
@@ -159,14 +161,14 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
             <button
               type="button"
               onClick={goBack}
-              aria-label="Go back"
+              aria-label={t("btGoBack")}
               className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ChevronLeft size={20} aria-hidden="true" />
             </button>
             <div className="flex-1 min-w-0">
               <h1 id="bank-transfer-title" className="text-xl font-extrabold tracking-tight">{t("flowBankTransfer")}</h1>
-              <p className="text-xs text-white/70 mt-0.5">Withdraw to bank account</p>
+              <p className="text-xs text-white/70 mt-0.5">{t("btSubtitle")}</p>
             </div>
           </div>
           <div
@@ -175,7 +177,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
             aria-valuemin={0}
             aria-valuemax={STEPS.length}
             aria-valuenow={stepIndex + 1}
-            aria-label={`Step ${stepIndex + 1} of ${STEPS.length}`}
+            aria-label={t("btStepXofY").replace("{current}", String(stepIndex + 1)).replace("{total}", String(STEPS.length))}
           >
             <motion.div className="h-full bg-white rounded-full"
               animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
@@ -232,7 +234,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                               <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
                                 <Landmark size={16} className="text-muted-foreground" />
                               </div>
-                              <span className="flex-1 text-sm text-muted-foreground">Choose a bank…</span>
+                              <span className="flex-1 text-sm text-muted-foreground">{t("btChooseBank")}</span>
                             </>
                           )}
                           <ChevronDown size={16} className="text-muted-foreground shrink-0" />
@@ -244,7 +246,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                             <input
                               type="text"
-                              placeholder="Search banks…"
+                              placeholder={t("btSearchBanks")}
                               value={bankSearch}
                               onChange={e => setBankSearch(e.target.value)}
                               className="w-full pl-8 pr-3 py-2 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
@@ -254,7 +256,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                         </div>
                         <div className="overflow-y-auto max-h-56">
                           {filteredBanks.length === 0 ? (
-                            <p className="text-xs text-muted-foreground text-center py-4">No banks found</p>
+                            <p className="text-xs text-muted-foreground text-center py-4">{t("btNoBanksFound")}</p>
                           ) : (
                             filteredBanks.map(b => (
                               <button
@@ -282,7 +284,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     <label className="text-sm font-semibold text-foreground">{t("accountNumber")}</label>
                     <div className="relative">
                       <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="text" inputMode="numeric" placeholder="e.g. 1234567890123" value={accountNumber} onChange={e => { const digits = e.target.value.replace(/\D/g, "").slice(0, 17); setAccountNumber(digits); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
+                      <Input type="text" inputMode="numeric" placeholder={t("btAcctPlaceholder")} value={accountNumber} onChange={e => { const digits = e.target.value.replace(/\D/g, "").slice(0, 17); setAccountNumber(digits); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
                     </div>
                     {(() => {
                       const v = validateRecipient("bankAccount", accountNumber);
@@ -295,7 +297,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     <label className="text-sm font-semibold text-foreground">{t("accountHolderName")}</label>
                     <div className="relative">
                       <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="text" placeholder="e.g. Mohammad Ali" value={accountHolder} onChange={e => { setAccountHolder(e.target.value); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
+                      <Input type="text" placeholder={t("btHolderPlaceholder")} value={accountHolder} onChange={e => { setAccountHolder(e.target.value); setError(""); }} className="pl-9 h-12 text-base bg-card border-border" />
                     </div>
                     {(() => {
                       const v = validateRecipient("accountHolder", accountHolder);
@@ -338,21 +340,21 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     {QUICK_AMOUNTS.map(q => (
                       <button key={q} onClick={() => setAmount(String(q))}
                         className={`py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 ${amount === String(q) ? "gradient-primary text-white border-transparent" : "bg-card border-border text-foreground hover:border-primary/50"}`}>
-                        ৳{q.toLocaleString()}
+                        ৳{fmt(q)}
                       </button>
                     ))}
                   </div>
                   {parsedAmount > 0 && totalDeduction > getBalance() && (
-                    <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                    <p className="text-center text-sm text-destructive font-medium">{t("btInsufficientBalance")}</p>
                   )}
                   {parsedAmount > 0 && totalDeduction <= getBalance() && parsedAmount > 50000 && (
-                    <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳50,000)</p>
+                    <p className="text-center text-sm text-destructive font-medium">{t("btExceedsDailyLimit")}</p>
                   )}
                   {parsedAmount > 0 && totalDeduction <= getBalance() && parsedAmount <= 50000 && (
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                       <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                         onClick={handleAmountContinue}>
-                        Continue
+                        {t("continue")}
                       </Button>
                     </motion.div>
                   )}
@@ -366,8 +368,8 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     <ShieldCheck size={32} className="text-primary" />
                   </div>
                   <div className="text-center space-y-1">
-                    <h2 className="text-lg font-bold text-foreground">Enter Your PIN</h2>
-                    <p className="text-sm text-muted-foreground">Confirm withdrawal of ৳{totalDeduction.toLocaleString()}</p>
+                    <h2 className="text-lg font-bold text-foreground">{t("btEnterYourPin")}</h2>
+                    <p className="text-sm text-muted-foreground">{t("btConfirmWithdrawalOf").replace("{amount}", fmt(totalDeduction))}</p>
                   </div>
                   <div className="flex gap-3">
                     {[0, 1, 2, 3].map(i => (
@@ -381,7 +383,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       type="password"
                       inputMode="numeric"
                       maxLength={4}
-                      placeholder="Enter 4-digit PIN"
+                      placeholder={t("btEnter4DigitPin")}
                       value={pin}
                       onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
                       className="text-center text-lg tracking-[0.5em] h-12 bg-card border-border"
@@ -394,7 +396,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     onClick={handlePinSubmit}
                     disabled={submitting || pin.length !== 4}
                   >
-                    {submitting ? "Processing…" : "Confirm Withdrawal"}
+                    {submitting ? t("btProcessing") : t("btConfirmWithdrawal")}
                   </Button>
                 </div>
               )}
@@ -403,26 +405,26 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
               {step === "confirm" && (
                 <div className="space-y-6">
                   <div className="text-center space-y-1">
-                    <p className="text-sm text-muted-foreground">Withdrawal Summary</p>
-                    <p className="text-4xl font-extrabold text-foreground">৳{parsedAmount.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground">{t("btWithdrawalSummary")}</p>
+                    <p className="text-4xl font-extrabold text-foreground">৳{fmt(parsedAmount)}</p>
                   </div>
 
                   <div className="rounded-2xl border border-border bg-card overflow-hidden">
                     <div className="flex items-center justify-between p-4 border-b border-border">
-                      <span className="text-sm text-muted-foreground">Transfer Amount</span>
-                      <span className="text-sm font-bold text-foreground">৳{parsedAmount.toLocaleString()}</span>
+                      <span className="text-sm text-muted-foreground">{t("btTransferAmount")}</span>
+                      <span className="text-sm font-bold text-foreground">৳{fmt(parsedAmount)}</span>
                     </div>
                     <div className="flex items-center justify-between p-4 border-b border-border">
-                      <span className="text-sm text-muted-foreground">Service Charge (1%)</span>
-                      <span className="text-sm font-bold text-destructive">−৳{fee.toLocaleString()}</span>
+                      <span className="text-sm text-muted-foreground">{t("btServiceCharge1")}</span>
+                      <span className="text-sm font-bold text-destructive">−৳{fmt(fee)}</span>
                     </div>
                     <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-                      <span className="text-xs text-muted-foreground/70">Fee source</span>
-                      <span className="text-xs text-primary font-medium">From your balance</span>
+                      <span className="text-xs text-muted-foreground/70">{t("btFeeSource")}</span>
+                      <span className="text-xs text-primary font-medium">{t("btFromYourBalance")}</span>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/50">
-                      <span className="text-sm font-bold text-foreground">Total Deduction</span>
-                      <span className="text-base font-extrabold text-foreground">৳{totalDeduction.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-foreground">{t("btTotalDeduction")}</span>
+                      <span className="text-base font-extrabold text-foreground">৳{fmt(totalDeduction)}</span>
                     </div>
                   </div>
 
@@ -437,7 +439,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                   <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                     <p className="text-xs text-amber-700 dark:text-amber-300">
                       <AlertCircle size={12} className="inline mr-1" />
-                      ৳{totalDeduction.toLocaleString()} will be deducted from your balance instantly. You'll receive ৳{parsedAmount.toLocaleString()} after admin approval. If rejected, the full ৳{totalDeduction.toLocaleString()} will be refunded.
+                      {t("btAdminNotice").replace(/\{total\}/g, fmt(totalDeduction)).replace(/\{amount\}/g, fmt(parsedAmount))}
                     </p>
                   </div>
 
@@ -445,9 +447,9 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     className="w-full h-12 gradient-primary border-0 text-white font-semibold text-base rounded-xl"
                     onClick={handleConfirmContinue}
                   >
-                    Confirm & Enter PIN
+                    {t("btConfirmAndPin")}
                   </Button>
-                  <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>Edit Amount</Button>
+                  <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>{t("btEditAmount")}</Button>
                 </div>
               )}
 
@@ -458,32 +460,32 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       <CheckCircle2 size={36} className="text-emerald-600" />
                     </div>
                   </motion.div>
-                  <h2 className="text-xl font-bold text-foreground">Withdrawal Submitted</h2>
+                  <h2 className="text-xl font-bold text-foreground">{t("btWithdrawalSubmitted")}</h2>
                   <p className="text-sm text-muted-foreground max-w-xs">
-                    ৳{resultData ? resultData.total_deducted.toLocaleString() : totalDeduction.toLocaleString()} has been deducted from your balance.
+                    {t("btDeductedFromBalance").replace("{total}", fmt(resultData ? resultData.total_deducted : totalDeduction))}
                   </p>
                   <div className="w-full max-w-xs rounded-2xl border border-border bg-card overflow-hidden text-left">
                     <div className="flex justify-between p-3 border-b border-border">
-                      <span className="text-xs text-muted-foreground">You'll Receive</span>
-                      <span className="text-sm font-bold text-foreground">৳{parsedAmount.toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground">{t("btYoullReceive")}</span>
+                      <span className="text-sm font-bold text-foreground">৳{fmt(parsedAmount)}</span>
                     </div>
                     <div className="flex justify-between p-3 border-b border-border">
-                      <span className="text-xs text-muted-foreground">Charge (1%)</span>
-                      <span className="text-sm font-bold text-destructive">৳{(resultData?.fee ?? fee).toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground">{t("btCharge1")}</span>
+                      <span className="text-sm font-bold text-destructive">৳{fmt(resultData?.fee ?? fee)}</span>
                     </div>
                     <div className="flex justify-between p-3 border-b border-border">
-                      <span className="text-xs text-muted-foreground">Bank</span>
+                      <span className="text-xs text-muted-foreground">{t("bank")}</span>
                       <span className="text-sm font-bold text-foreground">{bankName}</span>
                     </div>
                     <div className="flex justify-between p-3">
-                      <span className="text-xs text-muted-foreground">Status</span>
-                      <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-[10px] gap-1"><Clock size={10} />Pending Approval</Badge>
+                      <span className="text-xs text-muted-foreground">{t("btStatus")}</span>
+                      <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-[10px] gap-1"><Clock size={10} />{t("btPendingApproval")}</Badge>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground max-w-xs">
-                    If rejected, ৳{resultData ? resultData.total_deducted.toLocaleString() : totalDeduction.toLocaleString()} will be refunded to your wallet instantly.
+                    {t("btRefundNotice").replace("{total}", fmt(resultData ? resultData.total_deducted : totalDeduction))}
                   </p>
-                  <Button className="mt-4 w-full max-w-xs" onClick={onClose}>Done</Button>
+                  <Button className="mt-4 w-full max-w-xs" onClick={onClose}>{t("btDone")}</Button>
                 </div>
               )}
             </motion.div>
@@ -493,12 +495,12 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove saved account?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove the saved bank details.</AlertDialogDescription>
+            <AlertDialogTitle>{t("removeSavedAccount")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("btRemoveSavedAccountDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (deleteConfirmId) removeBank(deleteConfirmId); setDeleteConfirmId(null); }}>Remove</AlertDialogAction>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteConfirmId) removeBank(deleteConfirmId); setDeleteConfirmId(null); }}>{t("remove")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
