@@ -53,14 +53,17 @@ interface Provider {
   short: string;
 }
 
-const BILL_TYPES: BillType[] = [
+const BILL_TYPES: (BillType & { nameKey: string; accountLabelKey: string; placeholderKey: string })[] = [
   {
     id: "electricity",
     name: "Electricity",
+    nameKey: "pbElectricity",
     icon: Zap,
     gradient: "gradient-accent",
     accountLabel: "Customer ID",
+    accountLabelKey: "pbAcctCustomerId",
     accountPlaceholder: "e.g. 1234567890",
+    placeholderKey: "pbAcctPlaceholderElec",
     accountMaxLength: 13,
     providers: [
       { id: "desco", name: "DESCO", short: "DE" },
@@ -72,10 +75,13 @@ const BILL_TYPES: BillType[] = [
   {
     id: "gas",
     name: "Gas",
+    nameKey: "pbGas",
     icon: Flame,
     gradient: "gradient-cashout",
     accountLabel: "Bill Account No.",
+    accountLabelKey: "pbAcctBillAccount",
     accountPlaceholder: "e.g. 01-123456-00",
+    placeholderKey: "pbAcctPlaceholderGas",
     accountMaxLength: 14,
     providers: [
       { id: "titas", name: "Titas Gas", short: "TG" },
@@ -86,10 +92,13 @@ const BILL_TYPES: BillType[] = [
   {
     id: "water",
     name: "Water",
+    nameKey: "pbWater",
     icon: Droplets,
     gradient: "gradient-payment",
     accountLabel: "Connection No.",
+    accountLabelKey: "pbAcctConnection",
     accountPlaceholder: "e.g. W-789012",
+    placeholderKey: "pbAcctPlaceholderWater",
     accountMaxLength: 12,
     providers: [
       { id: "wasa", name: "WASA (Dhaka)", short: "DW" },
@@ -100,10 +109,13 @@ const BILL_TYPES: BillType[] = [
   {
     id: "internet",
     name: "Internet",
+    nameKey: "pbInternet",
     icon: Wifi,
     gradient: "gradient-addmoney",
     accountLabel: "Account / User ID",
+    accountLabelKey: "pbAcctUserId",
     accountPlaceholder: "e.g. ISP-100234",
+    placeholderKey: "pbAcctPlaceholderNet",
     accountMaxLength: 15,
     providers: [
       { id: "link3", name: "Link3", short: "L3" },
@@ -115,10 +127,13 @@ const BILL_TYPES: BillType[] = [
   {
     id: "tv",
     name: "TV / Cable",
+    nameKey: "pbTvCable",
     icon: Tv2,
     gradient: "gradient-send",
     accountLabel: "Subscriber ID",
+    accountLabelKey: "pbAcctSubscriber",
     accountPlaceholder: "e.g. 5678901",
+    placeholderKey: "pbAcctPlaceholderTv",
     accountMaxLength: 12,
     providers: [
       { id: "dishtv", name: "Dish TV", short: "DT" },
