@@ -39,11 +39,14 @@ type Step = "type" | "account" | "bill" | "review" | "pin" | "success";
 interface BillType {
   id: string;
   name: string;
+  nameKey: string;
   providers: Provider[];
   icon: typeof Zap;
   gradient: string;
   accountLabel: string;
+  accountLabelKey: string;
   accountPlaceholder: string;
+  placeholderKey: string;
   accountMaxLength: number;
 }
 
