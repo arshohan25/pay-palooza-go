@@ -405,26 +405,26 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
               {step === "confirm" && (
                 <div className="space-y-6">
                   <div className="text-center space-y-1">
-                    <p className="text-sm text-muted-foreground">Withdrawal Summary</p>
-                    <p className="text-4xl font-extrabold text-foreground">৳{parsedAmount.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground">{t("btWithdrawalSummary")}</p>
+                    <p className="text-4xl font-extrabold text-foreground">৳{fmt(parsedAmount)}</p>
                   </div>
 
                   <div className="rounded-2xl border border-border bg-card overflow-hidden">
                     <div className="flex items-center justify-between p-4 border-b border-border">
-                      <span className="text-sm text-muted-foreground">Transfer Amount</span>
-                      <span className="text-sm font-bold text-foreground">৳{parsedAmount.toLocaleString()}</span>
+                      <span className="text-sm text-muted-foreground">{t("btTransferAmount")}</span>
+                      <span className="text-sm font-bold text-foreground">৳{fmt(parsedAmount)}</span>
                     </div>
                     <div className="flex items-center justify-between p-4 border-b border-border">
-                      <span className="text-sm text-muted-foreground">Service Charge (1%)</span>
-                      <span className="text-sm font-bold text-destructive">−৳{fee.toLocaleString()}</span>
+                      <span className="text-sm text-muted-foreground">{t("btServiceCharge1")}</span>
+                      <span className="text-sm font-bold text-destructive">−৳{fmt(fee)}</span>
                     </div>
                     <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-                      <span className="text-xs text-muted-foreground/70">Fee source</span>
-                      <span className="text-xs text-primary font-medium">From your balance</span>
+                      <span className="text-xs text-muted-foreground/70">{t("btFeeSource")}</span>
+                      <span className="text-xs text-primary font-medium">{t("btFromYourBalance")}</span>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/50">
-                      <span className="text-sm font-bold text-foreground">Total Deduction</span>
-                      <span className="text-base font-extrabold text-foreground">৳{totalDeduction.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-foreground">{t("btTotalDeduction")}</span>
+                      <span className="text-base font-extrabold text-foreground">৳{fmt(totalDeduction)}</span>
                     </div>
                   </div>
 
@@ -439,7 +439,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                   <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                     <p className="text-xs text-amber-700 dark:text-amber-300">
                       <AlertCircle size={12} className="inline mr-1" />
-                      ৳{totalDeduction.toLocaleString()} will be deducted from your balance instantly. You'll receive ৳{parsedAmount.toLocaleString()} after admin approval. If rejected, the full ৳{totalDeduction.toLocaleString()} will be refunded.
+                      {t("btAdminNotice").replace(/\{total\}/g, fmt(totalDeduction)).replace(/\{amount\}/g, fmt(parsedAmount))}
                     </p>
                   </div>
 
@@ -447,9 +447,9 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     className="w-full h-12 gradient-primary border-0 text-white font-semibold text-base rounded-xl"
                     onClick={handleConfirmContinue}
                   >
-                    Confirm & Enter PIN
+                    {t("btConfirmAndPin")}
                   </Button>
-                  <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>Edit Amount</Button>
+                  <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>{t("btEditAmount")}</Button>
                 </div>
               )}
 
