@@ -134,7 +134,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
         activityTracker.transaction("bank_transfer_success", { amount: parseFloat(amount) || 0, bank: bankName })
       );
     } catch (e: any) {
-      setPinError(e.message || "Failed to submit request.");
+      setPinError(e.message || t("btErrSubmitFailed"));
       setPin("");
       setPinVerified(false);
     } finally {
