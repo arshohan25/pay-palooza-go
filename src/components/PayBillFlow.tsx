@@ -444,7 +444,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                         <Icon size={22} strokeWidth={2} />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-bold text-foreground">{item.name}</p>
+                        <p className="text-sm font-bold text-foreground">{t(item.nameKey as never)}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {item.providers.map((providerItem) => providerItem.name).join(" · ")}
                         </p>
