@@ -161,14 +161,14 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
             <button
               type="button"
               onClick={goBack}
-              aria-label="Go back"
+              aria-label={t("btGoBack")}
               className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ChevronLeft size={20} aria-hidden="true" />
             </button>
             <div className="flex-1 min-w-0">
               <h1 id="bank-transfer-title" className="text-xl font-extrabold tracking-tight">{t("flowBankTransfer")}</h1>
-              <p className="text-xs text-white/70 mt-0.5">Withdraw to bank account</p>
+              <p className="text-xs text-white/70 mt-0.5">{t("btSubtitle")}</p>
             </div>
           </div>
           <div
@@ -177,7 +177,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
             aria-valuemin={0}
             aria-valuemax={STEPS.length}
             aria-valuenow={stepIndex + 1}
-            aria-label={`Step ${stepIndex + 1} of ${STEPS.length}`}
+            aria-label={t("btStepXofY").replace("{current}", String(stepIndex + 1)).replace("{total}", String(STEPS.length))}
           >
             <motion.div className="h-full bg-white rounded-full"
               animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
