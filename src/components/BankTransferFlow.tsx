@@ -340,21 +340,21 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     {QUICK_AMOUNTS.map(q => (
                       <button key={q} onClick={() => setAmount(String(q))}
                         className={`py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 ${amount === String(q) ? "gradient-primary text-white border-transparent" : "bg-card border-border text-foreground hover:border-primary/50"}`}>
-                        ৳{q.toLocaleString()}
+                        ৳{fmt(q)}
                       </button>
                     ))}
                   </div>
                   {parsedAmount > 0 && totalDeduction > getBalance() && (
-                    <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                    <p className="text-center text-sm text-destructive font-medium">{t("btInsufficientBalance")}</p>
                   )}
                   {parsedAmount > 0 && totalDeduction <= getBalance() && parsedAmount > 50000 && (
-                    <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳50,000)</p>
+                    <p className="text-center text-sm text-destructive font-medium">{t("btExceedsDailyLimit")}</p>
                   )}
                   {parsedAmount > 0 && totalDeduction <= getBalance() && parsedAmount <= 50000 && (
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
                       <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                         onClick={handleAmountContinue}>
-                        Continue
+                        {t("continue")}
                       </Button>
                     </motion.div>
                   )}
