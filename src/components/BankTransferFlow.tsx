@@ -90,18 +90,18 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   };
 
   const handleBankContinue = () => {
-    if (!bankName) { setError("Select a bank."); return; }
+    if (!bankName) { setError(t("btErrSelectBank")); return; }
     const acctCheck = validateRecipient("bankAccount", accountNumber);
-    if (!acctCheck.isValid) { setError(acctCheck.errorMessage || "Enter a valid account number."); return; }
-    if (accountHolder.trim().length < 2) { setError("Enter account holder name."); return; }
+    if (!acctCheck.isValid) { setError(acctCheck.errorMessage || t("btErrValidAccount")); return; }
+    if (accountHolder.trim().length < 2) { setError(t("btErrAccountHolder")); return; }
     goTo("amount");
   };
 
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
-    if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
-    if (val < 30) { setError("Minimum withdrawal is ৳30."); return; }
-    if (val > 50000) { setError("Maximum withdrawal is ৳50,000."); return; }
+    if (!amount || isNaN(val) || val <= 0) { setError(t("btErrValidAmount")); return; }
+    if (val < 30) { setError(t("btErrMinAmount")); return; }
+    if (val > 50000) { setError(t("btErrMaxAmount")); return; }
     goTo("confirm");
   };
 
@@ -110,12 +110,12 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   };
 
   const handlePinSubmit = async () => {
-    if (pin.length !== 4) { setPinError("Enter your 4-digit PIN."); return; }
+    if (pin.length !== 4) { setPinError(t("btErrPin4")); return; }
     setSubmitting(true);
     setPinError("");
     try {
       const valid = await verifyPin(pin);
-      if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setSubmitting(false); return; }
+      if (!valid) { setPinError(t("btErrIncorrectPin")); setPin(""); setSubmitting(false); return; }
       setPinVerified(true);
       const result = await submitWithdraw({
         amount: parsedAmount,
