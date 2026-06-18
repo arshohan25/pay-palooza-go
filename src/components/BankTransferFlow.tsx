@@ -234,7 +234,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                               <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
                                 <Landmark size={16} className="text-muted-foreground" />
                               </div>
-                              <span className="flex-1 text-sm text-muted-foreground">Choose a bank…</span>
+                              <span className="flex-1 text-sm text-muted-foreground">{t("btChooseBank")}</span>
                             </>
                           )}
                           <ChevronDown size={16} className="text-muted-foreground shrink-0" />
@@ -246,7 +246,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                             <input
                               type="text"
-                              placeholder="Search banks…"
+                              placeholder={t("btSearchBanks")}
                               value={bankSearch}
                               onChange={e => setBankSearch(e.target.value)}
                               className="w-full pl-8 pr-3 py-2 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
@@ -256,7 +256,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                         </div>
                         <div className="overflow-y-auto max-h-56">
                           {filteredBanks.length === 0 ? (
-                            <p className="text-xs text-muted-foreground text-center py-4">No banks found</p>
+                            <p className="text-xs text-muted-foreground text-center py-4">{t("btNoBanksFound")}</p>
                           ) : (
                             filteredBanks.map(b => (
                               <button
