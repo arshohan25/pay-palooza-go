@@ -56,7 +56,7 @@ interface Provider {
   short: string;
 }
 
-const BILL_TYPES: (BillType & { nameKey: string; accountLabelKey: string; placeholderKey: string })[] = [
+const BILL_TYPES: BillType[] = [
   {
     id: "electricity",
     name: "Electricity",
