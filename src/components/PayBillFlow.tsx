@@ -573,7 +573,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">Enter Bill Amount</label>
+                      <label className="text-sm font-semibold text-foreground">{t("pbEnterBillAmount")}</label>
                       <Input
                         type="number"
                         inputMode="decimal"
@@ -584,7 +584,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                           setBillAmount(event.target.value);
                           setError("");
                         }}
-                        placeholder="e.g. 1250"
+                        placeholder={t("pbAmountPlaceholder")}
                         className="h-12 text-lg font-semibold"
                       />
                       {error && (
@@ -601,13 +601,13 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                   className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                   onClick={() => {
                     if ((parseFloat(billAmount) || 0) <= 0) {
-                      setError("Enter a valid bill amount.");
+                      setError(t("pbErrValidAmount"));
                       return;
                     }
                     goTo("review");
                   }}
                 >
-                  Review Payment
+                  {t("pbReviewPayment")}
                 </Button>
               </div>
             )}
