@@ -666,9 +666,11 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                   <div className="mx-auto w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center text-white shadow-card">
                     <FileText size={24} />
                   </div>
-                  <h2 className="text-xl font-extrabold text-foreground">Confirm payment</h2>
+                  <h2 className="text-xl font-extrabold text-foreground">{t("pbConfirmPayment")}</h2>
                   <p className="text-sm text-muted-foreground">
-                    Enter your PIN to pay ৳{((parseFloat(billAmount) || 0) + fee).toLocaleString()} to {provider?.name}
+                    {t("pbEnterPinToPay")
+                      .replace("{amount}", ((parseFloat(billAmount) || 0) + fee).toLocaleString(dateLocale))
+                      .replace("{provider}", provider?.name ?? "")}
                   </p>
                 </div>
 
@@ -684,7 +686,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                 <SlideToConfirm
                   disabled={pin.length < 4 || processing}
                   onConfirm={handlePinConfirm}
-                  label={processing ? "Processing..." : `Slide to pay ৳${((parseFloat(billAmount) || 0) + fee).toLocaleString()}`}
+                  label={processing ? t("pbProcessing") : t("pbSlideToPay").replace("{amount}", ((parseFloat(billAmount) || 0) + fee).toLocaleString(dateLocale))}
                 />
               </div>
             )}
