@@ -109,8 +109,8 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
   };
 
   const handleSave = async () => {
-    if (!form.store_name.trim()) { toast({ title: "Store name required", variant: "destructive" }); return; }
-    if (!form.slug.trim()) { toast({ title: "Store URL slug required", variant: "destructive" }); return; }
+    if (!form.store_name.trim()) { toast({ title: t("mssStoreNameRequired"), variant: "destructive" }); return; }
+    if (!form.slug.trim()) { toast({ title: t("mssSlugRequired"), variant: "destructive" }); return; }
     setSaving(true);
 
     const payload = {
