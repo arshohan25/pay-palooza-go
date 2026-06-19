@@ -204,7 +204,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
   };
 
   // Quick replies for merchants
-  const MERCHANT_QUICK_REPLIES = ["Thank you for your order! 🎉", "Your order is being prepared ✅", "We'll get back to you shortly!", "Currently out of stock, sorry!", "Shipped! 📦"];
+  const MERCHANT_QUICK_REPLIES = [t("miQrThanks"), t("miQrPreparing"), t("miQrGetBack"), t("miQrOutOfStock"), t("miQrShipped")];
 
   // ── Chat Detail View ──────────────────────────────────────────────────
   if (activeChat && activeChatData) {
