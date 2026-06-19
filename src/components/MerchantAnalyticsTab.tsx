@@ -176,13 +176,13 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {/* Shop Sales Summary */}
       {shopStats.count > 0 && (
         <>
-          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5"><ShoppingCart size={13} /> Shop Sales</h3>
+          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5"><ShoppingCart size={13} /> {t("matShopSales")}</h3>
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { label: "Gross Sales", value: `৳${fmt(shopStats.grossSales)}`, icon: DollarSign, color: "text-primary" },
-              { label: "Net Earnings", value: `৳${fmt(shopStats.netEarnings)}`, icon: TrendingUp, color: "text-emerald-600" },
-              { label: "Platform Fees", value: `৳${fmt(shopStats.totalFees)}`, icon: Activity, color: "text-amber-600" },
-              { label: "Items Sold", value: shopStats.totalQty.toString(), icon: Package, color: "text-blue-600" },
+              { label: t("matGrossSales"), value: `৳${fmt(shopStats.grossSales)}`, icon: DollarSign, color: "text-primary" },
+              { label: t("matNetEarnings"), value: `৳${fmt(shopStats.netEarnings)}`, icon: TrendingUp, color: "text-emerald-600" },
+              { label: t("matPlatformFees"), value: `৳${fmt(shopStats.totalFees)}`, icon: Activity, color: "text-amber-600" },
+              { label: t("matItemsSold"), value: fmt(shopStats.totalQty), icon: Package, color: "text-blue-600" },
             ].map(c => (
               <Card key={c.label} className="p-3">
                 <div className="flex items-center gap-2 mb-1">
