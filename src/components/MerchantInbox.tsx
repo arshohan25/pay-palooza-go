@@ -249,14 +249,14 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-semibold text-foreground truncate">
-                Inquiry: {activeChatData.productContext.name}
+                {t("miInquiry")} {activeChatData.productContext.name}
               </p>
               {activeChatData.productContext.price && (
                 <p className="text-[10px] text-primary font-bold">৳{activeChatData.productContext.price}</p>
               )}
             </div>
             <Badge variant="secondary" className="text-[9px]">
-              <Package size={10} className="mr-0.5" /> Product Chat
+              <Package size={10} className="mr-0.5" /> {t("miProductChat")}
             </Badge>
           </div>
         )}
