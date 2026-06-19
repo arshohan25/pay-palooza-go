@@ -12,6 +12,7 @@ import { useChat, type ChatConversation, type ChatMessage } from "@/hooks/use-ch
 import { useAuth } from "@/hooks/use-auth";
 import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 const getInitials = (name: string) =>
