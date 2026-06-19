@@ -110,7 +110,7 @@ export default function DeviceOtpStep({
 
       {devOtp && (
         <p className="mt-3 text-center text-[11px] uppercase tracking-wider text-amber-200/70">
-          Dev OTP: <span className="font-mono font-semibold text-amber-200">{devOtp}</span>
+          {t("dotsDevOtp")} <span className="font-mono font-semibold text-amber-200">{devOtp}</span>
         </p>
       )}
 
@@ -123,11 +123,11 @@ export default function DeviceOtpStep({
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Verifying...
+            {t("dotsVerifying")}
           </>
         ) : (
           <>
-            Verify code
+            {t("dotsVerifyCode")}
             <ArrowRight className="h-4 w-4" />
           </>
         )}
