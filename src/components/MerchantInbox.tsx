@@ -361,7 +361,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
             value={input}
             onChange={e => { setInput(e.target.value); sendTyping(); }}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="Reply to customer..."
+            placeholder={t("miReplyPlaceholder")}
             className="flex-1 h-10 rounded-xl text-xs bg-muted/30 border-border/40"
             disabled={sending}
           />
