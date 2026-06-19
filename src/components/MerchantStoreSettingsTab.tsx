@@ -190,29 +190,29 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       {/* Form fields */}
       <div className="space-y-3">
         <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Store Name</label>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssStoreName")}</label>
           <Input value={form.store_name} onChange={e => setForm(f => ({ ...f, store_name: e.target.value }))} className="mt-1 rounded-xl" />
         </div>
         <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">URL Slug</label>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssUrlSlug")}</label>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-xs text-muted-foreground">/shop/</span>
             <Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))} className="rounded-xl flex-1" />
           </div>
         </div>
         <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Description</label>
-          <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="mt-1 rounded-xl" rows={3} placeholder="Tell customers about your store..." />
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssDescription")}</label>
+          <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="mt-1 rounded-xl" rows={3} placeholder={t("mssDescPlaceholder")} />
         </div>
       </div>
 
       {/* Social Links */}
       <Card className="p-4 space-y-3">
-        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5"><Globe size={13} /> Social Links</h4>
+        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5"><Globe size={13} /> {t("mssSocialLinks")}</h4>
         {[
-          { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/yourpage" },
-          { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/yourshop" },
-          { key: "website", label: "Website", placeholder: "https://yoursite.com" },
+          { key: "facebook", label: t("mssFacebook"), placeholder: "https://facebook.com/yourpage" },
+          { key: "instagram", label: t("mssInstagram"), placeholder: "https://instagram.com/yourshop" },
+          { key: "website", label: t("mssWebsite"), placeholder: "https://yoursite.com" },
         ].map(s => (
           <div key={s.key}>
             <label className="text-[10px] text-muted-foreground font-medium">{s.label}</label>
@@ -229,8 +229,8 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       {/* Active toggle */}
       <div className="flex items-center justify-between bg-card border border-border/60 rounded-2xl p-4">
         <div>
-          <p className="text-sm font-bold text-foreground">Store Active</p>
-          <p className="text-[11px] text-muted-foreground">Visible in marketplace when active</p>
+          <p className="text-sm font-bold text-foreground">{t("mssStoreActive")}</p>
+          <p className="text-[11px] text-muted-foreground">{t("mssStoreActiveDesc")}</p>
         </div>
         <button onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
           className={`w-12 h-7 rounded-full transition-colors relative ${form.is_active ? "bg-primary" : "bg-muted"}`}>
@@ -240,7 +240,7 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
 
       <Button onClick={handleSave} disabled={saving} className="w-full rounded-xl h-12 gap-2 text-sm font-bold">
         {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-        {store?.id ? "Update Store" : "Create Store"}
+        {store?.id ? t("mssUpdateStore") : t("mssCreateStore")}
       </Button>
     </div>
   );
