@@ -168,7 +168,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
       return {
         id: msg.id,
         text: msg.decryptedContent || msg.content,
-        time: formatMsgTime(msg.created_at),
+        time: formatMsgTime(msg.created_at, lang),
         sent: msg.sender_id === userId,
         status,
         senderId: msg.sender_id,
