@@ -39,6 +39,7 @@ export default function DeviceOtpStep({
   onResend,
   onCancel,
 }: DeviceOtpStepProps) {
+  const { t } = useI18n();
   const [code, setCode] = useState("");
 
   // Auto-submit when 6 digits entered
