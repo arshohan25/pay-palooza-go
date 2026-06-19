@@ -325,7 +325,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {sessions.length === 0 && orderItems.length === 0 && (
         <Card className="p-8 text-center">
           <Activity size={32} className="text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">No sales data in this period.</p>
+          <p className="text-sm text-muted-foreground">{t("matNoSalesData")}</p>
         </Card>
       )}
     </div>
