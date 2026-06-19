@@ -84,7 +84,7 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${merchantId}/${folder}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("product-images").upload(path, file, { contentType: file.type, upsert: true });
-    if (error) { toast({ title: "Upload failed", description: error.message, variant: "destructive" }); return null; }
+    if (error) { toast({ title: t("mssUploadFailed"), description: error.message, variant: "destructive" }); return null; }
     return supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl;
   };
 
