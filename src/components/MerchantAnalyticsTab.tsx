@@ -216,7 +216,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
           {/* Daily Earnings Chart */}
           {dailyShopData.length > 0 && (
             <Card className="p-4">
-              <h4 className="text-xs font-bold text-foreground mb-3">Daily Net Earnings</h4>
+              <h4 className="text-xs font-bold text-foreground mb-3">{t("matDailyNetEarnings")}</h4>
               <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={dailyShopData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -224,7 +224,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
                   <YAxis tick={{ fontSize: 9 }} className="text-muted-foreground" />
                   <Tooltip
                     contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid hsl(var(--border))" }}
-                    formatter={(v: number) => [`৳${fmt(v)}`, "Earnings"]}
+                    formatter={(v: number) => [`৳${fmt(v)}`, t("matEarnings")]}
                   />
                   <Line type="monotone" dataKey="earnings" stroke="hsl(160 60% 45%)" strokeWidth={2.5} dot={{ r: 3 }} />
                 </LineChart>
