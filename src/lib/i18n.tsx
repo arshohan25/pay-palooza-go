@@ -1552,6 +1552,30 @@ const translations = {
   moItems: { en: "items", bn: "আইটেম" },
   moQty: { en: "Qty:", bn: "পরিমাণ:" },
   moFulfill: { en: "Fulfill / Update Shipment", bn: "পূরণ / শিপমেন্ট আপডেট" },
+
+  // MerchantStoreSettingsTab
+  mssUploadFailed: { en: "Upload failed", bn: "আপলোড ব্যর্থ" },
+  mssStoreNameRequired: { en: "Store name required", bn: "দোকানের নাম প্রয়োজন" },
+  mssSlugRequired: { en: "Store URL slug required", bn: "স্টোর URL স্লাগ প্রয়োজন" },
+  mssSaveFailed: { en: "Save failed", bn: "সংরক্ষণ ব্যর্থ" },
+  mssSaved: { en: "Store settings saved ✓", bn: "স্টোর সেটিংস সংরক্ষিত ✓" },
+  mssBannerAlt: { en: "Banner", bn: "ব্যানার" },
+  mssLogoAlt: { en: "Logo", bn: "লোগো" },
+  mssChangeBanner: { en: "Change Banner", bn: "ব্যানার পরিবর্তন" },
+  mssYourStore: { en: "Your Store", bn: "আপনার দোকান" },
+  mssYourSlug: { en: "your-slug", bn: "your-slug" },
+  mssStoreName: { en: "Store Name", bn: "দোকানের নাম" },
+  mssUrlSlug: { en: "URL Slug", bn: "URL স্লাগ" },
+  mssDescription: { en: "Description", bn: "বিবরণ" },
+  mssDescPlaceholder: { en: "Tell customers about your store...", bn: "আপনার দোকান সম্পর্কে গ্রাহকদের বলুন..." },
+  mssSocialLinks: { en: "Social Links", bn: "সোশ্যাল লিঙ্ক" },
+  mssFacebook: { en: "Facebook", bn: "ফেসবুক" },
+  mssInstagram: { en: "Instagram", bn: "ইনস্টাগ্রাম" },
+  mssWebsite: { en: "Website", bn: "ওয়েবসাইট" },
+  mssStoreActive: { en: "Store Active", bn: "দোকান সক্রিয়" },
+  mssStoreActiveDesc: { en: "Visible in marketplace when active", bn: "সক্রিয় থাকলে মার্কেটপ্লেসে দৃশ্যমান" },
+  mssUpdateStore: { en: "Update Store", bn: "দোকান আপডেট" },
+  mssCreateStore: { en: "Create Store", bn: "দোকান তৈরি" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
