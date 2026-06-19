@@ -18,20 +18,23 @@ import { useI18n } from "@/lib/i18n";
 const getInitials = (name: string) =>
   name.trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 
-const formatTime = (ts: number): string => {
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "Yesterday";
-  return `${days}d ago`;
+const useFormatTime = () => {
+  const { t, lang } = useI18n();
+  return (ts: number): string => {
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 1) return t("miJustNow");
+    if (mins < 60) return t("miMinAgo").replace("{n}", String(mins));
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return t("miHourAgo").replace("{n}", String(hours));
+    const days = Math.floor(hours / 24);
+    if (days === 1) return t("miYesterday");
+    return t("miDayAgo").replace("{n}", String(days));
+  };
 };
 
-const formatMsgTime = (dateStr: string) =>
-  new Date(dateStr).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+const formatMsgTime = (dateStr: string, lang: string) =>
+  new Date(dateStr).toLocaleTimeString(lang === "bn" ? "bn-BD" : "en-US", { hour: "2-digit", minute: "2-digit" });
 
 interface CustomerChat {
   id: string;
