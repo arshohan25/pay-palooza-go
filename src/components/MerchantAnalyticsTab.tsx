@@ -197,14 +197,14 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
           {/* Top Products */}
           {topProducts.length > 0 && (
             <Card className="p-4">
-              <h4 className="text-xs font-bold text-foreground mb-3">Top Products</h4>
+              <h4 className="text-xs font-bold text-foreground mb-3">{t("matTopProducts")}</h4>
               <div className="space-y-2">
                 {topProducts.map((p, i) => (
                   <div key={p.name} className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}</span>
+                    <span className="text-xs font-bold text-muted-foreground w-5">{fmt(i + 1)}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-foreground truncate">{p.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{p.qty} sold</p>
+                      <p className="text-[10px] text-muted-foreground">{fmt(p.qty)} {t("matSold")}</p>
                     </div>
                     <span className="text-xs font-bold text-foreground">৳{fmt(p.revenue)}</span>
                   </div>
