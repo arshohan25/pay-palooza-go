@@ -1535,6 +1535,23 @@ const translations = {
   miNoCustomerChats: { en: "No customer chats yet", bn: "এখনও কোনো গ্রাহক চ্যাট নেই" },
   miTryDifferentSearch: { en: "Try a different search", bn: "ভিন্নভাবে খুঁজে দেখুন" },
   miInquiriesAppearHere: { en: "Customer inquiries will appear here", bn: "গ্রাহকের জিজ্ঞাসা এখানে দেখাবে" },
+
+  // MerchantOrdersTab
+  moStatusProcessing: { en: "Processing", bn: "প্রক্রিয়াধীন" },
+  moStatusConfirmed: { en: "Confirmed", bn: "নিশ্চিত" },
+  moStatusPartiallyShipped: { en: "Partially Shipped", bn: "আংশিক পাঠানো" },
+  moStatusShipped: { en: "Shipped", bn: "পাঠানো হয়েছে" },
+  moStatusOutForDelivery: { en: "Out for Delivery", bn: "ডেলিভারির পথে" },
+  moStatusDelivered: { en: "Delivered", bn: "ডেলিভার হয়েছে" },
+  moStatusCancelled: { en: "Cancelled", bn: "বাতিল" },
+  moUpdateFailed: { en: "Update failed", bn: "আপডেট ব্যর্থ" },
+  moOrderTo: { en: "Order → {status}", bn: "অর্ডার → {status}" },
+  moNoOrders: { en: "No orders yet", bn: "এখনও কোনো অর্ডার নেই" },
+  moOrdersAppearHere: { en: "Orders from your shop will appear here", bn: "আপনার দোকানের অর্ডার এখানে দেখাবে" },
+  moItem: { en: "item", bn: "আইটেম" },
+  moItems: { en: "items", bn: "আইটেম" },
+  moQty: { en: "Qty:", bn: "পরিমাণ:" },
+  moFulfill: { en: "Fulfill / Update Shipment", bn: "পূরণ / শিপমেন্ট আপডেট" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
