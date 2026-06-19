@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Store, ImagePlus, Globe, Loader2, Check, Eye } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface StoreData {
   id?: string;
