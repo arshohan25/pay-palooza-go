@@ -7,6 +7,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
 import { TrendingUp, CheckCircle2, XCircle, Clock, DollarSign, Activity, RefreshCw, Package, ShoppingCart } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface Session {
   id: string;
