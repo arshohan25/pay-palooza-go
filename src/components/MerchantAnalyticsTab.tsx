@@ -157,7 +157,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
     <div ref={ref} className="space-y-5">
       {/* Range selector */}
       <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-muted-foreground">Period:</span>
+        <span className="text-xs font-semibold text-muted-foreground">{t("matPeriod")}</span>
         {RANGE_OPTIONS.map(r => (
           <button
             key={r.days}
