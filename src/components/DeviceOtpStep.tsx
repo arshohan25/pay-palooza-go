@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Loader2, RefreshCw, ShieldCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useI18n } from "@/lib/i18n";
 
 interface DeviceOtpStepProps {
   phone: string;
