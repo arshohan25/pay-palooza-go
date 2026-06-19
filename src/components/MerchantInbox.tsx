@@ -227,7 +227,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
               <p className="text-sm font-bold text-foreground truncate">{activeChatData.name}</p>
               <div className="flex items-center gap-1.5">
                 <User size={10} className="text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground">{activeChatData.phone || "Customer"}</span>
+                <span className="text-[10px] text-muted-foreground">{activeChatData.phone || t("miCustomer")}</span>
                 {activeChatData.productContext && (
                   <>
                     <span className="text-muted-foreground/40">·</span>
