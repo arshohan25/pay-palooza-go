@@ -137,9 +137,9 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
     }
 
     if (error) {
-      toast({ title: "Save failed", description: error.message, variant: "destructive" });
+      toast({ title: t("mssSaveFailed"), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Store settings saved ✓" });
+      toast({ title: t("mssSaved") });
       load();
     }
     setSaving(false);
