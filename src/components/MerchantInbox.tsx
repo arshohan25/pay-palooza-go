@@ -95,7 +95,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
         const others = conv.participants.filter(p => p.user_id !== userId);
         if (others.length === 0) return null;
         const other = others[0];
-        const name = other.profile?.name || other.profile?.phone || "Customer";
+        const name = other.profile?.name || other.profile?.phone || t("miCustomer");
         const phone = other.profile?.phone ?? "";
 
         const rawMsg = conv.lastMessage?.decryptedContent || conv.lastMessage?.content || t("miNoMessagesYet");
