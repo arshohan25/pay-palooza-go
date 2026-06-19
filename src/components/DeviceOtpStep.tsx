@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Loader2, RefreshCw, ShieldCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useI18n } from "@/lib/i18n";
 
 interface DeviceOtpStepProps {
   phone: string;
@@ -38,6 +39,7 @@ export default function DeviceOtpStep({
   onResend,
   onCancel,
 }: DeviceOtpStepProps) {
+  const { t } = useI18n();
   const [code, setCode] = useState("");
 
   // Auto-submit when 6 digits entered
@@ -65,14 +67,14 @@ export default function DeviceOtpStep({
           <ShieldCheck className="h-7 w-7 text-emerald-300" strokeWidth={1.8} />
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-[10.5px] font-medium uppercase tracking-[0.18em] text-emerald-200">
-          {portalLabel} · device verification
+          {portalLabel} · {t("dotsDeviceVerification")}
         </span>
         <h2 className="mt-3 text-xl font-semibold tracking-tight text-white">
-          Verify this device
+          {t("dotsVerifyDevice")}
         </h2>
         <p className="mt-1.5 text-[13px] leading-snug text-white/60">
-          We sent a 6-digit code to <span className="font-semibold text-white/85">{maskPhone(phone)}</span>.
-          You'll only need to do this once on this device.
+          {t("dotsCodeSent")} <span className="font-semibold text-white/85">{maskPhone(phone)}</span>.
+          {" "}{t("dotsOnlyOnce")}
         </p>
       </div>
 
@@ -108,7 +110,7 @@ export default function DeviceOtpStep({
 
       {devOtp && (
         <p className="mt-3 text-center text-[11px] uppercase tracking-wider text-amber-200/70">
-          Dev OTP: <span className="font-mono font-semibold text-amber-200">{devOtp}</span>
+          {t("dotsDevOtp")} <span className="font-mono font-semibold text-amber-200">{devOtp}</span>
         </p>
       )}
 
@@ -121,11 +123,11 @@ export default function DeviceOtpStep({
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Verifying...
+            {t("dotsVerifying")}
           </>
         ) : (
           <>
-            Verify code
+            {t("dotsVerifyCode")}
             <ArrowRight className="h-4 w-4" />
           </>
         )}
@@ -139,7 +141,7 @@ export default function DeviceOtpStep({
           className="inline-flex items-center gap-1.5 font-medium text-emerald-300 transition-opacity hover:text-emerald-200 disabled:cursor-not-allowed disabled:text-white/40"
         >
           <RefreshCw className="h-3.5 w-3.5" />
-          {resendIn > 0 ? `Resend in ${fmt(resendIn)}` : "Resend code"}
+          {resendIn > 0 ? t("dotsResendIn").replace("{time}", fmt(resendIn)) : t("dotsResendCode")}
         </button>
 
         {onCancel && (
@@ -149,7 +151,7 @@ export default function DeviceOtpStep({
             disabled={loading}
             className="font-medium text-white/60 hover:text-white/85"
           >
-            Cancel
+            {t("dotsCancel")}
           </button>
         )}
       </div>
