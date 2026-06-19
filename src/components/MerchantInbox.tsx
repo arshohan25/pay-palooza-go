@@ -98,7 +98,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
         const name = other.profile?.name || other.profile?.phone || "Customer";
         const phone = other.profile?.phone ?? "";
 
-        const rawMsg = conv.lastMessage?.decryptedContent || conv.lastMessage?.content || "No messages yet";
+        const rawMsg = conv.lastMessage?.decryptedContent || conv.lastMessage?.content || t("miNoMessagesYet");
         const meta = conv.lastMessage?.metadata as Record<string, unknown> | undefined;
         const hasProduct = meta?.isProductInquiry === true;
 
