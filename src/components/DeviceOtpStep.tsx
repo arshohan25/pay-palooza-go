@@ -141,7 +141,7 @@ export default function DeviceOtpStep({
           className="inline-flex items-center gap-1.5 font-medium text-emerald-300 transition-opacity hover:text-emerald-200 disabled:cursor-not-allowed disabled:text-white/40"
         >
           <RefreshCw className="h-3.5 w-3.5" />
-          {resendIn > 0 ? `Resend in ${fmt(resendIn)}` : "Resend code"}
+          {resendIn > 0 ? t("dotsResendIn").replace("{time}", fmt(resendIn)) : t("dotsResendCode")}
         </button>
 
         {onCancel && (
@@ -151,7 +151,7 @@ export default function DeviceOtpStep({
             disabled={loading}
             className="font-medium text-white/60 hover:text-white/85"
           >
-            Cancel
+            {t("dotsCancel")}
           </button>
         )}
       </div>
