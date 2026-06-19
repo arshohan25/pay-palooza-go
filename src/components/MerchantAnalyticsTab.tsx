@@ -287,7 +287,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {/* Daily sessions bar chart */}
       {dailyData.length > 0 && (
         <Card className="p-4">
-          <h4 className="text-xs font-bold text-foreground mb-3">Daily Sessions</h4>
+          <h4 className="text-xs font-bold text-foreground mb-3">{t("matDailySessions")}</h4>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={dailyData} barCategoryGap="20%">
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
