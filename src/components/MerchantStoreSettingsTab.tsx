@@ -155,7 +155,7 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       <Card className="overflow-hidden">
         <div className="relative h-32 bg-muted">
           {form.banner_url ? (
-            <img src={form.banner_url} alt="Banner" className="w-full h-full object-cover" />
+            <img src={form.banner_url} alt={t("mssBannerAlt")} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
               <ImagePlus size={24} />
@@ -163,14 +163,14 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
           )}
           <button onClick={() => bannerRef.current?.click()} disabled={uploadingBanner}
             className="absolute bottom-2 right-2 px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-sm text-xs font-semibold text-foreground shadow-sm">
-            {uploadingBanner ? <Loader2 size={12} className="animate-spin" /> : "Change Banner"}
+            {uploadingBanner ? <Loader2 size={12} className="animate-spin" /> : t("mssChangeBanner")}
           </button>
           <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
         </div>
         <div className="relative px-4 pb-4 -mt-8">
           <div className="w-16 h-16 rounded-2xl border-4 border-background bg-muted flex items-center justify-center overflow-hidden shadow-sm">
             {form.logo_url ? (
-              <img src={form.logo_url} alt="Logo" className="w-full h-full object-cover" />
+              <img src={form.logo_url} alt={t("mssLogoAlt")} className="w-full h-full object-cover" />
             ) : (
               <Store size={24} className="text-muted-foreground" />
             )}
@@ -181,8 +181,8 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
           </button>
           <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
           <div className="mt-2">
-            <p className="text-sm font-bold text-foreground">{form.store_name || "Your Store"}</p>
-            <p className="text-xs text-muted-foreground">/shop/{form.slug || "your-slug"}</p>
+            <p className="text-sm font-bold text-foreground">{form.store_name || t("mssYourStore")}</p>
+            <p className="text-xs text-muted-foreground">/shop/{form.slug || t("mssYourSlug")}</p>
           </div>
         </div>
       </Card>
