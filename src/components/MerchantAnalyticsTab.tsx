@@ -7,6 +7,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
 import { TrendingUp, CheckCircle2, XCircle, Clock, DollarSign, Activity, RefreshCw, Package, ShoppingCart } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface Session {
   id: string;
@@ -27,7 +28,7 @@ interface OrderItem {
   created_at: string;
 }
 
-const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
+const makeFmt = (lang: string) => (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-BD").format(n);
 
 const RANGE_OPTIONS = [
   { label: "7d", days: 7 },
@@ -43,6 +44,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(({ merchantId }, ref) => {
+  const { t, lang } = useI18n();
+  const fmt = useMemo(() => makeFmt(lang), [lang]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,12 +120,12 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
   // Pie chart data for sessions
   const pieData = useMemo(() => {
     return [
-      { name: "Completed", value: stats.completed, color: STATUS_COLORS.completed },
-      { name: "Pending", value: stats.pending, color: STATUS_COLORS.pending },
-      { name: "Failed", value: stats.failed, color: STATUS_COLORS.failed },
-      { name: "Expired", value: stats.expired, color: STATUS_COLORS.expired },
+      { name: t("matCompleted"), value: stats.completed, color: STATUS_COLORS.completed },
+      { name: t("matPending"), value: stats.pending, color: STATUS_COLORS.pending },
+      { name: t("matFailed"), value: stats.failed, color: STATUS_COLORS.failed },
+      { name: t("matExpired"), value: stats.expired, color: STATUS_COLORS.expired },
     ].filter(d => d.value > 0);
-  }, [stats]);
+  }, [stats, t]);
 
   // Daily sessions bar chart
   const dailyData = useMemo(() => {
@@ -154,7 +157,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
     <div ref={ref} className="space-y-5">
       {/* Range selector */}
       <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-muted-foreground">Period:</span>
+        <span className="text-xs font-semibold text-muted-foreground">{t("matPeriod")}</span>
         {RANGE_OPTIONS.map(r => (
           <button
             key={r.days}
@@ -173,13 +176,13 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {/* Shop Sales Summary */}
       {shopStats.count > 0 && (
         <>
-          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5"><ShoppingCart size={13} /> Shop Sales</h3>
+          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5"><ShoppingCart size={13} /> {t("matShopSales")}</h3>
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { label: "Gross Sales", value: `৳${fmt(shopStats.grossSales)}`, icon: DollarSign, color: "text-primary" },
-              { label: "Net Earnings", value: `৳${fmt(shopStats.netEarnings)}`, icon: TrendingUp, color: "text-emerald-600" },
-              { label: "Platform Fees", value: `৳${fmt(shopStats.totalFees)}`, icon: Activity, color: "text-amber-600" },
-              { label: "Items Sold", value: shopStats.totalQty.toString(), icon: Package, color: "text-blue-600" },
+              { label: t("matGrossSales"), value: `৳${fmt(shopStats.grossSales)}`, icon: DollarSign, color: "text-primary" },
+              { label: t("matNetEarnings"), value: `৳${fmt(shopStats.netEarnings)}`, icon: TrendingUp, color: "text-emerald-600" },
+              { label: t("matPlatformFees"), value: `৳${fmt(shopStats.totalFees)}`, icon: Activity, color: "text-amber-600" },
+              { label: t("matItemsSold"), value: fmt(shopStats.totalQty), icon: Package, color: "text-blue-600" },
             ].map(c => (
               <Card key={c.label} className="p-3">
                 <div className="flex items-center gap-2 mb-1">
@@ -194,14 +197,14 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
           {/* Top Products */}
           {topProducts.length > 0 && (
             <Card className="p-4">
-              <h4 className="text-xs font-bold text-foreground mb-3">Top Products</h4>
+              <h4 className="text-xs font-bold text-foreground mb-3">{t("matTopProducts")}</h4>
               <div className="space-y-2">
                 {topProducts.map((p, i) => (
                   <div key={p.name} className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}</span>
+                    <span className="text-xs font-bold text-muted-foreground w-5">{fmt(i + 1)}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-foreground truncate">{p.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{p.qty} sold</p>
+                      <p className="text-[10px] text-muted-foreground">{fmt(p.qty)} {t("matSold")}</p>
                     </div>
                     <span className="text-xs font-bold text-foreground">৳{fmt(p.revenue)}</span>
                   </div>
@@ -213,7 +216,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
           {/* Daily Earnings Chart */}
           {dailyShopData.length > 0 && (
             <Card className="p-4">
-              <h4 className="text-xs font-bold text-foreground mb-3">Daily Net Earnings</h4>
+              <h4 className="text-xs font-bold text-foreground mb-3">{t("matDailyNetEarnings")}</h4>
               <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={dailyShopData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -221,7 +224,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
                   <YAxis tick={{ fontSize: 9 }} className="text-muted-foreground" />
                   <Tooltip
                     contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid hsl(var(--border))" }}
-                    formatter={(v: number) => [`৳${fmt(v)}`, "Earnings"]}
+                    formatter={(v: number) => [`৳${fmt(v)}`, t("matEarnings")]}
                   />
                   <Line type="monotone" dataKey="earnings" stroke="hsl(160 60% 45%)" strokeWidth={2.5} dot={{ r: 3 }} />
                 </LineChart>
@@ -234,13 +237,13 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {/* API Payment Summary */}
       {stats.total > 0 && (
         <>
-          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 mt-2"><Activity size={13} /> API Payments</h3>
+          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 mt-2"><Activity size={13} /> {t("matApiPayments")}</h3>
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { label: "Total Revenue", value: `৳${fmt(stats.revenue)}`, icon: DollarSign, color: "text-emerald-600" },
-              { label: "Success Rate", value: `${stats.successRate.toFixed(1)}%`, icon: TrendingUp, color: "text-blue-600" },
-              { label: "Completed", value: stats.completed.toString(), icon: CheckCircle2, color: "text-emerald-600" },
-              { label: "Total Sessions", value: stats.total.toString(), icon: Activity, color: "text-primary" },
+              { label: t("matTotalRevenue"), value: `৳${fmt(stats.revenue)}`, icon: DollarSign, color: "text-emerald-600" },
+              { label: t("matSuccessRate"), value: `${fmt(Number(stats.successRate.toFixed(1)))}%`, icon: TrendingUp, color: "text-blue-600" },
+              { label: t("matCompleted"), value: fmt(stats.completed), icon: CheckCircle2, color: "text-emerald-600" },
+              { label: t("matTotalSessions"), value: fmt(stats.total), icon: Activity, color: "text-primary" },
             ].map(c => (
               <Card key={c.label} className="p-3">
                 <div className="flex items-center gap-2 mb-1">
@@ -257,7 +260,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {/* Status distribution pie */}
       {pieData.length > 0 && (
         <Card className="p-4">
-          <h4 className="text-xs font-bold text-foreground mb-3">Session Status</h4>
+          <h4 className="text-xs font-bold text-foreground mb-3">{t("matSessionStatus")}</h4>
           <div className="flex items-center gap-4">
             <div className="w-24 h-24">
               <ResponsiveContainer width="100%" height="100%">
@@ -273,7 +276,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
                 <div key={d.name} className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
                   <span className="text-[10px] text-muted-foreground">{d.name}</span>
-                  <span className="text-[10px] font-bold text-foreground ml-auto">{d.value}</span>
+                  <span className="text-[10px] font-bold text-foreground ml-auto">{fmt(d.value)}</span>
                 </div>
               ))}
             </div>
@@ -284,7 +287,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {/* Daily sessions bar chart */}
       {dailyData.length > 0 && (
         <Card className="p-4">
-          <h4 className="text-xs font-bold text-foreground mb-3">Daily Sessions</h4>
+          <h4 className="text-xs font-bold text-foreground mb-3">{t("matDailySessions")}</h4>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={dailyData} barCategoryGap="20%">
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -303,7 +306,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {/* Revenue line chart */}
       {revenueData.length > 0 && (
         <Card className="p-4">
-          <h4 className="text-xs font-bold text-foreground mb-3">Daily API Revenue</h4>
+          <h4 className="text-xs font-bold text-foreground mb-3">{t("matDailyApiRevenue")}</h4>
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -311,7 +314,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
               <YAxis tick={{ fontSize: 9 }} className="text-muted-foreground" />
               <Tooltip
                 contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid hsl(var(--border))" }}
-                formatter={(v: number) => [`৳${fmt(v)}`, "Revenue"]}
+                formatter={(v: number) => [`৳${fmt(v)}`, t("matRevenue")]}
               />
               <Line type="monotone" dataKey="revenue" stroke={STATUS_COLORS.completed} strokeWidth={2.5} dot={{ r: 3 }} />
             </LineChart>
@@ -322,7 +325,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {sessions.length === 0 && orderItems.length === 0 && (
         <Card className="p-8 text-center">
           <Activity size={32} className="text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">No sales data in this period.</p>
+          <p className="text-sm text-muted-foreground">{t("matNoSalesData")}</p>
         </Card>
       )}
     </div>

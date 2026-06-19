@@ -1576,6 +1576,31 @@ const translations = {
   mssStoreActiveDesc: { en: "Visible in marketplace when active", bn: "সক্রিয় থাকলে মার্কেটপ্লেসে দৃশ্যমান" },
   mssUpdateStore: { en: "Update Store", bn: "দোকান আপডেট" },
   mssCreateStore: { en: "Create Store", bn: "দোকান তৈরি" },
+
+  // MerchantAnalyticsTab
+  matPeriod: { en: "Period:", bn: "সময়:" },
+  matShopSales: { en: "Shop Sales", bn: "দোকানের বিক্রয়" },
+  matGrossSales: { en: "Gross Sales", bn: "মোট বিক্রয়" },
+  matNetEarnings: { en: "Net Earnings", bn: "নিট আয়" },
+  matPlatformFees: { en: "Platform Fees", bn: "প্ল্যাটফর্ম ফি" },
+  matItemsSold: { en: "Items Sold", bn: "বিক্রিত আইটেম" },
+  matTopProducts: { en: "Top Products", bn: "শীর্ষ পণ্য" },
+  matSold: { en: "sold", bn: "বিক্রি হয়েছে" },
+  matDailyNetEarnings: { en: "Daily Net Earnings", bn: "দৈনিক নিট আয়" },
+  matEarnings: { en: "Earnings", bn: "আয়" },
+  matApiPayments: { en: "API Payments", bn: "API পেমেন্ট" },
+  matTotalRevenue: { en: "Total Revenue", bn: "মোট রাজস্ব" },
+  matSuccessRate: { en: "Success Rate", bn: "সফলতার হার" },
+  matCompleted: { en: "Completed", bn: "সম্পন্ন" },
+  matTotalSessions: { en: "Total Sessions", bn: "মোট সেশন" },
+  matSessionStatus: { en: "Session Status", bn: "সেশন স্ট্যাটাস" },
+  matPending: { en: "Pending", bn: "অপেক্ষমাণ" },
+  matFailed: { en: "Failed", bn: "ব্যর্থ" },
+  matExpired: { en: "Expired", bn: "মেয়াদোত্তীর্ণ" },
+  matDailySessions: { en: "Daily Sessions", bn: "দৈনিক সেশন" },
+  matDailyApiRevenue: { en: "Daily API Revenue", bn: "দৈনিক API রাজস্ব" },
+  matRevenue: { en: "Revenue", bn: "রাজস্ব" },
+  matNoSalesData: { en: "No sales data in this period.", bn: "এই সময়ে কোনো বিক্রয় ডেটা নেই।" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
