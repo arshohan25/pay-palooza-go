@@ -12,25 +12,29 @@ import { useChat, type ChatConversation, type ChatMessage } from "@/hooks/use-ch
 import { useAuth } from "@/hooks/use-auth";
 import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 const getInitials = (name: string) =>
   name.trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 
-const formatTime = (ts: number): string => {
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "Yesterday";
-  return `${days}d ago`;
+const useFormatTime = () => {
+  const { t, lang } = useI18n();
+  return (ts: number): string => {
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 1) return t("miJustNow");
+    if (mins < 60) return t("miMinAgo").replace("{n}", String(mins));
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return t("miHourAgo").replace("{n}", String(hours));
+    const days = Math.floor(hours / 24);
+    if (days === 1) return t("miYesterday");
+    return t("miDayAgo").replace("{n}", String(days));
+  };
 };
 
-const formatMsgTime = (dateStr: string) =>
-  new Date(dateStr).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+const formatMsgTime = (dateStr: string, lang: string) =>
+  new Date(dateStr).toLocaleTimeString(lang === "bn" ? "bn-BD" : "en-US", { hour: "2-digit", minute: "2-digit" });
 
 interface CustomerChat {
   id: string;
@@ -63,6 +67,8 @@ type FilterType = "all" | "unread" | "product";
 
 // ── Main Component ───────────────────────────────────────────────────────
 const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
+  const { t, lang } = useI18n();
+  const formatTime = useFormatTime();
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const { conversations, loading, loadConversations, openConversation, messages, sendMessage, messagesLoading } = useChat();
@@ -89,10 +95,10 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
         const others = conv.participants.filter(p => p.user_id !== userId);
         if (others.length === 0) return null;
         const other = others[0];
-        const name = other.profile?.name || other.profile?.phone || "Customer";
+        const name = other.profile?.name || other.profile?.phone || t("miCustomer");
         const phone = other.profile?.phone ?? "";
 
-        const rawMsg = conv.lastMessage?.decryptedContent || conv.lastMessage?.content || "No messages yet";
+        const rawMsg = conv.lastMessage?.decryptedContent || conv.lastMessage?.content || t("miNoMessagesYet");
         const meta = conv.lastMessage?.metadata as Record<string, unknown> | undefined;
         const hasProduct = meta?.isProductInquiry === true;
 
@@ -162,7 +168,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
       return {
         id: msg.id,
         text: msg.decryptedContent || msg.content,
-        time: formatMsgTime(msg.created_at),
+        time: formatMsgTime(msg.created_at, lang),
         sent: msg.sender_id === userId,
         status,
         senderId: msg.sender_id,
@@ -198,7 +204,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
   };
 
   // Quick replies for merchants
-  const MERCHANT_QUICK_REPLIES = ["Thank you for your order! 🎉", "Your order is being prepared ✅", "We'll get back to you shortly!", "Currently out of stock, sorry!", "Shipped! 📦"];
+  const MERCHANT_QUICK_REPLIES = [t("miQrThanks"), t("miQrPreparing"), t("miQrGetBack"), t("miQrOutOfStock"), t("miQrShipped")];
 
   // ── Chat Detail View ──────────────────────────────────────────────────
   if (activeChat && activeChatData) {
@@ -221,7 +227,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
               <p className="text-sm font-bold text-foreground truncate">{activeChatData.name}</p>
               <div className="flex items-center gap-1.5">
                 <User size={10} className="text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground">{activeChatData.phone || "Customer"}</span>
+                <span className="text-[10px] text-muted-foreground">{activeChatData.phone || t("miCustomer")}</span>
                 {activeChatData.productContext && (
                   <>
                     <span className="text-muted-foreground/40">·</span>
@@ -243,14 +249,14 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-semibold text-foreground truncate">
-                Inquiry: {activeChatData.productContext.name}
+                {t("miInquiry")} {activeChatData.productContext.name}
               </p>
               {activeChatData.productContext.price && (
                 <p className="text-[10px] text-primary font-bold">৳{activeChatData.productContext.price}</p>
               )}
             </div>
             <Badge variant="secondary" className="text-[9px]">
-              <Package size={10} className="mr-0.5" /> Product Chat
+              <Package size={10} className="mr-0.5" /> {t("miProductChat")}
             </Badge>
           </div>
         )}
@@ -266,8 +272,8 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
                 <MessageCircle size={24} className="text-primary" />
               </div>
-              <p className="text-sm font-semibold text-foreground">No messages yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Start the conversation with your customer</p>
+              <p className="text-sm font-semibold text-foreground">{t("miNoMessagesYet")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("miStartConversation")}</p>
             </div>
           ) : (
             uiMessages.map((msg) => {
@@ -355,7 +361,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
             value={input}
             onChange={e => { setInput(e.target.value); sendTyping(); }}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="Reply to customer..."
+            placeholder={t("miReplyPlaceholder")}
             className="flex-1 h-10 rounded-xl text-xs bg-muted/30 border-border/40"
             disabled={sending}
           />
@@ -384,10 +390,12 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
           <div className="flex-1">
             <h2 className="text-base font-extrabold text-foreground flex items-center gap-2">
               <Store size={16} className="text-primary" />
-              Customer Messages
+              {t("miCustomerMessages")}
             </h2>
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              {totalUnread > 0 ? `${totalUnread} unread message${totalUnread > 1 ? "s" : ""}` : "All caught up ✓"}
+              {totalUnread > 0
+                ? (totalUnread > 1 ? t("miUnreadCountPlural") : t("miUnreadCount")).replace("{n}", String(totalUnread))
+                : t("miAllCaughtUp")}
             </p>
           </div>
         </div>
@@ -398,7 +406,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search customers..."
+            placeholder={t("miSearchCustomers")}
             className="pl-9 h-9 rounded-xl text-xs bg-muted/30 border-border/40"
           />
         </div>
@@ -406,9 +414,9 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
         {/* Filter tabs */}
         <div className="flex gap-1.5 mt-2.5">
           {([
-            { key: "all" as FilterType, label: "All", count: customerChats.length },
-            { key: "unread" as FilterType, label: "Unread", count: customerChats.filter(c => c.unread > 0).length },
-            { key: "product" as FilterType, label: "Product", count: customerChats.filter(c => c.productContext).length },
+            { key: "all" as FilterType, label: t("miFilterAll"), count: customerChats.length },
+            { key: "unread" as FilterType, label: t("miFilterUnread"), count: customerChats.filter(c => c.unread > 0).length },
+            { key: "product" as FilterType, label: t("miFilterProduct"), count: customerChats.filter(c => c.productContext).length },
           ]).map(f => (
             <button
               key={f.key}
@@ -437,10 +445,10 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
               <MessageCircle size={28} className="text-primary" />
             </div>
             <p className="text-sm font-bold text-foreground">
-              {search ? "No customers found" : filter === "unread" ? "No unread messages" : "No customer chats yet"}
+              {search ? t("miNoCustomersFound") : filter === "unread" ? t("miNoUnreadMessages") : t("miNoCustomerChats")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {search ? "Try a different search" : "Customer inquiries will appear here"}
+              {search ? t("miTryDifferentSearch") : t("miInquiriesAppearHere")}
             </p>
           </motion.div>
         ) : (
