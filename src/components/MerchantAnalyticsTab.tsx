@@ -237,13 +237,13 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {/* API Payment Summary */}
       {stats.total > 0 && (
         <>
-          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 mt-2"><Activity size={13} /> API Payments</h3>
+          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 mt-2"><Activity size={13} /> {t("matApiPayments")}</h3>
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { label: "Total Revenue", value: `৳${fmt(stats.revenue)}`, icon: DollarSign, color: "text-emerald-600" },
-              { label: "Success Rate", value: `${stats.successRate.toFixed(1)}%`, icon: TrendingUp, color: "text-blue-600" },
-              { label: "Completed", value: stats.completed.toString(), icon: CheckCircle2, color: "text-emerald-600" },
-              { label: "Total Sessions", value: stats.total.toString(), icon: Activity, color: "text-primary" },
+              { label: t("matTotalRevenue"), value: `৳${fmt(stats.revenue)}`, icon: DollarSign, color: "text-emerald-600" },
+              { label: t("matSuccessRate"), value: `${fmt(Number(stats.successRate.toFixed(1)))}%`, icon: TrendingUp, color: "text-blue-600" },
+              { label: t("matCompleted"), value: fmt(stats.completed), icon: CheckCircle2, color: "text-emerald-600" },
+              { label: t("matTotalSessions"), value: fmt(stats.total), icon: Activity, color: "text-primary" },
             ].map(c => (
               <Card key={c.label} className="p-3">
                 <div className="flex items-center gap-2 mb-1">
