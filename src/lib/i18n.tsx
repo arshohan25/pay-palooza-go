@@ -1492,6 +1492,18 @@ const translations = {
   btRefundNotice: { en: "If rejected, ৳{total} will be refunded to your wallet instantly.", bn: "প্রত্যাখ্যাত হলে ৳{total} আপনার ওয়ালেটে তৎক্ষণাৎ ফেরত দেওয়া হবে।" },
   btDone: { en: "Done", bn: "সম্পন্ন" },
   btRemoveSavedAccountDesc: { en: "This will remove the saved bank details.", bn: "এটি সংরক্ষিত ব্যাংক তথ্য সরিয়ে দেবে।" },
+
+  // DeviceOtpStep
+  dotsDeviceVerification: { en: "device verification", bn: "ডিভাইস যাচাই" },
+  dotsVerifyDevice: { en: "Verify this device", bn: "এই ডিভাইস যাচাই করুন" },
+  dotsCodeSent: { en: "We sent a 6-digit code to", bn: "আমরা একটি ৬-সংখ্যার কোড পাঠিয়েছি" },
+  dotsOnlyOnce: { en: "You'll only need to do this once on this device.", bn: "আপনাকে এই ডিভাইসে এটি শুধু একবারই করতে হবে।" },
+  dotsDevOtp: { en: "Dev OTP:", bn: "ডেভ ওটিপি:" },
+  dotsVerifying: { en: "Verifying...", bn: "যাচাই হচ্ছে..." },
+  dotsVerifyCode: { en: "Verify code", bn: "কোড যাচাই" },
+  dotsResendIn: { en: "Resend in {time}", bn: "{time} এ পুনরায় পাঠান" },
+  dotsResendCode: { en: "Resend code", bn: "কোড পুনরায় পাঠান" },
+  dotsCancel: { en: "Cancel", bn: "বাতিল" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
