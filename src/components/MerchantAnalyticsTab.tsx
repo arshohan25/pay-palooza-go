@@ -44,6 +44,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(({ merchantId }, ref) => {
+  const { t, lang } = useI18n();
+  const fmt = useMemo(() => makeFmt(lang), [lang]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
