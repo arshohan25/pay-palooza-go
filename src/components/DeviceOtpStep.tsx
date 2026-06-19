@@ -67,14 +67,14 @@ export default function DeviceOtpStep({
           <ShieldCheck className="h-7 w-7 text-emerald-300" strokeWidth={1.8} />
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-[10.5px] font-medium uppercase tracking-[0.18em] text-emerald-200">
-          {portalLabel} · device verification
+          {portalLabel} · {t("dotsDeviceVerification")}
         </span>
         <h2 className="mt-3 text-xl font-semibold tracking-tight text-white">
-          Verify this device
+          {t("dotsVerifyDevice")}
         </h2>
         <p className="mt-1.5 text-[13px] leading-snug text-white/60">
-          We sent a 6-digit code to <span className="font-semibold text-white/85">{maskPhone(phone)}</span>.
-          You'll only need to do this once on this device.
+          {t("dotsCodeSent")} <span className="font-semibold text-white/85">{maskPhone(phone)}</span>.
+          {" "}{t("dotsOnlyOnce")}
         </p>
       </div>
 
