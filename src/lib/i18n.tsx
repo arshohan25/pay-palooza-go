@@ -1492,6 +1492,27 @@ const translations = {
   btRefundNotice: { en: "If rejected, ৳{total} will be refunded to your wallet instantly.", bn: "প্রত্যাখ্যাত হলে ৳{total} আপনার ওয়ালেটে তৎক্ষণাৎ ফেরত দেওয়া হবে।" },
   btDone: { en: "Done", bn: "সম্পন্ন" },
   btRemoveSavedAccountDesc: { en: "This will remove the saved bank details.", bn: "এটি সংরক্ষিত ব্যাংক তথ্য সরিয়ে দেবে।" },
+
+  // ChangePinFlow
+  changePinTitle: { en: "Change PIN", bn: "পিন পরিবর্তন" },
+  keepAccountSecure: { en: "Keep your account secure", bn: "আপনার অ্যাকাউন্ট সুরক্ষিত রাখুন" },
+  enterCurrentPin: { en: "Enter Current PIN", bn: "বর্তমান পিন দিন" },
+  confirmCurrentPinSub: { en: "Confirm your current PIN to continue.", bn: "চালিয়ে যেতে আপনার বর্তমান পিন নিশ্চিত করুন।" },
+  setNewPin: { en: "Set New PIN", bn: "নতুন পিন সেট করুন" },
+  chooseStrongPin: { en: "Choose a strong 4-digit PIN.", bn: "একটি শক্তিশালী ৪-সংখ্যার পিন বাছুন।" },
+  confirmNewPin: { en: "Confirm New PIN", bn: "নতুন পিন নিশ্চিত করুন" },
+  reenterNewPin: { en: "Re-enter your new PIN to confirm.", bn: "নিশ্চিত করতে আপনার নতুন পিন পুনরায় দিন।" },
+  incorrectPin: { en: "Incorrect PIN. Try again.", bn: "ভুল পিন। আবার চেষ্টা করুন।" },
+  pinTooSimple: { en: "PIN is too simple. Choose another.", bn: "পিন খুব সহজ। অন্যটি বাছুন।" },
+  pinsDontMatch: { en: "PINs don't match. Try again.", bn: "পিন মিলছে না। আবার চেষ্টা করুন।" },
+  demoPin: { en: "Demo PIN:", bn: "ডেমো পিন:" },
+  pinTips: { en: "PIN tips", bn: "পিন টিপস" },
+  avoidRepeated: { en: "Avoid repeated digits (e.g. 1111).", bn: "পুনরাবৃত্ত সংখ্যা এড়িয়ে চলুন (যেমন ১১১১)।" },
+  avoidSequential: { en: "Avoid sequential digits (e.g. 1234).", bn: "ক্রমিক সংখ্যা এড়িয়ে চলুন (যেমন ১২৩৪)।" },
+  dontSharePin: { en: "Never share your PIN with anyone.", bn: "কারো সাথে আপনার পিন শেয়ার করবেন না।" },
+  pinChanged: { en: "PIN Changed", bn: "পিন পরিবর্তিত হয়েছে" },
+  pinChangedSub: { en: "Your PIN has been updated successfully. Use the new PIN from now on.", bn: "আপনার পিন সফলভাবে আপডেট হয়েছে। এখন থেকে নতুন পিন ব্যবহার করুন।" },
+  backToAccount: { en: "Back to Account", bn: "অ্যাকাউন্টে ফিরে যান" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
