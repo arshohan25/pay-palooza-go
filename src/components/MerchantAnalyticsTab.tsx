@@ -120,12 +120,12 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
   // Pie chart data for sessions
   const pieData = useMemo(() => {
     return [
-      { name: "Completed", value: stats.completed, color: STATUS_COLORS.completed },
-      { name: "Pending", value: stats.pending, color: STATUS_COLORS.pending },
-      { name: "Failed", value: stats.failed, color: STATUS_COLORS.failed },
-      { name: "Expired", value: stats.expired, color: STATUS_COLORS.expired },
+      { name: t("matCompleted"), value: stats.completed, color: STATUS_COLORS.completed },
+      { name: t("matPending"), value: stats.pending, color: STATUS_COLORS.pending },
+      { name: t("matFailed"), value: stats.failed, color: STATUS_COLORS.failed },
+      { name: t("matExpired"), value: stats.expired, color: STATUS_COLORS.expired },
     ].filter(d => d.value > 0);
-  }, [stats]);
+  }, [stats, t]);
 
   // Daily sessions bar chart
   const dailyData = useMemo(() => {
