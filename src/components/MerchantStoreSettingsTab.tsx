@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Store, ImagePlus, Globe, Loader2, Check, Eye } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface StoreData {
   id?: string;
@@ -25,6 +26,7 @@ interface Props {
 }
 
 const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [store, setStore] = useState<StoreData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,7 +84,7 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${merchantId}/${folder}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("product-images").upload(path, file, { contentType: file.type, upsert: true });
-    if (error) { toast({ title: "Upload failed", description: error.message, variant: "destructive" }); return null; }
+    if (error) { toast({ title: t("mssUploadFailed"), description: error.message, variant: "destructive" }); return null; }
     return supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl;
   };
 
@@ -107,8 +109,8 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
   };
 
   const handleSave = async () => {
-    if (!form.store_name.trim()) { toast({ title: "Store name required", variant: "destructive" }); return; }
-    if (!form.slug.trim()) { toast({ title: "Store URL slug required", variant: "destructive" }); return; }
+    if (!form.store_name.trim()) { toast({ title: t("mssStoreNameRequired"), variant: "destructive" }); return; }
+    if (!form.slug.trim()) { toast({ title: t("mssSlugRequired"), variant: "destructive" }); return; }
     setSaving(true);
 
     const payload = {
@@ -135,9 +137,9 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
     }
 
     if (error) {
-      toast({ title: "Save failed", description: error.message, variant: "destructive" });
+      toast({ title: t("mssSaveFailed"), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Store settings saved ✓" });
+      toast({ title: t("mssSaved") });
       load();
     }
     setSaving(false);
@@ -153,7 +155,7 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       <Card className="overflow-hidden">
         <div className="relative h-32 bg-muted">
           {form.banner_url ? (
-            <img src={form.banner_url} alt="Banner" className="w-full h-full object-cover" />
+            <img src={form.banner_url} alt={t("mssBannerAlt")} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
               <ImagePlus size={24} />
@@ -161,14 +163,14 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
           )}
           <button onClick={() => bannerRef.current?.click()} disabled={uploadingBanner}
             className="absolute bottom-2 right-2 px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-sm text-xs font-semibold text-foreground shadow-sm">
-            {uploadingBanner ? <Loader2 size={12} className="animate-spin" /> : "Change Banner"}
+            {uploadingBanner ? <Loader2 size={12} className="animate-spin" /> : t("mssChangeBanner")}
           </button>
           <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
         </div>
         <div className="relative px-4 pb-4 -mt-8">
           <div className="w-16 h-16 rounded-2xl border-4 border-background bg-muted flex items-center justify-center overflow-hidden shadow-sm">
             {form.logo_url ? (
-              <img src={form.logo_url} alt="Logo" className="w-full h-full object-cover" />
+              <img src={form.logo_url} alt={t("mssLogoAlt")} className="w-full h-full object-cover" />
             ) : (
               <Store size={24} className="text-muted-foreground" />
             )}
@@ -179,8 +181,8 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
           </button>
           <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
           <div className="mt-2">
-            <p className="text-sm font-bold text-foreground">{form.store_name || "Your Store"}</p>
-            <p className="text-xs text-muted-foreground">/shop/{form.slug || "your-slug"}</p>
+            <p className="text-sm font-bold text-foreground">{form.store_name || t("mssYourStore")}</p>
+            <p className="text-xs text-muted-foreground">/shop/{form.slug || t("mssYourSlug")}</p>
           </div>
         </div>
       </Card>
@@ -188,29 +190,29 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       {/* Form fields */}
       <div className="space-y-3">
         <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Store Name</label>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssStoreName")}</label>
           <Input value={form.store_name} onChange={e => setForm(f => ({ ...f, store_name: e.target.value }))} className="mt-1 rounded-xl" />
         </div>
         <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">URL Slug</label>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssUrlSlug")}</label>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-xs text-muted-foreground">/shop/</span>
             <Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))} className="rounded-xl flex-1" />
           </div>
         </div>
         <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Description</label>
-          <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="mt-1 rounded-xl" rows={3} placeholder="Tell customers about your store..." />
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssDescription")}</label>
+          <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="mt-1 rounded-xl" rows={3} placeholder={t("mssDescPlaceholder")} />
         </div>
       </div>
 
       {/* Social Links */}
       <Card className="p-4 space-y-3">
-        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5"><Globe size={13} /> Social Links</h4>
+        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5"><Globe size={13} /> {t("mssSocialLinks")}</h4>
         {[
-          { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/yourpage" },
-          { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/yourshop" },
-          { key: "website", label: "Website", placeholder: "https://yoursite.com" },
+          { key: "facebook", label: t("mssFacebook"), placeholder: "https://facebook.com/yourpage" },
+          { key: "instagram", label: t("mssInstagram"), placeholder: "https://instagram.com/yourshop" },
+          { key: "website", label: t("mssWebsite"), placeholder: "https://yoursite.com" },
         ].map(s => (
           <div key={s.key}>
             <label className="text-[10px] text-muted-foreground font-medium">{s.label}</label>
@@ -227,8 +229,8 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       {/* Active toggle */}
       <div className="flex items-center justify-between bg-card border border-border/60 rounded-2xl p-4">
         <div>
-          <p className="text-sm font-bold text-foreground">Store Active</p>
-          <p className="text-[11px] text-muted-foreground">Visible in marketplace when active</p>
+          <p className="text-sm font-bold text-foreground">{t("mssStoreActive")}</p>
+          <p className="text-[11px] text-muted-foreground">{t("mssStoreActiveDesc")}</p>
         </div>
         <button onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
           className={`w-12 h-7 rounded-full transition-colors relative ${form.is_active ? "bg-primary" : "bg-muted"}`}>
@@ -238,7 +240,7 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
 
       <Button onClick={handleSave} disabled={saving} className="w-full rounded-xl h-12 gap-2 text-sm font-bold">
         {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-        {store?.id ? "Update Store" : "Create Store"}
+        {store?.id ? t("mssUpdateStore") : t("mssCreateStore")}
       </Button>
     </div>
   );
