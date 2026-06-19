@@ -390,10 +390,12 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
           <div className="flex-1">
             <h2 className="text-base font-extrabold text-foreground flex items-center gap-2">
               <Store size={16} className="text-primary" />
-              Customer Messages
+              {t("miCustomerMessages")}
             </h2>
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              {totalUnread > 0 ? `${totalUnread} unread message${totalUnread > 1 ? "s" : ""}` : "All caught up ✓"}
+              {totalUnread > 0
+                ? (totalUnread > 1 ? t("miUnreadCountPlural") : t("miUnreadCount")).replace("{n}", String(totalUnread))
+                : t("miAllCaughtUp")}
             </p>
           </div>
         </div>
@@ -404,7 +406,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search customers..."
+            placeholder={t("miSearchCustomers")}
             className="pl-9 h-9 rounded-xl text-xs bg-muted/30 border-border/40"
           />
         </div>
@@ -412,9 +414,9 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
         {/* Filter tabs */}
         <div className="flex gap-1.5 mt-2.5">
           {([
-            { key: "all" as FilterType, label: "All", count: customerChats.length },
-            { key: "unread" as FilterType, label: "Unread", count: customerChats.filter(c => c.unread > 0).length },
-            { key: "product" as FilterType, label: "Product", count: customerChats.filter(c => c.productContext).length },
+            { key: "all" as FilterType, label: t("miFilterAll"), count: customerChats.length },
+            { key: "unread" as FilterType, label: t("miFilterUnread"), count: customerChats.filter(c => c.unread > 0).length },
+            { key: "product" as FilterType, label: t("miFilterProduct"), count: customerChats.filter(c => c.productContext).length },
           ]).map(f => (
             <button
               key={f.key}
@@ -443,10 +445,10 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
               <MessageCircle size={28} className="text-primary" />
             </div>
             <p className="text-sm font-bold text-foreground">
-              {search ? "No customers found" : filter === "unread" ? "No unread messages" : "No customer chats yet"}
+              {search ? t("miNoCustomersFound") : filter === "unread" ? t("miNoUnreadMessages") : t("miNoCustomerChats")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {search ? "Try a different search" : "Customer inquiries will appear here"}
+              {search ? t("miTryDifferentSearch") : t("miInquiriesAppearHere")}
             </p>
           </motion.div>
         ) : (
