@@ -26,6 +26,7 @@ interface Props {
 }
 
 const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [store, setStore] = useState<StoreData | null>(null);
   const [loading, setLoading] = useState(true);
