@@ -67,6 +67,8 @@ type FilterType = "all" | "unread" | "product";
 
 // ── Main Component ───────────────────────────────────────────────────────
 const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
+  const { t, lang } = useI18n();
+  const formatTime = useFormatTime();
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const { conversations, loading, loadConversations, openConversation, messages, sendMessage, messagesLoading } = useChat();
