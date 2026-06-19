@@ -260,7 +260,7 @@ const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: stri
       {/* Status distribution pie */}
       {pieData.length > 0 && (
         <Card className="p-4">
-          <h4 className="text-xs font-bold text-foreground mb-3">Session Status</h4>
+          <h4 className="text-xs font-bold text-foreground mb-3">{t("matSessionStatus")}</h4>
           <div className="flex items-center gap-4">
             <div className="w-24 h-24">
               <ResponsiveContainer width="100%" height="100%">
