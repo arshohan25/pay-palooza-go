@@ -28,7 +28,7 @@ interface OrderItem {
   created_at: string;
 }
 
-const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
+const makeFmt = (lang: string) => (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-BD").format(n);
 
 const RANGE_OPTIONS = [
   { label: "7d", days: 7 },
