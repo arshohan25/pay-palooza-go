@@ -305,11 +305,11 @@ export default function MerchantForgotPinSheet({
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/70">
                   <Clock className={`h-3.5 w-3.5 ${accentIcon}`} />
-                  ~15 min response
+                  {t("mfpResponseTime")}
                 </div>
                 <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/70">
                   <ShieldCheck className={`h-3.5 w-3.5 ${accentIcon}`} />
-                  OTP-protected
+                  {t("mfpOtpProtected")}
                 </div>
               </div>
 
