@@ -413,7 +413,7 @@ export default function MerchantForgotPinSheet({
                 className={`h-11 w-full rounded-2xl text-sm font-semibold text-white transition-transform hover:scale-[1.01] ${accentBtn}`}
               >
                 <MessageCircle className="h-4 w-4" />
-                Open live support to finish reset
+                {t("mfpOpenLiveSupport")}
                 <ArrowRight className="h-4 w-4" />
               </Button>
 
@@ -422,7 +422,7 @@ export default function MerchantForgotPinSheet({
                 onClick={() => onOpenChange(false)}
                 className="block w-full text-center text-[12px] font-medium text-white/55 hover:text-white/80"
               >
-                I'll wait for a callback instead
+                {t("mfpWaitCallback")}
               </button>
             </div>
           )}
