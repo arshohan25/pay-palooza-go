@@ -386,7 +386,7 @@ export default function MerchantForgotPinSheet({
 
               {loading && (
                 <div className="flex items-center justify-center gap-2 text-[12px] text-white/60">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying…
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("mfpVerifying")}
                 </div>
               )}
             </div>
