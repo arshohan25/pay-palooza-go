@@ -21,6 +21,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 interface MerchantForgotPinSheetProps {
   open: boolean;
