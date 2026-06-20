@@ -102,7 +102,7 @@ export default function MerchantForgotPinSheet({
   const sendOtp = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!phoneValid) {
-      toast.error("Enter a valid 11-digit Bangladeshi mobile number.");
+      toast.error(t("mfpErrInvalidPhone"));
       return;
     }
     setLoading(true);
@@ -118,9 +118,9 @@ export default function MerchantForgotPinSheet({
       setResendIn(RESEND_SECONDS);
       setCode("");
       setStep("verify");
-      toast.success(`Code sent to +88 ${maskBdPhone(cleanedPhone)}`);
+      toast.success(t("mfpToastCodeSent").replace("{phone}", maskBdPhone(cleanedPhone)));
     } catch (err: any) {
-      toast.error(err?.message || "Couldn't send verification code");
+      toast.error(err?.message || t("mfpErrSendCode"));
     } finally {
       setLoading(false);
     }
