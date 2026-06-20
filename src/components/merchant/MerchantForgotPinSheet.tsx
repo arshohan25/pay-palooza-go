@@ -181,7 +181,7 @@ export default function MerchantForgotPinSheet({
       // Keep the promise alive
       void forgotPromise;
     } catch (err: any) {
-      setOtpError(err?.message || "Verification failed.");
+      setOtpError(err?.message || t("mfpErrVerifyFailed"));
       setCode("");
     } finally {
       setLoading(false);
