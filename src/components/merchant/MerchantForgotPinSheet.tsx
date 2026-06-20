@@ -199,7 +199,7 @@ export default function MerchantForgotPinSheet({
   // ── Step 3: Handoff to live chat ─────────────────────────────────
   const goToLiveSupport = () => {
     if (!ticket || !requestId) {
-      toast.error("Verification expired. Please request a new code.");
+      toast.error(t("mfpErrExpired"));
       setStep("request");
       return;
     }
