@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Lock, Send, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { useMyStaffAccessRequests, TILE_TO_PERMISSION, type RequestablePermissionKey } from "@/hooks/use-staff-access-requests";
+import { useI18n } from "@/lib/i18n";
 
 interface Props {
   open: boolean;
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function RequestAccessSheet({ open, onClose, tileLabel, merchantId, staffId }: Props) {
+  const { t, lang } = useI18n();
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { submit, cancel, pendingForKey, requests } = useMyStaffAccessRequests(staffId);
@@ -34,7 +36,7 @@ export default function RequestAccessSheet({ open, onClose, tileLabel, merchantI
 
   const handleSubmit = async () => {
     if (!merchantId || !permissionKey || !tileLabel) {
-      toast.error("Cannot send request right now"); return;
+      toast.error(t("rasErrCannotSend")); return;
     }
     setSubmitting(true);
     const { error } = await submit({
@@ -45,10 +47,10 @@ export default function RequestAccessSheet({ open, onClose, tileLabel, merchantI
     });
     setSubmitting(false);
     if (error) {
-      toast.error(error.message || "Could not send request");
+      toast.error(error.message || t("rasErrCouldNotSend"));
       return;
     }
-    toast.success("Request sent — owner has been notified");
+    toast.success(t("rasToastSent"));
     onClose();
   };
 
@@ -56,34 +58,36 @@ export default function RequestAccessSheet({ open, onClose, tileLabel, merchantI
     if (!existingPending) return;
     const { error } = await cancel(existingPending.id);
     if (error) toast.error(error.message);
-    else toast.success("Request cancelled");
+    else toast.success(t("rasToastCancelled"));
   };
 
   const canRequest = !!permissionKey && !!merchantId && !!staffId;
+  const locale = lang === "bn" ? "bn-BD" : "en-US";
+  const fmtNum = (n: number) => n.toLocaleString(locale);
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent side="bottom" className="rounded-t-2xl z-[90]" overlayClassName="z-[90]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Lock size={16} className="text-amber-600" /> Request access
+            <Lock size={16} className="text-amber-600" /> {t("rasTitle")}
           </SheetTitle>
         </SheetHeader>
 
         <div className="mt-4 space-y-4">
           <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-4 text-center">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">You're requesting</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">{t("rasYouAreRequesting")}</p>
             <p className="text-lg font-bold text-foreground">{tileLabel ?? "—"}</p>
             {permissionKey && (
               <Badge variant="outline" className="text-[9px] mt-1.5">
-                Permission: {permissionKey.replace("_", " ")}
+                {t("rasPermissionLabel").replace("{key}", permissionKey.replace("_", " "))}
               </Badge>
             )}
           </div>
 
           {!canRequest && (
             <p className="text-[11px] text-destructive text-center">
-              This permission isn't requestable. Ask your store owner directly.
+              {t("rasNotRequestable")}
             </p>
           )}
 
@@ -91,10 +95,10 @@ export default function RequestAccessSheet({ open, onClose, tileLabel, merchantI
             <div className="rounded-xl border border-amber-300 bg-amber-500/10 p-3 flex items-start gap-2">
               <Clock size={14} className="text-amber-600 mt-0.5 shrink-0" />
               <div className="flex-1">
-                <p className="text-[11px] font-semibold text-amber-700">Request pending</p>
-                <p className="text-[10px] text-amber-700/80">The owner has been notified. You'll get access as soon as they approve.</p>
+                <p className="text-[11px] font-semibold text-amber-700">{t("rasPending")}</p>
+                <p className="text-[10px] text-amber-700/80">{t("rasPendingDesc")}</p>
               </div>
-              <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={handleCancel}>Cancel</Button>
+              <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={handleCancel}>{t("rasCancel")}</Button>
             </div>
           )}
 
@@ -102,9 +106,9 @@ export default function RequestAccessSheet({ open, onClose, tileLabel, merchantI
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
               <XCircle size={14} className="text-destructive mt-0.5 shrink-0" />
               <div className="flex-1">
-                <p className="text-[11px] font-semibold text-destructive">Previous request denied</p>
+                <p className="text-[11px] font-semibold text-destructive">{t("rasPrevDenied")}</p>
                 {lastDecision.deny_reason && <p className="text-[10px] text-destructive/80">"{lastDecision.deny_reason}"</p>}
-                <p className="text-[10px] text-muted-foreground mt-0.5">You can ask again with more context below.</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{t("rasAskAgain")}</p>
               </div>
             </div>
           )}
@@ -113,7 +117,7 @@ export default function RequestAccessSheet({ open, onClose, tileLabel, merchantI
             <div className="rounded-xl border border-emerald-300 bg-emerald-500/10 p-3 flex items-start gap-2">
               <CheckCircle2 size={14} className="text-emerald-600 mt-0.5 shrink-0" />
               <p className="text-[11px] text-emerald-700 flex-1">
-                You had this permission before — it may have been revoked. Send another request to ask for it again.
+                {t("rasHadBefore")}
               </p>
             </div>
           )}
@@ -121,25 +125,25 @@ export default function RequestAccessSheet({ open, onClose, tileLabel, merchantI
           {!existingPending && canRequest && (
             <>
               <div>
-                <label className="text-[11px] font-semibold text-foreground">Add a note (optional)</label>
+                <label className="text-[11px] font-semibold text-foreground">{t("rasNoteLabel")}</label>
                 <Textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="e.g. I need this to process today's customer payouts"
+                  placeholder={t("rasNotePlaceholder")}
                   maxLength={200}
                   className="mt-1 text-xs"
                   rows={3}
                 />
-                <p className="text-[10px] text-muted-foreground mt-1 text-right">{note.length}/200</p>
+                <p className="text-[10px] text-muted-foreground mt-1 text-right">{fmtNum(note.length)}/{fmtNum(200)}</p>
               </div>
               <Button className="w-full" onClick={handleSubmit} disabled={submitting}>
                 <Send size={13} className="mr-1.5" />
-                {submitting ? "Sending…" : "Send request to owner"}
+                {submitting ? t("rasSending") : t("rasSendToOwner")}
               </Button>
             </>
           )}
 
-          <Button variant="outline" className="w-full" onClick={onClose}>Close</Button>
+          <Button variant="outline" className="w-full" onClick={onClose}>{t("rasClose")}</Button>
         </div>
       </SheetContent>
     </Sheet>
