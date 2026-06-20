@@ -13,12 +13,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { format } from "date-fns";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
-const statusConfig: Record<string, { color: string; icon: typeof Clock; label: string }> = {
-  pending:  { color: "bg-amber-500/10 text-amber-700 border-amber-200",       icon: Clock,        label: "Pending" },
-  paid:     { color: "bg-emerald-500/10 text-emerald-700 border-emerald-200", icon: CheckCircle2, label: "Paid"    },
-  completed:{ color: "bg-emerald-500/10 text-emerald-700 border-emerald-200", icon: CheckCircle2, label: "Paid"    },
-  rejected: { color: "bg-red-500/10 text-red-700 border-red-200",             icon: XCircle,      label: "Rejected"},
+const statusConfig: Record<string, { color: string; icon: typeof Clock; labelKey: TranslationKey }> = {
+  pending:  { color: "bg-amber-500/10 text-amber-700 border-amber-200",       icon: Clock,        labelKey: "mptStatusPending"  },
+  paid:     { color: "bg-emerald-500/10 text-emerald-700 border-emerald-200", icon: CheckCircle2, labelKey: "mptStatusPaid"     },
+  completed:{ color: "bg-emerald-500/10 text-emerald-700 border-emerald-200", icon: CheckCircle2, labelKey: "mptStatusPaid"     },
+  rejected: { color: "bg-red-500/10 text-red-700 border-red-200",             icon: XCircle,      labelKey: "mptStatusRejected" },
 };
 
 interface Wallet {
@@ -31,6 +32,7 @@ interface Wallet {
 interface Props { merchantId: string; }
 
 export default function MerchantPayoutsTab({ merchantId }: Props) {
+  const { t, lang } = useI18n();
   const [payouts, setPayouts] = useState<any[]>([]);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [earnings, setEarnings] = useState<any[]>([]);
@@ -65,13 +67,13 @@ export default function MerchantPayoutsTab({ merchantId }: Props) {
 
   const handleRequest = async () => {
     const val = parseFloat(amount);
-    if (!val || val <= 0) { toast.error("Enter a valid amount"); return; }
-    if (wallet && val > wallet.available_balance) { toast.error("Amount exceeds available balance"); return; }
+    if (!val || val <= 0) { toast.error(t("mptErrInvalidAmount")); return; }
+    if (wallet && val > wallet.available_balance) { toast.error(t("mptErrExceedsBalance")); return; }
     setSaving(true);
     const { error } = await supabase.rpc("request_vendor_payout", { p_amount: val });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Withdrawal request submitted for admin review");
+    toast.success(t("mptToastSubmitted"));
     setShowRequest(false);
     setAmount("");
   };
@@ -79,7 +81,9 @@ export default function MerchantPayoutsTab({ merchantId }: Props) {
   if (loading) return <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>;
 
   const w = wallet ?? { available_balance: 0, pending_balance: 0, lifetime_earnings: 0, lifetime_withdrawn: 0 };
-  const fmt = (n: number) => `৳${Number(n).toLocaleString("en-BD", { maximumFractionDigits: 2 })}`;
+  const locale = lang === "bn" ? "bn-BD" : "en-BD";
+  const fmt = (n: number) => `৳${Number(n).toLocaleString(locale, { maximumFractionDigits: 2 })}`;
+  const fmtPct = (n: number) => Number(n).toLocaleString(locale);
 
   return (
     <div className="space-y-4">
@@ -89,7 +93,7 @@ export default function MerchantPayoutsTab({ merchantId }: Props) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Wallet size={16} className="text-primary" />
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Available to Withdraw</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("mptAvailableToWithdraw")}</p>
             </div>
             <button onClick={() => setShowBalance(s => !s)} className="text-muted-foreground">
               {showBalance ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -99,13 +103,13 @@ export default function MerchantPayoutsTab({ merchantId }: Props) {
             {showBalance ? fmt(w.available_balance) : "৳ ••••••"}
           </p>
           <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/50">
-            <div><p className="text-[10px] text-muted-foreground">Pending</p><p className="text-xs font-bold text-amber-600">{fmt(w.pending_balance)}</p></div>
-            <div><p className="text-[10px] text-muted-foreground">Lifetime Earned</p><p className="text-xs font-bold text-emerald-600">{fmt(w.lifetime_earnings)}</p></div>
-            <div><p className="text-[10px] text-muted-foreground">Withdrawn</p><p className="text-xs font-bold text-foreground">{fmt(w.lifetime_withdrawn)}</p></div>
+            <div><p className="text-[10px] text-muted-foreground">{t("mptPending")}</p><p className="text-xs font-bold text-amber-600">{fmt(w.pending_balance)}</p></div>
+            <div><p className="text-[10px] text-muted-foreground">{t("mptLifetimeEarned")}</p><p className="text-xs font-bold text-emerald-600">{fmt(w.lifetime_earnings)}</p></div>
+            <div><p className="text-[10px] text-muted-foreground">{t("mptWithdrawn")}</p><p className="text-xs font-bold text-foreground">{fmt(w.lifetime_withdrawn)}</p></div>
           </div>
           <Button className="w-full h-10" disabled={w.available_balance <= 0} onClick={() => setShowRequest(true)}>
             <ArrowUpRight size={14} className="mr-1.5" />
-            Withdraw to EasyPay Wallet
+            {t("mptWithdrawToWallet")}
           </Button>
         </CardContent>
       </Card>
@@ -113,10 +117,10 @@ export default function MerchantPayoutsTab({ merchantId }: Props) {
       {/* Payout history */}
       <div>
         <h3 className="text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-          <Landmark size={14} className="text-primary" /> Withdrawal History
+          <Landmark size={14} className="text-primary" /> {t("mptWithdrawalHistory")}
         </h3>
         {payouts.length === 0 ? (
-          <Card className="border-0 shadow-sm"><CardContent className="p-6 text-center text-muted-foreground text-xs">No withdrawals yet.</CardContent></Card>
+          <Card className="border-0 shadow-sm"><CardContent className="p-6 text-center text-muted-foreground text-xs">{t("mptNoWithdrawals")}</CardContent></Card>
         ) : (
           <div className="space-y-2">
             {payouts.map(p => {
@@ -130,7 +134,7 @@ export default function MerchantPayoutsTab({ merchantId }: Props) {
                       {p.admin_note && <p className="text-[10px] text-muted-foreground mt-0.5 italic">"{p.admin_note}"</p>}
                     </div>
                     <Badge variant="outline" className={`text-[10px] ${cfg.color}`}>
-                      <cfg.icon size={10} className="mr-0.5" />{cfg.label}
+                      <cfg.icon size={10} className="mr-0.5" />{t(cfg.labelKey)}
                     </Badge>
                   </CardContent>
                 </Card>
@@ -144,7 +148,7 @@ export default function MerchantPayoutsTab({ merchantId }: Props) {
       {earnings.length > 0 && (
         <div>
           <h3 className="text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-            <TrendingUp size={14} className="text-emerald-600" /> Recent Earnings
+            <TrendingUp size={14} className="text-emerald-600" /> {t("mptRecentEarnings")}
           </h3>
           <div className="space-y-1.5">
             {earnings.slice(0, 8).map(e => (
@@ -152,11 +156,11 @@ export default function MerchantPayoutsTab({ merchantId }: Props) {
                 <div>
                   <p className="font-medium text-foreground">+{fmt(e.net_amount)}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    Gross {fmt(e.gross_amount)} · {e.commission_rate}% fee
+                    {t("mptGrossFee", { gross: fmt(e.gross_amount), rate: fmtPct(e.commission_rate) })}
                   </p>
                 </div>
                 <Badge variant="outline" className={`text-[9px] ${e.status === "released" ? "text-emerald-600 border-emerald-200" : "text-amber-600 border-amber-200"}`}>
-                  {e.status}
+                  {e.status === "released" ? t("mptEarningReleased") : t("mptEarningPending")}
                 </Badge>
               </div>
             ))}
@@ -166,19 +170,19 @@ export default function MerchantPayoutsTab({ merchantId }: Props) {
 
       <Sheet open={showRequest} onOpenChange={setShowRequest}>
         <SheetContent side="bottom" className="rounded-t-2xl z-[80]" overlayClassName="z-[80]">
-          <SheetHeader><SheetTitle>Withdraw to EasyPay Wallet</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{t("mptWithdrawToWallet")}</SheetTitle></SheetHeader>
           <div className="space-y-4 mt-4">
             <div className="rounded-xl bg-primary/5 p-3 text-xs space-y-1">
-              <p className="text-muted-foreground">Available balance</p>
+              <p className="text-muted-foreground">{t("mptAvailableBalance")}</p>
               <p className="text-lg font-bold text-foreground">{fmt(w.available_balance)}</p>
             </div>
             <div>
-              <Label className="text-xs">Amount (৳)</Label>
+              <Label className="text-xs">{t("mptAmountLabel")}</Label>
               <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" max={w.available_balance} />
-              <p className="text-[10px] text-muted-foreground mt-1">Funds will be credited to your EasyPay wallet after admin approval.</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t("mptApprovalNote")}</p>
             </div>
             <Button className="w-full" disabled={saving || !amount} onClick={handleRequest}>
-              {saving ? "Submitting..." : "Submit for Review"}
+              {saving ? t("mptSubmitting") : t("mptSubmitForReview")}
             </Button>
           </div>
         </SheetContent>
