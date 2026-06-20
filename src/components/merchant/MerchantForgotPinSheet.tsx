@@ -21,6 +21,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 interface MerchantForgotPinSheetProps {
   open: boolean;
@@ -47,6 +48,7 @@ export default function MerchantForgotPinSheet({
   accent = "amber",
 }: MerchantForgotPinSheetProps) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>("request");
   const [phone, setPhone] = useState(defaultPhone);
   const [note, setNote] = useState("");
@@ -100,7 +102,7 @@ export default function MerchantForgotPinSheet({
   const sendOtp = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!phoneValid) {
-      toast.error("Enter a valid 11-digit Bangladeshi mobile number.");
+      toast.error(t("mfpErrInvalidPhone"));
       return;
     }
     setLoading(true);
@@ -116,9 +118,9 @@ export default function MerchantForgotPinSheet({
       setResendIn(RESEND_SECONDS);
       setCode("");
       setStep("verify");
-      toast.success(`Code sent to +88 ${maskBdPhone(cleanedPhone)}`);
+      toast.success(t("mfpToastCodeSent").replace("{phone}", maskBdPhone(cleanedPhone)));
     } catch (err: any) {
-      toast.error(err?.message || "Couldn't send verification code");
+      toast.error(err?.message || t("mfpErrSendCode"));
     } finally {
       setLoading(false);
     }
@@ -135,13 +137,13 @@ export default function MerchantForgotPinSheet({
       if (error) throw error;
       const payload: any = data;
       if (!payload?.verified) {
-        setOtpError(payload?.error || "Incorrect code. Please try again.");
+        setOtpError(payload?.error || t("mfpErrIncorrect"));
         setCode("");
         return;
       }
       const ticketValue: string | null = payload?.otp_ticket ?? null;
       if (!ticketValue) {
-        setOtpError("Verification failed. Please request a new code.");
+        setOtpError(t("mfpErrVerifyFailedNew"));
         setCode("");
         return;
       }
@@ -179,7 +181,7 @@ export default function MerchantForgotPinSheet({
       // Keep the promise alive
       void forgotPromise;
     } catch (err: any) {
-      setOtpError(err?.message || "Verification failed.");
+      setOtpError(err?.message || t("mfpErrVerifyFailed"));
       setCode("");
     } finally {
       setLoading(false);
@@ -197,7 +199,7 @@ export default function MerchantForgotPinSheet({
   // ── Step 3: Handoff to live chat ─────────────────────────────────
   const goToLiveSupport = () => {
     if (!ticket || !requestId) {
-      toast.error("Verification expired. Please request a new code.");
+      toast.error(t("mfpErrExpired"));
       setStep("request");
       return;
     }
@@ -226,16 +228,16 @@ export default function MerchantForgotPinSheet({
               {step === "handoff" ? <CheckCircle2 className="h-5 w-5 text-emerald-300" /> : <LifeBuoy className="h-5 w-5" />}
             </div>
             <SheetTitle className="text-lg font-semibold text-white">
-              {step === "request" && "Reset your merchant PIN"}
-              {step === "verify" && "Verify your number"}
-              {step === "handoff" && "Identity verified"}
+              {step === "request" && t("mfpTitleRequest")}
+              {step === "verify" && t("mfpTitleVerify")}
+              {step === "handoff" && t("mfpTitleHandoff")}
             </SheetTitle>
             <SheetDescription className="text-[13px] leading-snug text-white/60">
-              {step === "request" && "We'll send a one-time code to your registered number. Once verified, our support team will help you set a new PIN over secure live chat."}
+              {step === "request" && t("mfpDescRequest")}
               {step === "verify" && (
-                <>Enter the 6-digit code we sent to <span className="text-white/85 font-medium">+88 {maskBdPhone(cleanedPhone)}</span>.</>
+                <>{t("mfpDescVerifyPrefix")}<span className="text-white/85 font-medium">+88 {maskBdPhone(cleanedPhone)}</span>{t("mfpDescVerifySuffix")}</>
               )}
-              {step === "handoff" && "We've confirmed it's really you. Continue to live support and our team will finish your PIN reset on this chat."}
+              {step === "handoff" && t("mfpDescHandoff")}
             </SheetDescription>
           </SheetHeader>
 
@@ -262,7 +264,7 @@ export default function MerchantForgotPinSheet({
             <form onSubmit={sendOtp} className="mt-5 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="forgot-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                  Registered mobile number
+                  {t("mfpRegisteredMobile")}
                 </Label>
                 <div className={`flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors ${accentRing}`}>
                   <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
@@ -282,20 +284,20 @@ export default function MerchantForgotPinSheet({
                 </div>
                 {phone.length === 11 && (
                   <p className="text-[11px] text-white/50">
-                    Code will be sent to <span className="text-white/80 font-medium">+88 {maskBdPhone(phone)}</span>
+                    {t("mfpCodeWillBeSent")}<span className="text-white/80 font-medium">+88 {maskBdPhone(phone)}</span>
                   </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="forgot-note" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                  Anything we should know? <span className="text-white/40 normal-case">(optional)</span>
+                  {t("mfpAnythingWeKnowLabel")} <span className="text-white/40 normal-case">{t("mfpOptional")}</span>
                 </Label>
                 <Textarea
                   id="forgot-note"
                   value={note}
                   onChange={(e) => setNote(e.target.value.slice(0, 500))}
-                  placeholder="e.g. I changed my phone, can't receive SMS at the old SIM..."
+                  placeholder={t("mfpNotePlaceholder")}
                   className="min-h-[72px] rounded-2xl border-white/10 bg-white/[0.04] text-sm text-white placeholder:text-white/30 focus-visible:ring-amber-200/40"
                 />
               </div>
@@ -303,11 +305,11 @@ export default function MerchantForgotPinSheet({
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/70">
                   <Clock className={`h-3.5 w-3.5 ${accentIcon}`} />
-                  ~15 min response
+                  {t("mfpResponseTime")}
                 </div>
                 <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/70">
                   <ShieldCheck className={`h-3.5 w-3.5 ${accentIcon}`} />
-                  OTP-protected
+                  {t("mfpOtpProtected")}
                 </div>
               </div>
 
@@ -317,14 +319,14 @@ export default function MerchantForgotPinSheet({
                 className={`h-11 w-full rounded-2xl text-sm font-semibold text-white transition-transform hover:scale-[1.01] disabled:opacity-70 ${accentBtn}`}
               >
                 {loading ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Sending code...</>
+                  <><Loader2 className="h-4 w-4 animate-spin" /> {t("mfpSendingCode")}</>
                 ) : (
-                  <><Send className="h-4 w-4" /> Send verification code</>
+                  <><Send className="h-4 w-4" /> {t("mfpSendCode")}</>
                 )}
               </Button>
 
               <p className="text-center text-[11px] text-white/45">
-                By continuing, you agree to be contacted by EasyPay support for identity verification.
+                {t("mfpDisclaimer")}
               </p>
             </form>
           )}
@@ -358,7 +360,7 @@ export default function MerchantForgotPinSheet({
               )}
               {devOtp && (
                 <p className="text-center text-[11px] uppercase tracking-wider text-amber-200/70">
-                  Dev OTP: <span className="font-mono font-semibold text-amber-200">{devOtp}</span>
+                  {t("mfpDevOtp")} <span className="font-mono font-semibold text-amber-200">{devOtp}</span>
                 </p>
               )}
 
@@ -370,7 +372,7 @@ export default function MerchantForgotPinSheet({
                   className={`inline-flex items-center gap-1.5 font-medium transition-opacity disabled:cursor-not-allowed disabled:text-white/40 ${accent === "sky" ? "text-sky-300 hover:text-sky-200" : "text-amber-300 hover:text-amber-200"}`}
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
-                  {resendIn > 0 ? `Resend in ${fmtCountdown(resendIn)}` : "Resend code"}
+                  {resendIn > 0 ? t("mfpResendIn").replace("{time}", fmtCountdown(resendIn)) : t("mfpResendCode")}
                 </button>
                 <button
                   type="button"
@@ -378,13 +380,13 @@ export default function MerchantForgotPinSheet({
                   disabled={loading}
                   className="font-medium text-white/60 hover:text-white/85"
                 >
-                  Change number
+                  {t("mfpChangeNumber")}
                 </button>
               </div>
 
               {loading && (
                 <div className="flex items-center justify-center gap-2 text-[12px] text-white/60">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying…
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("mfpVerifying")}
                 </div>
               )}
             </div>
@@ -398,10 +400,10 @@ export default function MerchantForgotPinSheet({
                   <KeyRound className="h-6 w-6 text-emerald-200" />
                 </div>
                 <p className="text-[13px] text-emerald-100/85">
-                  +88 <span className="font-semibold text-white">{maskBdPhone(cleanedPhone)}</span> verified
+                  +88 <span className="font-semibold text-white">{maskBdPhone(cleanedPhone)}</span>{t("mfpVerifiedSuffix")}
                 </p>
                 <p className="mt-1 text-[12px] text-white/55">
-                  Continue to live support to set your new PIN safely with our team.
+                  {t("mfpHandoffHint")}
                 </p>
               </div>
 
@@ -411,7 +413,7 @@ export default function MerchantForgotPinSheet({
                 className={`h-11 w-full rounded-2xl text-sm font-semibold text-white transition-transform hover:scale-[1.01] ${accentBtn}`}
               >
                 <MessageCircle className="h-4 w-4" />
-                Open live support to finish reset
+                {t("mfpOpenLiveSupport")}
                 <ArrowRight className="h-4 w-4" />
               </Button>
 
@@ -420,7 +422,7 @@ export default function MerchantForgotPinSheet({
                 onClick={() => onOpenChange(false)}
                 className="block w-full text-center text-[12px] font-medium text-white/55 hover:text-white/80"
               >
-                I'll wait for a callback instead
+                {t("mfpWaitCallback")}
               </button>
             </div>
           )}
