@@ -48,6 +48,7 @@ export default function MerchantForgotPinSheet({
   accent = "amber",
 }: MerchantForgotPinSheetProps) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>("request");
   const [phone, setPhone] = useState(defaultPhone);
   const [note, setNote] = useState("");
