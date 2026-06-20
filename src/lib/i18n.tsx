@@ -1677,6 +1677,22 @@ const translations = {
   mctDisabled: { en: "Coupon disabled", bn: "কুপন নিষ্ক্রিয় করা হয়েছে" },
   mctErrDelete: { en: "Failed to delete", bn: "মুছে ফেলা ব্যর্থ" },
   mctDeleted: { en: "Coupon deleted", bn: "কুপন মুছে ফেলা হয়েছে" },
+  // MerchantCustomersTab
+  mcuTitle: { en: "Customer Directory", bn: "গ্রাহক তালিকা" },
+  mcuTotalCustomers: { en: "Total Customers", bn: "মোট গ্রাহক" },
+  mcuLifetimeValue: { en: "Lifetime Value", bn: "আজীবন মূল্য" },
+  mcuAvgOrder: { en: "Avg Order", bn: "গড় অর্ডার" },
+  mcuSearchPlaceholder: { en: "Search customers…", bn: "গ্রাহক খুঁজুন…" },
+  mcuNoCustomers: { en: "No customers yet", bn: "এখনও কোনো গ্রাহক নেই" },
+  mcuNoResults: { en: "No results", bn: "কোনো ফলাফল নেই" },
+  mcuNoCustomersDesc: { en: "Customers will appear here after their first order", bn: "প্রথম অর্ডারের পরে গ্রাহকরা এখানে দেখাবে" },
+  mcuTryDifferent: { en: "Try a different search", bn: "অন্য কিছু খুঁজে দেখুন" },
+  mcuUnknown: { en: "Unknown", bn: "অজানা" },
+  mcuOrdersN: { en: "{n} orders", bn: "{n} অর্ডার" },
+  mcuTierGold: { en: "Gold", bn: "গোল্ড" },
+  mcuTierSilver: { en: "Silver", bn: "সিলভার" },
+  mcuTierBronze: { en: "Bronze", bn: "ব্রোঞ্জ" },
+  mcuTierNew: { en: "New", bn: "নতুন" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

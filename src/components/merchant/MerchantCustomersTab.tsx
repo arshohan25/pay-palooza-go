@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Users, ShoppingBag, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface CustomerRow {
   customer_user_id: string;
@@ -24,7 +25,16 @@ const tierColors: Record<string, string> = {
   New: "bg-blue-500/10 text-blue-700 border-blue-200",
 };
 
+const tierLabelKey: Record<string, TranslationKey> = {
+  Gold: "mcuTierGold",
+  Silver: "mcuTierSilver",
+  Bronze: "mcuTierBronze",
+  New: "mcuTierNew",
+};
+
 export default function MerchantCustomersTab({ merchantId }: { merchantId: string }) {
+  const { t, lang } = useI18n();
+  const fmt = (n: number) => n.toLocaleString(lang === "bn" ? "bn-BD" : "en-US");
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -74,27 +84,27 @@ export default function MerchantCustomersTab({ merchantId }: { merchantId: strin
   return (
     <div className="space-y-4">
       <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-        <Users size={18} className="text-primary" /> Customer Directory
+        <Users size={18} className="text-primary" /> {t("mcuTitle")}
       </h3>
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-2">
         <Card className="border-0 shadow-elevated">
           <CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-foreground">{customers.length}</p>
-            <p className="text-[10px] text-muted-foreground">Total Customers</p>
+            <p className="text-lg font-bold text-foreground">{fmt(customers.length)}</p>
+            <p className="text-[10px] text-muted-foreground">{t("mcuTotalCustomers")}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-elevated">
           <CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-emerald-600">৳{(totalRevenue / 1000).toFixed(1)}k</p>
-            <p className="text-[10px] text-muted-foreground">Lifetime Value</p>
+            <p className="text-lg font-bold text-emerald-600">৳{fmt(Number((totalRevenue / 1000).toFixed(1)))}k</p>
+            <p className="text-[10px] text-muted-foreground">{t("mcuLifetimeValue")}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-elevated">
           <CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-primary">৳{Math.round(avgOrderValue)}</p>
-            <p className="text-[10px] text-muted-foreground">Avg Order</p>
+            <p className="text-lg font-bold text-primary">৳{fmt(Math.round(avgOrderValue))}</p>
+            <p className="text-[10px] text-muted-foreground">{t("mcuAvgOrder")}</p>
           </CardContent>
         </Card>
       </div>
@@ -104,7 +114,7 @@ export default function MerchantCustomersTab({ merchantId }: { merchantId: strin
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search customers…"
+            placeholder={t("mcuSearchPlaceholder")}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-9 h-9 text-xs"
@@ -118,10 +128,10 @@ export default function MerchantCustomersTab({ merchantId }: { merchantId: strin
           <CardContent className="p-8 text-center">
             <Users size={32} className="mx-auto text-muted-foreground/40 mb-2" />
             <p className="text-sm font-medium text-muted-foreground">
-              {customers.length === 0 ? "No customers yet" : "No results"}
+              {customers.length === 0 ? t("mcuNoCustomers") : t("mcuNoResults")}
             </p>
             <p className="text-xs text-muted-foreground/70 mt-1">
-              {customers.length === 0 ? "Customers will appear here after their first order" : "Try a different search"}
+              {customers.length === 0 ? t("mcuNoCustomersDesc") : t("mcuTryDifferent")}
             </p>
           </CardContent>
         </Card>
@@ -136,18 +146,20 @@ export default function MerchantCustomersTab({ merchantId }: { merchantId: strin
                       {(c.customer_name || "?").charAt(0)}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-foreground">{c.customer_name || "Unknown"}</p>
+                      <p className="text-xs font-bold text-foreground">{c.customer_name || t("mcuUnknown")}</p>
                       <p className="text-[10px] text-muted-foreground">
                         {c.customer_phone || "—"} · {c.last_order_at ? formatDistanceToNow(new Date(c.last_order_at), { addSuffix: true }) : "—"}
                       </p>
                     </div>
                   </div>
                   <div className="text-right space-y-1">
-                    <p className="text-xs font-bold text-foreground">৳{Number(c.total_spent).toLocaleString()}</p>
+                    <p className="text-xs font-bold text-foreground">৳{fmt(Number(c.total_spent))}</p>
                     <div className="flex items-center gap-1 justify-end">
                       <ShoppingBag size={10} className="text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">{c.order_count} orders</span>
-                      <Badge variant="outline" className={`text-[8px] ml-1 ${tierColors[c.tier] || ""}`}>{c.tier}</Badge>
+                      <span className="text-[10px] text-muted-foreground">{t("mcuOrdersN").replace("{n}", fmt(c.order_count))}</span>
+                      <Badge variant="outline" className={`text-[8px] ml-1 ${tierColors[c.tier] || ""}`}>
+                        {tierLabelKey[c.tier] ? t(tierLabelKey[c.tier]) : c.tier}
+                      </Badge>
                     </div>
                   </div>
                 </div>
