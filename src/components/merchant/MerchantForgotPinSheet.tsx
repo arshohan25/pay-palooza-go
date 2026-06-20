@@ -291,13 +291,13 @@ export default function MerchantForgotPinSheet({
 
               <div className="space-y-1.5">
                 <Label htmlFor="forgot-note" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                  Anything we should know? <span className="text-white/40 normal-case">(optional)</span>
+                  {t("mfpAnythingWeKnowLabel")} <span className="text-white/40 normal-case">{t("mfpOptional")}</span>
                 </Label>
                 <Textarea
                   id="forgot-note"
                   value={note}
                   onChange={(e) => setNote(e.target.value.slice(0, 500))}
-                  placeholder="e.g. I changed my phone, can't receive SMS at the old SIM..."
+                  placeholder={t("mfpNotePlaceholder")}
                   className="min-h-[72px] rounded-2xl border-white/10 bg-white/[0.04] text-sm text-white placeholder:text-white/30 focus-visible:ring-amber-200/40"
                 />
               </div>
