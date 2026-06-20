@@ -137,13 +137,13 @@ export default function MerchantForgotPinSheet({
       if (error) throw error;
       const payload: any = data;
       if (!payload?.verified) {
-        setOtpError(payload?.error || "Incorrect code. Please try again.");
+        setOtpError(payload?.error || t("mfpErrIncorrect"));
         setCode("");
         return;
       }
       const ticketValue: string | null = payload?.otp_ticket ?? null;
       if (!ticketValue) {
-        setOtpError("Verification failed. Please request a new code.");
+        setOtpError(t("mfpErrVerifyFailedNew"));
         setCode("");
         return;
       }
