@@ -228,16 +228,16 @@ export default function MerchantForgotPinSheet({
               {step === "handoff" ? <CheckCircle2 className="h-5 w-5 text-emerald-300" /> : <LifeBuoy className="h-5 w-5" />}
             </div>
             <SheetTitle className="text-lg font-semibold text-white">
-              {step === "request" && "Reset your merchant PIN"}
-              {step === "verify" && "Verify your number"}
-              {step === "handoff" && "Identity verified"}
+              {step === "request" && t("mfpTitleRequest")}
+              {step === "verify" && t("mfpTitleVerify")}
+              {step === "handoff" && t("mfpTitleHandoff")}
             </SheetTitle>
             <SheetDescription className="text-[13px] leading-snug text-white/60">
-              {step === "request" && "We'll send a one-time code to your registered number. Once verified, our support team will help you set a new PIN over secure live chat."}
+              {step === "request" && t("mfpDescRequest")}
               {step === "verify" && (
-                <>Enter the 6-digit code we sent to <span className="text-white/85 font-medium">+88 {maskBdPhone(cleanedPhone)}</span>.</>
+                <>{t("mfpDescVerifyPrefix")}<span className="text-white/85 font-medium">+88 {maskBdPhone(cleanedPhone)}</span>{t("mfpDescVerifySuffix")}</>
               )}
-              {step === "handoff" && "We've confirmed it's really you. Continue to live support and our team will finish your PIN reset on this chat."}
+              {step === "handoff" && t("mfpDescHandoff")}
             </SheetDescription>
           </SheetHeader>
 
