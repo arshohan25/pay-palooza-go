@@ -264,7 +264,7 @@ export default function MerchantForgotPinSheet({
             <form onSubmit={sendOtp} className="mt-5 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="forgot-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                  Registered mobile number
+                  {t("mfpRegisteredMobile")}
                 </Label>
                 <div className={`flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors ${accentRing}`}>
                   <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
