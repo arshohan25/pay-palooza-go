@@ -372,7 +372,7 @@ export default function MerchantForgotPinSheet({
                   className={`inline-flex items-center gap-1.5 font-medium transition-opacity disabled:cursor-not-allowed disabled:text-white/40 ${accent === "sky" ? "text-sky-300 hover:text-sky-200" : "text-amber-300 hover:text-amber-200"}`}
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
-                  {resendIn > 0 ? `Resend in ${fmtCountdown(resendIn)}` : "Resend code"}
+                  {resendIn > 0 ? t("mfpResendIn").replace("{time}", fmtCountdown(resendIn)) : t("mfpResendCode")}
                 </button>
                 <button
                   type="button"
@@ -380,7 +380,7 @@ export default function MerchantForgotPinSheet({
                   disabled={loading}
                   className="font-medium text-white/60 hover:text-white/85"
                 >
-                  Change number
+                  {t("mfpChangeNumber")}
                 </button>
               </div>
 
