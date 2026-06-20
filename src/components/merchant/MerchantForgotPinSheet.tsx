@@ -400,10 +400,10 @@ export default function MerchantForgotPinSheet({
                   <KeyRound className="h-6 w-6 text-emerald-200" />
                 </div>
                 <p className="text-[13px] text-emerald-100/85">
-                  +88 <span className="font-semibold text-white">{maskBdPhone(cleanedPhone)}</span> verified
+                  +88 <span className="font-semibold text-white">{maskBdPhone(cleanedPhone)}</span>{t("mfpVerifiedSuffix")}
                 </p>
                 <p className="mt-1 text-[12px] text-white/55">
-                  Continue to live support to set your new PIN safely with our team.
+                  {t("mfpHandoffHint")}
                 </p>
               </div>
 
