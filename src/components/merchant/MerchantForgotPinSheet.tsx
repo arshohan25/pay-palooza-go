@@ -360,7 +360,7 @@ export default function MerchantForgotPinSheet({
               )}
               {devOtp && (
                 <p className="text-center text-[11px] uppercase tracking-wider text-amber-200/70">
-                  Dev OTP: <span className="font-mono font-semibold text-amber-200">{devOtp}</span>
+                  {t("mfpDevOtp")} <span className="font-mono font-semibold text-amber-200">{devOtp}</span>
                 </p>
               )}
 
