@@ -319,14 +319,14 @@ export default function MerchantForgotPinSheet({
                 className={`h-11 w-full rounded-2xl text-sm font-semibold text-white transition-transform hover:scale-[1.01] disabled:opacity-70 ${accentBtn}`}
               >
                 {loading ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Sending code...</>
+                  <><Loader2 className="h-4 w-4 animate-spin" /> {t("mfpSendingCode")}</>
                 ) : (
-                  <><Send className="h-4 w-4" /> Send verification code</>
+                  <><Send className="h-4 w-4" /> {t("mfpSendCode")}</>
                 )}
               </Button>
 
               <p className="text-center text-[11px] text-white/45">
-                By continuing, you agree to be contacted by EasyPay support for identity verification.
+                {t("mfpDisclaimer")}
               </p>
             </form>
           )}
