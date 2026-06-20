@@ -156,7 +156,7 @@ export default function MerchantPayoutsTab({ merchantId }: Props) {
                 <div>
                   <p className="font-medium text-foreground">+{fmt(e.net_amount)}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {t("mptGrossFee", { gross: fmt(e.gross_amount), rate: fmtPct(e.commission_rate) })}
+                    {t("mptGrossFee").replace("{gross}", fmt(e.gross_amount)).replace("{rate}", fmtPct(e.commission_rate))}
                   </p>
                 </div>
                 <Badge variant="outline" className={`text-[9px] ${e.status === "released" ? "text-emerald-600 border-emerald-200" : "text-amber-600 border-amber-200"}`}>
