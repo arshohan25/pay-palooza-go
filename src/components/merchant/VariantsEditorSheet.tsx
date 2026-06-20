@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Loader2, Layers, AlertTriangle, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useI18n } from "@/lib/i18n";
 
 interface Variant {
   id: string;
@@ -25,18 +26,22 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-const friendlyError = (msg?: string) => {
-  if (!msg) return "Something went wrong";
-  if (msg.includes("uniq_variant_sku_per_product") || msg.includes("23505") && msg.includes("sku")) return "SKU already used on this product";
-  if (msg.includes("uniq_variant_attr_per_product") || msg.includes("23505")) return "This option combination already exists";
-  if (msg.includes("product_variants_stock_nonneg")) return "Stock cannot be negative";
-  if (msg.includes("product_variants_price_adj_bounds")) return "Price adjustment is out of range";
-  if (msg.includes("23514")) return "Validation failed — check values";
-  return msg;
-};
-
 export default function VariantsEditorSheet({ productId, productName, open, onOpenChange }: Props) {
   const { toast } = useToast();
+  const { t, lang } = useI18n();
+  const locale = lang === "bn" ? "bn-BD" : "en-US";
+  const fmt = (n: number) => Number(n).toLocaleString(locale);
+
+  const friendlyError = (msg?: string) => {
+    if (!msg) return t("vesErrSomething");
+    if (msg.includes("uniq_variant_sku_per_product") || (msg.includes("23505") && msg.includes("sku"))) return t("vesErrSkuDup");
+    if (msg.includes("uniq_variant_attr_per_product") || msg.includes("23505")) return t("vesErrAttrDup");
+    if (msg.includes("product_variants_stock_nonneg")) return t("vesStockNeg");
+    if (msg.includes("product_variants_price_adj_bounds")) return t("vesErrPriceBounds");
+    if (msg.includes("23514")) return t("vesErrCheckValues");
+    return msg;
+  };
+
   const [variants, setVariants] = useState<Variant[]>([]);
   const [basePrice, setBasePrice] = useState<number>(0);
   const [loading, setLoading] = useState(false);
@@ -68,22 +73,23 @@ export default function VariantsEditorSheet({ productId, productName, open, onOp
     const adj = Number(draft.price_adjustment) || 0;
     const stock = Number(draft.stock) || 0;
     const finalPrice = basePrice + adj;
-    const priceWarning = finalPrice <= 0 ? `Final price would be ৳${finalPrice}` : null;
+    const priceWarning = finalPrice <= 0 ? t("vesPriceWarning").replace("{price}", fmt(finalPrice)) : null;
     const stockInvalid = stock < 0;
     return { skuClash, attrClash, priceWarning, stockInvalid, finalPrice };
-  }, [draft, variants, basePrice]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, variants, basePrice, lang]);
 
   const addVariant = async () => {
     if (!productId) return;
-    if (!draft.variant_value.trim()) { toast({ title: "Value required", variant: "destructive" }); return; }
-    if (validation.skuClash) { toast({ title: "SKU already used", variant: "destructive" }); return; }
-    if (validation.attrClash) { toast({ title: "Option already exists", variant: "destructive" }); return; }
-    if (validation.stockInvalid) { toast({ title: "Stock cannot be negative", variant: "destructive" }); return; }
+    if (!draft.variant_value.trim()) { toast({ title: t("vesToastValueRequired"), variant: "destructive" }); return; }
+    if (validation.skuClash) { toast({ title: t("vesToastSkuUsed"), variant: "destructive" }); return; }
+    if (validation.attrClash) { toast({ title: t("vesToastOptionExists"), variant: "destructive" }); return; }
+    if (validation.stockInvalid) { toast({ title: t("vesStockNeg"), variant: "destructive" }); return; }
 
     setSaving(true);
     const { error } = await (supabase as any).from("product_variants").insert({
       product_id: productId,
-      variant_name: draft.variant_name.trim() || "Option",
+      variant_name: draft.variant_name.trim() || t("vesDefaultOption"),
       variant_value: draft.variant_value.trim(),
       sku: draft.sku.trim() || null,
       price_adjustment: Number(draft.price_adjustment) || 0,
@@ -91,32 +97,32 @@ export default function VariantsEditorSheet({ productId, productName, open, onOp
       is_active: true,
     });
     setSaving(false);
-    if (error) { toast({ title: "Failed", description: friendlyError(error.message), variant: "destructive" }); return; }
+    if (error) { toast({ title: t("vesToastFailed"), description: friendlyError(error.message), variant: "destructive" }); return; }
     setDraft({ variant_name: draft.variant_name, variant_value: "", price_adjustment: "0", stock: "0", sku: "" });
-    toast({ title: "Variant added" });
+    toast({ title: t("vesToastAdded") });
     load();
   };
 
   const updateVariant = async (id: string, patch: Partial<Variant>) => {
     if (patch.stock !== undefined && patch.stock < 0) {
-      toast({ title: "Stock cannot be negative", variant: "destructive" });
+      toast({ title: t("vesStockNeg"), variant: "destructive" });
       load();
       return;
     }
     const { error } = await (supabase as any).from("product_variants").update(patch).eq("id", id);
-    if (error) toast({ title: "Update failed", description: friendlyError(error.message), variant: "destructive" });
+    if (error) toast({ title: t("vesToastUpdateFailed"), description: friendlyError(error.message), variant: "destructive" });
     else load();
   };
 
   const removeVariant = async (id: string) => {
     const { error } = await (supabase as any).from("product_variants").delete().eq("id", id);
-    if (error) toast({ title: "Delete failed", variant: "destructive" });
-    else { toast({ title: "Removed" }); load(); }
+    if (error) toast({ title: t("vesToastDeleteFailed"), variant: "destructive" });
+    else { toast({ title: t("vesToastRemoved") }); load(); }
   };
 
   const copyText = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copied" });
+    toast({ title: t("vesToastCopied") });
   };
 
   return (
@@ -125,17 +131,17 @@ export default function VariantsEditorSheet({ productId, productName, open, onOp
         <SheetHeader className="text-left mb-4">
           <SheetTitle className="flex items-center gap-2 text-[16px]">
             <Layers size={17} className="text-primary" />
-            Variants {productName ? `· ${productName}` : ""}
+            {t("vesTitle")} {productName ? `· ${productName}` : ""}
           </SheetTitle>
           <p className="text-[11.5px] text-muted-foreground">
-            Add size/color/option choices. Base price: <strong>৳{basePrice.toLocaleString()}</strong>
+            {t("vesSubtitleBase")} <strong>৳{fmt(basePrice)}</strong>
           </p>
         </SheetHeader>
 
         {loading ? (
           <div className="space-y-2">{[1,2].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
         ) : variants.length === 0 ? (
-          <div className="text-center py-6 text-[12px] text-muted-foreground">No variants yet — add one below.</div>
+          <div className="text-center py-6 text-[12px] text-muted-foreground">{t("vesNoVariants")}</div>
         ) : (
           <div className="space-y-2 mb-5">
             {variants.map(v => {
@@ -154,7 +160,7 @@ export default function VariantsEditorSheet({ productId, productName, open, onOp
                             {v.sku} <Copy size={9} />
                           </button>
                         )}
-                        <span className="text-[10px] text-muted-foreground">· ৳{finalPrice.toLocaleString()}</span>
+                        <span className="text-[10px] text-muted-foreground">· ৳{fmt(finalPrice)}</span>
                       </div>
                     </div>
                     <button onClick={() => removeVariant(v.id)} className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center">
@@ -163,7 +169,7 @@ export default function VariantsEditorSheet({ productId, productName, open, onOp
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] text-muted-foreground font-semibold">Price ±</label>
+                      <label className="text-[10px] text-muted-foreground font-semibold">{t("vesPriceAdj")}</label>
                       <Input type="number" defaultValue={v.price_adjustment} className="h-8 text-[12px]"
                         onBlur={(e) => {
                           const val = Number(e.target.value) || 0;
@@ -171,7 +177,7 @@ export default function VariantsEditorSheet({ productId, productName, open, onOp
                         }} />
                     </div>
                     <div>
-                      <label className="text-[10px] text-muted-foreground font-semibold">Stock</label>
+                      <label className="text-[10px] text-muted-foreground font-semibold">{t("vesStock")}</label>
                       <Input type="number" min={0} defaultValue={v.stock} className="h-8 text-[12px]"
                         onBlur={(e) => {
                           const val = Math.max(0, Number(e.target.value) || 0);
@@ -187,33 +193,33 @@ export default function VariantsEditorSheet({ productId, productName, open, onOp
 
         {/* Add new */}
         <div className="bg-muted/40 border border-border/60 rounded-2xl p-3 space-y-3">
-          <p className="text-[12px] font-bold text-foreground">Add variant</p>
+          <p className="text-[12px] font-bold text-foreground">{t("vesAddVariant")}</p>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] text-muted-foreground font-semibold">Type</label>
+              <label className="text-[10px] text-muted-foreground font-semibold">{t("vesType")}</label>
               <Input value={draft.variant_name} onChange={(e) => setDraft({...draft, variant_name: e.target.value})}
-                placeholder="Size / Color" className="h-9 text-[12px]" />
+                placeholder={t("vesTypePlaceholder")} className="h-9 text-[12px]" />
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground font-semibold">Value</label>
+              <label className="text-[10px] text-muted-foreground font-semibold">{t("vesValue")}</label>
               <Input value={draft.variant_value} onChange={(e) => setDraft({...draft, variant_value: e.target.value})}
-                placeholder="M / Red"
+                placeholder={t("vesValuePlaceholder")}
                 className={`h-9 text-[12px] ${validation.attrClash ? "border-destructive" : ""}`} />
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground font-semibold">Price ± (৳)</label>
+              <label className="text-[10px] text-muted-foreground font-semibold">{t("vesPriceAdjBdt")}</label>
               <Input type="number" value={draft.price_adjustment}
                 onChange={(e) => setDraft({...draft, price_adjustment: e.target.value})}
                 className="h-9 text-[12px]" />
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground font-semibold">Stock</label>
+              <label className="text-[10px] text-muted-foreground font-semibold">{t("vesStock")}</label>
               <Input type="number" min={0} value={draft.stock}
                 onChange={(e) => setDraft({...draft, stock: e.target.value})}
                 className={`h-9 text-[12px] ${validation.stockInvalid ? "border-destructive" : ""}`} />
             </div>
             <div className="col-span-2">
-              <label className="text-[10px] text-muted-foreground font-semibold">SKU (optional)</label>
+              <label className="text-[10px] text-muted-foreground font-semibold">{t("vesSkuOptional")}</label>
               <Input value={draft.sku} onChange={(e) => setDraft({...draft, sku: e.target.value})}
                 placeholder="SKU-RED-M"
                 className={`h-9 text-[12px] font-mono ${validation.skuClash ? "border-destructive" : ""}`} />
@@ -224,27 +230,27 @@ export default function VariantsEditorSheet({ productId, productName, open, onOp
           <div className="space-y-1">
             {validation.attrClash && (
               <p className="text-[10.5px] text-destructive flex items-center gap-1">
-                <AlertTriangle size={11} /> "{draft.variant_name}: {draft.variant_value}" already exists
+                <AlertTriangle size={11} /> {t("vesAttrExists").replace("{name}", draft.variant_name).replace("{value}", draft.variant_value)}
               </p>
             )}
             {validation.skuClash && (
               <p className="text-[10.5px] text-destructive flex items-center gap-1">
-                <AlertTriangle size={11} /> SKU already in use on this product
+                <AlertTriangle size={11} /> {t("vesSkuClash")}
               </p>
             )}
             {validation.stockInvalid && (
               <p className="text-[10.5px] text-destructive flex items-center gap-1">
-                <AlertTriangle size={11} /> Stock cannot be negative
+                <AlertTriangle size={11} /> {t("vesStockNeg")}
               </p>
             )}
             {validation.priceWarning && (
               <p className="text-[10.5px] text-amber-600 flex items-center gap-1">
-                <AlertTriangle size={11} /> {validation.priceWarning} — please review
+                <AlertTriangle size={11} /> {validation.priceWarning}{t("vesPriceWarningSuffix")}
               </p>
             )}
             {!validation.attrClash && !validation.skuClash && !validation.priceWarning && draft.variant_value.trim() && (
               <p className="text-[10.5px] text-muted-foreground">
-                Final price: <strong className="text-foreground">৳{validation.finalPrice.toLocaleString()}</strong>
+                {t("vesFinalPrice")} <strong className="text-foreground">৳{fmt(validation.finalPrice)}</strong>
               </p>
             )}
           </div>
@@ -253,7 +259,7 @@ export default function VariantsEditorSheet({ productId, productName, open, onOp
             disabled={saving || validation.skuClash || validation.attrClash || validation.stockInvalid}
             className="w-full rounded-xl gap-1.5 h-9 text-[12px]">
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
-            Add Variant
+            {t("vesAddBtn")}
           </Button>
         </div>
       </SheetContent>
