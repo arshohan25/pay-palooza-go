@@ -284,7 +284,7 @@ export default function MerchantForgotPinSheet({
                 </div>
                 {phone.length === 11 && (
                   <p className="text-[11px] text-white/50">
-                    Code will be sent to <span className="text-white/80 font-medium">+88 {maskBdPhone(phone)}</span>
+                    {t("mfpCodeWillBeSent")}<span className="text-white/80 font-medium">+88 {maskBdPhone(phone)}</span>
                   </p>
                 )}
               </div>
