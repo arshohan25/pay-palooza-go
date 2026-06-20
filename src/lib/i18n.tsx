@@ -1751,6 +1751,27 @@ const translations = {
   mptErrInvalidAmount: { en: "Enter a valid amount", bn: "একটি বৈধ পরিমাণ লিখুন" },
   mptErrExceedsBalance: { en: "Amount exceeds available balance", bn: "পরিমাণ উত্তোলনযোগ্য ব্যালেন্স অতিক্রম করেছে" },
   mptToastSubmitted: { en: "Withdrawal request submitted for admin review", bn: "অ্যাডমিন পর্যালোচনার জন্য উত্তোলনের অনুরোধ জমা দেওয়া হয়েছে" },
+
+  // RequestAccessSheet
+  rasTitle: { en: "Request access", bn: "অ্যাক্সেসের অনুরোধ" },
+  rasYouAreRequesting: { en: "You're requesting", bn: "আপনি অনুরোধ করছেন" },
+  rasPermissionLabel: { en: "Permission: {key}", bn: "অনুমতি: {key}" },
+  rasNotRequestable: { en: "This permission isn't requestable. Ask your store owner directly.", bn: "এই অনুমতির জন্য অনুরোধ করা যায় না। সরাসরি আপনার স্টোর মালিকের সাথে যোগাযোগ করুন।" },
+  rasPending: { en: "Request pending", bn: "অনুরোধ অপেক্ষমাণ" },
+  rasPendingDesc: { en: "The owner has been notified. You'll get access as soon as they approve.", bn: "মালিককে জানানো হয়েছে। তারা অনুমোদন করলেই আপনি অ্যাক্সেস পাবেন।" },
+  rasCancel: { en: "Cancel", bn: "বাতিল" },
+  rasPrevDenied: { en: "Previous request denied", bn: "পূর্ববর্তী অনুরোধ প্রত্যাখ্যাত" },
+  rasAskAgain: { en: "You can ask again with more context below.", bn: "নিচে আরও বিস্তারিত দিয়ে আবার অনুরোধ করতে পারেন।" },
+  rasHadBefore: { en: "You had this permission before — it may have been revoked. Send another request to ask for it again.", bn: "আপনার আগে এই অনুমতি ছিল — সম্ভবত প্রত্যাহার করা হয়েছে। আবার পেতে নতুন অনুরোধ পাঠান।" },
+  rasNoteLabel: { en: "Add a note (optional)", bn: "একটি নোট যোগ করুন (ঐচ্ছিক)" },
+  rasNotePlaceholder: { en: "e.g. I need this to process today's customer payouts", bn: "যেমন: আজকের কাস্টমার পেআউট প্রসেস করতে আমার এটি প্রয়োজন" },
+  rasSending: { en: "Sending…", bn: "পাঠানো হচ্ছে…" },
+  rasSendToOwner: { en: "Send request to owner", bn: "মালিকের কাছে অনুরোধ পাঠান" },
+  rasClose: { en: "Close", bn: "বন্ধ করুন" },
+  rasErrCannotSend: { en: "Cannot send request right now", bn: "এই মুহূর্তে অনুরোধ পাঠানো যাচ্ছে না" },
+  rasErrCouldNotSend: { en: "Could not send request", bn: "অনুরোধ পাঠানো যায়নি" },
+  rasToastSent: { en: "Request sent — owner has been notified", bn: "অনুরোধ পাঠানো হয়েছে — মালিককে জানানো হয়েছে" },
+  rasToastCancelled: { en: "Request cancelled", bn: "অনুরোধ বাতিল করা হয়েছে" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
