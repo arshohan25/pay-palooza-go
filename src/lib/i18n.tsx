@@ -1727,6 +1727,30 @@ const translations = {
   mfpErrVerifyFailedNew: { en: "Verification failed. Please request a new code.", bn: "যাচাইকরণ ব্যর্থ। অনুগ্রহ করে একটি নতুন কোড অনুরোধ করুন।" },
   mfpErrVerifyFailed: { en: "Verification failed.", bn: "যাচাইকরণ ব্যর্থ।" },
   mfpErrExpired: { en: "Verification expired. Please request a new code.", bn: "যাচাইকরণের মেয়াদ শেষ। নতুন কোড অনুরোধ করুন।" },
+
+  // MerchantPayoutsTab
+  mptStatusPending: { en: "Pending", bn: "অপেক্ষমাণ" },
+  mptStatusPaid: { en: "Paid", bn: "পরিশোধিত" },
+  mptStatusRejected: { en: "Rejected", bn: "প্রত্যাখ্যাত" },
+  mptAvailableToWithdraw: { en: "Available to Withdraw", bn: "উত্তোলনযোগ্য" },
+  mptPending: { en: "Pending", bn: "অপেক্ষমাণ" },
+  mptLifetimeEarned: { en: "Lifetime Earned", bn: "মোট আয়" },
+  mptWithdrawn: { en: "Withdrawn", bn: "উত্তোলিত" },
+  mptWithdrawToWallet: { en: "Withdraw to EasyPay Wallet", bn: "EasyPay ওয়ালেটে উত্তোলন" },
+  mptWithdrawalHistory: { en: "Withdrawal History", bn: "উত্তোলনের ইতিহাস" },
+  mptNoWithdrawals: { en: "No withdrawals yet.", bn: "এখনো কোনো উত্তোলন নেই।" },
+  mptRecentEarnings: { en: "Recent Earnings", bn: "সাম্প্রতিক আয়" },
+  mptGrossFee: { en: "Gross {gross} · {rate}% fee", bn: "মোট {gross} · {rate}% ফি" },
+  mptEarningReleased: { en: "released", bn: "মুক্তিপ্রাপ্ত" },
+  mptEarningPending: { en: "pending", bn: "অপেক্ষমাণ" },
+  mptAvailableBalance: { en: "Available balance", bn: "উত্তোলনযোগ্য ব্যালেন্স" },
+  mptAmountLabel: { en: "Amount (৳)", bn: "পরিমাণ (৳)" },
+  mptApprovalNote: { en: "Funds will be credited to your EasyPay wallet after admin approval.", bn: "অ্যাডমিন অনুমোদনের পর তহবিল আপনার EasyPay ওয়ালেটে জমা হবে।" },
+  mptSubmitting: { en: "Submitting...", bn: "জমা দেওয়া হচ্ছে..." },
+  mptSubmitForReview: { en: "Submit for Review", bn: "পর্যালোচনার জন্য জমা দিন" },
+  mptErrInvalidAmount: { en: "Enter a valid amount", bn: "একটি বৈধ পরিমাণ লিখুন" },
+  mptErrExceedsBalance: { en: "Amount exceeds available balance", bn: "পরিমাণ উত্তোলনযোগ্য ব্যালেন্স অতিক্রম করেছে" },
+  mptToastSubmitted: { en: "Withdrawal request submitted for admin review", bn: "অ্যাডমিন পর্যালোচনার জন্য উত্তোলনের অনুরোধ জমা দেওয়া হয়েছে" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
