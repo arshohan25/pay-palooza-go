@@ -461,18 +461,18 @@ export default function MerchantStaffTab({ merchantId }: Props) {
 
   const handleSavePreset = async (name: string, perms: Record<string, boolean>) => {
     const { error } = await savePreset(name, perms) as any;
-    if (error) toast.error(error.message || "Could not save preset");
-    else toast.success(`Preset "${name}" saved`);
+    if (error) toast.error(error.message || t("mstToastPresetSaveErr"));
+    else toast.success(tp("mstToastPresetSaved", { name }));
   };
   const handleRenamePreset = async (id: string, name: string) => {
     const { error } = await updatePreset(id, { name }) as any;
-    if (error) toast.error(error.message || "Could not rename");
-    else toast.success("Renamed");
+    if (error) toast.error(error.message || t("mstToastRenameErr"));
+    else toast.success(t("mstToastRenamed"));
   };
   const handleDeletePreset = async (id: string) => {
     const { error } = await removePreset(id) as any;
-    if (error) toast.error(error.message || "Could not delete");
-    else toast.success("Preset deleted");
+    if (error) toast.error(error.message || t("mstToastDeleteErr"));
+    else toast.success(t("mstToastPresetDeleted"));
   };
 
   // When role changes inside Add sheet, refresh defaults.
