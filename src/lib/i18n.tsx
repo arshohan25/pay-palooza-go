@@ -2340,6 +2340,9 @@ const translations = {
 
   // ProductCard (shop)
   pcOutOfStock: { en: "Out of Stock", bn: "স্টকে নেই" },
+
+  // VendorStoreHeader (shop)
+  vshProducts: { en: "products", bn: "পণ্য" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
