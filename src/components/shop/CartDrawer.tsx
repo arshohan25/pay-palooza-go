@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProductImage from "@/components/ProductImage";
+import { useI18n } from "@/lib/i18n";
 import type { ShopProduct } from "./ProductCard";
 
 export interface CartItem extends ShopProduct {
