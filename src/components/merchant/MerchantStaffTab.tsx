@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle, Send, SlidersHorizontal, Bookmark, Pencil, Check, X, ArrowRight, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import {
   STAFF_PERMISSION_GROUPS,
   STAFF_PERMISSIONS,
