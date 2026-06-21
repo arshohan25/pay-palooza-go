@@ -20,6 +20,7 @@ const STAGE_CONFIG: Record<InstallStage, { labelKey: TranslationKey; descKey: Tr
 };
 
 const InstallPrompt = ({ isAuthenticated = true }: { isAuthenticated?: boolean }) => {
+  const { t } = useI18n();
   const [hasPrompt, setHasPrompt] = useState(!!getInstallPrompt());
   const [show, setShow] = useState(false);
   const [stage, setStage] = useState<InstallStage>("idle");
