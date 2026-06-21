@@ -163,9 +163,10 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
 
     const { error } = await (supabase as any).from("merchant_products").insert(payload);
     if (error) {
-      toast({ title: "Import failed", description: error.message, variant: "destructive" });
+      toast({ title: t("mbuErrImportFailed"), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: `${validRows.length} products imported ✓` });
+      toast({ title: t("mbuToastImported").replace("{n}", fmtNum(validRows.length)) });
+
       setImported(true);
       onSuccess();
     }
