@@ -114,7 +114,7 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
       const descIdx = header.indexOf("description");
 
       if (nameIdx === -1 || priceIdx === -1) {
-        toast({ title: "CSV must have 'name' and 'price' columns", variant: "destructive" });
+        toast({ title: t("mbuErrHeaders"), variant: "destructive" });
         return;
       }
 
