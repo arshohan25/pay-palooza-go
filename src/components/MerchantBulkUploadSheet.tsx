@@ -101,7 +101,7 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
       const lines = parseCSV(text);
-      if (lines.length < 2) { toast({ title: "Empty CSV", variant: "destructive" }); return; }
+      if (lines.length < 2) { toast({ title: t("mbuErrEmpty"), variant: "destructive" }); return; }
       
       const header = lines[0].map(h => h.toLowerCase().trim());
       const nameIdx = header.indexOf("name");
