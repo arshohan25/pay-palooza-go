@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 export interface ShopFilters {
   minPrice: number | null;
@@ -28,6 +29,7 @@ export const defaultFilters: ShopFilters = {
 };
 
 export default function FilterDrawer({ filters, onApply, availableBrands, activeCount }: FilterDrawerProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [local, setLocal] = useState<ShopFilters>(filters);
 
@@ -71,17 +73,17 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
       </SheetTrigger>
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Filters</SheetTitle>
+          <SheetTitle>{t("fdTitle")}</SheetTitle>
         </SheetHeader>
 
         <div className="space-y-6 py-4">
           {/* Price Range */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Price Range (৳)</p>
+            <p className="text-sm font-medium text-foreground">{t("fdPriceRange")}</p>
             <div className="flex items-center gap-2">
               <Input
                 type="number"
-                placeholder="Min"
+                placeholder={t("fdMin")}
                 value={local.minPrice ?? ""}
                 onChange={(e) => setLocal((p) => ({ ...p, minPrice: e.target.value ? Number(e.target.value) : null }))}
                 className="h-9"
@@ -89,7 +91,7 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
               <span className="text-muted-foreground">–</span>
               <Input
                 type="number"
-                placeholder="Max"
+                placeholder={t("fdMax")}
                 value={local.maxPrice ?? ""}
                 onChange={(e) => setLocal((p) => ({ ...p, maxPrice: e.target.value ? Number(e.target.value) : null }))}
                 className="h-9"
@@ -99,7 +101,7 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
 
           {/* Rating Filter */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Minimum Rating</p>
+            <p className="text-sm font-medium text-foreground">{t("fdMinRating")}</p>
             <div className="flex gap-2">
               {[4, 3, 2, 1].map((r) => (
                 <button
@@ -112,7 +114,7 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
                       : "border-border text-foreground hover:border-primary/50"
                   )}
                 >
-                  {r}<Star className="w-3 h-3 fill-accent text-accent" />&up
+                  {r}<Star className="w-3 h-3 fill-accent text-accent" />{t("fdAndUp")}
                 </button>
               ))}
             </div>
@@ -121,7 +123,7 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
           {/* Brand Filter */}
           {availableBrands.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">Brand</p>
+              <p className="text-sm font-medium text-foreground">{t("fdBrand")}</p>
               <div className="flex flex-wrap gap-2">
                 {availableBrands.map((brand) => (
                   <Badge
@@ -141,10 +143,10 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
 
         <div className="flex gap-3 pt-2">
           <Button variant="outline" className="flex-1" onClick={handleClear}>
-            Clear All
+            {t("fdClearAll")}
           </Button>
           <Button className="flex-1" onClick={handleApply}>
-            Apply Filters
+            {t("fdApply")}
           </Button>
         </div>
       </SheetContent>
