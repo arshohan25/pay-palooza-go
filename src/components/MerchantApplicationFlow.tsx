@@ -13,22 +13,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { useMerchantCategories } from "@/hooks/use-merchant-categories";
-
-const applicationSchema = z.object({
-  business_name: z.string().trim().min(2, "Business name required").max(100),
-  category: z.string().min(1, "Category required"),
-  trade_license: z.string().max(50).optional(),
-  owner_name: z.string().trim().min(2, "Owner name required").max(100),
-  contact_number: z.string().trim().min(6, "Contact number required").max(20),
-  contact_email: z.string().email("Invalid email").max(255).optional().or(z.literal("")),
-  business_address: z.string().trim().max(300).optional(),
-  bank_name: z.string().max(100).optional(),
-  bank_branch: z.string().max(100).optional(),
-  bank_account_number: z.string().max(30).optional(),
-  bank_account_holder: z.string().max(100).optional(),
-  bank_routing: z.string().max(20).optional(),
-  reason: z.string().trim().max(500).optional(),
-});
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface Props {
   open: boolean;
@@ -36,6 +21,7 @@ interface Props {
 }
 
 export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
+  const { t, lang } = useI18n();
   const { categories, loading: catsLoading, getLabelForName } = useMerchantCategories();
   const [existing, setExisting] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +44,22 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     bank_routing: "",
     reason: "",
   });
+
+  const applicationSchema = useMemo(() => z.object({
+    business_name: z.string().trim().min(2, t("mafErrBusinessName")).max(100),
+    category: z.string().min(1, t("mafErrCategory")),
+    trade_license: z.string().max(50).optional(),
+    owner_name: z.string().trim().min(2, t("mafErrOwnerName")).max(100),
+    contact_number: z.string().trim().min(6, t("mafErrContactNumber")).max(20),
+    contact_email: z.string().email(t("mafErrEmail")).max(255).optional().or(z.literal("")),
+    business_address: z.string().trim().max(300).optional(),
+    bank_name: z.string().max(100).optional(),
+    bank_branch: z.string().max(100).optional(),
+    bank_account_number: z.string().max(30).optional(),
+    bank_account_holder: z.string().max(100).optional(),
+    bank_routing: z.string().max(20).optional(),
+    reason: z.string().trim().max(500).optional(),
+  }), [t]);
 
   const filteredCats = useMemo(() => {
     if (!catSearch) return categories;
@@ -88,12 +90,12 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     const finalCategory = form.category === "__other__" ? customCategory.trim() : form.category;
     const parsed = applicationSchema.safeParse({ ...form, category: finalCategory });
     if (!parsed.success) {
-      toast.error(parsed.error.errors[0]?.message || "Invalid input");
+      toast.error(parsed.error.errors[0]?.message || t("mafToastInvalid"));
       return;
     }
     setSubmitting(true);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) { toast.error("Please sign in"); setSubmitting(false); return; }
+    if (!session?.user) { toast.error(t("mafToastSignIn")); setSubmitting(false); return; }
 
     const { error } = await (supabase as any).from("merchant_applications").insert({
       user_id: session.user.id,
@@ -113,9 +115,9 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     });
 
     if (error) {
-      toast.error("Failed to submit: " + error.message);
+      toast.error(t("mafToastFailed") + error.message);
     } else {
-      toast.success("Application submitted! We'll review it shortly.");
+      toast.success(t("mafToastSuccess"));
       const { data } = await (supabase as any)
         .from("merchant_applications")
         .select("*")
@@ -128,24 +130,26 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     setSubmitting(false);
   };
 
-  const statusUI = (status: string) => {
-    if (status === "pending") return { icon: Clock, color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300", label: "Pending Review" };
-    if (status === "approved") return { icon: CheckCircle, color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300", label: "Approved" };
-    return { icon: XCircle, color: "bg-destructive/10 text-destructive", label: "Rejected" };
+  const statusUI = (status: string): { icon: any; color: string; label: string } => {
+    if (status === "pending") return { icon: Clock, color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300", label: t("mafStatusPending") };
+    if (status === "approved") return { icon: CheckCircle, color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300", label: t("mafStatusApproved") };
+    return { icon: XCircle, color: "bg-destructive/10 text-destructive", label: t("mafStatusRejected") };
   };
 
   const set = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }));
 
   const selectedLabel = form.category === "__other__"
-    ? (customCategory || "Other (custom)")
+    ? (customCategory || t("mafOtherCustom"))
     : getLabelForName(form.category);
+
+  const dateLocale = lang === "bn" ? "bn-BD" : "en-US";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="rounded-t-3xl h-[90vh] flex flex-col p-0">
         <SheetHeader className="px-6 pt-5 pb-3">
           <SheetTitle className="flex items-center gap-2 text-base">
-            <Store size={18} /> Become a Merchant
+            <Store size={18} /> {t("mafTitle")}
           </SheetTitle>
         </SheetHeader>
 
@@ -155,30 +159,30 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : existing && (existing.status === "pending" || existing.status === "approved") ? (
-            <ExistingApplicationView existing={existing} statusUI={statusUI} getLabelForName={getLabelForName} />
+            <ExistingApplicationView existing={existing} statusUI={statusUI} getLabelForName={getLabelForName} dateLocale={dateLocale} />
           ) : (
             <>
               {existing?.status === "rejected" && (
                 <div className={`rounded-2xl p-4 text-center space-y-2 ${statusUI("rejected").color}`}>
                   <XCircle className="w-8 h-8 mx-auto" />
-                  <p className="font-bold">Previous Application Rejected</p>
+                  <p className="font-bold">{t("mafPrevRejected")}</p>
                   {existing.admin_notes && <p className="text-sm opacity-80">{existing.admin_notes}</p>}
-                  <p className="text-xs opacity-60">You can submit a new application below.</p>
+                  <p className="text-xs opacity-60">{t("mafCanResubmit")}</p>
                 </div>
               )}
 
               <div className="space-y-4">
-                <p className="text-xs text-muted-foreground">Fields marked with * are required</p>
+                <p className="text-xs text-muted-foreground">{t("mafRequiredNote")}</p>
 
                 {/* Business Information */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Business Information</h3>
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">{t("mafBusinessInfo")}</h3>
                   <div>
-                    <Label>Business Name *</Label>
-                    <Input value={form.business_name} onChange={e => set("business_name", e.target.value)} placeholder="Your business name" maxLength={100} />
+                    <Label>{t("mafBusinessName")}</Label>
+                    <Input value={form.business_name} onChange={e => set("business_name", e.target.value)} placeholder={t("mafBusinessNamePh")} maxLength={100} />
                   </div>
                   <div>
-                    <Label>Category *</Label>
+                    <Label>{t("mafCategory")}</Label>
                     <Popover open={catOpen} onOpenChange={setCatOpen}>
                       <PopoverTrigger asChild>
                         <Button variant="outline" role="combobox" aria-expanded={catOpen} className="w-full justify-between font-normal">
@@ -188,9 +192,9 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                       </PopoverTrigger>
                       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                         <Command shouldFilter={false}>
-                          <CommandInput placeholder="Search categories..." value={catSearch} onValueChange={setCatSearch} />
+                          <CommandInput placeholder={t("mafSearchCategories")} value={catSearch} onValueChange={setCatSearch} />
                           <CommandList>
-                            <CommandEmpty>No category found.</CommandEmpty>
+                            <CommandEmpty>{t("mafNoCategory")}</CommandEmpty>
                             <CommandGroup className="max-h-[200px] overflow-y-auto">
                               {filteredCats.map(c => (
                                 <CommandItem
@@ -207,7 +211,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                                 onSelect={() => { set("category", "__other__"); setCatOpen(false); setCatSearch(""); }}
                               >
                                 <Check className={cn("mr-2 h-4 w-4", form.category === "__other__" ? "opacity-100" : "opacity-0")} />
-                                Other (type your own)
+                                {t("mafOtherType")}
                               </CommandItem>
                             </CommandGroup>
                           </CommandList>
@@ -215,58 +219,58 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                       </PopoverContent>
                     </Popover>
                     {form.category === "__other__" && (
-                      <Input className="mt-2" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder="Enter your category..." maxLength={100} />
+                      <Input className="mt-2" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder={t("mafEnterCategory")} maxLength={100} />
                     )}
                   </div>
                   <div>
-                    <Label>Trade License Number</Label>
-                    <Input value={form.trade_license} onChange={e => set("trade_license", e.target.value)} placeholder="License number (if available)" maxLength={50} />
+                    <Label>{t("mafTradeLicense")}</Label>
+                    <Input value={form.trade_license} onChange={e => set("trade_license", e.target.value)} placeholder={t("mafTradeLicensePh")} maxLength={50} />
                   </div>
                   <div>
-                    <Label>Business Address</Label>
-                    <Input value={form.business_address} onChange={e => set("business_address", e.target.value)} placeholder="Full business address" maxLength={300} />
+                    <Label>{t("mafBusinessAddress")}</Label>
+                    <Input value={form.business_address} onChange={e => set("business_address", e.target.value)} placeholder={t("mafBusinessAddressPh")} maxLength={300} />
                   </div>
                 </div>
 
                 {/* Contact Information */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Contact Information</h3>
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">{t("mafContactInfo")}</h3>
                   <div>
-                    <Label>Owner / Representative Name *</Label>
-                    <Input value={form.owner_name} onChange={e => set("owner_name", e.target.value)} placeholder="Full name" maxLength={100} />
+                    <Label>{t("mafOwnerName")}</Label>
+                    <Input value={form.owner_name} onChange={e => set("owner_name", e.target.value)} placeholder={t("mafOwnerNamePh")} maxLength={100} />
                   </div>
                   <div>
-                    <Label>Contact Number *</Label>
-                    <Input value={form.contact_number} onChange={e => set("contact_number", e.target.value)} placeholder="e.g. 01XXXXXXXXX" maxLength={20} />
+                    <Label>{t("mafContactNumber")}</Label>
+                    <Input value={form.contact_number} onChange={e => set("contact_number", e.target.value)} placeholder={t("mafContactNumberPh")} maxLength={20} />
                   </div>
                   <div>
-                    <Label>Contact Email</Label>
-                    <Input type="email" value={form.contact_email} onChange={e => set("contact_email", e.target.value)} placeholder="business@email.com" maxLength={255} />
+                    <Label>{t("mafContactEmail")}</Label>
+                    <Input type="email" value={form.contact_email} onChange={e => set("contact_email", e.target.value)} placeholder={t("mafContactEmailPh")} maxLength={255} />
                   </div>
                 </div>
 
                 {/* Bank Details */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Bank / Settlement Details</h3>
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">{t("mafBankDetails")}</h3>
                   <div>
-                    <Label>Bank Name</Label>
-                    <Input value={form.bank_name} onChange={e => set("bank_name", e.target.value)} placeholder="e.g. Dutch Bangla Bank" maxLength={100} />
+                    <Label>{t("mafBankName")}</Label>
+                    <Input value={form.bank_name} onChange={e => set("bank_name", e.target.value)} placeholder={t("mafBankNamePh")} maxLength={100} />
                   </div>
                   <div>
-                    <Label>Branch Name</Label>
-                    <Input value={form.bank_branch} onChange={e => set("bank_branch", e.target.value)} placeholder="e.g. Gulshan Branch" maxLength={100} />
+                    <Label>{t("mafBranchName")}</Label>
+                    <Input value={form.bank_branch} onChange={e => set("bank_branch", e.target.value)} placeholder={t("mafBranchNamePh")} maxLength={100} />
                   </div>
                   <div>
-                    <Label>Account Holder Name</Label>
-                    <Input value={form.bank_account_holder} onChange={e => set("bank_account_holder", e.target.value)} placeholder="Name on bank account" maxLength={100} />
+                    <Label>{t("mafAccountHolder")}</Label>
+                    <Input value={form.bank_account_holder} onChange={e => set("bank_account_holder", e.target.value)} placeholder={t("mafAccountHolderPh")} maxLength={100} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label>Account Number</Label>
+                      <Label>{t("mafAccountNumber")}</Label>
                       <Input value={form.bank_account_number} onChange={e => set("bank_account_number", e.target.value)} maxLength={30} />
                     </div>
                     <div>
-                      <Label>Routing Number</Label>
+                      <Label>{t("mafRoutingNumber")}</Label>
                       <Input value={form.bank_routing} onChange={e => set("bank_routing", e.target.value)} maxLength={20} />
                     </div>
                   </div>
@@ -274,8 +278,8 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
 
                 {/* Reason */}
                 <div>
-                  <Label>Why do you want a merchant account?</Label>
-                  <Textarea value={form.reason} onChange={e => set("reason", e.target.value)} placeholder="Tell us about your business..." maxLength={500} rows={3} />
+                  <Label>{t("mafReason")}</Label>
+                  <Textarea value={form.reason} onChange={e => set("reason", e.target.value)} placeholder={t("mafReasonPh")} maxLength={500} rows={3} />
                 </div>
 
                 <Button
@@ -284,7 +288,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                   disabled={submitting || !form.business_name.trim() || !form.owner_name.trim() || !form.contact_number.trim() || (form.category === "__other__" && !customCategory.trim())}
                 >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Store className="w-4 h-4 mr-2" />}
-                  Submit Application
+                  {t("mafSubmit")}
                 </Button>
               </div>
             </>
@@ -295,7 +299,8 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
   );
 }
 
-function ExistingApplicationView({ existing, statusUI, getLabelForName }: { existing: any; statusUI: (s: string) => { icon: any; color: string; label: string }; getLabelForName: (n: string) => string }) {
+function ExistingApplicationView({ existing, statusUI, getLabelForName, dateLocale }: { existing: any; statusUI: (s: string) => { icon: any; color: string; label: string }; getLabelForName: (n: string) => string; dateLocale: string }) {
+  const { t } = useI18n();
   const s = statusUI(existing.status);
   const Icon = s.icon;
   return (
@@ -304,20 +309,18 @@ function ExistingApplicationView({ existing, statusUI, getLabelForName }: { exis
         <Icon className="w-10 h-10 mx-auto" />
         <p className="font-bold text-lg">{s.label}</p>
         <p className="text-sm opacity-80">
-          {existing.status === "pending"
-            ? "Your merchant application is being reviewed. We'll notify you once a decision is made."
-            : "Your merchant account is active! Go to the Merchant Dashboard to manage your business."}
+          {existing.status === "pending" ? t("mafPendingDesc") : t("mafApprovedDesc")}
         </p>
       </div>
       <div className="space-y-2 text-sm">
-        <div className="flex justify-between"><span className="text-muted-foreground">Business</span><span className="font-medium text-foreground">{existing.business_name}</span></div>
-        <div className="flex justify-between"><span className="text-muted-foreground">Category</span><Badge variant="outline">{getLabelForName(existing.category)}</Badge></div>
-        {existing.owner_name && <div className="flex justify-between"><span className="text-muted-foreground">Owner</span><span className="text-foreground">{existing.owner_name}</span></div>}
-        {existing.contact_number && <div className="flex justify-between"><span className="text-muted-foreground">Contact</span><span className="text-foreground">{existing.contact_number}</span></div>}
-        <div className="flex justify-between"><span className="text-muted-foreground">Submitted</span><span className="text-foreground">{new Date(existing.created_at).toLocaleDateString()}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">{t("mafFieldBusiness")}</span><span className="font-medium text-foreground">{existing.business_name}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">{t("mafFieldCategory")}</span><Badge variant="outline">{getLabelForName(existing.category)}</Badge></div>
+        {existing.owner_name && <div className="flex justify-between"><span className="text-muted-foreground">{t("mafFieldOwner")}</span><span className="text-foreground">{existing.owner_name}</span></div>}
+        {existing.contact_number && <div className="flex justify-between"><span className="text-muted-foreground">{t("mafFieldContact")}</span><span className="text-foreground">{existing.contact_number}</span></div>}
+        <div className="flex justify-between"><span className="text-muted-foreground">{t("mafFieldSubmitted")}</span><span className="text-foreground">{new Date(existing.created_at).toLocaleDateString(dateLocale)}</span></div>
         {existing.admin_notes && (
           <div className="pt-2 border-t border-border">
-            <p className="text-muted-foreground text-xs mb-1">Admin Notes</p>
+            <p className="text-muted-foreground text-xs mb-1">{t("mafAdminNotes")}</p>
             <p className="text-foreground">{existing.admin_notes}</p>
           </div>
         )}
