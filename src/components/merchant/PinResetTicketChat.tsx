@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface PinResetMessage {
   id: string;
@@ -56,20 +57,21 @@ const ATTACH_BUCKET = "pin-reset-attachments";
 
 /* ────────────────────────────────────────────────────────────── helpers ── */
 
-const formatDayLabel = (iso: string) => {
+const sameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+const makeFormatDayLabel = (lang: "en" | "bn", t: (k: TranslationKey) => string) => (iso: string) => {
   const d = new Date(iso);
   const today = new Date();
   const yest = new Date();
   yest.setDate(today.getDate() - 1);
-  const sameDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (sameDay(d, today)) return "Today";
-  if (sameDay(d, yest)) return "Yesterday";
-  return d.toLocaleDateString("en-BD", { month: "short", day: "numeric" });
+  if (sameDay(d, today)) return t("prcDayToday") as string;
+  if (sameDay(d, yest)) return t("prcDayYesterday") as string;
+  return d.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD", { month: "short", day: "numeric" });
 };
 
-const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" });
+const makeFormatTime = (lang: "en" | "bn") => (iso: string) =>
+  new Date(iso).toLocaleTimeString(lang === "bn" ? "bn-BD" : "en-BD", { hour: "2-digit", minute: "2-digit" });
 
 const formatBytes = (n?: number | null) => {
   if (!n) return "";
@@ -86,6 +88,15 @@ export default function PinResetTicketChat({
   maskedPhone,
   onSessionExpired,
 }: PinResetTicketChatProps) {
+  const { t, lang } = useI18n();
+  const fmtNum = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(n);
+  const tp = (key: TranslationKey, vars: Record<string, string | number>) => {
+    let s = t(key) as string;
+    for (const [k, v] of Object.entries(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+    return s;
+  };
+  const formatDayLabel = useMemo(() => makeFormatDayLabel(lang, t as any), [lang, t]);
+  const formatTime = useMemo(() => makeFormatTime(lang), [lang]);
   const [requestId, setRequestId] = useState(initialRequestId);
   const [ticket, setTicket] = useState(initialTicket);
   const [messages, setMessages] = useState<PinResetMessage[]>([]);
@@ -310,7 +321,7 @@ export default function PinResetTicketChat({
       setUploaded({ path, mime: file.type, name: file.name, size: file.size });
       setUploadProgress(1);
     } catch (err: any) {
-      toast.error(err?.message || "Upload failed");
+      toast.error(err?.message || (t("prcErrUploadFailed") as string));
       clearPending();
     }
   };
@@ -341,7 +352,7 @@ export default function PinResetTicketChat({
           // Stop flushing on error; surface and remove the failed item
           setMessages((prev) => prev.filter((m) => m.id !== next.id));
           setQueue((q) => q.slice(1));
-          toast.error(err?.message || "Couldn't send message");
+          toast.error(err?.message || (t("prcErrSendFailed") as string));
           break;
         }
       }
@@ -442,13 +453,13 @@ export default function PinResetTicketChat({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <h2 className="truncate text-[13px] font-semibold leading-tight text-foreground">
-                EasyPay Support
+                {t("prcSupportName")}
               </h2>
               <Sparkles className="h-3 w-3 text-primary" />
             </div>
             <p className="flex items-center gap-1 truncate text-[10px] leading-tight text-muted-foreground">
               <Lock className="h-2.5 w-2.5" />
-              Encrypted · +88 {maskedPhone}
+              {t("prcEncrypted")} · +88 {maskedPhone}
             </p>
           </div>
           <div
@@ -459,7 +470,7 @@ export default function PinResetTicketChat({
             }`}
           >
             <ShieldCheck className="h-3 w-3" />
-            {isResolved ? "RESOLVED" : "VERIFIED"}
+            {isResolved ? t("prcResolvedBadge") : t("prcVerifiedBadge")}
           </div>
         </div>
       </div>
@@ -487,11 +498,10 @@ export default function PinResetTicketChat({
           </div>
           <div className="max-w-[80%] rounded-[20px] rounded-bl-[6px] border border-border/40 bg-card/80 px-3.5 py-2.5 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] backdrop-blur-sm">
             <p className="text-[12.5px] leading-relaxed text-foreground">
-              Hi there 👋 Your number is verified. Tell us briefly what happened (e.g. "I changed
-              phones" or "I forgot my PIN") and our team will guide you through resetting it.
+              {t("prcWelcomeMsg")}
             </p>
             <p className="mt-1 text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">
-              EasyPay · automated
+              {t("prcWelcomeFooter")}
             </p>
           </div>
         </motion.div>
@@ -505,7 +515,7 @@ export default function PinResetTicketChat({
             const isPending = msg.id.startsWith("temp-");
             const seenLabel = msg.read_by_admin_at ? formatTime(msg.read_by_admin_at) : null;
             const fullSeenTitle = msg.read_by_admin_at
-              ? `Seen on ${new Date(msg.read_by_admin_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+              ? tp("prcSeenOn", { when: new Date(msg.read_by_admin_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) })
               : undefined;
             return (
               <div key={msg.id}>
@@ -562,16 +572,16 @@ export default function PinResetTicketChat({
                       title={
                         isMe
                           ? isPending
-                            ? "Sending…"
+                            ? (t("prcSending") as string)
                             : msg.read_by_admin
-                              ? fullSeenTitle ?? "Delivered & read by support"
-                              : "Sent"
+                              ? fullSeenTitle ?? (t("prcDeliveredRead") as string)
+                              : (t("prcSent") as string)
                           : undefined
                       }
                     >
                       {isMe && isLastOwn && msg.read_by_admin && seenLabel && (
                         <span className="mr-0.5 text-[9.5px] font-medium tracking-wide text-cyan-100">
-                          Seen {seenLabel}
+                          {tp("prcSeen", { time: seenLabel })}
                         </span>
                       )}
                       <span className={`text-[9px] tabular-nums ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
@@ -579,11 +589,11 @@ export default function PinResetTicketChat({
                       </span>
                       {isMe &&
                         (isPending ? (
-                          <Loader2 size={10} className="animate-spin text-primary-foreground/65" aria-label="Sending" />
+                          <Loader2 size={10} className="animate-spin text-primary-foreground/65" aria-label={t("prcAriaSending") as string} />
                         ) : msg.read_by_admin ? (
-                          <CheckCheck size={11} className="text-cyan-200" aria-label="Delivered & read" />
+                          <CheckCheck size={11} className="text-cyan-200" aria-label={t("prcAriaDelivered") as string} />
                         ) : (
-                          <Check size={11} className="text-primary-foreground/55" aria-label="Sent" />
+                          <Check size={11} className="text-primary-foreground/55" aria-label={t("prcAriaSent") as string} />
                         ))}
                     </div>
                   </div>
@@ -605,10 +615,10 @@ export default function PinResetTicketChat({
             exit={{ opacity: 0, y: 8, scale: 0.9 }}
             transition={{ type: "spring", stiffness: 420, damping: 28 }}
             className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground shadow-[0_8px_24px_-6px_hsl(var(--primary)/0.55)] ring-1 ring-primary/40"
-            aria-label={`${unreadCount} new message${unreadCount > 1 ? "s" : ""}, jump to latest`}
+            aria-label={tp(unreadCount > 1 ? "prcNewMsgMany" : "prcNewMsgOne", { n: fmtNum(unreadCount) })}
           >
             <ArrowDown className="h-3 w-3" />
-            {unreadCount} new {unreadCount > 1 ? "messages" : "message"}
+            {tp(unreadCount > 1 ? "prcNewLabelMany" : "prcNewLabelOne", { n: fmtNum(unreadCount) })}
           </motion.button>
         )}
       </AnimatePresence>
@@ -629,8 +639,8 @@ export default function PinResetTicketChat({
         <div className="relative z-10">
           {isResolved ? (
             <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/[0.08] to-emerald-500/[0.02] p-3 text-center backdrop-blur-xl">
-              <p className="text-[12.5px] font-semibold text-emerald-700 dark:text-emerald-300">✓ Ticket resolved</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">Try signing in with your new PIN.</p>
+              <p className="text-[12.5px] font-semibold text-emerald-700 dark:text-emerald-300">{t("prcTicketResolved")}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{t("prcTryNewPin")}</p>
             </div>
           ) : (
             <>
@@ -656,8 +666,8 @@ export default function PinResetTicketChat({
                       <p className="truncate text-[11.5px] font-medium text-foreground">{pendingFile.name}</p>
                       <p className="text-[10px] text-muted-foreground">
                         {formatBytes(pendingFile.size)}
-                        {!uploaded && uploadProgress < 1 && ` · uploading ${Math.round(uploadProgress * 100)}%`}
-                        {uploaded && " · ready"}
+                        {!uploaded && uploadProgress < 1 && tp("prcUploading", { pct: fmtNum(Math.round(uploadProgress * 100)) })}
+                        {uploaded && t("prcReady")}
                       </p>
                       {!uploaded && (
                         <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
@@ -734,7 +744,7 @@ export default function PinResetTicketChat({
                           void sendMessage();
                         }
                       }}
-                      placeholder={uploaded ? "Add a caption…" : "Type your message…"}
+                      placeholder={uploaded ? (t("prcPlaceholderCaption") as string) : (t("prcPlaceholderType") as string)}
                       rows={1}
                       disabled={composerDisabled}
                       className="block w-full resize-none rounded-[23px] border-0 bg-transparent px-4 py-3 pr-14 text-[13px] leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 disabled:opacity-60"
@@ -803,6 +813,7 @@ function AttachmentBubble({
   isMe: boolean;
   callChat: (action: "fetch" | "send" | "ack" | "attach_init" | "attach_url", extra?: Record<string, unknown>) => Promise<any>;
 }) {
+  const { t } = useI18n();
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const isImage = (message.attachment_mime ?? "").startsWith("image/");
@@ -842,7 +853,7 @@ function AttachmentBubble({
         ) : (
           <img
             src={url ?? ""}
-            alt={message.attachment_name ?? "attachment"}
+            alt={message.attachment_name ?? (t("prcAttachmentAlt") as string)}
             className="block max-h-[220px] w-auto rounded-xl"
             loading="lazy"
           />
@@ -868,7 +879,7 @@ function AttachmentBubble({
       </div>
       <div className="min-w-0 flex-1">
         <p className={`truncate text-[11.5px] font-medium ${isMe ? "text-primary-foreground" : "text-foreground"}`}>
-          {message.attachment_name ?? "Attachment"}
+          {message.attachment_name ?? t("prcAttachmentFallback")}
         </p>
         <p className={`text-[9.5px] ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
           {formatBytes(message.attachment_size)} · PDF
