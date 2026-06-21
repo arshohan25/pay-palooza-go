@@ -21,6 +21,7 @@ interface Suggestion {
 }
 
 export default function SearchAutocomplete({ value, onChange, onNavigate }: SearchAutocompleteProps) {
+  const { t } = useI18n();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
