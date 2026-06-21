@@ -3,6 +3,7 @@ import { Search, X, TrendingUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 interface SearchAutocompleteProps {
   value: string;
