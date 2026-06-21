@@ -853,7 +853,7 @@ function AttachmentBubble({
         ) : (
           <img
             src={url ?? ""}
-            alt={message.attachment_name ?? "attachment"}
+            alt={message.attachment_name ?? (t("prcAttachmentAlt") as string)}
             className="block max-h-[220px] w-auto rounded-xl"
             loading="lazy"
           />
