@@ -42,7 +42,7 @@ export default function VendorStoreHeader({ storeName, description, logoUrl, ban
                 {rating.toFixed(1)} ({reviewCount})
               </span>
               <span>•</span>
-              <span>{productCount} products</span>
+              <span>{productCount} {t("vshProducts")}</span>
             </div>
           </div>
         </div>
