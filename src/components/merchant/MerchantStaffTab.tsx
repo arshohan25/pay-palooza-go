@@ -59,6 +59,13 @@ function PermissionPicker({
   onRenamePreset: (id: string, name: string) => Promise<void>;
   onDeletePreset: (id: string) => Promise<void>;
 }) {
+  const { t, lang } = useI18n();
+  const fmtNum = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(n);
+  const tp = (key: TranslationKey, vars: Record<string, string | number>) => {
+    let s = t(key) as string;
+    for (const [k, v] of Object.entries(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+    return s;
+  };
   const active = countActive(value);
   const total = PERMISSION_KEYS.length;
   const [savingPreset, setSavingPreset] = useState(false);
