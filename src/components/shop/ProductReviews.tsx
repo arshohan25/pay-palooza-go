@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Star, ThumbsUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Review {
