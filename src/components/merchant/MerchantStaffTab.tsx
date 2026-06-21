@@ -190,7 +190,7 @@ function PermissionPicker({
       <div className="rounded-xl bg-muted/40 px-3 py-2 space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-[11px] text-muted-foreground">
-            {tp("mstFeaturesGranted", { active: fmtNum(active), total: fmtNum(total) }).split(/(\d+|[০-৯]+)/).map((seg, i) => /^(\d+|[০-৯]+)$/.test(seg) && seg === fmtNum(active) ? <span key={i} className="font-semibold text-foreground">{seg}</span> : seg)}
+            {tp("mstFeaturesGranted", { active: fmtNum(active), total: fmtNum(total) })}
           </div>
         </div>
         <div className="flex items-center gap-2">
