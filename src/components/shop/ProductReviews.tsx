@@ -46,7 +46,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
 
         setReviews(data.map((r: any) => ({
           ...r,
-          user_name: nameMap.get(r.user_id) || "Anonymous",
+          user_name: nameMap.get(r.user_id) || t("prAnonymous"),
         })));
       }
       setLoading(false);
@@ -65,7 +65,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
   if (reviews.length === 0) {
     return (
       <div className="p-4 text-center text-sm text-muted-foreground">
-        No reviews yet. Be the first to review this product!
+        {t("prNoReviews")}
       </div>
     );
   }
@@ -78,7 +78,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-medium text-foreground">{review.user_name}</span>
               {review.is_verified_purchase && (
-                <span className="text-[10px] text-primary font-medium">✓ Verified</span>
+                <span className="text-[10px] text-primary font-medium">✓ {t("prVerified")}</span>
               )}
             </div>
             <span className="text-[10px] text-muted-foreground">
