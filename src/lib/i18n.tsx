@@ -2315,6 +2315,23 @@ const translations = {
   catGarden: { en: "Garden", bn: "বাগান" },
   catTravel: { en: "Travel", bn: "ভ্রমণ" },
   saSearchPlaceholder: { en: "Search products, brands, stores...", bn: "পণ্য, ব্র্যান্ড, দোকান খুঁজুন..." },
+
+  // WriteReviewForm (shop)
+  wrWriteReview: { en: "Write a Review", bn: "রিভিউ লিখুন" },
+  wrRatingPoor: { en: "Poor", bn: "খারাপ" },
+  wrRatingFair: { en: "Fair", bn: "মোটামুটি" },
+  wrRatingGood: { en: "Good", bn: "ভালো" },
+  wrRatingVeryGood: { en: "Very Good", bn: "খুব ভালো" },
+  wrRatingExcellent: { en: "Excellent", bn: "চমৎকার" },
+  wrTitlePlaceholder: { en: "Review title (optional)", bn: "রিভিউ শিরোনাম (ঐচ্ছিক)" },
+  wrBodyPlaceholder: { en: "Tell others about your experience...", bn: "অন্যদের আপনার অভিজ্ঞতা জানান..." },
+  wrSubmit: { en: "Submit Review", bn: "রিভিউ জমা দিন" },
+  wrMaxImages: { en: "Maximum 3 images allowed", bn: "সর্বোচ্চ ৩টি ছবি অনুমোদিত" },
+  wrUploadFailed: { en: "Upload failed", bn: "আপলোড ব্যর্থ" },
+  wrSignIn: { en: "Please sign in", bn: "দয়া করে সাইন ইন করুন" },
+  wrSelectRating: { en: "Please select a rating", bn: "দয়া করে একটি রেটিং নির্বাচন করুন" },
+  wrSubmitFailed: { en: "Failed to submit review", bn: "রিভিউ জমা দিতে ব্যর্থ" },
+  wrSubmitSuccess: { en: "Review submitted!", bn: "রিভিউ জমা হয়েছে!" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
