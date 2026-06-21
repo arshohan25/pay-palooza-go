@@ -2,6 +2,7 @@ import { Heart, Star, ShoppingCart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ProductImage from "@/components/ProductImage";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export interface ShopProduct {
@@ -37,6 +38,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, isWishlisted, onAddToCart, onToggleWishlist, onNavigate }: ProductCardProps) {
+  const { t } = useI18n();
   const discount = product.original_price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
@@ -72,7 +74,7 @@ export default function ProductCard({ product, isWishlisted, onAddToCart, onTogg
         </button>
         {product.stock <= 0 && (
           <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-            <span className="text-sm font-semibold text-destructive">Out of Stock</span>
+            <span className="text-sm font-semibold text-destructive">{t("pcOutOfStock")}</span>
           </div>
         )}
       </div>

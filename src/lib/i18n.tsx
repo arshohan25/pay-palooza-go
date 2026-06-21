@@ -2315,6 +2315,61 @@ const translations = {
   catGarden: { en: "Garden", bn: "বাগান" },
   catTravel: { en: "Travel", bn: "ভ্রমণ" },
   saSearchPlaceholder: { en: "Search products, brands, stores...", bn: "পণ্য, ব্র্যান্ড, দোকান খুঁজুন..." },
+
+  // WriteReviewForm (shop)
+  wrWriteReview: { en: "Write a Review", bn: "রিভিউ লিখুন" },
+  wrRatingPoor: { en: "Poor", bn: "খারাপ" },
+  wrRatingFair: { en: "Fair", bn: "মোটামুটি" },
+  wrRatingGood: { en: "Good", bn: "ভালো" },
+  wrRatingVeryGood: { en: "Very Good", bn: "খুব ভালো" },
+  wrRatingExcellent: { en: "Excellent", bn: "চমৎকার" },
+  wrTitlePlaceholder: { en: "Review title (optional)", bn: "রিভিউ শিরোনাম (ঐচ্ছিক)" },
+  wrBodyPlaceholder: { en: "Tell others about your experience...", bn: "অন্যদের আপনার অভিজ্ঞতা জানান..." },
+  wrSubmit: { en: "Submit Review", bn: "রিভিউ জমা দিন" },
+  wrMaxImages: { en: "Maximum 3 images allowed", bn: "সর্বোচ্চ ৩টি ছবি অনুমোদিত" },
+  wrUploadFailed: { en: "Upload failed", bn: "আপলোড ব্যর্থ" },
+  wrSignIn: { en: "Please sign in", bn: "দয়া করে সাইন ইন করুন" },
+  wrSelectRating: { en: "Please select a rating", bn: "দয়া করে একটি রেটিং নির্বাচন করুন" },
+  wrSubmitFailed: { en: "Failed to submit review", bn: "রিভিউ জমা দিতে ব্যর্থ" },
+  wrSubmitSuccess: { en: "Review submitted!", bn: "রিভিউ জমা হয়েছে!" },
+
+  // ProductReviews (shop)
+  prNoReviews: { en: "No reviews yet. Be the first to review this product!", bn: "এখনো কোনো রিভিউ নেই। প্রথম রিভিউ দিন!" },
+  prVerified: { en: "Verified", bn: "যাচাইকৃত" },
+  prAnonymous: { en: "Anonymous", bn: "অজ্ঞাতনামা" },
+
+  // ProductCard (shop)
+  pcOutOfStock: { en: "Out of Stock", bn: "স্টকে নেই" },
+
+  // VendorStoreHeader (shop)
+  vshProducts: { en: "products", bn: "পণ্য" },
+
+  // AddressManager (shop)
+  amAddNew: { en: "Add New Address", bn: "নতুন ঠিকানা যোগ করুন" },
+  amNewAddress: { en: "New Address", bn: "নতুন ঠিকানা" },
+  amEditAddress: { en: "Edit Address", bn: "ঠিকানা সম্পাদনা" },
+  amFullName: { en: "Full Name *", bn: "পুরো নাম *" },
+  amPhone: { en: "Phone *", bn: "ফোন *" },
+  amAddressLine: { en: "Address Line *", bn: "ঠিকানা *" },
+  amAreaThana: { en: "Area / Thana", bn: "এলাকা / থানা" },
+  amCity: { en: "City *", bn: "শহর *" },
+  amSetDefault: { en: "Set as default address", bn: "ডিফল্ট ঠিকানা হিসেবে সেট করুন" },
+  amCancel: { en: "Cancel", bn: "বাতিল" },
+  amSaveAddress: { en: "Save Address", bn: "ঠিকানা সেভ করুন" },
+  amDefault: { en: "Default", bn: "ডিফল্ট" },
+  amFillRequired: { en: "Please fill all required fields", bn: "দয়া করে সব প্রয়োজনীয় তথ্য পূরণ করুন" },
+  amAddressSaved: { en: "Address saved", bn: "ঠিকানা সেভ হয়েছে" },
+  amAddressUpdated: { en: "Address updated", bn: "ঠিকানা আপডেট হয়েছে" },
+  amSaveFailed: { en: "Failed to save", bn: "সেভ করতে ব্যর্থ" },
+  amAddressDeleted: { en: "Address deleted", bn: "ঠিকানা মুছে ফেলা হয়েছে" },
+  amNamePlaceholder: { en: "e.g. Karim Hossain", bn: "যেমন: করিম হোসেন" },
+  amPhonePlaceholder: { en: "e.g. 01712-345678", bn: "যেমন: ০১৭১২-৩৪৫৬৭৮" },
+  amAddressPlaceholder: { en: "House/Flat, Road, Block", bn: "বাড়ি/ফ্ল্যাট, রোড, ব্লক" },
+  amAreaPlaceholder: { en: "e.g. Mirpur-10", bn: "যেমন: মিরপুর-১০" },
+  amCityPlaceholder: { en: "e.g. Dhaka", bn: "যেমন: ঢাকা" },
+  amLabelHome: { en: "Home", bn: "বাড়ি" },
+  amLabelOffice: { en: "Office", bn: "অফিস" },
+  amLabelOther: { en: "Other", bn: "অন্যান্য" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

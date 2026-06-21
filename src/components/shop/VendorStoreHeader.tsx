@@ -1,4 +1,5 @@
 import { Star, MapPin, BadgeCheck } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 
 interface VendorStoreHeaderProps {
@@ -12,6 +13,7 @@ interface VendorStoreHeaderProps {
 }
 
 export default function VendorStoreHeader({ storeName, description, logoUrl, bannerUrl, rating, reviewCount, productCount }: VendorStoreHeaderProps) {
+  const { t } = useI18n();
   return (
     <div className="relative">
       {/* Banner */}
@@ -40,7 +42,7 @@ export default function VendorStoreHeader({ storeName, description, logoUrl, ban
                 {rating.toFixed(1)} ({reviewCount})
               </span>
               <span>•</span>
-              <span>{productCount} products</span>
+              <span>{productCount} {t("vshProducts")}</span>
             </div>
           </div>
         </div>

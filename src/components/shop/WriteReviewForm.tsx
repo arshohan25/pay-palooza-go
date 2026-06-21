@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ interface WriteReviewFormProps {
 
 export default function WriteReviewForm({ productId, orderId, onSuccess }: WriteReviewFormProps) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState("");
@@ -28,7 +30,7 @@ export default function WriteReviewForm({ productId, orderId, onSuccess }: Write
     const files = e.target.files;
     if (!files || !user) return;
     if (images.length + files.length > 3) {
-      toast.error("Maximum 3 images allowed");
+      toast.error(t("wrMaxImages"));
       return;
     }
 
@@ -40,7 +42,7 @@ export default function WriteReviewForm({ productId, orderId, onSuccess }: Write
       const path = `reviews/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage.from("review-images").upload(path, file);
       if (error) {
-        toast.error("Upload failed");
+        toast.error(t("wrUploadFailed"));
         continue;
       }
       const { data: urlData } = supabase.storage.from("review-images").getPublicUrl(path);
@@ -52,8 +54,8 @@ export default function WriteReviewForm({ productId, orderId, onSuccess }: Write
   };
 
   const handleSubmit = async () => {
-    if (!user) { toast.error("Please sign in"); return; }
-    if (rating === 0) { toast.error("Please select a rating"); return; }
+    if (!user) { toast.error(t("wrSignIn")); return; }
+    if (rating === 0) { toast.error(t("wrSelectRating")); return; }
 
     setSubmitting(true);
     const { error } = await (supabase as any).from("product_reviews").insert({
@@ -68,9 +70,9 @@ export default function WriteReviewForm({ productId, orderId, onSuccess }: Write
     });
 
     if (error) {
-      toast.error(error.message || "Failed to submit review");
+      toast.error(error.message || t("wrSubmitFailed"));
     } else {
-      toast.success("Review submitted!");
+      toast.success(t("wrSubmitSuccess"));
       setRating(0); setTitle(""); setBody(""); setImages([]);
       onSuccess?.();
     }
@@ -79,7 +81,7 @@ export default function WriteReviewForm({ productId, orderId, onSuccess }: Write
 
   return (
     <div className="space-y-4 p-4 bg-muted/30 rounded-xl">
-      <h3 className="text-sm font-bold text-foreground">Write a Review</h3>
+      <h3 className="text-sm font-bold text-foreground">{t("wrWriteReview")}</h3>
 
       {/* Star Rating */}
       <div className="flex items-center gap-1">
@@ -103,20 +105,20 @@ export default function WriteReviewForm({ productId, orderId, onSuccess }: Write
         ))}
         {rating > 0 && (
           <span className="text-xs text-muted-foreground ml-2">
-            {["", "Poor", "Fair", "Good", "Very Good", "Excellent"][rating]}
+            {["", t("wrRatingPoor"), t("wrRatingFair"), t("wrRatingGood"), t("wrRatingVeryGood"), t("wrRatingExcellent")][rating]}
           </span>
         )}
       </div>
 
       <Input
-        placeholder="Review title (optional)"
+        placeholder={t("wrTitlePlaceholder")}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         maxLength={100}
       />
 
       <Textarea
-        placeholder="Tell others about your experience..."
+        placeholder={t("wrBodyPlaceholder")}
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={3}
@@ -146,7 +148,7 @@ export default function WriteReviewForm({ productId, orderId, onSuccess }: Write
 
       <Button onClick={handleSubmit} disabled={submitting || rating === 0} className="w-full">
         {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-        Submit Review
+        {t("wrSubmit")}
       </Button>
     </div>
   );

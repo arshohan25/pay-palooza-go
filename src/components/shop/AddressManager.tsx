@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
 
 interface SavedAddress {
@@ -28,6 +29,7 @@ interface AddressManagerProps {
 const LABEL_OPTIONS = ["Home", "Office", "Other"];
 
 export default function AddressManager({ userId, onSelect, selectedId, compact }: AddressManagerProps) {
+  const { t } = useI18n();
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<SavedAddress | "new" | null>(null);
@@ -35,6 +37,12 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
   const [form, setForm] = useState({
     label: "Home", recipient_name: "", phone: "", address_line: "", city: "", area: "", is_default: false,
   });
+
+  const labelKey = (label: string) => {
+    if (label === "Home") return "amLabelHome" as const;
+    if (label === "Office") return "amLabelOffice" as const;
+    return "amLabelOther" as const;
+  };
 
   const fetchAddresses = async () => {
     const { data } = await supabase
@@ -64,7 +72,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
 
   const handleSave = async () => {
     if (!form.recipient_name || !form.phone || !form.address_line || !form.city) {
-      toast.error("Please fill all required fields");
+      toast.error(t("amFillRequired"));
       return;
     }
     setSaving(true);
@@ -81,7 +89,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
           area: form.area || null, is_default: form.is_default,
         });
         if (error) throw error;
-        toast.success("Address saved");
+        toast.success(t("amAddressSaved"));
       } else if (editing) {
         const { error } = await supabase.from("delivery_addresses").update({
           label: form.label, recipient_name: form.recipient_name, phone: form.phone,
@@ -89,12 +97,12 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
           area: form.area || null, is_default: form.is_default,
         } as any).eq("id", editing.id);
         if (error) throw error;
-        toast.success("Address updated");
+        toast.success(t("amAddressUpdated"));
       }
       setEditing(null);
       fetchAddresses();
     } catch (e: any) {
-      toast.error(e.message || "Failed to save");
+      toast.error(e.message || t("amSaveFailed"));
     }
     setSaving(false);
   };
@@ -102,7 +110,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
   const handleDelete = async (id: string) => {
     await supabase.from("delivery_addresses").delete().eq("id", id);
     setAddresses(prev => prev.filter(a => a.id !== id));
-    toast.success("Address deleted");
+    toast.success(t("amAddressDeleted"));
   };
 
   if (loading) {
@@ -128,9 +136,9 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
           <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-[13px] font-bold text-foreground">{addr.label}</span>
+              <span className="text-[13px] font-bold text-foreground">{t(labelKey(addr.label))}</span>
               {addr.is_default && (
-                <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Default</span>
+                <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("amDefault")}</span>
               )}
             </div>
             <p className="text-[12px] text-muted-foreground mt-0.5">{addr.recipient_name} · {addr.phone}</p>
@@ -158,7 +166,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
         className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-border text-muted-foreground bg-muted/20 hover:bg-muted/40 transition-colors"
       >
         <Plus className="w-4 h-4" />
-        <span className="text-[13px] font-semibold">Add New Address</span>
+        <span className="text-[13px] font-semibold">{t("amAddNew")}</span>
       </button>
 
       {/* Edit Form Modal */}
@@ -176,7 +184,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
             >
               <div className="w-10 h-1 bg-border rounded-full mx-auto mb-2" />
               <div className="flex items-center justify-between">
-                <p className="text-base font-bold text-foreground">{editing === "new" ? "New Address" : "Edit Address"}</p>
+                <p className="text-base font-bold text-foreground">{editing === "new" ? t("amNewAddress") : t("amEditAddress")}</p>
                 <Button variant="ghost" size="icon" onClick={() => setEditing(null)}><X className="w-4 h-4" /></Button>
               </div>
 
@@ -186,45 +194,45 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
                   <button key={l} onClick={() => setForm(f => ({ ...f, label: l }))}
                     className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-colors ${
                       form.label === l ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-border"
-                    }`}>{l}</button>
+                    }`}>{t(labelKey(l))}</button>
                 ))}
               </div>
 
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Full Name *</Label>
-                  <Input value={form.recipient_name} onChange={e => setForm(f => ({ ...f, recipient_name: e.target.value }))} placeholder="e.g. Karim Hossain" />
+                  <Label className="text-xs">{t("amFullName")}</Label>
+                  <Input value={form.recipient_name} onChange={e => setForm(f => ({ ...f, recipient_name: e.target.value }))} placeholder={t("amNamePlaceholder")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Phone *</Label>
-                  <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="e.g. 01712-345678" />
+                  <Label className="text-xs">{t("amPhone")}</Label>
+                  <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder={t("amPhonePlaceholder")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Address Line *</Label>
-                  <Input value={form.address_line} onChange={e => setForm(f => ({ ...f, address_line: e.target.value }))} placeholder="House/Flat, Road, Block" />
+                  <Label className="text-xs">{t("amAddressLine")}</Label>
+                  <Input value={form.address_line} onChange={e => setForm(f => ({ ...f, address_line: e.target.value }))} placeholder={t("amAddressPlaceholder")} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Area / Thana</Label>
-                    <Input value={form.area} onChange={e => setForm(f => ({ ...f, area: e.target.value }))} placeholder="e.g. Mirpur-10" />
+                    <Label className="text-xs">{t("amAreaThana")}</Label>
+                    <Input value={form.area} onChange={e => setForm(f => ({ ...f, area: e.target.value }))} placeholder={t("amAreaPlaceholder")} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">City *</Label>
-                    <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="e.g. Dhaka" />
+                    <Label className="text-xs">{t("amCity")}</Label>
+                    <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={t("amCityPlaceholder")} />
                   </div>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.is_default} onChange={e => setForm(f => ({ ...f, is_default: e.target.checked }))}
                     className="rounded border-border" />
-                  <span className="text-xs text-foreground">Set as default address</span>
+                  <span className="text-xs text-foreground">{t("amSetDefault")}</span>
                 </label>
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button variant="outline" className="flex-1" onClick={() => setEditing(null)}>Cancel</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setEditing(null)}>{t("amCancel")}</Button>
                 <Button className="flex-1" onClick={handleSave} disabled={saving}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Save Address
+                  {t("amSaveAddress")}
                 </Button>
               </div>
             </motion.div>
