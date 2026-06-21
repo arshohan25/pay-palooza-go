@@ -73,17 +73,17 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
       </SheetTrigger>
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Filters</SheetTitle>
+          <SheetTitle>{t("fdTitle")}</SheetTitle>
         </SheetHeader>
 
         <div className="space-y-6 py-4">
           {/* Price Range */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Price Range (৳)</p>
+            <p className="text-sm font-medium text-foreground">{t("fdPriceRange")}</p>
             <div className="flex items-center gap-2">
               <Input
                 type="number"
-                placeholder="Min"
+                placeholder={t("fdMin")}
                 value={local.minPrice ?? ""}
                 onChange={(e) => setLocal((p) => ({ ...p, minPrice: e.target.value ? Number(e.target.value) : null }))}
                 className="h-9"
@@ -91,7 +91,7 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
               <span className="text-muted-foreground">–</span>
               <Input
                 type="number"
-                placeholder="Max"
+                placeholder={t("fdMax")}
                 value={local.maxPrice ?? ""}
                 onChange={(e) => setLocal((p) => ({ ...p, maxPrice: e.target.value ? Number(e.target.value) : null }))}
                 className="h-9"
