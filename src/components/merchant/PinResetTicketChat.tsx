@@ -879,7 +879,7 @@ function AttachmentBubble({
       </div>
       <div className="min-w-0 flex-1">
         <p className={`truncate text-[11.5px] font-medium ${isMe ? "text-primary-foreground" : "text-foreground"}`}>
-          {message.attachment_name ?? "Attachment"}
+          {message.attachment_name ?? t("prcAttachmentFallback")}
         </p>
         <p className={`text-[9.5px] ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
           {formatBytes(message.attachment_size)} · PDF
