@@ -330,7 +330,7 @@ function PermissionPicker({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-2 flex-wrap">
-              <DialogTitle className="text-base">Apply {pendingPreset?.label}?</DialogTitle>
+              <DialogTitle className="text-base">{tp("mstApplyDialogTitle", { label: pendingPreset?.label || "" })}</DialogTitle>
               {pendingPreset && (
                 <Badge
                   variant="outline"
@@ -341,17 +341,17 @@ function PermissionPicker({
                   }
                 >
                   {pendingPreset.source.kind === "builtin" ? (
-                    <><Shield size={10} /> Built-in role</>
+                    <><Shield size={10} /> {t("mstBuiltInRole")}</>
                   ) : (
-                    <><Bookmark size={10} /> Custom preset</>
+                    <><Bookmark size={10} /> {t("mstCustomPreset")}</>
                   )}
                 </Badge>
               )}
             </div>
             <DialogDescription className="text-xs">
               {pendingPreset?.source.kind === "builtin"
-                ? `System default for the ${pendingPreset.source.name} role · ${pendingPreset.source.total} features.`
-                : `Saved preset "${pendingPreset?.source.name}" · ${pendingPreset?.source.total} features.`} Review what will change before applying.
+                ? tp("mstBuiltInDesc", { name: pendingPreset.source.name, total: fmtNum(pendingPreset.source.total) })
+                : tp("mstCustomDesc", { name: pendingPreset?.source.name || "", total: fmtNum(pendingPreset?.source.total || 0) })}{" "}{t("mstReviewChanges")}
             </DialogDescription>
           </DialogHeader>
 
@@ -362,7 +362,7 @@ function PermissionPicker({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <AlertTriangle className="h-3 w-3 text-destructive" />
                     <p className="text-[11px] font-semibold text-destructive">
-                      Owner-only · stripped ({pendingPreset.stripped.length})
+                      {tp("mstOwnerStripped", { n: fmtNum(pendingPreset.stripped.length) })}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -373,7 +373,7 @@ function PermissionPicker({
                     ))}
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1.5 leading-tight">
-                    Staff cannot hold these. They are removed automatically.
+                    {t("mstStaffCannotHold")}
                   </p>
                 </div>
               )}
@@ -383,7 +383,7 @@ function PermissionPicker({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Plus className="h-3 w-3 text-emerald-600" />
                     <p className="text-[11px] font-semibold text-emerald-700">
-                      Will be added ({pendingPreset.added.length})
+                      {tp("mstWillBeAdded", { n: fmtNum(pendingPreset.added.length) })}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -401,7 +401,7 @@ function PermissionPicker({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Minus className="h-3 w-3 text-amber-600" />
                     <p className="text-[11px] font-semibold text-amber-700">
-                      Will be removed ({pendingPreset.removed.length})
+                      {tp("mstWillBeRemoved", { n: fmtNum(pendingPreset.removed.length) })}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -415,18 +415,18 @@ function PermissionPicker({
               )}
 
               <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground pt-1">
-                <span>{active} now</span>
+                <span>{tp("mstNow", { n: fmtNum(active) })}</span>
                 <ArrowRight className="h-3 w-3" />
                 <span className="font-semibold text-foreground">
-                  {countActive(pendingPreset.next)} after
+                  {tp("mstAfter", { n: fmtNum(countActive(pendingPreset.next)) })}
                 </span>
               </div>
             </div>
           )}
 
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPendingPreset(null)}>Cancel</Button>
-            <Button size="sm" onClick={() => pendingPreset?.onConfirm()}>Apply changes</Button>
+            <Button variant="outline" size="sm" onClick={() => setPendingPreset(null)}>{t("mstCancel")}</Button>
+            <Button size="sm" onClick={() => pendingPreset?.onConfirm()}>{t("mstApplyChanges")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
