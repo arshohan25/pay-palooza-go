@@ -2219,6 +2219,14 @@ const translations = {
   ipDescInstalling: { en: "Almost there...", bn: "প্রায় শেষ..." },
   ipDescDone: { en: "Check your home screen!", bn: "আপনার হোম স্ক্রিন দেখুন!" },
   ipDescFailed: { en: "You can try again anytime", bn: "আপনি যেকোনো সময় আবার চেষ্টা করতে পারেন" },
+
+  // PushOptInPrompt
+  popTitle: { en: "Stay in the loop", bn: "আপডেটে থাকুন" },
+  popDesc: { en: "Get instant alerts when your orders ship, payouts land, and offers drop.", bn: "অর্ডার পাঠানো, পেআউট আসা ও নতুন অফারের সাথে সাথে অ্যালার্ট পান।" },
+  popEnable: { en: "Enable", bn: "সক্ষম করুন" },
+  popNotNow: { en: "Not now", bn: "এখন নয়" },
+  popEnabled: { en: "Notifications enabled 🔔", bn: "নোটিফিকেশন চালু হয়েছে 🔔" },
+  popFailed: { en: "Couldn't enable", bn: "চালু করা যায়নি" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
