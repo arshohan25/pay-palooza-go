@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle, Send, SlidersHorizontal, Bookmark, Pencil, Check, X, ArrowRight, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import {
   STAFF_PERMISSION_GROUPS,
   STAFF_PERMISSIONS,
@@ -58,6 +59,13 @@ function PermissionPicker({
   onRenamePreset: (id: string, name: string) => Promise<void>;
   onDeletePreset: (id: string) => Promise<void>;
 }) {
+  const { t, lang } = useI18n();
+  const fmtNum = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(n);
+  const tp = (key: TranslationKey, vars: Record<string, string | number>) => {
+    let s = t(key) as string;
+    for (const [k, v] of Object.entries(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+    return s;
+  };
   const active = countActive(value);
   const total = PERMISSION_KEYS.length;
   const [savingPreset, setSavingPreset] = useState(false);
@@ -91,7 +99,7 @@ function PermissionPicker({
     const removed = [...currentSet].filter(k => !nextSet.has(k));
     if (!added.length && !removed.length && !stripped.length) {
       onConfirm(cleaned);
-      toast.success(`${label} matches current selection`);
+      toast.success(tp("mstToastMatches", { label }));
       return;
     }
     setPendingPreset({
@@ -101,7 +109,7 @@ function PermissionPicker({
       added,
       removed,
       stripped,
-      onConfirm: () => { onConfirm(cleaned); setPendingPreset(null); toast.success(`Applied ${label}`); },
+      onConfirm: () => { onConfirm(cleaned); setPendingPreset(null); toast.success(tp("mstToastApplied", { label })); },
     });
   };
 
@@ -124,10 +132,11 @@ function PermissionPicker({
     if (val.startsWith("__role_")) {
       const r = val.replace("__role_", "").replace("__", "") as StaffRole;
       const defaults = defaultPermissionsFor(r);
+      const roleLabel = r === "Manager" ? t("mstManager") : r === "Cashier" ? t("mstCashier") : t("mstViewer");
       stagePreview(
-        `${r} preset`,
+        `${roleLabel}`,
         defaults,
-        { kind: "builtin", name: r, total: ROLE_DEFAULTS[r].length },
+        { kind: "builtin", name: roleLabel, total: ROLE_DEFAULTS[r].length },
         onChange,
       );
       return;
@@ -145,8 +154,8 @@ function PermissionPicker({
 
   const doSave = async () => {
     const name = presetName.trim();
-    if (!name) { toast.error("Name required"); return; }
-    if (active === 0) { toast.error("Select at least one feature first"); return; }
+    if (!name) { toast.error(t("mstToastNameRequired")); return; }
+    if (active === 0) { toast.error(t("mstToastSelectOne")); return; }
     setSavingPreset(true);
     try {
       await onSavePreset(name, value);
@@ -160,7 +169,7 @@ function PermissionPicker({
   const doRename = async () => {
     if (!renaming) return;
     const name = renaming.name.trim();
-    if (!name) { toast.error("Name required"); return; }
+    if (!name) { toast.error(t("mstToastNameRequired")); return; }
     await onRenamePreset(renaming.id, name);
     setRenaming(null);
   };
@@ -172,39 +181,38 @@ function PermissionPicker({
       {ownerOnlyPresent.length > 0 && (
         <Alert variant="destructive" className="py-2 px-3">
           <AlertTriangle className="h-3.5 w-3.5" />
-          <AlertTitle className="text-[11px] font-semibold mb-0.5">Owner-only permissions will be stripped</AlertTitle>
+          <AlertTitle className="text-[11px] font-semibold mb-0.5">{t("mstOwnerStripTitle")}</AlertTitle>
           <AlertDescription className="text-[10px] leading-tight">
-            {ownerOnlyPresent.map(k => OWNER_ONLY_LABELS[k] ?? k).join(", ")} can only be held by the
-            store owner. These will be removed automatically when you save this staff member.
+            {ownerOnlyPresent.map(k => OWNER_ONLY_LABELS[k] ?? k).join(", ")}{t("mstOwnerStripDesc")}
           </AlertDescription>
         </Alert>
       )}
       <div className="rounded-xl bg-muted/40 px-3 py-2 space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-[11px] text-muted-foreground">
-            <span className="font-semibold text-foreground">{active}</span> of {total} features granted
+            {tp("mstFeaturesGranted", { active: fmtNum(active), total: fmtNum(total) })}
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Select onValueChange={applyChoice}>
             <SelectTrigger className="h-8 text-[11px] flex-1">
-              <SelectValue placeholder="Apply preset…" />
+              <SelectValue placeholder={t("mstApplyPreset")} />
             </SelectTrigger>
             <SelectContent className="z-[120]">
               <SelectGroup>
-                <SelectLabel className="text-[10px]">Built-in</SelectLabel>
-                <SelectItem value="__role_Manager__" className="text-xs">Manager · {ROLE_DEFAULTS.Manager.length}</SelectItem>
-                <SelectItem value="__role_Cashier__" className="text-xs">Cashier · {ROLE_DEFAULTS.Cashier.length}</SelectItem>
-                <SelectItem value="__role_Viewer__" className="text-xs">Viewer · {ROLE_DEFAULTS.Viewer.length}</SelectItem>
+                <SelectLabel className="text-[10px]">{t("mstBuiltIn")}</SelectLabel>
+                <SelectItem value="__role_Manager__" className="text-xs">{t("mstManager")} · {fmtNum(ROLE_DEFAULTS.Manager.length)}</SelectItem>
+                <SelectItem value="__role_Cashier__" className="text-xs">{t("mstCashier")} · {fmtNum(ROLE_DEFAULTS.Cashier.length)}</SelectItem>
+                <SelectItem value="__role_Viewer__" className="text-xs">{t("mstViewer")} · {fmtNum(ROLE_DEFAULTS.Viewer.length)}</SelectItem>
               </SelectGroup>
               {customPresets.length > 0 && (
                 <>
                   <SelectSeparator />
                   <SelectGroup>
-                    <SelectLabel className="text-[10px]">My presets</SelectLabel>
+                    <SelectLabel className="text-[10px]">{t("mstMyPresets")}</SelectLabel>
                     {customPresets.map(p => (
                       <SelectItem key={p.id} value={p.id} className="text-xs">
-                        {p.name} · {countActive(p.permissions)}
+                        {p.name} · {fmtNum(countActive(p.permissions))}
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -212,11 +220,11 @@ function PermissionPicker({
               )}
               <SelectSeparator />
               <SelectItem value="__save_current__" className="text-xs text-primary">
-                + Save current as preset…
+                {t("mstSaveCurrent")}
               </SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" className="h-8 px-2" title="Save current as preset" onClick={() => setShowSave(s => !s)}>
+          <Button size="sm" variant="outline" className="h-8 px-2" title={t("mstSavePresetTitle")} onClick={() => setShowSave(s => !s)}>
             <Bookmark size={13} />
           </Button>
         </div>
@@ -227,13 +235,13 @@ function PermissionPicker({
               autoFocus
               value={presetName}
               onChange={e => setPresetName(e.target.value)}
-              placeholder="e.g. Night Cashier"
+              placeholder={t("mstPresetNamePh")}
               className="h-8 text-xs"
               maxLength={40}
               onKeyDown={(e) => { if (e.key === "Enter") doSave(); }}
             />
             <Button size="sm" className="h-8 px-3 text-[11px]" disabled={savingPreset} onClick={doSave}>
-              {savingPreset ? "Saving…" : "Save"}
+              {savingPreset ? t("mstSavingPreset") : t("mstSavePreset")}
             </Button>
             <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => { setShowSave(false); setPresetName(""); }}>
               <X size={13} />
@@ -243,7 +251,7 @@ function PermissionPicker({
 
         {customPresets.length > 0 && (
           <div className="pt-1 space-y-1">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Manage custom</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("mstManageCustom")}</p>
             <div className="flex flex-wrap gap-1.5">
               {customPresets.map(p => (
                 <div key={p.id} className="flex items-center gap-1 rounded-lg border border-border/50 bg-background px-2 py-1">
@@ -263,17 +271,17 @@ function PermissionPicker({
                   ) : (
                     <>
                       <span className="text-[11px] font-medium text-foreground">{p.name}</span>
-                      <span className="text-[10px] text-muted-foreground">·{countActive(p.permissions)}</span>
+                      <span className="text-[10px] text-muted-foreground">·{fmtNum(countActive(p.permissions))}</span>
                       <button
                         className="text-muted-foreground hover:text-foreground ml-0.5"
-                        title="Rename"
+                        title={t("mstRename")}
                         onClick={() => setRenaming({ id: p.id, name: p.name })}
                       >
                         <Pencil size={11} />
                       </button>
                       <button
                         className="text-destructive/70 hover:text-destructive"
-                        title="Delete"
+                        title={t("mstDelete")}
                         onClick={() => onDeletePreset(p.id)}
                       >
                         <Trash2 size={11} />
@@ -305,7 +313,7 @@ function PermissionPicker({
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs font-semibold text-foreground">{p.label}</p>
                         {p.implies && p.implies.length > 0 && checked && (
-                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">+ view</Badge>
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">{t("mstViewBadge")}</Badge>
                         )}
                       </div>
                       {p.hint && <p className="text-[10px] text-muted-foreground leading-tight">{p.hint}</p>}
@@ -322,7 +330,7 @@ function PermissionPicker({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-2 flex-wrap">
-              <DialogTitle className="text-base">Apply {pendingPreset?.label}?</DialogTitle>
+              <DialogTitle className="text-base">{tp("mstApplyDialogTitle", { label: pendingPreset?.label || "" })}</DialogTitle>
               {pendingPreset && (
                 <Badge
                   variant="outline"
@@ -333,17 +341,17 @@ function PermissionPicker({
                   }
                 >
                   {pendingPreset.source.kind === "builtin" ? (
-                    <><Shield size={10} /> Built-in role</>
+                    <><Shield size={10} /> {t("mstBuiltInRole")}</>
                   ) : (
-                    <><Bookmark size={10} /> Custom preset</>
+                    <><Bookmark size={10} /> {t("mstCustomPreset")}</>
                   )}
                 </Badge>
               )}
             </div>
             <DialogDescription className="text-xs">
               {pendingPreset?.source.kind === "builtin"
-                ? `System default for the ${pendingPreset.source.name} role · ${pendingPreset.source.total} features.`
-                : `Saved preset "${pendingPreset?.source.name}" · ${pendingPreset?.source.total} features.`} Review what will change before applying.
+                ? tp("mstBuiltInDesc", { name: pendingPreset.source.name, total: fmtNum(pendingPreset.source.total) })
+                : tp("mstCustomDesc", { name: pendingPreset?.source.name || "", total: fmtNum(pendingPreset?.source.total || 0) })}{" "}{t("mstReviewChanges")}
             </DialogDescription>
           </DialogHeader>
 
@@ -354,7 +362,7 @@ function PermissionPicker({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <AlertTriangle className="h-3 w-3 text-destructive" />
                     <p className="text-[11px] font-semibold text-destructive">
-                      Owner-only · stripped ({pendingPreset.stripped.length})
+                      {tp("mstOwnerStripped", { n: fmtNum(pendingPreset.stripped.length) })}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -365,7 +373,7 @@ function PermissionPicker({
                     ))}
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1.5 leading-tight">
-                    Staff cannot hold these. They are removed automatically.
+                    {t("mstStaffCannotHold")}
                   </p>
                 </div>
               )}
@@ -375,7 +383,7 @@ function PermissionPicker({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Plus className="h-3 w-3 text-emerald-600" />
                     <p className="text-[11px] font-semibold text-emerald-700">
-                      Will be added ({pendingPreset.added.length})
+                      {tp("mstWillBeAdded", { n: fmtNum(pendingPreset.added.length) })}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -393,7 +401,7 @@ function PermissionPicker({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Minus className="h-3 w-3 text-amber-600" />
                     <p className="text-[11px] font-semibold text-amber-700">
-                      Will be removed ({pendingPreset.removed.length})
+                      {tp("mstWillBeRemoved", { n: fmtNum(pendingPreset.removed.length) })}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -407,18 +415,18 @@ function PermissionPicker({
               )}
 
               <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground pt-1">
-                <span>{active} now</span>
+                <span>{tp("mstNow", { n: fmtNum(active) })}</span>
                 <ArrowRight className="h-3 w-3" />
                 <span className="font-semibold text-foreground">
-                  {countActive(pendingPreset.next)} after
+                  {tp("mstAfter", { n: fmtNum(countActive(pendingPreset.next)) })}
                 </span>
               </div>
             </div>
           )}
 
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPendingPreset(null)}>Cancel</Button>
-            <Button size="sm" onClick={() => pendingPreset?.onConfirm()}>Apply changes</Button>
+            <Button variant="outline" size="sm" onClick={() => setPendingPreset(null)}>{t("mstCancel")}</Button>
+            <Button size="sm" onClick={() => pendingPreset?.onConfirm()}>{t("mstApplyChanges")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -427,6 +435,14 @@ function PermissionPicker({
 }
 
 export default function MerchantStaffTab({ merchantId }: Props) {
+  const { t, lang } = useI18n();
+  const fmtNum = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(n);
+  const tp = (key: TranslationKey, vars: Record<string, string | number>) => {
+    let s = t(key) as string;
+    for (const [k, v] of Object.entries(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+    return s;
+  };
+  const localizedRole = (r: string) => r === "Manager" ? t("mstManager") : r === "Cashier" ? t("mstCashier") : r === "Viewer" ? t("mstViewer") : r;
   const [staff, setStaff] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -445,18 +461,18 @@ export default function MerchantStaffTab({ merchantId }: Props) {
 
   const handleSavePreset = async (name: string, perms: Record<string, boolean>) => {
     const { error } = await savePreset(name, perms) as any;
-    if (error) toast.error(error.message || "Could not save preset");
-    else toast.success(`Preset "${name}" saved`);
+    if (error) toast.error(error.message || t("mstToastPresetSaveErr"));
+    else toast.success(tp("mstToastPresetSaved", { name }));
   };
   const handleRenamePreset = async (id: string, name: string) => {
     const { error } = await updatePreset(id, { name }) as any;
-    if (error) toast.error(error.message || "Could not rename");
-    else toast.success("Renamed");
+    if (error) toast.error(error.message || t("mstToastRenameErr"));
+    else toast.success(t("mstToastRenamed"));
   };
   const handleDeletePreset = async (id: string) => {
     const { error } = await removePreset(id) as any;
-    if (error) toast.error(error.message || "Could not delete");
-    else toast.success("Preset deleted");
+    if (error) toast.error(error.message || t("mstToastDeleteErr"));
+    else toast.success(t("mstToastPresetDeleted"));
   };
 
   // When role changes inside Add sheet, refresh defaults.
@@ -474,16 +490,16 @@ export default function MerchantStaffTab({ merchantId }: Props) {
         const body = ctx ? await ctx.json() : null;
         if (body?.cooldown) { toast.error(body.message || "Please wait before resending."); return; }
       } catch (_) { /* ignore */ }
-      if (!opts?.silent) toast.error(error.message || "Failed to send invite");
+      if (!opts?.silent) toast.error(error.message || t("mstToastInviteFailed"));
       return;
     }
     if (!opts?.silent) {
       const r = (data as any)?.results || {};
       const channels: string[] = [];
-      if (r.push?.sent > 0) channels.push("push");
-      if (r.sms?.status === "sent") channels.push("SMS");
-      if (r.email?.status === "sent") channels.push("email");
-      toast.success(channels.length ? `Invite sent via ${channels.join(", ")}` : "Invite logged (no channels available)");
+      if (r.push?.sent > 0) channels.push(t("mstChPush") as string);
+      if (r.sms?.status === "sent") channels.push(t("mstChSms") as string);
+      if (r.email?.status === "sent") channels.push(t("mstChEmail") as string);
+      toast.success(channels.length ? tp("mstToastInviteSent", { channels: channels.join(", ") }) : t("mstToastInviteLogged"));
     }
   };
 
@@ -526,7 +542,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
   }, [merchantId]);
 
   const handleAdd = async () => {
-    if (!name.trim() || !phone.trim()) { toast.error("Name and phone are required"); return; }
+    if (!name.trim() || !phone.trim()) { toast.error(t("mstToastNamePhoneRequired")); return; }
     setSaving(true);
     const { data, error } = await supabase
       .from("merchant_staff")
@@ -536,9 +552,9 @@ export default function MerchantStaffTab({ merchantId }: Props) {
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     if (data?.user_id) {
-      toast.success("Staff added & linked to EasyPay account");
+      toast.success(t("mstToastAddedLinked"));
     } else {
-      toast.success("Staff added (not yet on EasyPay)");
+      toast.success(t("mstToastAddedUnlinked"));
     }
     if (data?.id) sendInvite(data.id, { silent: true });
     setShowAdd(false); setName(""); setPhone(""); setRole("Cashier"); setPerms(defaultPermissionsFor("Cashier")); setPhoneLookup({ status: "idle", name: null });
@@ -562,7 +578,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
       .eq("id", editing.id);
     setSavingEdit(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Permissions updated");
+    toast.success(t("mstToastPermsUpdated"));
     setEditing(null);
   };
 
@@ -573,7 +589,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
 
   const deleteStaff = async (id: string) => {
     const { error } = await supabase.from("merchant_staff").delete().eq("id", id);
-    if (error) toast.error(error.message); else toast.success("Staff removed");
+    if (error) toast.error(error.message); else toast.success(t("mstToastRemoved"));
   };
 
   const activeCount = staff.filter(s => s.is_active).length;
@@ -585,10 +601,10 @@ export default function MerchantStaffTab({ merchantId }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-          <Users size={18} className="text-primary" /> Staff Accounts
+          <Users size={18} className="text-primary" /> {t("mstStaffAccounts")}
         </h3>
         <Button size="sm" className="h-8 text-xs" onClick={() => setShowAdd(true)}>
-          <Plus size={13} className="mr-1" /> Add Staff
+          <Plus size={13} className="mr-1" /> {t("mstAddStaff")}
         </Button>
       </div>
 
@@ -596,32 +612,32 @@ export default function MerchantStaffTab({ merchantId }: Props) {
       <AccessRequestsHeaderButton merchantId={merchantId} />
 
       <div className="grid grid-cols-3 gap-2">
-        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{staff.length}</p><p className="text-[10px] text-muted-foreground">Total Staff</p></CardContent></Card>
-        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-emerald-600">{activeCount}</p><p className="text-[10px] text-muted-foreground">Active</p></CardContent></Card>
-        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-blue-600">{linkedCount}</p><p className="text-[10px] text-muted-foreground">Linked</p></CardContent></Card>
+        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{fmtNum(staff.length)}</p><p className="text-[10px] text-muted-foreground">{t("mstTotalStaff")}</p></CardContent></Card>
+        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-emerald-600">{fmtNum(activeCount)}</p><p className="text-[10px] text-muted-foreground">{t("mstActive")}</p></CardContent></Card>
+        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-blue-600">{fmtNum(linkedCount)}</p><p className="text-[10px] text-muted-foreground">{t("mstLinked")}</p></CardContent></Card>
       </div>
 
       <Card className="border-0 shadow-elevated">
         <CardContent className="p-4 space-y-1">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2"><Shield size={14} className="text-primary" /><p className="text-xs font-semibold text-foreground">Role Presets</p></div>
+            <div className="flex items-center gap-2"><Shield size={14} className="text-primary" /><p className="text-xs font-semibold text-foreground">{t("mstRolePresets")}</p></div>
             {customPresets.length > 0 && (
-              <Badge variant="outline" className="text-[9px]"><Bookmark size={9} className="mr-0.5" />{customPresets.length} custom</Badge>
+              <Badge variant="outline" className="text-[9px]"><Bookmark size={9} className="mr-0.5" />{tp("mstCustomCount", { n: fmtNum(customPresets.length) })}</Badge>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground">Pick a role to pre-fill defaults, then fine-tune feature access — or save your own presets.</p>
+          <p className="text-[10px] text-muted-foreground">{t("mstRolePresetsDesc")}</p>
           <div className="grid grid-cols-3 gap-2 text-[10px] text-muted-foreground pt-1">
-            <div><p className="font-semibold text-foreground">Manager</p><p>{ROLE_DEFAULTS.Manager.length} features</p></div>
-            <div><p className="font-semibold text-foreground">Cashier</p><p>{ROLE_DEFAULTS.Cashier.length} features</p></div>
-            <div><p className="font-semibold text-foreground">Viewer</p><p>{ROLE_DEFAULTS.Viewer.length} features</p></div>
+            <div><p className="font-semibold text-foreground">{t("mstManager")}</p><p>{tp("mstFeaturesCount", { n: fmtNum(ROLE_DEFAULTS.Manager.length) })}</p></div>
+            <div><p className="font-semibold text-foreground">{t("mstCashier")}</p><p>{tp("mstFeaturesCount", { n: fmtNum(ROLE_DEFAULTS.Cashier.length) })}</p></div>
+            <div><p className="font-semibold text-foreground">{t("mstViewer")}</p><p>{tp("mstFeaturesCount", { n: fmtNum(ROLE_DEFAULTS.Viewer.length) })}</p></div>
           </div>
           {customPresets.length > 0 && (
             <div className="pt-2 border-t border-border/40 mt-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">My presets</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{t("mstMyPresets")}</p>
               <div className="flex flex-wrap gap-1.5">
                 {customPresets.map(p => (
                   <Badge key={p.id} variant="outline" className="text-[10px] font-medium">
-                    {p.name} · {countActive(p.permissions)}
+                    {p.name} · {fmtNum(countActive(p.permissions))}
                   </Badge>
                 ))}
               </div>
@@ -631,7 +647,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
       </Card>
 
       {staff.length === 0 ? (
-        <Card className="border-0 shadow-elevated"><CardContent className="p-8 text-center text-muted-foreground text-xs">No staff added yet. Tap "Add Staff" to get started.</CardContent></Card>
+        <Card className="border-0 shadow-elevated"><CardContent className="p-8 text-center text-muted-foreground text-xs">{t("mstNoStaff")}</CardContent></Card>
       ) : (
         <div className="space-y-2">
           {staff.map(s => {
@@ -647,27 +663,27 @@ export default function MerchantStaffTab({ merchantId }: Props) {
                           <p className="text-xs font-bold text-foreground truncate">{s.name}</p>
                           {s.user_id ? (
                             <Badge variant="outline" className="text-[8px] px-1 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-200">
-                              <LinkIcon size={8} className="mr-0.5" />Linked
+                              <LinkIcon size={8} className="mr-0.5" />{t("mstLinkedBadge")}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-[8px] px-1 py-0 bg-amber-500/10 text-amber-600 border-amber-200">
-                              <AlertTriangle size={8} className="mr-0.5" />Not on EasyPay
+                              <AlertTriangle size={8} className="mr-0.5" />{t("mstNotOnEasyPay")}
                             </Badge>
                           )}
                         </div>
                         <p className="text-[10px] text-muted-foreground">{s.phone}</p>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <Badge variant="outline" className={`text-[9px] ${roleColors[s.role] || ""}`}>{s.role}</Badge>
-                          <span className="text-[10px] text-muted-foreground">· {granted} feature{granted === 1 ? "" : "s"}</span>
+                          <Badge variant="outline" className={`text-[9px] ${roleColors[s.role] || ""}`}>{localizedRole(s.role)}</Badge>
+                          <span className="text-[10px] text-muted-foreground">{tp(granted === 1 ? "mstFeatureOne" : "mstFeatureMany", { n: fmtNum(granted) })}</span>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground" title="Edit permissions" onClick={() => openEdit(s)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground" title={t("mstEditPermissions")} onClick={() => openEdit(s)}>
                         <SlidersHorizontal size={13} />
                       </Button>
                       <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s.id, s.is_active)} />
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title="Resend invite" disabled={resendingId === s.id} onClick={() => sendInvite(s.id)}><Send size={13} /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title={t("mstResendInvite")} disabled={resendingId === s.id} onClick={() => sendInvite(s.id)}><Send size={13} /></Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteStaff(s.id)}><Trash2 size={13} /></Button>
                     </div>
                   </div>
@@ -681,36 +697,36 @@ export default function MerchantStaffTab({ merchantId }: Props) {
       {/* Add Staff sheet */}
       <Sheet open={showAdd} onOpenChange={setShowAdd}>
         <SheetContent side="bottom" className="rounded-t-2xl z-[80] max-h-[92vh] overflow-y-auto" overlayClassName="z-[80]">
-          <SheetHeader><SheetTitle>Add Staff Member</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{t("mstAddStaffMember")}</SheetTitle></SheetHeader>
           <div className="space-y-4 mt-4">
-            <div><Label className="text-xs">Name</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Staff name" /></div>
+            <div><Label className="text-xs">{t("mstName")}</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder={t("mstNamePh")} /></div>
             <div>
-              <Label className="text-xs">Phone</Label>
+              <Label className="text-xs">{t("mstPhone")}</Label>
               <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="01XXXXXXXXX" inputMode="numeric" />
-              {phoneLookup.status === "checking" && <p className="text-[10px] text-muted-foreground mt-1">Checking EasyPay…</p>}
+              {phoneLookup.status === "checking" && <p className="text-[10px] text-muted-foreground mt-1">{t("mstChecking")}</p>}
               {phoneLookup.status === "found" && (
                 <p className="text-[10px] text-emerald-600 mt-1 flex items-center gap-1">
-                  <LinkIcon size={10} /> On EasyPay{phoneLookup.name ? ` — ${phoneLookup.name}` : ""}. They'll get instant access.
+                  <LinkIcon size={10} /> {t("mstOnEasyPay")}{phoneLookup.name ? ` — ${phoneLookup.name}` : ""}{t("mstInstantAccess")}
                 </p>
               )}
               {phoneLookup.status === "missing" && (
                 <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
-                  <AlertTriangle size={10} /> Not on EasyPay yet. They'll be linked automatically when they sign up.
+                  <AlertTriangle size={10} /> {t("mstNotOnEasyPayDesc")}
                 </p>
               )}
             </div>
             <div>
-              <Label className="text-xs">Role preset</Label>
+              <Label className="text-xs">{t("mstRolePreset")}</Label>
               <div className="flex gap-2 mt-1">
                 {roles.map(r => (
-                  <Button key={r} size="sm" variant={role === r ? "default" : "outline"} className="text-xs flex-1" onClick={() => setRole(r)}>{r}</Button>
+                  <Button key={r} size="sm" variant={role === r ? "default" : "outline"} className="text-xs flex-1" onClick={() => setRole(r)}>{localizedRole(r)}</Button>
                 ))}
               </div>
             </div>
 
             <div>
               <Label className="text-xs flex items-center gap-1.5">
-                <SlidersHorizontal size={12} /> Feature access
+                <SlidersHorizontal size={12} /> {t("mstFeatureAccess")}
               </Label>
               <div className="mt-2">
                 <PermissionPicker
@@ -726,7 +742,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
             </div>
 
             <Button className="w-full" disabled={saving} onClick={handleAdd}>
-              {saving ? "Adding..." : `Add Staff · ${countActive(perms)} feature${countActive(perms) === 1 ? "" : "s"}`}
+              {saving ? t("mstAdding") : tp(countActive(perms) === 1 ? "mstAddStaffBtnOne" : "mstAddStaffBtnMany", { n: fmtNum(countActive(perms)) })}
             </Button>
           </div>
         </SheetContent>
@@ -736,15 +752,15 @@ export default function MerchantStaffTab({ merchantId }: Props) {
       <Sheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <SheetContent side="bottom" className="rounded-t-2xl z-[80] max-h-[92vh] overflow-y-auto" overlayClassName="z-[80]">
           <SheetHeader>
-            <SheetTitle>Permissions · {editing?.name}</SheetTitle>
+            <SheetTitle>{tp("mstPermissionsTitle", { name: editing?.name || "" })}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4">
             <div className="flex items-center justify-between rounded-xl bg-muted/30 px-3 py-2">
               <div className="text-[11px]">
-                <p className="font-semibold text-foreground">{editing?.role} role</p>
-                <p className="text-muted-foreground">Changes apply instantly — no logout needed.</p>
+                <p className="font-semibold text-foreground">{tp("mstRoleLabel", { role: localizedRole(editing?.role || "") })}</p>
+                <p className="text-muted-foreground">{t("mstChangesInstant")}</p>
               </div>
-              <Badge variant="outline" className={`text-[9px] ${roleColors[editing?.role] || ""}`}>{editing?.role}</Badge>
+              <Badge variant="outline" className={`text-[9px] ${roleColors[editing?.role] || ""}`}>{localizedRole(editing?.role || "")}</Badge>
             </div>
             {editing && (
               <PermissionPicker
@@ -758,7 +774,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
               />
             )}
             <Button className="w-full" disabled={savingEdit} onClick={saveEdit}>
-              {savingEdit ? "Saving..." : `Save · ${countActive(editPerms)} feature${countActive(editPerms) === 1 ? "" : "s"}`}
+              {savingEdit ? t("mstSavingBtn") : tp(countActive(editPerms) === 1 ? "mstSaveBtnOne" : "mstSaveBtnMany", { n: fmtNum(countActive(editPerms)) })}
             </Button>
           </div>
         </SheetContent>
