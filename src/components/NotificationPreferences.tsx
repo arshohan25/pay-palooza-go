@@ -9,37 +9,38 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { usePushSubscription } from "@/hooks/use-push-subscription";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 type Category = {
   key: string;
-  label: string;
-  description: string;
+  labelKey: TranslationKey;
+  descKey: TranslationKey;
 };
 
 const MERCHANT_CATEGORIES: Category[] = [
-  { key: "merchant_new_order", label: "New orders", description: "Buzz when a new order arrives." },
-  { key: "merchant_payout", label: "Payouts", description: "Settlement and payout confirmations." },
-  { key: "merchant_refund", label: "Refunds & returns", description: "Refund requests and return updates." },
-  { key: "merchant_low_stock", label: "Low stock alerts", description: "When inventory drops below threshold." },
-  { key: "merchant_inquiry", label: "Customer inquiries", description: "Buyer chat messages on your products." },
-  { key: "merchant_api", label: "API access updates", description: "When your API access request is approved or denied." },
+  { key: "merchant_new_order", labelKey: "npCatMerchantNewOrder", descKey: "npCatMerchantNewOrderDesc" },
+  { key: "merchant_payout", labelKey: "npCatMerchantPayout", descKey: "npCatMerchantPayoutDesc" },
+  { key: "merchant_refund", labelKey: "npCatMerchantRefund", descKey: "npCatMerchantRefundDesc" },
+  { key: "merchant_low_stock", labelKey: "npCatMerchantLowStock", descKey: "npCatMerchantLowStockDesc" },
+  { key: "merchant_inquiry", labelKey: "npCatMerchantInquiry", descKey: "npCatMerchantInquiryDesc" },
+  { key: "merchant_api", labelKey: "npCatMerchantApi", descKey: "npCatMerchantApiDesc" },
 ];
 
 const AGENT_CATEGORIES: Category[] = [
-  { key: "agent_float_low", label: "Float low", description: "When your float drops under 10%." },
-  { key: "agent_commission", label: "Commission credited", description: "When a commission is paid out." },
-  { key: "agent_fund_request", label: "Fund requests", description: "Approval or rejection of fund requests." },
-  { key: "agent_cash_in_out", label: "Cash in / out", description: "When customers transact with you." },
+  { key: "agent_float_low", labelKey: "npCatAgentFloatLow", descKey: "npCatAgentFloatLowDesc" },
+  { key: "agent_commission", labelKey: "npCatAgentCommission", descKey: "npCatAgentCommissionDesc" },
+  { key: "agent_fund_request", labelKey: "npCatAgentFundRequest", descKey: "npCatAgentFundRequestDesc" },
+  { key: "agent_cash_in_out", labelKey: "npCatAgentCashInOut", descKey: "npCatAgentCashInOutDesc" },
 ];
 
 const SAVINGS_CATEGORIES: Category[] = [
-  { key: "savings_collected", label: "DPS collected", description: "When an auto-save installment is collected or your goal completes." },
-  { key: "savings_missed", label: "DPS missed", description: "When an installment can't be collected (insufficient balance)." },
+  { key: "savings_collected", labelKey: "npCatSavingsCollected", descKey: "npCatSavingsCollectedDesc" },
+  { key: "savings_missed", labelKey: "npCatSavingsMissed", descKey: "npCatSavingsMissedDesc" },
 ];
 
 const COMMON_CATEGORIES: Category[] = [
-  { key: "daily_summary", label: "Daily summary", description: "Yesterday's recap at 8:00 PM." },
-  { key: "marketing", label: "Promotions & tips", description: "Offers, drops, and platform updates." },
+  { key: "daily_summary", labelKey: "npCatDailySummary", descKey: "npCatDailySummaryDesc" },
+  { key: "marketing", labelKey: "npCatMarketing", descKey: "npCatMarketingDesc" },
 ];
 
 interface Props {
@@ -49,6 +50,7 @@ interface Props {
 export default function NotificationPreferences({ scope }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useI18n();
   const { supported, configured, permission, subscribed, subscribe, unsubscribe, busy } =
     usePushSubscription();
 
@@ -118,7 +120,7 @@ export default function NotificationPreferences({ scope }: Props) {
       );
     setSavingQuiet(false);
     if (error) {
-      toast({ title: "Couldn't save quiet hours", description: error.message, variant: "destructive" });
+      toast({ title: t("npCouldNotSaveQuiet"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -135,30 +137,30 @@ export default function NotificationPreferences({ scope }: Props) {
     setSaving(null);
     if (error) {
       setPrefs((p) => ({ ...p, [category]: !next }));
-      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+      toast({ title: t("npCouldNotSave"), description: error.message, variant: "destructive" });
     }
   };
 
   const handleMaster = async () => {
     if (subscribed) {
       const ok = await unsubscribe();
-      if (ok) toast({ title: "Push disabled" });
+      if (ok) toast({ title: t("npPushDisabled") });
     } else {
       const r = await subscribe();
-      if (r.ok) toast({ title: "Push enabled 🔔" });
-      else toast({ title: "Couldn't enable", description: r.error, variant: "destructive" });
+      if (r.ok) toast({ title: t("npPushEnabled") });
+      else toast({ title: t("npCouldNotEnable"), description: r.error, variant: "destructive" });
     }
   };
 
   const masterStatus = !supported
-    ? { label: "Unsupported on this device", tone: "muted" as const }
+    ? { labelKey: "npStatusUnsupported" as TranslationKey, tone: "muted" as const }
     : !configured
-    ? { label: "Push not configured", tone: "warn" as const }
+    ? { labelKey: "npStatusNotConfigured" as TranslationKey, tone: "warn" as const }
     : permission === "denied"
-    ? { label: "Permission blocked in browser", tone: "warn" as const }
+    ? { labelKey: "npStatusBlocked" as TranslationKey, tone: "warn" as const }
     : subscribed
-    ? { label: "Push active on this device", tone: "ok" as const }
-    : { label: "Push not enabled on this device", tone: "muted" as const };
+    ? { labelKey: "npStatusActive" as TranslationKey, tone: "ok" as const }
+    : { labelKey: "npStatusInactive" as TranslationKey, tone: "muted" as const };
 
   return (
     <motion.div
@@ -173,9 +175,9 @@ export default function NotificationPreferences({ scope }: Props) {
             <Bell size={18} className="text-primary" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-[15px] font-bold text-foreground">Notification preferences</h3>
+            <h3 className="text-[15px] font-bold text-foreground">{t("npTitle")}</h3>
             <p className="text-[12px] text-muted-foreground mt-0.5">
-              Choose which alerts buzz your device.
+              {t("npSubtitle")}
             </p>
             <div className="flex items-center gap-1.5 mt-2">
               {masterStatus.tone === "ok" && (
@@ -194,7 +196,7 @@ export default function NotificationPreferences({ scope }: Props) {
                     : "border-border text-muted-foreground"
                 }`}
               >
-                {masterStatus.label}
+                {t(masterStatus.labelKey)}
               </Badge>
             </div>
           </div>
@@ -213,7 +215,7 @@ export default function NotificationPreferences({ scope }: Props) {
           ) : (
             <Bell size={12} />
           )}
-          {subscribed ? "Disable" : "Enable"}
+          {subscribed ? t("npDisable") : t("npEnable")}
         </Button>
       </div>
 
@@ -231,7 +233,8 @@ export default function NotificationPreferences({ scope }: Props) {
             ))
           : categories.map((c) => {
               const enabled = prefs[c.key] ?? true;
-              const blocked = !subscribed; // if no subscription, switches are informative only
+              const blocked = !subscribed;
+              const label = t(c.labelKey);
               return (
                 <div
                   key={c.key}
@@ -239,10 +242,10 @@ export default function NotificationPreferences({ scope }: Props) {
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold text-foreground truncate">
-                      {c.label}
+                      {label}
                     </p>
                     <p className="text-[11.5px] text-muted-foreground leading-snug">
-                      {c.description}
+                      {t(c.descKey)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -253,7 +256,7 @@ export default function NotificationPreferences({ scope }: Props) {
                       checked={enabled}
                       onCheckedChange={(v) => toggle(c.key, v)}
                       disabled={blocked || saving === c.key}
-                      aria-label={`Toggle ${c.label}`}
+                      aria-label={t("npToggleAria").replace("{label}", label)}
                     />
                   </div>
                 </div>
@@ -269,9 +272,9 @@ export default function NotificationPreferences({ scope }: Props) {
               <Moon size={16} className="text-primary" />
             </div>
             <div className="min-w-0">
-              <p className="text-[13px] font-bold text-foreground">Quiet hours</p>
+              <p className="text-[13px] font-bold text-foreground">{t("npQuietHours")}</p>
               <p className="text-[11.5px] text-muted-foreground leading-snug">
-                Mute push during this window (Asia/Dhaka time). In-app alerts still appear.
+                {t("npQuietDesc")}
               </p>
             </div>
           </div>
@@ -280,14 +283,14 @@ export default function NotificationPreferences({ scope }: Props) {
             <Switch
               checked={quietEnabled}
               onCheckedChange={(v) => { setQuietEnabled(v); saveQuiet({ enabled: v }); }}
-              aria-label="Toggle quiet hours"
+              aria-label={t("npQuietToggleAria")}
             />
           </div>
         </div>
         {quietEnabled && (
           <div className="mt-3 grid grid-cols-2 gap-3">
             <label className="text-[11.5px] text-muted-foreground">
-              From
+              {t("npFrom")}
               <Input
                 type="time"
                 value={quietStart}
@@ -297,7 +300,7 @@ export default function NotificationPreferences({ scope }: Props) {
               />
             </label>
             <label className="text-[11.5px] text-muted-foreground">
-              To
+              {t("npTo")}
               <Input
                 type="time"
                 value={quietEnd}
@@ -312,7 +315,7 @@ export default function NotificationPreferences({ scope }: Props) {
 
       {!subscribed && supported && configured && permission !== "denied" && (
         <p className="mt-3 text-[11px] text-muted-foreground leading-snug">
-          Enable push above to start receiving alerts. Your category choices are saved either way.
+          {t("npEnableHint")}
         </p>
       )}
     </motion.div>
