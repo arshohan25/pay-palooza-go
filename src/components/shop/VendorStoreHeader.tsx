@@ -13,6 +13,7 @@ interface VendorStoreHeaderProps {
 }
 
 export default function VendorStoreHeader({ storeName, description, logoUrl, bannerUrl, rating, reviewCount, productCount }: VendorStoreHeaderProps) {
+  const { t } = useI18n();
   return (
     <div className="relative">
       {/* Banner */}
