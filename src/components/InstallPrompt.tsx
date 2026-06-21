@@ -3,19 +3,20 @@ import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, X, Smartphone, CheckCircle2, Loader2, Wifi, Shield, Zap } from "lucide-react";
 import { getInstallPrompt, onPromptAvailable, isAppInstalled, clearPrompt } from "@/lib/installPromptStore";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 const DISMISSED_KEY = "mfs_pwa_dismissed";
 
 type InstallStage = "idle" | "detecting" | "preparing" | "downloading" | "installing" | "done" | "failed";
 
-const STAGE_CONFIG: Record<InstallStage, { label: string; icon: typeof Loader2; color: string; progress: number }> = {
-  idle: { label: "Ready to install", icon: Download, color: "text-primary", progress: 0 },
-  detecting: { label: "Detecting device...", icon: Wifi, color: "text-blue-500", progress: 15 },
-  preparing: { label: "Preparing app bundle...", icon: Shield, color: "text-amber-500", progress: 35 },
-  downloading: { label: "Downloading EasyPay...", icon: Loader2, color: "text-primary", progress: 65 },
-  installing: { label: "Installing on device...", icon: Zap, color: "text-emerald-500", progress: 85 },
-  done: { label: "Installed successfully!", icon: CheckCircle2, color: "text-emerald-500", progress: 100 },
-  failed: { label: "Installation cancelled", icon: X, color: "text-destructive", progress: 0 },
+const STAGE_CONFIG: Record<InstallStage, { labelKey: TranslationKey; descKey: TranslationKey; icon: typeof Loader2; color: string; progress: number }> = {
+  idle: { labelKey: "ipStageIdle", descKey: "ipDescIdle", icon: Download, color: "text-primary", progress: 0 },
+  detecting: { labelKey: "ipStageDetecting", descKey: "ipDescDetecting", icon: Wifi, color: "text-blue-500", progress: 15 },
+  preparing: { labelKey: "ipStagePreparing", descKey: "ipDescPreparing", icon: Shield, color: "text-amber-500", progress: 35 },
+  downloading: { labelKey: "ipStageDownloading", descKey: "ipDescDownloading", icon: Loader2, color: "text-primary", progress: 65 },
+  installing: { labelKey: "ipStageInstalling", descKey: "ipDescInstalling", icon: Zap, color: "text-emerald-500", progress: 85 },
+  done: { labelKey: "ipStageDone", descKey: "ipDescDone", icon: CheckCircle2, color: "text-emerald-500", progress: 100 },
+  failed: { labelKey: "ipStageFailed", descKey: "ipDescFailed", icon: X, color: "text-destructive", progress: 0 },
 };
 
 const InstallPrompt = ({ isAuthenticated = true }: { isAuthenticated?: boolean }) => {
