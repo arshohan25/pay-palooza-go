@@ -88,6 +88,15 @@ export default function PinResetTicketChat({
   maskedPhone,
   onSessionExpired,
 }: PinResetTicketChatProps) {
+  const { t, lang } = useI18n();
+  const fmtNum = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(n);
+  const tp = (key: TranslationKey, vars: Record<string, string | number>) => {
+    let s = t(key) as string;
+    for (const [k, v] of Object.entries(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+    return s;
+  };
+  const formatDayLabel = useMemo(() => makeFormatDayLabel(lang, t as any), [lang, t]);
+  const formatTime = useMemo(() => makeFormatTime(lang), [lang]);
   const [requestId, setRequestId] = useState(initialRequestId);
   const [ticket, setTicket] = useState(initialTicket);
   const [messages, setMessages] = useState<PinResetMessage[]>([]);
