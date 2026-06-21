@@ -1849,6 +1849,11 @@ const translations = {
   mrtErrSubmitFailed: { en: "Failed to submit refund", bn: "রিফান্ড জমা দিতে ব্যর্থ" },
   mrtToastSubmitted: { en: "Refund request submitted", bn: "রিফান্ড অনুরোধ জমা দেওয়া হয়েছে" },
   mrtToastSubmittedDesc: { en: "Admin will review shortly.", bn: "অ্যাডমিন শীঘ্রই পর্যালোচনা করবেন।" },
+  miaLowStockOne: { en: "{n} product low on stock", bn: "{n}টি পণ্যের স্টক কম" },
+  miaLowStockMany: { en: "{n} products low on stock", bn: "{n}টি পণ্যের স্টক কম" },
+  miaOutOfStock: { en: "Out of stock", bn: "স্টকে নেই" },
+  miaLeft: { en: "{n} left", bn: "{n}টি বাকি" },
+  miaRestocked: { en: "{name} restocked ✓", bn: "{name} আবার মজুদ ✓" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
