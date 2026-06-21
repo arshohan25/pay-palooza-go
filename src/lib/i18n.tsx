@@ -2332,6 +2332,11 @@ const translations = {
   wrSelectRating: { en: "Please select a rating", bn: "দয়া করে একটি রেটিং নির্বাচন করুন" },
   wrSubmitFailed: { en: "Failed to submit review", bn: "রিভিউ জমা দিতে ব্যর্থ" },
   wrSubmitSuccess: { en: "Review submitted!", bn: "রিভিউ জমা হয়েছে!" },
+
+  // ProductReviews (shop)
+  prNoReviews: { en: "No reviews yet. Be the first to review this product!", bn: "এখনো কোনো রিভিউ নেই। প্রথম রিভিউ দিন!" },
+  prVerified: { en: "Verified", bn: "যাচাইকৃত" },
+  prAnonymous: { en: "Anonymous", bn: "অজ্ঞাতনামা" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
