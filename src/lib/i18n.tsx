@@ -2343,6 +2343,33 @@ const translations = {
 
   // VendorStoreHeader (shop)
   vshProducts: { en: "products", bn: "পণ্য" },
+
+  // AddressManager (shop)
+  amAddNew: { en: "Add New Address", bn: "নতুন ঠিকানা যোগ করুন" },
+  amNewAddress: { en: "New Address", bn: "নতুন ঠিকানা" },
+  amEditAddress: { en: "Edit Address", bn: "ঠিকানা সম্পাদনা" },
+  amFullName: { en: "Full Name *", bn: "পুরো নাম *" },
+  amPhone: { en: "Phone *", bn: "ফোন *" },
+  amAddressLine: { en: "Address Line *", bn: "ঠিকানা *" },
+  amAreaThana: { en: "Area / Thana", bn: "এলাকা / থানা" },
+  amCity: { en: "City *", bn: "শহর *" },
+  amSetDefault: { en: "Set as default address", bn: "ডিফল্ট ঠিকানা হিসেবে সেট করুন" },
+  amCancel: { en: "Cancel", bn: "বাতিল" },
+  amSaveAddress: { en: "Save Address", bn: "ঠিকানা সেভ করুন" },
+  amDefault: { en: "Default", bn: "ডিফল্ট" },
+  amFillRequired: { en: "Please fill all required fields", bn: "দয়া করে সব প্রয়োজনীয় তথ্য পূরণ করুন" },
+  amAddressSaved: { en: "Address saved", bn: "ঠিকানা সেভ হয়েছে" },
+  amAddressUpdated: { en: "Address updated", bn: "ঠিকানা আপডেট হয়েছে" },
+  amSaveFailed: { en: "Failed to save", bn: "সেভ করতে ব্যর্থ" },
+  amAddressDeleted: { en: "Address deleted", bn: "ঠিকানা মুছে ফেলা হয়েছে" },
+  amNamePlaceholder: { en: "e.g. Karim Hossain", bn: "যেমন: করিম হোসেন" },
+  amPhonePlaceholder: { en: "e.g. 01712-345678", bn: "যেমন: ০১৭১২-৩৪৫৬৭৮" },
+  amAddressPlaceholder: { en: "House/Flat, Road, Block", bn: "বাড়ি/ফ্ল্যাট, রোড, ব্লক" },
+  amAreaPlaceholder: { en: "e.g. Mirpur-10", bn: "যেমন: মিরপুর-১০" },
+  amCityPlaceholder: { en: "e.g. Dhaka", bn: "যেমন: ঢাকা" },
+  amLabelHome: { en: "Home", bn: "বাড়ি" },
+  amLabelOffice: { en: "Office", bn: "অফিস" },
+  amLabelOther: { en: "Other", bn: "অন্যান্য" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
