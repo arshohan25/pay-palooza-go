@@ -57,20 +57,21 @@ const ATTACH_BUCKET = "pin-reset-attachments";
 
 /* ────────────────────────────────────────────────────────────── helpers ── */
 
-const formatDayLabel = (iso: string) => {
+const sameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+const makeFormatDayLabel = (lang: "en" | "bn", t: (k: TranslationKey) => string) => (iso: string) => {
   const d = new Date(iso);
   const today = new Date();
   const yest = new Date();
   yest.setDate(today.getDate() - 1);
-  const sameDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (sameDay(d, today)) return "Today";
-  if (sameDay(d, yest)) return "Yesterday";
-  return d.toLocaleDateString("en-BD", { month: "short", day: "numeric" });
+  if (sameDay(d, today)) return t("prcDayToday") as string;
+  if (sameDay(d, yest)) return t("prcDayYesterday") as string;
+  return d.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD", { month: "short", day: "numeric" });
 };
 
-const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" });
+const makeFormatTime = (lang: "en" | "bn") => (iso: string) =>
+  new Date(iso).toLocaleTimeString(lang === "bn" ? "bn-BD" : "en-BD", { hour: "2-digit", minute: "2-digit" });
 
 const formatBytes = (n?: number | null) => {
   if (!n) return "";
