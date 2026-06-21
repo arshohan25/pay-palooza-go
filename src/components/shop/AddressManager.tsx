@@ -72,7 +72,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
 
   const handleSave = async () => {
     if (!form.recipient_name || !form.phone || !form.address_line || !form.city) {
-      toast.error("Please fill all required fields");
+      toast.error(t("amFillRequired"));
       return;
     }
     setSaving(true);
@@ -89,7 +89,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
           area: form.area || null, is_default: form.is_default,
         });
         if (error) throw error;
-        toast.success("Address saved");
+        toast.success(t("amAddressSaved"));
       } else if (editing) {
         const { error } = await supabase.from("delivery_addresses").update({
           label: form.label, recipient_name: form.recipient_name, phone: form.phone,
@@ -97,12 +97,12 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
           area: form.area || null, is_default: form.is_default,
         } as any).eq("id", editing.id);
         if (error) throw error;
-        toast.success("Address updated");
+        toast.success(t("amAddressUpdated"));
       }
       setEditing(null);
       fetchAddresses();
     } catch (e: any) {
-      toast.error(e.message || "Failed to save");
+      toast.error(e.message || t("amSaveFailed"));
     }
     setSaving(false);
   };
@@ -110,7 +110,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
   const handleDelete = async (id: string) => {
     await supabase.from("delivery_addresses").delete().eq("id", id);
     setAddresses(prev => prev.filter(a => a.id !== id));
-    toast.success("Address deleted");
+    toast.success(t("amAddressDeleted"));
   };
 
   if (loading) {
@@ -136,9 +136,9 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
           <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-[13px] font-bold text-foreground">{addr.label}</span>
+              <span className="text-[13px] font-bold text-foreground">{t(labelKey(addr.label))}</span>
               {addr.is_default && (
-                <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Default</span>
+                <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("amDefault")}</span>
               )}
             </div>
             <p className="text-[12px] text-muted-foreground mt-0.5">{addr.recipient_name} · {addr.phone}</p>
@@ -166,7 +166,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
         className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-border text-muted-foreground bg-muted/20 hover:bg-muted/40 transition-colors"
       >
         <Plus className="w-4 h-4" />
-        <span className="text-[13px] font-semibold">Add New Address</span>
+        <span className="text-[13px] font-semibold">{t("amAddNew")}</span>
       </button>
 
       {/* Edit Form Modal */}
