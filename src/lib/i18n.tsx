@@ -2297,6 +2297,23 @@ const translations = {
   fdBrand: { en: "Brand", bn: "ব্র্যান্ড" },
   fdClearAll: { en: "Clear All", bn: "সব মুছুন" },
   fdApply: { en: "Apply Filters", bn: "ফিল্টার প্রয়োগ করুন" },
+  catAll: { en: "All", bn: "সব" },
+  catFashion: { en: "Fashion", bn: "ফ্যাশন" },
+  catElectronics: { en: "Electronics", bn: "ইলেকট্রনিক্স" },
+  catHome: { en: "Home", bn: "ঘর" },
+  catFood: { en: "Food", bn: "খাবার" },
+  catSports: { en: "Sports", bn: "খেলাধুলা" },
+  catBooks: { en: "Books", bn: "বই" },
+  catBeauty: { en: "Beauty", bn: "সৌন্দর্য" },
+  catKids: { en: "Kids", bn: "শিশু" },
+  catGrocery: { en: "Grocery", bn: "মুদি" },
+  catAutomotive: { en: "Automotive", bn: "গাড়ি" },
+  catHealth: { en: "Health", bn: "স্বাস্থ্য" },
+  catToys: { en: "Toys", bn: "খেলনা" },
+  catPets: { en: "Pets", bn: "পোষা প্রাণী" },
+  catOffice: { en: "Office", bn: "অফিস" },
+  catGarden: { en: "Garden", bn: "বাগান" },
+  catTravel: { en: "Travel", bn: "ভ্রমণ" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

@@ -4,6 +4,7 @@ import {
   LayoutGrid, Shirt, Smartphone, Home, Utensils, Dumbbell, BookOpen, Gem, Baby, Sparkles,
   ShoppingBasket, Car, HeartPulse, Gamepad2, PawPrint, Briefcase, Flower2, Plane,
 } from "lucide-react";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   All: <LayoutGrid className="w-5 h-5" />,
@@ -25,6 +26,26 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Travel: <Plane className="w-5 h-5" />,
 };
 
+const CATEGORY_KEYS: Record<string, TranslationKey> = {
+  All: "catAll",
+  Fashion: "catFashion",
+  Electronics: "catElectronics",
+  Home: "catHome",
+  Food: "catFood",
+  Sports: "catSports",
+  Books: "catBooks",
+  Beauty: "catBeauty",
+  Kids: "catKids",
+  Grocery: "catGrocery",
+  Automotive: "catAutomotive",
+  Health: "catHealth",
+  Toys: "catToys",
+  Pets: "catPets",
+  Office: "catOffice",
+  Garden: "catGarden",
+  Travel: "catTravel",
+};
+
 const FALLBACK_ICON = <Sparkles className="w-5 h-5" />;
 
 interface CategoryNavProps {
@@ -34,6 +55,7 @@ interface CategoryNavProps {
 }
 
 export default function CategoryNav({ categories, selected, onSelect }: CategoryNavProps) {
+  const { t } = useI18n();
   const allCats = ["All", ...categories];
 
   return (
@@ -41,6 +63,8 @@ export default function CategoryNav({ categories, selected, onSelect }: Category
       <div className="flex gap-4 px-4 py-3">
         {allCats.map((cat) => {
           const isActive = selected === cat;
+          const labelKey = CATEGORY_KEYS[cat];
+          const label = labelKey ? t(labelKey) : cat;
           return (
             <button
               key={cat}
@@ -63,7 +87,7 @@ export default function CategoryNav({ categories, selected, onSelect }: Category
                   isActive ? "text-primary font-semibold" : "text-muted-foreground"
                 )}
               >
-                {cat}
+                {label}
               </span>
             </button>
           );
