@@ -744,7 +744,7 @@ export default function PinResetTicketChat({
                           void sendMessage();
                         }
                       }}
-                      placeholder={uploaded ? "Add a caption…" : "Type your message…"}
+                      placeholder={uploaded ? (t("prcPlaceholderCaption") as string) : (t("prcPlaceholderType") as string)}
                       rows={1}
                       disabled={composerDisabled}
                       className="block w-full resize-none rounded-[23px] border-0 bg-transparent px-4 py-3 pr-14 text-[13px] leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 disabled:opacity-60"
