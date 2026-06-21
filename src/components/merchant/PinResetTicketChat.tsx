@@ -639,8 +639,8 @@ export default function PinResetTicketChat({
         <div className="relative z-10">
           {isResolved ? (
             <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/[0.08] to-emerald-500/[0.02] p-3 text-center backdrop-blur-xl">
-              <p className="text-[12.5px] font-semibold text-emerald-700 dark:text-emerald-300">✓ Ticket resolved</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">Try signing in with your new PIN.</p>
+              <p className="text-[12.5px] font-semibold text-emerald-700 dark:text-emerald-300">{t("prcTicketResolved")}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{t("prcTryNewPin")}</p>
             </div>
           ) : (
             <>
