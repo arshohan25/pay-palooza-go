@@ -29,6 +29,7 @@ interface AddressManagerProps {
 const LABEL_OPTIONS = ["Home", "Office", "Other"];
 
 export default function AddressManager({ userId, onSelect, selectedId, compact }: AddressManagerProps) {
+  const { t } = useI18n();
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<SavedAddress | "new" | null>(null);
@@ -36,6 +37,12 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
   const [form, setForm] = useState({
     label: "Home", recipient_name: "", phone: "", address_line: "", city: "", area: "", is_default: false,
   });
+
+  const labelKey = (label: string) => {
+    if (label === "Home") return "amLabelHome" as const;
+    if (label === "Office") return "amLabelOffice" as const;
+    return "amLabelOther" as const;
+  };
 
   const fetchAddresses = async () => {
     const { data } = await supabase
