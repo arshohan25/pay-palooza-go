@@ -38,6 +38,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, isWishlisted, onAddToCart, onToggleWishlist, onNavigate }: ProductCardProps) {
+  const { t } = useI18n();
   const discount = product.original_price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
