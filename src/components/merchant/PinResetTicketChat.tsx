@@ -498,11 +498,10 @@ export default function PinResetTicketChat({
           </div>
           <div className="max-w-[80%] rounded-[20px] rounded-bl-[6px] border border-border/40 bg-card/80 px-3.5 py-2.5 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] backdrop-blur-sm">
             <p className="text-[12.5px] leading-relaxed text-foreground">
-              Hi there 👋 Your number is verified. Tell us briefly what happened (e.g. "I changed
-              phones" or "I forgot my PIN") and our team will guide you through resetting it.
+              {t("prcWelcomeMsg")}
             </p>
             <p className="mt-1 text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">
-              EasyPay · automated
+              {t("prcWelcomeFooter")}
             </p>
           </div>
         </motion.div>
