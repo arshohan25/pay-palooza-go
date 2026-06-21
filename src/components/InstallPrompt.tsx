@@ -156,16 +156,10 @@ const InstallPrompt = ({ isAuthenticated = true }: { isAuthenticated?: boolean }
                     transition={{ duration: 0.15 }}
                   >
                     <p className="text-[13px] font-bold text-foreground leading-tight">
-                      {stage === "idle" ? "Install EasyPay" : currentConfig.label}
+                      {stage === "idle" ? t("ipTitleIdle") : t(currentConfig.labelKey)}
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-                      {stage === "idle" && "Add to home screen for instant access"}
-                      {stage === "detecting" && "Checking device compatibility..."}
-                      {stage === "preparing" && "Optimizing for your device..."}
-                      {stage === "downloading" && "Getting the latest version..."}
-                      {stage === "installing" && "Almost there..."}
-                      {stage === "done" && "Check your home screen!"}
-                      {stage === "failed" && "You can try again anytime"}
+                      {t(currentConfig.descKey)}
                     </p>
                   </motion.div>
                 </AnimatePresence>
