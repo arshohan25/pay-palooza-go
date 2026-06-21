@@ -615,10 +615,10 @@ export default function PinResetTicketChat({
             exit={{ opacity: 0, y: 8, scale: 0.9 }}
             transition={{ type: "spring", stiffness: 420, damping: 28 }}
             className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground shadow-[0_8px_24px_-6px_hsl(var(--primary)/0.55)] ring-1 ring-primary/40"
-            aria-label={`${unreadCount} new message${unreadCount > 1 ? "s" : ""}, jump to latest`}
+            aria-label={tp(unreadCount > 1 ? "prcNewMsgMany" : "prcNewMsgOne", { n: fmtNum(unreadCount) })}
           >
             <ArrowDown className="h-3 w-3" />
-            {unreadCount} new {unreadCount > 1 ? "messages" : "message"}
+            {tp(unreadCount > 1 ? "prcNewLabelMany" : "prcNewLabelOne", { n: fmtNum(unreadCount) })}
           </motion.button>
         )}
       </AnimatePresence>
