@@ -313,7 +313,7 @@ function PermissionPicker({
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs font-semibold text-foreground">{p.label}</p>
                         {p.implies && p.implies.length > 0 && checked && (
-                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">+ view</Badge>
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">{t("mstViewBadge")}</Badge>
                         )}
                       </div>
                       {p.hint && <p className="text-[10px] text-muted-foreground leading-tight">{p.hint}</p>}
