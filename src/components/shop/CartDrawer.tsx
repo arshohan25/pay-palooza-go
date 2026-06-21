@@ -47,7 +47,7 @@ export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, o
 
         {items.length === 0 ? (
           <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-            Your cart is empty
+            {t("yourCartEmpty")}
           </div>
         ) : (
           <>
