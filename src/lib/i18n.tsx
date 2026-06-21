@@ -2227,6 +2227,65 @@ const translations = {
   popNotNow: { en: "Not now", bn: "এখন নয়" },
   popEnabled: { en: "Notifications enabled 🔔", bn: "নোটিফিকেশন চালু হয়েছে 🔔" },
   popFailed: { en: "Couldn't enable", bn: "চালু করা যায়নি" },
+
+  // NotificationPreferences
+  npTitle: { en: "Notification preferences", bn: "নোটিফিকেশন পছন্দসমূহ" },
+  npSubtitle: { en: "Choose which alerts buzz your device.", bn: "আপনার ডিভাইসে কোন অ্যালার্ট বাজবে তা বেছে নিন।" },
+  npStatusUnsupported: { en: "Unsupported on this device", bn: "এই ডিভাইসে সমর্থিত নয়" },
+  npStatusNotConfigured: { en: "Push not configured", bn: "পুশ কনফিগার করা নেই" },
+  npStatusBlocked: { en: "Permission blocked in browser", bn: "ব্রাউজারে অনুমতি ব্লক করা" },
+  npStatusActive: { en: "Push active on this device", bn: "এই ডিভাইসে পুশ সক্রিয়" },
+  npStatusInactive: { en: "Push not enabled on this device", bn: "এই ডিভাইসে পুশ চালু নেই" },
+  npDisable: { en: "Disable", bn: "বন্ধ করুন" },
+  npEnable: { en: "Enable", bn: "চালু করুন" },
+  npPushDisabled: { en: "Push disabled", bn: "পুশ বন্ধ করা হয়েছে" },
+  npPushEnabled: { en: "Push enabled 🔔", bn: "পুশ চালু হয়েছে 🔔" },
+  npCouldNotEnable: { en: "Couldn't enable", bn: "চালু করা যায়নি" },
+  npCouldNotSave: { en: "Couldn't save", bn: "সংরক্ষণ করা যায়নি" },
+  npCouldNotSaveQuiet: { en: "Couldn't save quiet hours", bn: "নীরব সময় সংরক্ষণ করা যায়নি" },
+  npToggleAria: { en: "Toggle {label}", bn: "{label} টগল করুন" },
+  npQuietHours: { en: "Quiet hours", bn: "নীরব সময়" },
+  npQuietDesc: { en: "Mute push during this window (Asia/Dhaka time). In-app alerts still appear.", bn: "এই সময়ের মধ্যে পুশ নীরব রাখুন (এশিয়া/ঢাকা সময়)। ইন-অ্যাপ অ্যালার্ট দেখা যাবে।" },
+  npQuietToggleAria: { en: "Toggle quiet hours", bn: "নীরব সময় টগল করুন" },
+  npFrom: { en: "From", bn: "থেকে" },
+  npTo: { en: "To", bn: "পর্যন্ত" },
+  npEnableHint: { en: "Enable push above to start receiving alerts. Your category choices are saved either way.", bn: "অ্যালার্ট পেতে উপরে পুশ চালু করুন। আপনার ক্যাটাগরির পছন্দ যেভাবেই হোক সংরক্ষিত হবে।" },
+
+  // NotificationPreferences — merchant categories
+  npCatMerchantNewOrder: { en: "New orders", bn: "নতুন অর্ডার" },
+  npCatMerchantNewOrderDesc: { en: "Buzz when a new order arrives.", bn: "নতুন অর্ডার এলে অ্যালার্ট পাবেন।" },
+  npCatMerchantPayout: { en: "Payouts", bn: "পেআউট" },
+  npCatMerchantPayoutDesc: { en: "Settlement and payout confirmations.", bn: "সেটেলমেন্ট ও পেআউট নিশ্চিতকরণ।" },
+  npCatMerchantRefund: { en: "Refunds & returns", bn: "রিফান্ড ও রিটার্ন" },
+  npCatMerchantRefundDesc: { en: "Refund requests and return updates.", bn: "রিফান্ড অনুরোধ ও রিটার্ন আপডেট।" },
+  npCatMerchantLowStock: { en: "Low stock alerts", bn: "কম স্টক অ্যালার্ট" },
+  npCatMerchantLowStockDesc: { en: "When inventory drops below threshold.", bn: "ইনভেন্টরি সীমার নিচে নামলে।" },
+  npCatMerchantInquiry: { en: "Customer inquiries", bn: "গ্রাহকের জিজ্ঞাসা" },
+  npCatMerchantInquiryDesc: { en: "Buyer chat messages on your products.", bn: "আপনার পণ্যে ক্রেতার চ্যাট মেসেজ।" },
+  npCatMerchantApi: { en: "API access updates", bn: "এপিআই অ্যাক্সেস আপডেট" },
+  npCatMerchantApiDesc: { en: "When your API access request is approved or denied.", bn: "আপনার এপিআই অ্যাক্সেস অনুরোধ অনুমোদিত বা প্রত্যাখ্যাত হলে।" },
+
+  // NotificationPreferences — agent categories
+  npCatAgentFloatLow: { en: "Float low", bn: "ফ্লোট কম" },
+  npCatAgentFloatLowDesc: { en: "When your float drops under 10%.", bn: "আপনার ফ্লোট ১০%-এর নিচে নামলে।" },
+  npCatAgentCommission: { en: "Commission credited", bn: "কমিশন জমা" },
+  npCatAgentCommissionDesc: { en: "When a commission is paid out.", bn: "কমিশন পরিশোধ হলে।" },
+  npCatAgentFundRequest: { en: "Fund requests", bn: "ফান্ড অনুরোধ" },
+  npCatAgentFundRequestDesc: { en: "Approval or rejection of fund requests.", bn: "ফান্ড অনুরোধ অনুমোদন বা প্রত্যাখ্যান।" },
+  npCatAgentCashInOut: { en: "Cash in / out", bn: "ক্যাশ ইন / আউট" },
+  npCatAgentCashInOutDesc: { en: "When customers transact with you.", bn: "গ্রাহক আপনার সাথে লেনদেন করলে।" },
+
+  // NotificationPreferences — savings categories
+  npCatSavingsCollected: { en: "DPS collected", bn: "ডিপিএস সংগ্রহ" },
+  npCatSavingsCollectedDesc: { en: "When an auto-save installment is collected or your goal completes.", bn: "অটো-সেভ কিস্তি সংগ্রহ হলে বা লক্ষ্য পূর্ণ হলে।" },
+  npCatSavingsMissed: { en: "DPS missed", bn: "ডিপিএস মিস" },
+  npCatSavingsMissedDesc: { en: "When an installment can't be collected (insufficient balance).", bn: "কিস্তি সংগ্রহ করা না গেলে (পর্যাপ্ত ব্যালেন্স নেই)।" },
+
+  // NotificationPreferences — common categories
+  npCatDailySummary: { en: "Daily summary", bn: "দৈনিক সারাংশ" },
+  npCatDailySummaryDesc: { en: "Yesterday's recap at 8:00 PM.", bn: "রাত ৮:০০টায় গতকালের সারসংক্ষেপ।" },
+  npCatMarketing: { en: "Promotions & tips", bn: "প্রমোশন ও টিপস" },
+  npCatMarketingDesc: { en: "Offers, drops, and platform updates.", bn: "অফার, ড্রপ ও প্ল্যাটফর্ম আপডেট।" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
