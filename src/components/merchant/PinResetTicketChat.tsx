@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface PinResetMessage {
   id: string;
