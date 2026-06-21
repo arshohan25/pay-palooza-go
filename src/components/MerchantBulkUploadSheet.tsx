@@ -177,12 +177,12 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
     <Sheet open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setRows([]); setImported(false); } }}>
       <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2"><FileSpreadsheet size={18} /> Bulk Product Upload</SheetTitle>
+          <SheetTitle className="flex items-center gap-2"><FileSpreadsheet size={18} /> {t("mbuTitle")}</SheetTitle>
         </SheetHeader>
         <div className="space-y-4 pt-4 pb-8">
           {/* Template download */}
           <Button onClick={downloadTemplate} variant="outline" className="w-full rounded-xl gap-2 h-10">
-            <Download size={14} /> Download CSV Template
+            <Download size={14} /> {t("mbuDownloadTemplate")}
           </Button>
 
           {/* File picker */}
@@ -191,8 +191,8 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
             className="border-2 border-dashed border-border rounded-2xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
           >
             <Upload size={24} className="mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm font-semibold text-foreground">Click to upload CSV</p>
-            <p className="text-xs text-muted-foreground mt-1">name, price, category, stock, sku, brand</p>
+            <p className="text-sm font-semibold text-foreground">{t("mbuUploadClick")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("mbuUploadHint")}</p>
           </div>
           <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
 
@@ -201,10 +201,10 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
             <>
               <Card className="p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-bold text-foreground">Preview ({rows.length} rows)</p>
+                  <p className="text-xs font-bold text-foreground">{t("mbuPreview").replace("{n}", fmtNum(rows.length))}</p>
                   <div className="flex gap-2 text-[10px]">
-                    <span className="text-emerald-600 font-bold">{rows.filter(r => r.valid).length} valid</span>
-                    {rows.some(r => !r.valid) && <span className="text-destructive font-bold">{rows.filter(r => !r.valid).length} invalid</span>}
+                    <span className="text-emerald-600 font-bold">{t("mbuValid").replace("{n}", fmtNum(rows.filter(r => r.valid).length))}</span>
+                    {rows.some(r => !r.valid) && <span className="text-destructive font-bold">{t("mbuInvalid").replace("{n}", fmtNum(rows.filter(r => !r.valid).length))}</span>}
                   </div>
                 </div>
                 <div className="max-h-48 overflow-y-auto space-y-1">
@@ -212,15 +212,15 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
                     <div key={i} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs ${r.valid ? "bg-muted/50" : "bg-destructive/10"}`}>
                       {r.valid ? <CheckCircle2 size={12} className="text-emerald-600 shrink-0" /> : <AlertTriangle size={12} className="text-destructive shrink-0" />}
                       <span className="font-medium text-foreground truncate flex-1">{r.name || "—"}</span>
-                      <span className="text-muted-foreground">৳{r.price}</span>
-                      <span className="text-muted-foreground">×{r.stock}</span>
+                      <span className="text-muted-foreground">৳{fmtNum(r.price)}</span>
+                      <span className="text-muted-foreground">×{fmtNum(r.stock)}</span>
                     </div>
                   ))}
                 </div>
               </Card>
               <Button onClick={handleImport} disabled={importing || !rows.some(r => r.valid)} className="w-full rounded-xl h-11 gap-2 font-bold">
                 {importing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                Import {rows.filter(r => r.valid).length} Products
+                {t("mbuImportBtn").replace("{n}", fmtNum(rows.filter(r => r.valid).length))}
               </Button>
             </>
           )}
@@ -228,10 +228,11 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
           {imported && (
             <div className="text-center py-6">
               <CheckCircle2 size={40} className="mx-auto text-emerald-600 mb-2" />
-              <p className="text-sm font-bold text-foreground">Import Complete!</p>
-              <p className="text-xs text-muted-foreground mt-1">Products are now in your catalog</p>
+              <p className="text-sm font-bold text-foreground">{t("mbuImportComplete")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("mbuImportCompleteDesc")}</p>
             </div>
           )}
+
         </div>
       </SheetContent>
     </Sheet>
