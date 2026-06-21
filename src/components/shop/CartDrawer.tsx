@@ -80,11 +80,11 @@ export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, o
 
             <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between text-base font-bold">
-                <span>Total</span>
+                <span>{t("total")}</span>
                 <span>৳{total.toLocaleString()}</span>
               </div>
               <Button className="w-full" size="lg" onClick={() => { onOpenChange(false); navigate("/shop/checkout"); }}>
-                Proceed to Checkout
+                {t("proceedToCheckout")}
               </Button>
             </div>
           </>
