@@ -53,10 +53,13 @@ const TEMPLATE_CSV = `name,price,original_price,category,stock,sku,brand,descrip
 
 const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange, onSuccess }: Props) => {
   const { toast } = useToast();
+  const { t, lang } = useI18n();
+  const fmtNum = (n: number) => n.toLocaleString(lang === "bn" ? "bn-BD" : "en-US");
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [imported, setImported] = useState(false);
+
 
   const downloadTemplate = () => {
     const blob = new Blob([TEMPLATE_CSV], { type: "text/csv" });
