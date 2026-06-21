@@ -542,7 +542,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
   }, [merchantId]);
 
   const handleAdd = async () => {
-    if (!name.trim() || !phone.trim()) { toast.error("Name and phone are required"); return; }
+    if (!name.trim() || !phone.trim()) { toast.error(t("mstToastNamePhoneRequired")); return; }
     setSaving(true);
     const { data, error } = await supabase
       .from("merchant_staff")
@@ -552,9 +552,9 @@ export default function MerchantStaffTab({ merchantId }: Props) {
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     if (data?.user_id) {
-      toast.success("Staff added & linked to EasyPay account");
+      toast.success(t("mstToastAddedLinked"));
     } else {
-      toast.success("Staff added (not yet on EasyPay)");
+      toast.success(t("mstToastAddedUnlinked"));
     }
     if (data?.id) sendInvite(data.id, { silent: true });
     setShowAdd(false); setName(""); setPhone(""); setRole("Cashier"); setPerms(defaultPermissionsFor("Cashier")); setPhoneLookup({ status: "idle", name: null });
