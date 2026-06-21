@@ -17,6 +17,7 @@ interface WriteReviewFormProps {
 
 export default function WriteReviewForm({ productId, orderId, onSuccess }: WriteReviewFormProps) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState("");
