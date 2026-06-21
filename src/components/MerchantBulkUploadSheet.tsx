@@ -140,7 +140,7 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
 
   const handleImport = async () => {
     const validRows = rows.filter(r => r.valid);
-    if (!validRows.length) { toast({ title: "No valid rows", variant: "destructive" }); return; }
+    if (!validRows.length) { toast({ title: t("mbuErrNoValid"), variant: "destructive" }); return; }
     setImporting(true);
     if (businessName) {
       await ensureVendorStore(merchantId, businessName);
