@@ -2200,6 +2200,25 @@ const translations = {
   vocStep5Desc: { en: "Get instant alerts the moment a customer pays.", bn: "গ্রাহক পেমেন্ট করার সাথে সাথে তাৎক্ষণিক অ্যালার্ট পান।" },
   vocStep5Eta: { en: "~30 sec", bn: "~৩০ সেকেন্ড" },
   vocStep5Cta: { en: "Enable notifications", bn: "নোটিফিকেশন সক্ষম করুন" },
+
+  // InstallPrompt (PWA install banner)
+  ipInstall: { en: "Install", bn: "ইনস্টল" },
+  ipDismiss: { en: "Dismiss", bn: "বাতিল" },
+  ipTitleIdle: { en: "Install EasyPay", bn: "EasyPay ইনস্টল করুন" },
+  ipStageIdle: { en: "Ready to install", bn: "ইনস্টলের জন্য প্রস্তুত" },
+  ipStageDetecting: { en: "Detecting device...", bn: "ডিভাইস শনাক্ত করা হচ্ছে..." },
+  ipStagePreparing: { en: "Preparing app bundle...", bn: "অ্যাপ বান্ডেল প্রস্তুত করা হচ্ছে..." },
+  ipStageDownloading: { en: "Downloading EasyPay...", bn: "EasyPay ডাউনলোড করা হচ্ছে..." },
+  ipStageInstalling: { en: "Installing on device...", bn: "ডিভাইসে ইনস্টল করা হচ্ছে..." },
+  ipStageDone: { en: "Installed successfully!", bn: "সফলভাবে ইনস্টল হয়েছে!" },
+  ipStageFailed: { en: "Installation cancelled", bn: "ইনস্টলেশন বাতিল করা হয়েছে" },
+  ipDescIdle: { en: "Add to home screen for instant access", bn: "তাৎক্ষণিক প্রবেশের জন্য হোম স্ক্রিনে যোগ করুন" },
+  ipDescDetecting: { en: "Checking device compatibility...", bn: "ডিভাইস সামঞ্জস্য পরীক্ষা করা হচ্ছে..." },
+  ipDescPreparing: { en: "Optimizing for your device...", bn: "আপনার ডিভাইসের জন্য অপ্টিমাইজ করা হচ্ছে..." },
+  ipDescDownloading: { en: "Getting the latest version...", bn: "সর্বশেষ সংস্করণ আনা হচ্ছে..." },
+  ipDescInstalling: { en: "Almost there...", bn: "প্রায় শেষ..." },
+  ipDescDone: { en: "Check your home screen!", bn: "আপনার হোম স্ক্রিন দেখুন!" },
+  ipDescFailed: { en: "You can try again anytime", bn: "আপনি যেকোনো সময় আবার চেষ্টা করতে পারেন" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

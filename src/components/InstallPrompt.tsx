@@ -3,22 +3,24 @@ import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, X, Smartphone, CheckCircle2, Loader2, Wifi, Shield, Zap } from "lucide-react";
 import { getInstallPrompt, onPromptAvailable, isAppInstalled, clearPrompt } from "@/lib/installPromptStore";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 const DISMISSED_KEY = "mfs_pwa_dismissed";
 
 type InstallStage = "idle" | "detecting" | "preparing" | "downloading" | "installing" | "done" | "failed";
 
-const STAGE_CONFIG: Record<InstallStage, { label: string; icon: typeof Loader2; color: string; progress: number }> = {
-  idle: { label: "Ready to install", icon: Download, color: "text-primary", progress: 0 },
-  detecting: { label: "Detecting device...", icon: Wifi, color: "text-blue-500", progress: 15 },
-  preparing: { label: "Preparing app bundle...", icon: Shield, color: "text-amber-500", progress: 35 },
-  downloading: { label: "Downloading EasyPay...", icon: Loader2, color: "text-primary", progress: 65 },
-  installing: { label: "Installing on device...", icon: Zap, color: "text-emerald-500", progress: 85 },
-  done: { label: "Installed successfully!", icon: CheckCircle2, color: "text-emerald-500", progress: 100 },
-  failed: { label: "Installation cancelled", icon: X, color: "text-destructive", progress: 0 },
+const STAGE_CONFIG: Record<InstallStage, { labelKey: TranslationKey; descKey: TranslationKey; icon: typeof Loader2; color: string; progress: number }> = {
+  idle: { labelKey: "ipStageIdle", descKey: "ipDescIdle", icon: Download, color: "text-primary", progress: 0 },
+  detecting: { labelKey: "ipStageDetecting", descKey: "ipDescDetecting", icon: Wifi, color: "text-blue-500", progress: 15 },
+  preparing: { labelKey: "ipStagePreparing", descKey: "ipDescPreparing", icon: Shield, color: "text-amber-500", progress: 35 },
+  downloading: { labelKey: "ipStageDownloading", descKey: "ipDescDownloading", icon: Loader2, color: "text-primary", progress: 65 },
+  installing: { labelKey: "ipStageInstalling", descKey: "ipDescInstalling", icon: Zap, color: "text-emerald-500", progress: 85 },
+  done: { labelKey: "ipStageDone", descKey: "ipDescDone", icon: CheckCircle2, color: "text-emerald-500", progress: 100 },
+  failed: { labelKey: "ipStageFailed", descKey: "ipDescFailed", icon: X, color: "text-destructive", progress: 0 },
 };
 
 const InstallPrompt = ({ isAuthenticated = true }: { isAuthenticated?: boolean }) => {
+  const { t } = useI18n();
   const [hasPrompt, setHasPrompt] = useState(!!getInstallPrompt());
   const [show, setShow] = useState(false);
   const [stage, setStage] = useState<InstallStage>("idle");
@@ -154,16 +156,10 @@ const InstallPrompt = ({ isAuthenticated = true }: { isAuthenticated?: boolean }
                     transition={{ duration: 0.15 }}
                   >
                     <p className="text-[13px] font-bold text-foreground leading-tight">
-                      {stage === "idle" ? "Install EasyPay" : currentConfig.label}
+                      {stage === "idle" ? t("ipTitleIdle") : t(currentConfig.labelKey)}
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-                      {stage === "idle" && "Add to home screen for instant access"}
-                      {stage === "detecting" && "Checking device compatibility..."}
-                      {stage === "preparing" && "Optimizing for your device..."}
-                      {stage === "downloading" && "Getting the latest version..."}
-                      {stage === "installing" && "Almost there..."}
-                      {stage === "done" && "Check your home screen!"}
-                      {stage === "failed" && "You can try again anytime"}
+                      {t(currentConfig.descKey)}
                     </p>
                   </motion.div>
                 </AnimatePresence>
@@ -179,13 +175,13 @@ const InstallPrompt = ({ isAuthenticated = true }: { isAuthenticated?: boolean }
                       className="flex items-center gap-1.5 px-3 py-1.5 gradient-primary text-primary-foreground text-[12px] font-semibold rounded-xl shadow-glow"
                     >
                       <Download size={13} strokeWidth={2.5} />
-                      Install
+                      {t("ipInstall")}
                     </motion.button>
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={handleDismiss}
                       className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Dismiss"
+                      aria-label={t("ipDismiss")}
                     >
                       <X size={14} strokeWidth={2.5} />
                     </motion.button>
