@@ -271,17 +271,17 @@ function PermissionPicker({
                   ) : (
                     <>
                       <span className="text-[11px] font-medium text-foreground">{p.name}</span>
-                      <span className="text-[10px] text-muted-foreground">·{countActive(p.permissions)}</span>
+                      <span className="text-[10px] text-muted-foreground">·{fmtNum(countActive(p.permissions))}</span>
                       <button
                         className="text-muted-foreground hover:text-foreground ml-0.5"
-                        title="Rename"
+                        title={t("mstRename")}
                         onClick={() => setRenaming({ id: p.id, name: p.name })}
                       >
                         <Pencil size={11} />
                       </button>
                       <button
                         className="text-destructive/70 hover:text-destructive"
-                        title="Delete"
+                        title={t("mstDelete")}
                         onClick={() => onDeletePreset(p.id)}
                       >
                         <Trash2 size={11} />
