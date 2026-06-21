@@ -578,7 +578,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
       .eq("id", editing.id);
     setSavingEdit(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Permissions updated");
+    toast.success(t("mstToastPermsUpdated"));
     setEditing(null);
   };
 
@@ -589,7 +589,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
 
   const deleteStaff = async (id: string) => {
     const { error } = await supabase.from("merchant_staff").delete().eq("id", id);
-    if (error) toast.error(error.message); else toast.success("Staff removed");
+    if (error) toast.error(error.message); else toast.success(t("mstToastRemoved"));
   };
 
   const activeCount = staff.filter(s => s.is_active).length;
