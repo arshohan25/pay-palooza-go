@@ -2286,6 +2286,17 @@ const translations = {
   npCatDailySummaryDesc: { en: "Yesterday's recap at 8:00 PM.", bn: "রাত ৮:০০টায় গতকালের সারসংক্ষেপ।" },
   npCatMarketing: { en: "Promotions & tips", bn: "প্রমোশন ও টিপস" },
   npCatMarketingDesc: { en: "Offers, drops, and platform updates.", bn: "অফার, ড্রপ ও প্ল্যাটফর্ম আপডেট।" },
+
+  // FilterDrawer (shop)
+  fdTitle: { en: "Filters", bn: "ফিল্টার" },
+  fdPriceRange: { en: "Price Range (৳)", bn: "মূল্যের পরিসর (৳)" },
+  fdMin: { en: "Min", bn: "সর্বনিম্ন" },
+  fdMax: { en: "Max", bn: "সর্বোচ্চ" },
+  fdMinRating: { en: "Minimum Rating", bn: "সর্বনিম্ন রেটিং" },
+  fdAndUp: { en: "& up", bn: "ও তার বেশি" },
+  fdBrand: { en: "Brand", bn: "ব্র্যান্ড" },
+  fdClearAll: { en: "Clear All", bn: "সব মুছুন" },
+  fdApply: { en: "Apply Filters", bn: "ফিল্টার প্রয়োগ করুন" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
