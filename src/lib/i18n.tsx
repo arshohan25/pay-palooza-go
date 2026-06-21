@@ -2314,6 +2314,7 @@ const translations = {
   catOffice: { en: "Office", bn: "অফিস" },
   catGarden: { en: "Garden", bn: "বাগান" },
   catTravel: { en: "Travel", bn: "ভ্রমণ" },
+  saSearchPlaceholder: { en: "Search products, brands, stores...", bn: "পণ্য, ব্র্যান্ড, দোকান খুঁজুন..." },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
