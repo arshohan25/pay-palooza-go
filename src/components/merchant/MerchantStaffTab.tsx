@@ -132,10 +132,11 @@ function PermissionPicker({
     if (val.startsWith("__role_")) {
       const r = val.replace("__role_", "").replace("__", "") as StaffRole;
       const defaults = defaultPermissionsFor(r);
+      const roleLabel = r === "Manager" ? t("mstManager") : r === "Cashier" ? t("mstCashier") : t("mstViewer");
       stagePreview(
-        `${r} preset`,
+        `${roleLabel}`,
         defaults,
-        { kind: "builtin", name: r, total: ROLE_DEFAULTS[r].length },
+        { kind: "builtin", name: roleLabel, total: ROLE_DEFAULTS[r].length },
         onChange,
       );
       return;
@@ -153,8 +154,8 @@ function PermissionPicker({
 
   const doSave = async () => {
     const name = presetName.trim();
-    if (!name) { toast.error("Name required"); return; }
-    if (active === 0) { toast.error("Select at least one feature first"); return; }
+    if (!name) { toast.error(t("mstToastNameRequired")); return; }
+    if (active === 0) { toast.error(t("mstToastSelectOne")); return; }
     setSavingPreset(true);
     try {
       await onSavePreset(name, value);
@@ -168,7 +169,7 @@ function PermissionPicker({
   const doRename = async () => {
     if (!renaming) return;
     const name = renaming.name.trim();
-    if (!name) { toast.error("Name required"); return; }
+    if (!name) { toast.error(t("mstToastNameRequired")); return; }
     await onRenamePreset(renaming.id, name);
     setRenaming(null);
   };
