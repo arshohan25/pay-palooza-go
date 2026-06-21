@@ -74,7 +74,7 @@ export default function ProductCard({ product, isWishlisted, onAddToCart, onTogg
         </button>
         {product.stock <= 0 && (
           <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-            <span className="text-sm font-semibold text-destructive">Out of Stock</span>
+            <span className="text-sm font-semibold text-destructive">{t("pcOutOfStock")}</span>
           </div>
         )}
       </div>
