@@ -2337,6 +2337,9 @@ const translations = {
   prNoReviews: { en: "No reviews yet. Be the first to review this product!", bn: "এখনো কোনো রিভিউ নেই। প্রথম রিভিউ দিন!" },
   prVerified: { en: "Verified", bn: "যাচাইকৃত" },
   prAnonymous: { en: "Anonymous", bn: "অজ্ঞাতনামা" },
+
+  // ProductCard (shop)
+  pcOutOfStock: { en: "Out of Stock", bn: "স্টকে নেই" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
