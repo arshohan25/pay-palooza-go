@@ -46,7 +46,7 @@ export default function MerchantBusinessKycFlow({ open, onOpenChange }: Props) {
   const locale = lang === "bn" ? "bn-BD" : "en-US";
   const fmtNum = (n: number) => n.toLocaleString(locale);
   const tp = (key: TranslationKey, vars: Record<string, string | number>) =>
-    Object.entries(vars).reduce<string>((acc, [k, v]) => acc.replaceAll(`{${k}}`, String(v)), t(key));
+    Object.entries(vars).reduce<string>((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), t(key));
 
   useEffect(() => {
     if (!open) return;
