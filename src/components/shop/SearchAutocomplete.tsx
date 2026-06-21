@@ -3,6 +3,7 @@ import { Search, X, TrendingUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 interface SearchAutocompleteProps {
   value: string;
@@ -20,6 +21,7 @@ interface Suggestion {
 }
 
 export default function SearchAutocomplete({ value, onChange, onNavigate }: SearchAutocompleteProps) {
+  const { t } = useI18n();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,7 +66,7 @@ export default function SearchAutocomplete({ value, onChange, onNavigate }: Sear
     <div ref={containerRef} className="relative flex-1">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
       <Input
-        placeholder="Search products, brands, stores..."
+        placeholder={t("saSearchPlaceholder")}
         className="pl-9 pr-8 h-9 text-sm rounded-full border-border/40 bg-muted/30 focus-visible:ring-primary/30"
         value={value}
         onChange={(e) => onChange(e.target.value)}
