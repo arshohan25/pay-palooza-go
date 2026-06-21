@@ -490,16 +490,16 @@ export default function MerchantStaffTab({ merchantId }: Props) {
         const body = ctx ? await ctx.json() : null;
         if (body?.cooldown) { toast.error(body.message || "Please wait before resending."); return; }
       } catch (_) { /* ignore */ }
-      if (!opts?.silent) toast.error(error.message || "Failed to send invite");
+      if (!opts?.silent) toast.error(error.message || t("mstToastInviteFailed"));
       return;
     }
     if (!opts?.silent) {
       const r = (data as any)?.results || {};
       const channels: string[] = [];
-      if (r.push?.sent > 0) channels.push("push");
-      if (r.sms?.status === "sent") channels.push("SMS");
-      if (r.email?.status === "sent") channels.push("email");
-      toast.success(channels.length ? `Invite sent via ${channels.join(", ")}` : "Invite logged (no channels available)");
+      if (r.push?.sent > 0) channels.push(t("mstChPush") as string);
+      if (r.sms?.status === "sent") channels.push(t("mstChSms") as string);
+      if (r.email?.status === "sent") channels.push(t("mstChEmail") as string);
+      toast.success(channels.length ? tp("mstToastInviteSent", { channels: channels.join(", ") }) : t("mstToastInviteLogged"));
     }
   };
 
