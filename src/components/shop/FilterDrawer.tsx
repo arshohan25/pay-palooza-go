@@ -29,6 +29,7 @@ export const defaultFilters: ShopFilters = {
 };
 
 export default function FilterDrawer({ filters, onApply, availableBrands, activeCount }: FilterDrawerProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [local, setLocal] = useState<ShopFilters>(filters);
 
