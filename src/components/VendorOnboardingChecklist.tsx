@@ -7,42 +7,38 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useKycStatus } from "@/hooks/use-kyc-status";
 import KycFlow from "@/components/KycFlow";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 type StepStatus = "done" | "active" | "pending" | "in_review" | "locked" | "rejected";
 
 interface StepDef {
   key: string;
-  title: string;
-  desc: string;
-  eta: string;
+  titleKey: TranslationKey;
+  descKey: TranslationKey;
+  etaKey: TranslationKey;
   icon: LucideIcon;
-  cta: string;
+  ctaKey: TranslationKey;
 }
 
 const STEPS: StepDef[] = [
-  { key: "personal_kyc", title: "Verify your identity", desc: "Confirm your personal KYC to unlock business onboarding.", eta: "~3 min", icon: ShieldCheck, cta: "Complete KYC" },
-  { key: "submit_app",   title: "Submit business application", desc: "Tell us about your shop and upload trade documents.", eta: "~5 min", icon: FileText, cta: "Apply as Vendor" },
-  { key: "approval",     title: "Get approved by our team", desc: "We review applications within 24–48 hours on business days.", eta: "1–2 days", icon: BadgeCheck, cta: "Awaiting review" },
-  { key: "bank",         title: "Add settlement bank account", desc: "Where we send your daily payouts after MDR.", eta: "~2 min", icon: Landmark, cta: "Add bank account" },
-  { key: "notifications",title: "Turn on order notifications", desc: "Get instant alerts the moment a customer pays.", eta: "~30 sec", icon: Bell, cta: "Enable notifications" },
+  { key: "personal_kyc",  titleKey: "vocStep1Title", descKey: "vocStep1Desc", etaKey: "vocStep1Eta", icon: ShieldCheck, ctaKey: "vocStep1Cta" },
+  { key: "submit_app",    titleKey: "vocStep2Title", descKey: "vocStep2Desc", etaKey: "vocStep2Eta", icon: FileText,    ctaKey: "vocStep2Cta" },
+  { key: "approval",      titleKey: "vocStep3Title", descKey: "vocStep3Desc", etaKey: "vocStep3Eta", icon: BadgeCheck,  ctaKey: "vocStep3Cta" },
+  { key: "bank",          titleKey: "vocStep4Title", descKey: "vocStep4Desc", etaKey: "vocStep4Eta", icon: Landmark,    ctaKey: "vocStep4Cta" },
+  { key: "notifications", titleKey: "vocStep5Title", descKey: "vocStep5Desc", etaKey: "vocStep5Eta", icon: Bell,        ctaKey: "vocStep5Cta" },
 ];
 
 interface Props {
   onApply: () => void;
 }
 
-/**
- * Premium 5-step vendor onboarding checklist.
- * Completion is derived in real-time from existing DB tables — no shadow state.
- *
- * Source of truth per step:
- *  1 personal_kyc → profiles.kyc_status = 'verified'
- *  2 submit_app   → merchant_applications row exists for user
- *  3 approval     → merchants.business_kyc_status = 'approved'
- *  4 bank         → merchants.bank_account_number IS NOT NULL
- *  5 notifications→ push_subscriptions row exists for user
- */
 export default function VendorOnboardingChecklist({ onApply }: Props) {
+  const { t, lang } = useI18n();
+  const locale = lang === "bn" ? "bn-BD" : "en-US";
+  const fmtNum = (n: number) => n.toLocaleString(locale);
+  const tp = (key: TranslationKey, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce<string>((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), t(key));
+
   const { status: personalKycStatus, loading: kycLoading } = useKycStatus();
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +49,7 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
   const [hasBank, setHasBank] = useState(false);
   const [hasPush, setHasPush] = useState(false);
 
-  const [pendingSince, setPendingSince] = useState<string | null>(null); // merchant.created_at when business_kyc_status='pending'
+  const [pendingSince, setPendingSince] = useState<string | null>(null);
 
   const load = useCallback(async (uid: string) => {
     const [appRes, merchRes, pushRes] = await Promise.all([
@@ -86,8 +82,6 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
     return () => { active = false; };
   }, [load]);
 
-  // Realtime subscriptions on the source-of-truth tables
-  // (personal KYC realtime is handled inside useKycStatus)
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
@@ -99,7 +93,6 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
     return () => { supabase.removeChannel(channel); };
   }, [userId, load]);
 
-  // ── Real-time review-time ETA ─────────────────────────────────────────
   const [eta, setEta] = useState<{ medianMin: number; p90Min: number; sample: number; isEstimate: boolean } | null>(null);
   const fetchEta = useCallback(async () => {
     const { data, error } = await supabase.rpc("get_merchant_review_eta");
@@ -115,7 +108,6 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
 
   useEffect(() => { fetchEta(); }, [fetchEta]);
 
-  // Re-fetch every 5 minutes; also re-fetch whenever any merchant transitions to approved.
   useEffect(() => {
     const intv = setInterval(fetchEta, 5 * 60 * 1000);
     const channel = supabase
@@ -129,68 +121,63 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
     return () => { clearInterval(intv); supabase.removeChannel(channel); };
   }, [fetchEta]);
 
-  // Tick every minute so the personalized countdown stays fresh
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const i = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(i);
   }, []);
 
-  // Format minutes as a friendly duration
   const fmtMinutes = (m: number) => {
-    if (m < 60) return `${Math.max(1, Math.round(m))}m`;
-    if (m < 60 * 24) return `${Math.round(m / 60)}h`;
-    return `${Math.round(m / (60 * 24))}d`;
+    if (m < 60) return `${fmtNum(Math.max(1, Math.round(m)))}${t("vocMinUnit")}`;
+    if (m < 60 * 24) return `${fmtNum(Math.round(m / 60))}${t("vocHourUnit")}`;
+    return `${fmtNum(Math.round(m / (60 * 24)))}${t("vocDayUnit")}`;
   };
   const etaChipText = eta
-    ? eta.isEstimate ? "1–2 days est." : `~${fmtMinutes(eta.medianMin)} typical`
-    : "1–2 days";
+    ? eta.isEstimate ? t("vocEtaEstimate") : tp("vocEtaTypical", { dur: fmtMinutes(eta.medianMin) })
+    : t("vocEtaDefault");
 
-  // Confidence tier driven by sample size from the RPC.
-  // Drives chip color, dot color, and the caption shown below Step 3.
   type ConfTier = "estimate" | "low" | "medium" | "high";
   const confidence: { tier: ConfTier; label: string; dotClass: string; chipClass: string; tip: string } = (() => {
     if (!eta || eta.isEstimate || eta.sample < 3) {
       return {
         tier: "estimate",
-        label: "Estimated",
+        label: t("vocConfEstimated"),
         dotClass: "bg-muted-foreground/60 animate-pulse",
         chipClass: "bg-muted text-muted-foreground border border-border/60",
-        tip: "Estimated — not enough recent approvals to compute a real ETA yet.",
+        tip: t("vocTipEstimated"),
       };
     }
     if (eta.sample < 10) return {
-      tier: "low", label: "Low confidence",
+      tier: "low", label: t("vocConfLow"),
       dotClass: "bg-rose-500",
       chipClass: "bg-rose-500/10 text-rose-700 border border-rose-500/30",
-      tip: `Low confidence — based on only ${eta.sample} recent approvals.`,
+      tip: tp("vocTipLow", { n: fmtNum(eta.sample) }),
     };
     if (eta.sample < 30) return {
-      tier: "medium", label: "Medium confidence",
+      tier: "medium", label: t("vocConfMedium"),
       dotClass: "bg-amber-500",
       chipClass: "bg-amber-500/10 text-amber-700 border border-amber-500/30",
-      tip: `Medium confidence — based on ${eta.sample} recent approvals.`,
+      tip: tp("vocTipMedium", { n: fmtNum(eta.sample) }),
     };
     return {
-      tier: "high", label: "High confidence",
+      tier: "high", label: t("vocConfHigh"),
       dotClass: "bg-emerald-500",
       chipClass: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/30",
-      tip: `High confidence — based on ${eta.sample} recent approvals.`,
+      tip: tp("vocTipHigh", { n: fmtNum(eta.sample) }),
     };
   })();
 
-  // Personalized countdown for the current pending application
   const elapsedMin = pendingSince ? Math.max(0, (now - new Date(pendingSince).getTime()) / 60000) : 0;
   const personalLine: { text: string; tone: "amber" | "muted" } | null = (() => {
     if (!eta || !pendingSince || businessKycStatus !== "pending") return null;
     if (elapsedMin < eta.medianMin) {
       const remaining = eta.medianMin - elapsedMin;
-      return { text: `About ${fmtMinutes(remaining)} left on average`, tone: "amber" };
+      return { text: tp("vocPersonalRemaining", { dur: fmtMinutes(remaining) }), tone: "amber" };
     }
     if (elapsedMin < eta.p90Min) {
-      return { text: "Almost there — usually done by now", tone: "amber" };
+      return { text: t("vocPersonalAlmost"), tone: "amber" };
     }
-    return { text: "Taking longer than usual — we'll notify you the moment it's done", tone: "muted" };
+    return { text: t("vocPersonalDelay"), tone: "muted" };
   })();
 
 
@@ -199,40 +186,31 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
     try {
       const perm = await Notification.requestPermission();
       if (perm !== "granted") return;
-      // Best-effort hint: a project-wide push subscription manager will create the push_subscriptions row.
-      // The realtime listener above will refresh once it lands.
       window.dispatchEvent(new CustomEvent("easypay:enable-push"));
     } catch {/* ignore */}
   };
 
-  // Derive per-step status
   const statuses: StepStatus[] = useMemo(() => {
     const s: StepStatus[] = ["pending","pending","pending","pending","pending"];
-    // 1 personal kyc
     s[0] = personalKycStatus === "verified" ? "done"
          : personalKycStatus === "pending" ? "in_review"
          : personalKycStatus === "rejected" ? "rejected"
          : "active";
-    // Gate downstream behind step 1
     const step1Done = s[0] === "done";
 
-    // 2 submit application
     s[1] = appStatus === "approved" || appStatus === "pending" || appStatus === "rejected"
          ? (appStatus === "rejected" ? "rejected" : "done")
          : (step1Done ? "active" : "locked");
 
     const step2Done = s[1] === "done";
 
-    // 3 approval
     s[2] = businessKycStatus === "approved" ? "done"
          : businessKycStatus === "rejected" ? "rejected"
          : (step2Done ? "in_review" : "locked");
 
     const step3Done = s[2] === "done";
 
-    // 4 bank
     s[3] = hasBank ? "done" : (step3Done ? "active" : "locked");
-    // 5 notifications
     s[4] = hasPush ? "done" : (step3Done ? "active" : "locked");
     return s;
   }, [personalKycStatus, appStatus, businessKycStatus, hasBank, hasPush]);
@@ -242,18 +220,16 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
   const percent = Math.round((completed / total) * 100);
 
   const nextStepIdx = statuses.findIndex(s => s === "active" || s === "rejected");
-  const nextLabel = nextStepIdx >= 0 ? STEPS[nextStepIdx].title : completed === total ? "All set!" : "Awaiting review";
+  const nextLabel = nextStepIdx >= 0 ? t(STEPS[nextStepIdx].titleKey) : completed === total ? t("vocAllSet") : t("vocAwaitingReview");
 
-  // Visual config for status pill
   const pillFor = (st: StepStatus, n: number) => {
     if (st === "done") return { bg: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", node: <Check size={14} strokeWidth={3} /> };
-    if (st === "active") return { bg: "bg-primary/15 text-primary border-primary/30 ring-2 ring-primary/20", node: <span className="text-[11px] font-black">{n}</span> };
+    if (st === "active") return { bg: "bg-primary/15 text-primary border-primary/30 ring-2 ring-primary/20", node: <span className="text-[11px] font-black">{fmtNum(n)}</span> };
     if (st === "in_review") return { bg: "bg-amber-500/15 text-amber-600 border-amber-500/30", node: <Loader2 size={12} className="animate-spin" /> };
     if (st === "rejected") return { bg: "bg-destructive/15 text-destructive border-destructive/30", node: <span className="text-[11px] font-black">!</span> };
     return { bg: "bg-muted text-muted-foreground border-border/60", node: <Lock size={11} /> };
   };
 
-  // Circumference for progress ring (r=42 → 2πr ≈ 263.89)
   const C = 2 * Math.PI * 42;
   const dash = (percent / 100) * C;
 
@@ -265,14 +241,11 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
         transition={{ delay: 0.2 }}
       >
         <Card className="relative overflow-hidden border-0 shadow-elevated p-5 rounded-[19px]">
-          {/* Decorative orb */}
           <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full opacity-15 pointer-events-none" style={{
             background: "radial-gradient(circle, hsl(24 90% 50%) 0%, transparent 70%)"
           }} />
 
-          {/* Header: ring + title */}
           <div className="relative flex items-center gap-4">
-            {/* Progress ring */}
             <div className="relative shrink-0 w-[100px] h-[100px]">
               <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                 <defs>
@@ -292,24 +265,23 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <p className="text-xl font-black text-foreground leading-none">{completed}<span className="text-sm text-muted-foreground">/{total}</span></p>
-                <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wider mt-1">complete</p>
+                <p className="text-xl font-black text-foreground leading-none">{fmtNum(completed)}<span className="text-sm text-muted-foreground">/{fmtNum(total)}</span></p>
+                <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wider mt-1">{t("vocComplete")}</p>
               </div>
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 mb-1">
                 <Sparkles size={12} className="text-primary" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">Onboarding</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">{t("vocOnboarding")}</span>
               </div>
-              <h3 className="text-base font-black text-foreground leading-tight mb-1">Become a Vendor in 5 steps</h3>
+              <h3 className="text-base font-black text-foreground leading-tight mb-1">{t("vocTitle")}</h3>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Next: <span className="font-semibold text-foreground">{(loading || kycLoading) ? "Loading…" : nextLabel}</span>
+                {t("vocNext")} <span className="font-semibold text-foreground">{(loading || kycLoading) ? t("vocLoading") : nextLabel}</span>
               </p>
             </div>
           </div>
 
-          {/* Step list */}
           <div className="mt-4 space-y-2">
             <AnimatePresence initial={false}>
               {STEPS.map((step, idx) => {
@@ -317,12 +289,14 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
                 const pill = pillFor(st, idx + 1);
                 const Icon = step.icon;
                 const showCta = st === "active" || st === "rejected";
-                const ctaLabel = st === "rejected" ? (idx === 0 ? "Resubmit KYC" : idx === 1 ? "Reapply" : step.cta) : step.cta;
+                const ctaLabel = st === "rejected"
+                  ? (idx === 0 ? t("vocStep1Resubmit") : idx === 1 ? t("vocStep2Reapply") : t(step.ctaKey))
+                  : t(step.ctaKey);
 
                 const handleClick = () => {
                   if (idx === 0) setKycOpen(true);
                   else if (idx === 1) onApply();
-                  else if (idx === 3) onApply(); // bank captured inside business KYC flow
+                  else if (idx === 3) onApply();
                   else if (idx === 4) enableNotifications();
                 };
 
@@ -349,7 +323,7 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <Icon size={12} className={st === "done" ? "text-emerald-600" : st === "locked" ? "text-muted-foreground/60" : "text-foreground"} />
                         <p className={`text-[13px] font-bold leading-tight ${st === "locked" ? "text-muted-foreground" : "text-foreground"}`}>
-                          {step.title}
+                          {t(step.titleKey)}
                         </p>
                         <span
                           className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold inline-flex items-center gap-1 ${
@@ -364,14 +338,14 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
                           {idx === 2 && st !== "done" && st !== "locked" && (
                             <span className={`inline-block w-1.5 h-1.5 rounded-full ${confidence.dotClass}`} />
                           )}
-                          {st === "done" ? "Done"
-                            : st === "in_review" ? "In review"
-                            : st === "rejected" ? "Action needed"
+                          {st === "done" ? t("vocDone")
+                            : st === "in_review" ? t("vocInReview")
+                            : st === "rejected" ? t("vocActionNeeded")
                             : idx === 2 ? etaChipText
-                            : step.eta}
+                            : t(step.etaKey)}
                         </span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">{step.desc}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">{t(step.descKey)}</p>
                       {idx === 2 && st === "in_review" && personalLine && (
                         <p className={`text-[10.5px] font-semibold mt-1 leading-tight ${personalLine.tone === "amber" ? "text-amber-700" : "text-muted-foreground"}`}>
                           {personalLine.text}
@@ -382,7 +356,7 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
                           <span className={`inline-block w-1.5 h-1.5 rounded-full ${confidence.dotClass}`} />
                           <span className="font-semibold">{confidence.label}</span>
                           <span aria-hidden>•</span>
-                          <span>{eta.sample} {eta.sample === 1 ? "approval" : "approvals"}</span>
+                          <span>{fmtNum(eta.sample)} {eta.sample === 1 ? t("vocApproval") : t("vocApprovals")}</span>
                         </p>
                       )}
                     </div>
@@ -410,7 +384,7 @@ export default function VendorOnboardingChecklist({ onApply }: Props) {
               className="mt-4 rounded-[15px] p-3 border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 flex items-center gap-2"
             >
               <Check size={16} className="text-emerald-600" />
-              <p className="text-xs font-bold text-emerald-700">You're fully onboarded — your dashboard is ready.</p>
+              <p className="text-xs font-bold text-emerald-700">{t("vocFullyOnboarded")}</p>
             </motion.div>
           )}
         </Card>
