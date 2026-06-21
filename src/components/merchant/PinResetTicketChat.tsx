@@ -352,7 +352,7 @@ export default function PinResetTicketChat({
           // Stop flushing on error; surface and remove the failed item
           setMessages((prev) => prev.filter((m) => m.id !== next.id));
           setQueue((q) => q.slice(1));
-          toast.error(err?.message || "Couldn't send message");
+          toast.error(err?.message || (t("prcErrSendFailed") as string));
           break;
         }
       }
