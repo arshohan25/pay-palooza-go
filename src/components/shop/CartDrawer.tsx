@@ -41,7 +41,7 @@ export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, o
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5" /> Cart ({count})
+            <ShoppingCart className="w-5 h-5" /> {t("cart")} ({count})
           </SheetTitle>
         </SheetHeader>
 
