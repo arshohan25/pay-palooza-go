@@ -184,7 +184,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
             >
               <div className="w-10 h-1 bg-border rounded-full mx-auto mb-2" />
               <div className="flex items-center justify-between">
-                <p className="text-base font-bold text-foreground">{editing === "new" ? "New Address" : "Edit Address"}</p>
+                <p className="text-base font-bold text-foreground">{editing === "new" ? t("amNewAddress") : t("amEditAddress")}</p>
                 <Button variant="ghost" size="icon" onClick={() => setEditing(null)}><X className="w-4 h-4" /></Button>
               </div>
 
@@ -194,45 +194,45 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
                   <button key={l} onClick={() => setForm(f => ({ ...f, label: l }))}
                     className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-colors ${
                       form.label === l ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-border"
-                    }`}>{l}</button>
+                    }`}>{t(labelKey(l))}</button>
                 ))}
               </div>
 
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Full Name *</Label>
-                  <Input value={form.recipient_name} onChange={e => setForm(f => ({ ...f, recipient_name: e.target.value }))} placeholder="e.g. Karim Hossain" />
+                  <Label className="text-xs">{t("amFullName")}</Label>
+                  <Input value={form.recipient_name} onChange={e => setForm(f => ({ ...f, recipient_name: e.target.value }))} placeholder={t("amNamePlaceholder")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Phone *</Label>
-                  <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="e.g. 01712-345678" />
+                  <Label className="text-xs">{t("amPhone")}</Label>
+                  <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder={t("amPhonePlaceholder")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Address Line *</Label>
-                  <Input value={form.address_line} onChange={e => setForm(f => ({ ...f, address_line: e.target.value }))} placeholder="House/Flat, Road, Block" />
+                  <Label className="text-xs">{t("amAddressLine")}</Label>
+                  <Input value={form.address_line} onChange={e => setForm(f => ({ ...f, address_line: e.target.value }))} placeholder={t("amAddressPlaceholder")} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Area / Thana</Label>
-                    <Input value={form.area} onChange={e => setForm(f => ({ ...f, area: e.target.value }))} placeholder="e.g. Mirpur-10" />
+                    <Label className="text-xs">{t("amAreaThana")}</Label>
+                    <Input value={form.area} onChange={e => setForm(f => ({ ...f, area: e.target.value }))} placeholder={t("amAreaPlaceholder")} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">City *</Label>
-                    <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="e.g. Dhaka" />
+                    <Label className="text-xs">{t("amCity")}</Label>
+                    <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={t("amCityPlaceholder")} />
                   </div>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.is_default} onChange={e => setForm(f => ({ ...f, is_default: e.target.checked }))}
                     className="rounded border-border" />
-                  <span className="text-xs text-foreground">Set as default address</span>
+                  <span className="text-xs text-foreground">{t("amSetDefault")}</span>
                 </label>
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button variant="outline" className="flex-1" onClick={() => setEditing(null)}>Cancel</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setEditing(null)}>{t("amCancel")}</Button>
                 <Button className="flex-1" onClick={handleSave} disabled={saving}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Save Address
+                  {t("amSaveAddress")}
                 </Button>
               </div>
             </motion.div>
