@@ -666,8 +666,8 @@ export default function PinResetTicketChat({
                       <p className="truncate text-[11.5px] font-medium text-foreground">{pendingFile.name}</p>
                       <p className="text-[10px] text-muted-foreground">
                         {formatBytes(pendingFile.size)}
-                        {!uploaded && uploadProgress < 1 && ` · uploading ${Math.round(uploadProgress * 100)}%`}
-                        {uploaded && " · ready"}
+                        {!uploaded && uploadProgress < 1 && tp("prcUploading", { pct: fmtNum(Math.round(uploadProgress * 100)) })}
+                        {uploaded && t("prcReady")}
                       </p>
                       {!uploaded && (
                         <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
