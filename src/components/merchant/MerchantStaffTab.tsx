@@ -99,7 +99,7 @@ function PermissionPicker({
     const removed = [...currentSet].filter(k => !nextSet.has(k));
     if (!added.length && !removed.length && !stripped.length) {
       onConfirm(cleaned);
-      toast.success(`${label} matches current selection`);
+      toast.success(tp("mstToastMatches", { label }));
       return;
     }
     setPendingPreset({
@@ -109,7 +109,7 @@ function PermissionPicker({
       added,
       removed,
       stripped,
-      onConfirm: () => { onConfirm(cleaned); setPendingPreset(null); toast.success(`Applied ${label}`); },
+      onConfirm: () => { onConfirm(cleaned); setPendingPreset(null); toast.success(tp("mstToastApplied", { label })); },
     });
   };
 
