@@ -1854,6 +1854,22 @@ const translations = {
   miaOutOfStock: { en: "Out of stock", bn: "স্টকে নেই" },
   miaLeft: { en: "{n} left", bn: "{n}টি বাকি" },
   miaRestocked: { en: "{name} restocked ✓", bn: "{name} আবার মজুদ ✓" },
+  mbuTitle: { en: "Bulk Product Upload", bn: "একসাথে পণ্য আপলোড" },
+  mbuDownloadTemplate: { en: "Download CSV Template", bn: "CSV টেমপ্লেট ডাউনলোড করুন" },
+  mbuUploadClick: { en: "Click to upload CSV", bn: "CSV আপলোড করতে ক্লিক করুন" },
+  mbuUploadHint: { en: "name, price, category, stock, sku, brand", bn: "name, price, category, stock, sku, brand" },
+  mbuPreview: { en: "Preview ({n} rows)", bn: "প্রিভিউ ({n}টি সারি)" },
+  mbuValid: { en: "{n} valid", bn: "{n}টি বৈধ" },
+  mbuInvalid: { en: "{n} invalid", bn: "{n}টি অবৈধ" },
+  mbuImportBtn: { en: "Import {n} Products", bn: "{n}টি পণ্য ইম্পোর্ট করুন" },
+  mbuImportComplete: { en: "Import Complete!", bn: "ইম্পোর্ট সম্পন্ন!" },
+  mbuImportCompleteDesc: { en: "Products are now in your catalog", bn: "পণ্যগুলো এখন আপনার ক্যাটালগে আছে" },
+  mbuErrEmpty: { en: "Empty CSV", bn: "খালি CSV" },
+  mbuErrHeaders: { en: "CSV must have 'name' and 'price' columns", bn: "CSV-তে 'name' এবং 'price' কলাম থাকতে হবে" },
+  mbuErrNoValid: { en: "No valid rows", bn: "কোনো বৈধ সারি নেই" },
+  mbuErrImportFailed: { en: "Import failed", bn: "ইম্পোর্ট ব্যর্থ" },
+  mbuRowInvalid: { en: "Missing name or invalid price", bn: "নাম নেই বা দাম অবৈধ" },
+  mbuToastImported: { en: "{n} products imported ✓", bn: "{n}টি পণ্য ইম্পোর্ট হয়েছে ✓" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
