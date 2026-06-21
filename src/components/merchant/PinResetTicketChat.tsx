@@ -453,13 +453,13 @@ export default function PinResetTicketChat({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <h2 className="truncate text-[13px] font-semibold leading-tight text-foreground">
-                EasyPay Support
+                {t("prcSupportName")}
               </h2>
               <Sparkles className="h-3 w-3 text-primary" />
             </div>
             <p className="flex items-center gap-1 truncate text-[10px] leading-tight text-muted-foreground">
               <Lock className="h-2.5 w-2.5" />
-              Encrypted · +88 {maskedPhone}
+              {t("prcEncrypted")} · +88 {maskedPhone}
             </p>
           </div>
           <div
@@ -470,7 +470,7 @@ export default function PinResetTicketChat({
             }`}
           >
             <ShieldCheck className="h-3 w-3" />
-            {isResolved ? "RESOLVED" : "VERIFIED"}
+            {isResolved ? t("prcResolvedBadge") : t("prcVerifiedBadge")}
           </div>
         </div>
       </div>
