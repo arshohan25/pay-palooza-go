@@ -321,7 +321,7 @@ export default function PinResetTicketChat({
       setUploaded({ path, mime: file.type, name: file.name, size: file.size });
       setUploadProgress(1);
     } catch (err: any) {
-      toast.error(err?.message || "Upload failed");
+      toast.error(err?.message || (t("prcErrUploadFailed") as string));
       clearPending();
     }
   };
