@@ -435,6 +435,14 @@ function PermissionPicker({
 }
 
 export default function MerchantStaffTab({ merchantId }: Props) {
+  const { t, lang } = useI18n();
+  const fmtNum = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(n);
+  const tp = (key: TranslationKey, vars: Record<string, string | number>) => {
+    let s = t(key) as string;
+    for (const [k, v] of Object.entries(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+    return s;
+  };
+  const localizedRole = (r: string) => r === "Manager" ? t("mstManager") : r === "Cashier" ? t("mstCashier") : r === "Viewer" ? t("mstViewer") : r;
   const [staff, setStaff] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
