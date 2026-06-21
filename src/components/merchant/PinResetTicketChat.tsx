@@ -813,6 +813,7 @@ function AttachmentBubble({
   isMe: boolean;
   callChat: (action: "fetch" | "send" | "ack" | "attach_init" | "attach_url", extra?: Record<string, unknown>) => Promise<any>;
 }) {
+  const { t } = useI18n();
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const isImage = (message.attachment_mime ?? "").startsWith("image/");
