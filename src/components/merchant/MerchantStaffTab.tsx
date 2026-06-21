@@ -181,39 +181,38 @@ function PermissionPicker({
       {ownerOnlyPresent.length > 0 && (
         <Alert variant="destructive" className="py-2 px-3">
           <AlertTriangle className="h-3.5 w-3.5" />
-          <AlertTitle className="text-[11px] font-semibold mb-0.5">Owner-only permissions will be stripped</AlertTitle>
+          <AlertTitle className="text-[11px] font-semibold mb-0.5">{t("mstOwnerStripTitle")}</AlertTitle>
           <AlertDescription className="text-[10px] leading-tight">
-            {ownerOnlyPresent.map(k => OWNER_ONLY_LABELS[k] ?? k).join(", ")} can only be held by the
-            store owner. These will be removed automatically when you save this staff member.
+            {ownerOnlyPresent.map(k => OWNER_ONLY_LABELS[k] ?? k).join(", ")}{t("mstOwnerStripDesc")}
           </AlertDescription>
         </Alert>
       )}
       <div className="rounded-xl bg-muted/40 px-3 py-2 space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-[11px] text-muted-foreground">
-            <span className="font-semibold text-foreground">{active}</span> of {total} features granted
+            {tp("mstFeaturesGranted", { active: fmtNum(active), total: fmtNum(total) }).split(/(\d+|[০-৯]+)/).map((seg, i) => /^(\d+|[০-৯]+)$/.test(seg) && seg === fmtNum(active) ? <span key={i} className="font-semibold text-foreground">{seg}</span> : seg)}
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Select onValueChange={applyChoice}>
             <SelectTrigger className="h-8 text-[11px] flex-1">
-              <SelectValue placeholder="Apply preset…" />
+              <SelectValue placeholder={t("mstApplyPreset")} />
             </SelectTrigger>
             <SelectContent className="z-[120]">
               <SelectGroup>
-                <SelectLabel className="text-[10px]">Built-in</SelectLabel>
-                <SelectItem value="__role_Manager__" className="text-xs">Manager · {ROLE_DEFAULTS.Manager.length}</SelectItem>
-                <SelectItem value="__role_Cashier__" className="text-xs">Cashier · {ROLE_DEFAULTS.Cashier.length}</SelectItem>
-                <SelectItem value="__role_Viewer__" className="text-xs">Viewer · {ROLE_DEFAULTS.Viewer.length}</SelectItem>
+                <SelectLabel className="text-[10px]">{t("mstBuiltIn")}</SelectLabel>
+                <SelectItem value="__role_Manager__" className="text-xs">{t("mstManager")} · {fmtNum(ROLE_DEFAULTS.Manager.length)}</SelectItem>
+                <SelectItem value="__role_Cashier__" className="text-xs">{t("mstCashier")} · {fmtNum(ROLE_DEFAULTS.Cashier.length)}</SelectItem>
+                <SelectItem value="__role_Viewer__" className="text-xs">{t("mstViewer")} · {fmtNum(ROLE_DEFAULTS.Viewer.length)}</SelectItem>
               </SelectGroup>
               {customPresets.length > 0 && (
                 <>
                   <SelectSeparator />
                   <SelectGroup>
-                    <SelectLabel className="text-[10px]">My presets</SelectLabel>
+                    <SelectLabel className="text-[10px]">{t("mstMyPresets")}</SelectLabel>
                     {customPresets.map(p => (
                       <SelectItem key={p.id} value={p.id} className="text-xs">
-                        {p.name} · {countActive(p.permissions)}
+                        {p.name} · {fmtNum(countActive(p.permissions))}
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -221,11 +220,11 @@ function PermissionPicker({
               )}
               <SelectSeparator />
               <SelectItem value="__save_current__" className="text-xs text-primary">
-                + Save current as preset…
+                {t("mstSaveCurrent")}
               </SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" className="h-8 px-2" title="Save current as preset" onClick={() => setShowSave(s => !s)}>
+          <Button size="sm" variant="outline" className="h-8 px-2" title={t("mstSavePresetTitle")} onClick={() => setShowSave(s => !s)}>
             <Bookmark size={13} />
           </Button>
         </div>
@@ -236,13 +235,13 @@ function PermissionPicker({
               autoFocus
               value={presetName}
               onChange={e => setPresetName(e.target.value)}
-              placeholder="e.g. Night Cashier"
+              placeholder={t("mstPresetNamePh")}
               className="h-8 text-xs"
               maxLength={40}
               onKeyDown={(e) => { if (e.key === "Enter") doSave(); }}
             />
             <Button size="sm" className="h-8 px-3 text-[11px]" disabled={savingPreset} onClick={doSave}>
-              {savingPreset ? "Saving…" : "Save"}
+              {savingPreset ? t("mstSavingPreset") : t("mstSavePreset")}
             </Button>
             <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => { setShowSave(false); setPresetName(""); }}>
               <X size={13} />
@@ -252,7 +251,7 @@ function PermissionPicker({
 
         {customPresets.length > 0 && (
           <div className="pt-1 space-y-1">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Manage custom</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("mstManageCustom")}</p>
             <div className="flex flex-wrap gap-1.5">
               {customPresets.map(p => (
                 <div key={p.id} className="flex items-center gap-1 rounded-lg border border-border/50 bg-background px-2 py-1">
