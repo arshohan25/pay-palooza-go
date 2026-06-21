@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProductImage from "@/components/ProductImage";
+import { useI18n } from "@/lib/i18n";
 import type { ShopProduct } from "./ProductCard";
 
 export interface CartItem extends ShopProduct {
@@ -21,6 +22,7 @@ interface CartDrawerProps {
 
 export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, open, onOpenChange }: CartDrawerProps) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const total = items.reduce((s, i) => s + i.price * i.qty, 0);
   const count = items.reduce((s, i) => s + i.qty, 0);
 
@@ -39,13 +41,13 @@ export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, o
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5" /> Cart ({count})
+            <ShoppingCart className="w-5 h-5" /> {t("cart")} ({count})
           </SheetTitle>
         </SheetHeader>
 
         {items.length === 0 ? (
           <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-            Your cart is empty
+            {t("yourCartEmpty")}
           </div>
         ) : (
           <>
@@ -78,11 +80,11 @@ export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, o
 
             <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between text-base font-bold">
-                <span>Total</span>
+                <span>{t("total")}</span>
                 <span>৳{total.toLocaleString()}</span>
               </div>
               <Button className="w-full" size="lg" onClick={() => { onOpenChange(false); navigate("/shop/checkout"); }}>
-                Proceed to Checkout
+                {t("proceedToCheckout")}
               </Button>
             </div>
           </>
