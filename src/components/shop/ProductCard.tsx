@@ -2,6 +2,7 @@ import { Heart, Star, ShoppingCart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ProductImage from "@/components/ProductImage";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export interface ShopProduct {
