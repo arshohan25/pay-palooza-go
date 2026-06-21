@@ -101,7 +101,7 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
 
           {/* Rating Filter */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Minimum Rating</p>
+            <p className="text-sm font-medium text-foreground">{t("fdMinRating")}</p>
             <div className="flex gap-2">
               {[4, 3, 2, 1].map((r) => (
                 <button
@@ -114,7 +114,7 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
                       : "border-border text-foreground hover:border-primary/50"
                   )}
                 >
-                  {r}<Star className="w-3 h-3 fill-accent text-accent" />&up
+                  {r}<Star className="w-3 h-3 fill-accent text-accent" />{t("fdAndUp")}
                 </button>
               ))}
             </div>
@@ -123,7 +123,7 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
           {/* Brand Filter */}
           {availableBrands.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">Brand</p>
+              <p className="text-sm font-medium text-foreground">{t("fdBrand")}</p>
               <div className="flex flex-wrap gap-2">
                 {availableBrands.map((brand) => (
                   <Badge
@@ -143,10 +143,10 @@ export default function FilterDrawer({ filters, onApply, availableBrands, active
 
         <div className="flex gap-3 pt-2">
           <Button variant="outline" className="flex-1" onClick={handleClear}>
-            Clear All
+            {t("fdClearAll")}
           </Button>
           <Button className="flex-1" onClick={handleApply}>
-            Apply Filters
+            {t("fdApply")}
           </Button>
         </div>
       </SheetContent>
