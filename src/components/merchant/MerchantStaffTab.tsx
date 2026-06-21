@@ -697,36 +697,36 @@ export default function MerchantStaffTab({ merchantId }: Props) {
       {/* Add Staff sheet */}
       <Sheet open={showAdd} onOpenChange={setShowAdd}>
         <SheetContent side="bottom" className="rounded-t-2xl z-[80] max-h-[92vh] overflow-y-auto" overlayClassName="z-[80]">
-          <SheetHeader><SheetTitle>Add Staff Member</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{t("mstAddStaffMember")}</SheetTitle></SheetHeader>
           <div className="space-y-4 mt-4">
-            <div><Label className="text-xs">Name</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Staff name" /></div>
+            <div><Label className="text-xs">{t("mstName")}</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder={t("mstNamePh")} /></div>
             <div>
-              <Label className="text-xs">Phone</Label>
+              <Label className="text-xs">{t("mstPhone")}</Label>
               <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="01XXXXXXXXX" inputMode="numeric" />
-              {phoneLookup.status === "checking" && <p className="text-[10px] text-muted-foreground mt-1">Checking EasyPay…</p>}
+              {phoneLookup.status === "checking" && <p className="text-[10px] text-muted-foreground mt-1">{t("mstChecking")}</p>}
               {phoneLookup.status === "found" && (
                 <p className="text-[10px] text-emerald-600 mt-1 flex items-center gap-1">
-                  <LinkIcon size={10} /> On EasyPay{phoneLookup.name ? ` — ${phoneLookup.name}` : ""}. They'll get instant access.
+                  <LinkIcon size={10} /> {t("mstOnEasyPay")}{phoneLookup.name ? ` — ${phoneLookup.name}` : ""}{t("mstInstantAccess")}
                 </p>
               )}
               {phoneLookup.status === "missing" && (
                 <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
-                  <AlertTriangle size={10} /> Not on EasyPay yet. They'll be linked automatically when they sign up.
+                  <AlertTriangle size={10} /> {t("mstNotOnEasyPayDesc")}
                 </p>
               )}
             </div>
             <div>
-              <Label className="text-xs">Role preset</Label>
+              <Label className="text-xs">{t("mstRolePreset")}</Label>
               <div className="flex gap-2 mt-1">
                 {roles.map(r => (
-                  <Button key={r} size="sm" variant={role === r ? "default" : "outline"} className="text-xs flex-1" onClick={() => setRole(r)}>{r}</Button>
+                  <Button key={r} size="sm" variant={role === r ? "default" : "outline"} className="text-xs flex-1" onClick={() => setRole(r)}>{localizedRole(r)}</Button>
                 ))}
               </div>
             </div>
 
             <div>
               <Label className="text-xs flex items-center gap-1.5">
-                <SlidersHorizontal size={12} /> Feature access
+                <SlidersHorizontal size={12} /> {t("mstFeatureAccess")}
               </Label>
               <div className="mt-2">
                 <PermissionPicker
@@ -742,7 +742,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
             </div>
 
             <Button className="w-full" disabled={saving} onClick={handleAdd}>
-              {saving ? "Adding..." : `Add Staff · ${countActive(perms)} feature${countActive(perms) === 1 ? "" : "s"}`}
+              {saving ? t("mstAdding") : tp(countActive(perms) === 1 ? "mstAddStaffBtnOne" : "mstAddStaffBtnMany", { n: fmtNum(countActive(perms)) })}
             </Button>
           </div>
         </SheetContent>
@@ -752,15 +752,15 @@ export default function MerchantStaffTab({ merchantId }: Props) {
       <Sheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <SheetContent side="bottom" className="rounded-t-2xl z-[80] max-h-[92vh] overflow-y-auto" overlayClassName="z-[80]">
           <SheetHeader>
-            <SheetTitle>Permissions · {editing?.name}</SheetTitle>
+            <SheetTitle>{tp("mstPermissionsTitle", { name: editing?.name || "" })}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4">
             <div className="flex items-center justify-between rounded-xl bg-muted/30 px-3 py-2">
               <div className="text-[11px]">
-                <p className="font-semibold text-foreground">{editing?.role} role</p>
-                <p className="text-muted-foreground">Changes apply instantly — no logout needed.</p>
+                <p className="font-semibold text-foreground">{tp("mstRoleLabel", { role: localizedRole(editing?.role || "") })}</p>
+                <p className="text-muted-foreground">{t("mstChangesInstant")}</p>
               </div>
-              <Badge variant="outline" className={`text-[9px] ${roleColors[editing?.role] || ""}`}>{editing?.role}</Badge>
+              <Badge variant="outline" className={`text-[9px] ${roleColors[editing?.role] || ""}`}>{localizedRole(editing?.role || "")}</Badge>
             </div>
             {editing && (
               <PermissionPicker
@@ -774,7 +774,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
               />
             )}
             <Button className="w-full" disabled={savingEdit} onClick={saveEdit}>
-              {savingEdit ? "Saving..." : `Save · ${countActive(editPerms)} feature${countActive(editPerms) === 1 ? "" : "s"}`}
+              {savingEdit ? t("mstSavingBtn") : tp(countActive(editPerms) === 1 ? "mstSaveBtnOne" : "mstSaveBtnMany", { n: fmtNum(countActive(editPerms)) })}
             </Button>
           </div>
         </SheetContent>
