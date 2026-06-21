@@ -175,13 +175,13 @@ const InstallPrompt = ({ isAuthenticated = true }: { isAuthenticated?: boolean }
                       className="flex items-center gap-1.5 px-3 py-1.5 gradient-primary text-primary-foreground text-[12px] font-semibold rounded-xl shadow-glow"
                     >
                       <Download size={13} strokeWidth={2.5} />
-                      Install
+                      {t("ipInstall")}
                     </motion.button>
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={handleDismiss}
                       className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Dismiss"
+                      aria-label={t("ipDismiss")}
                     >
                       <X size={14} strokeWidth={2.5} />
                     </motion.button>
