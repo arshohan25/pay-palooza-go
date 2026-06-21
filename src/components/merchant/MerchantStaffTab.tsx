@@ -647,7 +647,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
       </Card>
 
       {staff.length === 0 ? (
-        <Card className="border-0 shadow-elevated"><CardContent className="p-8 text-center text-muted-foreground text-xs">No staff added yet. Tap "Add Staff" to get started.</CardContent></Card>
+        <Card className="border-0 shadow-elevated"><CardContent className="p-8 text-center text-muted-foreground text-xs">{t("mstNoStaff")}</CardContent></Card>
       ) : (
         <div className="space-y-2">
           {staff.map(s => {
@@ -663,27 +663,27 @@ export default function MerchantStaffTab({ merchantId }: Props) {
                           <p className="text-xs font-bold text-foreground truncate">{s.name}</p>
                           {s.user_id ? (
                             <Badge variant="outline" className="text-[8px] px-1 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-200">
-                              <LinkIcon size={8} className="mr-0.5" />Linked
+                              <LinkIcon size={8} className="mr-0.5" />{t("mstLinkedBadge")}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-[8px] px-1 py-0 bg-amber-500/10 text-amber-600 border-amber-200">
-                              <AlertTriangle size={8} className="mr-0.5" />Not on EasyPay
+                              <AlertTriangle size={8} className="mr-0.5" />{t("mstNotOnEasyPay")}
                             </Badge>
                           )}
                         </div>
                         <p className="text-[10px] text-muted-foreground">{s.phone}</p>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <Badge variant="outline" className={`text-[9px] ${roleColors[s.role] || ""}`}>{s.role}</Badge>
-                          <span className="text-[10px] text-muted-foreground">· {granted} feature{granted === 1 ? "" : "s"}</span>
+                          <Badge variant="outline" className={`text-[9px] ${roleColors[s.role] || ""}`}>{localizedRole(s.role)}</Badge>
+                          <span className="text-[10px] text-muted-foreground">{tp(granted === 1 ? "mstFeatureOne" : "mstFeatureMany", { n: fmtNum(granted) })}</span>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground" title="Edit permissions" onClick={() => openEdit(s)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground" title={t("mstEditPermissions")} onClick={() => openEdit(s)}>
                         <SlidersHorizontal size={13} />
                       </Button>
                       <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s.id, s.is_active)} />
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title="Resend invite" disabled={resendingId === s.id} onClick={() => sendInvite(s.id)}><Send size={13} /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title={t("mstResendInvite")} disabled={resendingId === s.id} onClick={() => sendInvite(s.id)}><Send size={13} /></Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteStaff(s.id)}><Trash2 size={13} /></Button>
                     </div>
                   </div>
