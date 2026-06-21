@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Undo2, Clock, CheckCircle2, XCircle, Search, Plus, Package, Loader2 } from "lucide-react";
+import { Undo2, Clock, CheckCircle2, XCircle, Search, Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 
 interface RefundRow {
   id: string;
@@ -38,15 +39,17 @@ const statusConfig: Record<string, { color: string; icon: typeof Clock }> = {
 };
 
 export default function MerchantRefundsTab({ merchantId }: { merchantId: string }) {
-  const { user } = useAuth();
+  useAuth();
   const { toast } = useToast();
+  const { t, lang } = useI18n();
+  const locale = lang === "bn" ? "bn-BD" : "en-US";
+  const fmtNum = (n: number) => n.toLocaleString(locale);
 
   const [refunds, setRefunds] = useState<RefundRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showIssue, setShowIssue] = useState(false);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
 
-  // Issue refund state
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [orderSearch, setOrderSearch] = useState("");
@@ -68,7 +71,6 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
 
   useEffect(() => { fetchRefunds(); }, [fetchRefunds]);
 
-  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel("merchant-refunds-rt")
@@ -77,7 +79,6 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
     return () => { supabase.removeChannel(channel); };
   }, [merchantId, fetchRefunds]);
 
-  // Load eligible orders when sheet opens
   const openIssueSheet = async () => {
     setShowIssue(true);
     setOrdersLoading(true);
@@ -87,7 +88,6 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
     setReason("");
     setOrderSearch("");
 
-    // Fetch delivered/completed orders for this merchant's products
     const { data } = await supabase
       .from("orders")
       .select("id, order_num, total, user_id, status")
@@ -95,7 +95,6 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
       .order("created_at", { ascending: false })
       .limit(100);
 
-    // Filter orders that have items from this merchant
     if (data && data.length > 0) {
       const orderIds = data.map(o => o.id);
       const { data: items } = await supabase
@@ -107,7 +106,6 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
       const validOrderIds = new Set((items || []).map(i => i.order_id));
       const filtered = data.filter(o => validOrderIds.has(o.id));
 
-      // Get customer names
       const userIds = [...new Set(filtered.map(o => o.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -115,7 +113,7 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
         .in("user_id", userIds);
       const nameMap = new Map((profiles || []).map(p => [p.user_id, p.name]));
 
-      setOrders(filtered.map(o => ({ ...o, customer_name: nameMap.get(o.user_id) || "Unknown" })) as OrderRow[]);
+      setOrders(filtered.map(o => ({ ...o, customer_name: nameMap.get(o.user_id) || t("mrtUnknown") })) as OrderRow[]);
     } else {
       setOrders([]);
     }
@@ -124,12 +122,12 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
 
   const handleSubmitRefund = async () => {
     if (!selectedOrder || !reason.trim()) {
-      toast({ title: "Please select an order and provide a reason", variant: "destructive" });
+      toast({ title: t("mrtErrSelectAndReason"), variant: "destructive" });
       return;
     }
     const amount = refundType === "full" ? selectedOrder.total : parseFloat(partialAmount);
     if (!amount || amount <= 0 || amount > selectedOrder.total) {
-      toast({ title: "Invalid refund amount", variant: "destructive" });
+      toast({ title: t("mrtErrInvalidAmount"), variant: "destructive" });
       return;
     }
 
@@ -147,9 +145,9 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
 
     setSubmitting(false);
     if (error) {
-      toast({ title: "Failed to submit refund", description: error.message, variant: "destructive" });
+      toast({ title: t("mrtErrSubmitFailed"), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Refund request submitted", description: "Admin will review shortly." });
+      toast({ title: t("mrtToastSubmitted"), description: t("mrtToastSubmittedDesc") });
       setShowIssue(false);
       fetchRefunds();
     }
@@ -165,11 +163,17 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
   const timeAgo = (d: string) => {
     const diff = Date.now() - new Date(d).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 60) return t("mrtTimeMinAgo").replace("{n}", fmtNum(mins));
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+    if (hrs < 24) return t("mrtTimeHourAgo").replace("{n}", fmtNum(hrs));
+    return t("mrtTimeDayAgo").replace("{n}", fmtNum(Math.floor(hrs / 24)));
   };
+
+  const filterKey = (f: typeof filter) =>
+    f === "all" ? "mrtFilterAll" : f === "pending" ? "mrtFilterPending" : f === "approved" ? "mrtFilterApproved" : "mrtFilterRejected";
+
+  const statusKey = (s: string) =>
+    s === "approved" ? "mrtStatusApproved" : s === "rejected" ? "mrtStatusRejected" : "mrtStatusPending";
 
   if (loading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-primary" size={28} /></div>;
@@ -179,34 +183,33 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-          <Undo2 size={18} className="text-primary" /> Refund Management
+          <Undo2 size={18} className="text-primary" /> {t("mrtTitle")}
         </h3>
         <Button size="sm" className="h-8 text-xs" onClick={openIssueSheet}>
-          <Plus size={13} className="mr-1" /> Issue Refund
+          <Plus size={13} className="mr-1" /> {t("mrtIssueRefund")}
         </Button>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-2">
-        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{refunds.length}</p><p className="text-[10px] text-muted-foreground">Total</p></CardContent></Card>
-        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-amber-600">{pendingCount}</p><p className="text-[10px] text-muted-foreground">Pending</p></CardContent></Card>
-        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-emerald-600">৳{approvedTotal}</p><p className="text-[10px] text-muted-foreground">Refunded</p></CardContent></Card>
+        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{fmtNum(refunds.length)}</p><p className="text-[10px] text-muted-foreground">{t("mrtTotal")}</p></CardContent></Card>
+        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-amber-600">{fmtNum(pendingCount)}</p><p className="text-[10px] text-muted-foreground">{t("mrtPending")}</p></CardContent></Card>
+        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-emerald-600">৳{fmtNum(approvedTotal)}</p><p className="text-[10px] text-muted-foreground">{t("mrtRefunded")}</p></CardContent></Card>
       </div>
 
-      {/* Status filter */}
       <div className="flex gap-1.5">
         {(["all", "pending", "approved", "rejected"] as const).map(f => (
-          <Button key={f} size="sm" variant={filter === f ? "default" : "outline"} className="h-7 text-[10px] px-2.5 capitalize" onClick={() => setFilter(f)}>{f}</Button>
+          <Button key={f} size="sm" variant={filter === f ? "default" : "outline"} className="h-7 text-[10px] px-2.5 capitalize" onClick={() => setFilter(f)}>{t(filterKey(f))}</Button>
         ))}
       </div>
 
-      {/* Refund List */}
       {filteredRefunds.length === 0 ? (
         <Card className="border-0 shadow-elevated">
           <CardContent className="p-8 text-center">
             <Undo2 size={32} className="mx-auto text-muted-foreground/40 mb-2" />
-            <p className="text-sm font-medium text-muted-foreground">No refunds {filter !== "all" ? `with status "${filter}"` : "yet"}</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Issue a refund from a delivered order</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              {filter !== "all" ? t("mrtNoneStatus").replace("{status}", t(filterKey(filter))) : t("mrtNoneYet")}
+            </p>
+            <p className="text-xs text-muted-foreground/70 mt-1">{t("mrtNoneHint")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -218,17 +221,17 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-foreground">{r.customer_name || "Unknown"}</p>
+                      <p className="text-xs font-bold text-foreground">{r.customer_name || t("mrtUnknown")}</p>
                       <p className="text-[10px] text-muted-foreground">{r.order_num || "—"} · {timeAgo(r.created_at)}</p>
                       <p className="text-[10px] text-muted-foreground italic">"{r.reason}"</p>
-                      {r.admin_note && <p className="text-[10px] text-primary/80 mt-1">Admin: {r.admin_note}</p>}
+                      {r.admin_note && <p className="text-[10px] text-primary/80 mt-1">{t("mrtAdminLabel").replace("{note}", r.admin_note)}</p>}
                     </div>
                     <div className="text-right space-y-1.5">
-                      <p className="text-sm font-bold text-foreground">৳{r.amount}</p>
+                      <p className="text-sm font-bold text-foreground">৳{fmtNum(r.amount)}</p>
                       <Badge variant="outline" className={`text-[9px] ${cfg.color}`}>
-                        <cfg.icon size={10} className="mr-0.5" />{r.status}
+                        <cfg.icon size={10} className="mr-0.5" />{t(statusKey(r.status))}
                       </Badge>
-                      <p className="text-[9px] text-muted-foreground capitalize">{r.refund_type}</p>
+                      <p className="text-[9px] text-muted-foreground capitalize">{r.refund_type === "full" ? t("mrtTypeFull") : t("mrtTypePartial")}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -238,24 +241,22 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
         </div>
       )}
 
-      {/* Issue Refund Sheet */}
       <Sheet open={showIssue} onOpenChange={setShowIssue}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto z-[80]" overlayClassName="z-[80]">
           <SheetHeader>
-            <SheetTitle className="flex items-center gap-2"><Undo2 size={18} /> Issue Refund</SheetTitle>
+            <SheetTitle className="flex items-center gap-2"><Undo2 size={18} /> {t("mrtIssueRefund")}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4">
-            {/* Order selection */}
             <div>
-              <label className="text-xs font-medium text-foreground mb-1.5 block">Select Order</label>
+              <label className="text-xs font-medium text-foreground mb-1.5 block">{t("mrtSelectOrder")}</label>
               <div className="relative mb-2">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Search by order # or name..." className="pl-8 h-9 text-xs" value={orderSearch} onChange={e => setOrderSearch(e.target.value)} />
+                <Input placeholder={t("mrtSearchOrders")} className="pl-8 h-9 text-xs" value={orderSearch} onChange={e => setOrderSearch(e.target.value)} />
               </div>
               {ordersLoading ? (
                 <div className="flex justify-center py-4"><Loader2 className="animate-spin text-primary" size={20} /></div>
               ) : searchedOrders.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">No eligible delivered orders found</p>
+                <p className="text-xs text-muted-foreground text-center py-4">{t("mrtNoEligibleOrders")}</p>
               ) : (
                 <div className="max-h-40 overflow-y-auto space-y-1.5">
                   {searchedOrders.map(o => (
@@ -266,7 +267,7 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
                           <span className="font-bold text-foreground">{o.order_num}</span>
                           <span className="text-muted-foreground ml-2">{o.customer_name}</span>
                         </div>
-                        <span className="font-bold text-foreground">৳{o.total}</span>
+                        <span className="font-bold text-foreground">৳{fmtNum(o.total)}</span>
                       </div>
                     </button>
                   ))}
@@ -276,35 +277,33 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
 
             {selectedOrder && (
               <>
-                {/* Refund type */}
                 <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 block">Refund Type</label>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">{t("mrtRefundType")}</label>
                   <div className="flex gap-2">
                     <Button size="sm" variant={refundType === "full" ? "default" : "outline"} className="h-8 text-xs flex-1" onClick={() => setRefundType("full")}>
-                      Full (৳{selectedOrder.total})
+                      {t("mrtFullRefund").replace("{total}", fmtNum(selectedOrder.total))}
                     </Button>
                     <Button size="sm" variant={refundType === "partial" ? "default" : "outline"} className="h-8 text-xs flex-1" onClick={() => setRefundType("partial")}>
-                      Partial
+                      {t("mrtPartialRefund")}
                     </Button>
                   </div>
                 </div>
 
                 {refundType === "partial" && (
                   <div>
-                    <label className="text-xs font-medium text-foreground mb-1.5 block">Amount (max ৳{selectedOrder.total})</label>
-                    <Input type="number" placeholder="Enter amount" className="h-9 text-xs" value={partialAmount} onChange={e => setPartialAmount(e.target.value)} max={selectedOrder.total} min={1} />
+                    <label className="text-xs font-medium text-foreground mb-1.5 block">{t("mrtAmountMax").replace("{total}", fmtNum(selectedOrder.total))}</label>
+                    <Input type="number" placeholder={t("mrtEnterAmount")} className="h-9 text-xs" value={partialAmount} onChange={e => setPartialAmount(e.target.value)} max={selectedOrder.total} min={1} />
                   </div>
                 )}
 
-                {/* Reason */}
                 <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 block">Reason *</label>
-                  <Textarea placeholder="Why is this refund being issued?" className="text-xs min-h-[60px]" value={reason} onChange={e => setReason(e.target.value)} />
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">{t("mrtReasonLabel")}</label>
+                  <Textarea placeholder={t("mrtReasonPlaceholder")} className="text-xs min-h-[60px]" value={reason} onChange={e => setReason(e.target.value)} />
                 </div>
 
                 <Button className="w-full" disabled={submitting || !reason.trim()} onClick={handleSubmitRefund}>
                   {submitting ? <Loader2 className="animate-spin mr-2" size={16} /> : <Undo2 size={16} className="mr-2" />}
-                  Submit Refund Request
+                  {t("mrtSubmitRefund")}
                 </Button>
               </>
             )}
