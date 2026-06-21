@@ -129,7 +129,7 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
         const description = descIdx >= 0 ? (r[descIdx] || "") : "";
 
         const valid = !!name && price > 0;
-        return { name, price, original_price, category, stock: isNaN(stock) ? 0 : stock, sku, brand, description, valid, error: !valid ? "Missing name or invalid price" : undefined };
+        return { name, price, original_price, category, stock: isNaN(stock) ? 0 : stock, sku, brand, description, valid, error: !valid ? t("mbuRowInvalid") : undefined };
       });
 
       setRows(parsed);
