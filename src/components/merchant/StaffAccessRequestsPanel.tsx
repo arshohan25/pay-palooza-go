@@ -11,6 +11,7 @@ import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useStaffAccessRequests, type StaffAccessRequest, type RequestablePermissionKey } from "@/hooks/use-staff-access-requests";
 import { useEffect } from "react";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface Props {
   merchantId: string;
@@ -18,22 +19,33 @@ interface Props {
   inboxOnly?: boolean;
 }
 
-const PERM_LABEL: Record<RequestablePermissionKey, string> = {
-  payouts: "Payouts (Send Money, Cash Out, Bank Transfer)",
-  store_settings: "Store Settings",
-  settlements: "Settlements",
-  add_bank: "Add bank account",
+const PERM_LABEL_KEY: Record<RequestablePermissionKey, TranslationKey> = {
+  payouts: "sarPermPayouts",
+  store_settings: "sarPermStoreSettings",
+  settlements: "sarPermSettlements",
+  add_bank: "sarPermAddBank",
 };
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const h = Math.floor(mins / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  return `${d}d ago`;
+function useI18nHelpers() {
+  const { t, lang } = useI18n();
+  const fmtNum = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(n);
+  const tp = (key: TranslationKey, vars: Record<string, string | number>) => {
+    let s = t(key) as string;
+    for (const [k, v] of Object.entries(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+    return s;
+  };
+  const timeAgo = (iso: string) => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t("sarJustNow") as string;
+    if (mins < 60) return tp("sarMinAgo", { n: fmtNum(mins) });
+    const h = Math.floor(mins / 60);
+    if (h < 24) return tp("sarHourAgo", { n: fmtNum(h) });
+    const d = Math.floor(h / 24);
+    return tp("sarDayAgo", { n: fmtNum(d) });
+  };
+  const permLabel = (k: RequestablePermissionKey) => t(PERM_LABEL_KEY[k]) as string;
+  return { t, tp, fmtNum, timeAgo, permLabel };
 }
 
 interface StaffLite { id: string; name: string; phone: string; role: string; permissions: Record<string, boolean> | null; }
@@ -60,6 +72,7 @@ function useMerchantStaffLite(merchantId: string) {
 }
 
 export default function StaffAccessRequestsPanel({ merchantId, inboxOnly }: Props) {
+  const { t, tp, fmtNum, timeAgo } = useI18nHelpers();
   const { pending, history, loading, grant, deny, revoke } = useStaffAccessRequests(merchantId);
   const staff = useMerchantStaffLite(merchantId);
   const [showAll, setShowAll] = useState(false);
@@ -72,14 +85,14 @@ export default function StaffAccessRequestsPanel({ merchantId, inboxOnly }: Prop
   const handleGrant = async (r: StaffAccessRequest) => {
     const { error } = await grant(r.id);
     if (error) toast.error(error.message);
-    else toast.success(`Granted ${r.display_label} to ${staffById[r.staff_id]?.name ?? "staff"}`);
+    else toast.success(tp("sarToastGranted", { label: r.display_label, name: staffById[r.staff_id]?.name ?? (t("sarStaffFallback") as string) }));
   };
 
   const submitDeny = async () => {
     if (!denying) return;
     const { error } = await deny(denying.id, denyReason.trim() || undefined);
     if (error) toast.error(error.message);
-    else toast.success("Request denied");
+    else toast.success(t("sarToastDenied"));
     setDenying(null);
     setDenyReason("");
   };
@@ -87,10 +100,10 @@ export default function StaffAccessRequestsPanel({ merchantId, inboxOnly }: Prop
   const handleRevoke = async (staffId: string, key: RequestablePermissionKey, label: string) => {
     const { error } = await revoke({ staffId, permissionKey: key, displayLabel: label });
     if (error) toast.error(error.message);
-    else toast.success(`Revoked ${label}`);
+    else toast.success(tp("sarToastRevoked", { label }));
   };
 
-  // ===== Inline inbox view (rendered above staff list) =====
+  // ===== Inline inbox view =====
   if (inboxOnly) {
     if (loading) return null;
     if (pending.length === 0) return null;
@@ -103,12 +116,12 @@ export default function StaffAccessRequestsPanel({ merchantId, inboxOnly }: Prop
                 <Inbox size={15} className="text-amber-600" />
               </div>
               <div>
-                <p className="text-xs font-bold text-foreground">Access Requests</p>
-                <p className="text-[10px] text-muted-foreground">{pending.length} waiting for your decision</p>
+                <p className="text-xs font-bold text-foreground">{t("sarAccessRequests")}</p>
+                <p className="text-[10px] text-muted-foreground">{tp("sarWaitingDecision", { n: fmtNum(pending.length) })}</p>
               </div>
             </div>
             <Button size="sm" variant="ghost" className="h-7 text-[11px] px-2" onClick={() => { setTab("pending"); setShowAll(true); }}>
-              View all <ArrowRight size={11} className="ml-1" />
+              {t("sarViewAll")} <ArrowRight size={11} className="ml-1" />
             </Button>
           </div>
           <div className="space-y-1.5">
@@ -121,12 +134,12 @@ export default function StaffAccessRequestsPanel({ merchantId, inboxOnly }: Prop
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-semibold text-foreground truncate">
-                      {s?.name ?? "Staff"} <span className="text-muted-foreground font-normal">wants</span> {r.display_label}
+                      {s?.name ?? t("sarStaffFallback")} <span className="text-muted-foreground font-normal">{t("sarWants")}</span> {r.display_label}
                     </p>
                     <p className="text-[10px] text-muted-foreground">{timeAgo(r.created_at)}{r.note ? ` · "${r.note}"` : ""}</p>
                   </div>
                   <Button size="sm" className="h-7 px-2 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleGrant(r)}>
-                    <Check size={11} className="mr-0.5" /> Grant
+                    <Check size={11} className="mr-0.5" /> {t("sarGrant")}
                   </Button>
                   <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" onClick={() => setDenying(r)}>
                     <X size={11} />
@@ -136,13 +149,12 @@ export default function StaffAccessRequestsPanel({ merchantId, inboxOnly }: Prop
             })}
             {pending.length > 3 && (
               <button onClick={() => { setTab("pending"); setShowAll(true); }} className="w-full text-center text-[10px] text-amber-700 hover:underline py-1">
-                + {pending.length - 3} more
+                {tp("sarMoreCount", { n: fmtNum(pending.length - 3) })}
               </button>
             )}
           </div>
         </CardContent>
 
-        {/* Full screen sheet */}
         <FullScreenSheet
           open={showAll}
           onClose={() => setShowAll(false)}
@@ -157,25 +169,24 @@ export default function StaffAccessRequestsPanel({ merchantId, inboxOnly }: Prop
           onRevoke={handleRevoke}
         />
 
-        {/* Deny dialog */}
         <Dialog open={!!denying} onOpenChange={(o) => { if (!o) { setDenying(null); setDenyReason(""); } }}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Deny request?</DialogTitle>
+              <DialogTitle>{t("sarDenyTitle")}</DialogTitle>
               <DialogDescription className="text-xs">
-                Optionally tell {denying ? (staffById[denying.staff_id]?.name ?? "the staff") : "the staff"} why.
+                {tp("sarDenyDescTo", { name: denying ? (staffById[denying.staff_id]?.name ?? (t("sarDenyDescThe") as string)) : (t("sarDenyDescThe") as string) })}
               </DialogDescription>
             </DialogHeader>
             <Textarea
               value={denyReason}
               onChange={(e) => setDenyReason(e.target.value)}
-              placeholder="Reason (optional)"
+              placeholder={t("sarReasonPh") as string}
               maxLength={200}
               className="text-xs"
             />
             <DialogFooter className="gap-2">
-              <Button variant="outline" size="sm" onClick={() => { setDenying(null); setDenyReason(""); }}>Cancel</Button>
-              <Button size="sm" variant="destructive" onClick={submitDeny}>Deny</Button>
+              <Button variant="outline" size="sm" onClick={() => { setDenying(null); setDenyReason(""); }}>{t("sarCancel")}</Button>
+              <Button size="sm" variant="destructive" onClick={submitDeny}>{t("sarDeny")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -183,7 +194,6 @@ export default function StaffAccessRequestsPanel({ merchantId, inboxOnly }: Prop
     );
   }
 
-  // ===== Standalone full-screen mode (not currently used outside the inbox sheet) =====
   return (
     <FullScreenSheet
       open
@@ -216,6 +226,7 @@ function FullScreenSheet({
   onDenyOpen: (r: StaffAccessRequest) => void;
   onRevoke: (staffId: string, key: RequestablePermissionKey, label: string) => void;
 }) {
+  const { t, fmtNum, timeAgo, permLabel } = useI18nHelpers();
   const staffById = Object.fromEntries(staff.map(s => [s.id, s]));
 
   const grantedList = useMemo(() => {
@@ -224,34 +235,39 @@ function FullScreenSheet({
     for (const s of staff) {
       const perms = (s.permissions ?? {}) as Record<string, boolean>;
       for (const k of KEYS) {
-        if (perms[k]) rows.push({ staff: s, key: k, label: PERM_LABEL[k] });
+        if (perms[k]) rows.push({ staff: s, key: k, label: permLabel(k) });
       }
     }
     return rows;
-  }, [staff]);
+  }, [staff, permLabel]);
+
+  const statusLabel = (s: string) =>
+    s === "granted" ? (t("sarStatusGranted") as string)
+    : s === "denied" ? (t("sarStatusDenied") as string)
+    : s === "revoked" ? (t("sarStatusRevoked") as string)
+    : (t("sarStatusPending") as string);
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent side="bottom" className="rounded-t-2xl z-[80] max-h-[92vh] overflow-y-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }} overlayClassName="z-[80]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Shield size={16} className="text-primary" /> Staff Access
+            <Shield size={16} className="text-primary" /> {t("sarStaffAccess")}
           </SheetTitle>
         </SheetHeader>
 
-        {/* Segmented tabs */}
         <div className="grid grid-cols-3 gap-1 p-1 mt-3 bg-muted/40 rounded-xl">
           {([
-            { k: "pending", label: "Pending", count: pending.length },
-            { k: "granted", label: "Granted", count: grantedList.length },
-            { k: "history", label: "History", count: history.length },
-          ] as const).map(t => (
+            { k: "pending", label: t("sarTabPending") as string, count: pending.length },
+            { k: "granted", label: t("sarTabGranted") as string, count: grantedList.length },
+            { k: "history", label: t("sarTabHistory") as string, count: history.length },
+          ] as const).map(ti => (
             <button
-              key={t.k}
-              onClick={() => setTab(t.k)}
-              className={`text-[11px] font-semibold py-1.5 rounded-lg transition ${tab === t.k ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+              key={ti.k}
+              onClick={() => setTab(ti.k)}
+              className={`text-[11px] font-semibold py-1.5 rounded-lg transition ${tab === ti.k ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
             >
-              {t.label} <span className="text-[10px] opacity-70">{t.count}</span>
+              {ti.label} <span className="text-[10px] opacity-70">{fmtNum(ti.count)}</span>
             </button>
           ))}
         </div>
@@ -261,7 +277,7 @@ function FullScreenSheet({
 
           {!loading && tab === "pending" && (
             pending.length === 0 ? (
-              <EmptyState icon={<Inbox size={22} />} title="No pending requests" subtitle="When staff request access, you'll see them here." />
+              <EmptyState icon={<Inbox size={22} />} title={t("sarEmptyPending") as string} subtitle={t("sarEmptyPendingSub") as string} />
             ) : pending.map(r => {
               const s = staffById[r.staff_id];
               return (
@@ -273,23 +289,23 @@ function FullScreenSheet({
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-xs font-bold text-foreground">{s?.name ?? "Staff"}</p>
+                          <p className="text-xs font-bold text-foreground">{s?.name ?? t("sarStaffFallback")}</p>
                           {s?.role && <Badge variant="outline" className="text-[9px] px-1 py-0">{s.role}</Badge>}
                           <span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><Clock size={9} />{timeAgo(r.created_at)}</span>
                         </div>
                         <p className="text-[11px] text-foreground mt-0.5">
-                          Wants <span className="font-semibold">{r.display_label}</span>
-                          <span className="text-muted-foreground"> · {PERM_LABEL[r.permission_key]}</span>
+                          {t("sarWantsLabel")} <span className="font-semibold">{r.display_label}</span>
+                          <span className="text-muted-foreground"> · {permLabel(r.permission_key)}</span>
                         </p>
                         {r.note && <p className="text-[10px] text-muted-foreground italic mt-1">"{r.note}"</p>}
                       </div>
                     </div>
                     <div className="flex gap-2 pt-1">
                       <Button size="sm" className="flex-1 h-8 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => onGrant(r)}>
-                        <Check size={12} className="mr-1" /> Grant access
+                        <Check size={12} className="mr-1" /> {t("sarGrantAccess")}
                       </Button>
                       <Button size="sm" variant="outline" className="flex-1 h-8 text-[11px]" onClick={() => onDenyOpen(r)}>
-                        <X size={12} className="mr-1" /> Deny
+                        <X size={12} className="mr-1" /> {t("sarDeny")}
                       </Button>
                     </div>
                   </CardContent>
@@ -300,7 +316,7 @@ function FullScreenSheet({
 
           {!loading && tab === "granted" && (
             grantedList.length === 0 ? (
-              <EmptyState icon={<ShieldCheck size={22} />} title="No granted permissions yet" subtitle="When you grant access, you can revoke it from here." />
+              <EmptyState icon={<ShieldCheck size={22} />} title={t("sarEmptyGranted") as string} subtitle={t("sarEmptyGrantedSub") as string} />
             ) : grantedList.map(({ staff: s, key, label }) => (
               <Card key={`${s.id}-${key}`} className="border-0 shadow-elevated">
                 <CardContent className="p-3 flex items-center gap-2.5">
@@ -315,7 +331,7 @@ function FullScreenSheet({
                     <p className="text-[10px] text-muted-foreground">{label}</p>
                   </div>
                   <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => onRevoke(s.id, key, label)}>
-                    <ShieldOff size={11} className="mr-1" /> Revoke
+                    <ShieldOff size={11} className="mr-1" /> {t("sarRevoke")}
                   </Button>
                 </CardContent>
               </Card>
@@ -324,7 +340,7 @@ function FullScreenSheet({
 
           {!loading && tab === "history" && (
             history.length === 0 ? (
-              <EmptyState icon={<Clock size={22} />} title="No history yet" />
+              <EmptyState icon={<Clock size={22} />} title={t("sarEmptyHistory") as string} />
             ) : history.map(r => {
               const s = staffById[r.staff_id];
               const tone =
@@ -340,10 +356,10 @@ function FullScreenSheet({
                         {(s?.name ?? "?").charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold text-foreground truncate">{s?.name ?? "Staff"} · {r.display_label}</p>
+                        <p className="text-[11px] font-semibold text-foreground truncate">{s?.name ?? t("sarStaffFallback")} · {r.display_label}</p>
                         <p className="text-[10px] text-muted-foreground">{timeAgo(r.decided_at || r.created_at)}{r.deny_reason ? ` · ${r.deny_reason}` : ""}</p>
                       </div>
-                      <Badge variant="outline" className={`text-[9px] capitalize ${tone}`}>{r.status}</Badge>
+                      <Badge variant="outline" className={`text-[9px] ${tone}`}>{statusLabel(r.status)}</Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -352,7 +368,7 @@ function FullScreenSheet({
           )}
         </div>
 
-        <Button variant="outline" className="w-full mt-4" onClick={onClose}>Close</Button>
+        <Button variant="outline" className="w-full mt-4" onClick={onClose}>{t("sarClose")}</Button>
       </SheetContent>
     </Sheet>
   );
@@ -370,6 +386,7 @@ function EmptyState({ icon, title, subtitle }: { icon: React.ReactNode; title: s
 
 /** Standalone trigger button shown in the staff tab header. */
 export function AccessRequestsHeaderButton({ merchantId }: { merchantId: string }) {
+  const { t, tp, fmtNum } = useI18nHelpers();
   const { pending } = useStaffAccessRequests(merchantId);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"pending" | "history" | "granted">("pending");
@@ -380,17 +397,17 @@ export function AccessRequestsHeaderButton({ merchantId }: { merchantId: string 
 
   const handleGrant = async (r: StaffAccessRequest) => {
     const { error } = await grant(r.id);
-    if (error) toast.error(error.message); else toast.success("Granted");
+    if (error) toast.error(error.message); else toast.success(t("sarToastGrantedSimple"));
   };
   const submitDeny = async () => {
     if (!denying) return;
     const { error } = await deny(denying.id, denyReason.trim() || undefined);
-    if (error) toast.error(error.message); else toast.success("Denied");
+    if (error) toast.error(error.message); else toast.success(t("sarToastDeniedSimple"));
     setDenying(null); setDenyReason("");
   };
   const handleRevoke = async (staffId: string, key: RequestablePermissionKey, label: string) => {
     const { error } = await revoke({ staffId, permissionKey: key, displayLabel: label });
-    if (error) toast.error(error.message); else toast.success("Revoked");
+    if (error) toast.error(error.message); else toast.success(t("sarToastRevokedSimple"));
   };
 
   return (
@@ -401,11 +418,11 @@ export function AccessRequestsHeaderButton({ merchantId }: { merchantId: string 
             <Users size={15} className="text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-foreground">Access Requests & Permissions</p>
-            <p className="text-[10px] text-muted-foreground">Grant or revoke payouts, settlements & store settings</p>
+            <p className="text-xs font-bold text-foreground">{t("sarHeaderTitle")}</p>
+            <p className="text-[10px] text-muted-foreground">{t("sarHeaderSubtitle")}</p>
           </div>
           {pending.length > 0 && (
-            <Badge className="bg-amber-500 text-white border-0 text-[10px]">{pending.length} new</Badge>
+            <Badge className="bg-amber-500 text-white border-0 text-[10px]">{tp("sarNewCount", { n: fmtNum(pending.length) })}</Badge>
           )}
           <ArrowRight size={14} className="text-muted-foreground" />
         </CardContent>
@@ -428,13 +445,13 @@ export function AccessRequestsHeaderButton({ merchantId }: { merchantId: string 
       <Dialog open={!!denying} onOpenChange={(o) => { if (!o) { setDenying(null); setDenyReason(""); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Deny request?</DialogTitle>
-            <DialogDescription className="text-xs">Optionally explain why.</DialogDescription>
+            <DialogTitle>{t("sarDenyTitle")}</DialogTitle>
+            <DialogDescription className="text-xs">{t("sarDenyDescGeneric")}</DialogDescription>
           </DialogHeader>
-          <Textarea value={denyReason} onChange={(e) => setDenyReason(e.target.value)} placeholder="Reason (optional)" maxLength={200} className="text-xs" />
+          <Textarea value={denyReason} onChange={(e) => setDenyReason(e.target.value)} placeholder={t("sarReasonPh") as string} maxLength={200} className="text-xs" />
           <DialogFooter className="gap-2">
-            <Button variant="outline" size="sm" onClick={() => { setDenying(null); setDenyReason(""); }}>Cancel</Button>
-            <Button size="sm" variant="destructive" onClick={submitDeny}>Deny</Button>
+            <Button variant="outline" size="sm" onClick={() => { setDenying(null); setDenyReason(""); }}>{t("sarCancel")}</Button>
+            <Button size="sm" variant="destructive" onClick={submitDeny}>{t("sarDeny")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
