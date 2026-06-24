@@ -357,16 +357,16 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
               transition={{ delay: 0.15, duration: 0.4 }}
               className="flex gap-2 mb-6"
             >
-              {slide.pills.map((pill, i) => (
+              {slide.pillKeys.map((pillKey, i) => (
                 <motion.span
-                  key={pill}
+                  key={pillKey}
                   initial={{ opacity: 0, y: i % 2 === 0 ? -12 : 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + i * 0.09, type: "spring", stiffness: 320, damping: 22 }}
                   className="px-3 py-1 rounded-full text-white text-xs font-bold border border-white/20"
                   style={{ background: slide.pillColors[i] }}
                 >
-                  {pill}
+                  {t(pillKey)}
                 </motion.span>
               ))}
             </motion.div>
