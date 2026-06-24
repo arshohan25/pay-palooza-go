@@ -275,7 +275,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
           className="px-3 py-1.5 rounded-full text-white text-xs font-bold backdrop-blur-sm border border-white/25"
           style={{ background: "rgba(255,255,255,0.15)" }}
         >
-          {slide.badgeLabel}
+          {t(slide.badgeLabelKey)}
         </motion.div>
 
         {!isLast && (
