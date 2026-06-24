@@ -25,11 +25,11 @@ const SLIDES = [
         <path d="M18 57v10M13 62h10" stroke="white" strokeOpacity="0.6" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ),
-    title: "Send Money Instantly",
-    subtitle: "Transfer to any mobile number in Bangladesh in seconds — day or night, zero delays.",
-    pills: ["01700…", "৳500", "✓ Sent"],
+    titleKey: "obSendTitle",
+    subtitleKey: "obSendSubtitle",
+    pillKeys: ["obSendPill1", "obSendPill2", "obSendPill3"] as const,
     pillColors: ["rgba(255,255,255,0.15)", "rgba(255,255,255,0.2)", "rgba(255,255,255,0.28)"],
-    badgeLabel: "⚡ Instant Transfer",
+    badgeLabelKey: "obSendBadge",
   },
   {
     id: "bills",
@@ -47,11 +47,11 @@ const SLIDES = [
         <path d="M63 14l-4 7h4l-4 7" stroke="white" strokeOpacity="0.8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
-    title: "Pay Bills with Ease",
-    subtitle: "Electricity, gas, water, internet — pay any utility bill from your wallet in one tap.",
-    pills: ["Electric", "Internet", "Gas"],
+    titleKey: "obBillsTitle",
+    subtitleKey: "obBillsSubtitle",
+    pillKeys: ["obBillsPill1", "obBillsPill2", "obBillsPill3"] as const,
     pillColors: ["rgba(255,255,255,0.15)", "rgba(255,255,255,0.2)", "rgba(255,255,255,0.15)"],
-    badgeLabel: "🏦 50+ Billers",
+    badgeLabelKey: "obBillsBadge",
   },
   {
     id: "cashback",
@@ -69,11 +69,11 @@ const SLIDES = [
         <circle cx="70" cy="36" r="3" fill="white" fillOpacity="0.18"/>
       </svg>
     ),
-    title: "Earn Cashback & Rewards",
-    subtitle: "Get Drive commission on mobile recharges, cashback on payments, and exclusive loyalty rewards.",
-    pills: ["Drive ৳", "Cashback", "Rewards"],
+    titleKey: "obCashbackTitle",
+    subtitleKey: "obCashbackSubtitle",
+    pillKeys: ["obCashbackPill1", "obCashbackPill2", "obCashbackPill3"] as const,
     pillColors: ["rgba(255,255,255,0.2)", "rgba(255,255,255,0.15)", "rgba(255,255,255,0.22)"],
-    badgeLabel: "🎁 Drive Rewards",
+    badgeLabelKey: "obCashbackBadge",
   },
 ] as const;
 
