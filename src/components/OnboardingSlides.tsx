@@ -386,7 +386,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
               transition={{ delay: current === 0 ? 0 : 0.12, duration: 0.3 }}
               className="text-white/75 text-sm font-medium leading-relaxed"
             >
-              {slide.subtitle}
+              {t(slide.subtitleKey)}
             </motion.p>
           </motion.div>
         </AnimatePresence>
