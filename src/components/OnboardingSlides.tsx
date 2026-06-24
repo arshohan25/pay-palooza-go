@@ -297,7 +297,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
         transition={{ delay: 2, duration: 1 }}
         className="absolute top-28 left-0 right-0 text-center text-white text-[10px] font-semibold z-10 pointer-events-none"
       >
-        📳 Shake to skip
+        {t("obShakeHint")}
       </motion.p>
 
       {/* Slide content */}
