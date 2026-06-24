@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { haptics } from "@/lib/haptics";
+import { useI18n } from "@/lib/i18n";
 
 import { hasSeenOnboarding, markOnboardingDone } from "@/lib/onboardingUtils";
 export { hasSeenOnboarding, markOnboardingDone };
