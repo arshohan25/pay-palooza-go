@@ -449,7 +449,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
           transition={{ delay: 1.5, duration: 1 }}
           className="text-center text-white text-[10px] font-semibold tracking-wider"
         >
-          {current + 1} / {SLIDES.length} · Hold to feel the bounce
+          {current + 1} / {SLIDES.length} · {t("obHoldHint")}
         </motion.p>
       </div>
     </motion.div>
