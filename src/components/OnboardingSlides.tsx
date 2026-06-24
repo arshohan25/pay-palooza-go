@@ -426,7 +426,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
         >
           {isLast ? (
             <>
-              Get Started
+              {t("obGetStarted")}
               <motion.div
                 animate={{ x: [0, 5, 0] }}
                 transition={{ repeat: Infinity, duration: 1.1, ease: "easeInOut" }}
