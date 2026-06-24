@@ -285,7 +285,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
             className="px-4 py-2 rounded-full text-white/80 text-sm font-semibold backdrop-blur-sm border border-white/20"
             style={{ background: "rgba(255,255,255,0.12)" }}
           >
-            Skip
+            {t("obSkip")}
           </motion.button>
         )}
       </div>
