@@ -2370,6 +2370,31 @@ const translations = {
   amLabelHome: { en: "Home", bn: "বাড়ি" },
   amLabelOffice: { en: "Office", bn: "অফিস" },
   amLabelOther: { en: "Other", bn: "অন্যান্য" },
+
+  // OnboardingSlides
+  obSendTitle: { en: "Send Money Instantly", bn: "তাৎক্ষণিক টাকা পাঠান" },
+  obSendSubtitle: { en: "Transfer to any mobile number in Bangladesh in seconds — day or night, zero delays.", bn: "বাংলাদেশের যেকোনো মোবাইল নম্বরে কয়েক সেকেন্ডে পাঠান — দিন হোক বা রাত, কোনো দেরি নেই।" },
+  obSendBadge: { en: "⚡ Instant Transfer", bn: "⚡ তাৎক্ষণিক স্থানান্তর" },
+  obSendPill1: { en: "01700…", bn: "০১৭০০…" },
+  obSendPill2: { en: "৳500", bn: "৳৫০০" },
+  obSendPill3: { en: "✓ Sent", bn: "✓ পাঠানো" },
+  obBillsTitle: { en: "Pay Bills with Ease", bn: "সহজে বিল পরিশোধ করুন" },
+  obBillsSubtitle: { en: "Electricity, gas, water, internet — pay any utility bill from your wallet in one tap.", bn: "বিদ্যুৎ, গ্যাস, পানি, ইন্টারনেট — এক ট্যাপে আপনার ওয়ালেট থেকে যেকোনো ইউটিলিটি বিল পরিশোধ করুন।" },
+  obBillsBadge: { en: "🏦 50+ Billers", bn: "🏦 ৫০+ বিলার" },
+  obBillsPill1: { en: "Electric", bn: "বিদ্যুৎ" },
+  obBillsPill2: { en: "Internet", bn: "ইন্টারনেট" },
+  obBillsPill3: { en: "Gas", bn: "গ্যাস" },
+  obCashbackTitle: { en: "Earn Cashback & Rewards", bn: "ক্যাশব্যাক ও পুরস্কার অর্জন করুন" },
+  obCashbackSubtitle: { en: "Get Drive commission on mobile recharges, cashback on payments, and exclusive loyalty rewards.", bn: "মোবাইল রিচার্জে ড্রাইভ কমিশন, পেমেন্টে ক্যাশব্যাক এবং বিশেষ লয়্যালটি পুরস্কার পান।" },
+  obCashbackBadge: { en: "🎁 Drive Rewards", bn: "🎁 ড্রাইভ পুরস্কার" },
+  obCashbackPill1: { en: "Drive ৳", bn: "ড্রাইভ ৳" },
+  obCashbackPill2: { en: "Cashback", bn: "ক্যাশব্যাক" },
+  obCashbackPill3: { en: "Rewards", bn: "পুরস্কার" },
+  obSkip: { en: "Skip", bn: "এড়িয়ে যান" },
+  obShakeHint: { en: "📳 Shake to skip", bn: "📳 এড়াতে ঝাঁকান" },
+  obGetStarted: { en: "Get Started", bn: "শুরু করুন" },
+  obNext: { en: "Next", bn: "পরবর্তী" },
+  obHoldHint: { en: "Hold to feel the bounce", bn: "বাউন্স অনুভব করতে চেপে ধরুন" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
