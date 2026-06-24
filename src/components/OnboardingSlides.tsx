@@ -378,7 +378,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
               transition={{ delay: current === 0 ? 0 : 0.1, duration: 0.3 }}
               className="text-[28px] font-black text-white leading-tight tracking-tight mb-3"
             >
-              {slide.title}
+              {t(slide.titleKey)}
             </motion.h2>
             <motion.p
               initial={{ opacity: current === 0 ? 1 : 0, y: current === 0 ? 0 : 8 }}
