@@ -101,6 +101,7 @@ interface OnboardingSlidesProps {
 }
 
 export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
+  const { t } = useI18n();
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
   const [isHeld, setIsHeld] = useState(false);
