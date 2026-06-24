@@ -436,7 +436,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
             </>
           ) : (
             <>
-              Next
+              {t("obNext")}
               <ChevronRight size={18} />
             </>
           )}
