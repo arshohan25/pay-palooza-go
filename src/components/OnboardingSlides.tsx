@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { haptics } from "@/lib/haptics";
+import { useI18n } from "@/lib/i18n";
 
 import { hasSeenOnboarding, markOnboardingDone } from "@/lib/onboardingUtils";
 export { hasSeenOnboarding, markOnboardingDone };
@@ -24,11 +25,11 @@ const SLIDES = [
         <path d="M18 57v10M13 62h10" stroke="white" strokeOpacity="0.6" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ),
-    title: "Send Money Instantly",
-    subtitle: "Transfer to any mobile number in Bangladesh in seconds — day or night, zero delays.",
-    pills: ["01700…", "৳500", "✓ Sent"],
+    titleKey: "obSendTitle",
+    subtitleKey: "obSendSubtitle",
+    pillKeys: ["obSendPill1", "obSendPill2", "obSendPill3"] as const,
     pillColors: ["rgba(255,255,255,0.15)", "rgba(255,255,255,0.2)", "rgba(255,255,255,0.28)"],
-    badgeLabel: "⚡ Instant Transfer",
+    badgeLabelKey: "obSendBadge",
   },
   {
     id: "bills",
@@ -46,11 +47,11 @@ const SLIDES = [
         <path d="M63 14l-4 7h4l-4 7" stroke="white" strokeOpacity="0.8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
-    title: "Pay Bills with Ease",
-    subtitle: "Electricity, gas, water, internet — pay any utility bill from your wallet in one tap.",
-    pills: ["Electric", "Internet", "Gas"],
+    titleKey: "obBillsTitle",
+    subtitleKey: "obBillsSubtitle",
+    pillKeys: ["obBillsPill1", "obBillsPill2", "obBillsPill3"] as const,
     pillColors: ["rgba(255,255,255,0.15)", "rgba(255,255,255,0.2)", "rgba(255,255,255,0.15)"],
-    badgeLabel: "🏦 50+ Billers",
+    badgeLabelKey: "obBillsBadge",
   },
   {
     id: "cashback",
@@ -68,11 +69,11 @@ const SLIDES = [
         <circle cx="70" cy="36" r="3" fill="white" fillOpacity="0.18"/>
       </svg>
     ),
-    title: "Earn Cashback & Rewards",
-    subtitle: "Get Drive commission on mobile recharges, cashback on payments, and exclusive loyalty rewards.",
-    pills: ["Drive ৳", "Cashback", "Rewards"],
+    titleKey: "obCashbackTitle",
+    subtitleKey: "obCashbackSubtitle",
+    pillKeys: ["obCashbackPill1", "obCashbackPill2", "obCashbackPill3"] as const,
     pillColors: ["rgba(255,255,255,0.2)", "rgba(255,255,255,0.15)", "rgba(255,255,255,0.22)"],
-    badgeLabel: "🎁 Drive Rewards",
+    badgeLabelKey: "obCashbackBadge",
   },
 ] as const;
 
@@ -100,6 +101,7 @@ interface OnboardingSlidesProps {
 }
 
 export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
+  const { t } = useI18n();
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
   const [isHeld, setIsHeld] = useState(false);
@@ -273,7 +275,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
           className="px-3 py-1.5 rounded-full text-white text-xs font-bold backdrop-blur-sm border border-white/25"
           style={{ background: "rgba(255,255,255,0.15)" }}
         >
-          {slide.badgeLabel}
+          {t(slide.badgeLabelKey)}
         </motion.div>
 
         {!isLast && (
@@ -283,7 +285,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
             className="px-4 py-2 rounded-full text-white/80 text-sm font-semibold backdrop-blur-sm border border-white/20"
             style={{ background: "rgba(255,255,255,0.12)" }}
           >
-            Skip
+            {t("obSkip")}
           </motion.button>
         )}
       </div>
@@ -295,7 +297,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
         transition={{ delay: 2, duration: 1 }}
         className="absolute top-28 left-0 right-0 text-center text-white text-[10px] font-semibold z-10 pointer-events-none"
       >
-        📳 Shake to skip
+        {t("obShakeHint")}
       </motion.p>
 
       {/* Slide content */}
@@ -355,16 +357,16 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
               transition={{ delay: 0.15, duration: 0.4 }}
               className="flex gap-2 mb-6"
             >
-              {slide.pills.map((pill, i) => (
+              {slide.pillKeys.map((pillKey, i) => (
                 <motion.span
-                  key={pill}
+                  key={pillKey}
                   initial={{ opacity: 0, y: i % 2 === 0 ? -12 : 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + i * 0.09, type: "spring", stiffness: 320, damping: 22 }}
                   className="px-3 py-1 rounded-full text-white text-xs font-bold border border-white/20"
                   style={{ background: slide.pillColors[i] }}
                 >
-                  {pill}
+                  {t(pillKey)}
                 </motion.span>
               ))}
             </motion.div>
@@ -376,7 +378,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
               transition={{ delay: current === 0 ? 0 : 0.1, duration: 0.3 }}
               className="text-[28px] font-black text-white leading-tight tracking-tight mb-3"
             >
-              {slide.title}
+              {t(slide.titleKey)}
             </motion.h2>
             <motion.p
               initial={{ opacity: current === 0 ? 1 : 0, y: current === 0 ? 0 : 8 }}
@@ -384,7 +386,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
               transition={{ delay: current === 0 ? 0 : 0.12, duration: 0.3 }}
               className="text-white/75 text-sm font-medium leading-relaxed"
             >
-              {slide.subtitle}
+              {t(slide.subtitleKey)}
             </motion.p>
           </motion.div>
         </AnimatePresence>
@@ -424,7 +426,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
         >
           {isLast ? (
             <>
-              Get Started
+              {t("obGetStarted")}
               <motion.div
                 animate={{ x: [0, 5, 0] }}
                 transition={{ repeat: Infinity, duration: 1.1, ease: "easeInOut" }}
@@ -434,7 +436,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
             </>
           ) : (
             <>
-              Next
+              {t("obNext")}
               <ChevronRight size={18} />
             </>
           )}
@@ -447,7 +449,7 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
           transition={{ delay: 1.5, duration: 1 }}
           className="text-center text-white text-[10px] font-semibold tracking-wider"
         >
-          {current + 1} / {SLIDES.length} · Hold to feel the bounce
+          {current + 1} / {SLIDES.length} · {t("obHoldHint")}
         </motion.p>
       </div>
     </motion.div>
