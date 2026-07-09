@@ -60,15 +60,15 @@ export default function CustomerOrdersPage() {
         ) : !user ? (
           <div className="text-center py-16">
             <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">Please log in to see your orders</p>
-            <Button variant="outline" className="mt-4" onClick={() => navigate("/auth")}>Log In</Button>
+            <p className="text-sm text-muted-foreground">{t("coPleaseLogIn")}</p>
+            <Button variant="outline" className="mt-4" onClick={() => navigate("/auth")}>{t("coLogIn")}</Button>
           </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-16">
             <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No orders yet</p>
+            <p className="text-sm text-muted-foreground">{t("noOrdersYet")}</p>
             <Button variant="outline" className="mt-4" onClick={() => navigate("/shop")}>
-              Start Shopping
+              {t("startShopping")}
             </Button>
           </div>
         ) : (
