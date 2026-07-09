@@ -19,7 +19,9 @@ interface QrScannerModalProps {
   title?: string;
 }
 
-const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScannerModalProps) => {
+const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) => {
+  const { t } = useI18n();
+  const displayTitle = title ?? t("qrScanTitle");
   const [detected, setDetected] = useState(false);
   const [uploadProcessing, setUploadProcessing] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
