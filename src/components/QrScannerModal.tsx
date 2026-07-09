@@ -5,6 +5,7 @@ import jsQR from "jsqr";
 import { requestCamera } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { activityTracker } from "@/lib/activityTracker";
+import { useI18n } from "@/lib/i18n";
 
 const trackScan = (source: "camera" | "upload" | "ocr" | "multi", decoded: string) => {
   const preview = decoded.length > 60 ? decoded.slice(0, 60) + "…" : decoded;
