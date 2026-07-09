@@ -86,7 +86,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
       haptics.success();
       playPaymentSuccess();
     } catch (err: any) {
-      setErrorMsg(err.message || "Payment failed");
+      setErrorMsg(err.message || t("dqPaymentFailed"));
       setStep("error");
       haptics.error();
       playPaymentError();
