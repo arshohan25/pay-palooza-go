@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
+import { useI18n } from "@/lib/i18n";
+
 
 /* ─── helpers ──────────────────────────────────────────────────── */
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
