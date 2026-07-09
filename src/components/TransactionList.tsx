@@ -304,7 +304,7 @@ const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
               <FileText className="w-7 h-7 text-muted-foreground" />
             </motion.div>
             <p className="text-sm font-semibold text-foreground">{t("noTransactions")}</p>
-            <p className="text-xs text-muted-foreground mt-1">Your transactions will appear here</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("tlEmptyHint")}</p>
           </motion.div>
         ) : (
           transactions.map((tx, index) => {
