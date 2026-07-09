@@ -95,7 +95,7 @@ const BlockedUsersPage = ({ onBack }: BlockedUsersPageProps) => {
           <AnimatePresence initial={false}>
             {blockedIds.map((id) => {
               const profile = profiles.find((p) => p.user_id === id);
-              const name = profile?.name || "Unknown";
+              const name = profile?.name || t("buUnknown");
               const phone = profile?.phone || id.slice(0, 8) + "…";
               const avatar = profile?.avatar_url;
 
