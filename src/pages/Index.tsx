@@ -22,6 +22,7 @@ import { getCachedStatus, requestContacts, requestCamera } from "@/lib/permissio
 import { saveContacts } from "@/lib/contactStore";
 import { retryLazyImport } from "@/lib/cacheReset";
 import { useFutureFeatures } from "@/hooks/use-future-features";
+import { useI18n } from "@/lib/i18n";
 
 // ── Critical above-fold: eagerly imported for instant render ──
 import AppHeader from "@/components/AppHeader";
@@ -61,6 +62,7 @@ const ReferPage = lazy(() => import("@/pages/ReferPage"));
 
 const Index = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   useUserSessionTimeout("user");
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
@@ -144,7 +146,7 @@ const Index = () => {
     window.history.replaceState({}, "", window.location.pathname);
 
     if (status === "cancel") {
-      toast.error("Payment was cancelled.");
+      toast.error(t("idxPaymentCancelled"));
       return;
     }
 
@@ -173,15 +175,15 @@ const Index = () => {
 
         const data = await res.json();
         if (data.success) {
-          toast.success("Money added successfully via AsthaPay!");
+          toast.success(t("idxMoneyAdded"));
           fetchBalance();
           setRefreshKey((k) => k + 1);
         } else {
-          toast.error(data.error || "Payment verification failed.");
+          toast.error(data.error || t("idxVerificationFailed"));
         }
       } catch (err) {
         console.error("AsthaPay verify error:", err);
-        toast.error("Could not verify payment. Please contact support.");
+        toast.error(t("idxContactSupport"));
       }
     };
 
@@ -202,7 +204,7 @@ const Index = () => {
         filter: `target_user_id=eq.${user.id}`,
       }, (payload: any) => {
         if (payload.new?.feature === "account" && payload.new?.is_active) {
-          toast.error("Your account has been locked by an administrator. Contact support.");
+          toast.error(t("idxAccountLocked"));
           setTimeout(() => signOut(), 1500);
         }
       })
@@ -336,7 +338,7 @@ const Index = () => {
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}>
                   <RefreshCw size={16} />
                 </motion.div>
-                Refreshing…
+                {t("idxRefreshing")}
               </motion.div>
             )}
           </AnimatePresence>
@@ -361,21 +363,21 @@ const Index = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground">
                       {kycStatus === "pending"
-                        ? "KYC Under Review"
+                        ? t("idxKycUnderReview")
                         : kycStatus === "rejected"
-                        ? "KYC Rejected — Resubmit"
-                        : "Complete KYC to unlock all features"}
+                        ? t("idxKycRejected")
+                        : t("idxCompleteKyc")}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
                       {kycStatus === "pending"
-                        ? "Your verification is being reviewed"
+                        ? t("idxKycReviewing")
                         : kycStatus === "rejected"
-                        ? (rejectionReason || "Please resubmit your verification documents")
-                        : "Verify your identity to send money, cash out & more"}
+                        ? (rejectionReason || t("idxKycResubmit"))
+                        : t("idxKycUnlock")}
                     </p>
                   </div>
                   <span className="text-xs font-medium text-primary shrink-0">
-                    {kycStatus === "pending" ? "View" : kycStatus === "rejected" ? "Retry" : "Start →"}
+                    {kycStatus === "pending" ? t("idxView") : kycStatus === "rejected" ? t("idxRetry") : t("idxStart")}
                   </span>
                 </motion.button>
               )}
@@ -438,7 +440,7 @@ const Index = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">
         <p className="text-lg font-semibold capitalize">{activeTab}</p>
-        <p className="text-sm">Coming soon</p>
+        <p className="text-sm">{t("idxComingSoon")}</p>
       </div>
     );
     })();
@@ -571,7 +573,7 @@ const Index = () => {
         <QrScannerModal
           open={showScanPay}
           onClose={() => setShowScanPay(false)}
-          title="Scan & Pay"
+          title={t("idxScanPay")}
           onScan={async (result) => {
             setShowScanPay(false);
             const parsed = parseQrData(result);
@@ -611,11 +613,11 @@ const Index = () => {
                     setPaymentPrefilledMerchant(parsed.identifier);
                     setShowPayment(true);
                   } else {
-                    toast.error("Unrecognized QR code. Please try a valid EasyPay QR.");
+                    toast.error(t("idxUnrecognizedQr"));
                   }
                 }
               } catch {
-                toast.error("Could not process QR code. Please try again.");
+                toast.error(t("idxQrFailed"));
               }
             }
           }}
