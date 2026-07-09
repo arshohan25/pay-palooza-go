@@ -81,9 +81,9 @@ const InsurancePage = () => {
       expires_at: expiresAt.toISOString(),
     } as any);
 
-    if (error) toast.error("Failed to purchase plan");
+    if (error) toast.error(t("ipToastFailed"));
     else {
-      toast.success("Insurance plan activated!");
+      toast.success(t("ipToastActivated"));
       setSelectedPlan(null);
       const { data } = await supabase.from("insurance_policies").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
       setPolicies(data || []);
