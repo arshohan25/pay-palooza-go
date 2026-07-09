@@ -420,26 +420,26 @@ export default function OrderDetailPage() {
       <Sheet open={returnSheet} onOpenChange={setReturnSheet}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Request a Return</SheetTitle>
+            <SheetTitle>{t("odRequestReturnTitle")}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 pt-4">
             <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-2">Reason for return</p>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">{t("odReasonForReturn")}</p>
               <Select value={returnReason} onValueChange={setReturnReason}>
-                <SelectTrigger><SelectValue placeholder="Select a reason..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("odSelectReason")} /></SelectTrigger>
                 <SelectContent>
-                  {RETURN_REASONS.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  {RETURN_REASON_KEYS.map((k) => (
+                    <SelectItem key={k} value={t(k as any)}>{t(k as any)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-2">Additional details (optional)</p>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">{t("odAdditionalDetails")}</p>
               <Textarea
                 value={returnDetails}
                 onChange={(e) => setReturnDetails(e.target.value)}
-                placeholder="Describe the issue..."
+                placeholder={t("odDescribeIssue")}
                 rows={3}
               />
             </div>
@@ -449,7 +449,7 @@ export default function OrderDetailPage() {
               onClick={handleReturnRequest}
             >
               {submittingReturn ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RotateCcw className="w-4 h-4 mr-2" />}
-              Submit Return Request
+              {t("odSubmitReturn")}
             </Button>
           </div>
         </SheetContent>
