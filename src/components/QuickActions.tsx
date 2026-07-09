@@ -450,7 +450,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
               className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-full bg-muted/60 hover:bg-muted"
             >
               <RotateCcw className="w-3 h-3" />
-              Reset order
+              {t("qaResetOrder")}
             </button>
           </motion.div>
         )}
