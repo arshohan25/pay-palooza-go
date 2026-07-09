@@ -241,6 +241,7 @@ const MerchantAvatar = ({ name }: { name: string }) => {
 const CheckoutPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const [step, setStep] = useState<Step>("loading");
   const [session, setSession] = useState<SessionData | null>(null);
