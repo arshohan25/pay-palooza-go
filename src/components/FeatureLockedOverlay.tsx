@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Lock, Clock, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 interface FeatureLockedOverlayProps {
   featureName: string;
