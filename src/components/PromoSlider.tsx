@@ -6,6 +6,7 @@ import { icons } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
+import { useI18n } from "@/lib/i18n";
 
 interface PromoBanner {
   id: string;
