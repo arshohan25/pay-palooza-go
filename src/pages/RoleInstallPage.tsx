@@ -172,8 +172,8 @@ const RoleInstallPage = () => {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                 <Check size={28} className="text-primary" />
               </div>
-              <p className="font-bold text-foreground">App Installed!</p>
-              <p className="text-sm text-muted-foreground mt-1">Check your home screen</p>
+              <p className="font-bold text-foreground">{t("ripAppInstalled")}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t("ripCheckHome")}</p>
             </motion.div>
           ) : hasPrompt ? (
             <motion.div key="installable" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
