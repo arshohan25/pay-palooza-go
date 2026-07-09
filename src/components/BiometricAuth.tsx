@@ -267,8 +267,8 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
               >
                 <ShieldCheck size={48} className="text-white" />
               </motion.div>
-              <p className="text-xl font-extrabold text-foreground">Authenticated!</p>
-              <p className="text-sm text-muted-foreground">Opening your wallet…</p>
+              <p className="text-xl font-extrabold text-foreground">{t("baAuthenticated")}</p>
+              <p className="text-sm text-muted-foreground">{t("baOpeningWallet")}</p>
             </motion.div>
           )}
         </AnimatePresence>
