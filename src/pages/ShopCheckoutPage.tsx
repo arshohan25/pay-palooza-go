@@ -18,6 +18,7 @@ import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ProductImage from "@/components/ProductImage";
+import { useI18n } from "@/lib/i18n";
 
 interface Address {
   id: string;
@@ -63,6 +64,7 @@ export default function ShopCheckoutPage() {
   const location = useLocation();
   const { user } = useAuth();
   const cart = useCart();
+  const { t } = useI18n();
 
   // Buy Now: a single product passed via navigation state bypasses the cart entirely.
   // Capture once on mount so re-renders / state-loss don't drop the item.
@@ -146,7 +148,7 @@ export default function ShopCheckoutPage() {
   const applyPromo = async () => {
     const code = promoInput.trim().toUpperCase();
     if (!code) return;
-    if (appliedPromo?.code === code) { toast.error("Already applied"); return; }
+    if (appliedPromo?.code === code) { toast.error(t("scpAlreadyApplied")); return; }
     setPromoLoading(true);
     try {
       const { data, error } = await supabase.rpc("validate_and_apply_coupon", {
@@ -156,7 +158,7 @@ export default function ShopCheckoutPage() {
       });
       const result = typeof data === "string" ? JSON.parse(data) : data;
       if (error || !result?.valid) {
-        toast.error(result?.error || error?.message || "Invalid coupon code");
+        toast.error(result?.error || error?.message || t("scpInvalidCoupon"));
         setPromoLoading(false);
         return;
       }
@@ -168,9 +170,9 @@ export default function ShopCheckoutPage() {
         discount_value: result.discount_value,
         max_discount: result.max_discount,
       });
-      toast.success(`🎉 ৳${Math.round(result.discount_amount).toLocaleString()} off applied!`);
+      toast.success(`🎉 ৳${Math.round(result.discount_amount).toLocaleString()} ${t("scpDiscountApplied")}`);
     } catch (e: any) {
-      toast.error(e.message || "Failed to validate coupon");
+      toast.error(e.message || t("scpFailedValidate"));
     }
     setPromoLoading(false);
   };
@@ -179,8 +181,8 @@ export default function ShopCheckoutPage() {
   const needsPin = payMethod === "wallet";
 
   const handleCheckout = async () => {
-    if (needsPin && pin.length < 4) { setPinError("Enter your 4-digit PIN."); return; }
-    if (!selectedAddress) { toast.error("Please select a delivery address"); return; }
+    if (needsPin && pin.length < 4) { setPinError(t("scpEnterPin")); return; }
+    if (!selectedAddress) { toast.error(t("scpSelectAddress")); return; }
     if (processing) return;
     setProcessing(true);
     setPinError("");
@@ -188,7 +190,7 @@ export default function ShopCheckoutPage() {
     if (needsPin) {
       const pinValid = await verifyPin(pin);
       if (!pinValid) {
-        setPinError("Incorrect PIN. Please try again.");
+        setPinError(t("scpIncorrectPin"));
         setPin("");
         setProcessing(false);
         return;
@@ -197,7 +199,7 @@ export default function ShopCheckoutPage() {
     haptics.success();
 
     if (payMethod === "wallet" && orderTotal > walletBalance) {
-      toast.error("Insufficient wallet balance");
+      toast.error(t("scpInsufficientBalance"));
       setProcessing(false);
       return;
     }
@@ -237,7 +239,7 @@ export default function ShopCheckoutPage() {
       clearCart();
       setSuccess(true);
     } catch (e: any) {
-      toast.error(e.message ?? "Payment failed");
+      toast.error(e.message ?? t("scpPaymentFailed"));
       setPin("");
     }
     setProcessing(false);
@@ -251,7 +253,7 @@ export default function ShopCheckoutPage() {
           <Button variant="ghost" size="icon" onClick={() => navigate("/shop")} className="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-base font-bold text-primary-foreground">Order Placed!</h1>
+          <h1 className="text-base font-bold text-primary-foreground">{t("scpOrderPlaced")}</h1>
         </div>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -267,20 +269,20 @@ export default function ShopCheckoutPage() {
             🎉
           </motion.div>
           <div>
-            <h2 className="text-xl font-extrabold text-foreground">Order Confirmed!</h2>
-            <p className="text-muted-foreground text-sm mt-1">Your order has been placed successfully</p>
+            <h2 className="text-xl font-extrabold text-foreground">{t("scpOrderConfirmed")}</h2>
+            <p className="text-muted-foreground text-sm mt-1">{t("scpOrderSuccess")}</p>
             <p className="text-xs font-mono font-semibold mt-2 text-muted-foreground">{orderNum}</p>
           </div>
           <div className="w-full bg-card rounded-2xl border border-border p-4 space-y-2 text-left">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Delivery Info</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("scpDeliveryInfo")}</p>
             <div className="flex items-center gap-2 text-sm">
               <span>📦</span>
-              <span className="font-semibold text-foreground">Estimated 3-5 business days</span>
+              <span className="font-semibold text-foreground">{t("scpEstDays")}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               {isCod ? <Truck className="w-3.5 h-3.5 text-primary" /> : <Wallet className="w-3.5 h-3.5 text-primary" />}
               <span className="font-semibold text-foreground">
-                {isCod ? `Pay ৳${orderTotal.toLocaleString()} on delivery` : `৳${orderTotal.toLocaleString()} deducted from wallet`}
+                {isCod ? t("scpPayOnDelivery").replace("{n}", orderTotal.toLocaleString()) : t("scpDeductedWallet").replace("{n}", orderTotal.toLocaleString())}
               </span>
             </div>
             {selectedAddress && (
@@ -299,13 +301,13 @@ export default function ShopCheckoutPage() {
               onClick={() => navigate(`/orders/${orderId}`)}
             >
               <Package className="w-4 h-4 mr-2" />
-              View Order
+              {t("scpViewOrder")}
             </Button>
             <Button
               className="flex-1 h-12"
               onClick={() => navigate("/shop")}
             >
-              Continue Shopping
+              {t("scpContinueShopping")}
             </Button>
           </div>
         </motion.div>
@@ -320,14 +322,14 @@ export default function ShopCheckoutPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-base font-bold text-primary-foreground">Checkout</h1>
-        <span className="text-xs text-primary-foreground/80 ml-auto">{count} items</span>
+        <h1 className="text-base font-bold text-primary-foreground">{t("scpCheckout")}</h1>
+        <span className="text-xs text-primary-foreground/80 ml-auto">{count} {t("scpItems")}</span>
       </div>
 
       <div className="px-4 pt-4 space-y-4">
         {/* Delivery Address */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Delivery Address</p>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("scpDeliveryAddress")}</p>
           {user && (
             <AddressManager
               userId={user.id}
@@ -341,7 +343,7 @@ export default function ShopCheckoutPage() {
         {/* Payment Method */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            Payment Method
+            {t("scpPaymentMethod")}
           </p>
           {paymentMethods.length === 0 ? (
             <button
@@ -354,8 +356,8 @@ export default function ShopCheckoutPage() {
                 <Wallet className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-bold text-foreground">EasyPay Wallet</p>
-                <p className="text-[11px] text-muted-foreground">Balance: ৳{walletBalance.toLocaleString()}</p>
+                <p className="text-sm font-bold text-foreground">{t("scpEasyPayWallet")}</p>
+                <p className="text-[11px] text-muted-foreground">{t("scpBalance")}: ৳{walletBalance.toLocaleString()}</p>
               </div>
               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${payMethod === "wallet" ? "border-primary" : "border-border"}`}>
                 {payMethod === "wallet" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
@@ -382,11 +384,11 @@ export default function ShopCheckoutPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-foreground">{m.label}</p>
                       {isComingSoon && (
-                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Coming Soon</span>
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{t("scpComingSoon")}</span>
                       )}
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      {m.key === "wallet" ? `Balance: ৳${walletBalance.toLocaleString()}` : m.description || ""}
+                      {m.key === "wallet" ? `${t("scpBalance")}: ৳${walletBalance.toLocaleString()}` : m.description || ""}
                     </p>
                   </div>
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-primary" : "border-border"}`}>
@@ -400,7 +402,7 @@ export default function ShopCheckoutPage() {
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/5 border border-destructive/20">
               <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
               <p className="text-[11px] text-destructive font-semibold">
-                Insufficient balance. Need ৳{(orderTotal - walletBalance).toLocaleString()} more.
+                {t("scpInsufficientNeed").replace("{n}", (orderTotal - walletBalance).toLocaleString())}
               </p>
             </div>
           )}
@@ -408,7 +410,7 @@ export default function ShopCheckoutPage() {
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/50 border border-accent">
               <Truck className="w-3.5 h-3.5 text-primary shrink-0" />
               <p className="text-[11px] text-muted-foreground font-semibold">
-                No advance payment required. Pay ৳{orderTotal.toLocaleString()} on delivery.
+                {t("scpCodNote").replace("{n}", orderTotal.toLocaleString())}
               </p>
             </div>
           )}
@@ -417,7 +419,7 @@ export default function ShopCheckoutPage() {
         {/* Items Summary */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            Items ({count})
+            {t("scpItemsLabel")} ({count})
           </p>
           {items.map((item) => (
             <div key={item.id} className="flex items-center justify-between py-1">
@@ -433,7 +435,7 @@ export default function ShopCheckoutPage() {
                 <div>
                   <p className="text-xs font-semibold text-foreground leading-tight">{item.name}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    Qty: {item.qty} · {item.vendor_name}
+                    {t("scpQty")}: {item.qty} · {item.vendor_name}
                   </p>
                 </div>
               </div>
@@ -447,7 +449,7 @@ export default function ShopCheckoutPage() {
         {/* Coupon */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            Promo Code
+            {t("scpPromoCode")}
           </p>
           {appliedPromo ? (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/50 border border-accent">
@@ -455,7 +457,7 @@ export default function ShopCheckoutPage() {
               <div className="flex-1">
                 <p className="text-sm font-bold text-foreground">{appliedPromo.code}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Saving ৳{discountAmt.toLocaleString()}
+                  {t("scpSaving")} ৳{discountAmt.toLocaleString()}
                 </p>
               </div>
               <button
@@ -477,12 +479,12 @@ export default function ShopCheckoutPage() {
                   value={promoInput}
                   onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === "Enter" && applyPromo()}
-                  placeholder="Enter promo code"
+                  placeholder={t("scpEnterPromo")}
                   className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-muted border border-border text-sm text-foreground font-mono outline-none focus:border-primary transition-colors uppercase"
                 />
               </div>
               <Button onClick={applyPromo} disabled={promoLoading} size="sm" className="shrink-0">
-                {promoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+                {promoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("scpApply")}
               </Button>
             </div>
           )}
@@ -491,34 +493,34 @@ export default function ShopCheckoutPage() {
         {/* Order Summary */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            Order Summary
+            {t("scpOrderSummary")}
           </p>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal ({count} items)</span>
+            <span className="text-muted-foreground">{t("scpSubtotal")} ({count} {t("scpItems")})</span>
             <span className="font-semibold text-foreground">৳{subtotal.toLocaleString()}</span>
           </div>
           {appliedPromo && (
             <div className="flex justify-between text-sm">
-              <span className="text-primary">Discount ({appliedPromo.code})</span>
+              <span className="text-primary">{t("scpDiscount")} ({appliedPromo.code})</span>
               <span className="font-semibold text-primary">-৳{discountAmt.toLocaleString()}</span>
             </div>
           )}
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">
-              Delivery{matchedZone ? ` (${matchedZone.zone_name})` : ""}
+              {t("scpDelivery")}{matchedZone ? ` (${matchedZone.zone_name})` : ""}
             </span>
             <span className={`font-semibold ${deliveryFee > 0 ? "text-foreground" : "text-primary"}`}>
-              {deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : "FREE"}
+              {deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : t("scpFree")}
             </span>
           </div>
           {matchedZone && (
             <p className="text-[10px] text-muted-foreground text-right">
-              Est. {matchedZone.estimated_days}{matchedZone.courier_providers?.name ? ` via ${matchedZone.courier_providers.name}` : ""}
+              {t("scpEst")} {matchedZone.estimated_days}{matchedZone.courier_providers?.name ? ` ${t("scpVia")} ${matchedZone.courier_providers.name}` : ""}
             </p>
           )}
           <div className="h-px bg-border my-1" />
           <div className="flex justify-between text-base font-bold">
-            <span className="text-foreground">Total</span>
+            <span className="text-foreground">{t("scpTotal")}</span>
             <span className="text-primary">৳{orderTotal.toLocaleString()}</span>
           </div>
         </div>
@@ -527,10 +529,10 @@ export default function ShopCheckoutPage() {
         {needsPin && (
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            Confirm PIN
+            {t("scpConfirmPin")}
           </p>
           <p className="text-xs text-muted-foreground">
-            Enter your 4-digit PIN to authorize this purchase
+            {t("scpConfirmPinDesc")}
           </p>
           <div className="flex justify-center gap-5 py-2">
             {[0, 1, 2, 3].map((i) => (
@@ -578,7 +580,7 @@ export default function ShopCheckoutPage() {
       >
         <SlideToConfirm
           onConfirm={handleCheckout}
-          label={isCod ? `Place COD Order · ৳${orderTotal.toLocaleString()}` : `Place Order · ৳${orderTotal.toLocaleString()}`}
+          label={isCod ? `${t("scpPlaceCodOrder")} · ৳${orderTotal.toLocaleString()}` : `${t("scpPlaceOrder")} · ৳${orderTotal.toLocaleString()}`}
           gradient="gradient-primary"
           disabled={
             (needsPin && pin.length < 4) ||
