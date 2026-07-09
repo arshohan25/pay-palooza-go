@@ -590,9 +590,9 @@ const CheckoutPage = () => {
 
               <div className="px-6 pb-5 space-y-4">
                 <div className="text-center">
-                  <h3 className="text-base font-bold text-foreground">Enter OTP</h3>
+                  <h3 className="text-base font-bold text-foreground">{t("cpEnterOtp")}</h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    A 6-digit code was sent to <span className="font-semibold text-foreground">{phone}</span>
+                    {t("cpOtpSentTo")} <span className="font-semibold text-foreground">{phone}</span>
                   </p>
                 </div>
 
