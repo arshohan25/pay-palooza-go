@@ -91,8 +91,8 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
   useEffect(() => {
     const cleanup = startScreenshotDetection(() => {
       setScreenshotAlert(true);
-      toast.warning("Screenshot detected!", {
-        description: "Screenshots are monitored in encrypted chats.",
+      toast.warning(t("scScreenshotToast"), {
+        description: t("scScreenshotDesc"),
         icon: <ShieldAlert size={16} />,
       });
       setTimeout(() => setScreenshotAlert(false), 3000);
