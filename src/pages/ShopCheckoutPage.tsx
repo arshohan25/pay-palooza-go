@@ -384,11 +384,11 @@ export default function ShopCheckoutPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-foreground">{m.label}</p>
                       {isComingSoon && (
-                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Coming Soon</span>
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{t("scpComingSoon")}</span>
                       )}
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      {m.key === "wallet" ? `Balance: ৳${walletBalance.toLocaleString()}` : m.description || ""}
+                      {m.key === "wallet" ? `${t("scpBalance")}: ৳${walletBalance.toLocaleString()}` : m.description || ""}
                     </p>
                   </div>
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-primary" : "border-border"}`}>
