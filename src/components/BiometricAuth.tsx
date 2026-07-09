@@ -70,7 +70,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
       setStep("success");
       setTimeout(onAuthenticated, 900);
     } else {
-      setBioError("Biometric check failed or was cancelled.");
+      setBioError(t("baBioFailed"));
       setStep("prompt");
     }
   };
