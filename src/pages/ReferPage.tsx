@@ -216,7 +216,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
-                    {ref.referee_name || ref.referee_phone || "User"}
+                    {ref.referee_name || ref.referee_phone || t("referUserFallback")}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {ref.referee_phone ? `${ref.referee_phone.slice(0,3)}••••${ref.referee_phone.slice(-4)}` : ""} · {new Date(ref.created_at).toLocaleDateString()}
