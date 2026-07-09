@@ -322,8 +322,8 @@ export default function ShopCheckoutPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-base font-bold text-primary-foreground">Checkout</h1>
-        <span className="text-xs text-primary-foreground/80 ml-auto">{count} items</span>
+        <h1 className="text-base font-bold text-primary-foreground">{t("scpCheckout")}</h1>
+        <span className="text-xs text-primary-foreground/80 ml-auto">{count} {t("scpItems")}</span>
       </div>
 
       <div className="px-4 pt-4 space-y-4">
