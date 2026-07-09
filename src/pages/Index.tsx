@@ -613,11 +613,11 @@ const Index = () => {
                     setPaymentPrefilledMerchant(parsed.identifier);
                     setShowPayment(true);
                   } else {
-                    toast.error("Unrecognized QR code. Please try a valid EasyPay QR.");
+                    toast.error(t("idxUnrecognizedQr"));
                   }
                 }
               } catch {
-                toast.error("Could not process QR code. Please try again.");
+                toast.error(t("idxQrFailed"));
               }
             }
           }}
