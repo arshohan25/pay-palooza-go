@@ -518,7 +518,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                       <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString("en-IN")}</p>
                     )}
                     <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[10.5px] text-muted-foreground/60">{relativeDate(tx.date)}</p>
+                      <p className="text-[10.5px] text-muted-foreground/60">{relativeDate(tx.date, t)}</p>
                       {tx.status === "pending" && (
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                           <Clock size={9} /> PENDING
