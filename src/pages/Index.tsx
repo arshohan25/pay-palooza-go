@@ -204,7 +204,7 @@ const Index = () => {
         filter: `target_user_id=eq.${user.id}`,
       }, (payload: any) => {
         if (payload.new?.feature === "account" && payload.new?.is_active) {
-          toast.error("Your account has been locked by an administrator. Contact support.");
+          toast.error(t("idxAccountLocked"));
           setTimeout(() => signOut(), 1500);
         }
       })
