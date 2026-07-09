@@ -446,13 +446,13 @@ const CheckoutPage = () => {
   /* ── Amount hero ───────────────────────────────────────────── */
   const AmountHero = () => (
     <div className="text-center py-5">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] font-semibold mb-1">Amount to Pay</p>
+      <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] font-semibold mb-1">{t("cpAmountToPay")}</p>
       <p className="text-4xl font-black text-foreground tracking-tight">
         <span className="text-primary text-2xl mr-0.5">৳</span>
         {session ? fmt(session.amount) : "—"}
       </p>
       {session?.reference && (
-        <p className="text-[10px] text-muted-foreground mt-2 font-medium">Ref: {session.reference}</p>
+        <p className="text-[10px] text-muted-foreground mt-2 font-medium">{t("cpRef")}: {session.reference}</p>
       )}
     </div>
   );
