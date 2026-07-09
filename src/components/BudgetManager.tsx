@@ -5,6 +5,7 @@ import { Plus, Trash2, Pencil, Target } from "lucide-react";
 import { useSpendingBudgets, BUDGET_CATEGORIES } from "@/hooks/use-spending-budgets";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 
 const BudgetManager = () => {
   const { budgets, spending, loading, setBudget, toggleRecurring, removeBudget, categoryLabel } = useSpendingBudgets();
