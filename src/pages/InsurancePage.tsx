@@ -10,12 +10,13 @@ import { useKycStatus } from "@/hooks/use-kyc-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
-const PLAN_CATEGORIES = [
-  { key: "life", label: "Life", icon: Heart, color: "text-red-500" },
-  { key: "health", label: "Health", icon: Shield, color: "text-emerald-500" },
-  { key: "accident", label: "Accident", icon: Zap, color: "text-amber-500" },
-  { key: "device", label: "Device", icon: Smartphone, color: "text-blue-500" },
+const PLAN_CATEGORIES: { key: string; labelKey: TranslationKey; icon: any; color: string }[] = [
+  { key: "life", labelKey: "ipCatLife", icon: Heart, color: "text-red-500" },
+  { key: "health", labelKey: "ipCatHealth", icon: Shield, color: "text-emerald-500" },
+  { key: "accident", labelKey: "ipCatAccident", icon: Zap, color: "text-amber-500" },
+  { key: "device", labelKey: "ipCatDevice", icon: Smartphone, color: "text-blue-500" },
 ];
 
 const PLANS: Record<string, { name: string; coverage: number; premium: number; duration: number; benefits: string[] }[]> = {
