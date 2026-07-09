@@ -39,7 +39,7 @@ const SAVINGS_CATEGORIES: Category[] = [
 ];
 
 const COMMON_CATEGORIES: Category[] = [
-  { key: "daily_summary", labelKey: "npCatDailySummary", descKey: "npCatDailySummaryDesc" },
+  { key: "monthly_summary", labelKey: "npCatMonthlySummary", descKey: "npCatMonthlySummaryDesc" },
   { key: "marketing", labelKey: "npCatMarketing", descKey: "npCatMarketingDesc" },
 ];
 
