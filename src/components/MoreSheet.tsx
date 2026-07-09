@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Landmark, Ticket, Heart, X, Briefcase, HandCoins, Shield, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface MoreSheetProps {
   open: boolean;
