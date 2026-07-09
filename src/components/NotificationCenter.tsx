@@ -197,7 +197,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                   {filter !== "all" && filter !== "unread" && filtered.some((n) => !n.read) && (
                     <button onClick={markFilteredRead}
                       className="text-[11px] font-semibold text-primary px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-1">
-                      <CheckCheck size={12} /> Mark filter
+                      <CheckCheck size={12} /> {t("ncMarkFilter")}
                     </button>
                   )}
                   {unreadCount > 0 && (
