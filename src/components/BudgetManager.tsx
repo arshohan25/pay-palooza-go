@@ -5,9 +5,11 @@ import { Plus, Trash2, Pencil, Target } from "lucide-react";
 import { useSpendingBudgets, BUDGET_CATEGORIES } from "@/hooks/use-spending-budgets";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 
 const BudgetManager = () => {
   const { budgets, spending, loading, setBudget, toggleRecurring, removeBudget, categoryLabel } = useSpendingBudgets();
+  const { t } = useI18n();
 
   const [adding, setAdding] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -56,7 +58,7 @@ const BudgetManager = () => {
           <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
             <Target size={15} className="text-primary" />
           </div>
-          <p className="text-sm font-bold text-foreground">Monthly Budgets</p>
+          <p className="text-sm font-bold text-foreground">{t("bmTitle")}</p>
         </div>
         {available.length > 0 && (
           <motion.button
@@ -64,7 +66,7 @@ const BudgetManager = () => {
             onClick={() => { setAdding(!adding); setNewCat(available[0]?.key || ""); }}
             className="text-xs font-semibold text-primary flex items-center gap-1"
           >
-            <Plus size={14} /> Add
+            <Plus size={14} /> {t("bmAdd")}
           </motion.button>
         )}
       </div>
@@ -84,7 +86,7 @@ const BudgetManager = () => {
           <div className="flex gap-2">
             <Input
               type="number"
-              placeholder="৳ Limit"
+              placeholder={t("bmLimit")}
               value={newLimit}
               onChange={(e) => setNewLimit(e.target.value)}
               className="rounded-xl text-sm"
@@ -94,7 +96,7 @@ const BudgetManager = () => {
               onClick={handleAdd}
               className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shrink-0"
             >
-              Save
+              {t("bmSave")}
             </motion.button>
           </div>
         </motion.div>
@@ -103,7 +105,7 @@ const BudgetManager = () => {
       {/* Budget list */}
       {budgets.length === 0 && !adding && (
         <p className="text-xs text-muted-foreground text-center py-3">
-          No budgets set. Tap Add to create one.
+          {t("bmEmpty")}
         </p>
       )}
 
@@ -157,7 +159,7 @@ const BudgetManager = () => {
                   className="scale-75 origin-left"
                 />
                 <span className="text-[10px] text-muted-foreground">
-                  {b.is_recurring ? "Recurring" : "One-time"}
+                  {b.is_recurring ? t("bmRecurring") : t("bmOneTime")}
                 </span>
               </div>
               <div className="flex items-center gap-2">
