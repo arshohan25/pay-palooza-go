@@ -46,17 +46,17 @@ interface Transaction {
   recipient_phone?: string | null;
 }
 
-const CATEGORIES: { id: TxCategory; label: string }[] = [
-  { id: "all",      label: "All" },
-  { id: "send",     label: "Send" },
-  { id: "receive",  label: "Received" },
-  { id: "cashout",  label: "Cash Out" },
-  { id: "cashin",   label: "Cash In" },
-  { id: "payment",  label: "Payment" },
-  { id: "banktransfer", label: "Bank Transfer" },
-  { id: "recharge", label: "Recharge" },
-  { id: "paybill",  label: "Bill Pay" },
-  { id: "addmoney", label: "Add Money" },
+const CATEGORY_KEYS: { id: TxCategory; key: string }[] = [
+  { id: "all",          key: "thAll" },
+  { id: "send",         key: "thSend" },
+  { id: "receive",      key: "thReceived" },
+  { id: "cashout",      key: "thCashOut" },
+  { id: "cashin",       key: "thCashIn" },
+  { id: "payment",      key: "thPayment" },
+  { id: "banktransfer", key: "thBankTransfer" },
+  { id: "recharge",     key: "thRecharge" },
+  { id: "paybill",      key: "thBillPay" },
+  { id: "addmoney",     key: "thAddMoney" },
 ];
 
 // Illustrated icon config for each transaction category
@@ -79,13 +79,13 @@ const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
   banktransfer: { Icon: TxBankTransferIcon, ReceiveIcon: TxBankTransferIcon, bg: "rgba(63,81,181,0.12)", ring: "1px solid rgba(63,81,181,0.2)", receiveBg: "rgba(63,81,181,0.12)", receiveRing: "1px solid rgba(63,81,181,0.2)" },
 };
 
-const relativeDate = (iso: string) => {
+const relativeDate = (iso: string, t: (k: string) => string) => {
   const d = new Date(iso);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString())     return `Today · ${format(d, "h:mm a")}`;
-  if (d.toDateString() === yesterday.toDateString()) return `Yesterday · ${format(d, "h:mm a")}`;
+  if (d.toDateString() === today.toDateString())     return `${t("thToday")} · ${format(d, "h:mm a")}`;
+  if (d.toDateString() === yesterday.toDateString()) return `${t("thYesterday")} · ${format(d, "h:mm a")}`;
   return format(d, "dd MMM yyyy · h:mm a");
 };
 
@@ -93,6 +93,7 @@ interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void
 
 const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, customLabels }: TransactionHistoryProps) => {
   const { t } = useI18n();
+  const CATEGORIES = useMemo(() => CATEGORY_KEYS.map((c) => ({ id: c.id, label: t(c.key as any) })), [t]);
   const runningMonthStart = useMemo(() => startOfMonth(new Date()), []);
   const runningMonthEnd = useMemo(() => endOfDay(new Date()), []);
   const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions(100, undefined);
@@ -111,47 +112,47 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   // Map DB transactions to local Transaction shape
   const allTransactions: Transaction[] = useMemo(() =>
     dbTxns
-      .filter((t) => !filterTypes || filterTypes.includes(t.type as TxCategory))
-      .map((t) => {
-        const cfg = TX_ICON_MAP[t.type as Exclude<TxCategory, "all">];
-        const isCashback = t.type === "addmoney" && (t.description?.startsWith("Drive Cashback:") || t.reference?.startsWith("CB-") || false);
+      .filter((tx) => !filterTypes || filterTypes.includes(tx.type as TxCategory))
+      .map((tx) => {
+        const cfg = TX_ICON_MAP[tx.type as Exclude<TxCategory, "all">];
+        const isCashback = tx.type === "addmoney" && (tx.description?.startsWith("Drive Cashback:") || tx.reference?.startsWith("CB-") || false);
         const isInvestment =
-          (t.description?.startsWith("Gold Purchase:") ||
-            t.description?.startsWith("Gold Sale:") ||
-            t.description?.startsWith("Stock Purchase:") ||
-            t.description?.startsWith("Stock Sale:") ||
-            t.reference?.startsWith("GOLD-BUY-") ||
-            t.reference?.startsWith("GOLD-SELL-") ||
-            t.reference?.startsWith("STOCK-BUY-") ||
-            t.reference?.startsWith("STOCK-SELL-")) ?? false;
-        const label = isCashback ? "Drive Cashback" : (CATEGORIES.find((c) => c.id === t.type)?.label ?? t.type);
+          (tx.description?.startsWith("Gold Purchase:") ||
+            tx.description?.startsWith("Gold Sale:") ||
+            tx.description?.startsWith("Stock Purchase:") ||
+            tx.description?.startsWith("Stock Sale:") ||
+            tx.reference?.startsWith("GOLD-BUY-") ||
+            tx.reference?.startsWith("GOLD-SELL-") ||
+            tx.reference?.startsWith("STOCK-BUY-") ||
+            tx.reference?.startsWith("STOCK-SELL-")) ?? false;
+        const label = isCashback ? t("thDriveCashback") : (CATEGORIES.find((c) => c.id === tx.type)?.label ?? tx.type);
         const isCredit = agentView
-          ? t.type === "cashout"
-          : t.type === "addmoney" || t.type === "receive" || t.type === "cashin";
+          ? tx.type === "cashout"
+          : tx.type === "addmoney" || tx.type === "receive" || tx.type === "cashin";
         const agentName = agentView
-          ? (t.type === "cashout" ? "CashOut Received" : t.type === "cashin" ? "Cash In Sent" : undefined)
+          ? (tx.type === "cashout" ? t("thCashOutReceived") : tx.type === "cashin" ? t("thCashInSent") : undefined)
           : undefined;
         const agentDetail = agentView
-          ? (t.type === "cashout" ? "CashOut Received" : t.type === "cashin" ? "Cash In Sent" : undefined)
+          ? (tx.type === "cashout" ? t("thCashOutReceived") : tx.type === "cashin" ? t("thCashInSent") : undefined)
           : undefined;
         return {
-          id: t.id,
-          short_id: t.short_id || t.id.slice(0, 12).toUpperCase(),
-          category: t.type as Exclude<TxCategory, "all">,
+          id: tx.id,
+          short_id: tx.short_id || tx.id.slice(0, 12).toUpperCase(),
+          category: tx.type as Exclude<TxCategory, "all">,
           name: agentName || (isCashback
-            ? (t.description?.replace("Drive Cashback: ", "") || "Cashback")
-            : (t.recipient_name || t.description || label)),
-          detail: agentDetail || (isCashback ? "Drive Cashback" : (t.description || label)),
-          date: t.created_at,
-          amount: isCredit ? t.amount : -t.amount,
-          fee: t.fee,
-          commission: t.commission || 0,
+            ? (tx.description?.replace("Drive Cashback: ", "") || t("thCashback"))
+            : (tx.recipient_name || tx.description || label)),
+          detail: agentDetail || (isCashback ? t("thDriveCashback") : (tx.description || label)),
+          date: tx.created_at,
+          amount: isCredit ? tx.amount : -tx.amount,
+          fee: tx.fee,
+          commission: tx.commission || 0,
           _isCashback: isCashback,
           _isInvestment: isInvestment,
-          status: t.status,
-          recipient_phone: t.recipient_phone,
+          status: tx.status,
+          recipient_phone: tx.recipient_phone,
         };
-      }), [dbTxns, filterTypes]);
+      }), [dbTxns, filterTypes, t, agentView, CATEGORIES]);
 
   const triggerRefresh = () => {
     if (isRefreshing) return;
@@ -240,7 +241,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
             whileTap={{ scale: 0.88 }}
             onClick={triggerRefresh}
             className="glass-hero w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0"
-            aria-label="Refresh"
+            aria-label={t("thRefresh")}
           >
             <motion.div animate={isRefreshing ? { rotate: 360 } : { rotate: 0 }} transition={{ repeat: isRefreshing ? Infinity : 0, duration: 0.8, ease: "linear" }}>
               <RefreshCw size={15} />
@@ -254,7 +255,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 ? "bg-white text-primary"
                 : "glass-hero"
             }`}
-            aria-label="Toggle filters"
+            aria-label={t("thToggleFilters")}
           >
             <SlidersHorizontal size={15} />
           </motion.button>
@@ -266,8 +267,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
             { label: t("moneyIn"),  value: `+৳${monthIn.toLocaleString("en-IN")}`,  color: "text-green-300" },
             { label: t("moneyOut"), value: `-৳${monthOut.toLocaleString("en-IN")}`, color: "text-rose-300"  },
             agentView
-              ? { label: "Commission", value: `৳${monthCommission.toLocaleString("en-IN")}`, color: "text-emerald-300" }
-              : { label: "Fees",       value: `৳${monthFees.toLocaleString("en-IN")}`,       color: "text-amber-300" },
+              ? { label: t("thCommission"), value: `৳${monthCommission.toLocaleString("en-IN")}`, color: "text-emerald-300" }
+              : { label: t("thFees"),       value: `৳${monthFees.toLocaleString("en-IN")}`,       color: "text-amber-300" },
           ].map(({ label, value, color }) => (
             <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center min-w-0 overflow-hidden">
               <p className="text-[9px] font-semibold uppercase tracking-wide text-white/60 mb-0.5 truncate">{label}</p>
@@ -280,7 +281,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" />
           <Input
-            placeholder={`${t("searchTransactions")} or Transaction ID`}
+            placeholder={`${t("searchTransactions")} ${t("thOrTxnId")}`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-9 h-10 bg-white/10 border-white/15 rounded-2xl text-[13px] text-white placeholder:text-white/40 focus-visible:ring-white/30"
@@ -302,7 +303,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         filtered.forEach((tx) => {
           if (tx.fee > 0) {
             const label = tx._isInvestment
-              ? "Brokerage Fee"
+              ? t("thBrokerageFee")
               : (CATEGORIES.find((c) => c.id === tx.category)?.label ?? tx.category);
             feeByType[label] = (feeByType[label] || 0) + tx.fee;
           }
@@ -514,10 +515,10 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tx.detail}</p>
                     {agentView && tx.commission > 0 && (
-                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString("en-IN")}</p>
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">{t("thCommission")}: ৳{tx.commission.toLocaleString("en-IN")}</p>
                     )}
                     <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[10.5px] text-muted-foreground/60">{relativeDate(tx.date)}</p>
+                      <p className="text-[10.5px] text-muted-foreground/60">{relativeDate(tx.date, t)}</p>
                       {tx.status === "pending" && (
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                           <Clock size={9} /> PENDING
@@ -542,7 +543,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                                 <TrendingUp size={12} className="text-emerald-500/70 dark:text-emerald-400/70 cursor-help" />
                               </TooltipTrigger>
                               <TooltipContent side="left" className="text-xs">
-                                Commission: ৳{tx.commission.toLocaleString("en-IN")}
+                                {t("thCommission")}: ৳{tx.commission.toLocaleString("en-IN")}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -555,7 +556,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                                 <BadgeDollarSign size={12} className="text-amber-500/70 dark:text-amber-400/70 cursor-help" />
                               </TooltipTrigger>
                               <TooltipContent side="left" className="text-xs">
-                                Fee: ৳{tx.fee.toLocaleString("en-IN")}
+                                {t("thFee")}: ৳{tx.fee.toLocaleString("en-IN")}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -587,9 +588,9 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           const txDate    = new Date(selectedTx.date);
           const txId      = selectedTx.short_id;
           const baseAmount = Math.abs(selectedTx.amount);
-          const summaryBaseLabel = isCredit ? "Gross Amount" : "Principal";
-          const summaryFeeLabel = isCredit ? "Fee Deducted" : "Fee (from balance)";
-          const summaryTotalLabel = isCredit ? "Net Credited" : "Total Deducted";
+          const summaryBaseLabel = isCredit ? t("thGrossAmount") : t("thPrincipal");
+          const summaryFeeLabel = isCredit ? t("thFeeDeducted") : t("thFeeFromBalance");
+          const summaryTotalLabel = isCredit ? t("thNetCredited") : t("thTotalDeducted");
           const summaryTotalAmount = isCredit ? Math.max(0, baseAmount - selectedTx.fee) : baseAmount + selectedTx.fee;
           const catLabel  = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
 
@@ -646,17 +647,17 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     {selectedTx.status === "pending" ? (
                       <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30">
                         <Clock size={12} className="text-amber-600 dark:text-amber-400" />
-                        <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Pending</span>
+                        <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">{t("thPending")}</span>
                       </div>
                     ) : selectedTx.status === "failed" ? (
                       <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-destructive/10">
                         <AlertCircle size={12} className="text-destructive" />
-                        <span className="text-[11px] font-bold text-destructive">Rejected</span>
+                        <span className="text-[11px] font-bold text-destructive">{t("thRejected")}</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-primary/10">
                         <CheckCircle2 size={12} className="text-primary" />
-                        <span className="text-[11px] font-bold text-primary">Successful</span>
+                        <span className="text-[11px] font-bold text-primary">{t("thSuccessful")}</span>
                       </div>
                     )}
                   </div>
@@ -665,17 +666,17 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
 
                   {/* Detail rows */}
                   {[
-                    { icon: Hash,     label: "Transaction ID", value: txId,                                   copy: true  },
-                    { icon: User,     label: "Name / Party",   value: selectedTx.name,                        copy: false },
-                    ...(selectedTx.recipient_phone ? [{ icon: Phone, label: "Receiver Number", value: selectedTx.recipient_phone, copy: true }] : []),
-                    { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
+                    { icon: Hash,     label: t("thTransactionId"), value: txId,                                   copy: true  },
+                    { icon: User,     label: t("thNameParty"),   value: selectedTx.name,                        copy: false },
+                    ...(selectedTx.recipient_phone ? [{ icon: Phone, label: t("thReceiverNumber"), value: selectedTx.recipient_phone, copy: true }] : []),
+                    { icon: Tag,      label: t("thCategory"),       value: catLabel,                               copy: false },
                     ...(selectedTx.detail && !selectedTx.detail.includes("[Wallet:") && !selectedTx.detail.includes("Wallet:") && selectedTx.detail !== catLabel
-                      ? [{ icon: FileText, label: "Description", value: selectedTx.detail, copy: false }] : []),
+                      ? [{ icon: FileText, label: t("thDescription"), value: selectedTx.detail, copy: false }] : []),
                     ...(agentView
-                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `+৳${selectedTx.commission.toLocaleString("en-IN")}`, copy: false }] : [])
-                      : (selectedTx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${selectedTx.fee.toLocaleString("en-IN")}`, copy: false }] : [])
+                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: t("thCommissionEarned"), value: `+৳${selectedTx.commission.toLocaleString("en-IN")}`, copy: false }] : [])
+                      : (selectedTx.fee > 0 ? [{ icon: Coins, label: t("thChargeFee"), value: `৳${selectedTx.fee.toLocaleString("en-IN")}`, copy: false }] : [])
                     ),
-                    { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
+                    { icon: Clock,    label: t("thDateTime"),    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
                   ].map(({ icon: RowIcon, label, value, copy }) => (
                     <div key={label} className="flex items-start gap-3 py-2.5 border-b border-border/50 last:border-0">
                       <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0 mt-0.5">
@@ -701,30 +702,30 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   {agentView && selectedTx.commission > 0 ? (
                     <div className="mt-4 rounded-2xl p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40">
                       <div className="flex items-center justify-between text-[12.5px]">
-                        <span className="text-muted-foreground font-medium">Transaction Amount</span>
+                        <span className="text-muted-foreground font-medium">{t("thTransactionAmount")}</span>
                         <span className="font-semibold text-foreground">৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}</span>
                       </div>
                       <div className="flex items-center justify-between text-[12.5px] mt-1.5">
                         <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                          Commission Earned
+                          {t("thCommissionEarned")}
                         </span>
                         <span className="font-semibold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString("en-IN")}</span>
                       </div>
                       <div className="h-px bg-emerald-200/60 dark:bg-emerald-800/40 my-2" />
                       <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-bold text-foreground">Net Earned</span>
+                        <span className="text-[13px] font-bold text-foreground">{t("thNetEarned")}</span>
                         <span className="text-[18px] font-bold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString("en-IN")}</span>
                       </div>
                     </div>
                   ) : agentView ? (
                     <div className={`mt-4 rounded-2xl p-4 ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
                       <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
+                        <span className="text-[13px] font-semibold text-muted-foreground">{t("thTotalAmount")}</span>
                         <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
                           {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
                         </span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-1 text-right font-medium">No commission</p>
+                      <p className="text-[11px] text-muted-foreground mt-1 text-right font-medium">{t("thNoCommission")}</p>
                     </div>
                   ) : selectedTx.fee > 0 ? (
                     <div className="mt-4 rounded-2xl p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
@@ -745,12 +746,12 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   ) : (
                     <div className={`mt-4 rounded-2xl p-4 ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
                       <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
+                        <span className="text-[13px] font-semibold text-muted-foreground">{t("thTotalAmount")}</span>
                         <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
                           {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
                         </span>
                       </div>
-                      <p className="text-[11px] text-primary mt-1 text-right font-medium">No fee charged</p>
+                      <p className="text-[11px] text-primary mt-1 text-right font-medium">{t("thNoFeeCharged")}</p>
                     </div>
                   )}
 
@@ -760,7 +761,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     onClick={() => setShowShare(true)}
                     className="w-full mt-2 h-11 rounded-2xl border border-border bg-muted/40 flex items-center justify-center gap-2 text-sm font-semibold text-foreground hover:bg-muted/70 transition-colors"
                   >
-                    <Share2 size={15} /> Share Receipt
+                    <Share2 size={15} /> {t("thShareReceipt")}
                   </motion.button>
                 </div>
               </motion.div>
@@ -775,9 +776,9 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         const txId   = selectedTx.short_id;
         const catLabel = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
         const baseAmount = Math.abs(selectedTx.amount);
-        const summaryBaseLabel = selectedTx.amount > 0 ? "Gross Amount" : "Principal";
-        const summaryFeeLabel = selectedTx.amount > 0 ? "Fee Deducted" : "Fee (from balance)";
-        const summaryTotalLabel = selectedTx.amount > 0 ? "Net Credited" : "Total Deducted";
+        const summaryBaseLabel = selectedTx.amount > 0 ? t("thGrossAmount") : t("thPrincipal");
+        const summaryFeeLabel = selectedTx.amount > 0 ? t("thFeeDeducted") : t("thFeeFromBalance");
+        const summaryTotalLabel = selectedTx.amount > 0 ? t("thNetCredited") : t("thTotalDeducted");
         const summaryTotalAmount = selectedTx.amount > 0
           ? Math.max(0, baseAmount - selectedTx.fee)
           : baseAmount + selectedTx.fee;
@@ -796,22 +797,22 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
               gradient: gradMap[selectedTx.category] ?? "gradient-primary",
               txnId: txId,
               rows: [
-                { label: "Party", value: selectedTx.name },
-                ...(selectedTx.recipient_phone ? [{ label: "Receiver", value: selectedTx.recipient_phone }] : []),
-                { label: "Category", value: catLabel },
+                { label: t("thParty"), value: selectedTx.name },
+                ...(selectedTx.recipient_phone ? [{ label: t("thReceiver"), value: selectedTx.recipient_phone }] : []),
+                { label: t("thCategory"), value: catLabel },
                 ...(selectedTx.detail && !selectedTx.detail.includes("[Wallet:") && !selectedTx.detail.includes("Wallet:") && selectedTx.detail !== catLabel
-                  ? [{ label: "Note", value: selectedTx.detail }] : []),
+                  ? [{ label: t("thNote"), value: selectedTx.detail }] : []),
                 ...(agentView
-                   ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString("en-IN")}` }] : [])
+                   ? (selectedTx.commission > 0 ? [{ label: t("thCommission"), value: `+৳${selectedTx.commission.toLocaleString("en-IN")}` }] : [])
                     : (selectedTx.fee > 0
                       ? [
                           { label: summaryBaseLabel, value: `৳${baseAmount.toLocaleString("en-IN")}` },
                           { label: summaryFeeLabel, value: `৳${selectedTx.fee.toLocaleString("en-IN")}` },
                           { label: summaryTotalLabel, value: `৳${summaryTotalAmount.toLocaleString("en-IN")}` },
                         ]
-                     : [{ label: "Fee", value: "Free" }])
+                     : [{ label: t("thFee"), value: t("thFree") }])
                 ),
-                { label: "Date & Time", value: format(txDate, "dd MMM yyyy, h:mm a") },
+                { label: t("thDateTime"), value: format(txDate, "dd MMM yyyy, h:mm a") },
               ],
             }}
           />
@@ -823,6 +824,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
 
 // ─── Fee Breakdown Summary (collapsible) ──────────────────────────────────
 const FeeBreakdownSummary = ({ entries, totalFees }: { entries: [string, number][]; totalFees: number }) => {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <div className="mb-2">
@@ -833,7 +835,7 @@ const FeeBreakdownSummary = ({ entries, totalFees }: { entries: [string, number]
       >
         <div className="flex items-center gap-2">
           <Coins size={14} className="text-amber-600 dark:text-amber-400" />
-          <span className="text-[12px] font-semibold text-foreground">Fee Breakdown</span>
+          <span className="text-[12px] font-semibold text-foreground">{t("thFeeBreakdown")}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-bold text-amber-600 dark:text-amber-400">৳{totalFees.toLocaleString("en-IN")}</span>
@@ -868,6 +870,7 @@ const FeeBreakdownSummary = ({ entries, totalFees }: { entries: [string, number]
 
 // ─── Commission Breakdown Summary (collapsible, agent view) ───────────────
 const CommissionBreakdownSummary = ({ entries, totalCommission }: { entries: [string, number][]; totalCommission: number }) => {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <div className="mb-2">
@@ -878,7 +881,7 @@ const CommissionBreakdownSummary = ({ entries, totalCommission }: { entries: [st
       >
         <div className="flex items-center gap-2">
           <TrendingUp size={14} className="text-emerald-600 dark:text-emerald-400" />
-          <span className="text-[12px] font-semibold text-foreground">Commission Breakdown</span>
+          <span className="text-[12px] font-semibold text-foreground">{t("thCommissionBreakdown")}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">৳{totalCommission.toLocaleString("en-IN")}</span>
