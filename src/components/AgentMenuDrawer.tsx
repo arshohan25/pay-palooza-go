@@ -104,16 +104,16 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   };
 
   const menuItems = [
-    { icon: Camera, label: "Edit Avatar", action: () => openAfterClose(() => setAvatarSheetOpen(true)), toggleKey: "agent_edit_avatar" },
-    { icon: QrCode, label: "Share QR", action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
-    { icon: ShieldCheck, label: "Customer KYC", action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
-    { icon: BarChart3, label: "Analytics", action: () => { onClose(); navigate("/agent/analytics"); }, toggleKey: "agent_analytics" },
-    { icon: Bell, label: "Notifications", action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
+    { icon: Camera, label: t("agEditAvatar"), action: () => openAfterClose(() => setAvatarSheetOpen(true)), toggleKey: "agent_edit_avatar" },
+    { icon: QrCode, label: t("agShareQr"), action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
+    { icon: ShieldCheck, label: t("agCustomerKyc"), action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
+    { icon: BarChart3, label: t("agAnalytics"), action: () => { onClose(); navigate("/agent/analytics"); }, toggleKey: "agent_analytics" },
+    { icon: Bell, label: t("agNotifications"), action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
   ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
 
   const bottomItems = [
-    { icon: Home, label: "Back to Home", action: () => { onClose(); navigate("/"); } },
-    { icon: LogOut, label: "Sign Out", action: async () => { await signOut(); navigate("/"); }, danger: true },
+    { icon: Home, label: t("agBackHome"), action: () => { onClose(); navigate("/"); } },
+    { icon: LogOut, label: t("agSignOut"), action: async () => { await signOut(); navigate("/"); }, danger: true },
   ];
 
   return (
