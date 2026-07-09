@@ -279,7 +279,7 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13.5px] font-semibold text-foreground truncate">
-                          {ticket.subject || "General Support"}
+                          {ticket.subject || t("ticketGeneralSupport")}
                         </p>
                         {/* Complaint number badge */}
                         {ticket.complaint_number && (
