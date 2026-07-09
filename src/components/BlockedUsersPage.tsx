@@ -66,9 +66,9 @@ const BlockedUsersPage = ({ onBack }: BlockedUsersPageProps) => {
           <ArrowLeft size={20} />
         </Button>
         <div>
-          <h1 className="text-lg font-bold text-foreground">Blocked Users</h1>
+          <h1 className="text-lg font-bold text-foreground">{t("buTitle")}</h1>
           <p className="text-xs text-muted-foreground">
-            Manage users you've blocked from messaging
+            {t("buSubtitle")}
           </p>
         </div>
       </div>
