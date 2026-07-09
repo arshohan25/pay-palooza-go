@@ -110,7 +110,7 @@ export default function CustomerOrdersPage() {
                     className="text-xs h-7"
                     onClick={(e) => { e.stopPropagation(); downloadInvoice(order); }}
                   >
-                    <FileText className="w-3 h-3 mr-1" /> Invoice
+                    <FileText className="w-3 h-3 mr-1" /> {t("coInvoice")}
                   </Button>
                   {order.status === "delivered" && items.length > 0 && (
                     <Button
@@ -122,7 +122,7 @@ export default function CustomerOrdersPage() {
                         setReviewSheet({ open: true, productId: items[0].id || items[0].product_id, orderId: order.id });
                       }}
                     >
-                      <Star className="w-3 h-3 mr-1" /> Rate & Review
+                      <Star className="w-3 h-3 mr-1" /> {t("coRateReview")}
                     </Button>
                   )}
                 </div>
