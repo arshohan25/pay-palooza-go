@@ -15,7 +15,7 @@ import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface SpeedDialAction {
   id: string;
-  label: string;
+  labelKey: TranslationKey;
   icon: React.ElementType;
   gradient: string;
   shadow: string;
@@ -41,11 +41,12 @@ const SpeedDial = ({
 }: SpeedDialProps) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   const actions: SpeedDialAction[] = [
     {
       id: "send",
-      label: "Send Money",
+      labelKey: "sendMoney",
       icon: Send,
       gradient: "gradient-send",
       shadow: "shadow-[0_4px_20px_rgba(99,102,241,0.45)]",
@@ -53,7 +54,7 @@ const SpeedDial = ({
     },
     {
       id: "pay",
-      label: "Pay",
+      labelKey: "sdPay",
       icon: CreditCard,
       gradient: "gradient-payment",
       shadow: "shadow-[0_4px_20px_rgba(236,72,153,0.45)]",
@@ -61,7 +62,7 @@ const SpeedDial = ({
     },
     {
       id: "cashout",
-      label: "Cash Out",
+      labelKey: "cashOut",
       icon: Zap,
       gradient: "gradient-cashout",
       shadow: "shadow-[0_4px_20px_rgba(234,88,12,0.45)]",
@@ -69,7 +70,7 @@ const SpeedDial = ({
     },
     {
       id: "recharge",
-      label: "Recharge",
+      labelKey: "recharge",
       icon: Phone,
       gradient: "gradient-accent",
       shadow: "shadow-[0_4px_20px_rgba(16,185,129,0.45)]",
@@ -77,7 +78,7 @@ const SpeedDial = ({
     },
     {
       id: "bill",
-      label: "Pay Bill",
+      labelKey: "payBill",
       icon: Receipt,
       gradient: "gradient-primary",
       shadow: "shadow-[0_4px_20px_rgba(59,130,246,0.45)]",
@@ -85,7 +86,7 @@ const SpeedDial = ({
     },
     {
       id: "addmoney",
-      label: "Add Money",
+      labelKey: "addMoney",
       icon: Landmark,
       gradient: "gradient-addmoney",
       shadow: "shadow-[0_4px_20px_rgba(139,92,246,0.45)]",
