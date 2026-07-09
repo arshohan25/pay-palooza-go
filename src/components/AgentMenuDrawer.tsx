@@ -303,7 +303,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       <Sheet open={notifSheetOpen} onOpenChange={setNotifSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto">
           <SheetHeader className="text-left mb-3">
-            <SheetTitle className="text-base font-bold">Notification Preferences</SheetTitle>
+            <SheetTitle className="text-base font-bold">{t("agNotifPrefs")}</SheetTitle>
           </SheetHeader>
           <NotificationPreferences scope="agent" />
         </SheetContent>
