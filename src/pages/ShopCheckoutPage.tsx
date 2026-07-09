@@ -435,7 +435,7 @@ export default function ShopCheckoutPage() {
                 <div>
                   <p className="text-xs font-semibold text-foreground leading-tight">{item.name}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    Qty: {item.qty} · {item.vendor_name}
+                    {t("scpQty")}: {item.qty} · {item.vendor_name}
                   </p>
                 </div>
               </div>
