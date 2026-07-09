@@ -11,6 +11,7 @@ interface FeatureLockedOverlayProps {
 }
 
 const FeatureLockedOverlay = ({ featureName, reason, expiresAt, onClose }: FeatureLockedOverlayProps) => {
+  const { t, lang } = useI18n();
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
@@ -28,8 +29,8 @@ const FeatureLockedOverlay = ({ featureName, reason, expiresAt, onClose }: Featu
             <ChevronLeft size={20} />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-extrabold tracking-tight">Feature Restricted</h1>
-            <p className="text-xs text-white/70 mt-0.5">{featureName} is currently locked</p>
+            <h1 className="text-xl font-extrabold tracking-tight">{t("floTitle")}</h1>
+            <p className="text-xs text-white/70 mt-0.5">{t("floCurrentlyLocked").replace("{name}", featureName)}</p>
           </div>
         </div>
       </motion.div>
@@ -52,15 +53,15 @@ const FeatureLockedOverlay = ({ featureName, reason, expiresAt, onClose }: Featu
           className="text-center space-y-3 max-w-xs"
         >
           <h2 className="text-xl font-bold text-foreground">
-            {featureName} is Locked
+            {t("floIsLocked").replace("{name}", featureName)}
           </h2>
           <p className="text-sm text-muted-foreground">
-            This feature has been temporarily restricted on your account by an administrator.
+            {t("floDesc")}
           </p>
 
           {reason && (
             <div className="bg-muted rounded-xl p-3 text-left">
-              <p className="text-xs font-semibold text-muted-foreground mb-1">Reason</p>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">{t("floReason")}</p>
               <p className="text-sm text-foreground">{reason}</p>
             </div>
           )}
@@ -69,7 +70,7 @@ const FeatureLockedOverlay = ({ featureName, reason, expiresAt, onClose }: Featu
             <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
               <Clock className="w-3.5 h-3.5" />
               <span>
-                Expires: {new Date(expiresAt).toLocaleString("en-BD", {
+                {t("floExpires")}: {new Date(expiresAt).toLocaleString(lang === "bn" ? "bn-BD" : "en-BD", {
                   month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                 })}
               </span>
@@ -78,7 +79,7 @@ const FeatureLockedOverlay = ({ featureName, reason, expiresAt, onClose }: Featu
 
           {!expiresAt && (
             <p className="text-xs text-muted-foreground">
-              Contact support if you believe this is an error.
+              {t("floContactSupport")}
             </p>
           )}
         </motion.div>
@@ -88,7 +89,7 @@ const FeatureLockedOverlay = ({ featureName, reason, expiresAt, onClose }: Featu
           variant="outline"
           className="mt-4 min-w-[160px]"
         >
-          Go Back
+          {t("floGoBack")}
         </Button>
       </div>
     </div>
