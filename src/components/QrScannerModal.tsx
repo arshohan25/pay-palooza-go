@@ -302,7 +302,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
               {ocrScanning && !detected && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                   <Loader2 size={32} className="text-primary animate-spin" />
-                  <p className="text-white text-xs font-medium">Reading number...</p>
+                  <p className="text-white text-xs font-medium">{t("qrReadingNumber")}</p>
                 </div>
               )}
 
