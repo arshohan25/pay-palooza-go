@@ -66,7 +66,7 @@ const BudgetManager = () => {
             onClick={() => { setAdding(!adding); setNewCat(available[0]?.key || ""); }}
             className="text-xs font-semibold text-primary flex items-center gap-1"
           >
-            <Plus size={14} /> Add
+            <Plus size={14} /> {t("bmAdd")}
           </motion.button>
         )}
       </div>
