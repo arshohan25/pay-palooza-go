@@ -130,29 +130,29 @@ const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
                     >
                       <div className="px-4 pb-4 pt-1 space-y-2 border-t border-border/40">
                         {r.source_method && (
-                          <Detail label="Method" value={r.source_method} />
+                          <Detail label={t("frhMethod")} value={r.source_method} />
                         )}
                         {r.bank_name && (
-                          <Detail label="Bank" value={r.bank_name} />
+                          <Detail label={t("frhBank")} value={r.bank_name} />
                         )}
                         {r.account_number && (
-                          <Detail label="Account" value={r.account_number} />
+                          <Detail label={t("frhAccount")} value={r.account_number} />
                         )}
                         {r.account_holder && (
-                          <Detail label="Holder" value={r.account_holder} />
+                          <Detail label={t("frhHolder")} value={r.account_holder} />
                         )}
                         {r.transaction_id_proof && (
-                          <Detail label="TXN ID" value={r.transaction_id_proof} />
+                          <Detail label={t("frhTxnId")} value={r.transaction_id_proof} />
                         )}
                         {r.admin_note && (
                           <div className="bg-destructive/8 rounded-xl px-3 py-2">
-                            <p className="text-[10px] font-bold text-destructive/70 uppercase tracking-wider">Admin Note</p>
+                            <p className="text-[10px] font-bold text-destructive/70 uppercase tracking-wider">{t("frhAdminNote")}</p>
                             <p className="text-[12px] text-destructive mt-0.5">{r.admin_note}</p>
                           </div>
                         )}
                         {r.proof_url && (
                           <ExternalLink href={r.proof_url} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline">
-                            <ImageIcon size={12} /> View Proof
+                            <ImageIcon size={12} /> {t("frhViewProof")}
                           </ExternalLink>
                         )}
                       </div>
