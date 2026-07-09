@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import UserQrModal from "@/components/UserQrModal";
 import NotificationPreferences from "@/components/NotificationPreferences";
+import { useI18n } from "@/lib/i18n";
 
 interface AgentMenuDrawerProps {
   open: boolean;
