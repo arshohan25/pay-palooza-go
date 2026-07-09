@@ -203,7 +203,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
         const updated = payload.new as Message;
         setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
         if (updated.is_deleted) {
-          setDecryptedCache(prev => ({ ...prev, [updated.id]: "🗑️ This message was deleted" }));
+          setDecryptedCache(prev => ({ ...prev, [updated.id]: t("scMsgDeleted") }));
         }
       })
       .subscribe();
