@@ -84,8 +84,13 @@ const relativeDate = (iso: string) => {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString())     return `Today · ${format(d, "h:mm a")}`;
-  if (d.toDateString() === yesterday.toDateString()) return `Yesterday · ${format(d, "h:mm a")}`;
+const relativeDate = (iso: string, t: (k: string) => string) => {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString())     return `${t("thToday")} · ${format(d, "h:mm a")}`;
+  if (d.toDateString() === yesterday.toDateString()) return `${t("thYesterday")} · ${format(d, "h:mm a")}`;
   return format(d, "dd MMM yyyy · h:mm a");
 };
 
