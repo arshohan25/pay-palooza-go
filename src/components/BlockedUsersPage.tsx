@@ -50,7 +50,7 @@ const BlockedUsersPage = ({ onBack }: BlockedUsersPageProps) => {
     localStorage.setItem(BLOCKED_KEY, JSON.stringify(updated));
     setBlockedIds(updated);
     setProfiles((prev) => prev.filter((p) => p.user_id !== userId));
-    toast.success("User unblocked");
+    toast.success(t("buUnblocked"));
   };
 
   return (
