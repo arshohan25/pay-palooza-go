@@ -493,34 +493,34 @@ export default function ShopCheckoutPage() {
         {/* Order Summary */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            Order Summary
+            {t("scpOrderSummary")}
           </p>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal ({count} items)</span>
+            <span className="text-muted-foreground">{t("scpSubtotal")} ({count} {t("scpItems")})</span>
             <span className="font-semibold text-foreground">৳{subtotal.toLocaleString()}</span>
           </div>
           {appliedPromo && (
             <div className="flex justify-between text-sm">
-              <span className="text-primary">Discount ({appliedPromo.code})</span>
+              <span className="text-primary">{t("scpDiscount")} ({appliedPromo.code})</span>
               <span className="font-semibold text-primary">-৳{discountAmt.toLocaleString()}</span>
             </div>
           )}
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">
-              Delivery{matchedZone ? ` (${matchedZone.zone_name})` : ""}
+              {t("scpDelivery")}{matchedZone ? ` (${matchedZone.zone_name})` : ""}
             </span>
             <span className={`font-semibold ${deliveryFee > 0 ? "text-foreground" : "text-primary"}`}>
-              {deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : "FREE"}
+              {deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : t("scpFree")}
             </span>
           </div>
           {matchedZone && (
             <p className="text-[10px] text-muted-foreground text-right">
-              Est. {matchedZone.estimated_days}{matchedZone.courier_providers?.name ? ` via ${matchedZone.courier_providers.name}` : ""}
+              {t("scpEst")} {matchedZone.estimated_days}{matchedZone.courier_providers?.name ? ` ${t("scpVia")} ${matchedZone.courier_providers.name}` : ""}
             </p>
           )}
           <div className="h-px bg-border my-1" />
           <div className="flex justify-between text-base font-bold">
-            <span className="text-foreground">Total</span>
+            <span className="text-foreground">{t("scpTotal")}</span>
             <span className="text-primary">৳{orderTotal.toLocaleString()}</span>
           </div>
         </div>
