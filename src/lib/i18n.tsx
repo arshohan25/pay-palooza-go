@@ -2434,6 +2434,24 @@ const translations = {
   msCouponsDesc: { en: "Exclusive deals & cashback", bn: "বিশেষ ডিল ও ক্যাশব্যাক" },
   msDonationsLabel: { en: "Donations", bn: "দান" },
   msDonationsDesc: { en: "Support causes you care about", bn: "যে বিষয়গুলো আপনার কাছে গুরুত্বপূর্ণ তা সমর্থন করুন" },
+
+  // CouponBanner
+  cbOff: { en: "off", bn: "ছাড়" },
+  cbFlat: { en: "flat", bn: "ফ্ল্যাট" },
+  cbUpTo: { en: "up to", bn: "সর্বোচ্চ" },
+
+  // AiRewardBanner
+  arbTitle: { en: "AI Recommended", bn: "এআই সুপারিশকৃত" },
+  arbSmart: { en: "Smart", bn: "স্মার্ট" },
+  arbClaim: { en: "Claim", bn: "গ্রহণ করুন" },
+  arbApply: { en: "Apply", bn: "আবেদন করুন" },
+  arbDaysLeft: { en: "d left", bn: "দিন বাকি" },
+  arbClaimed: { en: "Reward claimed! 🎉", bn: "পুরস্কার গ্রহণ করা হয়েছে! 🎉" },
+
+  // PromoSlider fallback
+  psFallbackTitle: { en: "Invite Friends & Earn ৳50", bn: "বন্ধুদের আমন্ত্রণ জানান ও ৳৫০ আয় করুন" },
+  psFallbackSubtitle: { en: "Share your referral code and earn rewards when friends join EasyPay", bn: "আপনার রেফারেল কোড শেয়ার করুন এবং বন্ধুরা EasyPay-এ যোগ দিলে পুরস্কার আয় করুন" },
+  psFallbackBadge: { en: "Limited Offer", bn: "সীমিত অফার" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

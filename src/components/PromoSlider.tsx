@@ -6,6 +6,7 @@ import { icons } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
+import { useI18n } from "@/lib/i18n";
 
 interface PromoBanner {
   id: string;
@@ -47,6 +48,7 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const navigate = useNavigate();
   const { isDisabled } = useGlobalToggles();
+  const { t } = useI18n();
 
   // Filter out banners linked to disabled features
   const visibleBanners = useMemo(() => {
@@ -112,6 +114,10 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
           {visibleBanners.map((b) => {
             const IconComp = (icons as any)[b.icon || "Gift"] || icons.Gift;
             const hasMedia = !!b.media_url;
+            const isFallback = b.id === "fallback-1";
+            const title = isFallback ? t("psFallbackTitle") : b.title;
+            const subtitle = isFallback ? t("psFallbackSubtitle") : b.subtitle;
+            const badge = isFallback ? t("psFallbackBadge") : b.badge_text;
             return (
               <div key={b.id} className="min-w-0 shrink-0 grow-0 basis-full">
                 <motion.div
@@ -153,14 +159,14 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
 
                   <div className="relative z-10 flex items-center gap-4">
                     <div className="flex-1 min-w-0">
-                      {b.badge_text && (
+                      {badge && (
                         <span className="inline-block bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full mb-2 backdrop-blur-sm">
-                          {b.badge_text}
+                          {badge}
                         </span>
                       )}
-                      {b.title && <h3 className="text-white text-sm font-bold leading-tight">{b.title}</h3>}
-                      {b.subtitle && (
-                        <p className="text-white/80 text-xs mt-1 leading-snug line-clamp-2">{b.subtitle}</p>
+                      {title && <h3 className="text-white text-sm font-bold leading-tight">{title}</h3>}
+                      {subtitle && (
+                        <p className="text-white/80 text-xs mt-1 leading-snug line-clamp-2">{subtitle}</p>
                       )}
                     </div>
                     {!hasMedia && (
