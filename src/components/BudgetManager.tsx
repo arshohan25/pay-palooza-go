@@ -159,7 +159,7 @@ const BudgetManager = () => {
                   className="scale-75 origin-left"
                 />
                 <span className="text-[10px] text-muted-foreground">
-                  {b.is_recurring ? "Recurring" : "One-time"}
+                  {b.is_recurring ? t("bmRecurring") : t("bmOneTime")}
                 </span>
               </div>
               <div className="flex items-center gap-2">
