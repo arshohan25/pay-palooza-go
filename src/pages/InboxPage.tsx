@@ -371,7 +371,8 @@ const ForwardSheet = ({ contacts, onForward, onClose }: ForwardSheetProps) => {
       </div>
     </motion.div>
   </>
-);
+  );
+};
 
 // ── Message Bubble ────────────────────────────────────────────────────────────
 interface BubbleProps {
