@@ -85,9 +85,9 @@ const BlockedUsersPage = ({ onBack }: BlockedUsersPageProps) => {
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
             <ShieldBan size={28} className="text-muted-foreground" />
           </div>
-          <p className="text-sm font-semibold text-foreground">No blocked users</p>
+          <p className="text-sm font-semibold text-foreground">{t("buEmpty")}</p>
           <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
-            Users you block from chat will appear here
+            {t("buEmptyHint")}
           </p>
         </div>
       ) : (
