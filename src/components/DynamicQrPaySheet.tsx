@@ -145,8 +145,8 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                       <Store className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-foreground truncate">{merchantName || "Merchant"}</p>
-                      {reference && <p className="text-xs text-muted-foreground">Ref: {reference}</p>}
+                      <p className="font-bold text-foreground truncate">{merchantName || t("dqMerchant")}</p>
+                      {reference && <p className="text-xs text-muted-foreground">{t("dqRef")} {reference}</p>}
                     </div>
                   </div>
 
