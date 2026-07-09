@@ -276,24 +276,24 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                 <Users size={24} className="text-primary" />
               </div>
               <p className="text-3xl font-extrabold text-foreground">{agentInfo?.customers_onboarded ?? 0}</p>
-              <p className="text-xs text-muted-foreground font-semibold mt-1">Customers Onboarded</p>
+              <p className="text-xs text-muted-foreground font-semibold mt-1">{t("agCustomersOnboarded")}</p>
             </Card>
 
             <div className="grid grid-cols-2 gap-3">
               <Card className="p-4 border-0 shadow-card rounded-xl text-center">
                 <ShieldCheck size={20} className="mx-auto text-primary mb-2" />
                 <p className="text-lg font-extrabold text-foreground">{agentInfo?.customers_onboarded ?? 0}</p>
-                <p className="text-[10px] text-muted-foreground font-semibold">Registered</p>
+                <p className="text-[10px] text-muted-foreground font-semibold">{t("agRegistered")}</p>
               </Card>
               <Card className="p-4 border-0 shadow-card rounded-xl text-center">
                 <Activity size={20} className="mx-auto text-accent mb-2" />
                 <p className="text-lg font-extrabold text-foreground">—</p>
-                <p className="text-[10px] text-muted-foreground font-semibold">KYC Verified</p>
+                <p className="text-[10px] text-muted-foreground font-semibold">{t("agKycVerified")}</p>
               </Card>
             </div>
 
             <p className="text-[10px] text-muted-foreground text-center">
-              Detailed customer KYC tracking will be available soon.
+              {t("agKycTrackingSoon")}
             </p>
           </div>
         </SheetContent>
