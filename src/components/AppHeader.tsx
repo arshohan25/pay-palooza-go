@@ -35,7 +35,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
           whileTap={{ scale: 0.88 }}
           onClick={onSignOut}
           className="flex items-center gap-2 px-3 py-2 rounded-2xl gradient-primary border border-primary/30 shadow-glow text-primary-foreground hover:shadow-glow-lg transition-all duration-150 tap-target"
-          aria-label="Sign out"
+          aria-label={t("signOut")}
         >
           <LogOut size={15} strokeWidth={2} />
           <span className="text-[13px] font-semibold">{t("logout")}</span>
@@ -48,7 +48,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
             whileTap={{ scale: 0.88 }}
             onClick={toggleTheme}
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-primary/10 border border-primary/25 shadow-card flex items-center justify-center text-primary hover:bg-primary/15 hover:shadow-elevated transition-all duration-150 tap-target overflow-hidden"
-            aria-label="Toggle dark mode"
+            aria-label={t("ahToggleDark")}
           >
             <AnimatePresence mode="wait" initial={false}>
               {mounted && (
@@ -70,7 +70,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
           <motion.button
             whileTap={{ scale: 0.90 }}
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-primary/10 border border-primary/25 shadow-card flex items-center justify-center text-primary hover:bg-primary/15 hover:shadow-elevated transition-all duration-150 tap-target"
-            aria-label="Search"
+            aria-label={t("ahSearch")}
           >
             <Search size={17} strokeWidth={2} />
           </motion.button>
@@ -80,7 +80,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
             whileTap={{ scale: 0.90 }}
             onClick={() => setShowNotif(true)}
             className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-2xl gradient-primary border border-primary/30 shadow-glow flex items-center justify-center text-primary-foreground hover:shadow-glow-lg transition-all duration-150 tap-target"
-            aria-label="Notifications"
+            aria-label={t("notifications")}
           >
             <Bell size={17} strokeWidth={2} />
             <AnimatePresence>
