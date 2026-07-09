@@ -11,6 +11,7 @@ import {
   Landmark,
 } from "lucide-react";
 import { haptics } from "@/lib/haptics";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface SpeedDialAction {
   id: string;
