@@ -189,12 +189,12 @@ const RoleInstallPage = () => {
             <motion.div key="manual" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-3">
               <div className="p-4 rounded-2xl bg-muted/50 border border-border">
                 <Icon size={24} className="text-primary mx-auto mb-2" />
-                <p className="text-sm font-semibold text-foreground">Install Manually</p>
+                <p className="text-sm font-semibold text-foreground">{t("ripInstallManually")}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  <strong>iPhone:</strong> Tap Share → "Add to Home Screen"
+                  <strong>{t("ripIphone")}</strong> {t("ripIphoneHint")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  <strong>Android:</strong> Tap ⋮ menu → "Install app"
+                  <strong>{t("ripAndroid")}</strong> {t("ripAndroidHint")}
                 </p>
               </div>
             </motion.div>
