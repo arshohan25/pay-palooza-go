@@ -129,7 +129,7 @@ const InsurancePage = () => {
                   </ul>
                 </div>
                 <Button onClick={() => handlePurchase(selectedPlan)} disabled={purchasing} className="w-full rounded-xl h-12 font-bold">
-                  {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : `Purchase for ৳${selectedPlan.premium}/mo`}
+                  {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : t("ipPurchaseFor").replace("{amount}", String(selectedPlan.premium))}
                 </Button>
               </CardContent>
             </Card>
