@@ -1216,6 +1216,7 @@ const ChatView = ({
     </div>
   );
 };
+}
 
 // ── InboxPage ─────────────────────────────────────────────────────────────────
 interface InboxPageProps {
@@ -1704,5 +1705,4 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
     </>
   );
-}
 }
