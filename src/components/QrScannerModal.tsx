@@ -202,7 +202,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
       }
     } catch (err: any) {
       console.error("OCR error:", err);
-      setOcrError("Could not read the number. Try again.");
+      setOcrError(t("qrCantRead"));
     } finally {
       setOcrScanning(false);
     }
