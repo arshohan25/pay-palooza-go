@@ -243,7 +243,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
 
       // Top recipients (current month outgoing)
       if (mk === currentMonthKey && OUTGOING_TYPES.includes(tx.type)) {
-        const key = tx.recipient_name || tx.recipient_phone || "Unknown";
+        const key = tx.recipient_name || tx.recipient_phone || t("siUnknown");
         if (!recipientAccum[key]) recipientAccum[key] = { amount: 0, type: tx.type };
         recipientAccum[key].amount += amt;
       }
@@ -347,13 +347,13 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
               <CalendarIcon size={13} />
               {activePreset === "custom"
                 ? `${format(dateRange.from, "MMM d")} – ${format(dateRange.to, "MMM d")}`
-                : "Custom"}
+                : t("siCustom")}
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-3 space-y-3" align="start">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground mb-1">From</p>
+                <p className="text-[11px] font-medium text-muted-foreground mb-1">{t("siFrom")}</p>
                 <Calendar
                   mode="single"
                   selected={customFrom}
@@ -363,7 +363,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
                 />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground mb-1">To</p>
+                <p className="text-[11px] font-medium text-muted-foreground mb-1">{t("siTo")}</p>
                 <Calendar
                   mode="single"
                   selected={customTo}
@@ -379,7 +379,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
               disabled={!customFrom || !customTo}
               onClick={applyCustomRange}
             >
-              Apply Range
+              {t("siApplyRange")}
             </Button>
           </PopoverContent>
         </Popover>
@@ -395,9 +395,9 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           <div className="w-20 h-20 rounded-3xl bg-muted flex items-center justify-center mb-5">
             <BarChart3 size={36} className="text-muted-foreground" />
           </div>
-          <h2 className="text-lg font-bold text-foreground mb-2">No transactions yet</h2>
+          <h2 className="text-lg font-bold text-foreground mb-2">{t("siNoTxnsYet")}</h2>
           <p className="text-sm text-muted-foreground max-w-[260px]">
-            Your spending insights will appear here once you make transactions in the selected period.
+            {t("siNoTxnsHint")}
           </p>
         </motion.div>
       ) : (
@@ -489,8 +489,8 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
               className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
             >
               <div className="px-4 pt-4 pb-2">
-                <p className="text-sm font-bold text-foreground">Budget vs Actual</p>
-                <p className="text-[11px] text-muted-foreground">This month's spending against your limits</p>
+                <p className="text-sm font-bold text-foreground">{t("siBudgetVsActual")}</p>
+                <p className="text-[11px] text-muted-foreground">{t("siBudgetVsActualSub")}</p>
               </div>
               <div className="px-1 pb-4" style={{ height: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -507,10 +507,10 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
                         return (
                           <div className="bg-card border border-border rounded-xl px-3 py-2.5 shadow-elevated text-xs space-y-1 min-w-[140px]">
                             <p className="font-semibold text-foreground mb-1">{label}</p>
-                            <div className="flex justify-between"><span className="text-muted-foreground">Budget</span><span className="font-medium text-foreground">৳{budget.toLocaleString()}</span></div>
-                            <div className="flex justify-between"><span className="text-muted-foreground">Actual</span><span className="font-medium text-foreground">৳{actual.toLocaleString()}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">{t("siBudget")}</span><span className="font-medium text-foreground">৳{budget.toLocaleString()}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">{t("siActual")}</span><span className="font-medium text-foreground">৳{actual.toLocaleString()}</span></div>
                             <div className="border-t border-border pt-1 mt-1 flex justify-between font-semibold">
-                              <span className="text-muted-foreground">Used</span>
+                              <span className="text-muted-foreground">{t("siUsed")}</span>
                               <span className={pct >= 90 ? "text-destructive" : pct >= 70 ? "text-amber-500" : "text-primary"}>{pct}%</span>
                             </div>
                           </div>
@@ -539,11 +539,11 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
               <div className="flex gap-4 px-4 pb-4">
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: "hsl(var(--muted-foreground) / 0.3)" }} />
-                  Budget
+                  {t("siBudget")}
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: "hsl(var(--primary))" }} />
-                  Actual
+                  {t("siActual")}
                 </div>
               </div>
             </motion.div>
@@ -579,7 +579,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
             ) : barAllZero ? (
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                 <BarChart3 size={28} className="text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">No data for this period</p>
+                <p className="text-sm text-muted-foreground">{t("siNoData")}</p>
               </div>
             ) : (
               <div className="px-1 pb-4" style={{ height: 210 }}>
