@@ -100,9 +100,9 @@ const MoreSheet = ({ open, onClose, onBankTransfer }: MoreSheetProps) => {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center justify-center gap-1.5">
-                      <p className="text-sm font-bold text-foreground">{item.label}</p>
+                      <p className="text-sm font-bold text-foreground">{t(item.labelKey)}</p>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{item.desc}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{t(item.descKey)}</p>
                   </div>
                 </motion.button>
               ))}
