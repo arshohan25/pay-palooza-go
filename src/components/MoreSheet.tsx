@@ -56,7 +56,7 @@ const MoreSheet = ({ open, onClose, onBankTransfer }: MoreSheetProps) => {
       else if (id === "loan") navigate("/loan");
       else if (id === "insurance") navigate("/insurance");
       else if (id === "giftcards") navigate("/giftcards");
-      else toast.info("Coming soon!");
+      else toast.info(t("msComingSoon"));
     }, 200);
   };
 
