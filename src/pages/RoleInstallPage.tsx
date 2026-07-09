@@ -155,7 +155,7 @@ const RoleInstallPage = () => {
 
       <div className="flex-1 px-6 py-6 -mt-4 bg-background rounded-t-3xl relative z-10">
         <div className="mb-8">
-          <h2 className="text-sm font-bold text-foreground mb-3">What's included</h2>
+          <h2 className="text-sm font-bold text-foreground mb-3">{t("ripWhatsIncluded")}</h2>
           <div className="grid grid-cols-2 gap-2">
             {config.features.map((f) => (
               <div key={f} className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
