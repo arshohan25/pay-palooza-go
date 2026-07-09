@@ -181,8 +181,8 @@ export default function ShopCheckoutPage() {
   const needsPin = payMethod === "wallet";
 
   const handleCheckout = async () => {
-    if (needsPin && pin.length < 4) { setPinError("Enter your 4-digit PIN."); return; }
-    if (!selectedAddress) { toast.error("Please select a delivery address"); return; }
+    if (needsPin && pin.length < 4) { setPinError(t("scpEnterPin")); return; }
+    if (!selectedAddress) { toast.error(t("scpSelectAddress")); return; }
     if (processing) return;
     setProcessing(true);
     setPinError("");
@@ -190,7 +190,7 @@ export default function ShopCheckoutPage() {
     if (needsPin) {
       const pinValid = await verifyPin(pin);
       if (!pinValid) {
-        setPinError("Incorrect PIN. Please try again.");
+        setPinError(t("scpIncorrectPin"));
         setPin("");
         setProcessing(false);
         return;
@@ -199,7 +199,7 @@ export default function ShopCheckoutPage() {
     haptics.success();
 
     if (payMethod === "wallet" && orderTotal > walletBalance) {
-      toast.error("Insufficient wallet balance");
+      toast.error(t("scpInsufficientBalance"));
       setProcessing(false);
       return;
     }
