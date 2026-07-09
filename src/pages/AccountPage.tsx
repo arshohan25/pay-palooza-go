@@ -335,7 +335,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_change_pin") && <MenuRow icon={Lock}       iconClass="gradient-send"    label={t("changePin")}        sub={t("changePinSub")}    onClick={() => setShowChangePin(true)} />}
           {!isDisabled("account_refer") && <MenuRow icon={Gift}       iconClass="gradient-accent"  label={t("referAFriend")}   sub={t("referSub")} onClick={() => setSubPage("refer")} />}
           {!isDisabled("account_become_merchant") && !merchantApplyLoading && canMerchantApply && (
-            <MenuRow icon={Store} iconClass="gradient-payment" label="Become a Merchant" sub="Apply for a merchant account" onClick={() => setShowMerchantApp(true)} />
+            <MenuRow icon={Store} iconClass="gradient-payment" label={t("becomeMerchant")} sub={t("becomeMerchantSub")} onClick={() => setShowMerchantApp(true)} />
           )}
         </Section>
 
@@ -356,8 +356,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_theme") && <MenuRow
             icon={Sun}
             iconClass="gradient-accent"
-            label="Theme"
-            sub="Switch between light, dark & system"
+            label={t("theme")}
+            sub={t("themeSub")}
             right={
               <span className="text-[12px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
                 {themeLabel}
@@ -368,8 +368,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_icon_size") && <MenuRow
             icon={Grid3X3}
             iconClass="gradient-cashout"
-            label="Icon Size"
-            sub="Adjust Quick Action icon size"
+            label={t("iconSize")}
+            sub={t("iconSizeSub")}
             right={
               <span className="text-[12px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
                 {iconSizeLabel}
@@ -380,8 +380,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_grid_layout") && <MenuRow
             icon={Grid3X3}
             iconClass="gradient-primary"
-            label="Grid Layout"
-            sub="Change Quick Actions grid arrangement"
+            label={t("gridLayoutLabel")}
+            sub={t("gridLayoutSub")}
             right={
               <span className="text-[12px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
                 {gridLayout}
@@ -392,24 +392,24 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_compact_mode") && <ToggleRow
             icon={Minimize2}
             iconClass="gradient-hero"
-            label="Compact Mode"
-            sub="Reduce spacing for more content"
+            label={t("compactMode")}
+            sub={t("compactModeSub")}
             checked={compactMode}
             onCheckedChange={(v) => {
               setCompactMode(v);
-              toast.success(v ? "Compact mode enabled" : "Compact mode disabled");
+              toast.success(v ? t("compactEnabled") : t("compactDisabled"));
             }}
           />}
           {!isDisabled("account_rearrange_actions") && <ToggleRow
             icon={GripVertical}
             iconClass="gradient-send"
-            label="Rearrange Quick Actions"
-            sub="Enable drag & drop to customize icon order"
+            label={t("rearrangeQA")}
+            sub={t("rearrangeQASub")}
             checked={dndEnabled}
             onCheckedChange={(v) => {
               setDndEnabled(v);
               localStorage.setItem("mfs_dnd_enabled", String(v));
-              toast.success(v ? "Drag & drop enabled" : "Drag & drop disabled");
+              toast.success(v ? t("dndEnabled") : t("dndDisabled"));
             }}
           />}
           {!isDisabled("account_onboarding") && <MenuRow
@@ -427,7 +427,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
 
         {/* ── My Rewards ── */}
         {myRewards.length > 0 && (
-          <Section title="My Rewards">
+          <Section title={t("myRewardsTitle")}>
             {myRewards.map(r => (
               <div key={r.id} className="flex items-center gap-3 px-4 py-3">
                 <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-white">
@@ -485,7 +485,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         <Section title={t("sectionSecurity")}>
           {!isDisabled("account_biometric") && <ToggleRow icon={Fingerprint} iconClass="gradient-send"    label={t("biometricLogin")}  sub={t("biometricSub")}   checked={biometric}   onCheckedChange={(v) => { setBiometric(v); toast.success(v ? t("biometricEnabled") : t("biometricDisabled")); }} />}
           {!isDisabled("account_2fa") && <ToggleRow icon={Shield}      iconClass="gradient-primary"  label={t("twoFactorAuth")}  sub={t("twoFactorSub")} checked={twoFa}       onCheckedChange={(v) => { setTwoFa(v); toast.success(v ? t("twoFaEnabled") : t("twoFaDisabled")); }} />}
-          {!isDisabled("account_blocked_users") && <MenuRow icon={ShieldBan} iconClass="bg-destructive/80" label="Blocked Users" sub="Manage blocked accounts" onClick={() => setSubPage("blocked")} />}
+          {!isDisabled("account_blocked_users") && <MenuRow icon={ShieldBan} iconClass="bg-destructive/80" label={t("blockedUsersLabel")} sub={t("blockedUsersSub")} onClick={() => setSubPage("blocked")} />}
         </Section>
 
         {/* ── Sign Out ── */}
