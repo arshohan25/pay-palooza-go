@@ -198,7 +198,7 @@ export default function OrderDetailPage() {
           </p>
         </div>
         <Badge variant="outline" className={`shrink-0 border-white/30 ${isCancelled ? "bg-destructive/20 text-destructive-foreground" : "bg-white/15 text-primary-foreground"}`}>
-          {isCancelled ? "Cancelled" : STATUS_STEPS[currentStepIdx]?.label ?? order.status}
+          {isCancelled ? t("cancelled") : (STATUS_STEPS[currentStepIdx]?.labelKey ? t(STATUS_STEPS[currentStepIdx].labelKey as any) : order.status)}
         </Badge>
       </div>
 
