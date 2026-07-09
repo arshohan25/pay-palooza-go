@@ -189,13 +189,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
     });
   }, [activeTab, search, dateFrom, dateTo, allTransactions]);
 
-  const clearFilters    = () => { setDateFrom(runningMonthStart); setDateTo(runningMonthEnd); setSearch(""); setActiveTab("all"); };
-  const dateScopeChanged = Boolean(
-    (dateFrom && isBefore(startOfDay(runningMonthStart), startOfDay(dateFrom))) ||
-    (dateTo && isBefore(endOfDay(dateTo), runningMonthEnd)) ||
-    !dateFrom ||
-    !dateTo
-  );
+  const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); };
+  const dateScopeChanged = Boolean(dateFrom || dateTo);
   const hasActiveFilters = search || activeTab !== "all" || dateScopeChanged;
 
   // DB-backed running-month totals for summary chips (ignores search/category filters)
