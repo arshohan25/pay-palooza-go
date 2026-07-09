@@ -197,7 +197,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                   {filter !== "all" && filter !== "unread" && filtered.some((n) => !n.read) && (
                     <button onClick={markFilteredRead}
                       className="text-[11px] font-semibold text-primary px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-1">
-                      <CheckCheck size={12} /> Mark filter
+                      <CheckCheck size={12} /> {t("ncMarkFilter")}
                     </button>
                   )}
                   {unreadCount > 0 && (
@@ -257,7 +257,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                   onClick={() => setFilter("fulfillment")}
                   className="mx-3 mt-2 px-3 py-1.5 rounded-lg bg-primary/10 text-[11px] font-semibold text-primary flex items-center gap-2 hover:bg-primary/15 transition-colors"
                 >
-                  <Truck size={12} /> {fulfillmentUnread} unread order update{fulfillmentUnread > 1 ? "s" : ""} →
+                  <Truck size={12} /> {(fulfillmentUnread > 1 ? t("ncUnreadOrderUpdates") : t("ncUnreadOrderUpdate")).replace("{n}", String(fulfillmentUnread))}
                 </button>
               )}
 
@@ -271,10 +271,10 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                         <BellOff size={28} className="text-muted-foreground" />
                       </div>
                       <p className="font-bold text-foreground text-sm">
-                        {filter === "all" ? t("allCaughtUp") : "No matching notifications"}
+                        {filter === "all" ? t("allCaughtUp") : t("ncNoMatching")}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {filter === "all" ? t("noNotificationsRightNow") : "Try a different filter"}
+                        {filter === "all" ? t("noNotificationsRightNow") : t("ncTryDifferent")}
                       </p>
                     </motion.div>
                   ) : (
@@ -312,12 +312,12 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                               <p className="text-[10px] text-muted-foreground/60">{timeAgo}</p>
                               {isRich && (
                                 <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
-                                  Tap for details
+                                  {t("ncTapForDetails")}
                                 </span>
                               )}
                               {fulfillment && meta?.order_id && (
                                 <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
-                                  View order →
+                                  {t("ncViewOrder")}
                                 </span>
                               )}
                             </div>
@@ -325,7 +325,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                           <div className="flex flex-col gap-1 shrink-0">
                             {!n.read && (
                               <button onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
-                                title="Mark as read"
+                                title={t("ncMarkAsRead")}
                                 className="w-6 h-6 rounded-lg flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors">
                                 <CheckCheck size={12} />
                               </button>
@@ -369,7 +369,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                 <button
                   onClick={() => setDetailNotif(null)}
                   className="absolute top-2.5 right-4 w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Close"
+                  aria-label={t("ncClose")}
                 >
                   <X size={18} />
                 </button>
@@ -420,10 +420,10 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                         className="h-7 px-2 gap-1 text-xs"
                         onClick={() => {
                           navigator.clipboard.writeText(meta.coupon_code);
-                          toast.success("Coupon code copied!");
+                          toast.success(t("ncCouponCopied"));
                         }}
                       >
-                        <Copy size={12} /> Copy
+                        <Copy size={12} /> {t("ncCopy")}
                       </Button>
                     </div>
                   )}
@@ -432,13 +432,13 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                     <div className="rounded-xl border border-border/60 bg-muted/30 p-3 space-y-1.5">
                       {txnRef && (
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Reference</span>
+                          <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">{t("ncReference")}</span>
                           <span className="font-mono text-[11px] text-foreground truncate">{String(txnRef)}</span>
                         </div>
                       )}
                       {detailFulfillment && meta?.tracking_number && (
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Tracking</span>
+                          <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">{t("ncTracking")}</span>
                           <span className="font-mono text-[11px] text-foreground truncate">{String(meta.tracking_number)}</span>
                         </div>
                       )}
