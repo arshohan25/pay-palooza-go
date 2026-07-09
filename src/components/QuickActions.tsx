@@ -404,8 +404,8 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const handleAction = (id: string, label: string) => {
     const featureKey = FEATURE_MAP[id];
     if (featureKey && isGloballyDisabled(featureKey)) {
-      toast.info(`${label} is temporarily unavailable`, {
-        description: "This feature has been disabled by the system. Please try again later.",
+      toast.info(t("qaUnavailable").replace("{label}", label), {
+        description: t("qaDisabledDesc"),
       });
       return;
     }
@@ -418,11 +418,11 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (id === "bank") return onBankTransfer();
     if (id === "shop") return onShop();
     if (id === "more") { haptics.light(); return setExpanded(prev => !prev); }
-    toast.info(`${label} coming soon!`);
+    toast.info(t("qaFeatureComingSoon").replace("{label}", label));
   };
 
   const handleMoreService = (id: string, soon?: boolean) => {
-    if (soon) { toast.info("Coming soon!"); return; }
+    if (soon) { toast.info(t("qaComingSoon")); return; }
     if (id === "refer") onRefer();
     else if (id === "donations") navigate("/donations");
     else if (id === "coupons") navigate("/coupons");
@@ -450,7 +450,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
               className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-full bg-muted/60 hover:bg-muted"
             >
               <RotateCcw className="w-3 h-3" />
-              Reset order
+              {t("qaResetOrder")}
             </button>
           </motion.div>
         )}
@@ -535,7 +535,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
           >
             <div className="border-t border-border/40 mt-4 pt-4">
               <div className="flex items-center justify-between mb-3 px-1">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">More Services</h3>
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("qaMoreServices")}</h3>
                 <button
                   onClick={() => setExpanded(false)}
                   className="w-6 h-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
@@ -555,7 +555,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                       whileTap={{ scale: 0.90 }}
                       onClick={() => {
                         if (didLongPress.current) { didLongPress.current = false; return; }
-                        if (moreGlobalOff) { toast.info(`${item.label} is temporarily unavailable`, { description: "This feature has been disabled by the system. Please try again later." }); return; }
+                        if (moreGlobalOff) { toast.info(t("qaUnavailable").replace("{label}", item.label), { description: t("qaDisabledDesc") }); return; }
                         handleMoreService(item.id, item.soon);
                       }}
                       onPointerDown={() => startLongPress(item.id)}
@@ -585,7 +585,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                       </motion.div>
                       {item.soon && (
                         <motion.div className="absolute -top-1 right-0 z-10" animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
-                          <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>Soon</span>
+                          <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>{t("qaSoon")}</span>
                         </motion.div>
                       )}
                       <AnimatePresence>
