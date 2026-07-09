@@ -78,7 +78,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
         body: { session_id: sessionId, pin, source: "qr" },
       });
 
-      if (error) throw new Error(error.message || "Payment failed");
+      if (error) throw new Error(error.message || t("dqPaymentFailed"));
       if (data?.error) throw new Error(data.error);
 
       setStep("success");
