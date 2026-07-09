@@ -79,11 +79,6 @@ const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
   banktransfer: { Icon: TxBankTransferIcon, ReceiveIcon: TxBankTransferIcon, bg: "rgba(63,81,181,0.12)", ring: "1px solid rgba(63,81,181,0.2)", receiveBg: "rgba(63,81,181,0.12)", receiveRing: "1px solid rgba(63,81,181,0.2)" },
 };
 
-const relativeDate = (iso: string) => {
-  const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
 const relativeDate = (iso: string, t: (k: string) => string) => {
   const d = new Date(iso);
   const today = new Date();
