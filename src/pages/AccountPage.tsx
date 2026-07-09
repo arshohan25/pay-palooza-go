@@ -392,12 +392,12 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_compact_mode") && <ToggleRow
             icon={Minimize2}
             iconClass="gradient-hero"
-            label="Compact Mode"
-            sub="Reduce spacing for more content"
+            label={t("compactMode")}
+            sub={t("compactModeSub")}
             checked={compactMode}
             onCheckedChange={(v) => {
               setCompactMode(v);
-              toast.success(v ? "Compact mode enabled" : "Compact mode disabled");
+              toast.success(v ? t("compactEnabled") : t("compactDisabled"));
             }}
           />}
           {!isDisabled("account_rearrange_actions") && <ToggleRow
