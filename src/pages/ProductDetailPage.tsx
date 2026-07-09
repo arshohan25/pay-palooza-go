@@ -694,9 +694,9 @@ export default function ProductDetailPage() {
                 <span className={cn("absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card", merchantOnline ? "bg-emerald-500" : "bg-muted-foreground/40")} />
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-semibold text-foreground truncate">{vendorInfo?.name || "Seller"}</span>
+                <span className="text-sm font-semibold text-foreground truncate">{vendorInfo?.name || t("pdpSeller")}</span>
                 <span className={cn("text-[10px]", merchantOnline ? "text-emerald-600" : "text-muted-foreground")}>
-                  {typingUsers.length > 0 ? "typing..." : merchantOnline ? "Online" : "Offline"}
+                  {typingUsers.length > 0 ? t("pdpTyping") : merchantOnline ? t("pdpOnline") : t("pdpOffline")}
                 </span>
               </div>
             </div>
