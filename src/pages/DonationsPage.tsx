@@ -217,6 +217,10 @@ const DonationsPage = () => {
   };
 
   const causeForIcon = (name: string) => CAUSES.find(c => c.name === name);
+  const localizeCauseName = (name: string) => {
+    const c = CAUSES.find(x => x.name === name);
+    return c ? (CAUSE_I18N[c.id]?.name ?? name) : name;
+  };
 
   const MEDALS = ["🥇", "🥈", "🥉"];
   const MEDAL_BAR = ["from-yellow-400 to-amber-500", "from-slate-300 to-slate-400", "from-amber-600 to-amber-700"];
@@ -591,7 +595,7 @@ const DonationsPage = () => {
                         {cause ? <cause.icon size={18} /> : (r.cause_icon || "❤️")}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{r.cause_name}</p>
+                        <p className="text-sm font-semibold text-foreground truncate">{localizeCauseName(r.cause_name)}</p>
                         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                           <CalendarClock size={11} />
                           <span>{r.frequency === "weekly" ? t("donWeekly") : t("donMonthly")}</span>
@@ -638,7 +642,7 @@ const DonationsPage = () => {
                         {cause ? <cause.icon size={18} /> : (d.cause_icon || "❤️")}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{d.cause_name}</p>
+                        <p className="text-sm font-semibold text-foreground truncate">{localizeCauseName(d.cause_name)}</p>
                         <p className="text-[11px] text-muted-foreground">{format(new Date(d.created_at), "dd MMM yyyy, hh:mm a")}</p>
                       </div>
                       <p className="text-sm font-bold text-foreground tabular-nums">৳{d.amount}</p>
