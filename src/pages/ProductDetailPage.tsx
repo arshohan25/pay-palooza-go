@@ -399,8 +399,8 @@ export default function ProductDetailPage() {
         {product.stock > 0 && product.stock <= 20 && (
           <motion.div custom={3.5} variants={fadeUp} initial="hidden" animate="show" className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-destructive">Only {product.stock} left!</span>
-              <span className="text-[10px] text-muted-foreground">Hurry up</span>
+              <span className="text-xs font-medium text-destructive">{t("pdpOnlyLeft").replace("{n}", String(product.stock))}</span>
+              <span className="text-[10px] text-muted-foreground">{t("pdpHurryUp")}</span>
             </div>
             <Progress value={stockPct} className="h-1.5 bg-destructive/10 [&>div]:bg-destructive" />
           </motion.div>
