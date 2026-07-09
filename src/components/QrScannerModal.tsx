@@ -386,7 +386,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
                     : <ScanText size={22} className="text-white" />
                   }
                 </div>
-                <span className="text-white/60 text-[10px] font-medium">Read Number</span>
+                <span className="text-white/60 text-[10px] font-medium">{t("qrReadNumber")}</span>
               </button>
 
               <button
