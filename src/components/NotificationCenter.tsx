@@ -369,7 +369,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                 <button
                   onClick={() => setDetailNotif(null)}
                   className="absolute top-2.5 right-4 w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Close"
+                  aria-label={t("ncClose")}
                 >
                   <X size={18} />
                 </button>
