@@ -236,7 +236,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">Processing payment…</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("dqProcessing")}</p>
                 </motion.div>
               )}
 
