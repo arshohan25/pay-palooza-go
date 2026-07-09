@@ -159,7 +159,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                     className="w-full h-13 rounded-2xl font-bold text-base gradient-primary text-primary-foreground"
                     onClick={() => { setStep("pin"); setTimeout(() => inputRef.current?.focus(), 100); }}
                   >
-                    Confirm & Pay
+                    {t("dqConfirmPay")}
                   </Button>
                 </motion.div>
               )}
