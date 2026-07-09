@@ -252,8 +252,8 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
 
     if (!error) {
       setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_deleted: true, content: "" } : m));
-      setDecryptedCache(prev => ({ ...prev, [msgId]: "🗑️ This message was deleted" }));
-      toast.success("Message deleted");
+      setDecryptedCache(prev => ({ ...prev, [msgId]: t("scMsgDeleted") }));
+      toast.success(t("scMsgDeletedToast"));
     }
   };
 
