@@ -2469,6 +2469,15 @@ const translations = {
   baAuthenticated: { en: "Authenticated!", bn: "প্রমাণীকরণ সফল!" },
   baOpeningWallet: { en: "Opening your wallet…", bn: "আপনার ওয়ালেট খোলা হচ্ছে…" },
   baE2EProtected: { en: "Protected by end-to-end encryption", bn: "এন্ড-টু-এন্ড এনক্রিপশন দ্বারা সুরক্ষিত" },
+
+  // BudgetManager
+  bmTitle: { en: "Monthly Budgets", bn: "মাসিক বাজেট" },
+  bmAdd: { en: "Add", bn: "যোগ করুন" },
+  bmLimit: { en: "৳ Limit", bn: "৳ সীমা" },
+  bmSave: { en: "Save", bn: "সংরক্ষণ" },
+  bmEmpty: { en: "No budgets set. Tap Add to create one.", bn: "কোনো বাজেট সেট করা নেই। তৈরি করতে যোগ করুন ট্যাপ করুন।" },
+  bmRecurring: { en: "Recurring", bn: "পুনরাবৃত্ত" },
+  bmOneTime: { en: "One-time", bn: "একবারের" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
