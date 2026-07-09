@@ -325,7 +325,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                           <div className="flex flex-col gap-1 shrink-0">
                             {!n.read && (
                               <button onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
-                                title="Mark as read"
+                                title={t("ncMarkAsRead")}
                                 className="w-6 h-6 rounded-lg flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors">
                                 <CheckCheck size={12} />
                               </button>
