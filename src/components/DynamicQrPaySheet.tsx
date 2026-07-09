@@ -246,9 +246,9 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }}>
                     <CheckCircle2 className="w-16 h-16 text-primary mx-auto" />
                   </motion.div>
-                  <h3 className="text-xl font-bold text-foreground">Payment Successful!</h3>
-                  <p className="text-sm text-muted-foreground">৳{fmt(amount)} paid to {merchantName}</p>
-                  <Button variant="outline" className="mt-4 rounded-2xl" onClick={onClose}>Done</Button>
+                  <h3 className="text-xl font-bold text-foreground">{t("dqPaymentSuccess")}</h3>
+                  <p className="text-sm text-muted-foreground">৳{fmt(amount)} {t("dqPaidTo")} {merchantName}</p>
+                  <Button variant="outline" className="mt-4 rounded-2xl" onClick={onClose}>{t("dqDone")}</Button>
                 </motion.div>
               )}
 
