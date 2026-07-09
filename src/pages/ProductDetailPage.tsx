@@ -808,12 +808,13 @@ function RelatedProductsRow({ title, products, seeAllLink, onNavigate }: {
   title: string; products: any[]; seeAllLink: string; onNavigate: (id: string) => void;
 }) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-foreground">{title}</h3>
         <button onClick={() => navigate(seeAllLink)} className="text-xs font-medium text-primary flex items-center gap-0.5">
-          See All <ChevronRight className="w-3.5 h-3.5" />
+          {t("pdpSeeAll")} <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
       <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory pb-1 -mx-4 px-4 scrollbar-hide">
