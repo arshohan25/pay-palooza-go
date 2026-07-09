@@ -539,9 +539,9 @@ export default function ProductDetailPage() {
         <motion.div custom={8} variants={fadeUp} initial="hidden" animate="show">
           <Tabs defaultValue="description">
             <TabsList className="w-full bg-muted/50 rounded-xl p-1 h-auto">
-              <TabsTrigger value="description" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">Description</TabsTrigger>
-              <TabsTrigger value="specs" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">Specifications</TabsTrigger>
-              <TabsTrigger value="reviews" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">Reviews ({product.review_count})</TabsTrigger>
+              <TabsTrigger value="description" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">{t("pdpDescription")}</TabsTrigger>
+              <TabsTrigger value="specs" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">{t("pdpSpecifications")}</TabsTrigger>
+              <TabsTrigger value="reviews" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">{t("pdpReviewsTab")} ({product.review_count})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="description" className="mt-3 space-y-3">
