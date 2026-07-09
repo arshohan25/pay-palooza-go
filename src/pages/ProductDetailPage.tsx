@@ -768,7 +768,7 @@ export default function ProductDetailPage() {
                 {typingUsers.length > 0 && (
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-2xl rounded-bl-md px-3.5 py-2">
-                      <span className="text-xs text-muted-foreground italic">{typingUsers[0]} is typing…</span>
+                      <span className="text-xs text-muted-foreground italic">{typingUsers[0]} {t("pdpIsTyping")}</span>
                     </div>
                   </div>
                 )}
