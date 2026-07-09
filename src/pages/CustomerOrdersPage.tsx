@@ -7,16 +7,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import WriteReviewForm from "@/components/shop/WriteReviewForm";
 import { downloadInvoice } from "@/components/InvoiceGenerator";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  processing: { label: "Processing", color: "bg-blue-500/10 text-blue-600", icon: Clock },
-  confirmed: { label: "Confirmed", color: "bg-primary/10 text-primary", icon: CircleCheck },
-  shipped: { label: "Shipped", color: "bg-accent/10 text-accent", icon: Truck },
-  out_for_delivery: { label: "Out for Delivery", color: "bg-orange-500/10 text-orange-600", icon: Truck },
-  delivered: { label: "Delivered", color: "bg-emerald-500/10 text-emerald-600", icon: CircleCheck },
-  cancelled: { label: "Cancelled", color: "bg-destructive/10 text-destructive", icon: XCircle },
+const STATUS_CONFIG: Record<string, { labelKey: string; color: string; icon: any }> = {
+  processing: { labelKey: "processing", color: "bg-blue-500/10 text-blue-600", icon: Clock },
+  confirmed: { labelKey: "confirmed2", color: "bg-primary/10 text-primary", icon: CircleCheck },
+  shipped: { labelKey: "shipped", color: "bg-accent/10 text-accent", icon: Truck },
+  out_for_delivery: { labelKey: "outForDelivery", color: "bg-orange-500/10 text-orange-600", icon: Truck },
+  delivered: { labelKey: "delivered", color: "bg-emerald-500/10 text-emerald-600", icon: CircleCheck },
+  cancelled: { labelKey: "cancelled", color: "bg-destructive/10 text-destructive", icon: XCircle },
 };
 
 export default function CustomerOrdersPage() {
