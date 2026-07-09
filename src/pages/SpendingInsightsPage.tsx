@@ -395,9 +395,9 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           <div className="w-20 h-20 rounded-3xl bg-muted flex items-center justify-center mb-5">
             <BarChart3 size={36} className="text-muted-foreground" />
           </div>
-          <h2 className="text-lg font-bold text-foreground mb-2">No transactions yet</h2>
+          <h2 className="text-lg font-bold text-foreground mb-2">{t("siNoTxnsYet")}</h2>
           <p className="text-sm text-muted-foreground max-w-[260px]">
-            Your spending insights will appear here once you make transactions in the selected period.
+            {t("siNoTxnsHint")}
           </p>
         </motion.div>
       ) : (
