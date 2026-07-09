@@ -649,11 +649,11 @@ export default function ProductDetailPage() {
               {addedToCart ? (
                 <motion.span key="check" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}
                   className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-primary" /> Added!
+                  <Check className="w-4 h-4 text-primary" /> {t("pdpAdded")}
                 </motion.span>
               ) : (
                 <motion.span key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  Add to Cart
+                  {t("pdpAddToCart")}
                 </motion.span>
               )}
             </AnimatePresence>
