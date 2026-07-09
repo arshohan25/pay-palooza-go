@@ -59,9 +59,9 @@ export default function WishlistPage() {
         ) : products.length === 0 ? (
           <div className="text-center py-16">
             <Heart className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">Your wishlist is empty</p>
+            <p className="text-sm text-muted-foreground">{t("wpEmpty")}</p>
             <Button variant="outline" className="mt-4" onClick={() => navigate("/shop")}>
-              Browse Products
+              {t("wpBrowse")}
             </Button>
           </div>
         ) : (
