@@ -430,7 +430,7 @@ const CheckoutPage = () => {
       <MerchantAvatar name={merchantName} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1">
-          <p className="text-sm font-bold text-foreground truncate">{merchantName || "Merchant"}</p>
+          <p className="text-sm font-bold text-foreground truncate">{merchantName || t("cpMerchant")}</p>
           <BadgeCheck size={14} className="text-primary shrink-0" />
         </div>
         {session?.description && (
