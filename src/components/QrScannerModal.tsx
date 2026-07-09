@@ -403,7 +403,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
 
             {/* Branding footer */}
             <div className="flex flex-col items-center gap-1.5">
-              <span className="text-white/30 text-[9px] uppercase tracking-widest">Supports</span>
+              <span className="text-white/30 text-[9px] uppercase tracking-widest">{t("qrSupports")}</span>
               <img
                 src="/icons/easypay-logo.webp"
                 alt="EasyPay"
