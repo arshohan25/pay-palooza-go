@@ -188,8 +188,8 @@ const InsurancePage = () => {
                             <h3 className="font-bold text-foreground text-sm">{p.plan_name}</h3>
                             <Badge variant={p.status === "active" ? "default" : "secondary"}>{p.status}</Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground">Coverage: ৳{Number(p.coverage_amount).toLocaleString()} · ৳{Number(p.premium).toLocaleString()}/mo</p>
-                          {p.expires_at && <p className="text-xs text-muted-foreground">Expires: {new Date(p.expires_at).toLocaleDateString()}</p>}
+                          <p className="text-xs text-muted-foreground">{t("ipCoverage")}: ৳{Number(p.coverage_amount).toLocaleString()} · ৳{Number(p.premium).toLocaleString()}{t("ipMoSuffix")}</p>
+                          {p.expires_at && <p className="text-xs text-muted-foreground">{t("ipExpires")}: {new Date(p.expires_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD")}</p>}
                         </CardContent>
                       </Card>
                     </motion.div>
