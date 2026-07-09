@@ -175,15 +175,15 @@ const Index = () => {
 
         const data = await res.json();
         if (data.success) {
-          toast.success("Money added successfully via AsthaPay!");
+          toast.success(t("idxMoneyAdded"));
           fetchBalance();
           setRefreshKey((k) => k + 1);
         } else {
-          toast.error(data.error || "Payment verification failed.");
+          toast.error(data.error || t("idxVerificationFailed"));
         }
       } catch (err) {
         console.error("AsthaPay verify error:", err);
-        toast.error("Could not verify payment. Please contact support.");
+        toast.error(t("idxContactSupport"));
       }
     };
 
