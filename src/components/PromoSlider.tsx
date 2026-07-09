@@ -159,14 +159,14 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
 
                   <div className="relative z-10 flex items-center gap-4">
                     <div className="flex-1 min-w-0">
-                      {b.badge_text && (
+                      {badge && (
                         <span className="inline-block bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full mb-2 backdrop-blur-sm">
-                          {b.badge_text}
+                          {badge}
                         </span>
                       )}
-                      {b.title && <h3 className="text-white text-sm font-bold leading-tight">{b.title}</h3>}
-                      {b.subtitle && (
-                        <p className="text-white/80 text-xs mt-1 leading-snug line-clamp-2">{b.subtitle}</p>
+                      {title && <h3 className="text-white text-sm font-bold leading-tight">{title}</h3>}
+                      {subtitle && (
+                        <p className="text-white/80 text-xs mt-1 leading-snug line-clamp-2">{subtitle}</p>
                       )}
                     </div>
                     {!hasMedia && (
