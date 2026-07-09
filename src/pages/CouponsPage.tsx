@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
@@ -30,13 +30,13 @@ interface Coupon {
   applicable_flow: string | null;
 }
 
-const FLOW_MAP: Record<string, { label: string; icon: typeof ShoppingBag; route: string }> = {
-  shop:       { label: "Shop",      icon: ShoppingBag, route: "/shop" },
-  payment:    { label: "Payment",   icon: CreditCard,  route: "/?flow=payment" },
-  cash_out:   { label: "Cash Out",  icon: Zap,         route: "/?flow=cash_out" },
-  recharge:   { label: "Recharge",  icon: Smartphone,  route: "/?flow=recharge" },
-  bill_pay:   { label: "Bill Pay",  icon: FileText,    route: "/?flow=bill_pay" },
-  all:        { label: "All",       icon: Tag,         route: "/shop" },
+const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof ShoppingBag; route: string }> = {
+  shop:       { labelKey: "cpFlowShop",     icon: ShoppingBag, route: "/shop" },
+  payment:    { labelKey: "cpFlowPayment",  icon: CreditCard,  route: "/?flow=payment" },
+  cash_out:   { labelKey: "cpFlowCashOut",  icon: Zap,         route: "/?flow=cash_out" },
+  recharge:   { labelKey: "cpFlowRecharge", icon: Smartphone,  route: "/?flow=recharge" },
+  bill_pay:   { labelKey: "cpFlowBillPay",  icon: FileText,    route: "/?flow=bill_pay" },
+  all:        { labelKey: "cpFlowAll",      icon: Tag,         route: "/shop" },
 };
 
 function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
@@ -80,7 +80,7 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
             <span className="text-[20px] font-black text-primary leading-none tracking-tight">
               {formatDiscount}
             </span>
-            <span className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">off</span>
+            <span className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">{t("cpOff")}</span>
           </div>
 
           {/* Right: details + actions */}
@@ -88,11 +88,11 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
             {/* Top: description + flow */}
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <p className="text-[11px] text-foreground/70 font-medium leading-snug line-clamp-1 flex-1">
-                {coupon.description || `${flowInfo.label} discount`}
+                {coupon.description || `${t(flowInfo.labelKey)} ${t("cpDiscountSuffix")}`}
               </p>
               <div className="flex items-center gap-1 text-muted-foreground/50 shrink-0">
                 <FlowIcon className="w-2.5 h-2.5" />
-                <span className="text-[9px] font-medium">{flowInfo.label}</span>
+                <span className="text-[9px] font-medium">{t(flowInfo.labelKey)}</span>
               </div>
             </div>
 
@@ -164,14 +164,14 @@ export default function CouponsPage() {
   const handleCopy = (coupon: Coupon) => {
     navigator.clipboard.writeText(coupon.code);
     setCopiedId(coupon.id);
-    toast.success(`Copied: ${coupon.code}`);
+    toast.success(t("cpCopiedToast").replace("{code}", coupon.code));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleUseNow = (coupon: Coupon) => {
     navigator.clipboard.writeText(coupon.code);
     setCopiedId(coupon.id);
-    toast.success(`Code "${coupon.code}" copied — paste it during payment`);
+    toast.success(t("cpUseNowToast").replace("{code}", coupon.code));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
