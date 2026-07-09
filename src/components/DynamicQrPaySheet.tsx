@@ -23,6 +23,7 @@ interface DynamicQrPaySheetProps {
 type Step = "loading" | "confirm" | "pin" | "processing" | "success" | "error";
 
 const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmount, ref_ }: DynamicQrPaySheetProps) => {
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>("loading");
   const [merchantName, setMerchantName] = useState("");
   const [amount, setAmount] = useState(qrAmount || 0);
