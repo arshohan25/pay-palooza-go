@@ -356,8 +356,8 @@ export default function ShopCheckoutPage() {
                 <Wallet className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-bold text-foreground">EasyPay Wallet</p>
-                <p className="text-[11px] text-muted-foreground">Balance: ৳{walletBalance.toLocaleString()}</p>
+                <p className="text-sm font-bold text-foreground">{t("scpEasyPayWallet")}</p>
+                <p className="text-[11px] text-muted-foreground">{t("scpBalance")}: ৳{walletBalance.toLocaleString()}</p>
               </div>
               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${payMethod === "wallet" ? "border-primary" : "border-border"}`}>
                 {payMethod === "wallet" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
