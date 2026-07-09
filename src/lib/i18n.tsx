@@ -2545,6 +2545,14 @@ const translations = {
   // AppHeader
   ahSearch: { en: "Search", bn: "অনুসন্ধান" },
   ahToggleDark: { en: "Toggle dark mode", bn: "ডার্ক মোড টগল" },
+
+  // AvailableBalanceBadge / BalanceCard
+  availableLabel: { en: "Available", bn: "উপলব্ধ" },
+  showQrCode: { en: "Show QR Code", bn: "QR কোড দেখান" },
+  copyWalletId: { en: "Copy Wallet ID", bn: "ওয়ালেট আইডি কপি" },
+  hideBalance: { en: "Hide balance", bn: "ব্যালেন্স লুকান" },
+  addMoneyTitle: { en: "Add Money", bn: "টাকা যোগ" },
+  shareWallet: { en: "Share QR / Wallet ID", bn: "QR / ওয়ালেট আইডি শেয়ার" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
