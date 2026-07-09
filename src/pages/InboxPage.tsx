@@ -1216,7 +1216,6 @@ const ChatView = ({
     </div>
   );
 };
-}
 
 // ── InboxPage ─────────────────────────────────────────────────────────────────
 interface InboxPageProps {
