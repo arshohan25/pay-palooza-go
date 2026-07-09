@@ -162,10 +162,10 @@ const InsurancePage = () => {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="font-bold text-foreground">{plan.name}</h3>
-                            <Badge variant="secondary">৳{plan.premium}/mo</Badge>
+                            <Badge variant="secondary">৳{plan.premium}{t("ipMoSuffix")}</Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">Coverage: ৳{plan.coverage.toLocaleString()} · {plan.duration} months</p>
-                          <p className="text-xs text-primary mt-1 font-medium">Tap to view details →</p>
+                          <p className="text-sm text-muted-foreground">{t("ipCoverage")}: ৳{plan.coverage.toLocaleString()} · {plan.duration} {t("ipMonths")}</p>
+                          <p className="text-xs text-primary mt-1 font-medium">{t("ipTapDetails")}</p>
                         </CardContent>
                       </Card>
                     </motion.div>
