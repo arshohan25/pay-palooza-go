@@ -708,9 +708,9 @@ const CheckoutPage = () => {
                 animate={{ opacity: [1, 0.4, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
-                Processing payment...
+                {t("cpProcessing")}
               </motion.p>
-              <p className="text-[11px] text-muted-foreground text-center mt-1.5">Please don't close this page</p>
+              <p className="text-[11px] text-muted-foreground text-center mt-1.5">{t("cpDontClose")}</p>
             </motion.div>
           )}
 
