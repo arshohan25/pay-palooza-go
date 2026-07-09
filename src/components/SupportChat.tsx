@@ -326,7 +326,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
             <Lock size={10} className="text-muted-foreground" />
           )}
           <span className={`text-[10px] font-medium ${screenshotAlert ? "text-destructive" : "text-muted-foreground"}`}>
-            {screenshotAlert ? "⚠️ Screenshot detected!" : "End-to-end encrypted • AES-256-GCM"}
+            {screenshotAlert ? t("scScreenshotBanner") : t("scE2EBanner")}
           </span>
         </div>
       </div>
