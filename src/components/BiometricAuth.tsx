@@ -245,7 +245,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
                   onClick={() => { setStep("prompt"); setPin(""); setPinError(""); }}
                   className="w-full text-sm text-primary font-semibold text-center"
                 >
-                  Use biometrics instead
+                  {t("baUseBioInstead")}
                 </button>
               )}
             </motion.div>
