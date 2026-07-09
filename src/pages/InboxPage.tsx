@@ -1225,6 +1225,7 @@ interface InboxPageProps {
 }
 
 type FilterTab = "all" | "unread" | "groups" | "requests";
+}
 
 export default function InboxPage({ onBack, onSendMoney, isActive = false }: InboxPageProps) {
   const { t } = useI18n();
