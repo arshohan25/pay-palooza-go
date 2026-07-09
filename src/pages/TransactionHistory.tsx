@@ -834,7 +834,7 @@ const FeeBreakdownSummary = ({ entries, totalFees }: { entries: [string, number]
       >
         <div className="flex items-center gap-2">
           <Coins size={14} className="text-amber-600 dark:text-amber-400" />
-          <span className="text-[12px] font-semibold text-foreground">Fee Breakdown</span>
+          <span className="text-[12px] font-semibold text-foreground">{t("thFeeBreakdown")}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-bold text-amber-600 dark:text-amber-400">৳{totalFees.toLocaleString("en-IN")}</span>
@@ -879,7 +879,7 @@ const CommissionBreakdownSummary = ({ entries, totalCommission }: { entries: [st
       >
         <div className="flex items-center gap-2">
           <TrendingUp size={14} className="text-emerald-600 dark:text-emerald-400" />
-          <span className="text-[12px] font-semibold text-foreground">Commission Breakdown</span>
+          <span className="text-[12px] font-semibold text-foreground">{t("thCommissionBreakdown")}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">৳{totalCommission.toLocaleString("en-IN")}</span>
