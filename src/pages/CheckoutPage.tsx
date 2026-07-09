@@ -775,11 +775,11 @@ const CheckoutPage = () => {
               <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
                 <XCircle size={34} className="text-destructive" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-2">Payment Failed</h2>
-              <p className="text-sm text-muted-foreground mb-6 max-w-[260px] mx-auto">{errorMsg || "Something went wrong."}</p>
+              <h2 className="text-lg font-bold text-foreground mb-2">{t("cpFailedTitle")}</h2>
+              <p className="text-sm text-muted-foreground mb-6 max-w-[260px] mx-auto">{errorMsg || t("cpSomethingWrong")}</p>
               <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={handleCancel} className="rounded-2xl px-6 h-11">Cancel</Button>
-                <Button onClick={() => { setStep("phone"); setOtp(""); setPin(""); setErrorMsg(""); }} className="rounded-2xl px-6 h-11 gradient-primary text-primary-foreground">Try Again</Button>
+                <Button variant="outline" onClick={handleCancel} className="rounded-2xl px-6 h-11">{t("cpCancel")}</Button>
+                <Button onClick={() => { setStep("phone"); setOtp(""); setPin(""); setErrorMsg(""); }} className="rounded-2xl px-6 h-11 gradient-primary text-primary-foreground">{t("cpTryAgain")}</Button>
               </div>
             </motion.div>
           )}
