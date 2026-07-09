@@ -46,9 +46,9 @@ export default function WishlistPage() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <Heart className="w-5 h-5 text-destructive" /> Wishlist
+          <Heart className="w-5 h-5 text-destructive" /> {t("wpTitle")}
         </h1>
-        <span className="text-xs text-muted-foreground ml-auto">{wishlistIds.size} items</span>
+        <span className="text-xs text-muted-foreground ml-auto">{wishlistIds.size} {t("wpItems")}</span>
       </div>
 
       <div className="px-4 pt-4">
