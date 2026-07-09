@@ -80,7 +80,7 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
             <span className="text-[20px] font-black text-primary leading-none tracking-tight">
               {formatDiscount}
             </span>
-            <span className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">off</span>
+            <span className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">{t("cpOff")}</span>
           </div>
 
           {/* Right: details + actions */}
@@ -88,11 +88,11 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
             {/* Top: description + flow */}
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <p className="text-[11px] text-foreground/70 font-medium leading-snug line-clamp-1 flex-1">
-                {coupon.description || `${flowInfo.label} discount`}
+                {coupon.description || `${t(flowInfo.labelKey)} ${t("cpDiscountSuffix")}`}
               </p>
               <div className="flex items-center gap-1 text-muted-foreground/50 shrink-0">
                 <FlowIcon className="w-2.5 h-2.5" />
-                <span className="text-[9px] font-medium">{flowInfo.label}</span>
+                <span className="text-[9px] font-medium">{t(flowInfo.labelKey)}</span>
               </div>
             </div>
 
