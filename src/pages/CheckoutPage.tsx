@@ -377,14 +377,14 @@ const CheckoutPage = () => {
         body: JSON.stringify({ session_id: session.id, phone: cleanPhone, otp_code: otp, pin }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Payment failed");
+      if (!res.ok) throw new Error(result.error || t("cpPaymentFailed"));
 
       setStep("success");
       fireSuccessConfetti();
       haptics.success();
       playPaymentSuccess();
     } catch (err: any) {
-      setErrorMsg(err.message || "Payment failed");
+      setErrorMsg(err.message || t("cpPaymentFailed"));
       setPin("");
       // If PIN wrong, go back to PIN step; otherwise show failed
       if (err.message?.toLowerCase().includes("pin")) {
@@ -395,7 +395,7 @@ const CheckoutPage = () => {
       haptics.error();
       playPaymentError();
     }
-  }, [session, otp, pin, phone]);
+  }, [session, otp, pin, phone, t]);
 
   /* ── Auto-submit PIN when 4 digits ─────────────────────────── */
   useEffect(() => {
