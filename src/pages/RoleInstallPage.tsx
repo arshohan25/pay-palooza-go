@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, onPromptAvailable, isAppInstalled, clearPrompt } from "@/lib/installPromptStore";
+import { useI18n } from "@/lib/i18n";
 
 const ROLE_CONFIG: Record<string, {
   name: string;
