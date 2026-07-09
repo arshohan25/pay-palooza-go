@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n";
 
 const BudgetManager = () => {
   const { budgets, spending, loading, setBudget, toggleRecurring, removeBudget, categoryLabel } = useSpendingBudgets();
+  const { t } = useI18n();
 
   const [adding, setAdding] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
