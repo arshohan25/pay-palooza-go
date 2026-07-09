@@ -37,6 +37,7 @@ interface SupportChatProps {
 }
 
 const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, initialContext }: SupportChatProps) => {
+  const { t } = useI18n();
   const [conversationId, setConversationId] = useState<string | null>(externalConvId ?? null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [decryptedCache, setDecryptedCache] = useState<Record<string, string>>({});
