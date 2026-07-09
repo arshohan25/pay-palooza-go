@@ -190,7 +190,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
       ];
 
       if (allResults.length === 0) {
-        setOcrError("No numbers found. Try again with clearer text.");
+        setOcrError(t("qrNoNumbers"));
       } else if (allResults.length === 1) {
         // Single result — auto-select
         setDetected(true);
