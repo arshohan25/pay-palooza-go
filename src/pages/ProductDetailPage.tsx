@@ -392,7 +392,7 @@ export default function ProductDetailPage() {
               <Star key={i} className={cn("w-3.5 h-3.5", i < Math.round(product.rating) ? "fill-accent text-accent" : "text-muted-foreground/20")} />
             ))}
           </div>
-          <span className="text-xs text-muted-foreground">{product.rating?.toFixed(1)} · {product.review_count} reviews</span>
+          <span className="text-xs text-muted-foreground">{product.rating?.toFixed(1)} · {product.review_count} {t("pdpReviews")}</span>
         </motion.div>
 
         {/* Stock urgency */}
