@@ -161,13 +161,13 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                   </button>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-bold text-foreground truncate">
-                      {agentInfo?.business_name || "Agent Portal"}
+                      {agentInfo?.business_name || t("agAgentPortal")}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge className="bg-primary/10 text-primary border-0 text-[9px] px-1.5 py-0 font-semibold">
                         {agentInfo?.territory_code || "BD"}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground capitalize">{agentInfo?.status || "active"}</span>
+                      <span className="text-[10px] text-muted-foreground capitalize">{agentInfo?.status || t("agActive")}</span>
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-0.5">{profile.phone || "—"}</p>
                   </div>
