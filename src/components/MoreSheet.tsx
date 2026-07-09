@@ -36,6 +36,7 @@ const items: { id: string; icon: any; labelKey: TranslationKey; descKey: Transla
 const MoreSheet = ({ open, onClose, onBankTransfer }: MoreSheetProps) => {
   const navigate = useNavigate();
   const { isHidden } = useGlobalToggles();
+  const { t } = useI18n();
 
   const visibleItems = useMemo(
     () => items.filter(item => {
