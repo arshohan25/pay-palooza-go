@@ -269,20 +269,20 @@ export default function ShopCheckoutPage() {
             🎉
           </motion.div>
           <div>
-            <h2 className="text-xl font-extrabold text-foreground">Order Confirmed!</h2>
-            <p className="text-muted-foreground text-sm mt-1">Your order has been placed successfully</p>
+            <h2 className="text-xl font-extrabold text-foreground">{t("scpOrderConfirmed")}</h2>
+            <p className="text-muted-foreground text-sm mt-1">{t("scpOrderSuccess")}</p>
             <p className="text-xs font-mono font-semibold mt-2 text-muted-foreground">{orderNum}</p>
           </div>
           <div className="w-full bg-card rounded-2xl border border-border p-4 space-y-2 text-left">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Delivery Info</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("scpDeliveryInfo")}</p>
             <div className="flex items-center gap-2 text-sm">
               <span>📦</span>
-              <span className="font-semibold text-foreground">Estimated 3-5 business days</span>
+              <span className="font-semibold text-foreground">{t("scpEstDays")}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               {isCod ? <Truck className="w-3.5 h-3.5 text-primary" /> : <Wallet className="w-3.5 h-3.5 text-primary" />}
               <span className="font-semibold text-foreground">
-                {isCod ? `Pay ৳${orderTotal.toLocaleString()} on delivery` : `৳${orderTotal.toLocaleString()} deducted from wallet`}
+                {isCod ? t("scpPayOnDelivery").replace("{n}", orderTotal.toLocaleString()) : t("scpDeductedWallet").replace("{n}", orderTotal.toLocaleString())}
               </span>
             </div>
             {selectedAddress && (
