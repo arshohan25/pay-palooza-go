@@ -133,7 +133,7 @@ const BlockedUsersPage = ({ onBack }: BlockedUsersPageProps) => {
                     className="text-xs h-8 rounded-xl"
                     onClick={() => handleUnblock(id)}
                   >
-                    Unblock
+                    {t("buUnblock")}
                   </Button>
                 </motion.div>
               );
