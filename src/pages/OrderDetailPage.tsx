@@ -312,7 +312,7 @@ export default function OrderDetailPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-bold text-foreground truncate">{item.name || item.product_name}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Qty: {item.qty || item.quantity || 1}
+                  {t("odQty")}: {item.qty || item.quantity || 1}
                   {item.vendor_name && <> · <span className="text-primary">{item.vendor_name}</span></>}
                 </p>
               </div>
@@ -325,38 +325,38 @@ export default function OrderDetailPage() {
 
         {/* Payment Summary */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Payment Summary</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t("odPaymentSummary")}</p>
           <div className="flex justify-between text-[13px]">
-            <span className="text-muted-foreground">Subtotal</span>
+            <span className="text-muted-foreground">{t("odSubtotal")}</span>
             <span className="font-semibold text-foreground">৳{subtotal.toLocaleString()}</span>
           </div>
           {couponDiscount > 0 && (
             <div className="flex justify-between text-[13px]">
-              <span className="text-primary">Coupon Discount</span>
+              <span className="text-primary">{t("odCouponDiscount")}</span>
               <span className="font-semibold text-primary">-৳{couponDiscount.toLocaleString()}</span>
             </div>
           )}
           <div className="flex justify-between text-[13px]">
-            <span className="text-muted-foreground">Delivery</span>
-            <span className="font-semibold text-foreground">{deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : "Free"}</span>
+            <span className="text-muted-foreground">{t("odDelivery")}</span>
+            <span className="font-semibold text-foreground">{deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : t("odFree")}</span>
           </div>
           <div className="h-px bg-border my-1" />
           <div className="flex justify-between text-[15px] font-bold">
-            <span className="text-foreground">Total</span>
+            <span className="text-foreground">{t("odTotal")}</span>
             <span className="text-primary">৳{Number(order.total).toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
             {order.payment_method === "wallet" ? (
-              <><Wallet className="w-3.5 h-3.5" /> Paid via EasyPay Wallet</>
+              <><Wallet className="w-3.5 h-3.5" /> {t("odPaidViaWallet")}</>
             ) : (
-              <><CreditCard className="w-3.5 h-3.5" /> Paid via Card</>
+              <><CreditCard className="w-3.5 h-3.5" /> {t("odPaidViaCard")}</>
             )}
           </div>
         </div>
 
         {/* Shipping Info */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Shipping Details</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t("odShippingDetails")}</p>
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
             <div>
@@ -370,10 +370,10 @@ export default function OrderDetailPage() {
         {/* Invoice Actions */}
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1 gap-2" onClick={() => downloadInvoice(order)}>
-            <Download className="w-4 h-4" /> Download Invoice
+            <Download className="w-4 h-4" /> {t("odDownloadInvoice")}
           </Button>
           <Button variant="outline" className="flex-1 gap-2" onClick={() => printInvoice(order)}>
-            <Printer className="w-4 h-4" /> Print
+            <Printer className="w-4 h-4" /> {t("odPrint")}
           </Button>
         </div>
 
@@ -382,18 +382,18 @@ export default function OrderDetailPage() {
           {canCancel && (
             <Button variant="destructive" className="w-full" onClick={handleCancel} disabled={cancelling}>
               {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Ban className="w-4 h-4 mr-2" />}
-              Cancel Order
+              {t("odCancelOrder")}
             </Button>
           )}
           <div className="flex gap-3">
             {isDelivered && orderItems.length > 0 && (
               <Button variant="outline" className="flex-1" onClick={() => setReviewSheet({ productId: orderItems[0].product_id || orderItems[0].id, orderId: order.id })}>
-                <Star className="w-4 h-4 mr-2" /> Rate & Review
+                <Star className="w-4 h-4 mr-2" /> {t("coRateReview")}
               </Button>
             )}
             {canReturn && (
               <Button variant="outline" className="flex-1" onClick={() => setReturnSheet(true)}>
-                <RotateCcw className="w-4 h-4 mr-2" /> Request Return
+                <RotateCcw className="w-4 h-4 mr-2" /> {t("odRequestReturn")}
               </Button>
             )}
           </div>
