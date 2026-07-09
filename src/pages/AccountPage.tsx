@@ -427,7 +427,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
 
         {/* ── My Rewards ── */}
         {myRewards.length > 0 && (
-          <Section title="My Rewards">
+          <Section title={t("myRewardsTitle")}>
             {myRewards.map(r => (
               <div key={r.id} className="flex items-center gap-3 px-4 py-3">
                 <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-white">
