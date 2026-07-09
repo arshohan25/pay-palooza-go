@@ -504,9 +504,9 @@ const CheckoutPage = () => {
               <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
                 <AlertTriangle size={30} className="text-destructive" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-2">Invalid Session</h2>
-              <p className="text-sm text-muted-foreground mb-6">This payment link is invalid or no longer available.</p>
-              <Button variant="outline" onClick={() => navigate("/")} className="rounded-2xl px-8 h-11">Go Home</Button>
+              <h2 className="text-lg font-bold text-foreground mb-2">{t("cpInvalidSession")}</h2>
+              <p className="text-sm text-muted-foreground mb-6">{t("cpLinkInvalid")}</p>
+              <Button variant="outline" onClick={() => navigate("/")} className="rounded-2xl px-8 h-11">{t("cpGoHome")}</Button>
             </motion.div>
           )}
 
