@@ -449,7 +449,7 @@ export default function ShopCheckoutPage() {
         {/* Coupon */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            Promo Code
+            {t("scpPromoCode")}
           </p>
           {appliedPromo ? (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/50 border border-accent">
