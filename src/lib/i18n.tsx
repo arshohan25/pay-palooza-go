@@ -1012,6 +1012,16 @@ const translations = {
   endsTomorrow: { en: "Ends tomorrow", bn: "আগামীকাল শেষ" },
   daysLeftSuffix: { en: "days left", bn: "দিন বাকি" },
   daysRemainingSuffix: { en: "d remaining", bn: "দিন বাকি" },
+  cpOff: { en: "off", bn: "ছাড়" },
+  cpDiscountSuffix: { en: "discount", bn: "ডিসকাউন্ট" },
+  cpCopiedToast: { en: "Copied: {code}", bn: "কপি হয়েছে: {code}" },
+  cpUseNowToast: { en: 'Code "{code}" copied — paste it during payment', bn: 'কোড "{code}" কপি হয়েছে — পেমেন্টের সময় পেস্ট করুন' },
+  cpFlowShop: { en: "Shop", bn: "শপ" },
+  cpFlowPayment: { en: "Payment", bn: "পেমেন্ট" },
+  cpFlowCashOut: { en: "Cash Out", bn: "ক্যাশ আউট" },
+  cpFlowRecharge: { en: "Recharge", bn: "রিচার্জ" },
+  cpFlowBillPay: { en: "Bill Pay", bn: "বিল পে" },
+  cpFlowAll: { en: "All", bn: "সকল" },
 
   // ─── PayPage error state ───
   merchantNotFound: { en: "Merchant Not Found", bn: "মার্চেন্ট পাওয়া যায়নি" },
