@@ -148,7 +148,7 @@ const SpeedDial = ({
                 transition={{ delay: i * 0.045 + 0.05, duration: 0.18 }}
                 className="text-xs font-semibold text-foreground bg-card/90 backdrop-blur-sm border border-border/60 px-3 py-1.5 rounded-xl shadow-card whitespace-nowrap"
               >
-                {action.label}
+                {t(action.labelKey)}
               </motion.span>
 
               {/* Icon button */}
