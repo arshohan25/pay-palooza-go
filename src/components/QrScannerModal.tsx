@@ -5,6 +5,7 @@ import jsQR from "jsqr";
 import { requestCamera } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { activityTracker } from "@/lib/activityTracker";
+import { useI18n } from "@/lib/i18n";
 
 const trackScan = (source: "camera" | "upload" | "ocr" | "multi", decoded: string) => {
   const preview = decoded.length > 60 ? decoded.slice(0, 60) + "…" : decoded;
@@ -18,7 +19,9 @@ interface QrScannerModalProps {
   title?: string;
 }
 
-const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScannerModalProps) => {
+const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) => {
+  const { t } = useI18n();
+  const displayTitle = title ?? t("qrScanTitle");
   const [detected, setDetected] = useState(false);
   const [uploadProcessing, setUploadProcessing] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
@@ -187,7 +190,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
       ];
 
       if (allResults.length === 0) {
-        setOcrError("No numbers found. Try again with clearer text.");
+        setOcrError(t("qrNoNumbers"));
       } else if (allResults.length === 1) {
         // Single result — auto-select
         setDetected(true);
@@ -199,7 +202,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
       }
     } catch (err: any) {
       console.error("OCR error:", err);
-      setOcrError("Could not read the number. Try again.");
+      setOcrError(t("qrCantRead"));
     } finally {
       setOcrScanning(false);
     }
@@ -240,7 +243,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
           <div className="relative z-30 flex items-center justify-between px-5 pt-[env(safe-area-inset-top,12px)] mt-3">
             <div className="w-10" />
             <div className="flex items-center gap-1.5">
-              <h2 className="text-white text-base font-bold tracking-tight">{title}</h2>
+              <h2 className="text-white text-base font-bold tracking-tight">{displayTitle}</h2>
               <Info size={14} className="text-white/50" />
             </div>
             <button
@@ -283,8 +286,8 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
               {/* Camera error */}
               {cameraError && !detected && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/60 text-xs text-center px-4">
-                  <p>Camera not available</p>
-                  <p className="text-[10px] text-white/40">Use gallery upload below</p>
+                  <p>{t("qrCameraUnavailable")}</p>
+                  <p className="text-[10px] text-white/40">{t("qrUseGallery")}</p>
                 </div>
               )}
 
@@ -299,14 +302,14 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
               {ocrScanning && !detected && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                   <Loader2 size={32} className="text-primary animate-spin" />
-                  <p className="text-white text-xs font-medium">Reading number...</p>
+                  <p className="text-white text-xs font-medium">{t("qrReadingNumber")}</p>
                 </div>
               )}
 
               {/* OCR results — multiple numbers found */}
               {ocrResults.length > 1 && !detected && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-3">
-                  <p className="text-white/70 text-[10px] uppercase tracking-wider mb-1">Numbers found</p>
+                  <p className="text-white/70 text-[10px] uppercase tracking-wider mb-1">{t("qrNumbersFound")}</p>
                   {ocrResults.map((r, i) => (
                     <button
                       key={i}
@@ -327,7 +330,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
                     onClick={captureFrameForOcr}
                     className="text-white/70 text-[10px] underline"
                   >
-                    Tap to retry
+                    {t("qrTapRetry")}
                   </button>
                 </div>
               )}
@@ -342,14 +345,14 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
                   <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
                     <CheckCircle2 size={36} className="text-emerald-400" />
                   </div>
-                  <p className="text-white text-sm font-semibold">Detected!</p>
+                  <p className="text-white text-sm font-semibold">{t("qrDetected")}</p>
                 </motion.div>
               )}
             </div>
 
             {/* Help text */}
             <p className="text-white/50 text-[11px] text-center mt-4 px-8 leading-relaxed">
-              Scan QR code or tap "Read Number" to scan a phone number.
+              {t("qrHelpText")}
             </p>
           </div>
 
@@ -368,7 +371,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
                     : <FlashlightOff size={20} className="text-white/80" />
                   }
                 </div>
-                <span className="text-white/60 text-[10px] font-medium">Torch</span>
+                <span className="text-white/60 text-[10px] font-medium">{t("qrTorch")}</span>
               </button>
 
               {/* OCR Scan Number button */}
@@ -383,7 +386,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
                     : <ScanText size={22} className="text-white" />
                   }
                 </div>
-                <span className="text-white/60 text-[10px] font-medium">Read Number</span>
+                <span className="text-white/60 text-[10px] font-medium">{t("qrReadNumber")}</span>
               </button>
 
               <button
@@ -394,13 +397,13 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
                 <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
                   <ImageUp size={20} className="text-white/80" />
                 </div>
-                <span className="text-white/60 text-[10px] font-medium">Gallery</span>
+                <span className="text-white/60 text-[10px] font-medium">{t("qrGallery")}</span>
               </button>
             </div>
 
             {/* Branding footer */}
             <div className="flex flex-col items-center gap-1.5">
-              <span className="text-white/30 text-[9px] uppercase tracking-widest">Supports</span>
+              <span className="text-white/30 text-[9px] uppercase tracking-widest">{t("qrSupports")}</span>
               <img
                 src="/icons/easypay-logo.webp"
                 alt="EasyPay"
