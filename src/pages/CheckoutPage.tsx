@@ -461,7 +461,7 @@ const CheckoutPage = () => {
   const SecuredFooter = () => (
     <div className="px-6 pb-5 pt-2 flex items-center justify-center gap-1.5 text-muted-foreground/40">
       <Shield size={10} />
-      <p className="text-[9px] font-medium tracking-wide">Secured by EasyPay</p>
+      <p className="text-[9px] font-medium tracking-wide">{t("cpSecuredBy")}</p>
     </div>
   );
 
