@@ -2516,6 +2516,31 @@ const translations = {
   scNoMessages: { en: "No messages yet", bn: "এখনো কোনো বার্তা নেই" },
   scStartSecure: { en: "Start a secure conversation!", bn: "একটি সুরক্ষিত কথোপকথন শুরু করুন!" },
   scPlaceholder: { en: "Type an encrypted message...", bn: "একটি এনক্রিপ্টেড বার্তা লিখুন..." },
+
+  // AgentMenuDrawer
+  agImageMax: { en: "Image must be under 5MB", bn: "ছবি ৫MB এর কম হতে হবে" },
+  agUploadFailed: { en: "Upload failed", bn: "আপলোড ব্যর্থ" },
+  agProfileUpdateFailed: { en: "Failed to update profile", bn: "প্রোফাইল আপডেট ব্যর্থ" },
+  agAvatarUpdated: { en: "Avatar updated!", bn: "অবতার আপডেট হয়েছে!" },
+  agEditAvatar: { en: "Edit Avatar", bn: "অবতার সম্পাদনা" },
+  agShareQr: { en: "Share QR", bn: "QR শেয়ার করুন" },
+  agCustomerKyc: { en: "Customer KYC", bn: "গ্রাহক KYC" },
+  agAnalytics: { en: "Analytics", bn: "বিশ্লেষণ" },
+  agNotifications: { en: "Notifications", bn: "বিজ্ঞপ্তি" },
+  agBackHome: { en: "Back to Home", bn: "হোমে ফিরে যান" },
+  agSignOut: { en: "Sign Out", bn: "সাইন আউট" },
+  agAgentPortal: { en: "Agent Portal", bn: "এজেন্ট পোর্টাল" },
+  agChangeAvatar: { en: "Change Avatar", bn: "অবতার পরিবর্তন" },
+  agChoosePhoto: { en: "Choose Photo", bn: "ছবি নির্বাচন" },
+  agUploading: { en: "Uploading...", bn: "আপলোড হচ্ছে..." },
+  agSaveAvatar: { en: "Save Avatar", bn: "অবতার সংরক্ষণ" },
+  agCustomerKycStatus: { en: "Customer KYC Status", bn: "গ্রাহক KYC অবস্থা" },
+  agCustomersOnboarded: { en: "Customers Onboarded", bn: "যুক্ত গ্রাহক" },
+  agRegistered: { en: "Registered", bn: "নিবন্ধিত" },
+  agKycVerified: { en: "KYC Verified", bn: "KYC যাচাইকৃত" },
+  agKycTrackingSoon: { en: "Detailed customer KYC tracking will be available soon.", bn: "বিস্তারিত গ্রাহক KYC ট্র্যাকিং শীঘ্রই আসছে।" },
+  agNotifPrefs: { en: "Notification Preferences", bn: "বিজ্ঞপ্তি পছন্দ" },
+  agActive: { en: "active", bn: "সক্রিয়" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

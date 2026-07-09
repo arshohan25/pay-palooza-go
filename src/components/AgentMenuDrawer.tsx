@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import UserQrModal from "@/components/UserQrModal";
 import NotificationPreferences from "@/components/NotificationPreferences";
+import { useI18n } from "@/lib/i18n";
 
 interface AgentMenuDrawerProps {
   open: boolean;
@@ -39,6 +40,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const profile = useProfile();
   const navigate = useNavigate();
   const { isDisabled } = useGlobalToggles();
+  const { t } = useI18n();
 
   const [qrOpen, setQrOpen] = useState(false);
   const [avatarSheetOpen, setAvatarSheetOpen] = useState(false);
@@ -54,7 +56,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5MB");
+      toast.error(t("agImageMax"));
       return;
     }
     setPreviewUrl(URL.createObjectURL(file));
@@ -72,7 +74,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       .upload(path, file, { upsert: true });
 
     if (uploadErr) {
-      toast.error("Upload failed");
+      toast.error(t("agUploadFailed"));
       setUploading(false);
       return;
     }
@@ -85,9 +87,9 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       .eq("user_id", user.id);
 
     if (updateErr) {
-      toast.error("Failed to update profile");
+      toast.error(t("agProfileUpdateFailed"));
     } else {
-      toast.success("Avatar updated!");
+      toast.success(t("agAvatarUpdated"));
       window.dispatchEvent(new CustomEvent("profile-updated", { detail: {} }));
     }
     setPreviewUrl(null);
@@ -102,16 +104,16 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   };
 
   const menuItems = [
-    { icon: Camera, label: "Edit Avatar", action: () => openAfterClose(() => setAvatarSheetOpen(true)), toggleKey: "agent_edit_avatar" },
-    { icon: QrCode, label: "Share QR", action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
-    { icon: ShieldCheck, label: "Customer KYC", action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
-    { icon: BarChart3, label: "Analytics", action: () => { onClose(); navigate("/agent/analytics"); }, toggleKey: "agent_analytics" },
-    { icon: Bell, label: "Notifications", action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
+    { icon: Camera, label: t("agEditAvatar"), action: () => openAfterClose(() => setAvatarSheetOpen(true)), toggleKey: "agent_edit_avatar" },
+    { icon: QrCode, label: t("agShareQr"), action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
+    { icon: ShieldCheck, label: t("agCustomerKyc"), action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
+    { icon: BarChart3, label: t("agAnalytics"), action: () => { onClose(); navigate("/agent/analytics"); }, toggleKey: "agent_analytics" },
+    { icon: Bell, label: t("agNotifications"), action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
   ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
 
   const bottomItems = [
-    { icon: Home, label: "Back to Home", action: () => { onClose(); navigate("/"); } },
-    { icon: LogOut, label: "Sign Out", action: async () => { await signOut(); navigate("/"); }, danger: true },
+    { icon: Home, label: t("agBackHome"), action: () => { onClose(); navigate("/"); } },
+    { icon: LogOut, label: t("agSignOut"), action: async () => { await signOut(); navigate("/"); }, danger: true },
   ];
 
   return (
@@ -159,13 +161,13 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                   </button>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-bold text-foreground truncate">
-                      {agentInfo?.business_name || "Agent Portal"}
+                      {agentInfo?.business_name || t("agAgentPortal")}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge className="bg-primary/10 text-primary border-0 text-[9px] px-1.5 py-0 font-semibold">
                         {agentInfo?.territory_code || "BD"}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground capitalize">{agentInfo?.status || "active"}</span>
+                      <span className="text-[10px] text-muted-foreground capitalize">{agentInfo?.status || t("agActive")}</span>
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-0.5">{profile.phone || "—"}</p>
                   </div>
@@ -223,7 +225,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       <Sheet open={avatarSheetOpen} onOpenChange={setAvatarSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-base font-extrabold">Change Avatar</SheetTitle>
+            <SheetTitle className="text-base font-extrabold">{t("agChangeAvatar")}</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col items-center gap-4">
             <div className="w-24 h-24 rounded-2xl overflow-hidden bg-muted flex items-center justify-center border-2 border-dashed border-border">
@@ -247,7 +249,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               className="rounded-xl gap-2"
               onClick={() => fileRef.current?.click()}
             >
-              <Upload size={14} /> Choose Photo
+              <Upload size={14} /> {t("agChoosePhoto")}
             </Button>
             {previewUrl && (
               <Button
@@ -255,7 +257,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                 disabled={uploading}
                 onClick={uploadAvatar}
               >
-                {uploading ? "Uploading..." : "Save Avatar"}
+                {uploading ? t("agUploading") : t("agSaveAvatar")}
               </Button>
             )}
           </div>
@@ -266,7 +268,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       <Sheet open={kycSheetOpen} onOpenChange={setKycSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-base font-extrabold">Customer KYC Status</SheetTitle>
+            <SheetTitle className="text-base font-extrabold">{t("agCustomerKycStatus")}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4">
             <Card className="p-5 border-0 shadow-card rounded-2xl text-center">
@@ -274,24 +276,24 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                 <Users size={24} className="text-primary" />
               </div>
               <p className="text-3xl font-extrabold text-foreground">{agentInfo?.customers_onboarded ?? 0}</p>
-              <p className="text-xs text-muted-foreground font-semibold mt-1">Customers Onboarded</p>
+              <p className="text-xs text-muted-foreground font-semibold mt-1">{t("agCustomersOnboarded")}</p>
             </Card>
 
             <div className="grid grid-cols-2 gap-3">
               <Card className="p-4 border-0 shadow-card rounded-xl text-center">
                 <ShieldCheck size={20} className="mx-auto text-primary mb-2" />
                 <p className="text-lg font-extrabold text-foreground">{agentInfo?.customers_onboarded ?? 0}</p>
-                <p className="text-[10px] text-muted-foreground font-semibold">Registered</p>
+                <p className="text-[10px] text-muted-foreground font-semibold">{t("agRegistered")}</p>
               </Card>
               <Card className="p-4 border-0 shadow-card rounded-xl text-center">
                 <Activity size={20} className="mx-auto text-accent mb-2" />
                 <p className="text-lg font-extrabold text-foreground">—</p>
-                <p className="text-[10px] text-muted-foreground font-semibold">KYC Verified</p>
+                <p className="text-[10px] text-muted-foreground font-semibold">{t("agKycVerified")}</p>
               </Card>
             </div>
 
             <p className="text-[10px] text-muted-foreground text-center">
-              Detailed customer KYC tracking will be available soon.
+              {t("agKycTrackingSoon")}
             </p>
           </div>
         </SheetContent>
@@ -301,7 +303,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       <Sheet open={notifSheetOpen} onOpenChange={setNotifSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto">
           <SheetHeader className="text-left mb-3">
-            <SheetTitle className="text-base font-bold">Notification Preferences</SheetTitle>
+            <SheetTitle className="text-base font-bold">{t("agNotifPrefs")}</SheetTitle>
           </SheetHeader>
           <NotificationPreferences scope="agent" />
         </SheetContent>
