@@ -2579,6 +2579,21 @@ const translations = {
   buUnblock: { en: "Unblock", bn: "আনব্লক" },
   buUnblocked: { en: "User unblocked", bn: "ব্যবহারকারী আনব্লক হয়েছে" },
   buUnknown: { en: "Unknown", bn: "অজানা" },
+
+  // TransactionList
+  tlDriveCashback: { en: "Drive Cashback", bn: "ড্রাইভ ক্যাশব্যাক" },
+  tlPending: { en: "Pending", bn: "অপেক্ষমাণ" },
+  tlRejected: { en: "Rejected", bn: "প্রত্যাখ্যাত" },
+  tlEmptyHint: { en: "Your transactions will appear here", bn: "আপনার লেনদেন এখানে দেখাবে" },
+
+  // QuickActions
+  qaResetOrder: { en: "Reset order", bn: "ক্রম রিসেট" },
+  qaMoreServices: { en: "More Services", bn: "আরও সেবা" },
+  qaSoon: { en: "Soon", bn: "শীঘ্রই" },
+  qaComingSoon: { en: "Coming soon!", bn: "শীঘ্রই আসছে!" },
+  qaUnavailable: { en: "{label} is temporarily unavailable", bn: "{label} সাময়িকভাবে অনুপলব্ধ" },
+  qaDisabledDesc: { en: "This feature has been disabled by the system. Please try again later.", bn: "এই ফিচারটি সিস্টেম দ্বারা নিষ্ক্রিয় করা হয়েছে। পরে আবার চেষ্টা করুন।" },
+  qaFeatureComingSoon: { en: "{label} coming soon!", bn: "{label} শীঘ্রই আসছে!" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
