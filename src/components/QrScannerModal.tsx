@@ -352,7 +352,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
 
             {/* Help text */}
             <p className="text-white/50 text-[11px] text-center mt-4 px-8 leading-relaxed">
-              Scan QR code or tap "Read Number" to scan a phone number.
+              {t("qrHelpText")}
             </p>
           </div>
 
