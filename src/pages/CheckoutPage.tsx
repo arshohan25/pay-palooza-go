@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
+import { useI18n } from "@/lib/i18n";
+
 
 /* ─── helpers ──────────────────────────────────────────────────── */
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
@@ -239,6 +241,7 @@ const MerchantAvatar = ({ name }: { name: string }) => {
 const CheckoutPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const [step, setStep] = useState<Step>("loading");
   const [session, setSession] = useState<SessionData | null>(null);
@@ -321,7 +324,7 @@ const CheckoutPage = () => {
   const handleSendOtp = useCallback(async () => {
     const cleanPhone = phone.replace(/\D/g, "");
     if (!/^01[3-9]\d{8}$/.test(cleanPhone)) {
-      setErrorMsg("Enter a valid 11-digit number");
+      setErrorMsg(t("cpInvalidPhone"));
       haptics.error();
       return;
     }
@@ -336,18 +339,18 @@ const CheckoutPage = () => {
         body: JSON.stringify({ phone: cleanPhone, purpose: "payment" }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to send OTP");
+      if (!res.ok) throw new Error(result.error || t("cpFailedSendOtp"));
 
       if (result.dev_otp) setDevOtp(result.dev_otp);
       setResendCooldown(60);
       setStep("otp");
       haptics.success();
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to send OTP");
+      setErrorMsg(err.message || t("cpFailedSendOtp"));
       setStep("phone");
       haptics.error();
     }
-  }, [phone]);
+  }, [phone, t]);
 
   /* ── Transition to PIN step on OTP complete ────────────────── */
   useEffect(() => {
@@ -374,14 +377,14 @@ const CheckoutPage = () => {
         body: JSON.stringify({ session_id: session.id, phone: cleanPhone, otp_code: otp, pin }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Payment failed");
+      if (!res.ok) throw new Error(result.error || t("cpPaymentFailed"));
 
       setStep("success");
       fireSuccessConfetti();
       haptics.success();
       playPaymentSuccess();
     } catch (err: any) {
-      setErrorMsg(err.message || "Payment failed");
+      setErrorMsg(err.message || t("cpPaymentFailed"));
       setPin("");
       // If PIN wrong, go back to PIN step; otherwise show failed
       if (err.message?.toLowerCase().includes("pin")) {
@@ -392,7 +395,7 @@ const CheckoutPage = () => {
       haptics.error();
       playPaymentError();
     }
-  }, [session, otp, pin, phone]);
+  }, [session, otp, pin, phone, t]);
 
   /* ── Auto-submit PIN when 4 digits ─────────────────────────── */
   useEffect(() => {
@@ -427,7 +430,7 @@ const CheckoutPage = () => {
       <MerchantAvatar name={merchantName} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1">
-          <p className="text-sm font-bold text-foreground truncate">{merchantName || "Merchant"}</p>
+          <p className="text-sm font-bold text-foreground truncate">{merchantName || t("cpMerchant")}</p>
           <BadgeCheck size={14} className="text-primary shrink-0" />
         </div>
         {session?.description && (
@@ -443,13 +446,13 @@ const CheckoutPage = () => {
   /* ── Amount hero ───────────────────────────────────────────── */
   const AmountHero = () => (
     <div className="text-center py-5">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] font-semibold mb-1">Amount to Pay</p>
+      <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] font-semibold mb-1">{t("cpAmountToPay")}</p>
       <p className="text-4xl font-black text-foreground tracking-tight">
         <span className="text-primary text-2xl mr-0.5">৳</span>
         {session ? fmt(session.amount) : "—"}
       </p>
       {session?.reference && (
-        <p className="text-[10px] text-muted-foreground mt-2 font-medium">Ref: {session.reference}</p>
+        <p className="text-[10px] text-muted-foreground mt-2 font-medium">{t("cpRef")}: {session.reference}</p>
       )}
     </div>
   );
@@ -458,7 +461,7 @@ const CheckoutPage = () => {
   const SecuredFooter = () => (
     <div className="px-6 pb-5 pt-2 flex items-center justify-center gap-1.5 text-muted-foreground/40">
       <Shield size={10} />
-      <p className="text-[9px] font-medium tracking-wide">Secured by EasyPay</p>
+      <p className="text-[9px] font-medium tracking-wide">{t("cpSecuredBy")}</p>
     </div>
   );
 
@@ -475,7 +478,7 @@ const CheckoutPage = () => {
               className="rounded-3xl bg-card border border-border/60 shadow-elevated p-10 text-center"
             >
               <PulsingRings />
-              <p className="text-sm text-muted-foreground text-center mt-6 font-medium">Loading payment...</p>
+              <p className="text-sm text-muted-foreground text-center mt-6 font-medium">{t("cpLoadingPayment")}</p>
             </motion.div>
           )}
 
@@ -487,9 +490,9 @@ const CheckoutPage = () => {
               <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-5">
                 <Clock size={30} className="text-accent" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-2">Session Expired</h2>
-              <p className="text-sm text-muted-foreground mb-6 max-w-[260px] mx-auto">Please request a new payment link from the merchant.</p>
-              <Button variant="outline" onClick={handleCancel} className="rounded-2xl px-8 h-11">Go Back</Button>
+              <h2 className="text-lg font-bold text-foreground mb-2">{t("cpSessionExpired")}</h2>
+              <p className="text-sm text-muted-foreground mb-6 max-w-[260px] mx-auto">{t("cpRequestNewLink")}</p>
+              <Button variant="outline" onClick={handleCancel} className="rounded-2xl px-8 h-11">{t("cpGoBack")}</Button>
             </motion.div>
           )}
 
@@ -501,9 +504,9 @@ const CheckoutPage = () => {
               <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
                 <AlertTriangle size={30} className="text-destructive" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-2">Invalid Session</h2>
-              <p className="text-sm text-muted-foreground mb-6">This payment link is invalid or no longer available.</p>
-              <Button variant="outline" onClick={() => navigate("/")} className="rounded-2xl px-8 h-11">Go Home</Button>
+              <h2 className="text-lg font-bold text-foreground mb-2">{t("cpInvalidSession")}</h2>
+              <p className="text-sm text-muted-foreground mb-6">{t("cpLinkInvalid")}</p>
+              <Button variant="outline" onClick={() => navigate("/")} className="rounded-2xl px-8 h-11">{t("cpGoHome")}</Button>
             </motion.div>
           )}
 
@@ -520,7 +523,7 @@ const CheckoutPage = () => {
               <div className="px-6 pb-4 space-y-4">
                 <div className="h-px bg-border/50" />
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-2 text-center">Phone Number</label>
+                  <label className="text-xs font-semibold text-foreground block mb-2 text-center">{t("cpPhoneNumber")}</label>
                   <input
                     type="tel"
                     placeholder="01XXXXXXXXX"
@@ -546,11 +549,11 @@ const CheckoutPage = () => {
                   className="w-full h-12 rounded-2xl text-sm font-bold gradient-primary text-primary-foreground shadow-glow"
                 >
                   <Send size={15} className="mr-2" />
-                  Send OTP
+                  {t("cpSendOtp")}
                 </Button>
 
                 <button onClick={handleCancel} className="w-full text-center text-xs text-muted-foreground font-medium py-1 hover:text-foreground transition-colors">
-                  Cancel
+                  {t("cpCancel")}
                 </button>
               </div>
 
@@ -568,7 +571,7 @@ const CheckoutPage = () => {
               <div className="px-6 pt-5 pb-1 flex items-center justify-between">
                 <button onClick={() => { setStep("phone"); setOtp(""); setErrorMsg(""); }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronLeft size={16} />
-                  Back
+                  {t("cpBack")}
                 </button>
                 {secondsLeft !== null && (
                   <CircularCountdown secondsLeft={secondsLeft} total={totalSeconds} />
@@ -587,9 +590,9 @@ const CheckoutPage = () => {
 
               <div className="px-6 pb-5 space-y-4">
                 <div className="text-center">
-                  <h3 className="text-base font-bold text-foreground">Enter OTP</h3>
+                  <h3 className="text-base font-bold text-foreground">{t("cpEnterOtp")}</h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    A 6-digit code was sent to <span className="font-semibold text-foreground">{phone}</span>
+                    {t("cpOtpSentTo")} <span className="font-semibold text-foreground">{phone}</span>
                   </p>
                 </div>
 
@@ -597,7 +600,7 @@ const CheckoutPage = () => {
 
                 {devOtp && (
                   <p className="text-[10px] text-center text-muted-foreground bg-muted/50 rounded-xl px-3 py-1.5">
-                    Dev OTP: <span className="font-mono font-bold text-foreground">{devOtp}</span>
+                    {t("cpDevOtp")}: <span className="font-mono font-bold text-foreground">{devOtp}</span>
                   </p>
                 )}
 
@@ -612,7 +615,7 @@ const CheckoutPage = () => {
                 <div className="text-center">
                   {resendCooldown > 0 ? (
                     <p className="text-xs text-muted-foreground">
-                      Resend in <span className="font-bold text-foreground">{resendCooldown}s</span>
+                      {t("cpResendIn")} <span className="font-bold text-foreground">{resendCooldown}s</span>
                     </p>
                   ) : (
                     <button
@@ -620,7 +623,7 @@ const CheckoutPage = () => {
                       className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
                     >
                       <RotateCcw size={12} />
-                      Resend OTP
+                      {t("cpResendOtp")}
                     </button>
                   )}
                 </div>
@@ -640,7 +643,7 @@ const CheckoutPage = () => {
               <div className="px-6 pt-5 pb-1 flex items-center justify-between">
                 <button onClick={() => { setStep("otp"); setPin(""); setOtp(""); setErrorMsg(""); }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronLeft size={16} />
-                  Back
+                  {t("cpBack")}
                 </button>
                 {secondsLeft !== null && (
                   <CircularCountdown secondsLeft={secondsLeft} total={totalSeconds} />
@@ -656,7 +659,7 @@ const CheckoutPage = () => {
                   <span className="text-lg font-black text-foreground">{fmt(session.amount)}</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-2">
-                  to <span className="font-semibold text-foreground">{merchantName || "Merchant"}</span>
+                  {t("cpTo")} <span className="font-semibold text-foreground">{merchantName || t("cpMerchant")}</span>
                 </p>
               </div>
 
@@ -665,8 +668,8 @@ const CheckoutPage = () => {
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <KeyRound size={22} className="text-primary" />
                   </div>
-                  <h3 className="text-base font-bold text-foreground">Enter your PIN</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Confirm with your 4-digit EasyPay PIN</p>
+                  <h3 className="text-base font-bold text-foreground">{t("cpEnterPin")}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{t("cpConfirmPin")}</p>
                 </div>
 
                 <PinInput value={pin} onChange={setPin} />
@@ -686,7 +689,7 @@ const CheckoutPage = () => {
                   className="w-full h-12 rounded-2xl text-sm font-bold gradient-primary text-primary-foreground shadow-glow disabled:opacity-40"
                 >
                   <Lock size={15} className="mr-2" />
-                  Pay ৳{fmt(session.amount)}
+                  {t("cpPay")} ৳{fmt(session.amount)}
                 </Button>
               </div>
 
@@ -705,9 +708,9 @@ const CheckoutPage = () => {
                 animate={{ opacity: [1, 0.4, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
-                Processing payment...
+                {t("cpProcessing")}
               </motion.p>
-              <p className="text-[11px] text-muted-foreground text-center mt-1.5">Please don't close this page</p>
+              <p className="text-[11px] text-muted-foreground text-center mt-1.5">{t("cpDontClose")}</p>
             </motion.div>
           )}
 
@@ -729,18 +732,18 @@ const CheckoutPage = () => {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                 className="text-xl font-black text-foreground mb-1"
               >
-                Payment Successful!
+                {t("cpPaymentSuccess")}
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
                 className="text-sm text-muted-foreground"
               >
                 <span className="text-primary font-bold">৳{session ? fmt(session.amount) : "—"}</span>
-                {" "}paid to <span className="font-semibold text-foreground">{merchantName || "Merchant"}</span>
+                {" "}{t("cpPaidTo")} <span className="font-semibold text-foreground">{merchantName || t("cpMerchant")}</span>
               </motion.p>
 
               {session?.reference && (
-                <p className="text-[10px] text-muted-foreground mt-2">Ref: {session.reference}</p>
+                <p className="text-[10px] text-muted-foreground mt-2">{t("cpRef")}: {session.reference}</p>
               )}
 
               <motion.div
@@ -758,7 +761,7 @@ const CheckoutPage = () => {
                   </motion.div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Redirecting{session?.success_url ? " to merchant" : ""}...
+                  {t("cpRedirecting")}{session?.success_url ? t("cpToMerchant") : ""}...
                 </p>
               </motion.div>
             </motion.div>
@@ -772,11 +775,11 @@ const CheckoutPage = () => {
               <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
                 <XCircle size={34} className="text-destructive" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-2">Payment Failed</h2>
-              <p className="text-sm text-muted-foreground mb-6 max-w-[260px] mx-auto">{errorMsg || "Something went wrong."}</p>
+              <h2 className="text-lg font-bold text-foreground mb-2">{t("cpFailedTitle")}</h2>
+              <p className="text-sm text-muted-foreground mb-6 max-w-[260px] mx-auto">{errorMsg || t("cpSomethingWrong")}</p>
               <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={handleCancel} className="rounded-2xl px-6 h-11">Cancel</Button>
-                <Button onClick={() => { setStep("phone"); setOtp(""); setPin(""); setErrorMsg(""); }} className="rounded-2xl px-6 h-11 gradient-primary text-primary-foreground">Try Again</Button>
+                <Button variant="outline" onClick={handleCancel} className="rounded-2xl px-6 h-11">{t("cpCancel")}</Button>
+                <Button onClick={() => { setStep("phone"); setOtp(""); setPin(""); setErrorMsg(""); }} className="rounded-2xl px-6 h-11 gradient-primary text-primary-foreground">{t("cpTryAgain")}</Button>
               </div>
             </motion.div>
           )}
