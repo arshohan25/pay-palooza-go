@@ -824,6 +824,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
 
 // ─── Fee Breakdown Summary (collapsible) ──────────────────────────────────
 const FeeBreakdownSummary = ({ entries, totalFees }: { entries: [string, number][]; totalFees: number }) => {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <div className="mb-2">
