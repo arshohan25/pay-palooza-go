@@ -282,7 +282,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
             className="flex items-center justify-center gap-1.5 mt-8 text-[11px] text-muted-foreground"
           >
             <CheckCircle2 size={11} className="text-primary" />
-            Protected by end-to-end encryption
+            {t("baE2EProtected")}
           </motion.div>
         )}
       </div>
