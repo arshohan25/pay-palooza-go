@@ -479,12 +479,12 @@ export default function ShopCheckoutPage() {
                   value={promoInput}
                   onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === "Enter" && applyPromo()}
-                  placeholder="Enter promo code"
+                  placeholder={t("scpEnterPromo")}
                   className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-muted border border-border text-sm text-foreground font-mono outline-none focus:border-primary transition-colors uppercase"
                 />
               </div>
               <Button onClick={applyPromo} disabled={promoLoading} size="sm" className="shrink-0">
-                {promoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+                {promoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("scpApply")}
               </Button>
             </div>
           )}
