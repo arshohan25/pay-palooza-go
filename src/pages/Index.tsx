@@ -22,6 +22,7 @@ import { getCachedStatus, requestContacts, requestCamera } from "@/lib/permissio
 import { saveContacts } from "@/lib/contactStore";
 import { retryLazyImport } from "@/lib/cacheReset";
 import { useFutureFeatures } from "@/hooks/use-future-features";
+import { useI18n } from "@/lib/i18n";
 
 // ── Critical above-fold: eagerly imported for instant render ──
 import AppHeader from "@/components/AppHeader";
