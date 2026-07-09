@@ -268,7 +268,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       <Sheet open={kycSheetOpen} onOpenChange={setKycSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-base font-extrabold">Customer KYC Status</SheetTitle>
+            <SheetTitle className="text-base font-extrabold">{t("agCustomerKycStatus")}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4">
             <Card className="p-5 border-0 shadow-card rounded-2xl text-center">
