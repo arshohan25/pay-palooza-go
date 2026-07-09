@@ -23,10 +23,10 @@ interface FundRequest {
   transaction_id: string | null;
 }
 
-const statusConfig: Record<string, { icon: typeof Clock; label: string; class: string }> = {
-  pending:  { icon: Clock,        label: "Pending",  class: "bg-amber-500/12 text-amber-600 border-amber-500/20" },
-  approved: { icon: CheckCircle2, label: "Approved", class: "bg-emerald-500/12 text-emerald-600 border-emerald-500/20" },
-  rejected: { icon: XCircle,      label: "Rejected", class: "bg-destructive/12 text-destructive border-destructive/20" },
+const statusConfig: Record<string, { icon: typeof Clock; labelKey: "frhStatusPending" | "frhStatusApproved" | "frhStatusRejected"; class: string }> = {
+  pending:  { icon: Clock,        labelKey: "frhStatusPending",  class: "bg-amber-500/12 text-amber-600 border-amber-500/20" },
+  approved: { icon: CheckCircle2, labelKey: "frhStatusApproved", class: "bg-emerald-500/12 text-emerald-600 border-emerald-500/20" },
+  rejected: { icon: XCircle,      labelKey: "frhStatusRejected", class: "bg-destructive/12 text-destructive border-destructive/20" },
 };
 
 const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
@@ -70,7 +70,7 @@ const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
         <button onClick={onBack} className="w-9 h-9 rounded-xl bg-card border border-border/60 flex items-center justify-center active:scale-95 transition-transform">
           <ArrowLeft size={16} className="text-foreground" />
         </button>
-        <h1 className="text-[17px] font-bold text-foreground">My Fund Requests</h1>
+        <h1 className="text-[17px] font-bold text-foreground">{t("frhTitle")}</h1>
       </div>
 
       {loading ? (
@@ -80,8 +80,8 @@ const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
       ) : requests.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
           <Inbox size={48} strokeWidth={1.2} className="mb-3 opacity-40" />
-          <p className="text-sm font-medium">No requests yet</p>
-          <p className="text-xs opacity-70 mt-1">Your deposit & withdrawal requests will appear here</p>
+          <p className="text-sm font-medium">{t("frhEmpty")}</p>
+          <p className="text-xs opacity-70 mt-1">{t("frhEmptyHint")}</p>
         </div>
       ) : (
         <div className="space-y-2.5">
@@ -106,9 +106,9 @@ const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-[13px] font-semibold text-foreground">{isDeposit ? "Add Money" : "Bank Transfer"}</p>
+                      <p className="text-[13px] font-semibold text-foreground">{isDeposit ? t("frhAddMoney") : t("frhBankTransfer")}</p>
                       <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${st.class}`}>
-                        <StatusIcon size={10} /> {st.label}
+                        <StatusIcon size={10} /> {t(st.labelKey)}
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5">{formatDate(r.created_at)}</p>
@@ -130,29 +130,29 @@ const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
                     >
                       <div className="px-4 pb-4 pt-1 space-y-2 border-t border-border/40">
                         {r.source_method && (
-                          <Detail label="Method" value={r.source_method} />
+                          <Detail label={t("frhMethod")} value={r.source_method} />
                         )}
                         {r.bank_name && (
-                          <Detail label="Bank" value={r.bank_name} />
+                          <Detail label={t("frhBank")} value={r.bank_name} />
                         )}
                         {r.account_number && (
-                          <Detail label="Account" value={r.account_number} />
+                          <Detail label={t("frhAccount")} value={r.account_number} />
                         )}
                         {r.account_holder && (
-                          <Detail label="Holder" value={r.account_holder} />
+                          <Detail label={t("frhHolder")} value={r.account_holder} />
                         )}
                         {r.transaction_id_proof && (
-                          <Detail label="TXN ID" value={r.transaction_id_proof} />
+                          <Detail label={t("frhTxnId")} value={r.transaction_id_proof} />
                         )}
                         {r.admin_note && (
                           <div className="bg-destructive/8 rounded-xl px-3 py-2">
-                            <p className="text-[10px] font-bold text-destructive/70 uppercase tracking-wider">Admin Note</p>
+                            <p className="text-[10px] font-bold text-destructive/70 uppercase tracking-wider">{t("frhAdminNote")}</p>
                             <p className="text-[12px] text-destructive mt-0.5">{r.admin_note}</p>
                           </div>
                         )}
                         {r.proof_url && (
                           <ExternalLink href={r.proof_url} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline">
-                            <ImageIcon size={12} /> View Proof
+                            <ImageIcon size={12} /> {t("frhViewProof")}
                           </ExternalLink>
                         )}
                       </div>

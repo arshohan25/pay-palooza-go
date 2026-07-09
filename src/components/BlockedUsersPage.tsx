@@ -50,7 +50,7 @@ const BlockedUsersPage = ({ onBack }: BlockedUsersPageProps) => {
     localStorage.setItem(BLOCKED_KEY, JSON.stringify(updated));
     setBlockedIds(updated);
     setProfiles((prev) => prev.filter((p) => p.user_id !== userId));
-    toast.success("User unblocked");
+    toast.success(t("buUnblocked"));
   };
 
   return (
@@ -66,9 +66,9 @@ const BlockedUsersPage = ({ onBack }: BlockedUsersPageProps) => {
           <ArrowLeft size={20} />
         </Button>
         <div>
-          <h1 className="text-lg font-bold text-foreground">Blocked Users</h1>
+          <h1 className="text-lg font-bold text-foreground">{t("buTitle")}</h1>
           <p className="text-xs text-muted-foreground">
-            Manage users you've blocked from messaging
+            {t("buSubtitle")}
           </p>
         </div>
       </div>
@@ -85,9 +85,9 @@ const BlockedUsersPage = ({ onBack }: BlockedUsersPageProps) => {
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
             <ShieldBan size={28} className="text-muted-foreground" />
           </div>
-          <p className="text-sm font-semibold text-foreground">No blocked users</p>
+          <p className="text-sm font-semibold text-foreground">{t("buEmpty")}</p>
           <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
-            Users you block from chat will appear here
+            {t("buEmptyHint")}
           </p>
         </div>
       ) : (
@@ -95,7 +95,7 @@ const BlockedUsersPage = ({ onBack }: BlockedUsersPageProps) => {
           <AnimatePresence initial={false}>
             {blockedIds.map((id) => {
               const profile = profiles.find((p) => p.user_id === id);
-              const name = profile?.name || "Unknown";
+              const name = profile?.name || t("buUnknown");
               const phone = profile?.phone || id.slice(0, 8) + "…";
               const avatar = profile?.avatar_url;
 
@@ -133,7 +133,7 @@ const BlockedUsersPage = ({ onBack }: BlockedUsersPageProps) => {
                     className="text-xs h-8 rounded-xl"
                     onClick={() => handleUnblock(id)}
                   >
-                    Unblock
+                    {t("buUnblock")}
                   </Button>
                 </motion.div>
               );
