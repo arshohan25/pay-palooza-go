@@ -478,7 +478,7 @@ const CheckoutPage = () => {
               className="rounded-3xl bg-card border border-border/60 shadow-elevated p-10 text-center"
             >
               <PulsingRings />
-              <p className="text-sm text-muted-foreground text-center mt-6 font-medium">Loading payment...</p>
+              <p className="text-sm text-muted-foreground text-center mt-6 font-medium">{t("cpLoadingPayment")}</p>
             </motion.div>
           )}
 
