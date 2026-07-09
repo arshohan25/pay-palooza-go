@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Landmark, Ticket, Heart, X, Briefcase, HandCoins, Shield, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface MoreSheetProps {
   open: boolean;
@@ -22,19 +23,20 @@ const FEATURE_KEY_MAP: Record<string, string> = {
   donations: "donations",
 };
 
-const items = [
-  { id: "bank", icon: Landmark, label: "Bank Transfer", desc: "Transfer to any bank account", gradient: "bg-gradient-to-b from-blue-500 to-indigo-600" },
-  { id: "loan", icon: HandCoins, label: "Loan", desc: "Quick personal loans", gradient: "bg-gradient-to-b from-amber-500 to-orange-600" },
-  { id: "insurance", icon: Shield, label: "Insurance", desc: "Protect what matters", gradient: "bg-gradient-to-b from-violet-500 to-purple-600" },
-  { id: "giftcards", icon: Gift, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "bg-gradient-to-b from-orange-400 to-red-500" },
-  { id: "careers", icon: Briefcase, label: "Careers", desc: "Join our team & grow", gradient: "bg-gradient-to-b from-slate-500 to-slate-700" },
-  { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals & cashback", gradient: "bg-gradient-to-b from-pink-500 to-rose-600" },
-  { id: "donations", icon: Heart, label: "Donations", desc: "Support causes you care about", gradient: "bg-gradient-to-b from-red-500 to-rose-700" },
+const items: { id: string; icon: any; labelKey: TranslationKey; descKey: TranslationKey; gradient: string }[] = [
+  { id: "bank", icon: Landmark, labelKey: "msBankLabel", descKey: "msBankDesc", gradient: "bg-gradient-to-b from-blue-500 to-indigo-600" },
+  { id: "loan", icon: HandCoins, labelKey: "msLoanLabel", descKey: "msLoanDesc", gradient: "bg-gradient-to-b from-amber-500 to-orange-600" },
+  { id: "insurance", icon: Shield, labelKey: "msInsuranceLabel", descKey: "msInsuranceDesc", gradient: "bg-gradient-to-b from-violet-500 to-purple-600" },
+  { id: "giftcards", icon: Gift, labelKey: "msGiftLabel", descKey: "msGiftDesc", gradient: "bg-gradient-to-b from-orange-400 to-red-500" },
+  { id: "careers", icon: Briefcase, labelKey: "msCareersLabel", descKey: "msCareersDesc", gradient: "bg-gradient-to-b from-slate-500 to-slate-700" },
+  { id: "coupons", icon: Ticket, labelKey: "msCouponsLabel", descKey: "msCouponsDesc", gradient: "bg-gradient-to-b from-pink-500 to-rose-600" },
+  { id: "donations", icon: Heart, labelKey: "msDonationsLabel", descKey: "msDonationsDesc", gradient: "bg-gradient-to-b from-red-500 to-rose-700" },
 ];
 
 const MoreSheet = ({ open, onClose, onBankTransfer }: MoreSheetProps) => {
   const navigate = useNavigate();
   const { isHidden } = useGlobalToggles();
+  const { t } = useI18n();
 
   const visibleItems = useMemo(
     () => items.filter(item => {
@@ -54,7 +56,7 @@ const MoreSheet = ({ open, onClose, onBankTransfer }: MoreSheetProps) => {
       else if (id === "loan") navigate("/loan");
       else if (id === "insurance") navigate("/insurance");
       else if (id === "giftcards") navigate("/giftcards");
-      else toast.info("Coming soon!");
+      else toast.info(t("msComingSoon"));
     }, 200);
   };
 
@@ -77,7 +79,7 @@ const MoreSheet = ({ open, onClose, onBankTransfer }: MoreSheetProps) => {
             className="fixed inset-x-0 bottom-0 z-50 max-w-md mx-auto bg-background rounded-t-3xl border-t border-border shadow-elevated"
           >
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
-              <h2 className="text-lg font-extrabold text-foreground">More Services</h2>
+              <h2 className="text-lg font-extrabold text-foreground">{t("msTitle")}</h2>
               <button onClick={onClose} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
                 <X size={18} className="text-muted-foreground" />
               </button>
@@ -98,9 +100,9 @@ const MoreSheet = ({ open, onClose, onBankTransfer }: MoreSheetProps) => {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center justify-center gap-1.5">
-                      <p className="text-sm font-bold text-foreground">{item.label}</p>
+                      <p className="text-sm font-bold text-foreground">{t(item.labelKey)}</p>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{item.desc}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{t(item.descKey)}</p>
                   </div>
                 </motion.button>
               ))}

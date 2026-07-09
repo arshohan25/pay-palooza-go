@@ -2416,6 +2416,24 @@ const translations = {
   sdPay: { en: "Pay", bn: "পে" },
   sdCloseActions: { en: "Close actions", bn: "অ্যাকশন বন্ধ করুন" },
   sdQuickActions: { en: "Quick actions", bn: "দ্রুত অ্যাকশন" },
+
+  // MoreSheet
+  msTitle: { en: "More Services", bn: "আরও সেবা" },
+  msComingSoon: { en: "Coming soon!", bn: "শীঘ্রই আসছে!" },
+  msBankLabel: { en: "Bank Transfer", bn: "ব্যাংক ট্রান্সফার" },
+  msBankDesc: { en: "Transfer to any bank account", bn: "যেকোনো ব্যাংক অ্যাকাউন্টে ট্রান্সফার" },
+  msLoanLabel: { en: "Loan", bn: "ঋণ" },
+  msLoanDesc: { en: "Quick personal loans", bn: "দ্রুত ব্যক্তিগত ঋণ" },
+  msInsuranceLabel: { en: "Insurance", bn: "বীমা" },
+  msInsuranceDesc: { en: "Protect what matters", bn: "যা গুরুত্বপূর্ণ তা সুরক্ষিত করুন" },
+  msGiftLabel: { en: "Gift Cards", bn: "গিফট কার্ড" },
+  msGiftDesc: { en: "Send & redeem gifts", bn: "উপহার পাঠান ও রিডিম করুন" },
+  msCareersLabel: { en: "Careers", bn: "ক্যারিয়ার" },
+  msCareersDesc: { en: "Join our team & grow", bn: "আমাদের দলে যোগ দিন ও এগিয়ে যান" },
+  msCouponsLabel: { en: "Coupons & Offers", bn: "কুপন ও অফার" },
+  msCouponsDesc: { en: "Exclusive deals & cashback", bn: "বিশেষ ডিল ও ক্যাশব্যাক" },
+  msDonationsLabel: { en: "Donations", bn: "দান" },
+  msDonationsDesc: { en: "Support causes you care about", bn: "যে বিষয়গুলো আপনার কাছে গুরুত্বপূর্ণ তা সমর্থন করুন" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
