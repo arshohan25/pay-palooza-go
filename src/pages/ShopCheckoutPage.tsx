@@ -18,6 +18,7 @@ import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ProductImage from "@/components/ProductImage";
+import { useI18n } from "@/lib/i18n";
 
 interface Address {
   id: string;
