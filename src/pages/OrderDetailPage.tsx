@@ -173,7 +173,7 @@ export default function OrderDetailPage() {
   const isShipped = ["shipped", "out_for_delivery", "delivered"].includes(order.status);
   const canCancel = order.status === "processing";
   const canReturn = isDelivered && !existingReturn;
-  const escrow = ESCROW_LABELS[order.escrow_status] ?? null;
+  const escrow = ESCROW_LABEL_KEYS[order.escrow_status] ?? null;
   const orderItems = items.length > 0 ? items : (Array.isArray(order.items) ? order.items : []);
   const subtotal = orderItems.reduce((s: number, i: any) => s + (Number(i.price) * Number(i.qty || i.quantity || 1)), 0);
   const couponDiscount = Number(order.coupon_discount) || 0;
