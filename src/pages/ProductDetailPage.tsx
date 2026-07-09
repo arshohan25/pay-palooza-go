@@ -279,7 +279,7 @@ export default function ProductDetailPage() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <h1 className="flex-1 min-w-0 text-[15px] font-semibold text-primary-foreground truncate">
-                {product?.name ?? "Product"}
+                {product?.name ?? t("pdpProduct")}
               </h1>
               <div className="flex items-center gap-1">
                 <motion.div whileTap={{ scale: 0.75 }} className="relative">
