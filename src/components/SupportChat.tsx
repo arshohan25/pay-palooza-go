@@ -427,7 +427,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
                     <button
                       onClick={() => deleteMessage(msg.id)}
                       className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-destructive/10"
-                      title="Delete message"
+                      title={t("scDeleteMsg")}
                     >
                       <Trash2 size={12} className="text-destructive" />
                     </button>
