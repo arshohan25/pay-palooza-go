@@ -403,13 +403,13 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_rearrange_actions") && <ToggleRow
             icon={GripVertical}
             iconClass="gradient-send"
-            label="Rearrange Quick Actions"
-            sub="Enable drag & drop to customize icon order"
+            label={t("rearrangeQA")}
+            sub={t("rearrangeQASub")}
             checked={dndEnabled}
             onCheckedChange={(v) => {
               setDndEnabled(v);
               localStorage.setItem("mfs_dnd_enabled", String(v));
-              toast.success(v ? "Drag & drop enabled" : "Drag & drop disabled");
+              toast.success(v ? t("dndEnabled") : t("dndDisabled"));
             }}
           />}
           {!isDisabled("account_onboarding") && <MenuRow
