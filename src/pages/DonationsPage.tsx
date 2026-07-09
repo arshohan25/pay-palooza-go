@@ -595,7 +595,7 @@ const DonationsPage = () => {
                         {cause ? <cause.icon size={18} /> : (r.cause_icon || "❤️")}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{r.cause_name}</p>
+                        <p className="text-sm font-semibold text-foreground truncate">{localizeCauseName(r.cause_name)}</p>
                         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                           <CalendarClock size={11} />
                           <span>{r.frequency === "weekly" ? t("donWeekly") : t("donMonthly")}</span>
