@@ -489,8 +489,8 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
               className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
             >
               <div className="px-4 pt-4 pb-2">
-                <p className="text-sm font-bold text-foreground">Budget vs Actual</p>
-                <p className="text-[11px] text-muted-foreground">This month's spending against your limits</p>
+                <p className="text-sm font-bold text-foreground">{t("siBudgetVsActual")}</p>
+                <p className="text-[11px] text-muted-foreground">{t("siBudgetVsActualSub")}</p>
               </div>
               <div className="px-1 pb-4" style={{ height: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
