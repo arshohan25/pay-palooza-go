@@ -817,6 +817,7 @@ const ChatView = ({
   conversationId, userId, userName,
   isPending, isInitiator, onAccept, onDecline, onBlockReport, onSendMoney,
 }: ChatViewProps) => {
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const [showQuick, setShowQuick] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
