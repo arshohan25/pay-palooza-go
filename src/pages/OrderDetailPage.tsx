@@ -404,7 +404,7 @@ export default function OrderDetailPage() {
       <Sheet open={!!reviewSheet} onOpenChange={(o) => !o && setReviewSheet(null)}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Write a Review</SheetTitle>
+            <SheetTitle>{t("wrWriteReview")}</SheetTitle>
           </SheetHeader>
           {reviewSheet && (
             <WriteReviewForm
