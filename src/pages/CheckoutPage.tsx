@@ -339,18 +339,18 @@ const CheckoutPage = () => {
         body: JSON.stringify({ phone: cleanPhone, purpose: "payment" }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to send OTP");
+      if (!res.ok) throw new Error(result.error || t("cpFailedSendOtp"));
 
       if (result.dev_otp) setDevOtp(result.dev_otp);
       setResendCooldown(60);
       setStep("otp");
       haptics.success();
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to send OTP");
+      setErrorMsg(err.message || t("cpFailedSendOtp"));
       setStep("phone");
       haptics.error();
     }
-  }, [phone]);
+  }, [phone, t]);
 
   /* ── Transition to PIN step on OTP complete ────────────────── */
   useEffect(() => {
