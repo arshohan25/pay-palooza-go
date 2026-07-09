@@ -649,7 +649,6 @@ const translations = {
   referShareTitle: { en: "EasyPay Referral", bn: "EasyPay রেফারেল" },
   referShareText: { en: "Use my referral code {code} on EasyPay and earn up to ৳{reward}! Sign up here: {link}", bn: "EasyPay-তে আমার রেফারেল কোড {code} ব্যবহার করে ৳{reward} পর্যন্ত আয় করুন! এখানে সাইন আপ করুন: {link}" },
   referUserFallback: { en: "User", bn: "ব্যবহারকারী" },
-  active: { en: "Active", bn: "সক্রিয়" },
 
   // ─── Savings Flow ───
   mySavings: { en: "My Savings", bn: "আমার সঞ্চয়" },
