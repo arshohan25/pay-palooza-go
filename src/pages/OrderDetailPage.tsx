@@ -16,37 +16,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ExternalLink as SafeExternalLink } from "@/components/ExternalLink";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import { useOrderNotifications } from "@/hooks/use-order-notifications";
 import WriteReviewForm from "@/components/shop/WriteReviewForm";
 import { toast } from "sonner";
 import ProductImage from "@/components/ProductImage";
 
 const STATUS_STEPS = [
-  { key: "processing", label: "Order Placed", icon: Clock, color: "hsl(36 100% 50%)" },
-  { key: "confirmed", label: "Confirmed", icon: CircleCheck, color: "hsl(291 64% 42%)" },
-  { key: "shipped", label: "Shipped", icon: Package, color: "hsl(207 90% 54%)" },
-  { key: "out_for_delivery", label: "Out for Delivery", icon: Truck, color: "hsl(14 100% 57%)" },
-  { key: "delivered", label: "Delivered", icon: CircleCheck, color: "hsl(122 39% 49%)" },
-];
+  { key: "processing", labelKey: "orderPlacedTimeline", icon: Clock, color: "hsl(36 100% 50%)" },
+  { key: "confirmed", labelKey: "confirmed2", icon: CircleCheck, color: "hsl(291 64% 42%)" },
+  { key: "shipped", labelKey: "shipped", icon: Package, color: "hsl(207 90% 54%)" },
+  { key: "out_for_delivery", labelKey: "outForDelivery", icon: Truck, color: "hsl(14 100% 57%)" },
+  { key: "delivered", labelKey: "delivered", icon: CircleCheck, color: "hsl(122 39% 49%)" },
+] as const;
 
-const ESCROW_LABELS: Record<string, { label: string; color: string }> = {
-  held: { label: "Funds Held in Escrow", color: "text-amber-600" },
-  released: { label: "Funds Released to Vendor", color: "text-emerald-600" },
-  refunded: { label: "Refunded to Wallet", color: "text-blue-600" },
+const ESCROW_LABEL_KEYS: Record<string, { key: string; color: string }> = {
+  held: { key: "odFundsHeld", color: "text-amber-600" },
+  released: { key: "odFundsReleased", color: "text-emerald-600" },
+  refunded: { key: "odRefundedToWallet", color: "text-blue-600" },
 };
 
-const RETURN_REASONS = [
-  "Defective or damaged product",
-  "Wrong item received",
-  "Product not as described",
-  "Changed my mind",
-  "Quality not satisfactory",
-  "Other",
-];
+const RETURN_REASON_KEYS = [
+  "odReturnDefective",
+  "odReturnWrong",
+  "odReturnNotAsDescribed",
+  "odReturnChangedMind",
+  "odReturnQuality",
+  "odReturnOther",
+] as const;
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [order, setOrder] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
@@ -108,9 +110,9 @@ export default function OrderDetailPage() {
       const { error } = await supabase.from("orders").update({ status: "cancelled" } as any).eq("id", order.id).eq("user_id", user!.id);
       if (error) throw error;
       setOrder((prev: any) => ({ ...prev, status: "cancelled" }));
-      toast.success("Order cancelled · Refund will be processed within 24 hours");
+      toast.success(t("odCancelSuccess"));
     } catch (e: any) {
-      toast.error(e.message || "Failed to cancel order");
+      toast.error(e.message || t("odCancelFailed"));
     }
     setCancelling(false);
   };
@@ -132,9 +134,9 @@ export default function OrderDetailPage() {
       setReturnSheet(false);
       setReturnReason("");
       setReturnDetails("");
-      toast.success("Return request submitted");
+      toast.success(t("odReturnSubmitted"));
     } catch (e: any) {
-      toast.error(e.message || "Failed to submit return request");
+      toast.error(e.message || t("odReturnSubmitFailed"));
     }
     setSubmittingReturn(false);
   };
@@ -159,8 +161,8 @@ export default function OrderDetailPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Package className="w-16 h-16 text-muted-foreground/30" />
-        <p className="text-muted-foreground">{!user ? "Please log in to view this order" : "Order not found"}</p>
-        <Button variant="outline" onClick={() => navigate(!user ? "/auth" : "/orders")}>{!user ? "Log In" : "Back to Orders"}</Button>
+        <p className="text-muted-foreground">{!user ? t("odPleaseLogInOrder") : t("odOrderNotFound")}</p>
+        <Button variant="outline" onClick={() => navigate(!user ? "/auth" : "/orders")}>{!user ? t("coLogIn") : t("odBackToOrders")}</Button>
       </div>
     );
   }
@@ -171,7 +173,7 @@ export default function OrderDetailPage() {
   const isShipped = ["shipped", "out_for_delivery", "delivered"].includes(order.status);
   const canCancel = order.status === "processing";
   const canReturn = isDelivered && !existingReturn;
-  const escrow = ESCROW_LABELS[order.escrow_status] ?? null;
+  const escrow = ESCROW_LABEL_KEYS[order.escrow_status] ?? null;
   const orderItems = items.length > 0 ? items : (Array.isArray(order.items) ? order.items : []);
   const subtotal = orderItems.reduce((s: number, i: any) => s + (Number(i.price) * Number(i.qty || i.quantity || 1)), 0);
   const couponDiscount = Number(order.coupon_discount) || 0;
@@ -196,7 +198,7 @@ export default function OrderDetailPage() {
           </p>
         </div>
         <Badge variant="outline" className={`shrink-0 border-white/30 ${isCancelled ? "bg-destructive/20 text-destructive-foreground" : "bg-white/15 text-primary-foreground"}`}>
-          {isCancelled ? "Cancelled" : STATUS_STEPS[currentStepIdx]?.label ?? order.status}
+          {isCancelled ? t("cancelled") : (STATUS_STEPS[currentStepIdx]?.labelKey ? t(STATUS_STEPS[currentStepIdx].labelKey as any) : order.status)}
         </Badge>
       </div>
 
@@ -204,7 +206,7 @@ export default function OrderDetailPage() {
         {/* Status Timeline */}
         {!isCancelled && (
           <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Order Tracking</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t("odOrderTracking")}</p>
             <div className="space-y-0">
               {STATUS_STEPS.map((step, i) => {
                 const done = i <= currentStepIdx;
@@ -230,7 +232,7 @@ export default function OrderDetailPage() {
                       )}
                     </div>
                     <div className="pb-4 flex-1">
-                      <p className={`text-[13px] font-bold ${done ? "text-foreground" : "text-muted-foreground"}`}>{step.label}</p>
+                      <p className={`text-[13px] font-bold ${done ? "text-foreground" : "text-muted-foreground"}`}>{t(step.labelKey as any)}</p>
                       {done && i === 0 && (
                         <p className="text-[11px] text-muted-foreground mt-0.5">
                           {new Date(order.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
@@ -245,10 +247,10 @@ export default function OrderDetailPage() {
             {isShipped && order.tracking_number && (
               <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-xl px-3 py-2">
                 <Truck className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-muted-foreground">Tracking: <span className="font-semibold text-foreground">{order.tracking_number}</span></span>
+                <span className="text-muted-foreground">{t("odTracking")}: <span className="font-semibold text-foreground">{order.tracking_number}</span></span>
                 {trackingUrl && (
                   <SafeExternalLink href={trackingUrl} className="ml-auto text-primary flex items-center gap-1 font-semibold hover:underline">
-                    Track <ExternalLink className="w-3 h-3" />
+                    {t("odTrack")} <ExternalLink className="w-3 h-3" />
                   </SafeExternalLink>
                 )}
               </div>
@@ -256,7 +258,7 @@ export default function OrderDetailPage() {
             {order.estimated_delivery && !isDelivered && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2">
                 <Truck className="w-3.5 h-3.5" />
-                <span>Estimated delivery: {order.estimated_delivery}</span>
+                <span>{t("odEstimatedDelivery")}: {order.estimated_delivery}</span>
               </div>
             )}
           </div>
@@ -267,8 +269,8 @@ export default function OrderDetailPage() {
           <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4 flex items-center gap-3">
             <XCircle className="w-8 h-8 text-destructive shrink-0" />
             <div>
-              <p className="text-sm font-bold text-destructive">Order Cancelled</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Refund will be processed within 24 hours</p>
+              <p className="text-sm font-bold text-destructive">{t("odOrderCancelled")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("odRefund24h")}</p>
             </div>
           </div>
         )}
@@ -282,7 +284,7 @@ export default function OrderDetailPage() {
           }`}>
             <RotateCcw className="w-6 h-6 text-muted-foreground shrink-0" />
             <div>
-              <p className="text-sm font-bold text-foreground">Return {existingReturn.status === "approved" ? "Approved" : existingReturn.status === "rejected" ? "Rejected" : "Requested"}</p>
+              <p className="text-sm font-bold text-foreground">{existingReturn.status === "approved" ? t("odReturnApproved") : existingReturn.status === "rejected" ? t("odReturnRejected") : t("odReturnRequested")}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{existingReturn.reason}</p>
             </div>
             <Badge variant="outline" className="shrink-0 capitalize">{existingReturn.status}</Badge>
@@ -293,14 +295,14 @@ export default function OrderDetailPage() {
         {escrow && (
           <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2.5">
             <Shield className="w-4 h-4 text-muted-foreground" />
-            <span className={`text-xs font-semibold ${escrow.color}`}>{escrow.label}</span>
+            <span className={`text-xs font-semibold ${escrow.color}`}>{t(escrow.key as any)}</span>
           </div>
         )}
 
         {/* Items */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            Items ({orderItems.length})
+            {t("odItems")} ({orderItems.length})
           </p>
           {orderItems.map((item: any, i: number) => (
             <div key={item.id || i} className="flex items-center gap-3">
@@ -310,7 +312,7 @@ export default function OrderDetailPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-bold text-foreground truncate">{item.name || item.product_name}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Qty: {item.qty || item.quantity || 1}
+                  {t("odQty")}: {item.qty || item.quantity || 1}
                   {item.vendor_name && <> · <span className="text-primary">{item.vendor_name}</span></>}
                 </p>
               </div>
@@ -323,38 +325,38 @@ export default function OrderDetailPage() {
 
         {/* Payment Summary */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Payment Summary</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t("odPaymentSummary")}</p>
           <div className="flex justify-between text-[13px]">
-            <span className="text-muted-foreground">Subtotal</span>
+            <span className="text-muted-foreground">{t("odSubtotal")}</span>
             <span className="font-semibold text-foreground">৳{subtotal.toLocaleString()}</span>
           </div>
           {couponDiscount > 0 && (
             <div className="flex justify-between text-[13px]">
-              <span className="text-primary">Coupon Discount</span>
+              <span className="text-primary">{t("odCouponDiscount")}</span>
               <span className="font-semibold text-primary">-৳{couponDiscount.toLocaleString()}</span>
             </div>
           )}
           <div className="flex justify-between text-[13px]">
-            <span className="text-muted-foreground">Delivery</span>
-            <span className="font-semibold text-foreground">{deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : "Free"}</span>
+            <span className="text-muted-foreground">{t("odDelivery")}</span>
+            <span className="font-semibold text-foreground">{deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : t("odFree")}</span>
           </div>
           <div className="h-px bg-border my-1" />
           <div className="flex justify-between text-[15px] font-bold">
-            <span className="text-foreground">Total</span>
+            <span className="text-foreground">{t("odTotal")}</span>
             <span className="text-primary">৳{Number(order.total).toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
             {order.payment_method === "wallet" ? (
-              <><Wallet className="w-3.5 h-3.5" /> Paid via EasyPay Wallet</>
+              <><Wallet className="w-3.5 h-3.5" /> {t("odPaidViaWallet")}</>
             ) : (
-              <><CreditCard className="w-3.5 h-3.5" /> Paid via Card</>
+              <><CreditCard className="w-3.5 h-3.5" /> {t("odPaidViaCard")}</>
             )}
           </div>
         </div>
 
         {/* Shipping Info */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Shipping Details</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t("odShippingDetails")}</p>
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
             <div>
@@ -368,10 +370,10 @@ export default function OrderDetailPage() {
         {/* Invoice Actions */}
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1 gap-2" onClick={() => downloadInvoice(order)}>
-            <Download className="w-4 h-4" /> Download Invoice
+            <Download className="w-4 h-4" /> {t("odDownloadInvoice")}
           </Button>
           <Button variant="outline" className="flex-1 gap-2" onClick={() => printInvoice(order)}>
-            <Printer className="w-4 h-4" /> Print
+            <Printer className="w-4 h-4" /> {t("odPrint")}
           </Button>
         </div>
 
@@ -380,18 +382,18 @@ export default function OrderDetailPage() {
           {canCancel && (
             <Button variant="destructive" className="w-full" onClick={handleCancel} disabled={cancelling}>
               {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Ban className="w-4 h-4 mr-2" />}
-              Cancel Order
+              {t("odCancelOrder")}
             </Button>
           )}
           <div className="flex gap-3">
             {isDelivered && orderItems.length > 0 && (
               <Button variant="outline" className="flex-1" onClick={() => setReviewSheet({ productId: orderItems[0].product_id || orderItems[0].id, orderId: order.id })}>
-                <Star className="w-4 h-4 mr-2" /> Rate & Review
+                <Star className="w-4 h-4 mr-2" /> {t("coRateReview")}
               </Button>
             )}
             {canReturn && (
               <Button variant="outline" className="flex-1" onClick={() => setReturnSheet(true)}>
-                <RotateCcw className="w-4 h-4 mr-2" /> Request Return
+                <RotateCcw className="w-4 h-4 mr-2" /> {t("odRequestReturn")}
               </Button>
             )}
           </div>
@@ -402,7 +404,7 @@ export default function OrderDetailPage() {
       <Sheet open={!!reviewSheet} onOpenChange={(o) => !o && setReviewSheet(null)}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Write a Review</SheetTitle>
+            <SheetTitle>{t("wrWriteReview")}</SheetTitle>
           </SheetHeader>
           {reviewSheet && (
             <WriteReviewForm
@@ -418,26 +420,26 @@ export default function OrderDetailPage() {
       <Sheet open={returnSheet} onOpenChange={setReturnSheet}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Request a Return</SheetTitle>
+            <SheetTitle>{t("odRequestReturnTitle")}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 pt-4">
             <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-2">Reason for return</p>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">{t("odReasonForReturn")}</p>
               <Select value={returnReason} onValueChange={setReturnReason}>
-                <SelectTrigger><SelectValue placeholder="Select a reason..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("odSelectReason")} /></SelectTrigger>
                 <SelectContent>
-                  {RETURN_REASONS.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  {RETURN_REASON_KEYS.map((k) => (
+                    <SelectItem key={k} value={t(k as any)}>{t(k as any)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-2">Additional details (optional)</p>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">{t("odAdditionalDetails")}</p>
               <Textarea
                 value={returnDetails}
                 onChange={(e) => setReturnDetails(e.target.value)}
-                placeholder="Describe the issue..."
+                placeholder={t("odDescribeIssue")}
                 rows={3}
               />
             </div>
@@ -447,7 +449,7 @@ export default function OrderDetailPage() {
               onClick={handleReturnRequest}
             >
               {submittingReturn ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RotateCcw className="w-4 h-4 mr-2" />}
-              Submit Return Request
+              {t("odSubmitReturn")}
             </Button>
           </div>
         </SheetContent>
