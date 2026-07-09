@@ -134,9 +134,9 @@ export default function OrderDetailPage() {
       setReturnSheet(false);
       setReturnReason("");
       setReturnDetails("");
-      toast.success("Return request submitted");
+      toast.success(t("odReturnSubmitted"));
     } catch (e: any) {
-      toast.error(e.message || "Failed to submit return request");
+      toast.error(e.message || t("odReturnSubmitFailed"));
     }
     setSubmittingReturn(false);
   };
