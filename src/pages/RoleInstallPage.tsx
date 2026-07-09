@@ -182,7 +182,7 @@ const RoleInstallPage = () => {
                 className={`w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r ${config.color} text-white shadow-lg`}
               >
                 <Download size={18} className="mr-2" />
-                Install {config.shortName}
+                {t("ripInstall")} {config.shortName}
               </Button>
             </motion.div>
           ) : (
