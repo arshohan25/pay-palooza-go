@@ -50,7 +50,7 @@ export default function CustomerOrdersPage() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <Package className="w-5 h-5" /> My Orders
+          <Package className="w-5 h-5" /> {t("myOrders")}
         </h1>
       </div>
 
