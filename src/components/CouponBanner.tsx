@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Ticket, X } from "lucide-react";
 import type { PendingCoupon } from "@/lib/couponStore";
+import { useI18n } from "@/lib/i18n";
 
 interface CouponBannerProps {
   coupon: PendingCoupon;
@@ -8,7 +9,9 @@ interface CouponBannerProps {
   onRemove: () => void;
 }
 
-const CouponBanner = ({ coupon, discount, onRemove }: CouponBannerProps) => (
+const CouponBanner = ({ coupon, discount, onRemove }: CouponBannerProps) => {
+  const { t } = useI18n();
+  return (
   <motion.div
     initial={{ opacity: 0, y: -8 }}
     animate={{ opacity: 1, y: 0 }}
@@ -24,13 +27,13 @@ const CouponBanner = ({ coupon, discount, onRemove }: CouponBannerProps) => (
       <p className="text-[12px] font-semibold text-foreground leading-none tracking-tight">
         {coupon.code}
         {discount > 0 && (
-          <span className="text-primary ml-1.5 font-medium">−৳{discount.toFixed(0)} off</span>
+          <span className="text-primary ml-1.5 font-medium">−৳{discount.toFixed(0)} {t("cbOff")}</span>
         )}
       </p>
       <p className="text-[10.5px] text-muted-foreground mt-0.5 leading-none">
         {coupon.discount_type === "percentage"
-          ? `${coupon.discount_value}%${coupon.max_discount ? ` up to ৳${coupon.max_discount}` : ""}`
-          : `৳${coupon.discount_value} flat`}
+          ? `${coupon.discount_value}%${coupon.max_discount ? ` ${t("cbUpTo")} ৳${coupon.max_discount}` : ""}`
+          : `৳${coupon.discount_value} ${t("cbFlat")}`}
       </p>
     </div>
 
@@ -41,6 +44,7 @@ const CouponBanner = ({ coupon, discount, onRemove }: CouponBannerProps) => (
       <X size={11} className="text-muted-foreground group-hover:text-destructive transition-colors" />
     </button>
   </motion.div>
-);
+  );
+};
 
 export default CouponBanner;
