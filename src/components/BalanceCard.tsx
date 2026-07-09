@@ -122,7 +122,7 @@ const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
                 whileTap={{ scale: 0.88 }}
                 onClick={() => setShowQr(true)}
                 className="glass-hero w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
-                title="Show QR Code"
+                title={t("showQrCode")}
               >
                 <QrCode size={13} />
               </motion.button>
@@ -130,7 +130,7 @@ const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
                 whileTap={{ scale: 0.88 }}
                 onClick={handleCopyId}
                 className="glass-hero w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
-                title="Copy Wallet ID"
+                title={t("copyWalletId")}
               >
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.span
