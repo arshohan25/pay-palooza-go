@@ -418,11 +418,11 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (id === "bank") return onBankTransfer();
     if (id === "shop") return onShop();
     if (id === "more") { haptics.light(); return setExpanded(prev => !prev); }
-    toast.info(`${label} coming soon!`);
+    toast.info(t("qaFeatureComingSoon").replace("{label}", label));
   };
 
   const handleMoreService = (id: string, soon?: boolean) => {
-    if (soon) { toast.info("Coming soon!"); return; }
+    if (soon) { toast.info(t("qaComingSoon")); return; }
     if (id === "refer") onRefer();
     else if (id === "donations") navigate("/donations");
     else if (id === "coupons") navigate("/coupons");
