@@ -24,6 +24,7 @@ import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type SortOption = "popular" | "price_low" | "price_high" | "newest" | "rating";
@@ -42,6 +43,7 @@ const Section = ({ children, delay = 0, className }: { children: React.ReactNode
 
 /* ── Mini product card for trending row ── */
 function FlashCard({ product, onNavigate }: { product: ShopProduct; onNavigate: (path: string) => void }) {
+  const { t } = useI18n();
   const discount = product.original_price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
@@ -73,7 +75,7 @@ function FlashCard({ product, onNavigate }: { product: ShopProduct; onNavigate: 
         {product.stock > 0 && product.stock <= 50 && (
           <div className="space-y-0.5 pt-0.5">
             <Progress value={stockPercent} className="h-1 bg-muted/60 [&>div]:bg-destructive/70" />
-            <p className="text-[9px] text-muted-foreground">Selling fast</p>
+            <p className="text-[9px] text-muted-foreground">{t("spSellingFast")}</p>
           </div>
         )}
       </div>
@@ -151,6 +153,7 @@ function ShopPromoBanner({ banner, onNavigate }: { banner: any; onNavigate: (pat
 
 /* ── Flash Sale Card ── */
 function FlashSaleCard({ sale, onNavigate }: { sale: any; onNavigate: (path: string) => void }) {
+  const { t } = useI18n();
   const prod = sale.merchant_products;
   const { h, m, s, expired } = useCountdown(sale.ends_at);
   if (expired) return null;
@@ -169,7 +172,7 @@ function FlashSaleCard({ sale, onNavigate }: { sale: any; onNavigate: (path: str
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-bold text-destructive uppercase tracking-wide">⚡ Flash Sale</p>
+        <p className="text-[10px] font-bold text-destructive uppercase tracking-wide">{t("spFlashSale")}</p>
         <p className="text-sm font-semibold text-foreground truncate">{prod?.name}</p>
         <div className="flex items-baseline gap-2 mt-0.5">
           <span className="text-base font-extrabold text-destructive">৳{sale.sale_price}</span>
@@ -177,7 +180,7 @@ function FlashSaleCard({ sale, onNavigate }: { sale: any; onNavigate: (path: str
         </div>
       </div>
       <div className="text-right shrink-0">
-        <p className="text-[9px] text-muted-foreground">Ends in</p>
+        <p className="text-[9px] text-muted-foreground">{t("spEndsIn")}</p>
         <p className="text-sm font-bold text-foreground tabular-nums">
           {h}h {m}m {s}s
         </p>
@@ -188,6 +191,7 @@ function FlashSaleCard({ sale, onNavigate }: { sale: any; onNavigate: (path: str
 
 export default function ShopPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { user } = useAuth();
   const { items, addToCart, updateQty, removeFromCart, count } = useCart();
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
@@ -228,7 +232,7 @@ export default function ShopPage() {
         const storeEntry = storeMap.get(p.merchant_id) as { store_name?: string; slug?: string } | undefined;
         return {
           ...p,
-          vendor_name: storeEntry?.store_name || (p.merchants as any)?.business_name || "Store",
+          vendor_name: storeEntry?.store_name || (p.merchants as any)?.business_name || t("spStore"),
           vendor_slug: storeEntry?.slug,
         };
       }));
@@ -410,9 +414,9 @@ export default function ShopPage() {
         {/* Trust Bar */}
         <div className="flex items-center justify-center gap-6 py-1.5 px-4 border-t border-primary-foreground/15">
           {[
-            { icon: ShieldCheck, label: "Safe Payment" },
-            { icon: Truck, label: "Fast Delivery" },
-            { icon: RotateCcw, label: "Free Return" },
+            { icon: ShieldCheck, label: t("spSafePayment") },
+            { icon: Truck, label: t("spFastDelivery") },
+            { icon: RotateCcw, label: t("spFreeReturn") },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="flex items-center gap-1">
               <Icon className="w-3 h-3 text-primary-foreground/85" />
@@ -455,7 +459,7 @@ export default function ShopPage() {
           <div className="flex items-center justify-between px-4 mb-3">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-primary" />
-              New Arrivals
+              {t("spNewArrivals")}
             </h2>
           </div>
           <ScrollArea className="w-full whitespace-nowrap">
@@ -474,10 +478,10 @@ export default function ShopPage() {
           <div className="flex items-center justify-between px-4 mb-3">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
               <Flame className="w-4 h-4 text-destructive" />
-              Trending Now
+              {t("spTrendingNow")}
             </h2>
             <button className="text-[10px] font-medium text-primary" onClick={() => setSortBy("popular")}>
-              See All
+              {t("spSeeAll")}
             </button>
           </div>
           <ScrollArea className="w-full whitespace-nowrap">
@@ -494,7 +498,7 @@ export default function ShopPage() {
       {/* ── Sort & Filter Bar ── */}
       <Section delay={0.25} className="px-4 pt-5">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-bold text-foreground">All Products</h2>
+          <h2 className="text-sm font-bold text-foreground">{t("spAllProducts")}</h2>
           <div className="flex items-center gap-1">
             <FilterDrawer
               filters={filters}
@@ -507,17 +511,17 @@ export default function ShopPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="popular">Popular</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="price_low">Price: Low → High</SelectItem>
-                <SelectItem value="price_high">Price: High → Low</SelectItem>
-                <SelectItem value="rating">Top Rated</SelectItem>
+                <SelectItem value="popular">{t("spPopular")}</SelectItem>
+                <SelectItem value="newest">{t("spNewest")}</SelectItem>
+                <SelectItem value="price_low">{t("spPriceLow")}</SelectItem>
+                <SelectItem value="price_high">{t("spPriceHigh")}</SelectItem>
+                <SelectItem value="rating">{t("spTopRated")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
         <p className="text-[10px] text-muted-foreground mb-3">
-          {filtered.length} product{filtered.length !== 1 ? "s" : ""}
+          {filtered.length} {filtered.length !== 1 ? t("spProducts") : t("spProduct")}
         </p>
       </Section>
 
@@ -532,7 +536,7 @@ export default function ShopPage() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
             <Store className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No products found</p>
+            <p className="text-sm text-muted-foreground">{t("spNoProductsFound")}</p>
           </div>
         ) : (
           <motion.div
@@ -564,7 +568,7 @@ export default function ShopPage() {
         {/* AI Recommendations */}
         {recommendedProducts.length > 0 && !search.trim() && selectedCategory === "All" && (
           <div className="mt-8 space-y-3">
-            <h2 className="text-sm font-bold text-foreground">Recommended For You</h2>
+            <h2 className="text-sm font-bold text-foreground">{t("spRecommendedForYou")}</h2>
             <div className="grid grid-cols-2 gap-2.5">
               {recommendedProducts.map((product) => (
                 <ProductCard
@@ -593,7 +597,7 @@ export default function ShopPage() {
           <div className="mt-8 space-y-3">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-muted-foreground" />
-              Recently Viewed
+              {t("spRecentlyViewed")}
             </h2>
             <ScrollArea className="w-full whitespace-nowrap">
               <div className="flex gap-2.5 pb-1">
