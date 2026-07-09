@@ -243,7 +243,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
 
       // Top recipients (current month outgoing)
       if (mk === currentMonthKey && OUTGOING_TYPES.includes(tx.type)) {
-        const key = tx.recipient_name || tx.recipient_phone || "Unknown";
+        const key = tx.recipient_name || tx.recipient_phone || t("siUnknown");
         if (!recipientAccum[key]) recipientAccum[key] = { amount: 0, type: tx.type };
         recipientAccum[key].amount += amt;
       }
