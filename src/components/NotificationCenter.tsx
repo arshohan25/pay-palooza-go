@@ -312,12 +312,12 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                               <p className="text-[10px] text-muted-foreground/60">{timeAgo}</p>
                               {isRich && (
                                 <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
-                                  Tap for details
+                                  {t("ncTapForDetails")}
                                 </span>
                               )}
                               {fulfillment && meta?.order_id && (
                                 <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
-                                  View order →
+                                  {t("ncViewOrder")}
                                 </span>
                               )}
                             </div>
