@@ -642,7 +642,7 @@ const DonationsPage = () => {
                         {cause ? <cause.icon size={18} /> : (d.cause_icon || "❤️")}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{d.cause_name}</p>
+                        <p className="text-sm font-semibold text-foreground truncate">{localizeCauseName(d.cause_name)}</p>
                         <p className="text-[11px] text-muted-foreground">{format(new Date(d.created_at), "dd MMM yyyy, hh:mm a")}</p>
                       </div>
                       <p className="text-sm font-bold text-foreground tabular-nums">৳{d.amount}</p>
