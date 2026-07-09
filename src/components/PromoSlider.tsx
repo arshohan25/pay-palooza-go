@@ -114,6 +114,10 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
           {visibleBanners.map((b) => {
             const IconComp = (icons as any)[b.icon || "Gift"] || icons.Gift;
             const hasMedia = !!b.media_url;
+            const isFallback = b.id === "fallback-1";
+            const title = isFallback ? t("psFallbackTitle") : b.title;
+            const subtitle = isFallback ? t("psFallbackSubtitle") : b.subtitle;
+            const badge = isFallback ? t("psFallbackBadge") : b.badge_text;
             return (
               <div key={b.id} className="min-w-0 shrink-0 grow-0 basis-full">
                 <motion.div
