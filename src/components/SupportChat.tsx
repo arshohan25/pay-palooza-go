@@ -79,7 +79,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
     const cache: Record<string, string> = {};
     for (const msg of msgs) {
       if (msg.is_deleted) {
-        cache[msg.id] = "🗑️ This message was deleted";
+        cache[msg.id] = t("scMsgDeleted");
       } else {
         cache[msg.id] = await tryDecryptMessage(msg.content, msg.is_encrypted, cryptoKeyRef.current);
       }
