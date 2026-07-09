@@ -271,10 +271,10 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                         <BellOff size={28} className="text-muted-foreground" />
                       </div>
                       <p className="font-bold text-foreground text-sm">
-                        {filter === "all" ? t("allCaughtUp") : "No matching notifications"}
+                        {filter === "all" ? t("allCaughtUp") : t("ncNoMatching")}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {filter === "all" ? t("noNotificationsRightNow") : "Try a different filter"}
+                        {filter === "all" ? t("noNotificationsRightNow") : t("ncTryDifferent")}
                       </p>
                     </motion.div>
                   ) : (
