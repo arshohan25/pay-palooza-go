@@ -309,7 +309,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
               {/* OCR results — multiple numbers found */}
               {ocrResults.length > 1 && !detected && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-3">
-                  <p className="text-white/70 text-[10px] uppercase tracking-wider mb-1">Numbers found</p>
+                  <p className="text-white/70 text-[10px] uppercase tracking-wider mb-1">{t("qrNumbersFound")}</p>
                   {ocrResults.map((r, i) => (
                     <button
                       key={i}
