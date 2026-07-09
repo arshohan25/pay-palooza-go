@@ -79,7 +79,7 @@ const MoreSheet = ({ open, onClose, onBankTransfer }: MoreSheetProps) => {
             className="fixed inset-x-0 bottom-0 z-50 max-w-md mx-auto bg-background rounded-t-3xl border-t border-border shadow-elevated"
           >
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
-              <h2 className="text-lg font-extrabold text-foreground">More Services</h2>
+              <h2 className="text-lg font-extrabold text-foreground">{t("msTitle")}</h2>
               <button onClick={onClose} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
                 <X size={18} className="text-muted-foreground" />
               </button>
