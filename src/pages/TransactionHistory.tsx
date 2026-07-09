@@ -870,6 +870,7 @@ const FeeBreakdownSummary = ({ entries, totalFees }: { entries: [string, number]
 
 // ─── Commission Breakdown Summary (collapsible, agent view) ───────────────
 const CommissionBreakdownSummary = ({ entries, totalCommission }: { entries: [string, number][]; totalCommission: number }) => {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <div className="mb-2">
