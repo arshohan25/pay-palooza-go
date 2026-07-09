@@ -177,7 +177,7 @@ const InsurancePage = () => {
               loading ? (
                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
               ) : policies.length === 0 ? (
-                <Card><CardContent className="p-6 text-center text-muted-foreground text-sm">No active policies</CardContent></Card>
+                <Card><CardContent className="p-6 text-center text-muted-foreground text-sm">{t("ipNoPolicies")}</CardContent></Card>
               ) : (
                 <div className="space-y-3">
                   {policies.map((p, i) => (
