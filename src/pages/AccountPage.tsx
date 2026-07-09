@@ -485,7 +485,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         <Section title={t("sectionSecurity")}>
           {!isDisabled("account_biometric") && <ToggleRow icon={Fingerprint} iconClass="gradient-send"    label={t("biometricLogin")}  sub={t("biometricSub")}   checked={biometric}   onCheckedChange={(v) => { setBiometric(v); toast.success(v ? t("biometricEnabled") : t("biometricDisabled")); }} />}
           {!isDisabled("account_2fa") && <ToggleRow icon={Shield}      iconClass="gradient-primary"  label={t("twoFactorAuth")}  sub={t("twoFactorSub")} checked={twoFa}       onCheckedChange={(v) => { setTwoFa(v); toast.success(v ? t("twoFaEnabled") : t("twoFaDisabled")); }} />}
-          {!isDisabled("account_blocked_users") && <MenuRow icon={ShieldBan} iconClass="bg-destructive/80" label="Blocked Users" sub="Manage blocked accounts" onClick={() => setSubPage("blocked")} />}
+          {!isDisabled("account_blocked_users") && <MenuRow icon={ShieldBan} iconClass="bg-destructive/80" label={t("blockedUsersLabel")} sub={t("blockedUsersSub")} onClick={() => setSubPage("blocked")} />}
         </Section>
 
         {/* ── Sign Out ── */}
