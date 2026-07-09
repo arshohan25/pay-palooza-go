@@ -573,7 +573,7 @@ const Index = () => {
         <QrScannerModal
           open={showScanPay}
           onClose={() => setShowScanPay(false)}
-          title="Scan & Pay"
+          title={t("idxScanPay")}
           onScan={async (result) => {
             setShowScanPay(false);
             const parsed = parseQrData(result);
