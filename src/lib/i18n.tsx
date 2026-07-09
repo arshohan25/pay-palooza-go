@@ -2337,8 +2337,8 @@ const translations = {
   npCatSavingsMissedDesc: { en: "When an installment can't be collected (insufficient balance).", bn: "কিস্তি সংগ্রহ করা না গেলে (পর্যাপ্ত ব্যালেন্স নেই)।" },
 
   // NotificationPreferences — common categories
-  npCatDailySummary: { en: "Daily summary", bn: "দৈনিক সারাংশ" },
-  npCatDailySummaryDesc: { en: "Yesterday's recap at 8:00 PM.", bn: "রাত ৮:০০টায় গতকালের সারসংক্ষেপ।" },
+  npCatMonthlySummary: { en: "Monthly summary", bn: "মাসিক সারাংশ" },
+  npCatMonthlySummaryDesc: { en: "Last month's recap on the 1st.", bn: "প্রতি মাসের ১ তারিখে গত মাসের সারসংক্ষেপ।" },
   npCatMarketing: { en: "Promotions & tips", bn: "প্রমোশন ও টিপস" },
   npCatMarketingDesc: { en: "Offers, drops, and platform updates.", bn: "অফার, ড্রপ ও প্ল্যাটফর্ম আপডেট।" },
 
