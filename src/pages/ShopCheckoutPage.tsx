@@ -580,7 +580,7 @@ export default function ShopCheckoutPage() {
       >
         <SlideToConfirm
           onConfirm={handleCheckout}
-          label={isCod ? `Place COD Order · ৳${orderTotal.toLocaleString()}` : `Place Order · ৳${orderTotal.toLocaleString()}`}
+          label={isCod ? `${t("scpPlaceCodOrder")} · ৳${orderTotal.toLocaleString()}` : `${t("scpPlaceOrder")} · ৳${orderTotal.toLocaleString()}`}
           gradient="gradient-primary"
           disabled={
             (needsPin && pin.length < 4) ||
