@@ -158,7 +158,7 @@ export default function ShopCheckoutPage() {
       });
       const result = typeof data === "string" ? JSON.parse(data) : data;
       if (error || !result?.valid) {
-        toast.error(result?.error || error?.message || "Invalid coupon code");
+        toast.error(result?.error || error?.message || t("scpInvalidCoupon"));
         setPromoLoading(false);
         return;
       }
@@ -170,9 +170,9 @@ export default function ShopCheckoutPage() {
         discount_value: result.discount_value,
         max_discount: result.max_discount,
       });
-      toast.success(`🎉 ৳${Math.round(result.discount_amount).toLocaleString()} off applied!`);
+      toast.success(`🎉 ৳${Math.round(result.discount_amount).toLocaleString()} ${t("scpDiscountApplied")}`);
     } catch (e: any) {
-      toast.error(e.message || "Failed to validate coupon");
+      toast.error(e.message || t("scpFailedValidate"));
     }
     setPromoLoading(false);
   };
