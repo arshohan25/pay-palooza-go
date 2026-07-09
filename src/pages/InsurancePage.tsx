@@ -66,7 +66,7 @@ const InsurancePage = () => {
   
 
   const handlePurchase = async (plan: typeof PLANS["life"][0]) => {
-    if (!user) { toast.error("Please sign in first"); return; }
+    if (!user) { toast.error(t("ipToastSignIn")); return; }
     setPurchasing(true);
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + plan.duration);
