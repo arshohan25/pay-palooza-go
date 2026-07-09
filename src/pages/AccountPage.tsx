@@ -335,7 +335,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_change_pin") && <MenuRow icon={Lock}       iconClass="gradient-send"    label={t("changePin")}        sub={t("changePinSub")}    onClick={() => setShowChangePin(true)} />}
           {!isDisabled("account_refer") && <MenuRow icon={Gift}       iconClass="gradient-accent"  label={t("referAFriend")}   sub={t("referSub")} onClick={() => setSubPage("refer")} />}
           {!isDisabled("account_become_merchant") && !merchantApplyLoading && canMerchantApply && (
-            <MenuRow icon={Store} iconClass="gradient-payment" label="Become a Merchant" sub="Apply for a merchant account" onClick={() => setShowMerchantApp(true)} />
+            <MenuRow icon={Store} iconClass="gradient-payment" label={t("becomeMerchant")} sub={t("becomeMerchantSub")} onClick={() => setShowMerchantApp(true)} />
           )}
         </Section>
 
