@@ -62,6 +62,7 @@ const ReferPage = lazy(() => import("@/pages/ReferPage"));
 
 const Index = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   useUserSessionTimeout("user");
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
