@@ -68,7 +68,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
 
   // Decrypt a message and cache the result
   const decryptAndCache = useCallback(async (msg: Message) => {
-    if (msg.is_deleted) return "🗑️ This message was deleted";
+    if (msg.is_deleted) return t("scMsgDeleted");
     const decrypted = await tryDecryptMessage(msg.content, msg.is_encrypted, cryptoKeyRef.current);
     setDecryptedCache(prev => ({ ...prev, [msg.id]: decrypted }));
     return decrypted;
