@@ -194,7 +194,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
                 className="w-full h-12 rounded-2xl font-semibold gap-2"
               >
                 <KeyRound size={16} />
-                Use PIN
+                {t("baUsePin")}
               </Button>
             </motion.div>
           )}
