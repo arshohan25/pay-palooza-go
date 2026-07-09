@@ -65,7 +65,10 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
   };
 
   const deepLink = `https://pay-palooza-go.lovable.app/?ref=${referralCode}`;
-  const shareText = `Use my referral code ${referralCode} on EasyPay and earn up to ৳${REWARD_PER_FRIEND}! Sign up here: ${deepLink}`;
+  const shareText = t("referShareText")
+    .replace("{code}", referralCode || "")
+    .replace("{reward}", String(REWARD_PER_FRIEND))
+    .replace("{link}", deepLink);
 
   const handleWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
@@ -75,7 +78,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
   };
   const handleNativeShare = async () => {
     if (navigator.share) {
-      try { await navigator.share({ title: "EasyPay Referral", text: shareText }); } catch {}
+      try { await navigator.share({ title: t("referShareTitle"), text: shareText }); } catch {}
     } else {
       handleCopy();
     }
@@ -213,7 +216,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
-                    {ref.referee_name || ref.referee_phone || "User"}
+                    {ref.referee_name || ref.referee_phone || t("referUserFallback")}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {ref.referee_phone ? `${ref.referee_phone.slice(0,3)}••••${ref.referee_phone.slice(-4)}` : ""} · {new Date(ref.created_at).toLocaleDateString()}
