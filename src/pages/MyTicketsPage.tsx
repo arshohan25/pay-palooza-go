@@ -372,7 +372,7 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">{t("ticketSubject")}</label>
               <Input
-                placeholder="e.g. Email change request"
+                placeholder={t("ticketSubjectPlaceholder")}
                 value={ticketSubject}
                 onChange={(e) => setTicketSubject(e.target.value)}
               />
