@@ -58,7 +58,7 @@ const InsurancePage = () => {
 
   useEffect(() => {
     if (!kycLoading && kycStatus !== "verified") {
-      toast.error("Please complete KYC verification to use this feature.");
+      toast.error(t("ipToastKyc"));
       navigate("/");
     }
   }, [kycLoading, kycStatus, navigate]);
