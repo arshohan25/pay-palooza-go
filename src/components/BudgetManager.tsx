@@ -96,7 +96,7 @@ const BudgetManager = () => {
               onClick={handleAdd}
               className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shrink-0"
             >
-              Save
+              {t("bmSave")}
             </motion.button>
           </div>
         </motion.div>
