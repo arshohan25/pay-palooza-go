@@ -137,6 +137,8 @@ const translations = {
   rateExperience: { en: "Rate your experience:", bn: "আপনার অভিজ্ঞতা রেট করুন:" },
   yourRating: { en: "Your rating:", bn: "আপনার রেটিং:" },
   ratingSubmitted: { en: "Thanks for your feedback!", bn: "আপনার মতামতের জন্য ধন্যবাদ!" },
+  ticketGeneralSupport: { en: "General Support", bn: "সাধারণ সহায়তা" },
+  ticketSubjectPlaceholder: { en: "e.g. Email change request", bn: "যেমন: ইমেইল পরিবর্তনের অনুরোধ" },
   liveChatTitle: { en: "Live Chat — Support", bn: "লাইভ চ্যাট — সাপোর্ট" },
   submitTicketTitle: { en: "Submit a Support Ticket", bn: "সাপোর্ট টিকেট জমা দিন" },
   signInFirst: { en: "Please sign in first.", bn: "অনুগ্রহ করে আগে সাইন ইন করুন।" },
