@@ -623,7 +623,7 @@ export default function ProductDetailPage() {
         {relatedOthers.length > 0 && (
           <motion.div custom={10} variants={fadeUp} initial="hidden" animate="show">
             <RelatedProductsRow
-              title="You May Also Like"
+              title={t("pdpYouMayLike")}
               products={relatedOthers}
               seeAllLink="/shop"
               onNavigate={(pid) => navigate(`/product/${pid}`)}
