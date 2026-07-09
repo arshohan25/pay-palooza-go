@@ -64,6 +64,7 @@ export default function ShopCheckoutPage() {
   const location = useLocation();
   const { user } = useAuth();
   const cart = useCart();
+  const { t } = useI18n();
 
   // Buy Now: a single product passed via navigation state bypasses the cart entirely.
   // Capture once on mount so re-renders / state-loss don't drop the item.
