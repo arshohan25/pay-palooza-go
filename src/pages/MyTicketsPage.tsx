@@ -347,7 +347,7 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
         <SheetContent side="bottom" className="rounded-t-3xl h-[85vh] flex flex-col p-0">
           <SheetHeader className="px-6 pt-5 pb-3">
             <SheetTitle className="text-base truncate">
-              {selectedTicket?.subject || "General Support"}
+              {selectedTicket?.subject || t("ticketGeneralSupport")}
             </SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-hidden">
