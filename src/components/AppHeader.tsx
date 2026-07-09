@@ -70,7 +70,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
           <motion.button
             whileTap={{ scale: 0.90 }}
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-primary/10 border border-primary/25 shadow-card flex items-center justify-center text-primary hover:bg-primary/15 hover:shadow-elevated transition-all duration-150 tap-target"
-            aria-label="Search"
+            aria-label={t("ahSearch")}
           >
             <Search size={17} strokeWidth={2} />
           </motion.button>
