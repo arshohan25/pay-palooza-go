@@ -148,7 +148,7 @@ export default function ShopCheckoutPage() {
   const applyPromo = async () => {
     const code = promoInput.trim().toUpperCase();
     if (!code) return;
-    if (appliedPromo?.code === code) { toast.error("Already applied"); return; }
+    if (appliedPromo?.code === code) { toast.error(t("scpAlreadyApplied")); return; }
     setPromoLoading(true);
     try {
       const { data, error } = await supabase.rpc("validate_and_apply_coupon", {
