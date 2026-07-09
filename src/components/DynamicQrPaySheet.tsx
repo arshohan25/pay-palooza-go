@@ -256,9 +256,9 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
               {step === "error" && (
                 <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8 text-center space-y-4">
                   <AlertCircle className="w-14 h-14 text-destructive/60 mx-auto" />
-                  <h3 className="text-lg font-bold text-foreground">Payment Failed</h3>
+                  <h3 className="text-lg font-bold text-foreground">{t("dqPaymentFailedTitle")}</h3>
                   <p className="text-sm text-muted-foreground">{errorMsg}</p>
-                  <Button variant="outline" className="rounded-2xl" onClick={onClose}>Close</Button>
+                  <Button variant="outline" className="rounded-2xl" onClick={onClose}>{t("dqClose")}</Button>
                 </motion.div>
               )}
             </AnimatePresence>
