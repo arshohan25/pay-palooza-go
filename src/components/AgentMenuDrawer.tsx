@@ -225,7 +225,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       <Sheet open={avatarSheetOpen} onOpenChange={setAvatarSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-base font-extrabold">Change Avatar</SheetTitle>
+            <SheetTitle className="text-base font-extrabold">{t("agChangeAvatar")}</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col items-center gap-4">
             <div className="w-24 h-24 rounded-2xl overflow-hidden bg-muted flex items-center justify-center border-2 border-dashed border-border">
