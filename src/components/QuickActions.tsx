@@ -535,7 +535,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
           >
             <div className="border-t border-border/40 mt-4 pt-4">
               <div className="flex items-center justify-between mb-3 px-1">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">More Services</h3>
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("qaMoreServices")}</h3>
                 <button
                   onClick={() => setExpanded(false)}
                   className="w-6 h-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
