@@ -186,17 +186,17 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
               {display.isCashback ? (
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
                   <Coins size={11} className="text-white" />
-                  <span className="text-[10px] font-bold text-white">Drive Cashback</span>
+                  <span className="text-[10px] font-bold text-white">{t("tlDriveCashback")}</span>
                 </div>
               ) : tx.status === "pending" ? (
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
                   <Clock size={11} className="text-white" />
-                  <span className="text-[10px] font-bold text-white">Pending</span>
+                  <span className="text-[10px] font-bold text-white">{t("tlPending")}</span>
                 </div>
               ) : tx.status === "failed" ? (
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/30 backdrop-blur-sm">
                   <AlertCircle size={11} className="text-white" />
-                  <span className="text-[10px] font-bold text-white">Rejected</span>
+                  <span className="text-[10px] font-bold text-white">{t("tlRejected")}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
