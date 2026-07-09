@@ -106,16 +106,16 @@ export default function ProductDetailPage() {
 
   const handleChatWithMerchant = useCallback(async () => {
     if (!user) {
-      toast.error("Please log in to chat with the seller");
+      toast.error(t("pdpLoginToChat"));
       return;
     }
     const merchantUserId = (product?.merchants as any)?.user_id;
     if (!merchantUserId) {
-      toast.error("Merchant info unavailable");
+      toast.error(t("pdpMerchantUnavailable"));
       return;
     }
     if (merchantUserId === user.id) {
-      toast.info("This is your own store");
+      toast.info(t("pdpOwnStore"));
       return;
     }
     setChattingWithMerchant(true);
@@ -126,7 +126,7 @@ export default function ProductDetailPage() {
       });
       if (convId) {
         // Send product inquiry as a "product" type message with metadata
-        await sendMessage(convId, `Inquiry about ${product.name}`, "text", {
+        await sendMessage(convId, `${t("pdpInquiryAbout")} ${product.name}`, "text", {
           productId: product.id,
           productName: product.name,
           productPrice: product.price,
@@ -137,14 +137,14 @@ export default function ProductDetailPage() {
         await openConversation(convId);
         setShowInlineChat(convId);
       } else {
-        toast.error("Could not start conversation");
+        toast.error(t("pdpConvFailed"));
       }
     } catch {
-      toast.error("Failed to start chat");
+      toast.error(t("pdpChatFailed"));
     } finally {
       setChattingWithMerchant(false);
     }
-  }, [user, product, createDirectConversation, sendMessage, openConversation]);
+  }, [user, product, createDirectConversation, sendMessage, openConversation, t]);
 
   // ── Data loading (unchanged logic) ──
   useEffect(() => {
