@@ -2594,6 +2594,31 @@ const translations = {
   qaUnavailable: { en: "{label} is temporarily unavailable", bn: "{label} সাময়িকভাবে অনুপলব্ধ" },
   qaDisabledDesc: { en: "This feature has been disabled by the system. Please try again later.", bn: "এই ফিচারটি সিস্টেম দ্বারা নিষ্ক্রিয় করা হয়েছে। পরে আবার চেষ্টা করুন।" },
   qaFeatureComingSoon: { en: "{label} coming soon!", bn: "{label} শীঘ্রই আসছে!" },
+
+  // FeatureLockedOverlay
+  floTitle: { en: "Feature Restricted", bn: "ফিচার সীমাবদ্ধ" },
+  floCurrentlyLocked: { en: "{name} is currently locked", bn: "{name} বর্তমানে লক করা" },
+  floIsLocked: { en: "{name} is Locked", bn: "{name} লক করা" },
+  floDesc: { en: "This feature has been temporarily restricted on your account by an administrator.", bn: "একজন প্রশাসক আপনার অ্যাকাউন্টে এই ফিচারটি সাময়িকভাবে সীমাবদ্ধ করেছেন।" },
+  floReason: { en: "Reason", bn: "কারণ" },
+  floExpires: { en: "Expires", bn: "মেয়াদ শেষ" },
+  floContactSupport: { en: "Contact support if you believe this is an error.", bn: "এটি ভুল মনে হলে সাপোর্টের সাথে যোগাযোগ করুন।" },
+  floGoBack: { en: "Go Back", bn: "ফিরে যান" },
+
+  // NotificationCenter
+  ncMarkFilter: { en: "Mark filter", bn: "ফিল্টার চিহ্নিত" },
+  ncNoMatching: { en: "No matching notifications", bn: "কোনো মিলে যাওয়া বিজ্ঞপ্তি নেই" },
+  ncTryDifferent: { en: "Try a different filter", bn: "অন্য ফিল্টার চেষ্টা করুন" },
+  ncUnreadOrderUpdates: { en: "{n} unread order updates →", bn: "{n}টি অপঠিত অর্ডার আপডেট →" },
+  ncUnreadOrderUpdate: { en: "{n} unread order update →", bn: "{n}টি অপঠিত অর্ডার আপডেট →" },
+  ncTapForDetails: { en: "Tap for details", bn: "বিস্তারিত দেখতে ট্যাপ" },
+  ncViewOrder: { en: "View order →", bn: "অর্ডার দেখুন →" },
+  ncMarkAsRead: { en: "Mark as read", bn: "পঠিত হিসাবে চিহ্নিত" },
+  ncClose: { en: "Close", bn: "বন্ধ" },
+  ncCouponCopied: { en: "Coupon code copied!", bn: "কুপন কোড কপি হয়েছে!" },
+  ncCopy: { en: "Copy", bn: "কপি" },
+  ncReference: { en: "Reference", bn: "রেফারেন্স" },
+  ncTracking: { en: "Tracking", bn: "ট্র্যাকিং" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
