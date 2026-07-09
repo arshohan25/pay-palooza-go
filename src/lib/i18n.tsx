@@ -2929,6 +2929,18 @@ const translations = {
   cpFailedTitle: { en: "Payment Failed", bn: "পেমেন্ট ব্যর্থ" },
   cpSomethingWrong: { en: "Something went wrong.", bn: "কিছু ভুল হয়েছে।" },
   cpTryAgain: { en: "Try Again", bn: "আবার চেষ্টা করুন" },
+  nfPageNotFound: { en: "Oops! Page not found", bn: "উফ! পৃষ্ঠা পাওয়া যায়নি" },
+  nfReturnHome: { en: "Return to Home", bn: "হোমে ফিরে যান" },
+  ripChooseApp: { en: "Choose an App to Install", bn: "ইনস্টল করতে একটি অ্যাপ বেছে নিন" },
+  ripWhatsIncluded: { en: "What's included", bn: "কি অন্তর্ভুক্ত" },
+  ripAppInstalled: { en: "App Installed!", bn: "অ্যাপ ইনস্টল হয়েছে!" },
+  ripCheckHome: { en: "Check your home screen", bn: "আপনার হোম স্ক্রিন দেখুন" },
+  ripInstall: { en: "Install", bn: "ইনস্টল করুন" },
+  ripInstallManually: { en: "Install Manually", bn: "নিজে ইনস্টল করুন" },
+  ripIphoneHint: { en: "Tap Share → \"Add to Home Screen\"", bn: "শেয়ার → \"হোম স্ক্রিনে যোগ করুন\" চাপুন" },
+  ripAndroidHint: { en: "Tap ⋮ menu → \"Install app\"", bn: "⋮ মেনু → \"অ্যাপ ইনস্টল করুন\" চাপুন" },
+  ripIphone: { en: "iPhone:", bn: "আইফোন:" },
+  ripAndroid: { en: "Android:", bn: "অ্যান্ড্রয়েড:" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
