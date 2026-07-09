@@ -100,7 +100,7 @@ const InsurancePage = () => {
       />
       <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur border-b border-primary/30 shadow-glow px-4 py-3 flex items-center gap-3">
         <button onClick={() => { if (selectedPlan) setSelectedPlan(null); else navigate(-1); }} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
-        <h1 className="text-lg font-bold text-foreground">{selectedPlan ? selectedPlan.name : "Insurance"}</h1>
+        <h1 className="text-lg font-bold text-foreground">{selectedPlan ? selectedPlan.name : t("ipTitle")}</h1>
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-4">
