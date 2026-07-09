@@ -600,7 +600,7 @@ const CheckoutPage = () => {
 
                 {devOtp && (
                   <p className="text-[10px] text-center text-muted-foreground bg-muted/50 rounded-xl px-3 py-1.5">
-                    Dev OTP: <span className="font-mono font-bold text-foreground">{devOtp}</span>
+                    {t("cpDevOtp")}: <span className="font-mono font-bold text-foreground">{devOtp}</span>
                   </p>
                 )}
 
