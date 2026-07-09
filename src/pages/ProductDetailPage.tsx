@@ -427,7 +427,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-1.5 shrink-0">
               {vendorInfo.slug && (
                 <Button variant="outline" size="sm" className="text-xs h-7 rounded-lg" onClick={() => navigate(`/shop/${vendorInfo.slug}`)}>
-                  Visit Store <ChevronRight className="w-3 h-3 ml-0.5" />
+                  {t("pdpVisitStore")} <ChevronRight className="w-3 h-3 ml-0.5" />
                 </Button>
               )}
             </div>
