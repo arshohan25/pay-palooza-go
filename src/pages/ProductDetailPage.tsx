@@ -376,7 +376,7 @@ export default function ProductDetailPage() {
             )}
           </div>
           {savings > 0 && (
-            <p className="text-xs font-medium text-primary">You save ৳{savings.toLocaleString()}</p>
+            <p className="text-xs font-medium text-primary">{t("pdpYouSave")} ৳{savings.toLocaleString()}</p>
           )}
         </motion.div>
 
