@@ -2395,6 +2395,22 @@ const translations = {
   obGetStarted: { en: "Get Started", bn: "শুরু করুন" },
   obNext: { en: "Next", bn: "পরবর্তী" },
   obHoldHint: { en: "Hold to feel the bounce", bn: "বাউন্স অনুভব করতে চেপে ধরুন" },
+
+  // QrScannerModal
+  qrScanTitle: { en: "Scan any QR", bn: "যেকোনো QR স্ক্যান করুন" },
+  qrCameraUnavailable: { en: "Camera not available", bn: "ক্যামেরা উপলব্ধ নেই" },
+  qrUseGallery: { en: "Use gallery upload below", bn: "নিচের গ্যালারি আপলোড ব্যবহার করুন" },
+  qrReadingNumber: { en: "Reading number...", bn: "নম্বর পড়া হচ্ছে..." },
+  qrNumbersFound: { en: "Numbers found", bn: "প্রাপ্ত নম্বরসমূহ" },
+  qrTapRetry: { en: "Tap to retry", bn: "আবার চেষ্টা করতে ট্যাপ করুন" },
+  qrDetected: { en: "Detected!", bn: "সনাক্ত হয়েছে!" },
+  qrHelpText: { en: 'Scan QR code or tap "Read Number" to scan a phone number.', bn: 'QR কোড স্ক্যান করুন অথবা ফোন নম্বর স্ক্যান করতে "নম্বর পড়ুন" ট্যাপ করুন।' },
+  qrTorch: { en: "Torch", bn: "টর্চ" },
+  qrReadNumber: { en: "Read Number", bn: "নম্বর পড়ুন" },
+  qrGallery: { en: "Gallery", bn: "গ্যালারি" },
+  qrSupports: { en: "Supports", bn: "সমর্থন" },
+  qrNoNumbers: { en: "No numbers found. Try again with clearer text.", bn: "কোনো নম্বর পাওয়া যায়নি। আরও স্পষ্ট টেক্সট দিয়ে চেষ্টা করুন।" },
+  qrCantRead: { en: "Could not read the number. Try again.", bn: "নম্বরটি পড়া যায়নি। আবার চেষ্টা করুন।" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
