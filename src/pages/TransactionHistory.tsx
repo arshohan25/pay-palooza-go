@@ -93,6 +93,7 @@ interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void
 
 const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, customLabels }: TransactionHistoryProps) => {
   const { t } = useI18n();
+  const CATEGORIES = useMemo(() => CATEGORY_KEYS.map((c) => ({ id: c.id, label: t(c.key as any) })), [t]);
   const runningMonthStart = useMemo(() => startOfMonth(new Date()), []);
   const runningMonthEnd = useMemo(() => endOfDay(new Date()), []);
   const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions(100, undefined);
