@@ -345,7 +345,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
                   <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
                     <CheckCircle2 size={36} className="text-emerald-400" />
                   </div>
-                  <p className="text-white text-sm font-semibold">Detected!</p>
+                  <p className="text-white text-sm font-semibold">{t("qrDetected")}</p>
                 </motion.div>
               )}
             </div>
