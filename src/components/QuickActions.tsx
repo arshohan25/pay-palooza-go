@@ -555,7 +555,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                       whileTap={{ scale: 0.90 }}
                       onClick={() => {
                         if (didLongPress.current) { didLongPress.current = false; return; }
-                        if (moreGlobalOff) { toast.info(`${item.label} is temporarily unavailable`, { description: "This feature has been disabled by the system. Please try again later." }); return; }
+                        if (moreGlobalOff) { toast.info(t("qaUnavailable").replace("{label}", item.label), { description: t("qaDisabledDesc") }); return; }
                         handleMoreService(item.id, item.soon);
                       }}
                       onPointerDown={() => startLongPress(item.id)}
