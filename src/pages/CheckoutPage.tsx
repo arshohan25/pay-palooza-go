@@ -732,18 +732,18 @@ const CheckoutPage = () => {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                 className="text-xl font-black text-foreground mb-1"
               >
-                Payment Successful!
+                {t("cpPaymentSuccess")}
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
                 className="text-sm text-muted-foreground"
               >
                 <span className="text-primary font-bold">৳{session ? fmt(session.amount) : "—"}</span>
-                {" "}paid to <span className="font-semibold text-foreground">{merchantName || "Merchant"}</span>
+                {" "}{t("cpPaidTo")} <span className="font-semibold text-foreground">{merchantName || t("cpMerchant")}</span>
               </motion.p>
 
               {session?.reference && (
-                <p className="text-[10px] text-muted-foreground mt-2">Ref: {session.reference}</p>
+                <p className="text-[10px] text-muted-foreground mt-2">{t("cpRef")}: {session.reference}</p>
               )}
 
               <motion.div
