@@ -787,7 +787,7 @@ export default function ProductDetailPage() {
                     handleSendInlineChat();
                   }
                 }}
-                placeholder="Type a message..."
+                placeholder={t("pdpTypeMessage")}
                 className="flex-1 rounded-full h-10 bg-muted/50 border-border/50"
               />
               <Button size="icon" className="rounded-full h-10 w-10 shrink-0"
