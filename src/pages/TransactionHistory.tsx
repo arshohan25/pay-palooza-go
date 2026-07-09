@@ -112,47 +112,47 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   // Map DB transactions to local Transaction shape
   const allTransactions: Transaction[] = useMemo(() =>
     dbTxns
-      .filter((t) => !filterTypes || filterTypes.includes(t.type as TxCategory))
-      .map((t) => {
-        const cfg = TX_ICON_MAP[t.type as Exclude<TxCategory, "all">];
-        const isCashback = t.type === "addmoney" && (t.description?.startsWith("Drive Cashback:") || t.reference?.startsWith("CB-") || false);
+      .filter((tx) => !filterTypes || filterTypes.includes(tx.type as TxCategory))
+      .map((tx) => {
+        const cfg = TX_ICON_MAP[tx.type as Exclude<TxCategory, "all">];
+        const isCashback = tx.type === "addmoney" && (tx.description?.startsWith("Drive Cashback:") || tx.reference?.startsWith("CB-") || false);
         const isInvestment =
-          (t.description?.startsWith("Gold Purchase:") ||
-            t.description?.startsWith("Gold Sale:") ||
-            t.description?.startsWith("Stock Purchase:") ||
-            t.description?.startsWith("Stock Sale:") ||
-            t.reference?.startsWith("GOLD-BUY-") ||
-            t.reference?.startsWith("GOLD-SELL-") ||
-            t.reference?.startsWith("STOCK-BUY-") ||
-            t.reference?.startsWith("STOCK-SELL-")) ?? false;
-        const label = isCashback ? t("thDriveCashback") : (CATEGORIES.find((c) => c.id === t.type)?.label ?? t.type);
+          (tx.description?.startsWith("Gold Purchase:") ||
+            tx.description?.startsWith("Gold Sale:") ||
+            tx.description?.startsWith("Stock Purchase:") ||
+            tx.description?.startsWith("Stock Sale:") ||
+            tx.reference?.startsWith("GOLD-BUY-") ||
+            tx.reference?.startsWith("GOLD-SELL-") ||
+            tx.reference?.startsWith("STOCK-BUY-") ||
+            tx.reference?.startsWith("STOCK-SELL-")) ?? false;
+        const label = isCashback ? t("thDriveCashback") : (CATEGORIES.find((c) => c.id === tx.type)?.label ?? tx.type);
         const isCredit = agentView
-          ? t.type === "cashout"
-          : t.type === "addmoney" || t.type === "receive" || t.type === "cashin";
+          ? tx.type === "cashout"
+          : tx.type === "addmoney" || tx.type === "receive" || tx.type === "cashin";
         const agentName = agentView
-          ? (t.type === "cashout" ? t("thCashOutReceived") : t.type === "cashin" ? t("thCashInSent") : undefined)
+          ? (tx.type === "cashout" ? t("thCashOutReceived") : tx.type === "cashin" ? t("thCashInSent") : undefined)
           : undefined;
         const agentDetail = agentView
-          ? (t.type === "cashout" ? t("thCashOutReceived") : t.type === "cashin" ? t("thCashInSent") : undefined)
+          ? (tx.type === "cashout" ? t("thCashOutReceived") : tx.type === "cashin" ? t("thCashInSent") : undefined)
           : undefined;
         return {
-          id: t.id,
-          short_id: t.short_id || t.id.slice(0, 12).toUpperCase(),
-          category: t.type as Exclude<TxCategory, "all">,
+          id: tx.id,
+          short_id: tx.short_id || tx.id.slice(0, 12).toUpperCase(),
+          category: tx.type as Exclude<TxCategory, "all">,
           name: agentName || (isCashback
-            ? (t.description?.replace("Drive Cashback: ", "") || t("thCashback"))
-            : (t.recipient_name || t.description || label)),
-          detail: agentDetail || (isCashback ? t("thDriveCashback") : (t.description || label)),
-          date: t.created_at,
-          amount: isCredit ? t.amount : -t.amount,
-          fee: t.fee,
-          commission: t.commission || 0,
+            ? (tx.description?.replace("Drive Cashback: ", "") || t("thCashback"))
+            : (tx.recipient_name || tx.description || label)),
+          detail: agentDetail || (isCashback ? t("thDriveCashback") : (tx.description || label)),
+          date: tx.created_at,
+          amount: isCredit ? tx.amount : -tx.amount,
+          fee: tx.fee,
+          commission: tx.commission || 0,
           _isCashback: isCashback,
           _isInvestment: isInvestment,
-          status: t.status,
-          recipient_phone: t.recipient_phone,
+          status: tx.status,
+          recipient_phone: tx.recipient_phone,
         };
-      }), [dbTxns, filterTypes]);
+      }), [dbTxns, filterTypes, t, agentView, CATEGORIES]);
 
   const triggerRefresh = () => {
     if (isRefreshing) return;
