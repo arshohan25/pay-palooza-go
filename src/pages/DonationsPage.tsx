@@ -217,6 +217,10 @@ const DonationsPage = () => {
   };
 
   const causeForIcon = (name: string) => CAUSES.find(c => c.name === name);
+  const localizeCauseName = (name: string) => {
+    const c = CAUSES.find(x => x.name === name);
+    return c ? (CAUSE_I18N[c.id]?.name ?? name) : name;
+  };
 
   const MEDALS = ["🥇", "🥈", "🥉"];
   const MEDAL_BAR = ["from-yellow-400 to-amber-500", "from-slate-300 to-slate-400", "from-amber-600 to-amber-700"];
