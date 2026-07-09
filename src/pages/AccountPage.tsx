@@ -380,8 +380,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_grid_layout") && <MenuRow
             icon={Grid3X3}
             iconClass="gradient-primary"
-            label="Grid Layout"
-            sub="Change Quick Actions grid arrangement"
+            label={t("gridLayoutLabel")}
+            sub={t("gridLayoutSub")}
             right={
               <span className="text-[12px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
                 {gridLayout}
