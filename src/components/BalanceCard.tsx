@@ -122,7 +122,7 @@ const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
                 whileTap={{ scale: 0.88 }}
                 onClick={() => setShowQr(true)}
                 className="glass-hero w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
-                title="Show QR Code"
+                title={t("showQrCode")}
               >
                 <QrCode size={13} />
               </motion.button>
@@ -130,7 +130,7 @@ const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
                 whileTap={{ scale: 0.88 }}
                 onClick={handleCopyId}
                 className="glass-hero w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
-                title="Copy Wallet ID"
+                title={t("copyWalletId")}
               >
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.span
@@ -156,7 +156,7 @@ const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
                 className="flex items-center group w-fit"
                 onClick={handleToggleBalance}
                 whileTap={{ scale: 0.97 }}
-                aria-label={showBalance ? "Hide balance" : t("tapToSeeBalance")}
+                aria-label={showBalance ? t("hideBalance") : t("tapToSeeBalance")}
               >
                 <AnimatePresence mode="wait">
                   {showBalance ? (
@@ -203,7 +203,7 @@ const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
               whileHover={{ scale: 1.05 }}
               onClick={onAddMoney}
               className="flex flex-col items-center gap-1 bg-white/15 hover:bg-white/25 transition-colors rounded-2xl px-3 py-2 tap-target shrink-0"
-              title="Add Money"
+              title={t("addMoneyTitle")}
             >
               <div className="w-7 h-7 flex items-center justify-center">
                 <AddMoneyIcon isHovered={false} />
@@ -228,7 +228,7 @@ const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
               whileHover={{ scale: 1.05 }}
               onClick={handleShare}
               className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 border border-white/20 transition-colors rounded-xl px-2.5 py-1.5 tap-target"
-              title="Share QR / Wallet ID"
+              title={t("shareWallet")}
             >
               <Share2 size={11} className="opacity-90" />
               <span className="text-[10.5px] font-bold opacity-95 whitespace-nowrap">{t("share")}</span>
