@@ -490,9 +490,9 @@ const CheckoutPage = () => {
               <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-5">
                 <Clock size={30} className="text-accent" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-2">Session Expired</h2>
-              <p className="text-sm text-muted-foreground mb-6 max-w-[260px] mx-auto">Please request a new payment link from the merchant.</p>
-              <Button variant="outline" onClick={handleCancel} className="rounded-2xl px-8 h-11">Go Back</Button>
+              <h2 className="text-lg font-bold text-foreground mb-2">{t("cpSessionExpired")}</h2>
+              <p className="text-sm text-muted-foreground mb-6 max-w-[260px] mx-auto">{t("cpRequestNewLink")}</p>
+              <Button variant="outline" onClick={handleCancel} className="rounded-2xl px-8 h-11">{t("cpGoBack")}</Button>
             </motion.div>
           )}
 
