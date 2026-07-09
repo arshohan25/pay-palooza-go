@@ -338,7 +338,7 @@ const Index = () => {
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}>
                   <RefreshCw size={16} />
                 </motion.div>
-                Refreshing…
+                {t("idxRefreshing")}
               </motion.div>
             )}
           </AnimatePresence>
