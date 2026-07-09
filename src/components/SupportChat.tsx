@@ -358,7 +358,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
                 {redactSensitive(initialContext.body)}
               </p>
               <p className="text-[10px] text-muted-foreground mt-1.5">
-                Address the points above in your message before resubmitting.
+                {t("scAddressPoints")}
               </p>
             </div>
           )}
