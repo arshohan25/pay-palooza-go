@@ -217,14 +217,14 @@ export default function ProductDetailPage() {
     try {
       await sendMessage(showInlineChat, text);
     } catch {
-      toast.error("Failed to send");
+      toast.error(t("pdpSendFailed"));
     } finally {
       setSendingChat(false);
     }
-  }, [chatInput, showInlineChat, sendingChat, sendMessage, setTyping]);
+  }, [chatInput, showInlineChat, sendingChat, sendMessage, setTyping, t]);
 
   if (loading) return <LoadingSkeleton />;
-  if (!product) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Product not found</p></div>;
+  if (!product) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">{t("pdpProductNotFound")}</p></div>;
 
   const finalPrice = product.price + (selectedVariant?.price_adjustment || 0);
   const discount = product.original_price ? Math.round(((product.original_price - product.price) / product.original_price) * 100) : 0;
