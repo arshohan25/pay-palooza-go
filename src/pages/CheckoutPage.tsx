@@ -659,7 +659,7 @@ const CheckoutPage = () => {
                   <span className="text-lg font-black text-foreground">{fmt(session.amount)}</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-2">
-                  to <span className="font-semibold text-foreground">{merchantName || "Merchant"}</span>
+                  {t("cpTo")} <span className="font-semibold text-foreground">{merchantName || t("cpMerchant")}</span>
                 </p>
               </div>
 
