@@ -553,11 +553,11 @@ export default function ProductDetailPage() {
                   <span className="text-xs font-semibold text-foreground">{t("pdpProductDetails")}</span>
                 </div>
                 {(() => {
-                  const lines = (product.description || "No description available.").split("\n").filter(Boolean);
+                  const lines = (product.description || t("pdpNoDescription")).split("\n").filter(Boolean);
                   if (lines.length <= 1) {
                     return (
                       <div className="px-3.5 py-3 border-l-2 border-primary/40 ml-3 my-3">
-                        <p className="text-sm text-muted-foreground leading-relaxed">{lines[0] || "No description available."}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{lines[0] || t("pdpNoDescription")}</p>
                       </div>
                     );
                   }
