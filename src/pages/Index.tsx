@@ -440,7 +440,7 @@ const Index = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">
         <p className="text-lg font-semibold capitalize">{activeTab}</p>
-        <p className="text-sm">Coming soon</p>
+        <p className="text-sm">{t("idxComingSoon")}</p>
       </div>
     );
     })();
