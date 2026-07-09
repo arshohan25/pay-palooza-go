@@ -156,7 +156,7 @@ const SpeedDial = ({
                 whileTap={{ scale: 0.88 }}
                 onClick={() => handleAction(action)}
                 className={`${action.gradient} ${action.shadow} w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0 active:scale-95 transition-transform`}
-                aria-label={action.label}
+                aria-label={t(action.labelKey)}
               >
                 <action.icon size={20} strokeWidth={2} />
               </motion.button>
