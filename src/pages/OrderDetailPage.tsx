@@ -232,7 +232,7 @@ export default function OrderDetailPage() {
                       )}
                     </div>
                     <div className="pb-4 flex-1">
-                      <p className={`text-[13px] font-bold ${done ? "text-foreground" : "text-muted-foreground"}`}>{step.label}</p>
+                      <p className={`text-[13px] font-bold ${done ? "text-foreground" : "text-muted-foreground"}`}>{t(step.labelKey as any)}</p>
                       {done && i === 0 && (
                         <p className="text-[11px] text-muted-foreground mt-0.5">
                           {new Date(order.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
