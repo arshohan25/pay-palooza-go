@@ -761,7 +761,7 @@ const CheckoutPage = () => {
                   </motion.div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Redirecting{session?.success_url ? " to merchant" : ""}...
+                  {t("cpRedirecting")}{session?.success_url ? t("cpToMerchant") : ""}...
                 </p>
               </motion.div>
             </motion.div>
