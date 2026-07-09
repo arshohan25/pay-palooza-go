@@ -2411,6 +2411,11 @@ const translations = {
   qrSupports: { en: "Supports", bn: "সমর্থন" },
   qrNoNumbers: { en: "No numbers found. Try again with clearer text.", bn: "কোনো নম্বর পাওয়া যায়নি। আরও স্পষ্ট টেক্সট দিয়ে চেষ্টা করুন।" },
   qrCantRead: { en: "Could not read the number. Try again.", bn: "নম্বরটি পড়া যায়নি। আবার চেষ্টা করুন।" },
+
+  // SpeedDial
+  sdPay: { en: "Pay", bn: "পে" },
+  sdCloseActions: { en: "Close actions", bn: "অ্যাকশন বন্ধ করুন" },
+  sdQuickActions: { en: "Quick actions", bn: "দ্রুত অ্যাকশন" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
