@@ -249,7 +249,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               className="rounded-xl gap-2"
               onClick={() => fileRef.current?.click()}
             >
-              <Upload size={14} /> Choose Photo
+              <Upload size={14} /> {t("agChoosePhoto")}
             </Button>
             {previewUrl && (
               <Button
@@ -257,7 +257,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                 disabled={uploading}
                 onClick={uploadAvatar}
               >
-                {uploading ? "Uploading..." : "Save Avatar"}
+                {uploading ? t("agUploading") : t("agSaveAvatar")}
               </Button>
             )}
           </div>
