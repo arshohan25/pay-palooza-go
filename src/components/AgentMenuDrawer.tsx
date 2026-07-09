@@ -74,7 +74,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       .upload(path, file, { upsert: true });
 
     if (uploadErr) {
-      toast.error("Upload failed");
+      toast.error(t("agUploadFailed"));
       setUploading(false);
       return;
     }
@@ -87,9 +87,9 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       .eq("user_id", user.id);
 
     if (updateErr) {
-      toast.error("Failed to update profile");
+      toast.error(t("agProfileUpdateFailed"));
     } else {
-      toast.success("Avatar updated!");
+      toast.success(t("agAvatarUpdated"));
       window.dispatchEvent(new CustomEvent("profile-updated", { detail: {} }));
     }
     setPreviewUrl(null);
