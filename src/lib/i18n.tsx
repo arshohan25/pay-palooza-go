@@ -2553,6 +2553,32 @@ const translations = {
   hideBalance: { en: "Hide balance", bn: "ব্যালেন্স লুকান" },
   addMoneyTitle: { en: "Add Money", bn: "টাকা যোগ" },
   shareWallet: { en: "Share QR / Wallet ID", bn: "QR / ওয়ালেট আইডি শেয়ার" },
+
+  // FundRequestHistory
+  frhTitle: { en: "My Fund Requests", bn: "আমার ফান্ড অনুরোধ" },
+  frhEmpty: { en: "No requests yet", bn: "এখনো কোনো অনুরোধ নেই" },
+  frhEmptyHint: { en: "Your deposit & withdrawal requests will appear here", bn: "আপনার জমা ও উত্তোলনের অনুরোধ এখানে দেখাবে" },
+  frhAdminNote: { en: "Admin Note", bn: "অ্যাডমিন নোট" },
+  frhViewProof: { en: "View Proof", bn: "প্রমাণ দেখুন" },
+  frhAddMoney: { en: "Add Money", bn: "টাকা যোগ" },
+  frhBankTransfer: { en: "Bank Transfer", bn: "ব্যাংক ট্রান্সফার" },
+  frhMethod: { en: "Method", bn: "পদ্ধতি" },
+  frhBank: { en: "Bank", bn: "ব্যাংক" },
+  frhAccount: { en: "Account", bn: "অ্যাকাউন্ট" },
+  frhHolder: { en: "Holder", bn: "হোল্ডার" },
+  frhTxnId: { en: "TXN ID", bn: "লেনদেন আইডি" },
+  frhStatusPending: { en: "Pending", bn: "অপেক্ষমাণ" },
+  frhStatusApproved: { en: "Approved", bn: "অনুমোদিত" },
+  frhStatusRejected: { en: "Rejected", bn: "প্রত্যাখ্যাত" },
+
+  // BlockedUsersPage
+  buTitle: { en: "Blocked Users", bn: "ব্লক করা ব্যবহারকারী" },
+  buSubtitle: { en: "Manage users you've blocked from messaging", bn: "মেসেজিং থেকে ব্লক করা ব্যবহারকারী পরিচালনা করুন" },
+  buEmpty: { en: "No blocked users", bn: "কোনো ব্লক করা ব্যবহারকারী নেই" },
+  buEmptyHint: { en: "Users you block from chat will appear here", bn: "চ্যাট থেকে ব্লক করা ব্যবহারকারীরা এখানে দেখাবে" },
+  buUnblock: { en: "Unblock", bn: "আনব্লক" },
+  buUnblocked: { en: "User unblocked", bn: "ব্যবহারকারী আনব্লক হয়েছে" },
+  buUnknown: { en: "Unknown", bn: "অজানা" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
