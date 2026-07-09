@@ -16,33 +16,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ExternalLink as SafeExternalLink } from "@/components/ExternalLink";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import { useOrderNotifications } from "@/hooks/use-order-notifications";
 import WriteReviewForm from "@/components/shop/WriteReviewForm";
 import { toast } from "sonner";
 import ProductImage from "@/components/ProductImage";
 
 const STATUS_STEPS = [
-  { key: "processing", label: "Order Placed", icon: Clock, color: "hsl(36 100% 50%)" },
-  { key: "confirmed", label: "Confirmed", icon: CircleCheck, color: "hsl(291 64% 42%)" },
-  { key: "shipped", label: "Shipped", icon: Package, color: "hsl(207 90% 54%)" },
-  { key: "out_for_delivery", label: "Out for Delivery", icon: Truck, color: "hsl(14 100% 57%)" },
-  { key: "delivered", label: "Delivered", icon: CircleCheck, color: "hsl(122 39% 49%)" },
-];
+  { key: "processing", labelKey: "orderPlacedTimeline", icon: Clock, color: "hsl(36 100% 50%)" },
+  { key: "confirmed", labelKey: "confirmed2", icon: CircleCheck, color: "hsl(291 64% 42%)" },
+  { key: "shipped", labelKey: "shipped", icon: Package, color: "hsl(207 90% 54%)" },
+  { key: "out_for_delivery", labelKey: "outForDelivery", icon: Truck, color: "hsl(14 100% 57%)" },
+  { key: "delivered", labelKey: "delivered", icon: CircleCheck, color: "hsl(122 39% 49%)" },
+] as const;
 
-const ESCROW_LABELS: Record<string, { label: string; color: string }> = {
-  held: { label: "Funds Held in Escrow", color: "text-amber-600" },
-  released: { label: "Funds Released to Vendor", color: "text-emerald-600" },
-  refunded: { label: "Refunded to Wallet", color: "text-blue-600" },
+const ESCROW_LABEL_KEYS: Record<string, { key: string; color: string }> = {
+  held: { key: "odFundsHeld", color: "text-amber-600" },
+  released: { key: "odFundsReleased", color: "text-emerald-600" },
+  refunded: { key: "odRefundedToWallet", color: "text-blue-600" },
 };
 
-const RETURN_REASONS = [
-  "Defective or damaged product",
-  "Wrong item received",
-  "Product not as described",
-  "Changed my mind",
-  "Quality not satisfactory",
-  "Other",
-];
+const RETURN_REASON_KEYS = [
+  "odReturnDefective",
+  "odReturnWrong",
+  "odReturnNotAsDescribed",
+  "odReturnChangedMind",
+  "odReturnQuality",
+  "odReturnOther",
+] as const;
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
