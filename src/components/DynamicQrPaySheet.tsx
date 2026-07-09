@@ -49,9 +49,9 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
         .eq("id", sessionId)
         .single();
 
-      if (error || !session) { setErrorMsg("Session not found"); setStep("error"); return; }
-      if (session.status !== "pending") { setErrorMsg(`Session already ${session.status}`); setStep("error"); return; }
-      if (new Date(session.expires_at) < new Date()) { setErrorMsg("Session expired"); setStep("error"); return; }
+      if (error || !session) { setErrorMsg(t("dqSessionNotFound")); setStep("error"); return; }
+      if (session.status !== "pending") { setErrorMsg(`${t("dqSessionAlready")} ${session.status}`); setStep("error"); return; }
+      if (new Date(session.expires_at) < new Date()) { setErrorMsg(t("dqSessionExpired")); setStep("error"); return; }
 
       setAmount(session.amount);
       setReference(session.reference || "");
