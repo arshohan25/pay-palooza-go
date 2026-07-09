@@ -72,7 +72,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
 
     try {
       const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (!authSession?.access_token) throw new Error("Not authenticated");
+      if (!authSession?.access_token) throw new Error(t("dqNotAuthenticated"));
 
       const { data, error } = await supabase.functions.invoke("checkout-pay", {
         body: { session_id: sessionId, pin, source: "qr" },
