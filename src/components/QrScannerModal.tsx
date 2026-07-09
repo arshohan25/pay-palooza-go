@@ -286,8 +286,8 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
               {/* Camera error */}
               {cameraError && !detected && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/60 text-xs text-center px-4">
-                  <p>Camera not available</p>
-                  <p className="text-[10px] text-white/40">Use gallery upload below</p>
+                  <p>{t("qrCameraUnavailable")}</p>
+                  <p className="text-[10px] text-white/40">{t("qrUseGallery")}</p>
                 </div>
               )}
 
