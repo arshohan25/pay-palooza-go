@@ -23,10 +23,10 @@ interface FundRequest {
   transaction_id: string | null;
 }
 
-const statusConfig: Record<string, { icon: typeof Clock; label: string; class: string }> = {
-  pending:  { icon: Clock,        label: "Pending",  class: "bg-amber-500/12 text-amber-600 border-amber-500/20" },
-  approved: { icon: CheckCircle2, label: "Approved", class: "bg-emerald-500/12 text-emerald-600 border-emerald-500/20" },
-  rejected: { icon: XCircle,      label: "Rejected", class: "bg-destructive/12 text-destructive border-destructive/20" },
+const statusConfig: Record<string, { icon: typeof Clock; labelKey: "frhStatusPending" | "frhStatusApproved" | "frhStatusRejected"; class: string }> = {
+  pending:  { icon: Clock,        labelKey: "frhStatusPending",  class: "bg-amber-500/12 text-amber-600 border-amber-500/20" },
+  approved: { icon: CheckCircle2, labelKey: "frhStatusApproved", class: "bg-emerald-500/12 text-emerald-600 border-emerald-500/20" },
+  rejected: { icon: XCircle,      labelKey: "frhStatusRejected", class: "bg-destructive/12 text-destructive border-destructive/20" },
 };
 
 const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
