@@ -571,7 +571,7 @@ const CheckoutPage = () => {
               <div className="px-6 pt-5 pb-1 flex items-center justify-between">
                 <button onClick={() => { setStep("phone"); setOtp(""); setErrorMsg(""); }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronLeft size={16} />
-                  Back
+                  {t("cpBack")}
                 </button>
                 {secondsLeft !== null && (
                   <CircularCountdown secondsLeft={secondsLeft} total={totalSeconds} />
