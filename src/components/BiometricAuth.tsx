@@ -172,9 +172,9 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
                   </motion.div>
                   <div className="text-center">
                     <p className="font-bold text-foreground text-base">
-                      {step === "checking" ? "Verifying…" : "Use Fingerprint / Face ID"}
+                      {step === "checking" ? t("baVerifying") : t("baUseBio")}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Touch the sensor to authenticate</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t("baTouchSensor")}</p>
                   </div>
                 </motion.button>
               )}
