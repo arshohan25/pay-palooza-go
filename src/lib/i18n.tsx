@@ -2761,6 +2761,23 @@ const translations = {
   vspStoreNotFound: { en: "Store not found", bn: "দোকান পাওয়া যায়নি" },
   vspSearchStore: { en: "Search this store...", bn: "এই দোকানে খুঁজুন..." },
   vspNoProducts: { en: "No products found", bn: "কোনো পণ্য পাওয়া যায়নি" },
+  mspBack: { en: "Back", bn: "ফিরে যান" },
+  mspPinResetLive: { en: "PIN reset · Live support", bn: "পিন রিসেট · লাইভ সহায়তা" },
+  mspMerchantLive: { en: "Merchant Live Support", bn: "মার্চেন্ট লাইভ সহায়তা" },
+  mspVerifiedGuest: { en: "Verified guest", bn: "যাচাইকৃত অতিথি" },
+  mspEndToEnd: { en: "End-to-end encrypted", bn: "এন্ড-টু-এন্ড এনক্রিপ্টেড" },
+  mspVerified: { en: "Verified", bn: "যাচাইকৃত" },
+  mspSecure: { en: "Secure", bn: "নিরাপদ" },
+  mspOpenChat: { en: "Open chat", bn: "চ্যাট খুলুন" },
+  mspCollapseChat: { en: "Collapse chat", bn: "চ্যাট সংকুচিত" },
+  mspExpandChat: { en: "Expand chat", bn: "চ্যাট প্রসারিত" },
+  mspTapReopen: { en: "PIN reset · Tap to reopen chat", bn: "পিন রিসেট · চ্যাট আবার খুলতে ট্যাপ করুন" },
+  mspSignInTitle: { en: "Sign in to continue your support chat", bn: "সহায়তা চ্যাট চালিয়ে যেতে সাইন ইন করুন" },
+  mspSignInDesc: { en: "You'll need to sign in to your EasyPay account so we can chat with you securely.", bn: "আপনার ইজিপে অ্যাকাউন্টে সাইন ইন করুন যাতে আমরা নিরাপদে চ্যাট করতে পারি।" },
+  mspForgotPin: { en: 'Forgot your PIN? Use the "Forgot PIN" option on the merchant login.', bn: 'পিন ভুলে গেছেন? মার্চেন্ট লগইনে "পিন ভুলে গেছি" অপশন ব্যবহার করুন।' },
+  mspSignInEasyPay: { en: "Sign in to EasyPay", bn: "ইজিপে-তে সাইন ইন" },
+  mspBackToMerchantLogin: { en: "Back to merchant login", bn: "মার্চেন্ট লগইনে ফিরে যান" },
+  mspSessionExpired: { en: "Your verification expired. Please request a new code.", bn: "আপনার যাচাইয়ের মেয়াদ শেষ। নতুন কোড অনুরোধ করুন।" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

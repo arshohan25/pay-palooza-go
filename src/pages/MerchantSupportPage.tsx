@@ -7,12 +7,14 @@ import PinResetTicketChat from "@/components/merchant/PinResetTicketChat";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, ShieldCheck, LogIn, KeyRound } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 const PEEK_HEIGHT = 72;
 
 export default function MerchantSupportPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const ticketId = params.get("ticket");
@@ -67,7 +69,7 @@ export default function MerchantSupportPage() {
   }, [shutterOpen]);
 
   const handleGuestExpiry = () => {
-    toast.error("Your verification expired. Please request a new code.");
+    toast.error(t("mspSessionExpired"));
     navigate("/merchant-login", { replace: true });
   };
 
@@ -103,29 +105,29 @@ export default function MerchantSupportPage() {
           type="button"
           onClick={() => navigate("/merchant-login")}
           className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-white text-foreground/80 shadow-sm transition hover:bg-muted"
-          aria-label="Back"
+          aria-label={t("mspBack")}
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className="min-w-0">
           <h1 className="truncate text-[15px] font-semibold leading-tight text-foreground">
-            {isGuestTicketMode ? "PIN reset · Live support" : "Merchant Live Support"}
+            {isGuestTicketMode ? t("mspPinResetLive") : t("mspMerchantLive")}
           </h1>
           <p className="truncate text-[11px] leading-tight text-muted-foreground">
             {isGuestTicketMode
-              ? `Verified guest · +88 ${maskedPhone}`
-              : "End-to-end encrypted"}
+              ? `${t("mspVerifiedGuest")} · +88 ${maskedPhone}`
+              : t("mspEndToEnd")}
           </p>
         </div>
         <div className="ml-auto flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700">
-          <ShieldCheck className="h-3 w-3" /> {isGuestTicketMode ? "Verified" : "Secure"}
+          <ShieldCheck className="h-3 w-3" /> {isGuestTicketMode ? t("mspVerified") : t("mspSecure")}
         </div>
       </header>
 
       {!shutterOpen && (
         <button
           type="button"
-          aria-label="Open chat"
+          aria-label={t("mspOpenChat")}
           onClick={() => setShutterOpen(true)}
           className="absolute inset-x-0 top-0 bottom-[72px] z-10 cursor-pointer"
         />
@@ -146,7 +148,7 @@ export default function MerchantSupportPage() {
           type="button"
           onClick={() => setShutterOpen((v) => !v)}
           className="group relative flex w-full shrink-0 items-center justify-center pt-2.5 pb-1.5"
-          aria-label={shutterOpen ? "Collapse chat" : "Expand chat"}
+          aria-label={shutterOpen ? t("mspCollapseChat") : t("mspExpandChat")}
         >
           <span className="block h-1 w-10 rounded-full bg-foreground/15 transition-colors group-hover:bg-foreground/30" />
         </button>
@@ -154,7 +156,7 @@ export default function MerchantSupportPage() {
         {!shutterOpen && (
           <div className="flex items-center gap-2 px-5 pb-2 text-[13px] font-medium text-foreground/80">
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="truncate">PIN reset · Tap to reopen chat</span>
+            <span className="truncate">{t("mspTapReopen")}</span>
           </div>
         )}
 
@@ -179,28 +181,28 @@ export default function MerchantSupportPage() {
               </div>
               <div className="max-w-sm space-y-1.5">
                 <h2 className="text-base font-semibold text-foreground">
-                  Sign in to continue your support chat
+                  {t("mspSignInTitle")}
                 </h2>
                 <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  You'll need to sign in to your EasyPay account so we can chat with you securely.
+                  {t("mspSignInDesc")}
                 </p>
                 <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-muted/70 px-3 py-1 text-[11px] text-muted-foreground">
                   <KeyRound className="h-3 w-3" />
-                  Forgot your PIN? Use the "Forgot PIN" option on the merchant login.
+                  {t("mspForgotPin")}
                 </p>
               </div>
               <Button
                 onClick={() => navigate("/")}
                 className="h-11 rounded-2xl bg-gradient-to-r from-orange-500 via-rose-500 to-rose-600 px-6 font-semibold text-white"
               >
-                Sign in to EasyPay
+                {t("mspSignInEasyPay")}
               </Button>
               <button
                 type="button"
                 onClick={() => navigate("/merchant-login")}
                 className="text-[12px] font-medium text-muted-foreground hover:text-foreground"
               >
-                Back to merchant login
+                {t("mspBackToMerchantLogin")}
               </button>
             </div>
           )}
