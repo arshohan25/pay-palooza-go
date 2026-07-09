@@ -402,7 +402,7 @@ export default function ShopCheckoutPage() {
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/5 border border-destructive/20">
               <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
               <p className="text-[11px] text-destructive font-semibold">
-                Insufficient balance. Need ৳{(orderTotal - walletBalance).toLocaleString()} more.
+                {t("scpInsufficientNeed").replace("{n}", (orderTotal - walletBalance).toLocaleString())}
               </p>
             </div>
           )}
@@ -410,7 +410,7 @@ export default function ShopCheckoutPage() {
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/50 border border-accent">
               <Truck className="w-3.5 h-3.5 text-primary shrink-0" />
               <p className="text-[11px] text-muted-foreground font-semibold">
-                No advance payment required. Pay ৳{orderTotal.toLocaleString()} on delivery.
+                {t("scpCodNote").replace("{n}", orderTotal.toLocaleString())}
               </p>
             </div>
           )}
