@@ -58,7 +58,7 @@ const BudgetManager = () => {
           <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
             <Target size={15} className="text-primary" />
           </div>
-          <p className="text-sm font-bold text-foreground">Monthly Budgets</p>
+          <p className="text-sm font-bold text-foreground">{t("bmTitle")}</p>
         </div>
         {available.length > 0 && (
           <motion.button
