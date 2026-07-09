@@ -279,7 +279,7 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13.5px] font-semibold text-foreground truncate">
-                          {ticket.subject || "General Support"}
+                          {ticket.subject || t("ticketGeneralSupport")}
                         </p>
                         {/* Complaint number badge */}
                         {ticket.complaint_number && (
@@ -347,7 +347,7 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
         <SheetContent side="bottom" className="rounded-t-3xl h-[85vh] flex flex-col p-0">
           <SheetHeader className="px-6 pt-5 pb-3">
             <SheetTitle className="text-base truncate">
-              {selectedTicket?.subject || "General Support"}
+              {selectedTicket?.subject || t("ticketGeneralSupport")}
             </SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-hidden">
@@ -372,7 +372,7 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">{t("ticketSubject")}</label>
               <Input
-                placeholder="e.g. Email change request"
+                placeholder={t("ticketSubjectPlaceholder")}
                 value={ticketSubject}
                 onChange={(e) => setTicketSubject(e.target.value)}
               />
