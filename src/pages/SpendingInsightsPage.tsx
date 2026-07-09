@@ -539,11 +539,11 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
               <div className="flex gap-4 px-4 pb-4">
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: "hsl(var(--muted-foreground) / 0.3)" }} />
-                  Budget
+                  {t("siBudget")}
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: "hsl(var(--primary))" }} />
-                  Actual
+                  {t("siActual")}
                 </div>
               </div>
             </motion.div>
