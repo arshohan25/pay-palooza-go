@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useCart } from "@/hooks/use-cart";
 import ProductCard, { type ShopProduct } from "@/components/shop/ProductCard";
+import { useI18n } from "@/lib/i18n";
 
 export default function WishlistPage() {
   const navigate = useNavigate();
