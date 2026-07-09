@@ -529,10 +529,10 @@ export default function ShopCheckoutPage() {
         {needsPin && (
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            Confirm PIN
+            {t("scpConfirmPin")}
           </p>
           <p className="text-xs text-muted-foreground">
-            Enter your 4-digit PIN to authorize this purchase
+            {t("scpConfirmPinDesc")}
           </p>
           <div className="flex justify-center gap-5 py-2">
             {[0, 1, 2, 3].map((i) => (
