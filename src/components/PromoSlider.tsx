@@ -48,6 +48,7 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const navigate = useNavigate();
   const { isDisabled } = useGlobalToggles();
+  const { t } = useI18n();
 
   // Filter out banners linked to disabled features
   const visibleBanners = useMemo(() => {
