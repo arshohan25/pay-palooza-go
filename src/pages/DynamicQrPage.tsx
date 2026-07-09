@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Clock, XCircle, Store, RefreshCw, Wallet } from "lucide-react";
 import QRCode from "qrcode";
@@ -33,6 +34,7 @@ interface SessionInfo {
 const DynamicQrPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { isAuthenticated } = useAuth();
+  const { t } = useI18n();
   const [status, setStatus] = useState<Status>("loading");
   const [amount, setAmount] = useState(0);
   const [currency, setCurrency] = useState("BDT");
@@ -162,8 +164,8 @@ const DynamicQrPage = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-3">
           <XCircle className="w-12 h-12 text-destructive mx-auto" />
-          <h2 className="text-lg font-bold text-foreground">Session Not Found</h2>
-          <p className="text-sm text-muted-foreground">This payment session does not exist or has been removed.</p>
+          <h2 className="text-lg font-bold text-foreground">{t("dqpSessionNotFound")}</h2>
+          <p className="text-sm text-muted-foreground">{t("dqpSessionNotFoundDesc")}</p>
         </div>
       </div>
     );
@@ -174,15 +176,15 @@ const DynamicQrPage = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-3">
           <XCircle className="w-12 h-12 text-destructive mx-auto" />
-          <h2 className="text-lg font-bold text-foreground">Something Went Wrong</h2>
-          <p className="text-sm text-muted-foreground">Could not load this payment session. Please try again.</p>
+          <h2 className="text-lg font-bold text-foreground">{t("dqpSomethingWrong")}</h2>
+          <p className="text-sm text-muted-foreground">{t("dqpCouldNotLoad")}</p>
           <button
             onClick={handleRetry}
             disabled={retrying}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-2 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${retrying ? "animate-spin" : ""}`} />
-            Retry
+            {t("dqpRetry")}
           </button>
         </div>
       </div>
@@ -206,7 +208,7 @@ const DynamicQrPage = () => {
           <p className="text-2xl font-extrabold text-foreground mt-0.5">
             ৳{fmt(amount)} <span className="text-xs font-medium text-muted-foreground">{currency}</span>
           </p>
-          {reference && <p className="text-[11px] text-muted-foreground mt-0.5">Ref: {reference}</p>}
+          {reference && <p className="text-[11px] text-muted-foreground mt-0.5">{t("dqpRef")}: {reference}</p>}
         </div>
 
         <AnimatePresence mode="wait">
@@ -214,11 +216,11 @@ const DynamicQrPage = () => {
             <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-2 py-1.5 space-y-1">
               {qrDataUrl && (
                 <div className="bg-white rounded-xl p-1.5 mx-auto w-fit shadow-sm">
-                  <img src={qrDataUrl} alt="Payment QR Code" className="w-48 h-48" />
+                  <img src={qrDataUrl} alt={t("dqpPaymentQrAlt")} className="w-48 h-48" />
                 </div>
               )}
               <p className="text-center text-xs text-muted-foreground">
-                Scan with <span className="font-semibold text-foreground">EasyPay</span> app to pay
+                {t("dqpScanWith")} <span className="font-semibold text-foreground">EasyPay</span> {t("dqpToPay")}
               </p>
               <div className="flex items-center justify-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-muted-foreground" />
@@ -232,7 +234,7 @@ const DynamicQrPage = () => {
                   animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 />
-                <span className="text-[11px] text-muted-foreground">Waiting for payment…</span>
+                <span className="text-[11px] text-muted-foreground">{t("dqpWaiting")}</span>
               </div>
               {isAuthenticated && (
                 <button
@@ -240,7 +242,7 @@ const DynamicQrPage = () => {
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
                 >
                   <Wallet className="w-4 h-4" />
-                  Pay with EasyPay
+                  {t("dqpPayWithEasyPay")}
                 </button>
               )}
             </motion.div>
@@ -251,23 +253,23 @@ const DynamicQrPage = () => {
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}>
                 <CheckCircle2 className="w-16 h-16 text-primary mx-auto" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground">Payment Received!</h2>
-              <p className="text-sm text-muted-foreground">৳{fmt(amount)} paid successfully</p>
-              {successUrl && <p className="text-xs text-muted-foreground">Redirecting…</p>}
+              <h2 className="text-xl font-bold text-foreground">{t("dqpPaymentReceived")}</h2>
+              <p className="text-sm text-muted-foreground">৳{fmt(amount)} {t("dqpPaidSuccess")}</p>
+              {successUrl && <p className="text-xs text-muted-foreground">{t("dqpRedirecting")}</p>}
             </motion.div>
           )}
 
           {status === "expired" && (
             <motion.div key="expired" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-5 text-center space-y-3">
               <XCircle className="w-14 h-14 text-destructive/60 mx-auto" />
-              <h2 className="text-lg font-bold text-foreground">Session Expired</h2>
-              <p className="text-sm text-muted-foreground">This payment session has expired.</p>
+              <h2 className="text-lg font-bold text-foreground">{t("dqpSessionExpired")}</h2>
+              <p className="text-sm text-muted-foreground">{t("dqpSessionExpiredDesc")}</p>
             </motion.div>
           )}
         </AnimatePresence>
 
         <div className="px-3 pb-1.5 pt-0.5 text-center">
-          <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
+          <p className="text-[10px] text-muted-foreground/60">{t("dqpPoweredBy")}</p>
         </div>
       </motion.div>
 
