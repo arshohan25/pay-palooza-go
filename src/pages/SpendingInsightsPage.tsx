@@ -507,10 +507,10 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
                         return (
                           <div className="bg-card border border-border rounded-xl px-3 py-2.5 shadow-elevated text-xs space-y-1 min-w-[140px]">
                             <p className="font-semibold text-foreground mb-1">{label}</p>
-                            <div className="flex justify-between"><span className="text-muted-foreground">Budget</span><span className="font-medium text-foreground">৳{budget.toLocaleString()}</span></div>
-                            <div className="flex justify-between"><span className="text-muted-foreground">Actual</span><span className="font-medium text-foreground">৳{actual.toLocaleString()}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">{t("siBudget")}</span><span className="font-medium text-foreground">৳{budget.toLocaleString()}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">{t("siActual")}</span><span className="font-medium text-foreground">৳{actual.toLocaleString()}</span></div>
                             <div className="border-t border-border pt-1 mt-1 flex justify-between font-semibold">
-                              <span className="text-muted-foreground">Used</span>
+                              <span className="text-muted-foreground">{t("siUsed")}</span>
                               <span className={pct >= 90 ? "text-destructive" : pct >= 70 ? "text-amber-500" : "text-primary"}>{pct}%</span>
                             </div>
                           </div>
