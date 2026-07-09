@@ -105,7 +105,7 @@ const BudgetManager = () => {
       {/* Budget list */}
       {budgets.length === 0 && !adding && (
         <p className="text-xs text-muted-foreground text-center py-3">
-          No budgets set. Tap Add to create one.
+          {t("bmEmpty")}
         </p>
       )}
 
