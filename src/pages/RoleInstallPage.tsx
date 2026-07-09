@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, onPromptAvailable, isAppInstalled, clearPrompt } from "@/lib/installPromptStore";
+import { useI18n } from "@/lib/i18n";
 
 const ROLE_CONFIG: Record<string, {
   name: string;
@@ -70,6 +71,7 @@ const ROLE_CONFIG: Record<string, {
 const RoleInstallPage = () => {
   const { role } = useParams<{ role: string }>();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [hasPrompt, setHasPrompt] = useState(!!getInstallPrompt());
   const [installed, setInstalled] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -109,7 +111,7 @@ const RoleInstallPage = () => {
   if (!config) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
-        <h1 className="text-xl font-bold text-foreground mb-4">Choose an App to Install</h1>
+        <h1 className="text-xl font-bold text-foreground mb-4">{t("ripChooseApp")}</h1>
         <div className="grid gap-3 w-full max-w-sm">
           {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
             <motion.button
@@ -153,7 +155,7 @@ const RoleInstallPage = () => {
 
       <div className="flex-1 px-6 py-6 -mt-4 bg-background rounded-t-3xl relative z-10">
         <div className="mb-8">
-          <h2 className="text-sm font-bold text-foreground mb-3">What's included</h2>
+          <h2 className="text-sm font-bold text-foreground mb-3">{t("ripWhatsIncluded")}</h2>
           <div className="grid grid-cols-2 gap-2">
             {config.features.map((f) => (
               <div key={f} className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
@@ -170,8 +172,8 @@ const RoleInstallPage = () => {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                 <Check size={28} className="text-primary" />
               </div>
-              <p className="font-bold text-foreground">App Installed!</p>
-              <p className="text-sm text-muted-foreground mt-1">Check your home screen</p>
+              <p className="font-bold text-foreground">{t("ripAppInstalled")}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t("ripCheckHome")}</p>
             </motion.div>
           ) : hasPrompt ? (
             <motion.div key="installable" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -180,19 +182,19 @@ const RoleInstallPage = () => {
                 className={`w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r ${config.color} text-white shadow-lg`}
               >
                 <Download size={18} className="mr-2" />
-                Install {config.shortName}
+                {t("ripInstall")} {config.shortName}
               </Button>
             </motion.div>
           ) : (
             <motion.div key="manual" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-3">
               <div className="p-4 rounded-2xl bg-muted/50 border border-border">
                 <Icon size={24} className="text-primary mx-auto mb-2" />
-                <p className="text-sm font-semibold text-foreground">Install Manually</p>
+                <p className="text-sm font-semibold text-foreground">{t("ripInstallManually")}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  <strong>iPhone:</strong> Tap Share → "Add to Home Screen"
+                  <strong>{t("ripIphone")}</strong> {t("ripIphoneHint")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  <strong>Android:</strong> Tap ⋮ menu → "Install app"
+                  <strong>{t("ripAndroid")}</strong> {t("ripAndroidHint")}
                 </p>
               </div>
             </motion.div>
