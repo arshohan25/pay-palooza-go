@@ -356,8 +356,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_theme") && <MenuRow
             icon={Sun}
             iconClass="gradient-accent"
-            label="Theme"
-            sub="Switch between light, dark & system"
+            label={t("theme")}
+            sub={t("themeSub")}
             right={
               <span className="text-[12px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
                 {themeLabel}
