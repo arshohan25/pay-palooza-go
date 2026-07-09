@@ -2499,6 +2499,23 @@ const translations = {
   dqDone: { en: "Done", bn: "সম্পন্ন" },
   dqPaymentFailedTitle: { en: "Payment Failed", bn: "পেমেন্ট ব্যর্থ হয়েছে" },
   dqClose: { en: "Close", bn: "বন্ধ করুন" },
+
+  // SupportChat
+  scMsgDeleted: { en: "🗑️ This message was deleted", bn: "🗑️ এই বার্তাটি মুছে ফেলা হয়েছে" },
+  scScreenshotToast: { en: "Screenshot detected!", bn: "স্ক্রিনশট সনাক্ত হয়েছে!" },
+  scScreenshotDesc: { en: "Screenshots are monitored in encrypted chats.", bn: "এনক্রিপ্টেড চ্যাটে স্ক্রিনশট পর্যবেক্ষণ করা হয়।" },
+  scMsgDeletedToast: { en: "Message deleted", bn: "বার্তা মুছে ফেলা হয়েছে" },
+  scScreenshotBanner: { en: "⚠️ Screenshot detected!", bn: "⚠️ স্ক্রিনশট সনাক্ত হয়েছে!" },
+  scE2EBanner: { en: "End-to-end encrypted • AES-256-GCM", bn: "এন্ড-টু-এন্ড এনক্রিপ্টেড • AES-256-GCM" },
+  scContext: { en: "Context", bn: "প্রসঙ্গ" },
+  scAddressPoints: { en: "Address the points above in your message before resubmitting.", bn: "পুনরায় জমা দেওয়ার আগে আপনার বার্তায় উপরের বিষয়গুলি সমাধান করুন।" },
+  scWelcome: { en: "🔐 This chat is end-to-end encrypted with AES-256-GCM. Messages are encrypted before leaving your device. Screenshots are monitored.", bn: "🔐 এই চ্যাটটি AES-256-GCM দিয়ে এন্ড-টু-এন্ড এনক্রিপ্টেড। আপনার ডিভাইস ছাড়ার আগেই বার্তাগুলি এনক্রিপ্ট করা হয়। স্ক্রিনশট পর্যবেক্ষণ করা হয়।" },
+  scSecuritySystem: { en: "Security System", bn: "নিরাপত্তা সিস্টেম" },
+  scDecrypting: { en: "🔓 Decrypting...", bn: "🔓 ডিক্রিপ্ট করা হচ্ছে..." },
+  scDeleteMsg: { en: "Delete message", bn: "বার্তা মুছুন" },
+  scNoMessages: { en: "No messages yet", bn: "এখনো কোনো বার্তা নেই" },
+  scStartSecure: { en: "Start a secure conversation!", bn: "একটি সুরক্ষিত কথোপকথন শুরু করুন!" },
+  scPlaceholder: { en: "Type an encrypted message...", bn: "একটি এনক্রিপ্টেড বার্তা লিখুন..." },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

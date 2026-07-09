@@ -13,6 +13,7 @@ import {
 } from "@/lib/chatCrypto";
 import { redactSensitive } from "@/lib/redactSensitive";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 interface Message {
   id: string;
@@ -36,6 +37,7 @@ interface SupportChatProps {
 }
 
 const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, initialContext }: SupportChatProps) => {
+  const { t } = useI18n();
   const [conversationId, setConversationId] = useState<string | null>(externalConvId ?? null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [decryptedCache, setDecryptedCache] = useState<Record<string, string>>({});
@@ -66,7 +68,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
 
   // Decrypt a message and cache the result
   const decryptAndCache = useCallback(async (msg: Message) => {
-    if (msg.is_deleted) return "🗑️ This message was deleted";
+    if (msg.is_deleted) return t("scMsgDeleted");
     const decrypted = await tryDecryptMessage(msg.content, msg.is_encrypted, cryptoKeyRef.current);
     setDecryptedCache(prev => ({ ...prev, [msg.id]: decrypted }));
     return decrypted;
@@ -77,7 +79,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
     const cache: Record<string, string> = {};
     for (const msg of msgs) {
       if (msg.is_deleted) {
-        cache[msg.id] = "🗑️ This message was deleted";
+        cache[msg.id] = t("scMsgDeleted");
       } else {
         cache[msg.id] = await tryDecryptMessage(msg.content, msg.is_encrypted, cryptoKeyRef.current);
       }
@@ -89,8 +91,8 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
   useEffect(() => {
     const cleanup = startScreenshotDetection(() => {
       setScreenshotAlert(true);
-      toast.warning("Screenshot detected!", {
-        description: "Screenshots are monitored in encrypted chats.",
+      toast.warning(t("scScreenshotToast"), {
+        description: t("scScreenshotDesc"),
         icon: <ShieldAlert size={16} />,
       });
       setTimeout(() => setScreenshotAlert(false), 3000);
@@ -201,7 +203,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
         const updated = payload.new as Message;
         setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
         if (updated.is_deleted) {
-          setDecryptedCache(prev => ({ ...prev, [updated.id]: "🗑️ This message was deleted" }));
+          setDecryptedCache(prev => ({ ...prev, [updated.id]: t("scMsgDeleted") }));
         }
       })
       .subscribe();
@@ -250,8 +252,8 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
 
     if (!error) {
       setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_deleted: true, content: "" } : m));
-      setDecryptedCache(prev => ({ ...prev, [msgId]: "🗑️ This message was deleted" }));
-      toast.success("Message deleted");
+      setDecryptedCache(prev => ({ ...prev, [msgId]: t("scMsgDeleted") }));
+      toast.success(t("scMsgDeletedToast"));
     }
   };
 
@@ -324,7 +326,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
             <Lock size={10} className="text-muted-foreground" />
           )}
           <span className={`text-[10px] font-medium ${screenshotAlert ? "text-destructive" : "text-muted-foreground"}`}>
-            {screenshotAlert ? "⚠️ Screenshot detected!" : "End-to-end encrypted • AES-256-GCM"}
+            {screenshotAlert ? t("scScreenshotBanner") : t("scE2EBanner")}
           </span>
         </div>
       </div>
@@ -341,7 +343,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
             <span className="flex items-center gap-1.5 min-w-0">
               <Info size={12} className="text-amber-600 shrink-0" />
               <span className="text-[11px] font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wide truncate">
-                Context · {initialContext.title}
+                {t("scContext")} · {initialContext.title}
               </span>
             </span>
             {contextOpen ? (
@@ -356,7 +358,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
                 {redactSensitive(initialContext.body)}
               </p>
               <p className="text-[10px] text-muted-foreground mt-1.5">
-                Address the points above in your message before resubmitting.
+                {t("scAddressPoints")}
               </p>
             </div>
           )}
@@ -372,9 +374,9 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
           </div>
           <div className="bg-muted/60 rounded-2xl rounded-tl-md px-3 py-2 max-w-[80%]">
             <p className="text-xs text-foreground leading-relaxed">
-              🔐 This chat is end-to-end encrypted with AES-256-GCM. Messages are encrypted before leaving your device. Screenshots are monitored.
+              {t("scWelcome")}
             </p>
-            <p className="text-[9px] text-muted-foreground mt-1">Security System</p>
+            <p className="text-[9px] text-muted-foreground mt-1">{t("scSecuritySystem")}</p>
           </div>
         </div>
 
@@ -382,8 +384,8 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
           {messages.map((msg) => {
             const isMe = msg.sender_id === userId;
             const displayContent = msg.is_deleted
-              ? "🗑️ This message was deleted"
-              : decryptedCache[msg.id] ?? "🔓 Decrypting...";
+              ? t("scMsgDeleted")
+              : decryptedCache[msg.id] ?? t("scDecrypting");
             const isExpiring = msg.expires_at !== null;
 
             return (
@@ -425,7 +427,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
                     <button
                       onClick={() => deleteMessage(msg.id)}
                       className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-destructive/10"
-                      title="Delete message"
+                      title={t("scDeleteMsg")}
                     >
                       <Trash2 size={12} className="text-destructive" />
                     </button>
@@ -456,8 +458,8 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
             <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
               <Lock className="w-7 h-7 text-muted-foreground" />
             </motion.div>
-            <p className="text-sm font-semibold text-foreground">No messages yet</p>
-            <p className="text-xs text-muted-foreground mt-1">Start a secure conversation!</p>
+            <p className="text-sm font-semibold text-foreground">{t("scNoMessages")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("scStartSecure")}</p>
           </motion.div>
         )}
       </div>
@@ -472,7 +474,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
             sendTypingIndicator();
           }}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-          placeholder="Type an encrypted message..."
+          placeholder={t("scPlaceholder")}
           className="flex-1 h-10 rounded-xl text-xs"
           disabled={sending}
         />
