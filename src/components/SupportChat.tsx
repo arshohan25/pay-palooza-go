@@ -474,7 +474,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
             sendTypingIndicator();
           }}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-          placeholder="Type an encrypted message..."
+          placeholder={t("scPlaceholder")}
           className="flex-1 h-10 rounded-xl text-xs"
           disabled={sending}
         />
