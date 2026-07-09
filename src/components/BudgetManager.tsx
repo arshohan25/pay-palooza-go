@@ -86,7 +86,7 @@ const BudgetManager = () => {
           <div className="flex gap-2">
             <Input
               type="number"
-              placeholder="৳ Limit"
+              placeholder={t("bmLimit")}
               value={newLimit}
               onChange={(e) => setNewLimit(e.target.value)}
               className="rounded-xl text-sm"
