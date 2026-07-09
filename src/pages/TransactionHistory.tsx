@@ -46,17 +46,17 @@ interface Transaction {
   recipient_phone?: string | null;
 }
 
-const CATEGORIES: { id: TxCategory; label: string }[] = [
-  { id: "all",      label: "All" },
-  { id: "send",     label: "Send" },
-  { id: "receive",  label: "Received" },
-  { id: "cashout",  label: "Cash Out" },
-  { id: "cashin",   label: "Cash In" },
-  { id: "payment",  label: "Payment" },
-  { id: "banktransfer", label: "Bank Transfer" },
-  { id: "recharge", label: "Recharge" },
-  { id: "paybill",  label: "Bill Pay" },
-  { id: "addmoney", label: "Add Money" },
+const CATEGORY_KEYS: { id: TxCategory; key: string }[] = [
+  { id: "all",          key: "thAll" },
+  { id: "send",         key: "thSend" },
+  { id: "receive",      key: "thReceived" },
+  { id: "cashout",      key: "thCashOut" },
+  { id: "cashin",       key: "thCashIn" },
+  { id: "payment",      key: "thPayment" },
+  { id: "banktransfer", key: "thBankTransfer" },
+  { id: "recharge",     key: "thRecharge" },
+  { id: "paybill",      key: "thBillPay" },
+  { id: "addmoney",     key: "thAddMoney" },
 ];
 
 // Illustrated icon config for each transaction category
