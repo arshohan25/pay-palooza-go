@@ -353,7 +353,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           <PopoverContent className="w-auto p-3 space-y-3" align="start">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground mb-1">From</p>
+                <p className="text-[11px] font-medium text-muted-foreground mb-1">{t("siFrom")}</p>
                 <Calendar
                   mode="single"
                   selected={customFrom}
@@ -363,7 +363,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
                 />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground mb-1">To</p>
+                <p className="text-[11px] font-medium text-muted-foreground mb-1">{t("siTo")}</p>
                 <Calendar
                   mode="single"
                   selected={customTo}
@@ -379,7 +379,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
               disabled={!customFrom || !customTo}
               onClick={applyCustomRange}
             >
-              Apply Range
+              {t("siApplyRange")}
             </Button>
           </PopoverContent>
         </Popover>
