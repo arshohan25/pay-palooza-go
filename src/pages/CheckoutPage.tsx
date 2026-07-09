@@ -549,11 +549,11 @@ const CheckoutPage = () => {
                   className="w-full h-12 rounded-2xl text-sm font-bold gradient-primary text-primary-foreground shadow-glow"
                 >
                   <Send size={15} className="mr-2" />
-                  Send OTP
+                  {t("cpSendOtp")}
                 </Button>
 
                 <button onClick={handleCancel} className="w-full text-center text-xs text-muted-foreground font-medium py-1 hover:text-foreground transition-colors">
-                  Cancel
+                  {t("cpCancel")}
                 </button>
               </div>
 
