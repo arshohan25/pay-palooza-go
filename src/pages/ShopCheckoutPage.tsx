@@ -253,7 +253,7 @@ export default function ShopCheckoutPage() {
           <Button variant="ghost" size="icon" onClick={() => navigate("/shop")} className="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-base font-bold text-primary-foreground">Order Placed!</h1>
+          <h1 className="text-base font-bold text-primary-foreground">{t("scpOrderPlaced")}</h1>
         </div>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
