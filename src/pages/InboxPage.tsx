@@ -1705,3 +1705,4 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     </>
   );
 }
+}
