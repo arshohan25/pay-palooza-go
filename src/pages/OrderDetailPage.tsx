@@ -110,9 +110,9 @@ export default function OrderDetailPage() {
       const { error } = await supabase.from("orders").update({ status: "cancelled" } as any).eq("id", order.id).eq("user_id", user!.id);
       if (error) throw error;
       setOrder((prev: any) => ({ ...prev, status: "cancelled" }));
-      toast.success("Order cancelled · Refund will be processed within 24 hours");
+      toast.success(t("odCancelSuccess"));
     } catch (e: any) {
-      toast.error(e.message || "Failed to cancel order");
+      toast.error(e.message || t("odCancelFailed"));
     }
     setCancelling(false);
   };
