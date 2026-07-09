@@ -363,21 +363,21 @@ const Index = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground">
                       {kycStatus === "pending"
-                        ? "KYC Under Review"
+                        ? t("idxKycUnderReview")
                         : kycStatus === "rejected"
-                        ? "KYC Rejected — Resubmit"
-                        : "Complete KYC to unlock all features"}
+                        ? t("idxKycRejected")
+                        : t("idxCompleteKyc")}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
                       {kycStatus === "pending"
-                        ? "Your verification is being reviewed"
+                        ? t("idxKycReviewing")
                         : kycStatus === "rejected"
-                        ? (rejectionReason || "Please resubmit your verification documents")
-                        : "Verify your identity to send money, cash out & more"}
+                        ? (rejectionReason || t("idxKycResubmit"))
+                        : t("idxKycUnlock")}
                     </p>
                   </div>
                   <span className="text-xs font-medium text-primary shrink-0">
-                    {kycStatus === "pending" ? "View" : kycStatus === "rejected" ? "Retry" : "Start →"}
+                    {kycStatus === "pending" ? t("idxView") : kycStatus === "rejected" ? t("idxRetry") : t("idxStart")}
                   </span>
                 </motion.button>
               )}
