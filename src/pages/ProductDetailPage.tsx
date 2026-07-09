@@ -27,6 +27,7 @@ import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { useChat } from "@/hooks/use-chat";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 interface Variant {
   id: string;
@@ -55,6 +56,7 @@ function getEstimatedDelivery() {
 }
 
 export default function ProductDetailPage() {
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -104,16 +106,16 @@ export default function ProductDetailPage() {
 
   const handleChatWithMerchant = useCallback(async () => {
     if (!user) {
-      toast.error("Please log in to chat with the seller");
+      toast.error(t("pdpLoginToChat"));
       return;
     }
     const merchantUserId = (product?.merchants as any)?.user_id;
     if (!merchantUserId) {
-      toast.error("Merchant info unavailable");
+      toast.error(t("pdpMerchantUnavailable"));
       return;
     }
     if (merchantUserId === user.id) {
-      toast.info("This is your own store");
+      toast.info(t("pdpOwnStore"));
       return;
     }
     setChattingWithMerchant(true);
@@ -124,7 +126,7 @@ export default function ProductDetailPage() {
       });
       if (convId) {
         // Send product inquiry as a "product" type message with metadata
-        await sendMessage(convId, `Inquiry about ${product.name}`, "text", {
+        await sendMessage(convId, `${t("pdpInquiryAbout")} ${product.name}`, "text", {
           productId: product.id,
           productName: product.name,
           productPrice: product.price,
@@ -135,14 +137,14 @@ export default function ProductDetailPage() {
         await openConversation(convId);
         setShowInlineChat(convId);
       } else {
-        toast.error("Could not start conversation");
+        toast.error(t("pdpConvFailed"));
       }
     } catch {
-      toast.error("Failed to start chat");
+      toast.error(t("pdpChatFailed"));
     } finally {
       setChattingWithMerchant(false);
     }
-  }, [user, product, createDirectConversation, sendMessage, openConversation]);
+  }, [user, product, createDirectConversation, sendMessage, openConversation, t]);
 
   // ── Data loading (unchanged logic) ──
   useEffect(() => {
@@ -215,14 +217,14 @@ export default function ProductDetailPage() {
     try {
       await sendMessage(showInlineChat, text);
     } catch {
-      toast.error("Failed to send");
+      toast.error(t("pdpSendFailed"));
     } finally {
       setSendingChat(false);
     }
-  }, [chatInput, showInlineChat, sendingChat, sendMessage, setTyping]);
+  }, [chatInput, showInlineChat, sendingChat, sendMessage, setTyping, t]);
 
   if (loading) return <LoadingSkeleton />;
-  if (!product) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Product not found</p></div>;
+  if (!product) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">{t("pdpProductNotFound")}</p></div>;
 
   const finalPrice = product.price + (selectedVariant?.price_adjustment || 0);
   const discount = product.original_price ? Math.round(((product.original_price - product.price) / product.original_price) * 100) : 0;
@@ -277,7 +279,7 @@ export default function ProductDetailPage() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <h1 className="flex-1 min-w-0 text-[15px] font-semibold text-primary-foreground truncate">
-                {product?.name ?? "Product"}
+                {product?.name ?? t("pdpProduct")}
               </h1>
               <div className="flex items-center gap-1">
                 <motion.div whileTap={{ scale: 0.75 }} className="relative">
@@ -374,7 +376,7 @@ export default function ProductDetailPage() {
             )}
           </div>
           {savings > 0 && (
-            <p className="text-xs font-medium text-primary">You save ৳{savings.toLocaleString()}</p>
+            <p className="text-xs font-medium text-primary">{t("pdpYouSave")} ৳{savings.toLocaleString()}</p>
           )}
         </motion.div>
 
@@ -390,15 +392,15 @@ export default function ProductDetailPage() {
               <Star key={i} className={cn("w-3.5 h-3.5", i < Math.round(product.rating) ? "fill-accent text-accent" : "text-muted-foreground/20")} />
             ))}
           </div>
-          <span className="text-xs text-muted-foreground">{product.rating?.toFixed(1)} · {product.review_count} reviews</span>
+          <span className="text-xs text-muted-foreground">{product.rating?.toFixed(1)} · {product.review_count} {t("pdpReviews")}</span>
         </motion.div>
 
         {/* Stock urgency */}
         {product.stock > 0 && product.stock <= 20 && (
           <motion.div custom={3.5} variants={fadeUp} initial="hidden" animate="show" className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-destructive">Only {product.stock} left!</span>
-              <span className="text-[10px] text-muted-foreground">Hurry up</span>
+              <span className="text-xs font-medium text-destructive">{t("pdpOnlyLeft").replace("{n}", String(product.stock))}</span>
+              <span className="text-[10px] text-muted-foreground">{t("pdpHurryUp")}</span>
             </div>
             <Progress value={stockPct} className="h-1.5 bg-destructive/10 [&>div]:bg-destructive" />
           </motion.div>
@@ -425,7 +427,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-1.5 shrink-0">
               {vendorInfo.slug && (
                 <Button variant="outline" size="sm" className="text-xs h-7 rounded-lg" onClick={() => navigate(`/shop/${vendorInfo.slug}`)}>
-                  Visit Store <ChevronRight className="w-3 h-3 ml-0.5" />
+                  {t("pdpVisitStore")} <ChevronRight className="w-3 h-3 ml-0.5" />
                 </Button>
               )}
             </div>
@@ -466,10 +468,10 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-2">
               <div className={cn("w-2.5 h-2.5 rounded-full", product.stock > 0 ? "bg-green-500" : "bg-destructive")} />
               <span className="text-sm font-semibold text-foreground">
-                {product.stock > 0 ? "In Stock" : "Out of Stock"}
+                {product.stock > 0 ? t("pdpInStock") : t("pdpOutOfStock")}
               </span>
               {product.stock > 0 && (
-                <span className="text-xs text-muted-foreground">· {product.stock} available</span>
+                <span className="text-xs text-muted-foreground">· {product.stock} {t("pdpAvailable")}</span>
               )}
             </div>
             <div className="flex items-center border border-border rounded-full overflow-hidden bg-background">
@@ -498,7 +500,7 @@ export default function ProductDetailPage() {
             <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
               <div className="flex items-center gap-2 px-3.5 py-2.5 bg-muted/30 border-b border-border/40">
                 <Tag className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs font-semibold text-foreground">Key Highlights</span>
+                <span className="text-xs font-semibold text-foreground">{t("pdpKeyHighlights")}</span>
               </div>
               <div className="flex flex-wrap gap-2 px-3.5 py-3">
                 {product.category && <Badge variant="secondary" className="text-xs">{product.category}</Badge>}
@@ -514,10 +516,10 @@ export default function ProductDetailPage() {
         <motion.div custom={7} variants={fadeUp} initial="hidden" animate="show"
           className="bg-card border border-border/60 rounded-xl divide-y divide-border/40 overflow-hidden">
           {[
-            { icon: Truck, label: "Free Delivery", sub: `Estimated ${getEstimatedDelivery()}`, color: "text-primary" },
-            { icon: Banknote, label: "Cash on Delivery Available", color: "text-primary" },
-            { icon: RefreshCw, label: "Easy Return", sub: "14 days return policy", color: "text-accent" },
-            { icon: ShieldCheck, label: "100% Authentic", sub: "Genuine product guarantee", color: "text-primary" },
+            { icon: Truck, label: t("pdpFreeDelivery"), sub: `${t("pdpEstimated")} ${getEstimatedDelivery()}`, color: "text-primary" },
+            { icon: Banknote, label: t("pdpCOD"), color: "text-primary" },
+            { icon: RefreshCw, label: t("pdpEasyReturn"), sub: t("pdpReturnPolicy"), color: "text-accent" },
+            { icon: ShieldCheck, label: t("pdpAuthentic"), sub: t("pdpGenuine"), color: "text-primary" },
           ].map(({ icon: Icon, label, sub, color }, idx) => (
             <motion.div key={label} className="flex items-center gap-3 px-3.5 py-3"
               initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
@@ -537,9 +539,9 @@ export default function ProductDetailPage() {
         <motion.div custom={8} variants={fadeUp} initial="hidden" animate="show">
           <Tabs defaultValue="description">
             <TabsList className="w-full bg-muted/50 rounded-xl p-1 h-auto">
-              <TabsTrigger value="description" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">Description</TabsTrigger>
-              <TabsTrigger value="specs" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">Specifications</TabsTrigger>
-              <TabsTrigger value="reviews" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">Reviews ({product.review_count})</TabsTrigger>
+              <TabsTrigger value="description" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">{t("pdpDescription")}</TabsTrigger>
+              <TabsTrigger value="specs" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">{t("pdpSpecifications")}</TabsTrigger>
+              <TabsTrigger value="reviews" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">{t("pdpReviewsTab")} ({product.review_count})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="description" className="mt-3 space-y-3">
@@ -548,14 +550,14 @@ export default function ProductDetailPage() {
               <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
                 <div className="flex items-center gap-2 px-3.5 py-2.5 bg-muted/30 border-b border-border/40">
                   <Package className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-foreground">Product Details</span>
+                  <span className="text-xs font-semibold text-foreground">{t("pdpProductDetails")}</span>
                 </div>
                 {(() => {
-                  const lines = (product.description || "No description available.").split("\n").filter(Boolean);
+                  const lines = (product.description || t("pdpNoDescription")).split("\n").filter(Boolean);
                   if (lines.length <= 1) {
                     return (
                       <div className="px-3.5 py-3 border-l-2 border-primary/40 ml-3 my-3">
-                        <p className="text-sm text-muted-foreground leading-relaxed">{lines[0] || "No description available."}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{lines[0] || t("pdpNoDescription")}</p>
                       </div>
                     );
                   }
@@ -578,10 +580,10 @@ export default function ProductDetailPage() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
               <div className="bg-card border border-border/60 rounded-xl divide-y divide-border/40 overflow-hidden">
                 {[
-                  product.category && ["Category", product.category],
-                  (product as any).brand && ["Brand", (product as any).brand],
-                  (product as any).sku && ["SKU", (product as any).sku],
-                  ["Stock", product.stock > 0 ? `${product.stock} units` : "Out of stock"],
+                  product.category && [t("pdpCategory"), product.category],
+                  (product as any).brand && [t("pdpBrand"), (product as any).brand],
+                  (product as any).sku && [t("pdpSku"), (product as any).sku],
+                  [t("pdpStock"), product.stock > 0 ? `${product.stock} ${t("pdpUnits")}` : t("pdpOutOfStock")],
                 ].filter(Boolean).map(([k, v]: any) => (
                   <div key={k} className="flex justify-between px-3.5 py-2.5">
                     <span className="text-xs text-muted-foreground">{k}</span>
@@ -609,7 +611,7 @@ export default function ProductDetailPage() {
         {relatedFromVendor.length > 0 && (
           <motion.div custom={9} variants={fadeUp} initial="hidden" animate="show">
             <RelatedProductsRow
-              title="More from this Store"
+              title={t("pdpMoreFromStore")}
               products={relatedFromVendor}
               seeAllLink={vendorInfo?.slug ? `/shop/${vendorInfo.slug}` : "/shop"}
               onNavigate={(pid) => navigate(`/product/${pid}`)}
@@ -621,7 +623,7 @@ export default function ProductDetailPage() {
         {relatedOthers.length > 0 && (
           <motion.div custom={10} variants={fadeUp} initial="hidden" animate="show">
             <RelatedProductsRow
-              title="You May Also Like"
+              title={t("pdpYouMayLike")}
               products={relatedOthers}
               seeAllLink="/shop"
               onNavigate={(pid) => navigate(`/product/${pid}`)}
@@ -647,11 +649,11 @@ export default function ProductDetailPage() {
               {addedToCart ? (
                 <motion.span key="check" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}
                   className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-primary" /> Added!
+                  <Check className="w-4 h-4 text-primary" /> {t("pdpAdded")}
                 </motion.span>
               ) : (
                 <motion.span key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  Add to Cart
+                  {t("pdpAddToCart")}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -667,7 +669,7 @@ export default function ProductDetailPage() {
               } catch {}
               navigate("/shop/checkout", { state: { buyNowItem: item } });
             }} disabled={product.stock <= 0}>
-            Buy Now
+            {t("pdpBuyNow")}
           </Button>
         </motion.div>
       </div>
@@ -692,9 +694,9 @@ export default function ProductDetailPage() {
                 <span className={cn("absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card", merchantOnline ? "bg-emerald-500" : "bg-muted-foreground/40")} />
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-semibold text-foreground truncate">{vendorInfo?.name || "Seller"}</span>
+                <span className="text-sm font-semibold text-foreground truncate">{vendorInfo?.name || t("pdpSeller")}</span>
                 <span className={cn("text-[10px]", merchantOnline ? "text-emerald-600" : "text-muted-foreground")}>
-                  {typingUsers.length > 0 ? "typing..." : merchantOnline ? "Online" : "Offline"}
+                  {typingUsers.length > 0 ? t("pdpTyping") : merchantOnline ? t("pdpOnline") : t("pdpOffline")}
                 </span>
               </div>
             </div>
@@ -716,7 +718,7 @@ export default function ProductDetailPage() {
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : messages.length === 0 ? (
-                  <p className="text-center text-xs text-muted-foreground py-10">No messages yet</p>
+                  <p className="text-center text-xs text-muted-foreground py-10">{t("pdpNoMessages")}</p>
                 ) : (
                   messages.map((msg) => {
                     const isMine = msg.sender_id === user?.id;
@@ -736,7 +738,7 @@ export default function ProductDetailPage() {
                         )}>
                           {isProductCard ? (
                             <div className="space-y-1">
-                              <p className="text-xs opacity-80">Product inquiry</p>
+                              <p className="text-xs opacity-80">{t("pdpProductInquiry")}</p>
                               <div className="flex items-center gap-2">
                                 <span className="text-base">{(msg.metadata as any)?.productEmoji || "📦"}</span>
                                 <div>
@@ -766,7 +768,7 @@ export default function ProductDetailPage() {
                 {typingUsers.length > 0 && (
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-2xl rounded-bl-md px-3.5 py-2">
-                      <span className="text-xs text-muted-foreground italic">{typingUsers[0]} is typing…</span>
+                      <span className="text-xs text-muted-foreground italic">{typingUsers[0]} {t("pdpIsTyping")}</span>
                     </div>
                   </div>
                 )}
@@ -785,7 +787,7 @@ export default function ProductDetailPage() {
                     handleSendInlineChat();
                   }
                 }}
-                placeholder="Type a message..."
+                placeholder={t("pdpTypeMessage")}
                 className="flex-1 rounded-full h-10 bg-muted/50 border-border/50"
               />
               <Button size="icon" className="rounded-full h-10 w-10 shrink-0"
@@ -806,12 +808,13 @@ function RelatedProductsRow({ title, products, seeAllLink, onNavigate }: {
   title: string; products: any[]; seeAllLink: string; onNavigate: (id: string) => void;
 }) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-foreground">{title}</h3>
         <button onClick={() => navigate(seeAllLink)} className="text-xs font-medium text-primary flex items-center gap-0.5">
-          See All <ChevronRight className="w-3.5 h-3.5" />
+          {t("pdpSeeAll")} <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
       <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory pb-1 -mx-4 px-4 scrollbar-hide">
