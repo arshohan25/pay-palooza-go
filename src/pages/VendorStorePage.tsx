@@ -11,10 +11,12 @@ import VendorStoreHeader from "@/components/shop/VendorStoreHeader";
 import CartDrawer from "@/components/shop/CartDrawer";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
+import { useI18n } from "@/lib/i18n";
 
 export default function VendorStorePage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { items, addToCart, updateQty, removeFromCart } = useCart();
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
   const [cartOpen, setCartOpen] = useState(false);
@@ -93,7 +95,7 @@ export default function VendorStorePage() {
   if (!store) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Store not found</p>
+        <p className="text-muted-foreground">{t("vspStoreNotFound")}</p>
       </div>
     );
   }
@@ -131,7 +133,7 @@ export default function VendorStorePage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search this store..."
+            placeholder={t("vspSearchStore")}
             className="pl-9 h-9 text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -144,7 +146,7 @@ export default function VendorStorePage() {
       {/* Products */}
       <div className="px-4 pt-2">
         {filtered.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground py-12">No products found</p>
+          <p className="text-center text-sm text-muted-foreground py-12">{t("vspNoProducts")}</p>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {filtered.map((product) => (

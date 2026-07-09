@@ -2758,6 +2758,9 @@ const translations = {
   dqpSessionExpiredDesc: { en: "This payment session has expired.", bn: "এই পেমেন্ট সেশনের মেয়াদ শেষ হয়েছে।" },
   dqpPoweredBy: { en: "Powered by EasyPay", bn: "পাওয়ার্ড বাই ইজিপে" },
   dqpPaymentQrAlt: { en: "Payment QR Code", bn: "পেমেন্ট QR কোড" },
+  vspStoreNotFound: { en: "Store not found", bn: "দোকান পাওয়া যায়নি" },
+  vspSearchStore: { en: "Search this store...", bn: "এই দোকানে খুঁজুন..." },
+  vspNoProducts: { en: "No products found", bn: "কোনো পণ্য পাওয়া যায়নি" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
