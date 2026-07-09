@@ -301,13 +301,13 @@ export default function ShopCheckoutPage() {
               onClick={() => navigate(`/orders/${orderId}`)}
             >
               <Package className="w-4 h-4 mr-2" />
-              View Order
+              {t("scpViewOrder")}
             </Button>
             <Button
               className="flex-1 h-12"
               onClick={() => navigate("/shop")}
             >
-              Continue Shopping
+              {t("scpContinueShopping")}
             </Button>
           </div>
         </motion.div>
