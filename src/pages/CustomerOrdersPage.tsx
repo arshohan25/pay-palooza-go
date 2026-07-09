@@ -7,20 +7,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import WriteReviewForm from "@/components/shop/WriteReviewForm";
 import { downloadInvoice } from "@/components/InvoiceGenerator";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  processing: { label: "Processing", color: "bg-blue-500/10 text-blue-600", icon: Clock },
-  confirmed: { label: "Confirmed", color: "bg-primary/10 text-primary", icon: CircleCheck },
-  shipped: { label: "Shipped", color: "bg-accent/10 text-accent", icon: Truck },
-  out_for_delivery: { label: "Out for Delivery", color: "bg-orange-500/10 text-orange-600", icon: Truck },
-  delivered: { label: "Delivered", color: "bg-emerald-500/10 text-emerald-600", icon: CircleCheck },
-  cancelled: { label: "Cancelled", color: "bg-destructive/10 text-destructive", icon: XCircle },
+const STATUS_CONFIG: Record<string, { labelKey: string; color: string; icon: any }> = {
+  processing: { labelKey: "processing", color: "bg-blue-500/10 text-blue-600", icon: Clock },
+  confirmed: { labelKey: "confirmed2", color: "bg-primary/10 text-primary", icon: CircleCheck },
+  shipped: { labelKey: "shipped", color: "bg-accent/10 text-accent", icon: Truck },
+  out_for_delivery: { labelKey: "outForDelivery", color: "bg-orange-500/10 text-orange-600", icon: Truck },
+  delivered: { labelKey: "delivered", color: "bg-emerald-500/10 text-emerald-600", icon: CircleCheck },
+  cancelled: { labelKey: "cancelled", color: "bg-destructive/10 text-destructive", icon: XCircle },
 };
 
 export default function CustomerOrdersPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,7 @@ export default function CustomerOrdersPage() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <Package className="w-5 h-5" /> My Orders
+          <Package className="w-5 h-5" /> {t("myOrders")}
         </h1>
       </div>
 
@@ -58,15 +60,15 @@ export default function CustomerOrdersPage() {
         ) : !user ? (
           <div className="text-center py-16">
             <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">Please log in to see your orders</p>
-            <Button variant="outline" className="mt-4" onClick={() => navigate("/auth")}>Log In</Button>
+            <p className="text-sm text-muted-foreground">{t("coPleaseLogIn")}</p>
+            <Button variant="outline" className="mt-4" onClick={() => navigate("/auth")}>{t("coLogIn")}</Button>
           </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-16">
             <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No orders yet</p>
+            <p className="text-sm text-muted-foreground">{t("noOrdersYet")}</p>
             <Button variant="outline" className="mt-4" onClick={() => navigate("/shop")}>
-              Start Shopping
+              {t("startShopping")}
             </Button>
           </div>
         ) : (
@@ -85,20 +87,20 @@ export default function CustomerOrdersPage() {
                   <span className="text-sm font-bold text-foreground">{order.order_num}</span>
                   <Badge variant="outline" className={config.color}>
                     <StatusIcon className="w-3 h-3 mr-1" />
-                    {config.label}
+                    {t(config.labelKey as any)}
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {new Date(order.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })}
                 </p>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{items.length} item{items.length !== 1 ? "s" : ""}</span>
+                  <span className="text-xs text-muted-foreground">{items.length} {items.length !== 1 ? t("moItems") : t("moItem")}</span>
                   <span className="text-xs text-muted-foreground">•</span>
                   <span className="text-sm font-bold text-foreground">৳{Number(order.total).toLocaleString()}</span>
                 </div>
                 {order.estimated_delivery && (
                   <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Truck className="w-3 h-3" /> Est. delivery: {order.estimated_delivery}
+                    <Truck className="w-3 h-3" /> {t("estDelivery")}: {order.estimated_delivery}
                   </p>
                 )}
                 <div className="flex gap-2 mt-2">
@@ -108,7 +110,7 @@ export default function CustomerOrdersPage() {
                     className="text-xs h-7"
                     onClick={(e) => { e.stopPropagation(); downloadInvoice(order); }}
                   >
-                    <FileText className="w-3 h-3 mr-1" /> Invoice
+                    <FileText className="w-3 h-3 mr-1" /> {t("coInvoice")}
                   </Button>
                   {order.status === "delivered" && items.length > 0 && (
                     <Button
@@ -120,7 +122,7 @@ export default function CustomerOrdersPage() {
                         setReviewSheet({ open: true, productId: items[0].id || items[0].product_id, orderId: order.id });
                       }}
                     >
-                      <Star className="w-3 h-3 mr-1" /> Rate & Review
+                      <Star className="w-3 h-3 mr-1" /> {t("coRateReview")}
                     </Button>
                   )}
                 </div>
@@ -134,7 +136,7 @@ export default function CustomerOrdersPage() {
       <Sheet open={!!reviewSheet?.open} onOpenChange={(o) => !o && setReviewSheet(null)}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Write a Review</SheetTitle>
+            <SheetTitle>{t("wrWriteReview")}</SheetTitle>
           </SheetHeader>
           {reviewSheet && (
             <WriteReviewForm
