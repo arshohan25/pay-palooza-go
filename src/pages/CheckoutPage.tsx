@@ -668,8 +668,8 @@ const CheckoutPage = () => {
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <KeyRound size={22} className="text-primary" />
                   </div>
-                  <h3 className="text-base font-bold text-foreground">Enter your PIN</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Confirm with your 4-digit EasyPay PIN</p>
+                  <h3 className="text-base font-bold text-foreground">{t("cpEnterPin")}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{t("cpConfirmPin")}</p>
                 </div>
 
                 <PinInput value={pin} onChange={setPin} />
