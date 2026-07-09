@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
+import { useI18n } from "@/lib/i18n";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
@@ -22,6 +23,7 @@ interface DynamicQrPaySheetProps {
 type Step = "loading" | "confirm" | "pin" | "processing" | "success" | "error";
 
 const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmount, ref_ }: DynamicQrPaySheetProps) => {
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>("loading");
   const [merchantName, setMerchantName] = useState("");
   const [amount, setAmount] = useState(qrAmount || 0);
@@ -47,9 +49,9 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
         .eq("id", sessionId)
         .single();
 
-      if (error || !session) { setErrorMsg("Session not found"); setStep("error"); return; }
-      if (session.status !== "pending") { setErrorMsg(`Session already ${session.status}`); setStep("error"); return; }
-      if (new Date(session.expires_at) < new Date()) { setErrorMsg("Session expired"); setStep("error"); return; }
+      if (error || !session) { setErrorMsg(t("dqSessionNotFound")); setStep("error"); return; }
+      if (session.status !== "pending") { setErrorMsg(`${t("dqSessionAlready")} ${session.status}`); setStep("error"); return; }
+      if (new Date(session.expires_at) < new Date()) { setErrorMsg(t("dqSessionExpired")); setStep("error"); return; }
 
       setAmount(session.amount);
       setReference(session.reference || "");
@@ -70,13 +72,13 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
 
     try {
       const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (!authSession?.access_token) throw new Error("Not authenticated");
+      if (!authSession?.access_token) throw new Error(t("dqNotAuthenticated"));
 
       const { data, error } = await supabase.functions.invoke("checkout-pay", {
         body: { session_id: sessionId, pin, source: "qr" },
       });
 
-      if (error) throw new Error(error.message || "Payment failed");
+      if (error) throw new Error(error.message || t("dqPaymentFailed"));
       if (data?.error) throw new Error(data.error);
 
       setStep("success");
@@ -84,7 +86,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
       haptics.success();
       playPaymentSuccess();
     } catch (err: any) {
-      setErrorMsg(err.message || "Payment failed");
+      setErrorMsg(err.message || t("dqPaymentFailed"));
       setStep("error");
       haptics.error();
       playPaymentError();
@@ -120,7 +122,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 pb-3">
-            <h3 className="text-base font-bold text-foreground">Pay with EasyPay</h3>
+            <h3 className="text-base font-bold text-foreground">{t("dqPayWithEasyPay")}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
               <X size={16} className="text-muted-foreground" />
             </button>
@@ -143,13 +145,13 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                       <Store className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-foreground truncate">{merchantName || "Merchant"}</p>
-                      {reference && <p className="text-xs text-muted-foreground">Ref: {reference}</p>}
+                      <p className="font-bold text-foreground truncate">{merchantName || t("dqMerchant")}</p>
+                      {reference && <p className="text-xs text-muted-foreground">{t("dqRef")} {reference}</p>}
                     </div>
                   </div>
 
                   <div className="text-center py-2">
-                    <p className="text-sm text-muted-foreground">Amount to Pay</p>
+                    <p className="text-sm text-muted-foreground">{t("dqAmountToPay")}</p>
                     <p className="text-4xl font-extrabold text-foreground">৳{fmt(amount)}</p>
                   </div>
 
@@ -157,7 +159,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                     className="w-full h-13 rounded-2xl font-bold text-base gradient-primary text-primary-foreground"
                     onClick={() => { setStep("pin"); setTimeout(() => inputRef.current?.focus(), 100); }}
                   >
-                    Confirm & Pay
+                    {t("dqConfirmPay")}
                   </Button>
                 </motion.div>
               )}
@@ -167,8 +169,8 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                 <motion.div key="pin" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-5 py-4">
                   <div className="text-center space-y-1">
                     <Lock className="w-8 h-8 text-primary mx-auto mb-2" />
-                    <p className="text-sm font-semibold text-foreground">Enter your PIN</p>
-                    <p className="text-xs text-muted-foreground">to pay ৳{fmt(amount)} to {merchantName}</p>
+                    <p className="text-sm font-semibold text-foreground">{t("dqEnterPin")}</p>
+                    <p className="text-xs text-muted-foreground">{t("dqToPay")} ৳{fmt(amount)} {t("dqTo")} {merchantName}</p>
                   </div>
 
                   {/* PIN dots */}
@@ -234,7 +236,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">Processing payment…</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("dqProcessing")}</p>
                 </motion.div>
               )}
 
@@ -244,9 +246,9 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }}>
                     <CheckCircle2 className="w-16 h-16 text-primary mx-auto" />
                   </motion.div>
-                  <h3 className="text-xl font-bold text-foreground">Payment Successful!</h3>
-                  <p className="text-sm text-muted-foreground">৳{fmt(amount)} paid to {merchantName}</p>
-                  <Button variant="outline" className="mt-4 rounded-2xl" onClick={onClose}>Done</Button>
+                  <h3 className="text-xl font-bold text-foreground">{t("dqPaymentSuccess")}</h3>
+                  <p className="text-sm text-muted-foreground">৳{fmt(amount)} {t("dqPaidTo")} {merchantName}</p>
+                  <Button variant="outline" className="mt-4 rounded-2xl" onClick={onClose}>{t("dqDone")}</Button>
                 </motion.div>
               )}
 
@@ -254,9 +256,9 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
               {step === "error" && (
                 <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8 text-center space-y-4">
                   <AlertCircle className="w-14 h-14 text-destructive/60 mx-auto" />
-                  <h3 className="text-lg font-bold text-foreground">Payment Failed</h3>
+                  <h3 className="text-lg font-bold text-foreground">{t("dqPaymentFailedTitle")}</h3>
                   <p className="text-sm text-muted-foreground">{errorMsg}</p>
-                  <Button variant="outline" className="rounded-2xl" onClick={onClose}>Close</Button>
+                  <Button variant="outline" className="rounded-2xl" onClick={onClose}>{t("dqClose")}</Button>
                 </motion.div>
               )}
             </AnimatePresence>

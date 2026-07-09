@@ -2478,6 +2478,27 @@ const translations = {
   bmEmpty: { en: "No budgets set. Tap Add to create one.", bn: "কোনো বাজেট সেট করা নেই। তৈরি করতে যোগ করুন ট্যাপ করুন।" },
   bmRecurring: { en: "Recurring", bn: "পুনরাবৃত্ত" },
   bmOneTime: { en: "One-time", bn: "একবারের" },
+
+  // DynamicQrPaySheet
+  dqSessionNotFound: { en: "Session not found", bn: "সেশন পাওয়া যায়নি" },
+  dqSessionAlready: { en: "Session already", bn: "সেশন ইতিমধ্যে" },
+  dqSessionExpired: { en: "Session expired", bn: "সেশনের মেয়াদ শেষ" },
+  dqNotAuthenticated: { en: "Not authenticated", bn: "প্রমাণীকৃত নয়" },
+  dqPaymentFailed: { en: "Payment failed", bn: "পেমেন্ট ব্যর্থ হয়েছে" },
+  dqPayWithEasyPay: { en: "Pay with EasyPay", bn: "EasyPay দিয়ে পেমেন্ট করুন" },
+  dqMerchant: { en: "Merchant", bn: "মার্চেন্ট" },
+  dqRef: { en: "Ref:", bn: "রেফ:" },
+  dqAmountToPay: { en: "Amount to Pay", bn: "প্রদেয় পরিমাণ" },
+  dqConfirmPay: { en: "Confirm & Pay", bn: "নিশ্চিত করুন ও পেমেন্ট করুন" },
+  dqEnterPin: { en: "Enter your PIN", bn: "আপনার পিন দিন" },
+  dqToPay: { en: "to pay", bn: "পরিশোধ করতে" },
+  dqTo: { en: "to", bn: "কে" },
+  dqProcessing: { en: "Processing payment…", bn: "পেমেন্ট প্রক্রিয়া চলছে…" },
+  dqPaymentSuccess: { en: "Payment Successful!", bn: "পেমেন্ট সফল হয়েছে!" },
+  dqPaidTo: { en: "paid to", bn: "পরিশোধ করা হয়েছে" },
+  dqDone: { en: "Done", bn: "সম্পন্ন" },
+  dqPaymentFailedTitle: { en: "Payment Failed", bn: "পেমেন্ট ব্যর্থ হয়েছে" },
+  dqClose: { en: "Close", bn: "বন্ধ করুন" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
