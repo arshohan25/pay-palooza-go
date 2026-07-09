@@ -550,7 +550,7 @@ export default function ProductDetailPage() {
               <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
                 <div className="flex items-center gap-2 px-3.5 py-2.5 bg-muted/30 border-b border-border/40">
                   <Package className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-foreground">Product Details</span>
+                  <span className="text-xs font-semibold text-foreground">{t("pdpProductDetails")}</span>
                 </div>
                 {(() => {
                   const lines = (product.description || "No description available.").split("\n").filter(Boolean);
