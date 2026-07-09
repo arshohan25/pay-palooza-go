@@ -523,7 +523,7 @@ const CheckoutPage = () => {
               <div className="px-6 pb-4 space-y-4">
                 <div className="h-px bg-border/50" />
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-2 text-center">Phone Number</label>
+                  <label className="text-xs font-semibold text-foreground block mb-2 text-center">{t("cpPhoneNumber")}</label>
                   <input
                     type="tel"
                     placeholder="01XXXXXXXXX"
