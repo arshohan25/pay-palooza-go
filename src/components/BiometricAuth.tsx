@@ -86,7 +86,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
         setStep("success");
         setTimeout(onAuthenticated, 900);
       } catch {
-        setPinError("Incorrect PIN. Try again.");
+        setPinError(t("baIncorrectPin"));
         setTimeout(() => setPin(""), 400);
       }
     }
