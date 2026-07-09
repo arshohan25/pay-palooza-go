@@ -80,8 +80,8 @@ const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
       ) : requests.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
           <Inbox size={48} strokeWidth={1.2} className="mb-3 opacity-40" />
-          <p className="text-sm font-medium">No requests yet</p>
-          <p className="text-xs opacity-70 mt-1">Your deposit & withdrawal requests will appear here</p>
+          <p className="text-sm font-medium">{t("frhEmpty")}</p>
+          <p className="text-xs opacity-70 mt-1">{t("frhEmptyHint")}</p>
         </div>
       ) : (
         <div className="space-y-2.5">
