@@ -420,10 +420,10 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                         className="h-7 px-2 gap-1 text-xs"
                         onClick={() => {
                           navigator.clipboard.writeText(meta.coupon_code);
-                          toast.success("Coupon code copied!");
+                          toast.success(t("ncCouponCopied"));
                         }}
                       >
-                        <Copy size={12} /> Copy
+                        <Copy size={12} /> {t("ncCopy")}
                       </Button>
                     </div>
                   )}
