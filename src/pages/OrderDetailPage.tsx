@@ -247,10 +247,10 @@ export default function OrderDetailPage() {
             {isShipped && order.tracking_number && (
               <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-xl px-3 py-2">
                 <Truck className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-muted-foreground">Tracking: <span className="font-semibold text-foreground">{order.tracking_number}</span></span>
+                <span className="text-muted-foreground">{t("odTracking")}: <span className="font-semibold text-foreground">{order.tracking_number}</span></span>
                 {trackingUrl && (
                   <SafeExternalLink href={trackingUrl} className="ml-auto text-primary flex items-center gap-1 font-semibold hover:underline">
-                    Track <ExternalLink className="w-3 h-3" />
+                    {t("odTrack")} <ExternalLink className="w-3 h-3" />
                   </SafeExternalLink>
                 )}
               </div>
@@ -258,7 +258,7 @@ export default function OrderDetailPage() {
             {order.estimated_delivery && !isDelivered && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2">
                 <Truck className="w-3.5 h-3.5" />
-                <span>Estimated delivery: {order.estimated_delivery}</span>
+                <span>{t("odEstimatedDelivery")}: {order.estimated_delivery}</span>
               </div>
             )}
           </div>
@@ -269,8 +269,8 @@ export default function OrderDetailPage() {
           <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4 flex items-center gap-3">
             <XCircle className="w-8 h-8 text-destructive shrink-0" />
             <div>
-              <p className="text-sm font-bold text-destructive">Order Cancelled</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Refund will be processed within 24 hours</p>
+              <p className="text-sm font-bold text-destructive">{t("odOrderCancelled")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("odRefund24h")}</p>
             </div>
           </div>
         )}
@@ -284,7 +284,7 @@ export default function OrderDetailPage() {
           }`}>
             <RotateCcw className="w-6 h-6 text-muted-foreground shrink-0" />
             <div>
-              <p className="text-sm font-bold text-foreground">Return {existingReturn.status === "approved" ? "Approved" : existingReturn.status === "rejected" ? "Rejected" : "Requested"}</p>
+              <p className="text-sm font-bold text-foreground">{existingReturn.status === "approved" ? t("odReturnApproved") : existingReturn.status === "rejected" ? t("odReturnRejected") : t("odReturnRequested")}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{existingReturn.reason}</p>
             </div>
             <Badge variant="outline" className="shrink-0 capitalize">{existingReturn.status}</Badge>
@@ -295,14 +295,14 @@ export default function OrderDetailPage() {
         {escrow && (
           <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2.5">
             <Shield className="w-4 h-4 text-muted-foreground" />
-            <span className={`text-xs font-semibold ${escrow.color}`}>{escrow.label}</span>
+            <span className={`text-xs font-semibold ${escrow.color}`}>{t(escrow.key as any)}</span>
           </div>
         )}
 
         {/* Items */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            Items ({orderItems.length})
+            {t("odItems")} ({orderItems.length})
           </p>
           {orderItems.map((item: any, i: number) => (
             <div key={item.id || i} className="flex items-center gap-3">
