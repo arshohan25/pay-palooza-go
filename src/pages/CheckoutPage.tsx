@@ -689,7 +689,7 @@ const CheckoutPage = () => {
                   className="w-full h-12 rounded-2xl text-sm font-bold gradient-primary text-primary-foreground shadow-glow disabled:opacity-40"
                 >
                   <Lock size={15} className="mr-2" />
-                  Pay ৳{fmt(session.amount)}
+                  {t("cpPay")} ৳{fmt(session.amount)}
                 </Button>
               </div>
 
