@@ -457,7 +457,7 @@ export default function ShopCheckoutPage() {
               <div className="flex-1">
                 <p className="text-sm font-bold text-foreground">{appliedPromo.code}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Saving ৳{discountAmt.toLocaleString()}
+                  {t("scpSaving")} ৳{discountAmt.toLocaleString()}
                 </p>
               </div>
               <button
