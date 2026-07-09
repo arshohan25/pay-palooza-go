@@ -516,10 +516,10 @@ export default function ProductDetailPage() {
         <motion.div custom={7} variants={fadeUp} initial="hidden" animate="show"
           className="bg-card border border-border/60 rounded-xl divide-y divide-border/40 overflow-hidden">
           {[
-            { icon: Truck, label: "Free Delivery", sub: `Estimated ${getEstimatedDelivery()}`, color: "text-primary" },
-            { icon: Banknote, label: "Cash on Delivery Available", color: "text-primary" },
-            { icon: RefreshCw, label: "Easy Return", sub: "14 days return policy", color: "text-accent" },
-            { icon: ShieldCheck, label: "100% Authentic", sub: "Genuine product guarantee", color: "text-primary" },
+            { icon: Truck, label: t("pdpFreeDelivery"), sub: `${t("pdpEstimated")} ${getEstimatedDelivery()}`, color: "text-primary" },
+            { icon: Banknote, label: t("pdpCOD"), color: "text-primary" },
+            { icon: RefreshCw, label: t("pdpEasyReturn"), sub: t("pdpReturnPolicy"), color: "text-accent" },
+            { icon: ShieldCheck, label: t("pdpAuthentic"), sub: t("pdpGenuine"), color: "text-primary" },
           ].map(({ icon: Icon, label, sub, color }, idx) => (
             <motion.div key={label} className="flex items-center gap-3 px-3.5 py-3"
               initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
