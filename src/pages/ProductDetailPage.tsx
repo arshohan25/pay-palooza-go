@@ -468,10 +468,10 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-2">
               <div className={cn("w-2.5 h-2.5 rounded-full", product.stock > 0 ? "bg-green-500" : "bg-destructive")} />
               <span className="text-sm font-semibold text-foreground">
-                {product.stock > 0 ? "In Stock" : "Out of Stock"}
+                {product.stock > 0 ? t("pdpInStock") : t("pdpOutOfStock")}
               </span>
               {product.stock > 0 && (
-                <span className="text-xs text-muted-foreground">· {product.stock} available</span>
+                <span className="text-xs text-muted-foreground">· {product.stock} {t("pdpAvailable")}</span>
               )}
             </div>
             <div className="flex items-center border border-border rounded-full overflow-hidden bg-background">
