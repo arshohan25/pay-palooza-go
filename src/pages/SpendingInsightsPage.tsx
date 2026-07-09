@@ -579,7 +579,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
             ) : barAllZero ? (
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                 <BarChart3 size={28} className="text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">No data for this period</p>
+                <p className="text-sm text-muted-foreground">{t("siNoData")}</p>
               </div>
             ) : (
               <div className="px-1 pb-4" style={{ height: 210 }}>
