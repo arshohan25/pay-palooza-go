@@ -611,7 +611,7 @@ export default function ProductDetailPage() {
         {relatedFromVendor.length > 0 && (
           <motion.div custom={9} variants={fadeUp} initial="hidden" animate="show">
             <RelatedProductsRow
-              title="More from this Store"
+              title={t("pdpMoreFromStore")}
               products={relatedFromVendor}
               seeAllLink={vendorInfo?.slug ? `/shop/${vendorInfo.slug}` : "/shop"}
               onNavigate={(pid) => navigate(`/product/${pid}`)}
