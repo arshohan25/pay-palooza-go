@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Fingerprint, KeyRound, AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 const logoImg = "/icons/easypay-logo.webp";
 
 const SESSION_KEY = "mfs_authenticated";
@@ -48,6 +49,7 @@ interface BiometricAuthProps {
 type AuthStep = "prompt" | "pin" | "checking" | "success";
 
 export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
+  const { t } = useI18n();
   const [step, setStep]             = useState<AuthStep>("prompt");
   const [biometricAvail, setBioAvail] = useState<boolean | null>(null);
   const [pin, setPin]               = useState("");
@@ -68,7 +70,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
       setStep("success");
       setTimeout(onAuthenticated, 900);
     } else {
-      setBioError("Biometric check failed or was cancelled.");
+      setBioError(t("baBioFailed"));
       setStep("prompt");
     }
   };
@@ -84,7 +86,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
         setStep("success");
         setTimeout(onAuthenticated, 900);
       } catch {
-        setPinError("Incorrect PIN. Try again.");
+        setPinError(t("baIncorrectPin"));
         setTimeout(() => setPin(""), 400);
       }
     }
@@ -134,7 +136,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
         >
           <img src={logoImg} alt="EasyPay" className="w-16 h-16 rounded-3xl object-contain shadow-glow mb-4" />
            <h1 className="text-2xl font-extrabold text-foreground">EasyPay</h1>
-          <p className="text-sm text-muted-foreground mt-1">Secure your account to continue</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("baSecureAccount")}</p>
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -170,9 +172,9 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
                   </motion.div>
                   <div className="text-center">
                     <p className="font-bold text-foreground text-base">
-                      {step === "checking" ? "Verifying…" : "Use Fingerprint / Face ID"}
+                      {step === "checking" ? t("baVerifying") : t("baUseBio")}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Touch the sensor to authenticate</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t("baTouchSensor")}</p>
                   </div>
                 </motion.button>
               )}
@@ -181,7 +183,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-border" />
                 <span className="text-xs text-muted-foreground">
-                  {biometricAvail ? "or" : "Authenticate with"}
+                  {biometricAvail ? t("baOr") : t("baAuthWith")}
                 </span>
                 <div className="flex-1 h-px bg-border" />
               </div>
@@ -192,7 +194,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
                 className="w-full h-12 rounded-2xl font-semibold gap-2"
               >
                 <KeyRound size={16} />
-                Use PIN
+                {t("baUsePin")}
               </Button>
             </motion.div>
           )}
@@ -210,8 +212,8 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
                 <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <KeyRound size={26} className="text-primary" />
                 </div>
-                <p className="font-bold text-foreground text-lg">Enter your PIN</p>
-                <p className="text-xs text-muted-foreground mt-1">Demo PIN is <strong>1234</strong></p>
+                <p className="font-bold text-foreground text-lg">{t("baEnterPin")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("baDemoPin")} <strong>1234</strong></p>
               </div>
 
               <PinDots />
@@ -243,7 +245,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
                   onClick={() => { setStep("prompt"); setPin(""); setPinError(""); }}
                   className="w-full text-sm text-primary font-semibold text-center"
                 >
-                  Use biometrics instead
+                  {t("baUseBioInstead")}
                 </button>
               )}
             </motion.div>
@@ -265,8 +267,8 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
               >
                 <ShieldCheck size={48} className="text-white" />
               </motion.div>
-              <p className="text-xl font-extrabold text-foreground">Authenticated!</p>
-              <p className="text-sm text-muted-foreground">Opening your wallet…</p>
+              <p className="text-xl font-extrabold text-foreground">{t("baAuthenticated")}</p>
+              <p className="text-sm text-muted-foreground">{t("baOpeningWallet")}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -280,7 +282,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
             className="flex items-center justify-center gap-1.5 mt-8 text-[11px] text-muted-foreground"
           >
             <CheckCircle2 size={11} className="text-primary" />
-            Protected by end-to-end encryption
+            {t("baE2EProtected")}
           </motion.div>
         )}
       </div>

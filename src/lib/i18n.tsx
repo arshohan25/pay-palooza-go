@@ -2452,6 +2452,23 @@ const translations = {
   psFallbackTitle: { en: "Invite Friends & Earn ৳50", bn: "বন্ধুদের আমন্ত্রণ জানান ও ৳৫০ আয় করুন" },
   psFallbackSubtitle: { en: "Share your referral code and earn rewards when friends join EasyPay", bn: "আপনার রেফারেল কোড শেয়ার করুন এবং বন্ধুরা EasyPay-এ যোগ দিলে পুরস্কার আয় করুন" },
   psFallbackBadge: { en: "Limited Offer", bn: "সীমিত অফার" },
+
+  // BiometricAuth
+  baSecureAccount: { en: "Secure your account to continue", bn: "চালিয়ে যেতে আপনার অ্যাকাউন্ট সুরক্ষিত করুন" },
+  baBioFailed: { en: "Biometric check failed or was cancelled.", bn: "বায়োমেট্রিক যাচাই ব্যর্থ হয়েছে বা বাতিল করা হয়েছে।" },
+  baIncorrectPin: { en: "Incorrect PIN. Try again.", bn: "ভুল পিন। আবার চেষ্টা করুন।" },
+  baVerifying: { en: "Verifying…", bn: "যাচাই করা হচ্ছে…" },
+  baUseBio: { en: "Use Fingerprint / Face ID", bn: "ফিঙ্গারপ্রিন্ট / ফেস আইডি ব্যবহার করুন" },
+  baTouchSensor: { en: "Touch the sensor to authenticate", bn: "প্রমাণীকরণের জন্য সেন্সর স্পর্শ করুন" },
+  baOr: { en: "or", bn: "অথবা" },
+  baAuthWith: { en: "Authenticate with", bn: "প্রমাণীকরণ করুন" },
+  baUsePin: { en: "Use PIN", bn: "পিন ব্যবহার করুন" },
+  baEnterPin: { en: "Enter your PIN", bn: "আপনার পিন দিন" },
+  baDemoPin: { en: "Demo PIN is", bn: "ডেমো পিন হলো" },
+  baUseBioInstead: { en: "Use biometrics instead", bn: "পরিবর্তে বায়োমেট্রিক ব্যবহার করুন" },
+  baAuthenticated: { en: "Authenticated!", bn: "প্রমাণীকরণ সফল!" },
+  baOpeningWallet: { en: "Opening your wallet…", bn: "আপনার ওয়ালেট খোলা হচ্ছে…" },
+  baE2EProtected: { en: "Protected by end-to-end encryption", bn: "এন্ড-টু-এন্ড এনক্রিপশন দ্বারা সুরক্ষিত" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
