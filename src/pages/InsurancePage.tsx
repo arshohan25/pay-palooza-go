@@ -138,8 +138,8 @@ const InsurancePage = () => {
           <>
             {/* Tabs */}
             <div className="flex gap-2 bg-muted/50 rounded-xl p-1">
-              <button onClick={() => setTab("browse")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "browse" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>Browse Plans</button>
-              <button onClick={() => setTab("my")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "my" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>My Policies</button>
+              <button onClick={() => setTab("browse")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "browse" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>{t("ipBrowsePlans")}</button>
+              <button onClick={() => setTab("my")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "my" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>{t("ipMyPolicies")}</button>
             </div>
 
             {tab === "browse" ? (
