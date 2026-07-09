@@ -19,6 +19,7 @@ import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { useProfile } from "@/hooks/use-profile";
 import { useOnlinePresence } from "@/hooks/use-online-presence";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Reaction { emoji: string; count: number; reacted: boolean; }
@@ -58,15 +59,15 @@ const pickGradient = (name: string) =>
 const getInitials = (name: string) =>
   name.trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 
-const formatRelativeTime = (ts: number): string => {
+const formatRelativeTime = (ts: number, t: (k: string) => string): string => {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "now";
+  if (mins < 1) return t("ipNow");
   if (mins < 60) return `${mins}m`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
-  if (days === 1) return "Yesterday";
+  if (days === 1) return t("ipYesterday");
   return `${days}d`;
 };
 
@@ -98,7 +99,7 @@ const togglePin = (id: string): string[] => {
 };
 
 // ── Convert DB conversation to UI contact ─────────────────────────────────────
-function convToUIContact(conv: ChatConversation, userId: string, isOnline?: (uid: string) => boolean): UIContact {
+function convToUIContact(conv: ChatConversation, userId: string, isOnline: ((uid: string) => boolean) | undefined, t: (k: string) => string): UIContact {
   const otherParticipants = conv.participants.filter((p) => p.user_id !== userId);
   const isGroup = conv.type === "group";
 
@@ -117,8 +118,8 @@ function convToUIContact(conv: ChatConversation, userId: string, isOnline?: (uid
 
   const rawLastMsg = conv.lastMessage
     ? conv.lastMessage.decryptedContent || conv.lastMessage.content
-    : "No messages yet";
-  const lastMsg = rawLastMsg?.includes("[Old message]") ? "Previous message" : rawLastMsg;
+    : t("ipNoMessagesYet");
+  const lastMsg = rawLastMsg?.includes("[Old message]") ? t("ipPreviousMessage") : rawLastMsg;
 
   const lastTimestamp = conv.lastMessage
     ? new Date(conv.lastMessage.created_at).getTime()
@@ -130,7 +131,7 @@ function convToUIContact(conv: ChatConversation, userId: string, isOnline?: (uid
     name, phone,
     initials: getInitials(name),
     gradient: pickGradient(name),
-    lastMsg, lastTime: formatRelativeTime(lastTimestamp), lastTimestamp,
+    lastMsg, lastTime: formatRelativeTime(lastTimestamp, t), lastTimestamp,
     unread: conv.unreadCount,
     online: !isGroup && !!otherUserId && !!isOnline && isOnline(otherUserId),
     avatarUrl,
@@ -258,6 +259,7 @@ const VoiceBubble = ({ msg }: { msg: UIMessage }) => {
 
 // ── Image Bubble ──────────────────────────────────────────────────────────────
 const ImageBubble = ({ msg }: { msg: UIMessage }) => {
+  const { t } = useI18n();
   const handleDownload = () => {
     const a = document.createElement("a");
     a.href = msg.imageUrl!;
@@ -267,10 +269,10 @@ const ImageBubble = ({ msg }: { msg: UIMessage }) => {
   };
   return (
     <div className={`relative rounded-2xl overflow-hidden shadow-card max-w-[220px] ${msg.sent ? "rounded-br-md" : "rounded-bl-md"}`}>
-      <img src={msg.imageUrl} alt="Shared image" className="w-full object-cover" />
+      <img src={msg.imageUrl} alt={t("ipSharedImage")} className="w-full object-cover" />
       <button onClick={handleDownload}
         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-        title="Download image">
+        title={t("ipDownloadImage")}>
         <Download size={13} />
       </button>
     </div>
@@ -300,7 +302,9 @@ interface MessageMenuProps {
   alignRight: boolean;
 }
 
-const MessageMenu = ({ msg, onClose, onCopy, onDelete, onForward, onReact, alignRight }: MessageMenuProps) => (
+const MessageMenu = ({ msg, onClose, onCopy, onDelete, onForward, onReact, alignRight }: MessageMenuProps) => {
+  const { t } = useI18n();
+  return (
   <>
     <div className="fixed inset-0 z-[70]" onClick={onClose} />
     <motion.div
@@ -328,7 +332,8 @@ const MessageMenu = ({ msg, onClose, onCopy, onDelete, onForward, onReact, align
       </button>
     </motion.div>
   </>
-);
+  );
+};
 
 // ── Forward Sheet ─────────────────────────────────────────────────────────────
 interface ForwardSheetProps {
@@ -337,7 +342,9 @@ interface ForwardSheetProps {
   onClose: () => void;
 }
 
-const ForwardSheet = ({ contacts, onForward, onClose }: ForwardSheetProps) => (
+const ForwardSheet = ({ contacts, onForward, onClose }: ForwardSheetProps) => {
+  const { t } = useI18n();
+  return (
   <>
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm" onClick={onClose} />
@@ -348,7 +355,7 @@ const ForwardSheet = ({ contacts, onForward, onClose }: ForwardSheetProps) => (
       style={{ maxHeight: "70vh", display: "flex", flexDirection: "column" }}
     >
       <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4 shrink-0" />
-      <h3 className="text-base font-bold text-foreground mb-3 shrink-0">Forward to…</h3>
+      <h3 className="text-base font-bold text-foreground mb-3 shrink-0">{t("ipForwardTo")}</h3>
       <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
         {contacts.map((c) => (
           <motion.button key={c.id} whileTap={{ scale: 0.98 }}
@@ -377,6 +384,7 @@ interface BubbleProps {
 }
 
 const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward, isGroup }: BubbleProps) => {
+  const { t } = useI18n();
   const [showMenu, setShowMenu] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -403,14 +411,14 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
           <div {...pressHandlers} className="rounded-2xl rounded-br-md border border-primary/30 bg-primary/5 shadow-card overflow-hidden min-w-[200px] select-none">
             <div className="gradient-send px-4 py-2 flex items-center gap-2">
               <CheckCircle2 size={16} className="text-primary-foreground/90" />
-              <span className="text-[12px] font-bold text-primary-foreground">Money Sent</span>
+              <span className="text-[12px] font-bold text-primary-foreground">{t("ipMoneySent")}</span>
             </div>
             <div className="px-4 py-3 space-y-1">
               <p className="text-xl font-extrabold text-foreground">৳{(msg.amount ?? 0).toLocaleString()}</p>
               <p className="text-[11px] text-muted-foreground">To: {contactName}</p>
               <div className="flex items-center justify-between pt-1 border-t border-border mt-1">
                 <span className="text-[10px] text-muted-foreground font-mono">{msg.txnId}</span>
-                <span className="text-[10px] text-primary font-semibold">View Receipt →</span>
+                <span className="text-[10px] text-primary font-semibold">{t("ipViewReceipt")}</span>
               </div>
             </div>
           </div>
@@ -423,15 +431,15 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
                 <Package size={14} className="text-primary" />
               </div>
               <div>
-                <p className="text-[11px] font-bold text-foreground leading-tight">Order Tracking</p>
+                <p className="text-[11px] font-bold text-foreground leading-tight">{t("ipOrderTracking")}</p>
                 <p className="text-[10px] text-muted-foreground font-mono">{msg.orderId}</p>
               </div>
               <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_STYLES[msg.orderStatus ?? "Pending"]}`}>{msg.orderStatus}</span>
             </div>
             <div className="px-4 py-3">
               <div className="flex items-center justify-between">
-                <p className="text-[12px] text-muted-foreground"><span className="font-semibold text-foreground">{msg.itemCount}</span> item{(msg.itemCount ?? 0) > 1 ? "s" : ""}</p>
-                <span className="text-[11px] text-primary font-semibold">Track →</span>
+                <p className="text-[12px] text-muted-foreground"><span className="font-semibold text-foreground">{msg.itemCount}</span> {(msg.itemCount ?? 0) > 1 ? t("ipItemPlural") : t("ipItemSingular")}</p>
+                <span className="text-[11px] text-primary font-semibold">{t("ipTrackArrow")}</span>
               </div>
               <div className="flex items-center gap-1 mt-3">
                 {["Pending", "Shipped", "Delivered"].map((step, i) => {
@@ -446,8 +454,8 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
                 })}
               </div>
               <div className="flex justify-between mt-1">
-                {["Pending", "Shipped", "Delivered"].map((step) => (
-                  <p key={step} className="text-[9px] text-muted-foreground">{step}</p>
+                {([["Pending", t("ipStatusPending")], ["Shipped", t("ipStatusShipped")], ["Delivered", t("ipStatusDelivered")]] as [string,string][]).map(([step, label]) => (
+                  <p key={step} className="text-[9px] text-muted-foreground">{label}</p>
                 ))}
               </div>
             </div>
@@ -470,7 +478,7 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
               {msg.productPrice != null && (
                 <p className="text-sm font-extrabold text-primary">৳{msg.productPrice.toLocaleString()}</p>
               )}
-              <p className="text-[10px] text-muted-foreground">Product Inquiry</p>
+              <p className="text-[10px] text-muted-foreground">{t("ipProductInquiry")}</p>
             </div>
           </div>
         )}
@@ -481,7 +489,7 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
         {!isMoney && !isOrder && !isVoice && !isImage && !isProduct && (
           msg.text?.includes("[Old message]") ? (
             <div className={`flex ${msg.sent ? "justify-end" : "justify-start"} py-0.5`}>
-              <span className="text-[10px] italic text-muted-foreground/50 px-3">Previous message unavailable</span>
+              <span className="text-[10px] italic text-muted-foreground/50 px-3">{t("ipPrevMsgUnavailable")}</span>
             </div>
           ) : (
             <div {...pressHandlers}
@@ -545,6 +553,7 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
 interface NewContactSheetProps { onClose: () => void; onCreate: (phone: string) => Promise<boolean>; findUser: (phone: string) => Promise<{ user_id: string; name: string | null; phone: string; avatar_url: string | null } | null>; }
 
 const NewContactSheet = ({ onClose, onCreate, findUser }: NewContactSheetProps) => {
+  const { t } = useI18n();
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
@@ -555,11 +564,11 @@ const NewContactSheet = ({ onClose, onCreate, findUser }: NewContactSheetProps) 
   const phoneValid = phone.length === 11 && phone.startsWith("01");
 
   const handleSearch = async () => {
-    if (!phoneValid) { setError("Enter a valid 11-digit number starting with 01"); return; }
+    if (!phoneValid) { setError(t("ipErrValidPhone")); return; }
     setIsLoading(true); setError("");
     const result = await findUser(phone.trim());
     setIsLoading(false);
-    if (!result) { setError("No EasyPay account found with this number"); return; }
+    if (!result) { setError(t("ipErrNoAccount")); return; }
     setFoundUser(result);
     setStep("preview");
   };
@@ -592,8 +601,8 @@ const NewContactSheet = ({ onClose, onCreate, findUser }: NewContactSheetProps) 
               </button>
             )}
             <div>
-              <h2 className="text-lg font-extrabold text-foreground">Add by Phone</h2>
-              <p className="text-xs text-muted-foreground">{step === "input" ? "Search for an EasyPay user" : "Send a chat request"}</p>
+              <h2 className="text-lg font-extrabold text-foreground">{t("ipAddByPhone")}</h2>
+              <p className="text-xs text-muted-foreground">{step === "input" ? t("ipSearchEasyPayUser") : t("ipSendChatRequest")}</p>
             </div>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
@@ -608,8 +617,8 @@ const NewContactSheet = ({ onClose, onCreate, findUser }: NewContactSheetProps) 
                   <UserCheck size={34} className="text-primary-foreground" />
                 </div>
                 <div className="text-center">
-                  <p className="font-bold text-foreground">Request Sent!</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">They'll receive your chat request</p>
+                  <p className="font-bold text-foreground">{t("ipRequestSentTitle")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("ipTheyReceiveRequest")}</p>
                 </div>
               </motion.div>
             ) : step === "preview" && foundUser ? (
@@ -620,7 +629,7 @@ const NewContactSheet = ({ onClose, onCreate, findUser }: NewContactSheetProps) 
                     : getInitials(foundUser.name || foundUser.phone)}
                 </div>
                 <div className="text-center">
-                  <p className="font-bold text-foreground text-base">{foundUser.name || "EasyPay User"}</p>
+                  <p className="font-bold text-foreground text-base">{foundUser.name || t("ipEasyPayUser")}</p>
                   <p className="text-sm text-muted-foreground">+88 {foundUser.phone}</p>
                 </div>
               </motion.div>
@@ -635,18 +644,18 @@ const NewContactSheet = ({ onClose, onCreate, findUser }: NewContactSheetProps) 
         {!sent && step === "input" && (
           <>
             <div className="mb-6">
-              <label className="text-[12px] font-semibold text-muted-foreground mb-1.5 block">Phone Number</label>
+              <label className="text-[12px] font-semibold text-muted-foreground mb-1.5 block">{t("ipPhoneNumber")}</label>
               <input type="tel" inputMode="numeric" value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); setError(""); }}
-                placeholder="e.g. 01711223344"
+                placeholder={t("ipPhonePlaceholder")}
                 className={`w-full h-12 px-4 bg-background border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${error ? "border-destructive" : "border-border"}`} />
               {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
               {phone.length > 0 && phone.length < 11 && !error && (
-                <p className="text-[11px] text-muted-foreground mt-1">{11 - phone.length} more digits needed</p>
+                <p className="text-[11px] text-muted-foreground mt-1">{11 - phone.length} {t("ipMoreDigitsNeeded")}</p>
               )}
             </div>
             <motion.button whileTap={{ scale: 0.97 }} onClick={handleSearch} disabled={isLoading || !phoneValid}
               className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 disabled:opacity-60">
-              {isLoading ? <><Loader2 size={18} className="animate-spin" /> Searching...</> : <><Search size={18} /> Find User</>}
+              {isLoading ? <><Loader2 size={18} className="animate-spin" /> {t("ipSearching")}</> : <><Search size={18} /> {t("ipFindUser")}</>}
             </motion.button>
           </>
         )}
@@ -654,7 +663,7 @@ const NewContactSheet = ({ onClose, onCreate, findUser }: NewContactSheetProps) 
           <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             whileTap={{ scale: 0.97 }} onClick={handleSend} disabled={isLoading}
             className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 disabled:opacity-60">
-            {isLoading ? <><Loader2 size={18} className="animate-spin" /> Sending request...</> : <><UserPlus size={18} /> Send Chat Request</>}
+            {isLoading ? <><Loader2 size={18} className="animate-spin" /> {t("ipSendingRequest")}</> : <><UserPlus size={18} /> {t("ipSendChatRequestBtn")}</>}
           </motion.button>
         )}
       </motion.div>
@@ -666,6 +675,7 @@ const NewContactSheet = ({ onClose, onCreate, findUser }: NewContactSheetProps) 
 interface NewGroupSheetProps { contacts: UIContact[]; onClose: () => void; onCreate: (name: string, icon: string, memberIds: string[]) => void; }
 
 const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
+  const { t } = useI18n();
   const [step, setStep] = useState<"pick" | "name">("pick");
   const [selected, setSelected] = useState<string[]>([]);
   const [groupName, setGroupName] = useState("");
@@ -674,8 +684,8 @@ const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
 
   const regularContacts = contacts.filter((c) => !c.isGroup);
   const toggleSelect = (id: string) => setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
-  const handleNext = () => { if (selected.length < 2) { setError("Select at least 2 contacts"); return; } setError(""); setStep("name"); };
-  const handleCreate = () => { if (!groupName.trim()) { setError("Group name is required"); return; } onCreate(groupName.trim(), groupIcon, selected); onClose(); };
+  const handleNext = () => { if (selected.length < 2) { setError(t("ipErrSelectTwo")); return; } setError(""); setStep("name"); };
+  const handleCreate = () => { if (!groupName.trim()) { setError(t("ipErrGroupNameRequired")); return; } onCreate(groupName.trim(), groupIcon, selected); onClose(); };
 
   return (
     <>
@@ -693,8 +703,8 @@ const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
             </button>
           )}
           <div className="flex-1">
-            <h2 className="text-lg font-extrabold text-foreground">{step === "pick" ? "New Group" : "Group Details"}</h2>
-            <p className="text-xs text-muted-foreground">{step === "pick" ? `Select members (${selected.length} selected)` : "Set a name and icon for your group"}</p>
+            <h2 className="text-lg font-extrabold text-foreground">{step === "pick" ? t("ipNewGroup") : t("ipGroupDetails")}</h2>
+            <p className="text-xs text-muted-foreground">{step === "pick" ? `${t("ipSelectMembers")} (${selected.length} ${t("ipSelected")})` : t("ipGroupNameAndIcon")}</p>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
             <X size={18} />
@@ -734,7 +744,7 @@ const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
             {error && <p className="text-[11px] text-destructive text-center mb-2">{error}</p>}
             <motion.button whileTap={{ scale: 0.97 }} onClick={handleNext}
               className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 shrink-0">
-              Next <ArrowLeft size={16} className="rotate-180" />
+              {t("ipNext")} <ArrowLeft size={16} className="rotate-180" />
             </motion.button>
           </>
         ) : (
@@ -751,14 +761,14 @@ const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
                 </div>
               </div>
               <div className="mb-4">
-                <label className="text-[12px] font-semibold text-muted-foreground mb-1.5 block">Group Name</label>
+                <label className="text-[12px] font-semibold text-muted-foreground mb-1.5 block">{t("ipGroupNameLabel")}</label>
                 <input type="text" value={groupName} onChange={(e) => { setGroupName(e.target.value); setError(""); }}
-                  placeholder="e.g. Family, Work Team"
+                  placeholder={t("ipGroupNamePlaceholder")}
                   className={`w-full h-12 px-4 bg-background border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${error ? "border-destructive" : "border-border"}`} />
                 {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
               </div>
               <div className="mb-4">
-                <p className="text-[12px] font-semibold text-muted-foreground mb-2">Members ({selected.length})</p>
+                <p className="text-[12px] font-semibold text-muted-foreground mb-2">{t("ipMembersLabel")} ({selected.length})</p>
                 <div className="flex flex-wrap gap-2">
                   {selected.map((id) => {
                     const c = regularContacts.find((rc) => rc.id === id);
@@ -774,7 +784,7 @@ const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
             </div>
             <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreate}
               className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 shrink-0">
-              <Users size={18} /> Create Group
+              <Users size={18} /> {t("ipCreateGroup")}
             </motion.button>
           </>
         )}
@@ -854,7 +864,7 @@ const ChatView = ({
     const file = e.target.files?.[0];
     if (!file) return;
     if (!userId || !conversationId) {
-      toast.error("Cannot upload right now");
+      toast.error(t("ipCannotUpload"));
       e.target.value = "";
       return;
     }
@@ -865,7 +875,7 @@ const ChatView = ({
       .from('chat_attachments')
       .upload(path, file, { contentType: file.type });
     if (error) {
-      toast.error("Failed to upload image");
+      toast.error(t("ipFailedUpload"));
       e.target.value = "";
       return;
     }
@@ -874,7 +884,7 @@ const ChatView = ({
       .from('chat_attachments')
       .createSignedUrl(data.path, 60 * 60 * 24 * 365);
     if (signErr || !signed?.signedUrl) {
-      toast.error("Failed to prepare image");
+      toast.error(t("ipFailedPrepare"));
       e.target.value = "";
       return;
     }
@@ -908,7 +918,7 @@ const ChatView = ({
             <p className="font-bold text-sm leading-tight text-foreground truncate">{contact.name}</p>
             <p className="text-[11px] text-muted-foreground">
               {contact.isGroup ? `${(contact.members?.length ?? 0) + 1} members`
-                : contact.online ? "Online" : contact.phone}
+                : contact.online ? t("ipOnline") : contact.phone}
             </p>
           </div>
           <div className="flex items-center gap-1 relative">
@@ -929,43 +939,43 @@ const ChatView = ({
                   >
                     {!contact.isGroup && (
                       <>
-                        <button onClick={() => { setShowChatMenu(false); toast.info("Notifications muted for this chat"); }}
+                        <button onClick={() => { setShowChatMenu(false); toast.info(t("ipNotificationsMutedChat")); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
-                          <Edit3 size={15} className="text-muted-foreground" /> Mute Notifications
+                          <Edit3 size={15} className="text-muted-foreground" /> {t("ipMuteNotifications")}
                         </button>
-                        <button onClick={() => { setShowChatMenu(false); toast.success("Chat cleared"); }}
+                        <button onClick={() => { setShowChatMenu(false); toast.success(t("ipChatCleared")); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
                           <Trash2 size={15} className="text-muted-foreground" /> Clear Chat
                         </button>
                         <div className="h-px bg-border/40 mx-3" />
                         <button onClick={() => { setShowChatMenu(false); setShowBlockDialog(true); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors">
-                          <UserMinus size={15} /> Block User
+                          <UserMinus size={15} /> {t("ipBlockUser")}
                         </button>
                         <button onClick={() => { setShowChatMenu(false); setShowBlockDialog(true); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors">
-                          <Shield size={15} /> Report User
+                          <Shield size={15} /> {t("ipReportUser")}
                         </button>
                       </>
                     )}
                     {contact.isGroup && (
                       <>
-                        <button onClick={() => { setShowChatMenu(false); toast.info("Group info"); }}
+                        <button onClick={() => { setShowChatMenu(false); toast.info(t("ipGroupInfoToast")); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
-                          <Info size={15} className="text-muted-foreground" /> Group Info
+                          <Info size={15} className="text-muted-foreground" /> {t("ipGroupInfo")}
                         </button>
-                        <button onClick={() => { setShowChatMenu(false); toast.info("Add member coming soon"); }}
+                        <button onClick={() => { setShowChatMenu(false); toast.info(t("ipAddMemberSoon")); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
-                          <UserPlus size={15} className="text-muted-foreground" /> Add Member
+                          <UserPlus size={15} className="text-muted-foreground" /> {t("ipAddMember")}
                         </button>
-                        <button onClick={() => { setShowChatMenu(false); toast.info("Notifications muted"); }}
+                        <button onClick={() => { setShowChatMenu(false); toast.info(t("ipNotificationsMuted")); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
-                          <Edit3 size={15} className="text-muted-foreground" /> Mute Notifications
+                          <Edit3 size={15} className="text-muted-foreground" /> {t("ipMuteNotifications")}
                         </button>
                         <div className="h-px bg-border/40 mx-3" />
-                        <button onClick={() => { setShowChatMenu(false); toast("Left the group"); }}
+                        <button onClick={() => { setShowChatMenu(false); toast(t("ipLeftGroup")); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors">
-                          <X size={15} /> Leave Group
+                          <X size={15} /> {t("ipLeaveGroup")}
                         </button>
                       </>
                     )}
@@ -982,13 +992,13 @@ const ChatView = ({
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 gap-3 text-muted-foreground">
             <Lock size={24} className="opacity-30" />
-            <p className="text-sm font-medium">Start a conversation</p>
-            <p className="text-xs">Messages are end-to-end encrypted</p>
+            <p className="text-sm font-medium">{t("ipStartConversation")}</p>
+            <p className="text-xs">{t("ipEncrypted")}</p>
           </div>
         )}
         {messages.map((msg, idx) => (
           <div key={msg.id}>
-            {idx === 0 && <p className="text-center text-[10px] text-muted-foreground mb-2 font-medium">Today</p>}
+            {idx === 0 && <p className="text-center text-[10px] text-muted-foreground mb-2 font-medium">{t("ipToday")}</p>}
             <motion.div
               initial={{ opacity: 0, y: 8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1012,7 +1022,7 @@ const ChatView = ({
                   ))}
                 </div>
                 <span className="text-[11px] text-muted-foreground font-medium">
-                  {typingUsers.length === 1 ? `${typingUsers[0]} is typing…` : `${typingUsers.length} people are typing…`}
+                  {typingUsers.length === 1 ? `${typingUsers[0]} ${t("ipIsTyping")}` : `${typingUsers.length} ${t("ipPeopleTyping")}`}
                 </span>
               </div>
             </motion.div>
@@ -1044,10 +1054,10 @@ const ChatView = ({
             className="px-3 pb-1 overflow-hidden">
             <div className="flex gap-3 py-2">
               {[
-                { icon: Camera, label: "Camera", color: "bg-blue-500", action: () => fileInputRef.current?.click() },
-                { icon: ImagePlus, label: "Gallery", color: "bg-purple-500", action: () => fileInputRef.current?.click() },
-                { icon: FileText, label: "Document", color: "bg-amber-500", action: () => toast.info("Coming soon") },
-                { icon: MapPin, label: "Location", color: "bg-green-500", action: () => toast.info("Coming soon") },
+                { icon: Camera, label: t("ipCamera"), color: "bg-blue-500", action: () => fileInputRef.current?.click() },
+                { icon: ImagePlus, label: t("ipGallery"), color: "bg-purple-500", action: () => fileInputRef.current?.click() },
+                { icon: FileText, label: t("ipDocument"), color: "bg-amber-500", action: () => toast.info("Coming soon") },
+                { icon: MapPin, label: t("ipLocation"), color: "bg-green-500", action: () => toast.info("Coming soon") },
               ].map((item) => (
                 <button key={item.label} onClick={() => { item.action(); setShowAttach(false); }}
                   className="flex flex-col items-center gap-1.5 flex-1">
@@ -1069,27 +1079,27 @@ const ChatView = ({
             <div className="mb-3 px-3 py-2.5 rounded-xl bg-muted/60 border border-border/50">
               <div className="flex items-center gap-1.5 mb-1">
                 <Shield size={12} className="text-muted-foreground" />
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Message Preview</span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{t("ipMessagePreview")}</span>
               </div>
               <p className="text-xs text-foreground/80 line-clamp-3 italic">"{messages[0]?.text || "..."}"</p>
             </div>
           )}
           <div className="flex items-center gap-2 mb-2 px-1">
             <Shield size={14} className="text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">This is a chat request. Accept to start chatting.</p>
+            <p className="text-xs text-muted-foreground">{t("ipChatRequestInfo")}</p>
           </div>
           <div className="flex gap-2">
             <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowBlockDialog(true)}
               className="h-11 px-3 rounded-2xl border-2 border-destructive/30 bg-destructive/10 text-destructive font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors hover:bg-destructive/20">
-              <Lock size={13} /> Block
+              <Lock size={13} /> {t("ipBlock")}
             </motion.button>
             <motion.button whileTap={{ scale: 0.95 }} onClick={onDecline}
               className="flex-1 h-11 rounded-2xl border-2 border-border bg-card text-foreground font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-muted">
-              <X size={16} /> Decline
+              <X size={16} /> {t("ipDecline")}
             </motion.button>
             <motion.button whileTap={{ scale: 0.95 }} onClick={onAccept}
               className="flex-1 h-11 rounded-2xl gradient-primary text-primary-foreground font-bold text-sm shadow-glow flex items-center justify-center gap-2">
-              <CheckCircle2 size={16} /> Accept
+              <CheckCircle2 size={16} /> {t("ipAccept")}
             </motion.button>
           </div>
 
@@ -1106,11 +1116,11 @@ const ChatView = ({
                       <Shield size={18} className="text-destructive" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-foreground">Block & Report</h3>
-                      <p className="text-[11px] text-muted-foreground">This user will be reported to admins</p>
+                      <h3 className="text-sm font-bold text-foreground">{t("ipBlockReport")}</h3>
+                      <p className="text-[11px] text-muted-foreground">{t("ipReportedToAdmins")}</p>
                     </div>
                   </div>
-                  <textarea value={blockReason} onChange={(e) => setBlockReason(e.target.value)} placeholder="Reason (optional)"
+                  <textarea value={blockReason} onChange={(e) => setBlockReason(e.target.value)} placeholder={t("ipReasonOptional")}
                     className="w-full h-20 p-3 rounded-xl bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-destructive/30 mb-3" />
                   <div className="flex gap-2">
                     <button onClick={() => { setShowBlockDialog(false); setBlockReason(""); }}
@@ -1130,8 +1140,8 @@ const ChatView = ({
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="flex items-center gap-2 mb-1.5 px-3">
                 <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }}
                   className="w-2.5 h-2.5 rounded-full bg-destructive" />
-                <span className="text-sm text-destructive font-semibold">Recording… {recordSeconds}s</span>
-                <span className="text-xs text-muted-foreground ml-auto">Release to send</span>
+                <span className="text-sm text-destructive font-semibold">{t("ipRecording")} {recordSeconds}s</span>
+                <span className="text-xs text-muted-foreground ml-auto">{t("ipReleaseToSend")}</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1145,13 +1155,13 @@ const ChatView = ({
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${showQuick ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
               <Smile size={17} />
             </button>
-            <input type="text" placeholder={recording ? "Recording…" : "Message…"} value={text}
+            <input type="text" placeholder={recording ? t("ipRecording") : t("ipMessagePlaceholder")} value={text}
               onChange={(e) => { setText(e.target.value); setTyping(true); }}
               onKeyDown={(e) => e.key === "Enter" && handleSend()} disabled={recording}
               className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0 disabled:opacity-50" />
             {!contact.isGroup && (
               <motion.button whileTap={{ scale: 0.88 }} onClick={() => onSendMoney(contact.phone)}
-                className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0" title={`Send money to ${contact.name}`}>
+                className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0" title={`${t("ipSendMoneyTo")} ${contact.name}`}>
                 <Wallet size={15} />
               </motion.button>
             )}
@@ -1191,13 +1201,13 @@ const ChatView = ({
                   <p className="text-[11px] text-muted-foreground">This user will be blocked and reported</p>
                 </div>
               </div>
-              <textarea value={blockReason} onChange={(e) => setBlockReason(e.target.value)} placeholder="Reason (optional)"
+              <textarea value={blockReason} onChange={(e) => setBlockReason(e.target.value)} placeholder={t("ipReasonOptional")}
                 className="w-full h-20 p-3 rounded-xl bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-destructive/30 mb-3" />
               <div className="flex gap-2">
                 <button onClick={() => { setShowBlockDialog(false); setBlockReason(""); }}
-                  className="flex-1 h-11 rounded-xl border border-border bg-card text-foreground font-semibold text-sm hover:bg-muted transition-colors">Cancel</button>
+                  className="flex-1 h-11 rounded-xl border border-border bg-card text-foreground font-semibold text-sm hover:bg-muted transition-colors">{t("ipCancel")}</button>
                 <button onClick={() => { onBlockReport?.(blockReason || undefined); setShowBlockDialog(false); setBlockReason(""); }}
-                  className="flex-1 h-11 rounded-xl bg-destructive text-destructive-foreground font-semibold text-sm hover:bg-destructive/90 transition-colors">Block & Report</button>
+                  className="flex-1 h-11 rounded-xl bg-destructive text-destructive-foreground font-semibold text-sm hover:bg-destructive/90 transition-colors">{t("ipBlockReport")}</button>
               </div>
             </motion.div>
           </motion.div>
@@ -1217,6 +1227,7 @@ interface InboxPageProps {
 type FilterTab = "all" | "unread" | "groups" | "requests";
 
 export default function InboxPage({ onBack, onSendMoney, isActive = false }: InboxPageProps) {
+  const { t } = useI18n();
   const { user } = useAuth();
   const profileData = useProfile();
   const chat = useChat();
@@ -1259,7 +1270,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     return !meta || meta.context !== "merchant_inquiry";
   });
   const uiContacts: UIContact[] = personalConversations.map((conv) =>
-    convToUIContact(conv, user?.id ?? "", isOnline)
+    convToUIContact(conv, user?.id ?? "", isOnline, t)
   );
 
   // Convert DB messages to UI messages with read receipt status
@@ -1349,7 +1360,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
   const handleCopy = useCallback((text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
+    toast.success(t("ipCopiedToClipboard"));
   }, []);
 
   const handleDeleteMessage = useCallback(async (msgId: string) => {
@@ -1357,8 +1368,8 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
       .from("chat_messages")
       .update({ is_deleted: true })
       .eq("id", msgId);
-    if (error) toast.error("Failed to delete message");
-    else toast.success("Message deleted");
+    if (error) toast.error(t("ipFailedDelete"));
+    else toast.success(t("ipMessageDeleted"));
   }, []);
 
   const handleForwardMessage = useCallback(async (targetConvId: string) => {
@@ -1367,24 +1378,24 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     if (!msg) return;
     const text = msg.decryptedContent || msg.content;
     await chat.sendMessage(targetConvId, `↗️ ${text}`, "text");
-    toast.success("Message forwarded");
+    toast.success(t("ipMessageForwarded"));
     setForwardMsgId(null);
   }, [forwardMsgId, chat]);
 
   const handleTogglePin = useCallback((id: string) => {
     const next = togglePin(id);
     setPinnedIdsState(next);
-    toast.success(next.includes(id) ? "Conversation pinned" : "Conversation unpinned");
+    toast.success(next.includes(id) ? t("ipConvPinned") : t("ipConvUnpinned"));
   }, []);
 
   const handleCreateContact = async (phone: string): Promise<boolean> => {
     if (!user) return false;
     const found = await chat.findUserByPhone(phone);
-    if (!found) { toast.error("User not found", { description: "No account with this phone number" }); return false; }
-    if (found.user_id === user.id) { toast.error("That's your own number!"); return false; }
+    if (!found) { toast.error(t("ipUserNotFound"), { description: t("ipNoAccountPhone") }); return false; }
+    if (found.user_id === user.id) { toast.error(t("ipOwnNumber")); return false; }
     const convId = await chat.createDirectConversation(found.user_id);
     if (convId) {
-      toast.success("Conversation started!", { description: `You can now chat with ${found.name || phone}` });
+      toast.success(t("ipConvStarted"), { description: `${t("ipCanNowChat")} ${found.name || phone}` });
       setActiveContactId(convId); chat.openConversation(convId);
       return true;
     }
@@ -1403,7 +1414,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     }
     const convId = await chat.createGroupConversation(name, icon, memberUserIds);
     if (convId) {
-      toast.success(`Group "${name}" created!`);
+      toast.success(t("ipGroupCreated"));
       setActiveContactId(convId); chat.openConversation(convId);
     }
   };
@@ -1437,9 +1448,9 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
             </div>
           )}
           <div>
-            <h1 className="text-xl font-extrabold text-foreground leading-tight">Messages</h1>
+            <h1 className="text-xl font-extrabold text-foreground leading-tight">{t("ipMessagesHeading")}</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {totalUnread > 0 ? `${totalUnread} unread` : "All caught up!"}
+              {totalUnread > 0 ? `${totalUnread} ${t("ipUnreadCount")}` : t("ipAllCaughtUp")}
             </p>
           </div>
         </div>
@@ -1460,7 +1471,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
         <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <input
           type="text"
-          placeholder="Search messages…"
+          placeholder={t("ipSearchMessages")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onFocus={() => setSearchFocused(true)}
@@ -1470,7 +1481,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
         {searchFocused && (
           <button onClick={() => { setSearch(""); setSearchFocused(false); }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary px-2 py-1">
-            Cancel
+            {t("ipCancelSearch")}
           </button>
         )}
       </div>
@@ -1484,7 +1495,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                 ? "bg-primary text-primary-foreground shadow-glow"
                 : "bg-muted/60 text-muted-foreground hover:bg-muted"
             }`}>
-            {tab === "all" ? "All" : tab === "unread" ? `Unread${tabCounts.unread > 0 ? ` (${tabCounts.unread})` : ""}` : tab === "groups" ? "Groups" : "Requests"}
+            {tab === "all" ? t("ipTabAll") : tab === "unread" ? `${t("ipTabUnread")}${tabCounts.unread > 0 ? ` (${tabCounts.unread})` : ""}` : tab === "groups" ? t("ipTabGroups") : t("ipTabRequests")}
             {tab === "requests" && tabCounts.requests > 0 && filterTab !== "requests" && (
               <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center">
                 {tabCounts.requests}
@@ -1563,18 +1574,18 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 min-w-0 flex-1">
                         {/* Delivery status for sent messages */}
-                        {isSentByMe && contact.lastMsg !== "No messages yet" && (
+                        {isSentByMe && contact.lastMsg !== t("ipNoMessagesYet") && (
                           <span className="shrink-0">
                             <CheckCheck size={12} className="text-primary" />
                           </span>
                         )}
                         <p className={`text-[12.5px] truncate ${contact.unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                          {isSentByMe && contact.lastMsg !== "No messages yet" ? `You: ${contact.lastMsg}` : contact.lastMsg}
+                          {isSentByMe && contact.lastMsg !== t("ipNoMessagesYet") ? `${t("ipYouPrefix")}: ${contact.lastMsg}` : contact.lastMsg}
                         </p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         {contact.pending && (
-                          <span className="px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-bold">Request</span>
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-bold">{t("ipRequestBadge")}</span>
                         )}
                         {contact.unread > 0 && (
                           <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
@@ -1610,16 +1621,16 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
             </motion.div>
             <div className="text-center">
               <p className="text-sm font-bold text-foreground mb-1">
-                {filterTab === "unread" ? "All caught up!" : filterTab === "groups" ? "No groups yet" : filterTab === "requests" ? "No pending requests" : uiContacts.length === 0 ? "No conversations yet" : "No results found"}
+                {filterTab === "unread" ? t("ipEmptyUnread") : filterTab === "groups" ? t("ipEmptyGroups") : filterTab === "requests" ? t("ipEmptyRequests") : uiContacts.length === 0 ? t("ipEmptyConvos") : t("ipNoResults")}
               </p>
               <p className="text-xs text-muted-foreground">
-                {filterTab === "unread" ? "You've read all your messages" : filterTab === "groups" ? "Create a group to chat with multiple people" : filterTab === "requests" ? "When someone sends you a chat request, it will appear here" : "Tap + to start a new conversation"}
+                {filterTab === "unread" ? t("ipEmptyUnreadSub") : filterTab === "groups" ? t("ipEmptyGroupsSub") : filterTab === "requests" ? t("ipEmptyRequestsSub") : t("ipStartNewConvo")}
               </p>
             </div>
             {uiContacts.length === 0 && (
               <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowNewContact(true)}
                 className="px-5 py-2.5 gradient-primary text-primary-foreground font-semibold text-sm rounded-full shadow-glow flex items-center gap-2">
-                <Plus size={16} /> Start Chatting
+                <Plus size={16} /> {t("ipStartChatting")}
               </motion.button>
             )}
           </motion.div>
@@ -1666,13 +1677,13 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                 return conv?.admin_id === user?.id;
               })()}
               onAccept={async () => {
-                if (activeContactId) { await chat.acceptConversation(activeContactId); toast.success("Chat request accepted!"); }
+                if (activeContactId) { await chat.acceptConversation(activeContactId); toast.success(t("ipChatAccepted")); }
               }}
               onDecline={async () => {
-                if (activeContactId) { await chat.declineConversation(activeContactId); setActiveContactId(null); toast("Chat request declined"); }
+                if (activeContactId) { await chat.declineConversation(activeContactId); setActiveContactId(null); toast(t("ipChatDeclined")); }
               }}
               onBlockReport={async (reason) => {
-                if (activeContactId) { await chat.blockAndReport(activeContactId, reason); setActiveContactId(null); toast.success("User blocked & reported"); }
+                if (activeContactId) { await chat.blockAndReport(activeContactId, reason); setActiveContactId(null); toast.success(t("ipUserBlockedReported")); }
               }}
               onSendMoney={(phone) => {
                 const contactId = activeContactId;
