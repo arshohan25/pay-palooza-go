@@ -397,7 +397,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
                 <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
                   <ImageUp size={20} className="text-white/80" />
                 </div>
-                <span className="text-white/60 text-[10px] font-medium">Gallery</span>
+                <span className="text-white/60 text-[10px] font-medium">{t("qrGallery")}</span>
               </button>
             </div>
 
