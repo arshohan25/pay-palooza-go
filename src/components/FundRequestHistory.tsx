@@ -106,9 +106,9 @@ const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-[13px] font-semibold text-foreground">{isDeposit ? "Add Money" : "Bank Transfer"}</p>
+                      <p className="text-[13px] font-semibold text-foreground">{isDeposit ? t("frhAddMoney") : t("frhBankTransfer")}</p>
                       <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${st.class}`}>
-                        <StatusIcon size={10} /> {st.label}
+                        <StatusIcon size={10} /> {t(st.labelKey)}
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5">{formatDate(r.created_at)}</p>
