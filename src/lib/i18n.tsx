@@ -2741,6 +2741,23 @@ const translations = {
   odAdditionalDetails: { en: "Additional details (optional)", bn: "অতিরিক্ত বিবরণ (ঐচ্ছিক)" },
   odDescribeIssue: { en: "Describe the issue...", bn: "সমস্যা বর্ণনা করুন..." },
   odSubmitReturn: { en: "Submit Return Request", bn: "রিটার্ন অনুরোধ জমা দিন" },
+  dqpSessionNotFound: { en: "Session Not Found", bn: "সেশন পাওয়া যায়নি" },
+  dqpSessionNotFoundDesc: { en: "This payment session does not exist or has been removed.", bn: "এই পেমেন্ট সেশন নেই বা সরানো হয়েছে।" },
+  dqpSomethingWrong: { en: "Something Went Wrong", bn: "কিছু ভুল হয়েছে" },
+  dqpCouldNotLoad: { en: "Could not load this payment session. Please try again.", bn: "এই পেমেন্ট সেশন লোড করা যায়নি। আবার চেষ্টা করুন।" },
+  dqpRetry: { en: "Retry", bn: "আবার চেষ্টা" },
+  dqpRef: { en: "Ref", bn: "রেফ" },
+  dqpScanWith: { en: "Scan with", bn: "স্ক্যান করুন" },
+  dqpToPay: { en: "app to pay", bn: "অ্যাপ দিয়ে পেমেন্ট করতে" },
+  dqpWaiting: { en: "Waiting for payment…", bn: "পেমেন্টের অপেক্ষায়…" },
+  dqpPayWithEasyPay: { en: "Pay with EasyPay", bn: "ইজিপে দিয়ে পরিশোধ" },
+  dqpPaymentReceived: { en: "Payment Received!", bn: "পেমেন্ট গৃহীত!" },
+  dqpPaidSuccess: { en: "paid successfully", bn: "সফলভাবে পরিশোধিত" },
+  dqpRedirecting: { en: "Redirecting…", bn: "রিডাইরেক্ট করা হচ্ছে…" },
+  dqpSessionExpired: { en: "Session Expired", bn: "সেশনের মেয়াদ শেষ" },
+  dqpSessionExpiredDesc: { en: "This payment session has expired.", bn: "এই পেমেন্ট সেশনের মেয়াদ শেষ হয়েছে।" },
+  dqpPoweredBy: { en: "Powered by EasyPay", bn: "পাওয়ার্ড বাই ইজিপে" },
+  dqpPaymentQrAlt: { en: "Payment QR Code", bn: "পেমেন্ট QR কোড" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
