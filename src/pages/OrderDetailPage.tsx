@@ -206,7 +206,7 @@ export default function OrderDetailPage() {
         {/* Status Timeline */}
         {!isCancelled && (
           <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Order Tracking</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t("odOrderTracking")}</p>
             <div className="space-y-0">
               {STATUS_STEPS.map((step, i) => {
                 const done = i <= currentStepIdx;
