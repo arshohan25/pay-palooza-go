@@ -30,13 +30,13 @@ interface Coupon {
   applicable_flow: string | null;
 }
 
-const FLOW_MAP: Record<string, { label: string; icon: typeof ShoppingBag; route: string }> = {
-  shop:       { label: "Shop",      icon: ShoppingBag, route: "/shop" },
-  payment:    { label: "Payment",   icon: CreditCard,  route: "/?flow=payment" },
-  cash_out:   { label: "Cash Out",  icon: Zap,         route: "/?flow=cash_out" },
-  recharge:   { label: "Recharge",  icon: Smartphone,  route: "/?flow=recharge" },
-  bill_pay:   { label: "Bill Pay",  icon: FileText,    route: "/?flow=bill_pay" },
-  all:        { label: "All",       icon: Tag,         route: "/shop" },
+const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof ShoppingBag; route: string }> = {
+  shop:       { labelKey: "cpFlowShop",     icon: ShoppingBag, route: "/shop" },
+  payment:    { labelKey: "cpFlowPayment",  icon: CreditCard,  route: "/?flow=payment" },
+  cash_out:   { labelKey: "cpFlowCashOut",  icon: Zap,         route: "/?flow=cash_out" },
+  recharge:   { labelKey: "cpFlowRecharge", icon: Smartphone,  route: "/?flow=recharge" },
+  bill_pay:   { labelKey: "cpFlowBillPay",  icon: FileText,    route: "/?flow=bill_pay" },
+  all:        { labelKey: "cpFlowAll",      icon: Tag,         route: "/shop" },
 };
 
 function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
