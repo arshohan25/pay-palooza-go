@@ -169,8 +169,8 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                 <motion.div key="pin" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-5 py-4">
                   <div className="text-center space-y-1">
                     <Lock className="w-8 h-8 text-primary mx-auto mb-2" />
-                    <p className="text-sm font-semibold text-foreground">Enter your PIN</p>
-                    <p className="text-xs text-muted-foreground">to pay ৳{fmt(amount)} to {merchantName}</p>
+                    <p className="text-sm font-semibold text-foreground">{t("dqEnterPin")}</p>
+                    <p className="text-xs text-muted-foreground">{t("dqToPay")} ৳{fmt(amount)} {t("dqTo")} {merchantName}</p>
                   </div>
 
                   {/* PIN dots */}
