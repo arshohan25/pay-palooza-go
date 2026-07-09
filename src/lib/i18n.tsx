@@ -2541,6 +2541,10 @@ const translations = {
   agKycTrackingSoon: { en: "Detailed customer KYC tracking will be available soon.", bn: "বিস্তারিত গ্রাহক KYC ট্র্যাকিং শীঘ্রই আসছে।" },
   agNotifPrefs: { en: "Notification Preferences", bn: "বিজ্ঞপ্তি পছন্দ" },
   agActive: { en: "active", bn: "সক্রিয়" },
+
+  // AppHeader
+  ahSearch: { en: "Search", bn: "অনুসন্ধান" },
+  ahToggleDark: { en: "Toggle dark mode", bn: "ডার্ক মোড টগল" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
