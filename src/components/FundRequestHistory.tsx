@@ -70,7 +70,7 @@ const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
         <button onClick={onBack} className="w-9 h-9 rounded-xl bg-card border border-border/60 flex items-center justify-center active:scale-95 transition-transform">
           <ArrowLeft size={16} className="text-foreground" />
         </button>
-        <h1 className="text-[17px] font-bold text-foreground">My Fund Requests</h1>
+        <h1 className="text-[17px] font-bold text-foreground">{t("frhTitle")}</h1>
       </div>
 
       {loading ? (
