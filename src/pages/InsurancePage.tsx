@@ -149,7 +149,7 @@ const InsurancePage = () => {
                   {PLAN_CATEGORIES.map(c => (
                     <button key={c.key} onClick={() => setCategory(c.key)}
                       className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${category === c.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                      <c.icon className="w-4 h-4" />{c.label}
+                      <c.icon className="w-4 h-4" />{t(c.labelKey)}
                     </button>
                   ))}
                 </div>
