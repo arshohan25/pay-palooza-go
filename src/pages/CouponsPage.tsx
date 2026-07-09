@@ -164,14 +164,14 @@ export default function CouponsPage() {
   const handleCopy = (coupon: Coupon) => {
     navigator.clipboard.writeText(coupon.code);
     setCopiedId(coupon.id);
-    toast.success(`Copied: ${coupon.code}`);
+    toast.success(t("cpCopiedToast").replace("{code}", coupon.code));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleUseNow = (coupon: Coupon) => {
     navigator.clipboard.writeText(coupon.code);
     setCopiedId(coupon.id);
-    toast.success(`Code "${coupon.code}" copied — paste it during payment`);
+    toast.success(t("cpUseNowToast").replace("{code}", coupon.code));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
