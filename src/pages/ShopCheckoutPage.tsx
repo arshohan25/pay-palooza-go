@@ -419,7 +419,7 @@ export default function ShopCheckoutPage() {
         {/* Items Summary */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            Items ({count})
+            {t("scpItemsLabel")} ({count})
           </p>
           {items.map((item) => (
             <div key={item.id} className="flex items-center justify-between py-1">
