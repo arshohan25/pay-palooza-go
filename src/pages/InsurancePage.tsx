@@ -111,14 +111,14 @@ const InsurancePage = () => {
               <CardContent className="p-5 space-y-4">
                 <div className="text-center space-y-1">
                   <p className="text-3xl font-bold text-foreground">৳{selectedPlan.coverage.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground">Coverage Amount</p>
+                  <p className="text-sm text-muted-foreground">{t("ipCoverageAmount")}</p>
                 </div>
                 <div className="flex justify-between text-sm bg-muted/50 rounded-xl p-3">
-                  <div><p className="text-muted-foreground">Premium</p><p className="font-bold text-foreground">৳{selectedPlan.premium}/mo</p></div>
-                  <div className="text-right"><p className="text-muted-foreground">Duration</p><p className="font-bold text-foreground">{selectedPlan.duration} months</p></div>
+                  <div><p className="text-muted-foreground">{t("ipPremium")}</p><p className="font-bold text-foreground">৳{selectedPlan.premium}{t("ipMoSuffix")}</p></div>
+                  <div className="text-right"><p className="text-muted-foreground">{t("ipDuration")}</p><p className="font-bold text-foreground">{selectedPlan.duration} {t("ipMonths")}</p></div>
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground mb-2">Benefits</p>
+                  <p className="font-semibold text-foreground mb-2">{t("ipBenefits")}</p>
                   <ul className="space-y-2">
                     {selectedPlan.benefits.map((b, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
