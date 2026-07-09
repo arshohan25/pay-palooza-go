@@ -35,7 +35,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
           whileTap={{ scale: 0.88 }}
           onClick={onSignOut}
           className="flex items-center gap-2 px-3 py-2 rounded-2xl gradient-primary border border-primary/30 shadow-glow text-primary-foreground hover:shadow-glow-lg transition-all duration-150 tap-target"
-          aria-label="Sign out"
+          aria-label={t("signOut")}
         >
           <LogOut size={15} strokeWidth={2} />
           <span className="text-[13px] font-semibold">{t("logout")}</span>
