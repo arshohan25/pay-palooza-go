@@ -239,7 +239,7 @@ export default function ShopCheckoutPage() {
       clearCart();
       setSuccess(true);
     } catch (e: any) {
-      toast.error(e.message ?? "Payment failed");
+      toast.error(e.message ?? t("scpPaymentFailed"));
       setPin("");
     }
     setProcessing(false);
