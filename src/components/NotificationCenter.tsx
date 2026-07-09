@@ -432,13 +432,13 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                     <div className="rounded-xl border border-border/60 bg-muted/30 p-3 space-y-1.5">
                       {txnRef && (
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Reference</span>
+                          <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">{t("ncReference")}</span>
                           <span className="font-mono text-[11px] text-foreground truncate">{String(txnRef)}</span>
                         </div>
                       )}
                       {detailFulfillment && meta?.tracking_number && (
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Tracking</span>
+                          <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">{t("ncTracking")}</span>
                           <span className="font-mono text-[11px] text-foreground truncate">{String(meta.tracking_number)}</span>
                         </div>
                       )}
