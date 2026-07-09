@@ -156,7 +156,7 @@ const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
                 className="flex items-center group w-fit"
                 onClick={handleToggleBalance}
                 whileTap={{ scale: 0.97 }}
-                aria-label={showBalance ? "Hide balance" : t("tapToSeeBalance")}
+                aria-label={showBalance ? t("hideBalance") : t("tapToSeeBalance")}
               >
                 <AnimatePresence mode="wait">
                   {showBalance ? (
