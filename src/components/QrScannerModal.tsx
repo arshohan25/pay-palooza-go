@@ -243,7 +243,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
           <div className="relative z-30 flex items-center justify-between px-5 pt-[env(safe-area-inset-top,12px)] mt-3">
             <div className="w-10" />
             <div className="flex items-center gap-1.5">
-              <h2 className="text-white text-base font-bold tracking-tight">{title}</h2>
+              <h2 className="text-white text-base font-bold tracking-tight">{displayTitle}</h2>
               <Info size={14} className="text-white/50" />
             </div>
             <button
