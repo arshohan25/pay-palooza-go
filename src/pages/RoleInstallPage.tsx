@@ -71,6 +71,7 @@ const ROLE_CONFIG: Record<string, {
 const RoleInstallPage = () => {
   const { role } = useParams<{ role: string }>();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [hasPrompt, setHasPrompt] = useState(!!getInstallPrompt());
   const [installed, setInstalled] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
