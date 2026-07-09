@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
+import { useI18n } from "@/lib/i18n";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
