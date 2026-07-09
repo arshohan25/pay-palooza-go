@@ -738,7 +738,7 @@ export default function ProductDetailPage() {
                         )}>
                           {isProductCard ? (
                             <div className="space-y-1">
-                              <p className="text-xs opacity-80">Product inquiry</p>
+                              <p className="text-xs opacity-80">{t("pdpProductInquiry")}</p>
                               <div className="flex items-center gap-2">
                                 <span className="text-base">{(msg.metadata as any)?.productEmoji || "📦"}</span>
                                 <div>
