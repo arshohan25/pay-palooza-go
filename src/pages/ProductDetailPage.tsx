@@ -56,6 +56,7 @@ function getEstimatedDelivery() {
 }
 
 export default function ProductDetailPage() {
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
