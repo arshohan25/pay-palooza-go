@@ -48,7 +48,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
             whileTap={{ scale: 0.88 }}
             onClick={toggleTheme}
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-primary/10 border border-primary/25 shadow-card flex items-center justify-center text-primary hover:bg-primary/15 hover:shadow-elevated transition-all duration-150 tap-target overflow-hidden"
-            aria-label="Toggle dark mode"
+            aria-label={t("ahToggleDark")}
           >
             <AnimatePresence mode="wait" initial={false}>
               {mounted && (
