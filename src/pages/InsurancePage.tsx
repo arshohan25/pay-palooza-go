@@ -10,12 +10,13 @@ import { useKycStatus } from "@/hooks/use-kyc-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
-const PLAN_CATEGORIES = [
-  { key: "life", label: "Life", icon: Heart, color: "text-red-500" },
-  { key: "health", label: "Health", icon: Shield, color: "text-emerald-500" },
-  { key: "accident", label: "Accident", icon: Zap, color: "text-amber-500" },
-  { key: "device", label: "Device", icon: Smartphone, color: "text-blue-500" },
+const PLAN_CATEGORIES: { key: string; labelKey: TranslationKey; icon: any; color: string }[] = [
+  { key: "life", labelKey: "ipCatLife", icon: Heart, color: "text-red-500" },
+  { key: "health", labelKey: "ipCatHealth", icon: Shield, color: "text-emerald-500" },
+  { key: "accident", labelKey: "ipCatAccident", icon: Zap, color: "text-amber-500" },
+  { key: "device", labelKey: "ipCatDevice", icon: Smartphone, color: "text-blue-500" },
 ];
 
 const PLANS: Record<string, { name: string; coverage: number; premium: number; duration: number; benefits: string[] }[]> = {
@@ -39,6 +40,7 @@ const PLANS: Record<string, { name: string; coverage: number; premium: number; d
 
 const InsurancePage = () => {
   const navigate = useNavigate();
+  const { t, lang } = useI18n();
   const { user } = useAuth();
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [category, setCategory] = useState("life");
@@ -56,7 +58,7 @@ const InsurancePage = () => {
 
   useEffect(() => {
     if (!kycLoading && kycStatus !== "verified") {
-      toast.error("Please complete KYC verification to use this feature.");
+      toast.error(t("ipToastKyc"));
       navigate("/");
     }
   }, [kycLoading, kycStatus, navigate]);
@@ -64,7 +66,7 @@ const InsurancePage = () => {
   
 
   const handlePurchase = async (plan: typeof PLANS["life"][0]) => {
-    if (!user) { toast.error("Please sign in first"); return; }
+    if (!user) { toast.error(t("ipToastSignIn")); return; }
     setPurchasing(true);
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + plan.duration);
@@ -79,9 +81,9 @@ const InsurancePage = () => {
       expires_at: expiresAt.toISOString(),
     } as any);
 
-    if (error) toast.error("Failed to purchase plan");
+    if (error) toast.error(t("ipToastFailed"));
     else {
-      toast.success("Insurance plan activated!");
+      toast.success(t("ipToastActivated"));
       setSelectedPlan(null);
       const { data } = await supabase.from("insurance_policies").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
       setPolicies(data || []);
@@ -98,7 +100,7 @@ const InsurancePage = () => {
       />
       <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur border-b border-primary/30 shadow-glow px-4 py-3 flex items-center gap-3">
         <button onClick={() => { if (selectedPlan) setSelectedPlan(null); else navigate(-1); }} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
-        <h1 className="text-lg font-bold text-foreground">{selectedPlan ? selectedPlan.name : "Insurance"}</h1>
+        <h1 className="text-lg font-bold text-foreground">{selectedPlan ? selectedPlan.name : t("ipTitle")}</h1>
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-4">
@@ -109,14 +111,14 @@ const InsurancePage = () => {
               <CardContent className="p-5 space-y-4">
                 <div className="text-center space-y-1">
                   <p className="text-3xl font-bold text-foreground">৳{selectedPlan.coverage.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground">Coverage Amount</p>
+                  <p className="text-sm text-muted-foreground">{t("ipCoverageAmount")}</p>
                 </div>
                 <div className="flex justify-between text-sm bg-muted/50 rounded-xl p-3">
-                  <div><p className="text-muted-foreground">Premium</p><p className="font-bold text-foreground">৳{selectedPlan.premium}/mo</p></div>
-                  <div className="text-right"><p className="text-muted-foreground">Duration</p><p className="font-bold text-foreground">{selectedPlan.duration} months</p></div>
+                  <div><p className="text-muted-foreground">{t("ipPremium")}</p><p className="font-bold text-foreground">৳{selectedPlan.premium}{t("ipMoSuffix")}</p></div>
+                  <div className="text-right"><p className="text-muted-foreground">{t("ipDuration")}</p><p className="font-bold text-foreground">{selectedPlan.duration} {t("ipMonths")}</p></div>
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground mb-2">Benefits</p>
+                  <p className="font-semibold text-foreground mb-2">{t("ipBenefits")}</p>
                   <ul className="space-y-2">
                     {selectedPlan.benefits.map((b, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
@@ -127,7 +129,7 @@ const InsurancePage = () => {
                   </ul>
                 </div>
                 <Button onClick={() => handlePurchase(selectedPlan)} disabled={purchasing} className="w-full rounded-xl h-12 font-bold">
-                  {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : `Purchase for ৳${selectedPlan.premium}/mo`}
+                  {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : t("ipPurchaseFor").replace("{amount}", String(selectedPlan.premium))}
                 </Button>
               </CardContent>
             </Card>
@@ -136,8 +138,8 @@ const InsurancePage = () => {
           <>
             {/* Tabs */}
             <div className="flex gap-2 bg-muted/50 rounded-xl p-1">
-              <button onClick={() => setTab("browse")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "browse" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>Browse Plans</button>
-              <button onClick={() => setTab("my")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "my" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>My Policies</button>
+              <button onClick={() => setTab("browse")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "browse" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>{t("ipBrowsePlans")}</button>
+              <button onClick={() => setTab("my")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "my" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>{t("ipMyPolicies")}</button>
             </div>
 
             {tab === "browse" ? (
@@ -147,7 +149,7 @@ const InsurancePage = () => {
                   {PLAN_CATEGORIES.map(c => (
                     <button key={c.key} onClick={() => setCategory(c.key)}
                       className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${category === c.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                      <c.icon className="w-4 h-4" />{c.label}
+                      <c.icon className="w-4 h-4" />{t(c.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -160,10 +162,10 @@ const InsurancePage = () => {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="font-bold text-foreground">{plan.name}</h3>
-                            <Badge variant="secondary">৳{plan.premium}/mo</Badge>
+                            <Badge variant="secondary">৳{plan.premium}{t("ipMoSuffix")}</Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">Coverage: ৳{plan.coverage.toLocaleString()} · {plan.duration} months</p>
-                          <p className="text-xs text-primary mt-1 font-medium">Tap to view details →</p>
+                          <p className="text-sm text-muted-foreground">{t("ipCoverage")}: ৳{plan.coverage.toLocaleString()} · {plan.duration} {t("ipMonths")}</p>
+                          <p className="text-xs text-primary mt-1 font-medium">{t("ipTapDetails")}</p>
                         </CardContent>
                       </Card>
                     </motion.div>
@@ -175,7 +177,7 @@ const InsurancePage = () => {
               loading ? (
                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
               ) : policies.length === 0 ? (
-                <Card><CardContent className="p-6 text-center text-muted-foreground text-sm">No active policies</CardContent></Card>
+                <Card><CardContent className="p-6 text-center text-muted-foreground text-sm">{t("ipNoPolicies")}</CardContent></Card>
               ) : (
                 <div className="space-y-3">
                   {policies.map((p, i) => (
@@ -186,8 +188,8 @@ const InsurancePage = () => {
                             <h3 className="font-bold text-foreground text-sm">{p.plan_name}</h3>
                             <Badge variant={p.status === "active" ? "default" : "secondary"}>{p.status}</Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground">Coverage: ৳{Number(p.coverage_amount).toLocaleString()} · ৳{Number(p.premium).toLocaleString()}/mo</p>
-                          {p.expires_at && <p className="text-xs text-muted-foreground">Expires: {new Date(p.expires_at).toLocaleDateString()}</p>}
+                          <p className="text-xs text-muted-foreground">{t("ipCoverage")}: ৳{Number(p.coverage_amount).toLocaleString()} · ৳{Number(p.premium).toLocaleString()}{t("ipMoSuffix")}</p>
+                          {p.expires_at && <p className="text-xs text-muted-foreground">{t("ipExpires")}: {new Date(p.expires_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD")}</p>}
                         </CardContent>
                       </Card>
                     </motion.div>

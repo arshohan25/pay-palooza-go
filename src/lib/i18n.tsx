@@ -2619,6 +2619,36 @@ const translations = {
   ncCopy: { en: "Copy", bn: "কপি" },
   ncReference: { en: "Reference", bn: "রেফারেন্স" },
   ncTracking: { en: "Tracking", bn: "ট্র্যাকিং" },
+
+  // WishlistPage
+  wpTitle: { en: "Wishlist", bn: "উইশলিস্ট" },
+  wpItems: { en: "items", bn: "আইটেম" },
+  wpEmpty: { en: "Your wishlist is empty", bn: "আপনার উইশলিস্ট খালি" },
+  wpBrowse: { en: "Browse Products", bn: "পণ্য ব্রাউজ করুন" },
+
+  // InsurancePage
+  ipTitle: { en: "Insurance", bn: "বীমা" },
+  ipCoverageAmount: { en: "Coverage Amount", bn: "কভারেজ পরিমাণ" },
+  ipPremium: { en: "Premium", bn: "প্রিমিয়াম" },
+  ipDuration: { en: "Duration", bn: "মেয়াদ" },
+  ipMonths: { en: "months", bn: "মাস" },
+  ipMoSuffix: { en: "/mo", bn: "/মাস" },
+  ipBenefits: { en: "Benefits", bn: "সুবিধা" },
+  ipPurchaseFor: { en: "Purchase for ৳{amount}/mo", bn: "৳{amount}/মাস দিয়ে কিনুন" },
+  ipBrowsePlans: { en: "Browse Plans", bn: "প্ল্যান দেখুন" },
+  ipMyPolicies: { en: "My Policies", bn: "আমার পলিসি" },
+  ipCoverage: { en: "Coverage", bn: "কভারেজ" },
+  ipTapDetails: { en: "Tap to view details →", bn: "বিস্তারিত দেখতে ট্যাপ →" },
+  ipNoPolicies: { en: "No active policies", bn: "কোনো সক্রিয় পলিসি নেই" },
+  ipExpires: { en: "Expires", bn: "মেয়াদ শেষ" },
+  ipCatLife: { en: "Life", bn: "লাইফ" },
+  ipCatHealth: { en: "Health", bn: "স্বাস্থ্য" },
+  ipCatAccident: { en: "Accident", bn: "দুর্ঘটনা" },
+  ipCatDevice: { en: "Device", bn: "ডিভাইস" },
+  ipToastFailed: { en: "Failed to purchase plan", bn: "প্ল্যান ক্রয় ব্যর্থ" },
+  ipToastActivated: { en: "Insurance plan activated!", bn: "বীমা প্ল্যান সক্রিয় হয়েছে!" },
+  ipToastKyc: { en: "Please complete KYC verification to use this feature.", bn: "এই ফিচার ব্যবহার করতে KYC যাচাই সম্পন্ন করুন।" },
+  ipToastSignIn: { en: "Please sign in first", bn: "প্রথমে সাইন ইন করুন" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

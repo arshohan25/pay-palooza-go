@@ -8,9 +8,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useCart } from "@/hooks/use-cart";
 import ProductCard, { type ShopProduct } from "@/components/shop/ProductCard";
+import { useI18n } from "@/lib/i18n";
 
 export default function WishlistPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { user } = useAuth();
   const { wishlistIds, toggle, isWishlisted } = useWishlist();
   const { addToCart } = useCart();
@@ -44,9 +46,9 @@ export default function WishlistPage() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <Heart className="w-5 h-5 text-destructive" /> Wishlist
+          <Heart className="w-5 h-5 text-destructive" /> {t("wpTitle")}
         </h1>
-        <span className="text-xs text-muted-foreground ml-auto">{wishlistIds.size} items</span>
+        <span className="text-xs text-muted-foreground ml-auto">{wishlistIds.size} {t("wpItems")}</span>
       </div>
 
       <div className="px-4 pt-4">
@@ -57,9 +59,9 @@ export default function WishlistPage() {
         ) : products.length === 0 ? (
           <div className="text-center py-16">
             <Heart className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">Your wishlist is empty</p>
+            <p className="text-sm text-muted-foreground">{t("wpEmpty")}</p>
             <Button variant="outline" className="mt-4" onClick={() => navigate("/shop")}>
-              Browse Products
+              {t("wpBrowse")}
             </Button>
           </div>
         ) : (
