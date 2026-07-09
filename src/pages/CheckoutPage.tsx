@@ -615,7 +615,7 @@ const CheckoutPage = () => {
                 <div className="text-center">
                   {resendCooldown > 0 ? (
                     <p className="text-xs text-muted-foreground">
-                      Resend in <span className="font-bold text-foreground">{resendCooldown}s</span>
+                      {t("cpResendIn")} <span className="font-bold text-foreground">{resendCooldown}s</span>
                     </p>
                   ) : (
                     <button
@@ -623,7 +623,7 @@ const CheckoutPage = () => {
                       className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
                     >
                       <RotateCcw size={12} />
-                      Resend OTP
+                      {t("cpResendOtp")}
                     </button>
                   )}
                 </div>
