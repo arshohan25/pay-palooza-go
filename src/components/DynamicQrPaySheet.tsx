@@ -151,7 +151,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
                   </div>
 
                   <div className="text-center py-2">
-                    <p className="text-sm text-muted-foreground">Amount to Pay</p>
+                    <p className="text-sm text-muted-foreground">{t("dqAmountToPay")}</p>
                     <p className="text-4xl font-extrabold text-foreground">৳{fmt(amount)}</p>
                   </div>
 
