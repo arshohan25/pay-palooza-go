@@ -384,8 +384,8 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
           {messages.map((msg) => {
             const isMe = msg.sender_id === userId;
             const displayContent = msg.is_deleted
-              ? "🗑️ This message was deleted"
-              : decryptedCache[msg.id] ?? "🔓 Decrypting...";
+              ? t("scMsgDeleted")
+              : decryptedCache[msg.id] ?? t("scDecrypting");
             const isExpiring = msg.expires_at !== null;
 
             return (
