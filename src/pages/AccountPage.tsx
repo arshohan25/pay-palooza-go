@@ -368,8 +368,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_icon_size") && <MenuRow
             icon={Grid3X3}
             iconClass="gradient-cashout"
-            label="Icon Size"
-            sub="Adjust Quick Action icon size"
+            label={t("iconSize")}
+            sub={t("iconSizeSub")}
             right={
               <span className="text-[12px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
                 {iconSizeLabel}
