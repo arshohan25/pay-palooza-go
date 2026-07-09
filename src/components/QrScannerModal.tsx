@@ -330,7 +330,7 @@ const QrScannerModal = ({ open, onClose, onScan, title }: QrScannerModalProps) =
                     onClick={captureFrameForOcr}
                     className="text-white/70 text-[10px] underline"
                   >
-                    Tap to retry
+                    {t("qrTapRetry")}
                   </button>
                 </div>
               )}
