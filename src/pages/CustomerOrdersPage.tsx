@@ -22,6 +22,7 @@ const STATUS_CONFIG: Record<string, { labelKey: string; color: string; icon: any
 
 export default function CustomerOrdersPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
