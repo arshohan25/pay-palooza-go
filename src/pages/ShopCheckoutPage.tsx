@@ -329,7 +329,7 @@ export default function ShopCheckoutPage() {
       <div className="px-4 pt-4 space-y-4">
         {/* Delivery Address */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Delivery Address</p>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("scpDeliveryAddress")}</p>
           {user && (
             <AddressManager
               userId={user.id}
