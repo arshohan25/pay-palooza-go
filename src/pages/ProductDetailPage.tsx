@@ -669,7 +669,7 @@ export default function ProductDetailPage() {
               } catch {}
               navigate("/shop/checkout", { state: { buyNowItem: item } });
             }} disabled={product.stock <= 0}>
-            Buy Now
+            {t("pdpBuyNow")}
           </Button>
         </motion.div>
       </div>
