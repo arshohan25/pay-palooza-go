@@ -343,7 +343,7 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
             <span className="flex items-center gap-1.5 min-w-0">
               <Info size={12} className="text-amber-600 shrink-0" />
               <span className="text-[11px] font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wide truncate">
-                Context · {initialContext.title}
+                {t("scContext")} · {initialContext.title}
               </span>
             </span>
             {contextOpen ? (
