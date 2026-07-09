@@ -212,8 +212,8 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
                 <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <KeyRound size={26} className="text-primary" />
                 </div>
-                <p className="font-bold text-foreground text-lg">Enter your PIN</p>
-                <p className="text-xs text-muted-foreground mt-1">Demo PIN is <strong>1234</strong></p>
+                <p className="font-bold text-foreground text-lg">{t("baEnterPin")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("baDemoPin")} <strong>1234</strong></p>
               </div>
 
               <PinDots />
