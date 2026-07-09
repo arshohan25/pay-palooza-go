@@ -49,6 +49,7 @@ interface BiometricAuthProps {
 type AuthStep = "prompt" | "pin" | "checking" | "success";
 
 export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
+  const { t } = useI18n();
   const [step, setStep]             = useState<AuthStep>("prompt");
   const [biometricAvail, setBioAvail] = useState<boolean | null>(null);
   const [pin, setPin]               = useState("");
