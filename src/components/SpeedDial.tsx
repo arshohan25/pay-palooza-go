@@ -168,7 +168,7 @@ const SpeedDial = ({
       <motion.button
         onClick={toggle}
         whileTap={{ scale: 0.88 }}
-        aria-label={open ? "Close actions" : "Quick actions"}
+        aria-label={open ? t("sdCloseActions") : t("sdQuickActions")}
         className="w-14 h-14 rounded-2xl gradient-primary shadow-glow-lg flex items-center justify-center text-primary-foreground relative overflow-hidden"
       >
         {/* Ripple ring when open */}
