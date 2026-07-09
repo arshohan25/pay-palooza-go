@@ -80,7 +80,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
             whileTap={{ scale: 0.90 }}
             onClick={() => setShowNotif(true)}
             className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-2xl gradient-primary border border-primary/30 shadow-glow flex items-center justify-center text-primary-foreground hover:shadow-glow-lg transition-all duration-150 tap-target"
-            aria-label="Notifications"
+            aria-label={t("notifications")}
           >
             <Bell size={17} strokeWidth={2} />
             <AnimatePresence>
