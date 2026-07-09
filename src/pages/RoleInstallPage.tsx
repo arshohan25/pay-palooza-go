@@ -111,7 +111,7 @@ const RoleInstallPage = () => {
   if (!config) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
-        <h1 className="text-xl font-bold text-foreground mb-4">Choose an App to Install</h1>
+        <h1 className="text-xl font-bold text-foreground mb-4">{t("ripChooseApp")}</h1>
         <div className="grid gap-3 w-full max-w-sm">
           {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
             <motion.button
