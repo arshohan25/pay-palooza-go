@@ -23,14 +23,14 @@ const FEATURE_KEY_MAP: Record<string, string> = {
   donations: "donations",
 };
 
-const items = [
-  { id: "bank", icon: Landmark, label: "Bank Transfer", desc: "Transfer to any bank account", gradient: "bg-gradient-to-b from-blue-500 to-indigo-600" },
-  { id: "loan", icon: HandCoins, label: "Loan", desc: "Quick personal loans", gradient: "bg-gradient-to-b from-amber-500 to-orange-600" },
-  { id: "insurance", icon: Shield, label: "Insurance", desc: "Protect what matters", gradient: "bg-gradient-to-b from-violet-500 to-purple-600" },
-  { id: "giftcards", icon: Gift, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "bg-gradient-to-b from-orange-400 to-red-500" },
-  { id: "careers", icon: Briefcase, label: "Careers", desc: "Join our team & grow", gradient: "bg-gradient-to-b from-slate-500 to-slate-700" },
-  { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals & cashback", gradient: "bg-gradient-to-b from-pink-500 to-rose-600" },
-  { id: "donations", icon: Heart, label: "Donations", desc: "Support causes you care about", gradient: "bg-gradient-to-b from-red-500 to-rose-700" },
+const items: { id: string; icon: any; labelKey: TranslationKey; descKey: TranslationKey; gradient: string }[] = [
+  { id: "bank", icon: Landmark, labelKey: "msBankLabel", descKey: "msBankDesc", gradient: "bg-gradient-to-b from-blue-500 to-indigo-600" },
+  { id: "loan", icon: HandCoins, labelKey: "msLoanLabel", descKey: "msLoanDesc", gradient: "bg-gradient-to-b from-amber-500 to-orange-600" },
+  { id: "insurance", icon: Shield, labelKey: "msInsuranceLabel", descKey: "msInsuranceDesc", gradient: "bg-gradient-to-b from-violet-500 to-purple-600" },
+  { id: "giftcards", icon: Gift, labelKey: "msGiftLabel", descKey: "msGiftDesc", gradient: "bg-gradient-to-b from-orange-400 to-red-500" },
+  { id: "careers", icon: Briefcase, labelKey: "msCareersLabel", descKey: "msCareersDesc", gradient: "bg-gradient-to-b from-slate-500 to-slate-700" },
+  { id: "coupons", icon: Ticket, labelKey: "msCouponsLabel", descKey: "msCouponsDesc", gradient: "bg-gradient-to-b from-pink-500 to-rose-600" },
+  { id: "donations", icon: Heart, labelKey: "msDonationsLabel", descKey: "msDonationsDesc", gradient: "bg-gradient-to-b from-red-500 to-rose-700" },
 ];
 
 const MoreSheet = ({ open, onClose, onBankTransfer }: MoreSheetProps) => {
