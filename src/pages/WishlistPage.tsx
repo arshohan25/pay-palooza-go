@@ -12,6 +12,7 @@ import { useI18n } from "@/lib/i18n";
 
 export default function WishlistPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { user } = useAuth();
   const { wishlistIds, toggle, isWishlisted } = useWishlist();
   const { addToCart } = useCart();
