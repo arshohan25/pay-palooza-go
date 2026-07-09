@@ -347,7 +347,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
               <CalendarIcon size={13} />
               {activePreset === "custom"
                 ? `${format(dateRange.from, "MMM d")} – ${format(dateRange.to, "MMM d")}`
-                : "Custom"}
+                : t("siCustom")}
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-3 space-y-3" align="start">
