@@ -374,9 +374,9 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
           </div>
           <div className="bg-muted/60 rounded-2xl rounded-tl-md px-3 py-2 max-w-[80%]">
             <p className="text-xs text-foreground leading-relaxed">
-              🔐 This chat is end-to-end encrypted with AES-256-GCM. Messages are encrypted before leaving your device. Screenshots are monitored.
+              {t("scWelcome")}
             </p>
-            <p className="text-[9px] text-muted-foreground mt-1">Security System</p>
+            <p className="text-[9px] text-muted-foreground mt-1">{t("scSecuritySystem")}</p>
           </div>
         </div>
 
