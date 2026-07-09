@@ -146,7 +146,7 @@ const Index = () => {
     window.history.replaceState({}, "", window.location.pathname);
 
     if (status === "cancel") {
-      toast.error("Payment was cancelled.");
+      toast.error(t("idxPaymentCancelled"));
       return;
     }
 
