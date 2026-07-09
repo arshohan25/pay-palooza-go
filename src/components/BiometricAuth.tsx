@@ -136,7 +136,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
         >
           <img src={logoImg} alt="EasyPay" className="w-16 h-16 rounded-3xl object-contain shadow-glow mb-4" />
            <h1 className="text-2xl font-extrabold text-foreground">EasyPay</h1>
-          <p className="text-sm text-muted-foreground mt-1">Secure your account to continue</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("baSecureAccount")}</p>
         </motion.div>
 
         <AnimatePresence mode="wait">
