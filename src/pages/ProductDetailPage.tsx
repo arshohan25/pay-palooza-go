@@ -580,10 +580,10 @@ export default function ProductDetailPage() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
               <div className="bg-card border border-border/60 rounded-xl divide-y divide-border/40 overflow-hidden">
                 {[
-                  product.category && ["Category", product.category],
-                  (product as any).brand && ["Brand", (product as any).brand],
-                  (product as any).sku && ["SKU", (product as any).sku],
-                  ["Stock", product.stock > 0 ? `${product.stock} units` : "Out of stock"],
+                  product.category && [t("pdpCategory"), product.category],
+                  (product as any).brand && [t("pdpBrand"), (product as any).brand],
+                  (product as any).sku && [t("pdpSku"), (product as any).sku],
+                  [t("pdpStock"), product.stock > 0 ? `${product.stock} ${t("pdpUnits")}` : t("pdpOutOfStock")],
                 ].filter(Boolean).map(([k, v]: any) => (
                   <div key={k} className="flex justify-between px-3.5 py-2.5">
                     <span className="text-xs text-muted-foreground">{k}</span>
