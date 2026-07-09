@@ -458,8 +458,8 @@ const SupportChat = ({ userId, conversationId: externalConvId, initialDraft, ini
             <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
               <Lock className="w-7 h-7 text-muted-foreground" />
             </motion.div>
-            <p className="text-sm font-semibold text-foreground">No messages yet</p>
-            <p className="text-xs text-muted-foreground mt-1">Start a secure conversation!</p>
+            <p className="text-sm font-semibold text-foreground">{t("scNoMessages")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("scStartSecure")}</p>
           </motion.div>
         )}
       </div>
