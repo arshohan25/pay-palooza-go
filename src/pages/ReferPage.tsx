@@ -65,7 +65,10 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
   };
 
   const deepLink = `https://pay-palooza-go.lovable.app/?ref=${referralCode}`;
-  const shareText = `Use my referral code ${referralCode} on EasyPay and earn up to ৳${REWARD_PER_FRIEND}! Sign up here: ${deepLink}`;
+  const shareText = t("referShareText")
+    .replace("{code}", referralCode || "")
+    .replace("{reward}", String(REWARD_PER_FRIEND))
+    .replace("{link}", deepLink);
 
   const handleWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
@@ -75,7 +78,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
   };
   const handleNativeShare = async () => {
     if (navigator.share) {
-      try { await navigator.share({ title: "EasyPay Referral", text: shareText }); } catch {}
+      try { await navigator.share({ title: t("referShareTitle"), text: shareText }); } catch {}
     } else {
       handleCopy();
     }
