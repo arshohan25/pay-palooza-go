@@ -40,6 +40,7 @@ const PLANS: Record<string, { name: string; coverage: number; premium: number; d
 
 const InsurancePage = () => {
   const navigate = useNavigate();
+  const { t, lang } = useI18n();
   const { user } = useAuth();
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [category, setCategory] = useState("life");
