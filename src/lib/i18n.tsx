@@ -2691,6 +2691,10 @@ const translations = {
   ipToastActivated: { en: "Insurance plan activated!", bn: "বীমা প্ল্যান সক্রিয় হয়েছে!" },
   ipToastKyc: { en: "Please complete KYC verification to use this feature.", bn: "এই ফিচার ব্যবহার করতে KYC যাচাই সম্পন্ন করুন।" },
   ipToastSignIn: { en: "Please sign in first", bn: "প্রথমে সাইন ইন করুন" },
+  coPleaseLogIn: { en: "Please log in to see your orders", bn: "আপনার অর্ডার দেখতে অনুগ্রহ করে লগ ইন করুন" },
+  coLogIn: { en: "Log In", bn: "লগ ইন" },
+  coInvoice: { en: "Invoice", bn: "ইনভয়েস" },
+  coRateReview: { en: "Rate & Review", bn: "রেট ও রিভিউ" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
