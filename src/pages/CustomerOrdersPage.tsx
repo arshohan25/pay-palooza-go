@@ -87,20 +87,20 @@ export default function CustomerOrdersPage() {
                   <span className="text-sm font-bold text-foreground">{order.order_num}</span>
                   <Badge variant="outline" className={config.color}>
                     <StatusIcon className="w-3 h-3 mr-1" />
-                    {config.label}
+                    {t(config.labelKey as any)}
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {new Date(order.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })}
                 </p>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{items.length} item{items.length !== 1 ? "s" : ""}</span>
+                  <span className="text-xs text-muted-foreground">{items.length} {items.length !== 1 ? t("moItems") : t("moItem")}</span>
                   <span className="text-xs text-muted-foreground">•</span>
                   <span className="text-sm font-bold text-foreground">৳{Number(order.total).toLocaleString()}</span>
                 </div>
                 {order.estimated_delivery && (
                   <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Truck className="w-3 h-3" /> Est. delivery: {order.estimated_delivery}
+                    <Truck className="w-3 h-3" /> {t("estDelivery")}: {order.estimated_delivery}
                   </p>
                 )}
                 <div className="flex gap-2 mt-2">
