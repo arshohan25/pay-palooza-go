@@ -718,7 +718,7 @@ export default function ProductDetailPage() {
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : messages.length === 0 ? (
-                  <p className="text-center text-xs text-muted-foreground py-10">No messages yet</p>
+                  <p className="text-center text-xs text-muted-foreground py-10">{t("pdpNoMessages")}</p>
                 ) : (
                   messages.map((msg) => {
                     const isMine = msg.sender_id === user?.id;
