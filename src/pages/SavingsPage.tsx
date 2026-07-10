@@ -246,7 +246,11 @@ function GoalsTab() {
         const isDone = g.status === "completed";
         return (
           <motion.div key={g.id} layout
-            className="relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)]">
+            onClick={() => {
+              if (isDone) setWithdrawGoal(g);
+              else if (g.status === "active") { setDepositGoal(g); setDepositAmt(""); }
+            }}
+            className="relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] cursor-pointer active:scale-[0.99] transition-transform">
             {/* accent stripe */}
             <div className={`absolute inset-y-0 left-0 w-1 ${isDone ? "bg-emerald-500" : "bg-gradient-to-b from-primary to-emerald-600"}`} />
             <div className="pointer-events-none absolute -top-14 -right-10 w-40 h-40 rounded-full bg-primary/5 blur-2xl" />
@@ -261,6 +265,9 @@ function GoalsTab() {
                   {isDone && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
                   {dpsLink && (
                     <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wide">DPS</span>
+                  )}
+                  {g.status === "active" && totalLock > 0 && (
+                    <Lock className="w-3 h-3 text-muted-foreground/70" aria-label={`Locked · ${totalLock}d left`} />
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
@@ -280,33 +287,6 @@ function GoalsTab() {
               <motion.div
                 initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.7, ease: "easeOut" }}
                 className={`h-full rounded-full ${isDone ? "bg-emerald-500" : "bg-gradient-to-r from-primary to-emerald-400"}`} />
-            </div>
-
-            <div className="relative mt-3 flex items-center gap-2">
-              {g.status === "active" && (
-                <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={() => { setDepositGoal(g); setDepositAmt(""); }}>
-                  <Plus className="w-3.5 h-3.5 mr-1" />{t("savDeposit")}
-                </Button>
-              )}
-              {isDone && (
-                <Button size="sm" className="rounded-full h-9 px-4 bg-emerald-500 text-white hover:bg-emerald-600" onClick={() => setWithdrawGoal(g)}>
-                  {t("savWithdraw")} <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                </Button>
-              )}
-              {g.status === "active" && (
-                totalLock > 0 ? (
-                  <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
-                    <Lock className="w-3 h-3" />{totalLock}d lock
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => setCancelGoal(g)}
-                    className="ml-auto text-[11px] text-destructive/80 hover:text-destructive font-medium">
-                    {t("savCancel")}
-                  </button>
-                )
-              )}
             </div>
           </motion.div>
         );
