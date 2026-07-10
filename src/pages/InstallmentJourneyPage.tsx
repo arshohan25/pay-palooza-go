@@ -354,13 +354,29 @@ function FabMenu() {
 
 export default function InstallmentJourneyPage() {
   const navigate = useNavigate();
-  const [productId, setProductId] = useState(PRODUCTS[0].id);
+  const [params] = useSearchParams();
+  const initialType = params.get("type"); // 'goal' | 'dps' | 'loan' | null
+  const initialId = params.get("id");
+  const initial =
+    PRODUCTS.find((p) => p.id === initialId) ||
+    PRODUCTS.find((p) => p.category === initialType) ||
+    PRODUCTS[0];
+  const [productId, setProductId] = useState(initial.id);
   const [filter, setFilter] = useState<Category>("all");
+  const [actionSheet, setActionSheet] = useState<null | "deposit" | "repay" | "installment">(null);
+  const [amt, setAmt] = useState("");
 
   const product = PRODUCTS.find((p) => p.id === productId)!;
   const installments = useMemo(() => buildInstallments(product), [product]);
   const pct = Math.round((product.balance / product.target) * 100);
   const paidCount = installments.filter((i) => i.status === "paid").length;
+
+  const primaryAction =
+    product.category === "loan"
+      ? { key: "repay" as const, label: "Repay Now", icon: Coins }
+      : product.category === "dps"
+        ? { key: "installment" as const, label: "Pay Installment", icon: Plus }
+        : { key: "deposit" as const, label: "Deposit", icon: PiggyBank };
 
   const Icon = product.icon;
 
