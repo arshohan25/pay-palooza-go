@@ -204,7 +204,6 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>("all");
   const { rewards: aiCouponRewards, claimReward } = useAiRewards("coupon");
   const { rewards: aiOfferRewards, claimReward: claimOffer } = useAiRewards("offer");
 
@@ -239,11 +238,6 @@ export default function CouponsPage() {
     toast.success(t("cpUseNowToast").replace("{code}", coupon.code));
     setTimeout(() => setCopiedId(null), 2000);
   };
-
-  const visible = useMemo(
-    () => (filter === "all" ? coupons : coupons.filter(c => (c.applicable_flow || "shop") === filter)),
-    [coupons, filter]
-  );
 
   const bestValue = useMemo(() => {
     if (!coupons.length) return 0;
@@ -350,7 +344,7 @@ export default function CouponsPage() {
           <div className="space-y-3 pt-1">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-[130px] w-full rounded-[22px]" />)}
           </div>
-        ) : visible.length === 0 ? (
+        ) : coupons.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
             className="flex flex-col items-center justify-center py-24 gap-4"
@@ -367,7 +361,7 @@ export default function CouponsPage() {
         ) : (
           <AnimatePresence mode="popLayout">
             <div className="space-y-3">
-              {visible.map((coupon, i) => (
+              {coupons.map((coupon, i) => (
                 <CouponCard
                   key={coupon.id}
                   coupon={coupon}
@@ -375,7 +369,7 @@ export default function CouponsPage() {
                   copiedId={copiedId}
                   onCopy={handleCopy}
                   onUse={handleUseNow}
-                  featured={i === 0 && filter === "all"}
+                  featured={i === 0}
                 />
               ))}
             </div>
