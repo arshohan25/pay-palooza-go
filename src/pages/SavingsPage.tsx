@@ -1280,40 +1280,47 @@ const SavingsPage = () => {
           </div>
         </div>
 
-        {/* Segmented tabs */}
-        <div className="relative bg-muted/60 backdrop-blur-md rounded-[16px] p-1 grid grid-cols-4 gap-1 border border-border/60">
-          {TABS.map(tb => {
-            const Icon = tb.icon;
-            const active = tab === tb.id;
-            return (
-              <button key={tb.id} onClick={() => setTab(tb.id)}
-                className={`relative h-12 rounded-[12px] flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
-                  active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}>
-                {active && (
-                  <motion.div layoutId="tab-pill" transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                    className="absolute inset-0 rounded-[12px] bg-primary shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.6)]" />
-                )}
-                <Icon className="w-4 h-4 relative" />
-                <span className="relative">{t(tb.labelKey)}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Tabs + content: mobile = segmented on top; desktop = left rail + right pane */}
+        <div className="md:grid md:grid-cols-[220px_1fr] md:gap-5 md:items-start">
+          {/* Segmented / vertical tabs */}
+          <div className="relative bg-muted/60 backdrop-blur-md rounded-[16px] p-1 grid grid-cols-4 gap-1 border border-border/60
+                          md:sticky md:top-24 md:grid-cols-1 md:p-2 md:gap-1 md:rounded-[19px]">
+            {TABS.map(tb => {
+              const Icon = tb.icon;
+              const active = tab === tb.id;
+              return (
+                <button key={tb.id} onClick={() => setTab(tb.id)}
+                  className={`relative h-12 rounded-[12px] flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors
+                              md:h-11 md:flex-row md:justify-start md:gap-2.5 md:px-3 md:text-sm md:rounded-[14px] ${
+                    active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}>
+                  {active && (
+                    <motion.div layoutId="tab-pill" transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                      className="absolute inset-0 rounded-[12px] md:rounded-[14px] bg-primary shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.6)]" />
+                  )}
+                  <Icon className="w-4 h-4 relative md:w-[18px] md:h-[18px]" />
+                  <span className="relative">{t(tb.labelKey)}</span>
+                </button>
+              );
+            })}
+          </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div key={tab}
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}>
-            {tab === "goals" && <GoalsTab />}
-            {tab === "dps" && <DpsTab />}
-            {tab === "gold" && <GoldTab />}
-            {tab === "stocks" && <StocksTab />}
-          </motion.div>
-        </AnimatePresence>
+          <AnimatePresence mode="wait">
+            <motion.div key={tab}
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="mt-5 md:mt-0 min-w-0">
+              {tab === "goals" && <GoalsTab />}
+              {tab === "dps" && <DpsTab />}
+              {tab === "gold" && <GoldTab />}
+              {tab === "stocks" && <StocksTab />}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
 };
+
 
 export default SavingsPage;
