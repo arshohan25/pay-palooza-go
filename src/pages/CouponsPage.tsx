@@ -44,10 +44,10 @@ const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof Shopping
    perforated divider, foil-style discount block.
    ──────────────────────────────────────────────────────────── */
 function CouponCard({
-  coupon, index, copiedId, onCopy, onUse, featured,
+  coupon, index, copiedId, onCopy, onUse, onOpen, featured,
 }: {
   coupon: Coupon; index: number; copiedId: string | null;
-  onCopy: (c: Coupon) => void; onUse: (c: Coupon) => void; featured?: boolean;
+  onCopy: (c: Coupon) => void; onUse: (c: Coupon) => void; onOpen: (c: Coupon) => void; featured?: boolean;
 }) {
   const { t } = useI18n();
   const isCopied = copiedId === coupon.id;
@@ -76,7 +76,8 @@ function CouponCard({
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ delay: Math.min(index * 0.04, 0.2), duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       layout
-      className="relative group"
+      onClick={() => onOpen(coupon)}
+      className="relative group cursor-pointer"
     >
       {/* Soft ambient glow */}
       <div
@@ -169,7 +170,7 @@ function CouponCard({
             {/* code + CTA */}
             <div className="mt-2.5 flex items-center gap-2">
               <button
-                onClick={() => onCopy(coupon)}
+                onClick={(e) => { e.stopPropagation(); onCopy(coupon); }}
                 className={`flex-1 h-8 px-2.5 rounded-lg border-2 border-dashed flex items-center justify-between gap-1 transition-all ${
                   isCopied
                     ? "border-primary/50 bg-primary/[0.06] text-primary"
@@ -180,7 +181,7 @@ function CouponCard({
                 {isCopied ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <Copy className="w-3 h-3 shrink-0 opacity-60" />}
               </button>
               <button
-                onClick={() => onUse(coupon)}
+                onClick={(e) => { e.stopPropagation(); onUse(coupon); }}
                 className="h-8 px-3 rounded-lg text-primary-foreground text-[11px] font-bold flex items-center gap-0.5 active:scale-[0.97] transition-transform shadow-[0_2px_8px_-2px_hsl(var(--shariah-green-600)/0.5)]"
                 style={{
                   background:
@@ -369,6 +370,7 @@ export default function CouponsPage() {
                   copiedId={copiedId}
                   onCopy={handleCopy}
                   onUse={handleUseNow}
+                  onOpen={(c) => navigate(`/coupons/${c.id}`)}
                   featured={i === 0}
                 />
               ))}

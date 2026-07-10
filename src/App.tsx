@@ -50,6 +50,7 @@ const CustomerOrdersPage = lazy(() => import("./pages/CustomerOrdersPage"));
 const OrderDetailPage = lazy(() => import("./pages/OrderDetailPage"));
 const CareersPage = lazy(() => import("./pages/CareersPage"));
 const CouponsPage = lazy(() => import("./pages/CouponsPage"));
+const CouponDetailPage = lazy(() => import("./pages/CouponDetailPage"));
 const DonationsPage = lazy(() => import("./pages/DonationsPage"));
 const LoanPage = lazy(() => import("./pages/LoanPage"));
 const InsurancePage = lazy(() => retryLazyImport(() => import("./pages/InsurancePage")));
@@ -109,6 +110,7 @@ const App = () => (
                       <Route path="pay" element={<PayPage />} />
                       <Route path="careers" element={<CareersPage />} />
                       <Route path="coupons" element={<CouponsPage />} />
+                      <Route path="coupons/:id" element={<CouponDetailPage />} />
                       <Route path="donations" element={<DonationsPage />} />
                       <Route path="loan" element={<LoanPage />} />
                       <Route path="insurance" element={<InsurancePage />} />
