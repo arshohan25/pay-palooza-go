@@ -780,7 +780,13 @@ function DpsTab() {
 
       {activePlans.map(p => {
         const goal = goals.find(g => g.id === p.goal_id);
-        const pctPlan = p.total_installments ? ((p.total_paid ?? 0) / p.total_installments) * 100 : 0;
+        const rawTotal = Number(p.total_installments ?? 0);
+        const paid = Number(p.total_paid ?? 0);
+        const amt = Number(p.amount) || 0;
+        const derivedTotal = rawTotal > 0
+          ? rawTotal
+          : (goal && amt > 0 ? Math.max(paid, Math.ceil(Number(goal.target_amount) / amt)) : 0);
+        const pctPlan = derivedTotal > 0 ? (paid / derivedTotal) * 100 : 0;
         const freqLabel = p.frequency === "daily" ? t("savDailyLabel") : p.frequency === "weekly" ? t("savWeeklyLabel") : t("savMonthlyLabel");
         const nextDate = new Date(p.next_run_at);
         const daysToNext = Math.max(0, Math.ceil((nextDate.getTime() - Date.now()) / 86400000));
