@@ -1,0 +1,1 @@
+DELETE FROM public.notifications WHERE category = 'daily_summary';
