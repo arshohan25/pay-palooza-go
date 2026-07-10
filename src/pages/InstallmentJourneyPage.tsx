@@ -352,6 +352,12 @@ export default function InstallmentJourneyPage() {
           .update({ saved_amount: Number(goal.saved_amount) + value })
           .eq("id", goal.id);
         if (error) throw error;
+        const { data: dep } = await supabase
+          .from("savings_deposits")
+          .insert({ goal_id: goal.id, user_id: user.id, amount: value, source: actionSheet === "installment" ? "installment" : "manual" })
+          .select("id, amount, created_at")
+          .single();
+        if (dep) setDeposits((prev) => [...prev, { ...dep, amount: Number(dep.amount) }]);
       }
       if (plan && actionSheet === "installment") {
         const { error } = await supabase
