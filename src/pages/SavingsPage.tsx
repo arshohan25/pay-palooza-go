@@ -409,7 +409,7 @@ function DpsPlanDetailsSheet({
     : (target > 0 && amt > 0 ? Math.max(paid, Math.ceil(target / amt)) : paid);
   const remaining = Math.max(0, total - paid);
   const pct = total > 0 ? (paid / total) * 100 : 0;
-  const totalDeposited = paid * amt;
+  const totalDeposited = goal ? Number(goal.saved_amount) : paid * amt;
   const totalPlanned = total * amt;
   const outstanding = Math.max(0, totalPlanned - totalDeposited);
   const nextRun = new Date(plan.next_run_at);
