@@ -736,8 +736,9 @@ function DpsTab() {
         const daysToNext = Math.max(0, Math.ceil((nextDate.getTime() - Date.now()) / 86400000));
         return (
           <motion.div key={p.id} layout
-            className="relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)]">
-            <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-emerald-600" />
+            onClick={() => setDetailsPlan(p)}
+            className="group relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] cursor-pointer active:scale-[0.995] transition-transform">
+            <div className={`absolute inset-y-0 left-0 w-1 ${p.is_active ? "bg-gradient-to-b from-primary to-emerald-600" : "bg-muted-foreground/40"}`} />
             <div className="pointer-events-none absolute -top-16 -right-12 w-40 h-40 rounded-full bg-emerald-500/5 blur-2xl" />
 
             <div className="relative flex items-start gap-3">
@@ -745,7 +746,10 @@ function DpsTab() {
                 {goal?.emoji ?? "💼"}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[15px] font-semibold truncate">{goal?.name ?? "—"}</div>
+                <div className="flex items-center gap-1.5">
+                  <div className="text-[15px] font-semibold truncate">{goal?.name ?? "—"}</div>
+                  {!p.is_active && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wide">Paused</span>}
+                </div>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
                   <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wide">{freqLabel}</span>
                   <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">৳{Number(p.amount).toLocaleString()}{t("savPerCycle")}</span>
@@ -766,12 +770,16 @@ function DpsTab() {
             </div>
 
             <div className="relative mt-3 flex items-center gap-2">
-              <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setCollectPlan(p)}>
+              <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={(e) => { e.stopPropagation(); setCollectPlan(p); }}>
                 <RefreshCw className="w-3.5 h-3.5 mr-1" />{t("savCollectNow")}
               </Button>
               <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
                 <Calendar className="w-3 h-3" />
                 {daysToNext === 0 ? "Today" : `in ${daysToNext}d`}
+              </span>
+              <span className="inline-flex items-center gap-0.5 text-[11px] text-primary font-semibold">
+                Details <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
           </motion.div>
