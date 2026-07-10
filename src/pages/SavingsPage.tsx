@@ -630,6 +630,7 @@ function DpsTab() {
   const [strategy, setStrategy] = useState<Strategy>("balanced");
   const [collectPlan, setCollectPlan] = useState<typeof plans[number] | null>(null);
   const [repayMissed, setRepayMissed] = useState<typeof missed[number] | null>(null);
+  const [detailsPlan, setDetailsPlan] = useState<typeof plans[number] | null>(null);
 
   const activePlans = plans.filter(p => !p.settled);
   const eligibleGoals = goals.filter(g => g.status === "active");
