@@ -403,12 +403,7 @@ export default function InstallmentJourneyPage() {
             <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">Journey</div>
             <div className="text-sm font-semibold">Installment Timeline</div>
           </div>
-          <button
-            aria-label="Filter"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur"
-          >
-            <Filter size={16} />
-          </button>
+          <div className="h-10 w-10" aria-hidden />
         </div>
 
         {/* Summary card */}
