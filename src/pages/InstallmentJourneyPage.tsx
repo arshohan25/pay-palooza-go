@@ -472,45 +472,6 @@ export default function InstallmentJourneyPage() {
           </div>
         </motion.div>
 
-        {/* Product switcher */}
-        <div className="mt-5 flex gap-2 overflow-x-auto scrollbar-none">
-          {PRODUCTS.map((p) => {
-            const active = p.id === productId;
-            return (
-              <button
-                key={p.id}
-                onClick={() => setProductId(p.id)}
-                className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                  active
-                    ? "border-transparent bg-gradient-to-r from-[#009688] to-[#2ECC71] text-white shadow-lg"
-                    : "border-white/10 bg-white/5 text-white/70",
-                )}
-              >
-                <p.icon size={12} /> {p.name}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Filters */}
-        <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
-          {FILTERS.map((f) => {
-            const active = filter === f.id;
-            return (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={cn(
-                  "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-all",
-                  active ? "bg-white text-[#0B1220]" : "border border-white/10 bg-white/5 text-white/60",
-                )}
-              >
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
 
         {/* Section title */}
         <div className="mt-6 flex items-center justify-between">
