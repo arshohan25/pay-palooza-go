@@ -224,12 +224,14 @@ function GoalsTab() {
 
   return (
     <div className="space-y-3">
-      <Button onClick={() => setCreateOpen(true)} className="w-full h-12 rounded-[19px]">
-        <Plus className="w-4 h-4 mr-2" />{t("savCreateNewGoal")}
-      </Button>
+      <button onClick={() => setCreateOpen(true)}
+        className="group w-full h-14 rounded-[18px] bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.6)] active:scale-[0.99] transition-transform">
+        <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center"><Plus className="w-4 h-4"/></span>
+        {t("savCreateNewGoal")}
+      </button>
 
       {activeGoals.length === 0 && (
-        <div className="text-center py-10 text-sm text-muted-foreground">
+        <div className="text-center py-12 text-sm text-muted-foreground rounded-[19px] bg-muted/40 border border-dashed border-border">
           <Target className="w-10 h-10 mx-auto mb-2 opacity-40" />
           {t("savNoGoalsYet")}
         </div>
@@ -241,40 +243,69 @@ function GoalsTab() {
         const dpsLink = goalHasDps(g.id);
         const dpsDays = dpsLink ? dpsLockDaysLeft(plans.find(p => p.goal_id === g.id)!.created_at) : 0;
         const totalLock = Math.max(lockDays, dpsDays);
+        const isDone = g.status === "completed";
         return (
           <motion.div key={g.id} layout
-            className="rounded-[19px] bg-card border border-border p-4 space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="text-3xl">{g.emoji}</div>
+            className="relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)]">
+            {/* accent stripe */}
+            <div className={`absolute inset-y-0 left-0 w-1 ${isDone ? "bg-emerald-500" : "bg-gradient-to-b from-primary to-emerald-600"}`} />
+            <div className="pointer-events-none absolute -top-14 -right-10 w-40 h-40 rounded-full bg-primary/5 blur-2xl" />
+
+            <div className="relative flex items-start gap-3">
+              <div className="w-14 h-14 rounded-[16px] bg-gradient-to-br from-primary/15 to-emerald-500/10 border border-primary/15 flex items-center justify-center text-3xl shrink-0">
+                {g.emoji}
+              </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold truncate">{g.name}</h3>
-                  {g.status === "completed" && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-semibold text-[15px] truncate">{g.name}</h3>
+                  {isDone && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                  {dpsLink && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wide">DPS</span>
+                  )}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  ৳{Number(g.saved_amount).toLocaleString()} / ৳{Number(g.target_amount).toLocaleString()}
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  ৳{Number(g.saved_amount).toLocaleString()} <span className="opacity-60">of</span> ৳{Number(g.target_amount).toLocaleString()}
                 </div>
               </div>
-              <span className="text-sm font-semibold">{pct.toFixed(0)}%</span>
+              <div className="text-right">
+                <div className="text-xl font-bold tabular-nums leading-none">{pct.toFixed(0)}<span className="text-sm text-muted-foreground">%</span></div>
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  {isDone ? t("savCurrentValue") : `৳${Math.max(0, Number(g.target_amount) - Number(g.saved_amount)).toLocaleString()} left`}
+                </div>
+              </div>
             </div>
-            <Progress value={pct} className="h-1.5" />
-            <div className="flex flex-wrap gap-2">
+
+            {/* Custom progress */}
+            <div className="relative mt-3 h-2 rounded-full bg-muted overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.7, ease: "easeOut" }}
+                className={`h-full rounded-full ${isDone ? "bg-emerald-500" : "bg-gradient-to-r from-primary to-emerald-400"}`} />
+            </div>
+
+            <div className="relative mt-3 flex items-center gap-2">
               {g.status === "active" && (
-                <Button size="sm" variant="secondary" className="rounded-full"
+                <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={() => { setDepositGoal(g); setDepositAmt(""); }}>
-                  <Plus className="w-3 h-3 mr-1" />{t("savDeposit")}
+                  <Plus className="w-3.5 h-3.5 mr-1" />{t("savDeposit")}
                 </Button>
               )}
-              {g.status === "completed" && (
-                <Button size="sm" className="rounded-full" onClick={() => setWithdrawGoal(g)}>
-                  {t("savWithdraw")}
+              {isDone && (
+                <Button size="sm" className="rounded-full h-9 px-4 bg-emerald-500 text-white hover:bg-emerald-600" onClick={() => setWithdrawGoal(g)}>
+                  {t("savWithdraw")} <ChevronRight className="w-3.5 h-3.5 ml-1" />
                 </Button>
               )}
               {g.status === "active" && (
-                <Button size="sm" variant="ghost" className="rounded-full text-destructive"
-                  onClick={() => setCancelGoal(g)} disabled={totalLock > 0}>
-                  {totalLock > 0 ? <><Lock className="w-3 h-3 mr-1" />{totalLock}d</> : t("savCancel")}
-                </Button>
+                totalLock > 0 ? (
+                  <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
+                    <Lock className="w-3 h-3" />{totalLock}d lock
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setCancelGoal(g)}
+                    className="ml-auto text-[11px] text-destructive/80 hover:text-destructive font-medium">
+                    {t("savCancel")}
+                  </button>
+                )
               )}
             </div>
           </motion.div>
