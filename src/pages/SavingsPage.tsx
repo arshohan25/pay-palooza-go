@@ -786,7 +786,7 @@ function DpsTab() {
         const daysToNext = Math.max(0, Math.ceil((nextDate.getTime() - Date.now()) / 86400000));
         return (
           <motion.div key={p.id} layout
-            onClick={() => setDetailsPlan(p)}
+            onClick={() => navigate(`/savings/journey?type=dps&id=${p.id}`)}
             className="group relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] cursor-pointer active:scale-[0.995] transition-transform">
             <div className={`absolute inset-y-0 left-0 w-1 ${p.is_active ? "bg-gradient-to-b from-primary to-emerald-600" : "bg-muted-foreground/40"}`} />
             <div className="pointer-events-none absolute -top-16 -right-12 w-40 h-40 rounded-full bg-emerald-500/5 blur-2xl" />
