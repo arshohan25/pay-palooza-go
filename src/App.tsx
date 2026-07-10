@@ -50,6 +50,7 @@ const CustomerOrdersPage = lazy(() => import("./pages/CustomerOrdersPage"));
 const OrderDetailPage = lazy(() => import("./pages/OrderDetailPage"));
 const CareersPage = lazy(() => import("./pages/CareersPage"));
 const CouponsPage = lazy(() => import("./pages/CouponsPage"));
+const CouponDetailPage = lazy(() => import("./pages/CouponDetailPage"));
 const DonationsPage = lazy(() => import("./pages/DonationsPage"));
 const LoanPage = lazy(() => import("./pages/LoanPage"));
 const InsurancePage = lazy(() => retryLazyImport(() => import("./pages/InsurancePage")));
