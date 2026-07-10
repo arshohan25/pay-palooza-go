@@ -282,17 +282,21 @@ export default function CouponsPage() {
 
         {/* Top bar */}
         <div className="relative flex items-center justify-between px-4 h-14">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/15 active:scale-95 transition"
-          >
-            <ArrowLeft className="w-[18px] h-[18px]" />
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/15 active:scale-95 transition"
+            >
+              <ArrowLeft className="w-[18px] h-[18px]" />
+            </button>
+            <h2 className="text-[16px] font-bold tracking-tight">{t("coupons")}</h2>
+          </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur">
             <Ticket className="w-3.5 h-3.5" />
             <span className="text-[11px] font-semibold tabular-nums">{loading ? "…" : coupons.length}</span>
           </div>
         </div>
+
 
         {/* Title block */}
         <div className="relative px-4 pt-2 pb-6">
