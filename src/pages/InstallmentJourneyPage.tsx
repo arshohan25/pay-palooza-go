@@ -199,9 +199,12 @@ function formatShort(d: Date) {
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 }
 
-function buildFromPlan(plan: AutoSavePlan): Installment[] {
-  const total = plan.total_installments ?? 12;
-  const paid = plan.total_paid ?? 0;
+function buildFromPlan(plan: AutoSavePlan, goalTarget?: number): Installment[] {
+  const amount = Number(plan.amount) || 0;
+  let total = Number(plan.total_installments) || 0;
+  const paid = Number(plan.total_paid) || 0;
+  if (!total && goalTarget && amount > 0) total = Math.max(paid, Math.ceil(goalTarget / amount));
+  if (!total) total = Math.max(paid + 4, 12);
   const cycleMs =
     plan.frequency === "daily" ? 86400000 : plan.frequency === "weekly" ? 7 * 86400000 : 30 * 86400000;
   const anchor = new Date(plan.next_run_at || plan.created_at).getTime();
@@ -289,7 +292,7 @@ export default function InstallmentJourneyPage() {
   }, [goal, plan]);
 
   const installments = useMemo<Installment[]>(() => {
-    if (plan) return buildFromPlan(plan);
+    if (plan) return buildFromPlan(plan, goal ? Number(goal.target_amount) : undefined);
     if (goal) {
       if (deposits.length > 0) {
         const target = Number(goal.target_amount);
