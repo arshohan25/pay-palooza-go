@@ -659,6 +659,5 @@ export default function InstallmentJourneyPage() {
         )}
       </AnimatePresence>
     </div>
-    </div>
   );
 }
