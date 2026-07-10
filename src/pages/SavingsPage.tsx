@@ -286,16 +286,6 @@ function GoalsTab() {
                 initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.7, ease: "easeOut" }}
                 className={`h-full rounded-full ${isDone ? "bg-emerald-500" : "bg-gradient-to-r from-primary to-emerald-400"}`} />
             </div>
-
-            <div className="relative mt-3 flex justify-end">
-              <button
-                onClick={(e) => { e.stopPropagation(); navigate(`/savings/journey?type=goal&id=${g.id}`); }}
-                aria-label={`View journey for ${g.name}`}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-              >
-                <CalendarClock className="w-3.5 h-3.5" /> Journey
-              </button>
-            </div>
           </motion.div>
         );
       })}
