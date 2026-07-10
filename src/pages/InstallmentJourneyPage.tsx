@@ -10,7 +10,7 @@ import {
   Target,
   Plus,
   Landmark,
-  PiggyBank,
+  Wallet,
   Coins,
   Sparkles,
   TrendingUp,
@@ -272,12 +272,55 @@ export default function InstallmentJourneyPage() {
   const [actionSheet, setActionSheet] = useState<null | "deposit" | "installment">(null);
   const [amt, setAmt] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [deposits, setDeposits] = useState<{ id: string; amount: number; created_at: string }[]>([]);
+
+  useEffect(() => {
+    if (!goal || plan) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("savings_deposits")
+        .select("id, amount, created_at")
+        .eq("goal_id", goal.id)
+        .order("created_at", { ascending: true });
+      if (!cancelled) setDeposits((data ?? []).map((d) => ({ ...d, amount: Number(d.amount) })));
+    })();
+    return () => { cancelled = true; };
+  }, [goal, plan]);
 
   const installments = useMemo<Installment[]>(() => {
     if (plan) return buildFromPlan(plan);
-    if (goal) return buildFromGoal(goal, linkedPlan);
+    if (goal) {
+      if (deposits.length > 0) {
+        const target = Number(goal.target_amount);
+        let running = 0;
+        const rows: Installment[] = deposits.map((d, i) => {
+          running += d.amount;
+          const isLast = i === deposits.length - 1 && running >= target;
+          return {
+            n: i + 1,
+            amount: d.amount,
+            remaining: Math.max(0, target - running),
+            dueDate: formatShort(new Date(d.created_at)),
+            paidDate: formatShort(new Date(d.created_at)),
+            status: isLast ? "completed" : "paid",
+          };
+        });
+        if (running < target) {
+          rows.push({
+            n: rows.length + 1,
+            amount: Math.max(0, target - running),
+            remaining: 0,
+            dueDate: formatShort(new Date()),
+            status: "upcoming",
+          });
+        }
+        return rows;
+      }
+      return buildFromGoal(goal, linkedPlan);
+    }
     return [];
-  }, [plan, goal, linkedPlan]);
+  }, [plan, goal, linkedPlan, deposits]);
 
   const loadingState = loading && !goal && !plan;
   const notFound = !loadingState && !goal && !plan;
@@ -309,6 +352,12 @@ export default function InstallmentJourneyPage() {
           .update({ saved_amount: Number(goal.saved_amount) + value })
           .eq("id", goal.id);
         if (error) throw error;
+        const { data: dep } = await supabase
+          .from("savings_deposits")
+          .insert({ goal_id: goal.id, user_id: user.id, amount: value, source: actionSheet === "installment" ? "installment" : "manual" })
+          .select("id, amount, created_at")
+          .single();
+        if (dep) setDeposits((prev) => [...prev, { ...dep, amount: Number(dep.amount) }]);
       }
       if (plan && actionSheet === "installment") {
         const { error } = await supabase
@@ -500,7 +549,7 @@ export default function InstallmentJourneyPage() {
               onClick={() => { setAmt(""); setActionSheet(primaryKey); }}
               className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#009688] via-[#2ECC71] to-[#F4C542] px-4 py-3 text-sm font-semibold text-white active:scale-[0.98]"
             >
-              {plan ? <Coins size={16} /> : <PiggyBank size={16} />} {primaryLabel}
+              {plan ? <Coins size={16} /> : <Wallet size={16} />} {primaryLabel}
             </button>
             {plan && (
               <button
