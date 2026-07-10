@@ -247,10 +247,7 @@ function GoalsTab() {
         const isDone = g.status === "completed";
         return (
           <motion.div key={g.id} layout
-            onClick={() => {
-              if (isDone) setWithdrawGoal(g);
-              else if (g.status === "active") { setDepositGoal(g); setDepositAmt(""); }
-            }}
+            onClick={() => navigate(`/savings/journey?type=goal&id=${g.id}`)}
             className="relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] cursor-pointer active:scale-[0.99] transition-transform">
             {/* accent stripe */}
             <div className={`absolute inset-y-0 left-0 w-1 ${isDone ? "bg-emerald-500" : "bg-gradient-to-b from-primary to-emerald-600"}`} />
