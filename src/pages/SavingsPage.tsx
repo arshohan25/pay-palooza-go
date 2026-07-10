@@ -1237,6 +1237,14 @@ const SavingsPage = () => {
               <span className="text-[10px] font-medium tracking-wide text-primary-foreground/95">{t("savShariaMudarabah")}</span>
             </div>
           </div>
+          <button
+            onClick={() => navigate("/savings/journey")}
+            aria-label="Installment Journey"
+            className="h-9 pl-2.5 pr-3 rounded-full bg-white/15 backdrop-blur-md border border-white/20 flex items-center gap-1.5 active:scale-95 transition-transform"
+          >
+            <CalendarClock className="w-4 h-4" />
+            <span className="text-[11px] font-semibold">Journey</span>
+          </button>
         </div>
       </div>
 
