@@ -292,7 +292,7 @@ export default function InstallmentJourneyPage() {
   }, [goal, plan]);
 
   const installments = useMemo<Installment[]>(() => {
-    if (plan) return buildFromPlan(plan);
+    if (plan) return buildFromPlan(plan, goal ? Number(goal.target_amount) : undefined);
     if (goal) {
       if (deposits.length > 0) {
         const target = Number(goal.target_amount);
