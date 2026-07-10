@@ -329,6 +329,47 @@ export default function CouponsPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleRedeemByCode = async () => {
+    const code = redeemCode.trim().toUpperCase();
+    if (code.length < 3) {
+      toast.error("Enter a valid coupon code");
+      return;
+    }
+    setRedeeming(true);
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("code", code)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error || !data) {
+        toast.error("Coupon not found");
+        return;
+      }
+      if (data.expires_at && data.expires_at < now) {
+        toast.error("This coupon has expired");
+        return;
+      }
+      if (data.usage_limit != null && (data.used_count ?? 0) >= data.usage_limit) {
+        toast.error("This coupon is fully redeemed");
+        return;
+      }
+
+      const existing = coupons.find((c) => c.id === data.id);
+      if (!existing) {
+        setCoupons((prev) => [data as Coupon, ...prev]);
+      }
+      toast.success(`Coupon ${code} added`);
+      setRedeemCode("");
+      navigate(`/coupons/${data.id}`);
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return coupons.filter((c) => {
