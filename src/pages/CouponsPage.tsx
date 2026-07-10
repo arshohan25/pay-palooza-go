@@ -144,7 +144,7 @@ function CouponCard({
                 <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[hsl(var(--shariah-gold-500)/0.15)]">
                   <Sparkles className="w-2.5 h-2.5 text-[hsl(var(--shariah-gold-700))]" />
                   <span className="text-[9px] font-bold uppercase tracking-wider text-[hsl(var(--shariah-gold-700))]">
-                    {t("cpFeatured") || "Featured"}
+                    Featured
                   </span>
                 </div>
               )}
@@ -299,34 +299,34 @@ export default function CouponsPage() {
           <div className="flex items-center gap-1.5 mb-2">
             <Sparkles className="w-3.5 h-3.5 text-[hsl(var(--shariah-gold-300))]" />
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--shariah-gold-300))]">
-              {t("cpHeroKicker") || "EasyPay Rewards"}
+              EasyPay Rewards
             </span>
           </div>
           <h1 className="text-[26px] leading-[1.1] font-black tracking-tight">
-            {t("cpHeroTitle") || "Save more, every"}
+            Save more, every
             <br />
             <span className="italic font-serif font-normal text-[hsl(var(--shariah-gold-300))]">
-              {t("cpHeroTitleAccent") || "single tap."}
+              single tap.
             </span>
           </h1>
           <p className="mt-2 text-[12px] text-white/70 max-w-[280px]">
-            {t("cpHeroSub") || "Handpicked coupons across shopping, bills, recharge & more."}
+            Handpicked coupons across shopping, bills, recharge & more.
           </p>
 
           {/* Stat strip */}
           <div className="mt-4 grid grid-cols-3 gap-2">
             <div className="rounded-xl bg-white/10 backdrop-blur px-3 py-2 border border-white/10">
-              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">{t("cpStatActive") || "Active"}</p>
+              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">Active</p>
               <p className="text-[16px] font-black tabular-nums">{loading ? "…" : coupons.length}</p>
             </div>
             <div className="rounded-xl bg-white/10 backdrop-blur px-3 py-2 border border-white/10">
-              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">{t("cpStatBest") || "Best"}</p>
+              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">Best</p>
               <p className="text-[16px] font-black text-[hsl(var(--shariah-gold-300))] tabular-nums">
                 {loading ? "…" : `${bestValue}%`}
               </p>
             </div>
             <div className="rounded-xl bg-white/10 backdrop-blur px-3 py-2 border border-white/10">
-              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">{t("cpStatEnding") || "Ending"}</p>
+              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">Ending</p>
               <p className="text-[16px] font-black tabular-nums">
                 {loading ? "…" : coupons.filter(c => c.expires_at && new Date(c.expires_at).getTime() - Date.now() < 3 * 86400000).length}
               </p>
