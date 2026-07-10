@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Ticket, Copy, CheckCircle2, Sparkles, Clock, Flame,
-  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, ChevronRight, Search,
+  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, ChevronRight, Search, Plus, Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -278,6 +278,8 @@ export default function CouponsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<FlowKey>("all");
+  const [redeemCode, setRedeemCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
   const { rewards: aiCouponRewards, claimReward } = useAiRewards("coupon");
   const { rewards: aiOfferRewards, claimReward: claimOffer } = useAiRewards("offer");
 
@@ -325,6 +327,47 @@ export default function CouponsPage() {
     setCopiedId(coupon.id);
     toast.success(t("cpCopiedToast").replace("{code}", coupon.code));
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleRedeemByCode = async () => {
+    const code = redeemCode.trim().toUpperCase();
+    if (code.length < 3) {
+      toast.error("Enter a valid coupon code");
+      return;
+    }
+    setRedeeming(true);
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("code", code)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error || !data) {
+        toast.error("Coupon not found");
+        return;
+      }
+      if (data.expires_at && data.expires_at < now) {
+        toast.error("This coupon has expired");
+        return;
+      }
+      if (data.usage_limit != null && (data.used_count ?? 0) >= data.usage_limit) {
+        toast.error("This coupon is fully redeemed");
+        return;
+      }
+
+      const existing = coupons.find((c) => c.id === data.id);
+      if (!existing) {
+        setCoupons((prev) => [data as Coupon, ...prev]);
+      }
+      toast.success(`Coupon ${code} added`);
+      setRedeemCode("");
+      navigate(`/coupons/${data.id}`);
+    } finally {
+      setRedeeming(false);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -388,6 +431,52 @@ export default function CouponsPage() {
             placeholder="Search coupons or codes"
             className="w-full h-11 pl-10 pr-3 rounded-2xl bg-muted/60 border border-transparent focus:border-primary/30 focus:bg-card focus:outline-none text-[13px] font-medium text-foreground placeholder:text-muted-foreground/60 transition-all"
           />
+        </div>
+
+        {/* Redeem by code — premium ticket input */}
+        <div
+          className="relative rounded-2xl p-[1px] overflow-hidden"
+          style={{
+            background:
+              "linear-gradient(135deg, hsl(var(--shariah-green-700)) 0%, hsl(var(--shariah-gold-500)) 50%, hsl(var(--shariah-green-700)) 100%)",
+          }}
+        >
+          <div className="relative rounded-2xl bg-card p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-lg bg-[hsl(var(--shariah-gold-500)/0.15)] flex items-center justify-center">
+                <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-600))]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11.5px] font-black uppercase tracking-wider text-foreground">
+                  Have a code?
+                </p>
+                <p className="text-[10px] text-muted-foreground -mt-0.5">
+                  Enter a valid promo code to unlock
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={redeemCode}
+                  onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === "Enter" && !redeeming && handleRedeemByCode()}
+                  placeholder="ENTER CODE"
+                  maxLength={20}
+                  className="w-full h-11 px-3 rounded-xl bg-muted/50 border-2 border-dashed border-border/60 focus:border-primary/40 focus:bg-card focus:outline-none text-[13px] font-black tracking-[0.18em] text-foreground placeholder:text-muted-foreground/50 placeholder:tracking-widest placeholder:font-bold uppercase transition-all"
+                />
+              </div>
+              <button
+                onClick={handleRedeemByCode}
+                disabled={redeeming || redeemCode.trim().length < 3}
+                className="h-11 px-4 rounded-xl bg-primary text-primary-foreground text-[12px] font-black flex items-center gap-1 shadow-[0_4px_14px_-4px_hsl(var(--shariah-green-600)/0.6)] disabled:opacity-40 disabled:shadow-none active:scale-95 transition-all"
+              >
+                {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Apply
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Category chips */}
