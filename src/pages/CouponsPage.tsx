@@ -38,14 +38,6 @@ const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof Shopping
   all:      { labelKey: "cpFlowAll",      icon: Tag         },
 };
 
-const FILTERS: { id: string; labelKey: TranslationKey }[] = [
-  { id: "all",      labelKey: "cpFlowAll"      },
-  { id: "shop",     labelKey: "cpFlowShop"     },
-  { id: "payment",  labelKey: "cpFlowPayment"  },
-  { id: "recharge", labelKey: "cpFlowRecharge" },
-  { id: "bill_pay", labelKey: "cpFlowBillPay"  },
-  { id: "cash_out", labelKey: "cpFlowCashOut"  },
-];
 
 /* ────────────────────────────────────────────────────────────
    Premium ticket card — emerald + gold, ticket cutouts,
@@ -212,7 +204,6 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>("all");
   const { rewards: aiCouponRewards, claimReward } = useAiRewards("coupon");
   const { rewards: aiOfferRewards, claimReward: claimOffer } = useAiRewards("offer");
 
@@ -248,11 +239,6 @@ export default function CouponsPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const visible = useMemo(
-    () => (filter === "all" ? coupons : coupons.filter(c => (c.applicable_flow || "shop") === filter)),
-    [coupons, filter]
-  );
-
   const bestValue = useMemo(() => {
     if (!coupons.length) return 0;
     return Math.max(...coupons.map(c => (c.discount_type === "percentage" ? c.discount_value : c.discount_value)));
@@ -282,17 +268,21 @@ export default function CouponsPage() {
 
         {/* Top bar */}
         <div className="relative flex items-center justify-between px-4 h-14">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/15 active:scale-95 transition"
-          >
-            <ArrowLeft className="w-[18px] h-[18px]" />
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/15 active:scale-95 transition"
+            >
+              <ArrowLeft className="w-[18px] h-[18px]" />
+            </button>
+            <h2 className="text-[16px] font-bold tracking-tight">{t("coupons")}</h2>
+          </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur">
             <Ticket className="w-3.5 h-3.5" />
             <span className="text-[11px] font-semibold tabular-nums">{loading ? "…" : coupons.length}</span>
           </div>
         </div>
+
 
         {/* Title block */}
         <div className="relative px-4 pt-2 pb-6">
@@ -335,28 +325,8 @@ export default function CouponsPage() {
         </div>
       </div>
 
-      {/* ── Filter pills (sticky) ───────────────────────────── */}
-      <div className="sticky top-0 z-30 -mt-3 px-3 pb-2 pt-3 bg-background/85 backdrop-blur-xl border-b border-border/40">
-        <div className="flex gap-1.5 overflow-x-auto">
-          {FILTERS.map(f => {
-            const active = filter === f.id;
-            return (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={`shrink-0 h-8 px-3 rounded-full text-[11px] font-semibold transition-all ${
-                  active
-                    ? "text-primary-foreground shadow-[0_2px_8px_-2px_hsl(var(--shariah-green-600)/0.5)]"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                }`}
-                style={active ? { background: "linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)))" } : undefined}
-              >
-                {t(f.labelKey)}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+
+
 
       <div className="px-4 pt-4 space-y-3">
         {/* AI Recommended */}
@@ -374,7 +344,7 @@ export default function CouponsPage() {
           <div className="space-y-3 pt-1">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-[130px] w-full rounded-[22px]" />)}
           </div>
-        ) : visible.length === 0 ? (
+        ) : coupons.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
             className="flex flex-col items-center justify-center py-24 gap-4"
@@ -391,7 +361,7 @@ export default function CouponsPage() {
         ) : (
           <AnimatePresence mode="popLayout">
             <div className="space-y-3">
-              {visible.map((coupon, i) => (
+              {coupons.map((coupon, i) => (
                 <CouponCard
                   key={coupon.id}
                   coupon={coupon}
@@ -399,7 +369,7 @@ export default function CouponsPage() {
                   copiedId={copiedId}
                   onCopy={handleCopy}
                   onUse={handleUseNow}
-                  featured={i === 0 && filter === "all"}
+                  featured={i === 0}
                 />
               ))}
             </div>
