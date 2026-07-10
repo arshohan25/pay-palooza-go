@@ -682,6 +682,7 @@ function DpsPlanDetailsSheet({
 // ─────────────────────────────────────────────────────────────────────────────
 function DpsTab() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { goals, plans, missed, reload } = useSavings();
   const [createOpen, setCreateOpen] = useState(false);
   const [confirmCreate, setConfirmCreate] = useState(false);
