@@ -44,10 +44,10 @@ const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof Shopping
    perforated divider, foil-style discount block.
    ──────────────────────────────────────────────────────────── */
 function CouponCard({
-  coupon, index, copiedId, onCopy, onUse, featured,
+  coupon, index, copiedId, onCopy, onUse, onOpen, featured,
 }: {
   coupon: Coupon; index: number; copiedId: string | null;
-  onCopy: (c: Coupon) => void; onUse: (c: Coupon) => void; featured?: boolean;
+  onCopy: (c: Coupon) => void; onUse: (c: Coupon) => void; onOpen: (c: Coupon) => void; featured?: boolean;
 }) {
   const { t } = useI18n();
   const isCopied = copiedId === coupon.id;
