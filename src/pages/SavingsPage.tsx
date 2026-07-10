@@ -841,6 +841,13 @@ function DpsTab() {
                 <Calendar className="w-3 h-3" />
                 {daysToNext === 0 ? "Today" : `in ${daysToNext}d`}
               </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); navigate(`/savings/journey?type=dps&id=${p.id}`); }}
+                aria-label="View installment journey"
+                className="inline-flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline"
+              >
+                <CalendarClock className="w-3.5 h-3.5" /> Journey
+              </button>
               <span className="inline-flex items-center gap-0.5 text-[11px] text-primary font-semibold">
                 Details <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
