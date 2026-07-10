@@ -1,53 +1,21 @@
-## Goal
-Admins can see every action a user performs — taps, screen views, QR opens, QR shares, transactions, logins — in a live feed and searchable history per user.
+## What to change
 
-## What gets built
+On the Goals list, each card currently shows a big **+ Deposit** button and a **50d lock** pill at the bottom. Since tapping the card already opens the full plan details sheet (which has deposit, schedule, lock info, pause/cancel, etc.), these inline controls are noisy and duplicate what's one tap away.
 
-### 1. Database (1 migration)
-- **`user_activity_logs`** table: `id, user_id, session_id, event_type, event_name, route, target` (e.g. button/link label), `metadata` (jsonb — amount, recipient, qr code, share channel, etc.), `device_fingerprint, user_agent, ip_address, created_at`
-- Indexes on `(user_id, created_at desc)` and `(event_type, created_at desc)` for fast per-user lookups
-- Realtime enabled (`ALTER PUBLICATION supabase_realtime ADD TABLE …`)
-- RLS:
-  - User can INSERT their own rows only (`auth.uid() = user_id`)
-  - Only admins can SELECT (uses existing `has_role(auth.uid(),'admin')`)
-- Auto-purge: daily `pg_cron` job deletes rows older than 90 days
+## Plan
 
-### 2. Client tracker (`src/lib/activityTracker.ts`)
-Small singleton that:
-- Generates per-tab `session_id`
-- Exposes `track(eventName, metadata?)`
-- Captures automatically:
-  - **Screen views** — listens to React Router location changes
-  - **Taps** — global `pointerdown` listener; resolves nearest `<button>`, `<a>`, or `[data-track]` and records its accessible label
-  - **QR events** — explicit `track('qr_opened')`, `track('qr_shared', { channel })`, `track('qr_scanned', { decoded })` inside `UserQrModal`, `DynamicQrPaySheet`, `WalletShareSheet`, `QrScannerModal`
-  - **Transactions** — explicit calls inside Send / CashOut / AddMoney / Payment / BillPay / Recharge success handlers
-  - **Auth** — login, logout, PIN success/fail
-- Batches events (flush every 3s or 20 events) into a single insert to keep cost down
-- Skips logging when no `auth.uid()` (no anonymous noise)
+**1. Goal card (`src/pages/SavingsPage.tsx`, lines ~285–310)**
+- Remove the bottom action row entirely: the `+ Deposit` button, the `50d lock` pill, and the inline `Cancel` link.
+- Keep the card fully tappable → opens the existing details sheet.
+- Add a subtle lock hint in the header instead: a small `Lock` icon (10px, muted) next to the goal name when `totalLock > 0`, with a tooltip/aria-label like "Locked · 50 days left". No pill, no chip — just the icon.
+- For completed goals, keep the `Withdraw →` button (it's a terminal state, not redundant with details).
 
-### 3. Mount the tracker once
-- Initialize inside `AppLayout` so it runs for every authenticated route
-- Tiny `useTrackRoute()` hook driven by `useLocation()`
+**2. Details sheet**
+- Confirm Deposit + Cancel actions live inside the sheet. If missing, add a primary `Deposit` button in the sheet footer and a subtle `Cancel goal` text button (only when `totalLock === 0`). Lock status is already shown in the sheet.
 
-### 4. Admin UI — new "Activity" tab in User Management drawer
-- **Live feed** (top): subscribes to `postgres_changes` on `user_activity_logs` filtered by `user_id`, newest first, glassmorphism cards with icon per event type, relative timestamp
-- **History** (below): paginated list with filters — event type, date range, search
-- **Per-event detail**: expandable JSON view of `metadata`
-- Global "Activity" section in `/admin` shows last 100 events across all users, auto-streaming
+**3. No logic changes**
+- `goalLockDaysLeft`, deposit flow, cancel flow all remain intact — only the surface where they appear changes.
 
-### Technical notes
-- Tracker inserts via a `log_activity` RPC (`security definer`) that reads `x-forwarded-for` for real IP — avoids trusting client IP
-- 90-day retention:
-  ```sql
-  select cron.schedule('purge-activity-logs','0 3 * * *',
-    $$ delete from public.user_activity_logs where created_at < now() - interval '90 days' $$);
-  ```
-- Volume guard: client rate-limits to max 1 tap per element per 500ms; debounces rapid route changes
-- Sensitive values (PIN, OTP, full card numbers) explicitly stripped from metadata
+## Result
 
-## Out of scope
-- Keystroke / form-field capture (privacy + cost)
-- Heatmaps / session replay video
-- CSV export (can add later)
-
-Approve to build, or tell me what to change.
+Cleaner, modern card: emoji · name (with tiny lock glyph if locked) · amounts · progress bar · percent. Nothing else. All actions consolidated in the details sheet.
