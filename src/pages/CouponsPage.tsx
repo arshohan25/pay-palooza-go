@@ -2,8 +2,8 @@ import Seo from "@/components/Seo";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Ticket, Copy, CheckCircle2, Sparkles,
-  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, Clock, Flame, ChevronRight,
+  ArrowLeft, Ticket, Copy, CheckCircle2, Sparkles, Clock, Flame,
+  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, ChevronRight, Search,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,175 +27,246 @@ interface Coupon {
   usage_limit: number | null;
   used_count: number;
   applicable_flow: string | null;
+  per_user_limit: number | null;
 }
 
-const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof ShoppingBag }> = {
-  shop:     { labelKey: "cpFlowShop",     icon: ShoppingBag },
-  payment:  { labelKey: "cpFlowPayment",  icon: CreditCard  },
-  cash_out: { labelKey: "cpFlowCashOut",  icon: Zap         },
-  recharge: { labelKey: "cpFlowRecharge", icon: Smartphone  },
-  bill_pay: { labelKey: "cpFlowBillPay",  icon: FileText    },
-  all:      { labelKey: "cpFlowAll",      icon: Tag         },
+type FlowKey = "all" | "shop" | "payment" | "recharge" | "bill_pay" | "cash_out";
+
+const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof ShoppingBag; tint: string }> = {
+  shop:     { labelKey: "cpFlowShop",     icon: ShoppingBag, tint: "hsl(var(--shariah-green-600))" },
+  payment:  { labelKey: "cpFlowPayment",  icon: CreditCard,  tint: "hsl(220 70% 55%)" },
+  cash_out: { labelKey: "cpFlowCashOut",  icon: Zap,         tint: "hsl(35 90% 55%)" },
+  recharge: { labelKey: "cpFlowRecharge", icon: Smartphone,  tint: "hsl(280 65% 60%)" },
+  bill_pay: { labelKey: "cpFlowBillPay",  icon: FileText,    tint: "hsl(190 75% 50%)" },
+  all:      { labelKey: "cpFlowAll",      icon: Tag,         tint: "hsl(var(--shariah-green-600))" },
 };
 
+const CATEGORIES: { id: FlowKey; icon: typeof ShoppingBag; labelKey: TranslationKey }[] = [
+  { id: "all",      icon: Sparkles,    labelKey: "cpFlowAll"      },
+  { id: "shop",     icon: ShoppingBag, labelKey: "cpFlowShop"     },
+  { id: "payment",  icon: CreditCard,  labelKey: "cpFlowPayment"  },
+  { id: "recharge", icon: Smartphone,  labelKey: "cpFlowRecharge" },
+  { id: "bill_pay", icon: FileText,    labelKey: "cpFlowBillPay"  },
+  { id: "cash_out", icon: Zap,         labelKey: "cpFlowCashOut"  },
+];
 
-/* ────────────────────────────────────────────────────────────
-   Premium ticket card — emerald + gold, ticket cutouts,
-   perforated divider, foil-style discount block.
-   ──────────────────────────────────────────────────────────── */
-function CouponCard({
-  coupon, index, copiedId, onCopy, onUse, onOpen, featured,
-}: {
-  coupon: Coupon; index: number; copiedId: string | null;
-  onCopy: (c: Coupon) => void; onUse: (c: Coupon) => void; onOpen: (c: Coupon) => void; featured?: boolean;
+function daysLeft(iso: string) {
+  return Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
+}
+
+/* ── FEATURED HERO COUPON ─────────────────────────────── */
+function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
+  coupon: Coupon; onOpen: () => void; onCopy: () => void; copied: boolean;
 }) {
   const { t } = useI18n();
-  const isCopied = copiedId === coupon.id;
+  const isPct = coupon.discount_type === "percentage";
   const flow = coupon.applicable_flow || "shop";
   const flowInfo = FLOW_MAP[flow] || FLOW_MAP.shop;
   const FlowIcon = flowInfo.icon;
-
-  const msLeft = coupon.expires_at ? new Date(coupon.expires_at).getTime() - Date.now() : Infinity;
-  const isExpiring = msLeft < 3 * 24 * 60 * 60 * 1000;
-
-  const getDaysLeft = (expiresAt: string) => {
-    const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    if (days <= 0) return t("expiredLabel");
-    if (days === 1) return t("endsTomorrow");
-    if (days <= 7) return `${days} ${t("daysLeftSuffix")}`;
-    return `${days}${t("daysRemainingSuffix")}`;
-  };
-
-  const value = coupon.discount_value;
-  const isPct = coupon.discount_type === "percentage";
+  const dLeft = coupon.expires_at ? daysLeft(coupon.expires_at) : null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
+    <motion.button
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      transition={{ delay: Math.min(index * 0.04, 0.2), duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      layout
-      onClick={() => onOpen(coupon)}
-      className="relative group cursor-pointer"
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      onClick={onOpen}
+      className="w-full text-left relative rounded-[26px] overflow-hidden active:scale-[0.99] transition-transform"
+      style={{
+        background:
+          "linear-gradient(135deg, hsl(var(--shariah-green-900)) 0%, hsl(var(--shariah-green-700)) 55%, hsl(var(--shariah-green-800)) 100%)",
+      }}
     >
-      {/* Soft ambient glow */}
+      {/* Foil sheen */}
       <div
-        className={`absolute -inset-px rounded-[22px] opacity-60 blur-md pointer-events-none transition-opacity duration-500 group-hover:opacity-100 ${
-          featured
-            ? "bg-[radial-gradient(60%_120%_at_10%_50%,hsl(var(--shariah-green-600)/0.35),transparent_60%),radial-gradient(50%_120%_at_100%_50%,hsl(var(--shariah-gold-500)/0.25),transparent_60%)]"
-            : "bg-[radial-gradient(60%_120%_at_10%_50%,hsl(var(--shariah-green-600)/0.18),transparent_70%)]"
-        }`}
+        className="absolute inset-0 opacity-50 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(115deg, transparent 30%, hsl(var(--shariah-gold-500)/0.35) 50%, transparent 70%)",
+        }}
+      />
+      {/* Gold blob */}
+      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-[hsl(var(--shariah-gold-500)/0.25)] blur-2xl pointer-events-none" />
+      {/* Micro dots */}
+      <div
+        className="absolute inset-0 opacity-[0.08] pointer-events-none"
+        style={{ backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)", backgroundSize: "10px 10px" }}
       />
 
-      <div className="relative overflow-hidden rounded-[22px] border border-border/40 bg-card shadow-[0_2px_10px_-4px_hsl(var(--shariah-green-900)/0.15)]">
+      <div className="relative p-5 text-primary-foreground">
+        {/* Top row */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[hsl(var(--shariah-gold-500)/0.18)] border border-[hsl(var(--shariah-gold-300)/0.4)]">
+            <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-300))]" />
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[hsl(var(--shariah-gold-300))]">
+              Featured
+            </span>
+          </div>
+          {dLeft != null && dLeft <= 7 && dLeft > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/10 backdrop-blur">
+              <Flame className="w-3 h-3" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">
+                {dLeft === 1 ? t("endsTomorrow") : `${dLeft}${t("daysRemainingSuffix")}`}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Big value */}
+        <div className="flex items-baseline gap-1">
+          {!isPct && <span className="text-[26px] font-bold opacity-90">৳</span>}
+          <span className="text-[64px] font-black leading-none tracking-tight tabular-nums">
+            {coupon.discount_value}
+          </span>
+          {isPct && <span className="text-[32px] font-black leading-none">%</span>}
+          <span className="text-[13px] font-black uppercase tracking-[0.2em] text-[hsl(var(--shariah-gold-300))] ml-2 pb-1">
+            {t("cpOff")}
+          </span>
+        </div>
+
+        <p className="mt-2 text-[13px] font-medium text-white/85 leading-snug line-clamp-2">
+          {coupon.description || `${t(flowInfo.labelKey)} ${t("cpDiscountSuffix")}`}
+        </p>
+
+        {/* Category tag */}
+        <div className="mt-3 flex items-center gap-1.5 text-white/70">
+          <FlowIcon className="w-3.5 h-3.5" />
+          <span className="text-[11px] font-semibold">{t(flowInfo.labelKey)}</span>
+          {coupon.min_order_amount ? (
+            <>
+              <span className="opacity-40">•</span>
+              <span className="text-[11px] font-semibold">Min ৳{coupon.min_order_amount}</span>
+            </>
+          ) : null}
+        </div>
+
+        {/* Code chip + CTA */}
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); onCopy(); }}
+            className={`flex-1 h-11 px-3 rounded-xl border-2 border-dashed flex items-center justify-between gap-2 transition-all ${
+              copied
+                ? "border-[hsl(var(--shariah-gold-300))] bg-[hsl(var(--shariah-gold-500)/0.12)]"
+                : "border-white/25 bg-white/5 hover:bg-white/10"
+            }`}
+          >
+            <div>
+              <p className="text-[8px] font-bold uppercase tracking-widest text-white/60">Code</p>
+              <p className="text-[13px] font-black tracking-[0.18em] text-white -mt-0.5">{coupon.code}</p>
+            </div>
+            {copied
+              ? <CheckCircle2 className="w-4 h-4 text-[hsl(var(--shariah-gold-300))]" />
+              : <Copy className="w-4 h-4 text-white/70" />}
+          </button>
+          <div className="h-11 px-4 rounded-xl bg-[hsl(var(--shariah-gold-500))] text-[hsl(var(--shariah-green-900))] text-[13px] font-black flex items-center gap-1 shadow-[0_4px_14px_-4px_hsl(var(--shariah-gold-500)/0.6)]">
+            {t("redeem")}
+            <ChevronRight className="w-4 h-4" />
+          </div>
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
+/* ── COMPACT COUPON ROW ───────────────────────────────── */
+function CouponRow({ coupon, index, copied, onCopy, onOpen }: {
+  coupon: Coupon; index: number; copied: boolean;
+  onCopy: () => void; onOpen: () => void;
+}) {
+  const { t } = useI18n();
+  const isPct = coupon.discount_type === "percentage";
+  const flow = coupon.applicable_flow || "shop";
+  const flowInfo = FLOW_MAP[flow] || FLOW_MAP.shop;
+  const FlowIcon = flowInfo.icon;
+  const dLeft = coupon.expires_at ? daysLeft(coupon.expires_at) : null;
+  const isExpiring = dLeft != null && dLeft > 0 && dLeft <= 3;
+
+  return (
+    <motion.button
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ delay: Math.min(index * 0.03, 0.15), duration: 0.3 }}
+      onClick={onOpen}
+      className="w-full text-left group relative"
+    >
+      <div className="relative bg-card rounded-2xl border border-border/50 overflow-hidden shadow-[0_1px_3px_0_hsl(var(--foreground)/0.03)] group-hover:border-primary/30 group-hover:shadow-[0_4px_16px_-6px_hsl(var(--shariah-green-600)/0.2)] transition-all">
         {/* Ticket cutouts */}
-        <div className="absolute left-[96px] top-0 -translate-x-1/2 -translate-y-1/2 w-[14px] h-[14px] rounded-full bg-background z-10" />
-        <div className="absolute left-[96px] bottom-0 -translate-x-1/2 translate-y-1/2 w-[14px] h-[14px] rounded-full bg-background z-10" />
+        <div className="absolute left-[68px] top-0 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-background z-10" />
+        <div className="absolute left-[68px] bottom-0 -translate-x-1/2 translate-y-1/2 w-3 h-3 rounded-full bg-background z-10" />
 
         <div className="flex items-stretch">
-          {/* Left: foil discount block */}
+          {/* Left: value pill */}
           <div
-            className="relative shrink-0 w-[96px] flex flex-col items-center justify-center py-4 text-primary-foreground overflow-hidden"
+            className="relative shrink-0 w-[68px] flex flex-col items-center justify-center py-3"
             style={{
-              background:
-                "linear-gradient(135deg, hsl(var(--shariah-green-800)) 0%, hsl(var(--shariah-green-600)) 55%, hsl(var(--shariah-green-800)) 100%)",
+              background: `linear-gradient(160deg, ${flowInfo.tint}, ${flowInfo.tint} 60%, transparent)`,
+              backgroundColor: `${flowInfo.tint}0F`,
             }}
           >
-            {/* gold shimmer streak */}
-            <div className="absolute inset-0 opacity-40 pointer-events-none"
-                 style={{ background: "linear-gradient(115deg, transparent 40%, hsl(var(--shariah-gold-500)/0.35) 50%, transparent 60%)" }} />
-            {/* micro dot pattern */}
-            <div className="absolute inset-0 opacity-[0.12] pointer-events-none"
-                 style={{ backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)", backgroundSize: "8px 8px" }} />
-
-            <div className="relative flex items-baseline gap-0.5">
-              {!isPct && <span className="text-[13px] font-semibold opacity-90 leading-none">৳</span>}
-              <span className="text-[28px] font-black leading-none tracking-tight tabular-nums">{value}</span>
-              {isPct && <span className="text-[14px] font-bold leading-none">%</span>}
+            <div
+              className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm"
+              style={{ backgroundColor: flowInfo.tint }}
+            >
+              <FlowIcon className="w-5 h-5 text-white" />
             </div>
-            <span className="relative mt-1 text-[9px] font-bold uppercase tracking-[0.18em] opacity-90">
-              {t("cpOff")}
-            </span>
-
-            {/* perforated right edge */}
-            <div className="absolute right-0 top-0 bottom-0 w-px opacity-40"
-                 style={{ backgroundImage: "repeating-linear-gradient(to bottom, hsl(var(--shariah-gold-500)) 0 4px, transparent 4px 8px)" }} />
+            {/* Perforated edge */}
+            <div
+              className="absolute right-0 top-2 bottom-2 w-px opacity-40"
+              style={{ backgroundImage: "repeating-linear-gradient(to bottom, hsl(var(--border)) 0 3px, transparent 3px 7px)" }}
+            />
           </div>
 
-          {/* Right: details */}
-          <div className="flex-1 min-w-0 p-3 pl-4">
-            {/* header row */}
-            <div className="flex items-center gap-2 mb-1">
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/50">
-                <FlowIcon className="w-2.5 h-2.5 text-muted-foreground" />
-                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {t(flowInfo.labelKey)}
-                </span>
-              </div>
-              {featured && (
-                <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[hsl(var(--shariah-gold-500)/0.15)]">
-                  <Sparkles className="w-2.5 h-2.5 text-[hsl(var(--shariah-gold-700))]" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-[hsl(var(--shariah-gold-700))]">
-                    Featured
-                  </span>
-                </div>
-              )}
-              {isExpiring && coupon.expires_at && (
-                <div className="ml-auto flex items-center gap-0.5 text-destructive">
+          {/* Right: content */}
+          <div className="flex-1 min-w-0 px-3.5 py-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[9.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t(flowInfo.labelKey)}
+              </span>
+              {isExpiring && dLeft != null && (
+                <span className="text-[9.5px] font-bold uppercase tracking-wider text-destructive flex items-center gap-0.5">
                   <Flame className="w-2.5 h-2.5" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider">{getDaysLeft(coupon.expires_at)}</span>
-                </div>
+                  {dLeft === 1 ? t("endsTomorrow") : `${dLeft}${t("daysRemainingSuffix")}`}
+                </span>
               )}
             </div>
 
-            {/* title */}
-            <p className="text-[13px] font-semibold text-foreground leading-snug line-clamp-2">
+            {/* Big value + title */}
+            <div className="flex items-baseline gap-1 mt-0.5">
+              {!isPct && <span className="text-[13px] font-bold text-primary">৳</span>}
+              <span className="text-[22px] font-black text-primary leading-none tabular-nums">
+                {coupon.discount_value}
+              </span>
+              {isPct && <span className="text-[14px] font-black text-primary leading-none">%</span>}
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary/70 ml-0.5">
+                {t("cpOff")}
+              </span>
+            </div>
+
+            <p className="mt-1 text-[11.5px] text-foreground/70 line-clamp-1 leading-snug">
               {coupon.description || `${t(flowInfo.labelKey)} ${t("cpDiscountSuffix")}`}
             </p>
 
-            {/* meta */}
-            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-              {coupon.min_order_amount ? (
-                <span>{t("cbUpTo") ? `Min ৳${coupon.min_order_amount}` : `Min ৳${coupon.min_order_amount}`}</span>
-              ) : null}
-              {coupon.expires_at && !isExpiring && (
-                <span className="flex items-center gap-0.5">
-                  <Clock className="w-2.5 h-2.5" />
-                  {getDaysLeft(coupon.expires_at)}
-                </span>
-              )}
-            </div>
-
-            {/* code + CTA */}
-            <div className="mt-2.5 flex items-center gap-2">
-              <button
-                onClick={(e) => { e.stopPropagation(); onCopy(coupon); }}
-                className={`flex-1 h-8 px-2.5 rounded-lg border-2 border-dashed flex items-center justify-between gap-1 transition-all ${
-                  isCopied
-                    ? "border-primary/50 bg-primary/[0.06] text-primary"
-                    : "border-border/70 text-foreground/80 hover:border-primary/40 hover:bg-primary/[0.03]"
+            {/* Code chip */}
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <div
+                onClick={(e) => { e.stopPropagation(); onCopy(); }}
+                className={`inline-flex items-center gap-1 px-2 h-6 rounded-md border border-dashed transition-colors ${
+                  copied
+                    ? "border-primary/40 bg-primary/5 text-primary"
+                    : "border-border/70 text-foreground/70 hover:border-primary/30"
                 }`}
               >
-                <span className="text-[11px] font-black tracking-[0.15em] truncate">{coupon.code}</span>
-                {isCopied ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <Copy className="w-3 h-3 shrink-0 opacity-60" />}
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onUse(coupon); }}
-                className="h-8 px-3 rounded-lg text-primary-foreground text-[11px] font-bold flex items-center gap-0.5 active:scale-[0.97] transition-transform shadow-[0_2px_8px_-2px_hsl(var(--shariah-green-600)/0.5)]"
-                style={{
-                  background:
-                    "linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)))",
-                }}
-              >
-                {t("redeem")}
-                <ChevronRight className="w-3 h-3" />
-              </button>
+                <span className="text-[10px] font-black tracking-[0.14em]">{coupon.code}</span>
+                {copied ? <CheckCircle2 className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5 opacity-60" />}
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
             </div>
           </div>
         </div>
       </div>
-    </motion.div>
+    </motion.button>
   );
 }
 
@@ -205,6 +276,8 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<FlowKey>("all");
   const { rewards: aiCouponRewards, claimReward } = useAiRewards("coupon");
   const { rewards: aiOfferRewards, claimReward: claimOffer } = useAiRewards("offer");
 
@@ -221,7 +294,6 @@ export default function CouponsPage() {
         supabase.auth.getUser(),
       ]);
 
-      // Fetch this user's redemption counts to hide already-used coupons
       const uid = sess?.user?.id;
       const usedMap = new Map<string, number>();
       if (uid) {
@@ -235,9 +307,7 @@ export default function CouponsPage() {
       }
 
       const filtered = (data || []).filter((c: any) => {
-        // Hide if global usage limit reached
         if (c.usage_limit != null && (c.used_count ?? 0) >= c.usage_limit) return false;
-        // Hide if this user has hit their per-user cap (default 1 when unset)
         const myUses = usedMap.get(c.id) ?? 0;
         const perUserCap = c.per_user_limit ?? 1;
         if (myUses >= perUserCap) return false;
@@ -250,7 +320,6 @@ export default function CouponsPage() {
     load();
   }, []);
 
-
   const handleCopy = (coupon: Coupon) => {
     navigator.clipboard.writeText(coupon.code);
     setCopiedId(coupon.id);
@@ -258,103 +327,93 @@ export default function CouponsPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleUseNow = (coupon: Coupon) => {
-    navigator.clipboard.writeText(coupon.code);
-    setCopiedId(coupon.id);
-    toast.success(t("cpUseNowToast").replace("{code}", coupon.code));
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return coupons.filter((c) => {
+      if (category !== "all" && (c.applicable_flow || "shop") !== category) return false;
+      if (!q) return true;
+      return (
+        c.code.toLowerCase().includes(q) ||
+        (c.description || "").toLowerCase().includes(q)
+      );
+    });
+  }, [coupons, category, query]);
 
-  const bestValue = useMemo(() => {
-    if (!coupons.length) return 0;
-    return Math.max(...coupons.map(c => (c.discount_type === "percentage" ? c.discount_value : c.discount_value)));
-  }, [coupons]);
+  const featured = filtered[0];
+  const rest = filtered.slice(1);
+  const endingSoon = rest.filter(c => c.expires_at && daysLeft(c.expires_at) <= 3 && daysLeft(c.expires_at) > 0);
+  const everythingElse = rest.filter(c => !endingSoon.includes(c));
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <Seo
         title="Coupons & Promotions – EasyPay"
         description="Browse the latest EasyPay coupons, cashback offers and discount codes across shopping, recharge, bills and more."
         path="/coupons"
       />
 
-      {/* ── Premium hero header ─────────────────────────────── */}
-      <div className="relative overflow-hidden text-primary-foreground"
-        style={{
-          background:
-            "linear-gradient(135deg, hsl(var(--shariah-green-900)) 0%, hsl(var(--shariah-green-800)) 45%, hsl(var(--shariah-green-600)) 100%)",
-        }}
-      >
-        {/* Ambient blobs */}
-        <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[hsl(var(--shariah-gold-500)/0.18)] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-10 w-56 h-56 rounded-full bg-[hsl(var(--shariah-green-300)/0.25)] blur-3xl pointer-events-none" />
-        {/* Grain */}
-        <div className="absolute inset-0 opacity-[0.06] pointer-events-none"
-             style={{ backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)", backgroundSize: "3px 3px" }} />
-
-        {/* Top bar */}
-        <div className="relative flex items-center justify-between px-4 h-14">
+      {/* ── Minimal branded header ────────────────────────── */}
+      <div className="sticky top-0 z-40 bg-background/85 backdrop-blur-xl border-b border-border/40">
+        <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => navigate(-1)}
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/15 active:scale-95 transition"
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-muted/60 hover:bg-muted active:scale-95 transition"
             >
-              <ArrowLeft className="w-[18px] h-[18px]" />
+              <ArrowLeft className="w-[18px] h-[18px] text-foreground" />
             </button>
-            <h2 className="text-[16px] font-bold tracking-tight">{t("coupons")}</h2>
-          </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur">
-            <Ticket className="w-3.5 h-3.5" />
-            <span className="text-[11px] font-semibold tabular-nums">{loading ? "…" : coupons.length}</span>
-          </div>
-        </div>
-
-
-        {/* Title block */}
-        <div className="relative px-4 pt-2 pb-6">
-          <div className="flex items-center gap-1.5 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-[hsl(var(--shariah-gold-300))]" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--shariah-gold-300))]">
-              EasyPay Rewards
-            </span>
-          </div>
-          <h1 className="text-[26px] leading-[1.1] font-black tracking-tight">
-            Save more, every
-            <br />
-            <span className="italic font-serif font-normal text-[hsl(var(--shariah-gold-300))]">
-              single tap.
-            </span>
-          </h1>
-          <p className="mt-2 text-[12px] text-white/70 max-w-[280px]">
-            Handpicked coupons across shopping, bills, recharge & more.
-          </p>
-
-          {/* Stat strip */}
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="rounded-xl bg-white/10 backdrop-blur px-3 py-2 border border-white/10">
-              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">Active</p>
-              <p className="text-[16px] font-black tabular-nums">{loading ? "…" : coupons.length}</p>
-            </div>
-            <div className="rounded-xl bg-white/10 backdrop-blur px-3 py-2 border border-white/10">
-              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">Best</p>
-              <p className="text-[16px] font-black text-[hsl(var(--shariah-gold-300))] tabular-nums">
-                {loading ? "…" : `${bestValue}%`}
+            <div>
+              <h1 className="text-[16px] font-bold tracking-tight text-foreground leading-none">
+                {t("coupons")}
+              </h1>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {loading ? "…" : `${coupons.length} live offers`}
               </p>
             </div>
-            <div className="rounded-xl bg-white/10 backdrop-blur px-3 py-2 border border-white/10">
-              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">Ending</p>
-              <p className="text-[16px] font-black tabular-nums">
-                {loading ? "…" : coupons.filter(c => c.expires_at && new Date(c.expires_at).getTime() - Date.now() < 3 * 86400000).length}
-              </p>
-            </div>
+          </div>
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+            <Ticket className="w-4 h-4 text-primary" />
           </div>
         </div>
       </div>
 
+      <div className="px-4 pt-4 space-y-5">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search coupons or codes"
+            className="w-full h-11 pl-10 pr-3 rounded-2xl bg-muted/60 border border-transparent focus:border-primary/30 focus:bg-card focus:outline-none text-[13px] font-medium text-foreground placeholder:text-muted-foreground/60 transition-all"
+          />
+        </div>
 
+        {/* Category chips */}
+        <div className="-mx-4 px-4 overflow-x-auto">
+          <div className="flex gap-2 min-w-max">
+            {CATEGORIES.map((c) => {
+              const Icon = c.icon;
+              const active = category === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setCategory(c.id)}
+                  className={`shrink-0 flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[11.5px] font-bold transition-all ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-[0_2px_8px_-2px_hsl(var(--shariah-green-600)/0.5)]"
+                      : "bg-muted/60 text-foreground/70 hover:bg-muted"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {t(c.labelKey)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-
-      <div className="px-4 pt-4 space-y-3">
         {/* AI Recommended */}
         {(aiCouponRewards.length > 0 || aiOfferRewards.length > 0) && (
           <AiRewardBanner
@@ -366,41 +425,115 @@ export default function CouponsPage() {
           />
         )}
 
+        {/* Content */}
         {loading ? (
-          <div className="space-y-3 pt-1">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-[130px] w-full rounded-[22px]" />)}
+          <div className="space-y-4">
+            <Skeleton className="h-[240px] w-full rounded-[26px]" />
+            <Skeleton className="h-[92px] w-full rounded-2xl" />
+            <Skeleton className="h-[92px] w-full rounded-2xl" />
           </div>
-        ) : coupons.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
             className="flex flex-col items-center justify-center py-24 gap-4"
           >
-            <div className="relative w-20 h-20 rounded-[20px] flex items-center justify-center"
-                 style={{ background: "linear-gradient(135deg, hsl(var(--shariah-green-600)/0.1), hsl(var(--shariah-gold-500)/0.1))" }}>
+            <div
+              className="w-20 h-20 rounded-[22px] flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg, hsl(var(--shariah-green-600)/0.12), hsl(var(--shariah-gold-500)/0.12))" }}
+            >
               <Ticket className="w-8 h-8 text-primary/60" />
             </div>
             <div className="text-center space-y-1">
-              <p className="text-[15px] text-foreground font-semibold">{t("noCouponsYet")}</p>
-              <p className="text-[12px] text-muted-foreground">{t("noCouponsDesc")}</p>
+              <p className="text-[15px] text-foreground font-semibold">
+                {query ? "No matches found" : t("noCouponsYet")}
+              </p>
+              <p className="text-[12px] text-muted-foreground max-w-[240px]">
+                {query ? "Try a different keyword or category." : t("noCouponsDesc")}
+              </p>
             </div>
           </motion.div>
         ) : (
-          <AnimatePresence mode="popLayout">
-            <div className="space-y-3">
-              {coupons.map((coupon, i) => (
-                <CouponCard
-                  key={coupon.id}
-                  coupon={coupon}
-                  index={i}
-                  copiedId={copiedId}
-                  onCopy={handleCopy}
-                  onUse={handleUseNow}
-                  onOpen={(c) => navigate(`/coupons/${c.id}`)}
-                  featured={i === 0}
-                />
-              ))}
-            </div>
-          </AnimatePresence>
+          <div className="space-y-6">
+            {/* Featured */}
+            {featured && (
+              <FeaturedCoupon
+                coupon={featured}
+                copied={copiedId === featured.id}
+                onCopy={() => handleCopy(featured)}
+                onOpen={() => navigate(`/coupons/${featured.id}`)}
+              />
+            )}
+
+            {/* Ending soon */}
+            {endingSoon.length > 0 && (
+              <section className="space-y-2.5">
+                <div className="flex items-center justify-between px-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded-full bg-destructive/10 flex items-center justify-center">
+                      <Flame className="w-3 h-3 text-destructive" />
+                    </div>
+                    <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">
+                      Ending soon
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-semibold text-muted-foreground">{endingSoon.length}</span>
+                </div>
+                <AnimatePresence mode="popLayout">
+                  <div className="space-y-2.5">
+                    {endingSoon.map((coupon, i) => (
+                      <CouponRow
+                        key={coupon.id}
+                        coupon={coupon}
+                        index={i}
+                        copied={copiedId === coupon.id}
+                        onCopy={() => handleCopy(coupon)}
+                        onOpen={() => navigate(`/coupons/${coupon.id}`)}
+                      />
+                    ))}
+                  </div>
+                </AnimatePresence>
+              </section>
+            )}
+
+            {/* All offers */}
+            {everythingElse.length > 0 && (
+              <section className="space-y-2.5">
+                <div className="flex items-center justify-between px-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Tag className="w-3 h-3 text-primary" />
+                    </div>
+                    <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">
+                      {category === "all" ? "All offers" : t(FLOW_MAP[category].labelKey)}
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-semibold text-muted-foreground">{everythingElse.length}</span>
+                </div>
+                <AnimatePresence mode="popLayout">
+                  <div className="space-y-2.5">
+                    {everythingElse.map((coupon, i) => (
+                      <CouponRow
+                        key={coupon.id}
+                        coupon={coupon}
+                        index={i}
+                        copied={copiedId === coupon.id}
+                        onCopy={() => handleCopy(coupon)}
+                        onOpen={() => navigate(`/coupons/${coupon.id}`)}
+                      />
+                    ))}
+                  </div>
+                </AnimatePresence>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* Footer note */}
+        {!loading && filtered.length > 0 && (
+          <p className="text-center text-[10.5px] text-muted-foreground/60 pt-2 flex items-center justify-center gap-1">
+            <Clock className="w-2.5 h-2.5" />
+            Coupons refresh in real-time. Tap any card for details.
+          </p>
         )}
       </div>
     </div>
