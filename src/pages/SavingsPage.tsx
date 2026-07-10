@@ -814,7 +814,7 @@ function DpsTab() {
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold tabular-nums leading-none">
-                  {p.total_paid ?? 0}<span className="text-sm text-muted-foreground">/{p.total_installments ?? "∞"}</span>
+                  {paid}<span className="text-sm text-muted-foreground">/{derivedTotal || "∞"}</span>
                 </div>
                 <div className="text-[10px] text-muted-foreground mt-1">installments</div>
               </div>
