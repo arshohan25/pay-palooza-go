@@ -902,6 +902,14 @@ function DpsTab() {
           </>
         }
         onConfirm={handleRepay} />
+
+      <DpsPlanDetailsSheet
+        plan={detailsPlan}
+        goal={detailsPlan ? goals.find(g => g.id === detailsPlan.goal_id) : undefined}
+        open={!!detailsPlan}
+        onClose={() => setDetailsPlan(null)}
+        onChanged={() => { reload(); setDetailsPlan(null); }}
+      />
     </div>
   );
 }
