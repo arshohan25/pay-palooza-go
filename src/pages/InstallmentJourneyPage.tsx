@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -9,26 +9,22 @@ import {
   Trophy,
   Target,
   Plus,
-  X,
   Landmark,
   PiggyBank,
   Coins,
-  Home,
-  Car,
-  GraduationCap,
-  Plane,
   Sparkles,
   TrendingUp,
   Calendar,
-  Filter,
   ChevronRight,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useSavings, type SavingsGoal, type AutoSavePlan } from "@/hooks/use-savings";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
-/* ---------- Types & mock data ---------- */
-
-type Status = "paid" | "upcoming" | "due" | "overdue" | "goal" | "completed";
+type Status = "paid" | "upcoming" | "due" | "overdue" | "completed";
 
 interface Installment {
   n: number;
@@ -39,89 +35,7 @@ interface Installment {
   status: Status;
 }
 
-type Category = "all" | "savings" | "dps" | "loan" | "goal";
-
-const PRODUCTS = [
-  {
-    id: "hajj",
-    category: "goal" as Category,
-    name: "Hajj Fund 2028",
-    icon: Sparkles,
-    tint: "from-[#009688] to-[#2ECC71]",
-    balance: 128000,
-    target: 450000,
-    outstanding: 322000,
-    nextAmount: 8000,
-    nextDate: "12 Aug",
-    monthly: 8000,
-    health: 86,
-  },
-  {
-    id: "dps",
-    category: "dps" as Category,
-    name: "DPS · Sonali 5yr",
-    icon: Landmark,
-    tint: "from-[#0EA5E9] to-[#009688]",
-    balance: 96000,
-    target: 300000,
-    outstanding: 204000,
-    nextAmount: 5000,
-    nextDate: "05 Aug",
-    monthly: 5000,
-    health: 92,
-  },
-  {
-    id: "car",
-    category: "loan" as Category,
-    name: "Car EMI · Toyota",
-    icon: Car,
-    tint: "from-[#F59E0B] to-[#F4C542]",
-    balance: 640000,
-    target: 1200000,
-    outstanding: 560000,
-    nextAmount: 22500,
-    nextDate: "28 Jul",
-    monthly: 22500,
-    health: 74,
-  },
-];
-
-const FILTERS: { id: Category; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "savings", label: "Savings" },
-  { id: "dps", label: "DPS" },
-  { id: "loan", label: "Loan" },
-  { id: "goal", label: "Goals" },
-];
-
-function buildInstallments(product: typeof PRODUCTS[number]): Installment[] {
-  const total = 12;
-  const paidCount = Math.floor((product.balance / product.target) * total);
-  const arr: Installment[] = [];
-  const months = ["Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
-  let running = 0;
-  for (let i = 0; i < total; i++) {
-    running += product.monthly;
-    let status: Status = "upcoming";
-    if (i < paidCount) status = "paid";
-    else if (i === paidCount) status = "due";
-    else if (i === paidCount + 1) status = "upcoming";
-    if (i === total - 1) status = i < paidCount ? "completed" : status;
-    arr.push({
-      n: i + 1,
-      amount: product.monthly,
-      remaining: Math.max(product.target - running, 0),
-      dueDate: `${5 + i} ${months[i % months.length]}`,
-      paidDate: i < paidCount ? `${3 + i} ${months[i % months.length]}` : undefined,
-      status,
-    });
-  }
-  // Sprinkle an overdue node for realism
-  if (paidCount > 2) arr[paidCount - 1].status = "paid";
-  return arr;
-}
-
-/* ---------- Small UI pieces ---------- */
+const bdt = (n: number) => `৳${Math.round(n).toLocaleString("en-BD")}`;
 
 const STATUS_META: Record<Status, { label: string; ring: string; dot: string; glow: string; icon: typeof Check }> = {
   paid: {
@@ -152,13 +66,6 @@ const STATUS_META: Record<Status, { label: string; ring: string; dot: string; gl
     glow: "",
     icon: AlertTriangle,
   },
-  goal: {
-    label: "Goal Reached",
-    ring: "border-[#F4C542]/50 bg-[#F4C542]/10 text-[#F4C542]",
-    dot: "bg-gradient-to-br from-[#F4C542] to-amber-600 shadow-[0_0_28px_rgba(244,197,66,0.7)]",
-    glow: "",
-    icon: Target,
-  },
   completed: {
     label: "Completed",
     ring: "border-[#F4C542]/50 bg-[#F4C542]/10 text-[#F4C542]",
@@ -168,16 +75,12 @@ const STATUS_META: Record<Status, { label: string; ring: string; dot: string; gl
   },
 };
 
-const bdt = (n: number) => `৳${n.toLocaleString("en-BD")}`;
-
-/* ---------- Circular progress ---------- */
-
 function Ring({ value, size = 120, stroke = 10 }: { value: number; size?: number; stroke?: number }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  const offset = c - (value / 100) * c;
+  const offset = c - (Math.min(100, Math.max(0, value)) / 100) * c;
   return (
-    <div className="relative" style={{ width: size, height: size }}>
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
         <defs>
           <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
@@ -198,29 +101,28 @@ function Ring({ value, size = 120, stroke = 10 }: { value: number; size?: number
           strokeDasharray={c}
           initial={{ strokeDashoffset: c }}
           animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-white tabular-nums">{value}%</span>
+        <span className="text-2xl font-bold text-white tabular-nums">{Math.round(value)}%</span>
         <span className="text-[10px] uppercase tracking-widest text-white/60">complete</span>
       </div>
     </div>
   );
 }
 
-/* ---------- Milestone row ---------- */
-
 function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" | "right"; isLast: boolean }) {
   const meta = STATUS_META[item.status];
   const Icon = meta.icon;
+
   const amountCard = (
     <motion.div
       initial={{ opacity: 0, x: side === "left" ? -20 : 20 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.4 }}
-      className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-3 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.5)]"
+      className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-3"
     >
       <div className="flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-wider text-white/50">Installment</span>
@@ -245,9 +147,7 @@ function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" 
         <Calendar size={10} />
         Due {item.dueDate}
       </div>
-      {item.paidDate && (
-        <div className="mt-1 text-[10px] text-emerald-300/80">Paid · {item.paidDate}</div>
-      )}
+      {item.paidDate && <div className="mt-1 text-[10px] text-emerald-300/80">Paid · {item.paidDate}</div>}
       <div className={cn("mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold", meta.ring)}>
         <Icon size={10} />
         {meta.label}
@@ -257,9 +157,8 @@ function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" 
 
   return (
     <div className="relative grid grid-cols-[1fr_44px_1fr] items-center gap-2">
-      <div className={side === "left" ? "block" : "invisible"}>{side === "left" ? amountCard : dateCard}</div>
+      <div>{side === "left" ? amountCard : dateCard}</div>
 
-      {/* Center node + connector */}
       <div className="relative flex flex-col items-center">
         <motion.div
           initial={{ scale: 0 }}
@@ -267,7 +166,7 @@ function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" 
           viewport={{ once: true }}
           transition={{ type: "spring", stiffness: 260, damping: 18 }}
           className={cn(
-            "z-10 flex h-10 w-10 items-center justify-center rounded-full ring-4 ring-background/80",
+            "z-10 flex h-10 w-10 items-center justify-center rounded-full ring-4 ring-[#0B1220]",
             meta.dot,
             meta.glow,
           )}
@@ -275,7 +174,7 @@ function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" 
           <Icon size={16} className="text-white" strokeWidth={2.5} />
         </motion.div>
         {!isLast && (
-          <div className="absolute left-1/2 top-10 h-[calc(100%+0.5rem)] w-[2px] -translate-x-1/2 overflow-hidden">
+          <div className="absolute left-1/2 top-10 h-[calc(100%+1.25rem)] w-[2px] -translate-x-1/2 overflow-hidden">
             <div className="h-full w-full bg-gradient-to-b from-white/20 via-white/10 to-transparent" />
             {item.status === "paid" && (
               <motion.div
@@ -291,102 +190,156 @@ function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" 
         )}
       </div>
 
-      <div className={side === "right" ? "block" : "invisible"}>{side === "right" ? amountCard : dateCard}</div>
-
-      {/* Actual opposite card rendered under the invisible placeholder */}
-      <div className="pointer-events-none absolute inset-0 grid grid-cols-[1fr_44px_1fr] gap-2">
-        <div className="pointer-events-auto">{side === "right" && amountCard}</div>
-        <div />
-        <div className="pointer-events-auto">{side === "left" && dateCard}</div>
-      </div>
+      <div>{side === "right" ? amountCard : dateCard}</div>
     </div>
   );
 }
 
-/* ---------- Floating action ---------- */
-
-function FabMenu() {
-  const [open, setOpen] = useState(false);
-  const items = [
-    { icon: PiggyBank, label: "Add Savings" },
-    { icon: Landmark, label: "Add DPS" },
-    { icon: Coins, label: "Add Loan" },
-    { icon: Target, label: "Add Goal" },
-    { icon: Plus, label: "Add Installment" },
-  ];
-  return (
-    <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-3 md:bottom-8">
-      <AnimatePresence>
-        {open &&
-          items.map((it, i) => (
-            <motion.button
-              key={it.label}
-              initial={{ opacity: 0, y: 8, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.9 }}
-              transition={{ delay: i * 0.03 }}
-              className="flex items-center gap-3"
-            >
-              <span className="rounded-xl border border-white/10 bg-black/60 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
-                {it.label}
-              </span>
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#009688] to-[#2ECC71] text-white shadow-lg">
-                <it.icon size={18} />
-              </span>
-            </motion.button>
-          ))}
-      </AnimatePresence>
-      <motion.button
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#009688] via-[#2ECC71] to-[#F4C542] text-white shadow-[0_10px_30px_-6px_rgba(46,204,113,0.6)]"
-        aria-label="Add"
-      >
-        <motion.div animate={{ rotate: open ? 135 : 0 }} transition={{ type: "spring", stiffness: 300 }}>
-          {open ? <X size={22} /> : <Plus size={22} />}
-        </motion.div>
-      </motion.button>
-    </div>
-  );
+function formatShort(d: Date) {
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 }
 
-/* ---------- Page ---------- */
+function buildFromPlan(plan: AutoSavePlan): Installment[] {
+  const total = plan.total_installments ?? 12;
+  const paid = plan.total_paid ?? 0;
+  const cycleMs =
+    plan.frequency === "daily" ? 86400000 : plan.frequency === "weekly" ? 7 * 86400000 : 30 * 86400000;
+  const anchor = new Date(plan.next_run_at || plan.created_at).getTime();
+  const list: Installment[] = [];
+  for (let i = 0; i < total; i++) {
+    const idx = i;
+    // due date estimation: anchor is next unpaid; back-fill paid, forward for upcoming
+    const offset = (idx - paid) * cycleMs;
+    const due = new Date(anchor + offset);
+    let status: Status = "upcoming";
+    if (idx < paid) status = "paid";
+    else if (idx === paid) status = due.getTime() <= Date.now() ? "due" : "upcoming";
+    if (idx === total - 1 && idx < paid) status = "completed";
+    const remaining = Math.max(0, (total - idx - 1) * Number(plan.amount));
+    list.push({
+      n: idx + 1,
+      amount: Number(plan.amount),
+      remaining,
+      dueDate: formatShort(due),
+      paidDate: idx < paid ? formatShort(new Date(anchor + offset)) : undefined,
+      status,
+    });
+  }
+  return list;
+}
+
+function buildFromGoal(goal: SavingsGoal, plan?: AutoSavePlan): Installment[] {
+  if (plan) return buildFromPlan(plan);
+  // No plan: synthesize milestones as 5 target checkpoints
+  const total = 5;
+  const step = Number(goal.target_amount) / total;
+  const saved = Number(goal.saved_amount);
+  const now = Date.now();
+  const list: Installment[] = [];
+  for (let i = 0; i < total; i++) {
+    const cumulative = step * (i + 1);
+    const status: Status = saved >= cumulative ? "paid" : i === Math.floor(saved / step) ? "due" : "upcoming";
+    list.push({
+      n: i + 1,
+      amount: step,
+      remaining: Math.max(0, Number(goal.target_amount) - cumulative),
+      dueDate: formatShort(new Date(now + i * 30 * 86400000)),
+      paidDate: saved >= cumulative ? formatShort(new Date(now)) : undefined,
+      status: i === total - 1 && saved >= cumulative ? "completed" : status,
+    });
+  }
+  return list;
+}
 
 export default function InstallmentJourneyPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const initialType = params.get("type"); // 'goal' | 'dps' | 'loan' | null
-  const initialId = params.get("id");
-  const initial =
-    PRODUCTS.find((p) => p.id === initialId) ||
-    PRODUCTS.find((p) => p.category === initialType) ||
-    PRODUCTS[0];
-  const [productId, setProductId] = useState(initial.id);
-  const [filter, setFilter] = useState<Category>("all");
-  const [actionSheet, setActionSheet] = useState<null | "deposit" | "repay" | "installment">(null);
+  const { user } = useAuth();
+  const { goals, plans, loading, reload } = useSavings();
+
+  const type = params.get("type"); // 'goal' | 'dps'
+  const id = params.get("id");
+
+  const plan = type === "dps" ? plans.find((p) => p.id === id) : undefined;
+  const goal =
+    type === "goal"
+      ? goals.find((g) => g.id === id)
+      : plan
+        ? goals.find((g) => g.id === plan.goal_id)
+        : undefined;
+  const linkedPlan = plan ?? (goal ? plans.find((p) => p.goal_id === goal.id) : undefined);
+
+  const [actionSheet, setActionSheet] = useState<null | "deposit" | "installment">(null);
   const [amt, setAmt] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const product = PRODUCTS.find((p) => p.id === productId)!;
-  const installments = useMemo(() => buildInstallments(product), [product]);
-  const pct = Math.round((product.balance / product.target) * 100);
+  const installments = useMemo<Installment[]>(() => {
+    if (plan) return buildFromPlan(plan);
+    if (goal) return buildFromGoal(goal, linkedPlan);
+    return [];
+  }, [plan, goal, linkedPlan]);
+
+  const loadingState = loading && !goal && !plan;
+  const notFound = !loadingState && !goal && !plan;
+
+  const displayName = goal?.name ?? (plan ? "DPS Plan" : "");
+  const emoji = goal?.emoji ?? "💼";
+  const target = Number(goal?.target_amount ?? (plan ? Number(plan.amount) * (plan.total_installments ?? 12) : 0));
+  const balance = Number(goal?.saved_amount ?? (plan ? Number(plan.amount) * (plan.total_paid ?? 0) : 0));
+  const pct = target > 0 ? (balance / target) * 100 : 0;
+  const outstanding = Math.max(0, target - balance);
+  const nextAmount = Number(plan?.amount ?? (linkedPlan?.amount ?? 0));
+  const nextDate = linkedPlan?.next_run_at ? formatShort(new Date(linkedPlan.next_run_at)) : "—";
   const paidCount = installments.filter((i) => i.status === "paid").length;
+  const kind = plan ? "DPS" : "GOAL";
+  const tint = plan ? "from-[#0EA5E9] to-[#009688]" : "from-[#009688] to-[#2ECC71]";
+  const HeaderIcon = plan ? Landmark : Target;
 
-  const primaryAction =
-    product.category === "loan"
-      ? { key: "repay" as const, label: "Repay Now", icon: Coins }
-      : product.category === "dps"
-        ? { key: "installment" as const, label: "Pay Installment", icon: Plus }
-        : { key: "deposit" as const, label: "Deposit", icon: PiggyBank };
+  const primaryLabel = plan ? "Pay Installment" : "Add Deposit";
+  const primaryKey: "deposit" | "installment" = plan ? "installment" : "deposit";
 
-  const Icon = product.icon;
+  async function confirmAction() {
+    const value = parseFloat(amt);
+    if (!(value > 0) || !user) return;
+    setSubmitting(true);
+    try {
+      if (goal) {
+        const { error } = await supabase
+          .from("savings_goals")
+          .update({ saved_amount: Number(goal.saved_amount) + value })
+          .eq("id", goal.id);
+        if (error) throw error;
+      }
+      if (plan && actionSheet === "installment") {
+        const { error } = await supabase
+          .from("savings_auto_save")
+          .update({
+            total_paid: (plan.total_paid ?? 0) + 1,
+            last_run_at: new Date().toISOString(),
+          })
+          .eq("id", plan.id);
+        if (error) throw error;
+      }
+      toast.success(actionSheet === "installment" ? "Installment recorded" : "Deposit added");
+      setActionSheet(null);
+      setAmt("");
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  useEffect(() => {
+    if (actionSheet && !amt && nextAmount > 0) setAmt(String(nextAmount));
+  }, [actionSheet, nextAmount, amt]);
 
   return (
     <div className="min-h-dvh bg-[#0B1220] text-white pb-32">
-      {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[#009688]/25 blur-3xl" />
         <div className="absolute top-40 -right-20 h-[280px] w-[280px] rounded-full bg-[#F4C542]/15 blur-3xl" />
-        <div className="absolute top-[60vh] -left-20 h-[280px] w-[280px] rounded-full bg-[#2ECC71]/15 blur-3xl" />
       </div>
 
       <div className="relative mx-auto max-w-md px-4 pt-4">
@@ -406,133 +359,161 @@ export default function InstallmentJourneyPage() {
           <div className="h-10 w-10" aria-hidden />
         </div>
 
-        {/* Summary card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative mt-5 overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] backdrop-blur-2xl p-5 shadow-[0_20px_60px_-20px_rgba(0,150,136,0.5)]"
-        >
-          <div className={cn("absolute inset-0 opacity-30 bg-gradient-to-br", product.tint)} />
-          <div className="relative">
-            <div className="flex items-start justify-between gap-4">
+        {loadingState && (
+          <div className="mt-16 flex flex-col items-center gap-3 text-white/60">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+            <div className="text-sm">Loading timeline…</div>
+          </div>
+        )}
+
+        {notFound && (
+          <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center">
+            <AlertTriangle size={22} className="mx-auto text-amber-400" />
+            <div className="mt-2 text-base font-semibold">Not found</div>
+            <p className="mt-1 text-sm text-white/60">
+              This {type === "dps" ? "DPS plan" : "goal"} could not be located.
+            </p>
+            <button
+              onClick={() => navigate("/savings")}
+              className="mt-4 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold"
+            >
+              Back to Savings
+            </button>
+          </div>
+        )}
+
+        {!loadingState && !notFound && (
+          <>
+            {/* Summary card */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="relative mt-5 overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] backdrop-blur-2xl p-5"
+            >
+              <div className={cn("absolute inset-0 opacity-30 bg-gradient-to-br", tint)} />
+              <div className="relative">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-lg backdrop-blur">
+                        {plan ? <HeaderIcon size={18} /> : <span>{emoji}</span>}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] uppercase tracking-widest text-white/60">{kind}</div>
+                        <div className="truncate text-base font-semibold">{displayName}</div>
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <div className="text-[11px] text-white/60">Current Balance</div>
+                      <div className="text-3xl font-bold tabular-nums">{bdt(balance)}</div>
+                      <div className="mt-1 text-[11px] text-white/60">
+                        of <span className="tabular-nums text-white/80">{bdt(target)}</span> target
+                      </div>
+                    </div>
+                  </div>
+                  <Ring value={pct} />
+                </div>
+
+                <div className="mt-5 grid grid-cols-3 gap-2">
+                  {[
+                    { label: "Outstanding", value: bdt(outstanding) },
+                    { label: "Next Amt", value: nextAmount > 0 ? bdt(nextAmount) : "—" },
+                    { label: "Due", value: nextDate },
+                  ].map((s) => (
+                    <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.06] p-2.5">
+                      <div className="text-[9px] uppercase tracking-wider text-white/50">{s.label}</div>
+                      <div className="mt-0.5 text-sm font-semibold tabular-nums">{s.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp size={16} className="text-emerald-400" />
+                    <div>
+                      <div className="text-[10px] uppercase tracking-widest text-white/50">Progress</div>
+                      <div className="text-sm font-semibold">{Math.round(pct)}% complete</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 rounded-full bg-gradient-to-r from-[#F4C542] to-amber-500 px-2.5 py-1 text-[10px] font-bold text-black">
+                    <Trophy size={11} /> Streak {paidCount}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Section title */}
+            <div className="mt-6 flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 backdrop-blur">
-                    <Icon size={18} />
-                  </div>
-                  <div>
-                    <div className="text-[10px] uppercase tracking-widest text-white/60">{product.category}</div>
-                    <div className="text-base font-semibold">{product.name}</div>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <div className="text-[11px] text-white/60">Current Balance</div>
-                  <div className="text-3xl font-bold tabular-nums">{bdt(product.balance)}</div>
-                  <div className="mt-1 text-[11px] text-white/60">
-                    of <span className="tabular-nums text-white/80">{bdt(product.target)}</span> target
-                  </div>
-                </div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">Timeline</div>
+                <div className="text-lg font-bold">Milestones</div>
               </div>
-              <Ring value={pct} />
+              <div className="text-[11px] text-white/60">
+                {paidCount}/{installments.length} paid
+              </div>
             </div>
 
-            {/* Sub-stats */}
-            <div className="mt-5 grid grid-cols-3 gap-2">
-              {[
-                { label: "Outstanding", value: bdt(product.outstanding) },
-                { label: "Next Amount", value: bdt(product.nextAmount) },
-                { label: "Due", value: product.nextDate },
-              ].map((s) => (
-                <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.06] p-2.5">
-                  <div className="text-[9px] uppercase tracking-wider text-white/50">{s.label}</div>
-                  <div className="mt-0.5 text-sm font-semibold tabular-nums">{s.value}</div>
-                </div>
+            {/* Timeline */}
+            <div className="mt-4 space-y-5">
+              {installments.map((it, idx) => (
+                <MilestoneRow
+                  key={it.n}
+                  item={it}
+                  side={idx % 2 === 0 ? "left" : "right"}
+                  isLast={idx === installments.length - 1}
+                />
               ))}
-            </div>
-
-            {/* Health + badge */}
-            <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp size={16} className="text-emerald-400" />
-                <div>
-                  <div className="text-[10px] uppercase tracking-widest text-white/50">Health Score</div>
-                  <div className="text-sm font-semibold">{product.health} / 100 · Excellent</div>
+              {installments.length === 0 && (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center text-sm text-white/60">
+                  No installments yet.
                 </div>
-              </div>
-              <div className="flex items-center gap-1 rounded-full bg-gradient-to-r from-[#F4C542] to-amber-500 px-2.5 py-1 text-[10px] font-bold text-black">
-                <Trophy size={11} /> Streak {paidCount}
-              </div>
+              )}
             </div>
-          </div>
-        </motion.div>
 
-
-        {/* Section title */}
-        <div className="mt-6 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">Journey</div>
-            <div className="text-lg font-bold">Milestone Timeline</div>
-          </div>
-          <div className="text-[11px] text-white/60">
-            {paidCount}/{installments.length} paid
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <div className="mt-4 space-y-5">
-          {installments.map((it, idx) => (
-            <MilestoneRow
-              key={it.n}
-              item={it}
-              side={idx % 2 === 0 ? "left" : "right"}
-              isLast={idx === installments.length - 1}
-            />
-          ))}
-        </div>
-
-        {/* Smart insight */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mt-8 rounded-[22px] border border-[#F4C542]/30 bg-gradient-to-br from-[#F4C542]/10 to-transparent p-4 backdrop-blur"
-        >
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#F4C542]">
-            <Sparkles size={12} /> AI Insight
-          </div>
-          <p className="mt-1.5 text-sm leading-relaxed text-white/85">
-            Increase your monthly contribution by <span className="font-bold text-[#F4C542]">৳1,500</span> to reach{" "}
-            <span className="font-semibold">{product.name}</span> 3 months earlier.
-          </p>
-          <button className="mt-3 inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/15">
-            Apply suggestion <ChevronRight size={12} />
-          </button>
-        </motion.div>
-
+            {/* AI Insight */}
+            {nextAmount > 0 && outstanding > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="mt-8 rounded-[22px] border border-[#F4C542]/30 bg-gradient-to-br from-[#F4C542]/10 to-transparent p-4 backdrop-blur"
+              >
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#F4C542]">
+                  <Sparkles size={12} /> AI Insight
+                </div>
+                <p className="mt-1.5 text-sm leading-relaxed text-white/85">
+                  Add <span className="font-bold text-[#F4C542]">{bdt(Math.round(nextAmount * 0.2))}</span> extra per
+                  cycle to finish <span className="font-semibold">{displayName}</span> faster.
+                </p>
+              </motion.div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Sticky action bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0B1220]/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-md items-center gap-2 px-4 py-3">
-          <button
-            onClick={() => { setAmt(""); setActionSheet(primaryAction.key); }}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#009688] via-[#2ECC71] to-[#F4C542] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-6px_rgba(46,204,113,0.5)] active:scale-[0.98]"
-          >
-            <primaryAction.icon size={16} />
-            {primaryAction.label}
-          </button>
-          {product.category !== "loan" && (
+      {!loadingState && !notFound && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0B1220]/90 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-md items-center gap-2 px-4 py-3">
             <button
-              onClick={() => { setAmt(""); setActionSheet("installment"); }}
-              aria-label="Add installment"
-              className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white active:scale-95"
+              onClick={() => { setAmt(""); setActionSheet(primaryKey); }}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#009688] via-[#2ECC71] to-[#F4C542] px-4 py-3 text-sm font-semibold text-white active:scale-[0.98]"
             >
-              <Plus size={18} />
+              {plan ? <Coins size={16} /> : <PiggyBank size={16} />} {primaryLabel}
             </button>
-          )}
+            {plan && (
+              <button
+                onClick={() => { setAmt(""); setActionSheet("deposit"); }}
+                aria-label="Extra deposit"
+                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white active:scale-95"
+              >
+                <Plus size={18} />
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Action sheet */}
       <AnimatePresence>
@@ -542,7 +523,7 @@ export default function InstallmentJourneyPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm"
-            onClick={() => setActionSheet(null)}
+            onClick={() => !submitting && setActionSheet(null)}
           >
             <motion.div
               initial={{ y: 40 }}
@@ -552,13 +533,9 @@ export default function InstallmentJourneyPage() {
               className="mx-auto w-full max-w-md rounded-t-[24px] border-t border-white/10 bg-[#111827] p-5 pb-8"
             >
               <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
-              <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/50">
-                {product.name}
-              </div>
+              <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/50">{displayName}</div>
               <div className="mb-4 text-lg font-bold">
-                {actionSheet === "deposit" && "Add Deposit"}
-                {actionSheet === "repay" && "Loan Repayment"}
-                {actionSheet === "installment" && "Pay Installment"}
+                {actionSheet === "installment" ? "Pay Installment" : "Add Deposit"}
               </div>
               <label className="text-[11px] text-white/60">Amount (৳)</label>
               <input
@@ -567,26 +544,35 @@ export default function InstallmentJourneyPage() {
                 inputMode="numeric"
                 value={amt}
                 onChange={(e) => setAmt(e.target.value)}
-                placeholder={String(product.nextAmount)}
+                placeholder={String(nextAmount || 500)}
                 className="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-lg font-semibold tabular-nums text-white outline-none focus:border-emerald-400/50"
               />
-              <div className="mt-3 flex gap-2">
-                {[product.nextAmount, product.nextAmount * 2, product.nextAmount * 3].map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setAmt(String(v))}
-                    className="flex-1 rounded-full border border-white/10 bg-white/5 py-1.5 text-xs font-medium text-white/80"
-                  >
-                    {bdt(v)}
-                  </button>
-                ))}
-              </div>
+              {nextAmount > 0 && (
+                <div className="mt-3 flex gap-2">
+                  {[nextAmount, nextAmount * 2, nextAmount * 3].map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => setAmt(String(v))}
+                      className="flex-1 rounded-full border border-white/10 bg-white/5 py-1.5 text-xs font-medium text-white/80"
+                    >
+                      {bdt(v)}
+                    </button>
+                  ))}
+                </div>
+              )}
               <button
-                disabled={!(parseFloat(amt) > 0)}
-                onClick={() => setActionSheet(null)}
+                disabled={!(parseFloat(amt) > 0) || submitting}
+                onClick={confirmAction}
                 className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#009688] to-[#2ECC71] py-3 text-sm font-semibold text-white disabled:opacity-40"
               >
-                Confirm {actionSheet === "repay" ? "Repayment" : actionSheet === "installment" ? "Installment" : "Deposit"}
+                {submitting ? "Processing…" : `Confirm ${actionSheet === "installment" ? "Installment" : "Deposit"}`}
+              </button>
+              <button
+                disabled={submitting}
+                onClick={() => setActionSheet(null)}
+                className="mt-2 w-full py-2 text-xs font-medium text-white/50"
+              >
+                Cancel
               </button>
             </motion.div>
           </motion.div>
