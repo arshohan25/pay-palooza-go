@@ -57,6 +57,7 @@ const GiftCardsPage = lazy(() => import("./pages/GiftCardsPage"));
 const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
 const SavingsPage = lazy(() => import("./pages/SavingsPage"));
+const InstallmentJourneyPage = lazy(() => import("./pages/InstallmentJourneyPage"));
 const RecipientHarness = lazy(() => import("./pages/RecipientHarness"));
 const CashOutHarness = lazy(() => import("./pages/CashOutHarness"));
 
@@ -114,6 +115,7 @@ const App = () => (
                       <Route path="giftcards" element={<GiftCardsPage />} />
                       <Route path="account" element={<AccountPage />} />
                       <Route path="savings" element={<SavingsPage />} />
+                      <Route path="savings/journey" element={<InstallmentJourneyPage />} />
                     </Route>
 
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
