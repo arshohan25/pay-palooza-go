@@ -433,6 +433,52 @@ export default function CouponsPage() {
           />
         </div>
 
+        {/* Redeem by code — premium ticket input */}
+        <div
+          className="relative rounded-2xl p-[1px] overflow-hidden"
+          style={{
+            background:
+              "linear-gradient(135deg, hsl(var(--shariah-green-700)) 0%, hsl(var(--shariah-gold-500)) 50%, hsl(var(--shariah-green-700)) 100%)",
+          }}
+        >
+          <div className="relative rounded-2xl bg-card p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-lg bg-[hsl(var(--shariah-gold-500)/0.15)] flex items-center justify-center">
+                <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-600))]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11.5px] font-black uppercase tracking-wider text-foreground">
+                  Have a code?
+                </p>
+                <p className="text-[10px] text-muted-foreground -mt-0.5">
+                  Enter a valid promo code to unlock
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={redeemCode}
+                  onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === "Enter" && !redeeming && handleRedeemByCode()}
+                  placeholder="ENTER CODE"
+                  maxLength={20}
+                  className="w-full h-11 px-3 rounded-xl bg-muted/50 border-2 border-dashed border-border/60 focus:border-primary/40 focus:bg-card focus:outline-none text-[13px] font-black tracking-[0.18em] text-foreground placeholder:text-muted-foreground/50 placeholder:tracking-widest placeholder:font-bold uppercase transition-all"
+                />
+              </div>
+              <button
+                onClick={handleRedeemByCode}
+                disabled={redeeming || redeemCode.trim().length < 3}
+                className="h-11 px-4 rounded-xl bg-primary text-primary-foreground text-[12px] font-black flex items-center gap-1 shadow-[0_4px_14px_-4px_hsl(var(--shariah-green-600)/0.6)] disabled:opacity-40 disabled:shadow-none active:scale-95 transition-all"
+              >
+                {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Category chips */}
         <div className="-mx-4 px-4 overflow-x-auto">
           <div className="flex gap-2 min-w-max">
