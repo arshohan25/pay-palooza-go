@@ -554,28 +554,6 @@ export default function InstallmentJourneyPage() {
           </button>
         </motion.div>
 
-        {/* Categories chip row (visual) */}
-        <div className="mt-8">
-          <div className="mb-3 text-[10px] uppercase tracking-[0.2em] text-white/50">Goal Categories</div>
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { icon: Home, label: "House" },
-              { icon: Car, label: "Car" },
-              { icon: GraduationCap, label: "Edu" },
-              { icon: Plane, label: "Travel" },
-            ].map((c) => (
-              <button
-                key={c.label}
-                className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.04] p-3 backdrop-blur"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#009688]/40 to-[#2ECC71]/40">
-                  <c.icon size={16} />
-                </span>
-                <span className="text-[11px] font-medium">{c.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Sticky action bar */}
