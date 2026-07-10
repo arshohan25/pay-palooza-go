@@ -401,11 +401,16 @@ function DpsPlanDetailsSheet({
   const freqLabel = plan.frequency === "daily" ? "Daily" : plan.frequency === "weekly" ? "Weekly" : "Monthly";
   const stepMs = plan.frequency === "daily" ? 86400000 : plan.frequency === "weekly" ? 7 * 86400000 : 30 * 86400000;
   const paid = Number(plan.total_paid ?? 0);
-  const total = Number(plan.total_installments ?? 0);
+  const rawTotal = Number(plan.total_installments ?? 0);
+  const amt = Number(plan.amount) || 0;
+  const target = goal ? Number(goal.target_amount) : 0;
+  const total = rawTotal > 0
+    ? rawTotal
+    : (target > 0 && amt > 0 ? Math.max(paid, Math.ceil(target / amt)) : paid);
   const remaining = Math.max(0, total - paid);
   const pct = total > 0 ? (paid / total) * 100 : 0;
-  const totalDeposited = paid * Number(plan.amount);
-  const totalPlanned = total * Number(plan.amount);
+  const totalDeposited = paid * amt;
+  const totalPlanned = total * amt;
   const outstanding = Math.max(0, totalPlanned - totalDeposited);
   const nextRun = new Date(plan.next_run_at);
   const endsAt = plan.ends_at ? new Date(plan.ends_at) : null;
