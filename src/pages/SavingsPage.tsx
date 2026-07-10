@@ -464,7 +464,7 @@ function DpsPlanDetailsSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-[24px] max-h-[92vh] overflow-hidden p-0">
+      <SheetContent side="bottom" className="rounded-t-[24px] max-h-[92vh] overflow-hidden p-0 [&>button.absolute]:hidden">
         <ScrollArea className="max-h-[92vh]">
           <div className="p-5 pb-8 space-y-5">
             {/* Hero */}
