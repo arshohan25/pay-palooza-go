@@ -500,7 +500,7 @@ export default function InstallmentJourneyPage() {
               onClick={() => { setAmt(""); setActionSheet(primaryKey); }}
               className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#009688] via-[#2ECC71] to-[#F4C542] px-4 py-3 text-sm font-semibold text-white active:scale-[0.98]"
             >
-              {plan ? <Coins size={16} /> : <PiggyBank size={16} />} {primaryLabel}
+              {plan ? <Coins size={16} /> : <Wallet size={16} />} {primaryLabel}
             </button>
             {plan && (
               <button
