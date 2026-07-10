@@ -388,6 +388,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "banners", label: "Banners", icon: Image },
       { id: "loyalty", label: "Loyalty", icon: Star },
       { id: "notify", label: "Notify", icon: Bell },
+      { id: "summary_log", label: "Summary Logs", icon: Bell },
       { id: "announcements", label: "Announcements", icon: Megaphone },
       { id: "feedback", label: "Feedback", icon: Star },
       { id: "changelog", label: "Changelog", icon: FileText },
