@@ -247,10 +247,7 @@ function GoalsTab() {
         const isDone = g.status === "completed";
         return (
           <motion.div key={g.id} layout
-            onClick={() => {
-              if (isDone) setWithdrawGoal(g);
-              else if (g.status === "active") { setDepositGoal(g); setDepositAmt(""); }
-            }}
+            onClick={() => navigate(`/savings/journey?type=goal&id=${g.id}`)}
             className="relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] cursor-pointer active:scale-[0.99] transition-transform">
             {/* accent stripe */}
             <div className={`absolute inset-y-0 left-0 w-1 ${isDone ? "bg-emerald-500" : "bg-gradient-to-b from-primary to-emerald-600"}`} />
@@ -288,16 +285,6 @@ function GoalsTab() {
               <motion.div
                 initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.7, ease: "easeOut" }}
                 className={`h-full rounded-full ${isDone ? "bg-emerald-500" : "bg-gradient-to-r from-primary to-emerald-400"}`} />
-            </div>
-
-            <div className="relative mt-3 flex justify-end">
-              <button
-                onClick={(e) => { e.stopPropagation(); navigate(`/savings/journey?type=goal&id=${g.id}`); }}
-                aria-label={`View journey for ${g.name}`}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-              >
-                <CalendarClock className="w-3.5 h-3.5" /> Journey
-              </button>
             </div>
           </motion.div>
         );
@@ -799,7 +786,7 @@ function DpsTab() {
         const daysToNext = Math.max(0, Math.ceil((nextDate.getTime() - Date.now()) / 86400000));
         return (
           <motion.div key={p.id} layout
-            onClick={() => setDetailsPlan(p)}
+            onClick={() => navigate(`/savings/journey?type=dps&id=${p.id}`)}
             className="group relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] cursor-pointer active:scale-[0.995] transition-transform">
             <div className={`absolute inset-y-0 left-0 w-1 ${p.is_active ? "bg-gradient-to-b from-primary to-emerald-600" : "bg-muted-foreground/40"}`} />
             <div className="pointer-events-none absolute -top-16 -right-12 w-40 h-40 rounded-full bg-emerald-500/5 blur-2xl" />
@@ -832,24 +819,13 @@ function DpsTab() {
                 className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-400" />
             </div>
 
-            <div className="relative mt-3 flex items-center gap-2">
-              <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90"
-                onClick={(e) => { e.stopPropagation(); setCollectPlan(p); }}>
-                <RefreshCw className="w-3.5 h-3.5 mr-1" />{t("savCollectNow")}
-              </Button>
-              <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
+            <div className="relative mt-3 flex items-center justify-between">
+              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
                 <Calendar className="w-3 h-3" />
-                {daysToNext === 0 ? "Today" : `in ${daysToNext}d`}
+                Next {daysToNext === 0 ? "today" : `in ${daysToNext}d`}
               </span>
-              <button
-                onClick={(e) => { e.stopPropagation(); navigate(`/savings/journey?type=dps&id=${p.id}`); }}
-                aria-label="View installment journey"
-                className="inline-flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline"
-              >
-                <CalendarClock className="w-3.5 h-3.5" /> Journey
-              </button>
               <span className="inline-flex items-center gap-0.5 text-[11px] text-primary font-semibold">
-                Details <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                View timeline <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
           </motion.div>

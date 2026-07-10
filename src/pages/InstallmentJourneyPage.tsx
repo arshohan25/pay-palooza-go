@@ -23,7 +23,7 @@ import {
   Filter,
   ChevronRight,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 /* ---------- Types & mock data ---------- */
@@ -354,13 +354,29 @@ function FabMenu() {
 
 export default function InstallmentJourneyPage() {
   const navigate = useNavigate();
-  const [productId, setProductId] = useState(PRODUCTS[0].id);
+  const [params] = useSearchParams();
+  const initialType = params.get("type"); // 'goal' | 'dps' | 'loan' | null
+  const initialId = params.get("id");
+  const initial =
+    PRODUCTS.find((p) => p.id === initialId) ||
+    PRODUCTS.find((p) => p.category === initialType) ||
+    PRODUCTS[0];
+  const [productId, setProductId] = useState(initial.id);
   const [filter, setFilter] = useState<Category>("all");
+  const [actionSheet, setActionSheet] = useState<null | "deposit" | "repay" | "installment">(null);
+  const [amt, setAmt] = useState("");
 
   const product = PRODUCTS.find((p) => p.id === productId)!;
   const installments = useMemo(() => buildInstallments(product), [product]);
   const pct = Math.round((product.balance / product.target) * 100);
   const paidCount = installments.filter((i) => i.status === "paid").length;
+
+  const primaryAction =
+    product.category === "loan"
+      ? { key: "repay" as const, label: "Repay Now", icon: Coins }
+      : product.category === "dps"
+        ? { key: "installment" as const, label: "Pay Installment", icon: Plus }
+        : { key: "deposit" as const, label: "Deposit", icon: PiggyBank };
 
   const Icon = product.icon;
 
@@ -562,7 +578,86 @@ export default function InstallmentJourneyPage() {
         </div>
       </div>
 
-      <FabMenu />
+      {/* Sticky action bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0B1220]/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-md items-center gap-2 px-4 py-3">
+          <button
+            onClick={() => { setAmt(""); setActionSheet(primaryAction.key); }}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#009688] via-[#2ECC71] to-[#F4C542] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-6px_rgba(46,204,113,0.5)] active:scale-[0.98]"
+          >
+            <primaryAction.icon size={16} />
+            {primaryAction.label}
+          </button>
+          {product.category !== "loan" && (
+            <button
+              onClick={() => { setAmt(""); setActionSheet("installment"); }}
+              aria-label="Add installment"
+              className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white active:scale-95"
+            >
+              <Plus size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Action sheet */}
+      <AnimatePresence>
+        {actionSheet && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm"
+            onClick={() => setActionSheet(null)}
+          >
+            <motion.div
+              initial={{ y: 40 }}
+              animate={{ y: 0 }}
+              exit={{ y: 40 }}
+              onClick={(e) => e.stopPropagation()}
+              className="mx-auto w-full max-w-md rounded-t-[24px] border-t border-white/10 bg-[#111827] p-5 pb-8"
+            >
+              <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
+              <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/50">
+                {product.name}
+              </div>
+              <div className="mb-4 text-lg font-bold">
+                {actionSheet === "deposit" && "Add Deposit"}
+                {actionSheet === "repay" && "Loan Repayment"}
+                {actionSheet === "installment" && "Pay Installment"}
+              </div>
+              <label className="text-[11px] text-white/60">Amount (৳)</label>
+              <input
+                autoFocus
+                type="number"
+                inputMode="numeric"
+                value={amt}
+                onChange={(e) => setAmt(e.target.value)}
+                placeholder={String(product.nextAmount)}
+                className="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-lg font-semibold tabular-nums text-white outline-none focus:border-emerald-400/50"
+              />
+              <div className="mt-3 flex gap-2">
+                {[product.nextAmount, product.nextAmount * 2, product.nextAmount * 3].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setAmt(String(v))}
+                    className="flex-1 rounded-full border border-white/10 bg-white/5 py-1.5 text-xs font-medium text-white/80"
+                  >
+                    {bdt(v)}
+                  </button>
+                ))}
+              </div>
+              <button
+                disabled={!(parseFloat(amt) > 0)}
+                onClick={() => setActionSheet(null)}
+                className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#009688] to-[#2ECC71] py-3 text-sm font-semibold text-white disabled:opacity-40"
+              >
+                Confirm {actionSheet === "repay" ? "Repayment" : actionSheet === "installment" ? "Installment" : "Deposit"}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
