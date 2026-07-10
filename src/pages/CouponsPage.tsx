@@ -211,20 +211,45 @@ export default function CouponsPage() {
   useEffect(() => {
     const load = async () => {
       const now = new Date().toISOString();
-      const { data } = await supabase
-        .from("coupons")
-        .select("*")
-        .eq("is_active", true)
-        .or(`expires_at.is.null,expires_at.gt.${now}`)
-        .order("created_at", { ascending: false });
-      const filtered = (data || []).filter((c: any) =>
-        c.usage_limit == null || (c.used_count ?? 0) < c.usage_limit
-      );
+      const [{ data }, { data: sess }] = await Promise.all([
+        supabase
+          .from("coupons")
+          .select("*")
+          .eq("is_active", true)
+          .or(`expires_at.is.null,expires_at.gt.${now}`)
+          .order("created_at", { ascending: false }),
+        supabase.auth.getUser(),
+      ]);
+
+      // Fetch this user's redemption counts to hide already-used coupons
+      const uid = sess?.user?.id;
+      const usedMap = new Map<string, number>();
+      if (uid) {
+        const { data: reds } = await supabase
+          .from("coupon_redemptions")
+          .select("coupon_id")
+          .eq("user_id", uid);
+        (reds || []).forEach((r: any) => {
+          usedMap.set(r.coupon_id, (usedMap.get(r.coupon_id) ?? 0) + 1);
+        });
+      }
+
+      const filtered = (data || []).filter((c: any) => {
+        // Hide if global usage limit reached
+        if (c.usage_limit != null && (c.used_count ?? 0) >= c.usage_limit) return false;
+        // Hide if this user has hit their per-user cap (default 1 when unset)
+        const myUses = usedMap.get(c.id) ?? 0;
+        const perUserCap = c.per_user_limit ?? 1;
+        if (myUses >= perUserCap) return false;
+        return true;
+      });
+
       setCoupons(filtered as Coupon[]);
       setLoading(false);
     };
     load();
   }, []);
+
 
   const handleCopy = (coupon: Coupon) => {
     navigator.clipboard.writeText(coupon.code);
