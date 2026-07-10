@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Target, Plus, Calendar, TrendingUp, Coins, LineChart,
   AlertCircle, CheckCircle2, Loader2, Lock, RefreshCw, ChevronRight, Info,
-  Wallet, Sparkles, X,
+  Wallet, Sparkles, X, Pause, Play, History, CalendarClock, XCircle, CircleDot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -382,6 +382,240 @@ function GoalsTab() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DPS Plan Details Sheet — full history, upcoming schedule, pause/resume
+// ─────────────────────────────────────────────────────────────────────────────
+interface RunLogEntry {
+  id: string;
+  outcome: string;
+  reason: string | null;
+  amount: number;
+  created_at: string;
+  tx_reference: string | null;
+  triggered_by: string | null;
+}
+
+function DpsPlanDetailsSheet({
+  plan, goal, open, onClose, onChanged,
+}: {
+  plan: any | null;
+  goal: any | undefined;
+  open: boolean;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const [history, setHistory] = useState<RunLogEntry[]>([]);
+  const [loadingHist, setLoadingHist] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open || !plan?.id) return;
+    setLoadingHist(true);
+    supabase.from("dps_run_log")
+      .select("id,outcome,reason,amount,created_at,tx_reference,triggered_by")
+      .eq("schedule_id", plan.id)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .then(({ data }) => { setHistory((data ?? []) as RunLogEntry[]); setLoadingHist(false); });
+  }, [open, plan?.id]);
+
+  if (!plan) return null;
+
+  const freqLabel = plan.frequency === "daily" ? "Daily" : plan.frequency === "weekly" ? "Weekly" : "Monthly";
+  const stepMs = plan.frequency === "daily" ? 86400000 : plan.frequency === "weekly" ? 7 * 86400000 : 30 * 86400000;
+  const paid = Number(plan.total_paid ?? 0);
+  const total = Number(plan.total_installments ?? 0);
+  const remaining = Math.max(0, total - paid);
+  const pct = total > 0 ? (paid / total) * 100 : 0;
+  const totalDeposited = paid * Number(plan.amount);
+  const totalPlanned = total * Number(plan.amount);
+  const outstanding = Math.max(0, totalPlanned - totalDeposited);
+  const nextRun = new Date(plan.next_run_at);
+  const endsAt = plan.ends_at ? new Date(plan.ends_at) : null;
+  const created = new Date(plan.created_at);
+  const lastRun = plan.last_run_at ? new Date(plan.last_run_at) : null;
+
+  // Upcoming schedule (next up to 6 or remaining)
+  const upcomingCount = Math.min(6, remaining);
+  const upcoming = Array.from({ length: upcomingCount }, (_, i) => {
+    const d = new Date(nextRun.getTime());
+    if (plan.frequency === "monthly") d.setMonth(d.getMonth() + i);
+    else d.setTime(d.getTime() + i * stepMs);
+    return d;
+  });
+
+  const togglePause = async () => {
+    setBusy(true);
+    const { error } = await supabase.from("savings_auto_save")
+      .update({ is_active: !plan.is_active, updated_at: new Date().toISOString() })
+      .eq("id", plan.id);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(plan.is_active ? "Plan paused" : "Plan resumed");
+    onChanged();
+  };
+
+  const outcomeBadge = (o: string) => {
+    if (o === "collected") return { color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20", Icon: CheckCircle2, label: "Collected" };
+    if (o === "missed") return { color: "text-amber-600 bg-amber-500/10 border-amber-500/20", Icon: AlertCircle, label: "Missed" };
+    if (o === "settled") return { color: "text-blue-600 bg-blue-500/10 border-blue-500/20", Icon: CheckCircle2, label: "Settled" };
+    if (o === "dedup_skipped") return { color: "text-muted-foreground bg-muted border-border", Icon: CircleDot, label: "Skipped" };
+    return { color: "text-muted-foreground bg-muted border-border", Icon: XCircle, label: o };
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent side="bottom" className="rounded-t-[24px] max-h-[92vh] overflow-hidden p-0">
+        <ScrollArea className="max-h-[92vh]">
+          <div className="p-5 pb-8 space-y-5">
+            {/* Hero */}
+            <div className="relative overflow-hidden rounded-[20px] p-5 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary)/0.85)_50%,#0b3d2e_100%)] text-primary-foreground">
+              <div className="pointer-events-none absolute -top-16 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
+              <div className="relative flex items-start gap-3">
+                <div className="w-14 h-14 rounded-[16px] bg-white/15 border border-white/25 flex items-center justify-center text-2xl shrink-0">
+                  {goal?.emoji ?? "💼"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] uppercase tracking-[0.14em] text-primary-foreground/70">DPS Plan</div>
+                  <div className="text-lg font-bold truncate leading-tight">{goal?.name ?? "—"}</div>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px]">
+                    <span className="px-2 py-0.5 rounded-full bg-white/15 border border-white/20 font-semibold uppercase tracking-wide">{freqLabel}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-white/15 border border-white/20 font-medium">৳{Number(plan.amount).toLocaleString()}/cycle</span>
+                    {plan.strategy && <span className="px-2 py-0.5 rounded-full bg-amber-300/25 border border-amber-200/40 text-amber-50 font-medium capitalize">{plan.strategy}</span>}
+                    <span className={`px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide border ${plan.is_active ? "bg-emerald-400/25 border-emerald-200/40 text-emerald-50" : "bg-white/15 border-white/20 text-primary-foreground/80"}`}>
+                      {plan.is_active ? "Active" : "Paused"}
+                    </span>
+                  </div>
+                </div>
+                <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/15 border border-white/20 flex items-center justify-center">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Progress */}
+              <div className="relative mt-4">
+                <div className="flex items-baseline justify-between text-sm">
+                  <div className="text-primary-foreground/80">Progress</div>
+                  <div className="tabular-nums font-semibold">{paid}<span className="opacity-70">/{total || "∞"}</span> · {pct.toFixed(0)}%</div>
+                </div>
+                <div className="mt-2 h-2 rounded-full bg-white/15 overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.7 }}
+                    className="h-full rounded-full bg-gradient-to-r from-amber-200 to-emerald-200" />
+                </div>
+              </div>
+            </div>
+
+            {/* Financial summary */}
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Deposited", value: `৳${totalDeposited.toLocaleString()}`, tone: "text-foreground" },
+                { label: "Outstanding", value: `৳${outstanding.toLocaleString()}`, tone: "text-primary" },
+                { label: "Remaining installments", value: `${remaining}`, tone: "text-foreground" },
+                { label: "Missed", value: `${plan.missed_count ?? 0}`, tone: (plan.missed_count ?? 0) > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground" },
+              ].map((s) => (
+                <div key={s.label} className="rounded-[14px] bg-card border border-border/70 p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{s.label}</div>
+                  <div className={`text-base font-bold tabular-nums mt-0.5 ${s.tone}`}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Plan meta */}
+            <div className="rounded-[16px] bg-muted/40 border border-border/60 divide-y divide-border/60 text-sm">
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">Started</span><span className="font-medium">{created.toLocaleDateString()}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">Last collection</span><span className="font-medium">{lastRun ? lastRun.toLocaleDateString() : "—"}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">Next collection</span><span className="font-semibold text-primary">{nextRun.toLocaleDateString()}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">Ends</span><span className="font-medium">{endsAt ? endsAt.toLocaleDateString() : "—"}</span></div>
+            </div>
+
+            {/* Upcoming schedule */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <CalendarClock className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold">Upcoming schedule</h3>
+                <span className="text-[10px] text-muted-foreground ml-auto">{remaining} left</span>
+              </div>
+              {upcoming.length === 0 ? (
+                <div className="text-xs text-muted-foreground bg-muted/40 rounded-[12px] p-3 text-center">No upcoming installments — plan is complete.</div>
+              ) : (
+                <div className="rounded-[16px] border border-border/70 bg-card overflow-hidden">
+                  {upcoming.map((d, i) => (
+                    <div key={i} className="flex items-center gap-3 px-3 py-2.5 border-b border-border/60 last:border-b-0">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold ${i === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                        #{paid + i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">{d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {i === 0 ? "Next up" : `+${Math.ceil((d.getTime() - Date.now()) / 86400000)} days`}
+                        </div>
+                      </div>
+                      <div className="text-sm font-semibold tabular-nums">৳{Number(plan.amount).toLocaleString()}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Payment history */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <History className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold">Payment history</h3>
+                <span className="text-[10px] text-muted-foreground ml-auto">{history.length} entries</span>
+              </div>
+              {loadingHist ? (
+                <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
+              ) : history.length === 0 ? (
+                <div className="text-xs text-muted-foreground bg-muted/40 rounded-[12px] p-4 text-center">No activity yet.</div>
+              ) : (
+                <div className="rounded-[16px] border border-border/70 bg-card overflow-hidden">
+                  {history.map((h) => {
+                    const b = outcomeBadge(h.outcome);
+                    const B = b.Icon;
+                    const d = new Date(h.created_at);
+                    return (
+                      <div key={h.id} className="flex items-center gap-3 px-3 py-2.5 border-b border-border/60 last:border-b-0">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${b.color}`}>
+                          <B className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium">
+                            {b.label}
+                            {h.triggered_by && <span className="ml-1.5 text-[10px] text-muted-foreground uppercase tracking-wide">· {h.triggered_by}</span>}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground truncate">
+                            {d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            {h.tx_reference && ` · ${h.tx_reference}`}
+                          </div>
+                        </div>
+                        {h.amount > 0 && (
+                          <div className={`text-sm font-semibold tabular-nums ${h.outcome === "missed" ? "text-amber-600 dark:text-amber-400" : "text-foreground"}`}>
+                            ৳{Number(h.amount).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <Button variant="outline" className="rounded-[14px] h-11" disabled={busy} onClick={togglePause}>
+                {plan.is_active ? <><Pause className="w-4 h-4 mr-1.5" />Pause plan</> : <><Play className="w-4 h-4 mr-1.5" />Resume plan</>}
+              </Button>
+              <Button className="rounded-[14px] h-11 bg-primary text-primary-foreground" onClick={onClose}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DPS tab
 // ─────────────────────────────────────────────────────────────────────────────
 function DpsTab() {
@@ -396,6 +630,7 @@ function DpsTab() {
   const [strategy, setStrategy] = useState<Strategy>("balanced");
   const [collectPlan, setCollectPlan] = useState<typeof plans[number] | null>(null);
   const [repayMissed, setRepayMissed] = useState<typeof missed[number] | null>(null);
+  const [detailsPlan, setDetailsPlan] = useState<typeof plans[number] | null>(null);
 
   const activePlans = plans.filter(p => !p.settled);
   const eligibleGoals = goals.filter(g => g.status === "active");
@@ -501,8 +736,9 @@ function DpsTab() {
         const daysToNext = Math.max(0, Math.ceil((nextDate.getTime() - Date.now()) / 86400000));
         return (
           <motion.div key={p.id} layout
-            className="relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)]">
-            <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-emerald-600" />
+            onClick={() => setDetailsPlan(p)}
+            className="group relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)] cursor-pointer active:scale-[0.995] transition-transform">
+            <div className={`absolute inset-y-0 left-0 w-1 ${p.is_active ? "bg-gradient-to-b from-primary to-emerald-600" : "bg-muted-foreground/40"}`} />
             <div className="pointer-events-none absolute -top-16 -right-12 w-40 h-40 rounded-full bg-emerald-500/5 blur-2xl" />
 
             <div className="relative flex items-start gap-3">
@@ -510,7 +746,10 @@ function DpsTab() {
                 {goal?.emoji ?? "💼"}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[15px] font-semibold truncate">{goal?.name ?? "—"}</div>
+                <div className="flex items-center gap-1.5">
+                  <div className="text-[15px] font-semibold truncate">{goal?.name ?? "—"}</div>
+                  {!p.is_active && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wide">Paused</span>}
+                </div>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
                   <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wide">{freqLabel}</span>
                   <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">৳{Number(p.amount).toLocaleString()}{t("savPerCycle")}</span>
@@ -531,12 +770,16 @@ function DpsTab() {
             </div>
 
             <div className="relative mt-3 flex items-center gap-2">
-              <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setCollectPlan(p)}>
+              <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={(e) => { e.stopPropagation(); setCollectPlan(p); }}>
                 <RefreshCw className="w-3.5 h-3.5 mr-1" />{t("savCollectNow")}
               </Button>
               <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
                 <Calendar className="w-3 h-3" />
                 {daysToNext === 0 ? "Today" : `in ${daysToNext}d`}
+              </span>
+              <span className="inline-flex items-center gap-0.5 text-[11px] text-primary font-semibold">
+                Details <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
           </motion.div>
@@ -659,6 +902,14 @@ function DpsTab() {
           </>
         }
         onConfirm={handleRepay} />
+
+      <DpsPlanDetailsSheet
+        plan={detailsPlan}
+        goal={detailsPlan ? goals.find(g => g.id === detailsPlan.goal_id) : undefined}
+        open={!!detailsPlan}
+        onClose={() => setDetailsPlan(null)}
+        onChanged={() => { reload(); setDetailsPlan(null); }}
+      />
     </div>
   );
 }
