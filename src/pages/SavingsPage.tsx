@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -469,8 +469,17 @@ function DpsPlanDetailsSheet({
           <div className="p-5 pb-8 space-y-5">
             {/* Hero */}
             <div className="relative overflow-hidden rounded-[20px] p-5 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary)/0.85)_50%,#0b3d2e_100%)] text-primary-foreground">
+              <SheetClose asChild>
+                <button
+                  type="button"
+                  aria-label="Close plan details"
+                  className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-primary-foreground/25 bg-primary-foreground/15 text-primary-foreground backdrop-blur-md transition hover:bg-primary-foreground/25 focus:outline-none focus:ring-2 focus:ring-primary-foreground/50"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </SheetClose>
               <div className="pointer-events-none absolute -top-16 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
-              <div className="relative flex items-start gap-3">
+              <div className="relative flex items-start gap-3 pr-10">
                 <div className="w-14 h-14 rounded-[16px] bg-white/15 border border-white/25 flex items-center justify-center text-2xl shrink-0">
                   {goal?.emoji ?? "💼"}
                 </div>
@@ -665,12 +674,9 @@ function DpsPlanDetailsSheet({
             </div>
 
             {/* Actions */}
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="pt-1">
               <Button variant="outline" className="rounded-[14px] h-11" disabled={busy} onClick={togglePause}>
                 {plan.is_active ? <><Pause className="w-4 h-4 mr-1.5" />Pause plan</> : <><Play className="w-4 h-4 mr-1.5" />Resume plan</>}
-              </Button>
-              <Button className="rounded-[14px] h-11 bg-primary text-primary-foreground" onClick={onClose}>
-                Close
               </Button>
             </div>
           </div>
