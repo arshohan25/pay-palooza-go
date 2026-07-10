@@ -403,12 +403,7 @@ export default function InstallmentJourneyPage() {
             <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">Journey</div>
             <div className="text-sm font-semibold">Installment Timeline</div>
           </div>
-          <button
-            aria-label="Filter"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur"
-          >
-            <Filter size={16} />
-          </button>
+          <div className="h-10 w-10" aria-hidden />
         </div>
 
         {/* Summary card */}
@@ -472,45 +467,6 @@ export default function InstallmentJourneyPage() {
           </div>
         </motion.div>
 
-        {/* Product switcher */}
-        <div className="mt-5 flex gap-2 overflow-x-auto scrollbar-none">
-          {PRODUCTS.map((p) => {
-            const active = p.id === productId;
-            return (
-              <button
-                key={p.id}
-                onClick={() => setProductId(p.id)}
-                className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                  active
-                    ? "border-transparent bg-gradient-to-r from-[#009688] to-[#2ECC71] text-white shadow-lg"
-                    : "border-white/10 bg-white/5 text-white/70",
-                )}
-              >
-                <p.icon size={12} /> {p.name}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Filters */}
-        <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
-          {FILTERS.map((f) => {
-            const active = filter === f.id;
-            return (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={cn(
-                  "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-all",
-                  active ? "bg-white text-[#0B1220]" : "border border-white/10 bg-white/5 text-white/60",
-                )}
-              >
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
 
         {/* Section title */}
         <div className="mt-6 flex items-center justify-between">
@@ -554,28 +510,6 @@ export default function InstallmentJourneyPage() {
           </button>
         </motion.div>
 
-        {/* Categories chip row (visual) */}
-        <div className="mt-8">
-          <div className="mb-3 text-[10px] uppercase tracking-[0.2em] text-white/50">Goal Categories</div>
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { icon: Home, label: "House" },
-              { icon: Car, label: "Car" },
-              { icon: GraduationCap, label: "Edu" },
-              { icon: Plane, label: "Travel" },
-            ].map((c) => (
-              <button
-                key={c.label}
-                className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.04] p-3 backdrop-blur"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#009688]/40 to-[#2ECC71]/40">
-                  <c.icon size={16} />
-                </span>
-                <span className="text-[11px] font-medium">{c.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Sticky action bar */}
