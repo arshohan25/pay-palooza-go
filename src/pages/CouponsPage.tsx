@@ -1,12 +1,11 @@
 import Seo from "@/components/Seo";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Ticket, Copy, CheckCircle2,
-  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, Clock, Scissors
+  ArrowLeft, Ticket, Copy, CheckCircle2, Sparkles,
+  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, Clock, Flame, ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,103 +29,176 @@ interface Coupon {
   applicable_flow: string | null;
 }
 
-const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof ShoppingBag; route: string }> = {
-  shop:       { labelKey: "cpFlowShop",     icon: ShoppingBag, route: "/shop" },
-  payment:    { labelKey: "cpFlowPayment",  icon: CreditCard,  route: "/?flow=payment" },
-  cash_out:   { labelKey: "cpFlowCashOut",  icon: Zap,         route: "/?flow=cash_out" },
-  recharge:   { labelKey: "cpFlowRecharge", icon: Smartphone,  route: "/?flow=recharge" },
-  bill_pay:   { labelKey: "cpFlowBillPay",  icon: FileText,    route: "/?flow=bill_pay" },
-  all:        { labelKey: "cpFlowAll",      icon: Tag,         route: "/shop" },
+const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof ShoppingBag }> = {
+  shop:     { labelKey: "cpFlowShop",     icon: ShoppingBag },
+  payment:  { labelKey: "cpFlowPayment",  icon: CreditCard  },
+  cash_out: { labelKey: "cpFlowCashOut",  icon: Zap         },
+  recharge: { labelKey: "cpFlowRecharge", icon: Smartphone  },
+  bill_pay: { labelKey: "cpFlowBillPay",  icon: FileText    },
+  all:      { labelKey: "cpFlowAll",      icon: Tag         },
 };
 
-function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
+const FILTERS: { id: string; labelKey: TranslationKey }[] = [
+  { id: "all",      labelKey: "cpFlowAll"      },
+  { id: "shop",     labelKey: "cpFlowShop"     },
+  { id: "payment",  labelKey: "cpFlowPayment"  },
+  { id: "recharge", labelKey: "cpFlowRecharge" },
+  { id: "bill_pay", labelKey: "cpFlowBillPay"  },
+  { id: "cash_out", labelKey: "cpFlowCashOut"  },
+];
+
+/* ────────────────────────────────────────────────────────────
+   Premium ticket card — emerald + gold, ticket cutouts,
+   perforated divider, foil-style discount block.
+   ──────────────────────────────────────────────────────────── */
+function CouponCard({
+  coupon, index, copiedId, onCopy, onUse, featured,
+}: {
   coupon: Coupon; index: number; copiedId: string | null;
-  onCopy: (c: Coupon) => void; onUse: (c: Coupon) => void;
+  onCopy: (c: Coupon) => void; onUse: (c: Coupon) => void; featured?: boolean;
 }) {
   const { t } = useI18n();
   const isCopied = copiedId === coupon.id;
   const flow = coupon.applicable_flow || "shop";
   const flowInfo = FLOW_MAP[flow] || FLOW_MAP.shop;
   const FlowIcon = flowInfo.icon;
-  const isExpiring = coupon.expires_at && new Date(coupon.expires_at).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
-  const formatDiscount = coupon.discount_type === "percentage" ? `${coupon.discount_value}%` : `৳${coupon.discount_value}`;
+
+  const msLeft = coupon.expires_at ? new Date(coupon.expires_at).getTime() - Date.now() : Infinity;
+  const isExpiring = msLeft < 3 * 24 * 60 * 60 * 1000;
 
   const getDaysLeft = (expiresAt: string) => {
-    const diff = new Date(expiresAt).getTime() - Date.now();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     if (days <= 0) return t("expiredLabel");
     if (days === 1) return t("endsTomorrow");
     if (days <= 7) return `${days} ${t("daysLeftSuffix")}`;
     return `${days}${t("daysRemainingSuffix")}`;
   };
 
+  const value = coupon.discount_value;
+  const isPct = coupon.discount_type === "percentage";
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      transition={{ delay: index * 0.03, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ delay: Math.min(index * 0.04, 0.2), duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       layout
-      className="relative"
+      className="relative group"
     >
-      <div className="relative bg-card rounded-2xl border border-border/30 overflow-hidden shadow-[0_1px_2px_0_hsl(var(--foreground)/0.03)]">
-        {/* Ticket cutouts */}
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[7px] w-[14px] h-[14px] rounded-full bg-background z-10" />
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[7px] w-[14px] h-[14px] rounded-full bg-background z-10" />
+      {/* Soft ambient glow */}
+      <div
+        className={`absolute -inset-px rounded-[22px] opacity-60 blur-md pointer-events-none transition-opacity duration-500 group-hover:opacity-100 ${
+          featured
+            ? "bg-[radial-gradient(60%_120%_at_10%_50%,hsl(var(--shariah-green-600)/0.35),transparent_60%),radial-gradient(50%_120%_at_100%_50%,hsl(var(--shariah-gold-500)/0.25),transparent_60%)]"
+            : "bg-[radial-gradient(60%_120%_at_10%_50%,hsl(var(--shariah-green-600)/0.18),transparent_70%)]"
+        }`}
+      />
 
-        <div className="flex items-center gap-0">
-          {/* Left: discount */}
-          <div className="shrink-0 w-[90px] flex flex-col items-center justify-center py-3 border-r border-dashed border-border/40">
-            <span className="text-[20px] font-black text-primary leading-none tracking-tight">
-              {formatDiscount}
+      <div className="relative overflow-hidden rounded-[22px] border border-border/40 bg-card shadow-[0_2px_10px_-4px_hsl(var(--shariah-green-900)/0.15)]">
+        {/* Ticket cutouts */}
+        <div className="absolute left-[96px] top-0 -translate-x-1/2 -translate-y-1/2 w-[14px] h-[14px] rounded-full bg-background z-10" />
+        <div className="absolute left-[96px] bottom-0 -translate-x-1/2 translate-y-1/2 w-[14px] h-[14px] rounded-full bg-background z-10" />
+
+        <div className="flex items-stretch">
+          {/* Left: foil discount block */}
+          <div
+            className="relative shrink-0 w-[96px] flex flex-col items-center justify-center py-4 text-primary-foreground overflow-hidden"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(var(--shariah-green-800)) 0%, hsl(var(--shariah-green-600)) 55%, hsl(var(--shariah-green-800)) 100%)",
+            }}
+          >
+            {/* gold shimmer streak */}
+            <div className="absolute inset-0 opacity-40 pointer-events-none"
+                 style={{ background: "linear-gradient(115deg, transparent 40%, hsl(var(--shariah-gold-500)/0.35) 50%, transparent 60%)" }} />
+            {/* micro dot pattern */}
+            <div className="absolute inset-0 opacity-[0.12] pointer-events-none"
+                 style={{ backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)", backgroundSize: "8px 8px" }} />
+
+            <div className="relative flex items-baseline gap-0.5">
+              {!isPct && <span className="text-[13px] font-semibold opacity-90 leading-none">৳</span>}
+              <span className="text-[28px] font-black leading-none tracking-tight tabular-nums">{value}</span>
+              {isPct && <span className="text-[14px] font-bold leading-none">%</span>}
+            </div>
+            <span className="relative mt-1 text-[9px] font-bold uppercase tracking-[0.18em] opacity-90">
+              {t("cpOff")}
             </span>
-            <span className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">{t("cpOff")}</span>
+
+            {/* perforated right edge */}
+            <div className="absolute right-0 top-0 bottom-0 w-px opacity-40"
+                 style={{ backgroundImage: "repeating-linear-gradient(to bottom, hsl(var(--shariah-gold-500)) 0 4px, transparent 4px 8px)" }} />
           </div>
 
-          {/* Right: details + actions */}
-          <div className="flex-1 min-w-0 px-3 py-2.5">
-            {/* Top: description + flow */}
-            <div className="flex items-start justify-between gap-2 mb-1.5">
-              <p className="text-[11px] text-foreground/70 font-medium leading-snug line-clamp-1 flex-1">
-                {coupon.description || `${t(flowInfo.labelKey)} ${t("cpDiscountSuffix")}`}
-              </p>
-              <div className="flex items-center gap-1 text-muted-foreground/50 shrink-0">
-                <FlowIcon className="w-2.5 h-2.5" />
-                <span className="text-[9px] font-medium">{t(flowInfo.labelKey)}</span>
+          {/* Right: details */}
+          <div className="flex-1 min-w-0 p-3 pl-4">
+            {/* header row */}
+            <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/50">
+                <FlowIcon className="w-2.5 h-2.5 text-muted-foreground" />
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t(flowInfo.labelKey)}
+                </span>
               </div>
+              {featured && (
+                <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[hsl(var(--shariah-gold-500)/0.15)]">
+                  <Sparkles className="w-2.5 h-2.5 text-[hsl(var(--shariah-gold-700))]" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[hsl(var(--shariah-gold-700))]">
+                    {t("cpFeatured") || "Featured"}
+                  </span>
+                </div>
+              )}
+              {isExpiring && coupon.expires_at && (
+                <div className="ml-auto flex items-center gap-0.5 text-destructive">
+                  <Flame className="w-2.5 h-2.5" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider">{getDaysLeft(coupon.expires_at)}</span>
+                </div>
+              )}
             </div>
 
-            {/* Code + copy + expiry row */}
-            <div className="flex items-center gap-2 mb-2">
-              <button
-                onClick={() => onCopy(coupon)}
-                className={`h-6 px-2 rounded-md border border-dashed flex items-center gap-1 transition-all text-[10px] font-bold tracking-wider ${
-                  isCopied
-                    ? "border-primary/30 bg-primary/[0.04] text-primary"
-                    : "border-border/50 text-foreground/60 hover:border-primary/20"
-                }`}
-              >
-                {coupon.code}
-                {isCopied ? <CheckCircle2 className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5 text-muted-foreground/40" />}
-              </button>
-              {coupon.expires_at && (
-                <span className={`text-[9px] font-medium flex items-center gap-0.5 ${
-                  isExpiring ? "text-destructive" : "text-muted-foreground/40"
-                }`}>
-                  <Clock className="w-2 h-2" />
+            {/* title */}
+            <p className="text-[13px] font-semibold text-foreground leading-snug line-clamp-2">
+              {coupon.description || `${t(flowInfo.labelKey)} ${t("cpDiscountSuffix")}`}
+            </p>
+
+            {/* meta */}
+            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+              {coupon.min_order_amount ? (
+                <span>{t("cbUpTo") ? `Min ৳${coupon.min_order_amount}` : `Min ৳${coupon.min_order_amount}`}</span>
+              ) : null}
+              {coupon.expires_at && !isExpiring && (
+                <span className="flex items-center gap-0.5">
+                  <Clock className="w-2.5 h-2.5" />
                   {getDaysLeft(coupon.expires_at)}
                 </span>
               )}
             </div>
 
-            {/* Redeem button */}
-            <Button
-              size="sm"
-              className="w-full rounded-xl font-semibold text-[11px] h-7 shadow-none"
-              onClick={() => onUse(coupon)}
-            >
-              {t("redeem")}
-            </Button>
+            {/* code + CTA */}
+            <div className="mt-2.5 flex items-center gap-2">
+              <button
+                onClick={() => onCopy(coupon)}
+                className={`flex-1 h-8 px-2.5 rounded-lg border-2 border-dashed flex items-center justify-between gap-1 transition-all ${
+                  isCopied
+                    ? "border-primary/50 bg-primary/[0.06] text-primary"
+                    : "border-border/70 text-foreground/80 hover:border-primary/40 hover:bg-primary/[0.03]"
+                }`}
+              >
+                <span className="text-[11px] font-black tracking-[0.15em] truncate">{coupon.code}</span>
+                {isCopied ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <Copy className="w-3 h-3 shrink-0 opacity-60" />}
+              </button>
+              <button
+                onClick={() => onUse(coupon)}
+                className="h-8 px-3 rounded-lg text-primary-foreground text-[11px] font-bold flex items-center gap-0.5 active:scale-[0.97] transition-transform shadow-[0_2px_8px_-2px_hsl(var(--shariah-green-600)/0.5)]"
+                style={{
+                  background:
+                    "linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)))",
+                }}
+              >
+                {t("redeem")}
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -140,6 +212,7 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>("all");
   const { rewards: aiCouponRewards, claimReward } = useAiRewards("coupon");
   const { rewards: aiOfferRewards, claimReward: claimOffer } = useAiRewards("offer");
 
@@ -175,6 +248,16 @@ export default function CouponsPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const visible = useMemo(
+    () => (filter === "all" ? coupons : coupons.filter(c => (c.applicable_flow || "shop") === filter)),
+    [coupons, filter]
+  );
+
+  const bestValue = useMemo(() => {
+    if (!coupons.length) return 0;
+    return Math.max(...coupons.map(c => (c.discount_type === "percentage" ? c.discount_value : c.discount_value)));
+  }, [coupons]);
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Seo
@@ -182,64 +265,133 @@ export default function CouponsPage() {
         description="Browse the latest EasyPay coupons, cashback offers and discount codes across shopping, recharge, bills and more."
         path="/coupons"
       />
-      {/* Header */}
-      <div className="sticky top-0 z-40 gradient-hero text-primary-foreground backdrop-blur-2xl border-b border-primary/30 shadow-glow">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted/50 transition-colors active:scale-95"
-            >
-              <ArrowLeft className="w-[18px] h-[18px] text-foreground" />
-            </button>
-            <h1 className="text-[16px] font-bold text-foreground tracking-tight">{t("coupons")}</h1>
-          </div>
-          <div className="flex items-center gap-1.5 text-muted-foreground/60">
+
+      {/* ── Premium hero header ─────────────────────────────── */}
+      <div className="relative overflow-hidden text-primary-foreground"
+        style={{
+          background:
+            "linear-gradient(135deg, hsl(var(--shariah-green-900)) 0%, hsl(var(--shariah-green-800)) 45%, hsl(var(--shariah-green-600)) 100%)",
+        }}
+      >
+        {/* Ambient blobs */}
+        <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[hsl(var(--shariah-gold-500)/0.18)] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-10 w-56 h-56 rounded-full bg-[hsl(var(--shariah-green-300)/0.25)] blur-3xl pointer-events-none" />
+        {/* Grain */}
+        <div className="absolute inset-0 opacity-[0.06] pointer-events-none"
+             style={{ backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)", backgroundSize: "3px 3px" }} />
+
+        {/* Top bar */}
+        <div className="relative flex items-center justify-between px-4 h-14">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/15 active:scale-95 transition"
+          >
+            <ArrowLeft className="w-[18px] h-[18px]" />
+          </button>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur">
             <Ticket className="w-3.5 h-3.5" />
-            {!loading && (
-              <span className="text-[11px] font-medium">{coupons.length}</span>
-            )}
+            <span className="text-[11px] font-semibold tabular-nums">{loading ? "…" : coupons.length}</span>
           </div>
+        </div>
+
+        {/* Title block */}
+        <div className="relative px-4 pt-2 pb-6">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-[hsl(var(--shariah-gold-300))]" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--shariah-gold-300))]">
+              {t("cpHeroKicker") || "EasyPay Rewards"}
+            </span>
+          </div>
+          <h1 className="text-[26px] leading-[1.1] font-black tracking-tight">
+            {t("cpHeroTitle") || "Save more, every"}
+            <br />
+            <span className="italic font-serif font-normal text-[hsl(var(--shariah-gold-300))]">
+              {t("cpHeroTitleAccent") || "single tap."}
+            </span>
+          </h1>
+          <p className="mt-2 text-[12px] text-white/70 max-w-[280px]">
+            {t("cpHeroSub") || "Handpicked coupons across shopping, bills, recharge & more."}
+          </p>
+
+          {/* Stat strip */}
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="rounded-xl bg-white/10 backdrop-blur px-3 py-2 border border-white/10">
+              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">{t("cpStatActive") || "Active"}</p>
+              <p className="text-[16px] font-black tabular-nums">{loading ? "…" : coupons.length}</p>
+            </div>
+            <div className="rounded-xl bg-white/10 backdrop-blur px-3 py-2 border border-white/10">
+              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">{t("cpStatBest") || "Best"}</p>
+              <p className="text-[16px] font-black text-[hsl(var(--shariah-gold-300))] tabular-nums">
+                {loading ? "…" : `${bestValue}%`}
+              </p>
+            </div>
+            <div className="rounded-xl bg-white/10 backdrop-blur px-3 py-2 border border-white/10">
+              <p className="text-[9px] uppercase tracking-wider text-white/60 font-semibold">{t("cpStatEnding") || "Ending"}</p>
+              <p className="text-[16px] font-black tabular-nums">
+                {loading ? "…" : coupons.filter(c => c.expires_at && new Date(c.expires_at).getTime() - Date.now() < 3 * 86400000).length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Filter pills (sticky) ───────────────────────────── */}
+      <div className="sticky top-0 z-30 -mt-3 px-3 pb-2 pt-3 bg-background/85 backdrop-blur-xl border-b border-border/40">
+        <div className="flex gap-1.5 overflow-x-auto">
+          {FILTERS.map(f => {
+            const active = filter === f.id;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`shrink-0 h-8 px-3 rounded-full text-[11px] font-semibold transition-all ${
+                  active
+                    ? "text-primary-foreground shadow-[0_2px_8px_-2px_hsl(var(--shariah-green-600)/0.5)]"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                }`}
+                style={active ? { background: "linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)))" } : undefined}
+              >
+                {t(f.labelKey)}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <div className="px-4 pt-4 space-y-3">
         {/* AI Recommended */}
         {(aiCouponRewards.length > 0 || aiOfferRewards.length > 0) && (
-          <AiRewardBanner rewards={[...aiCouponRewards, ...aiOfferRewards]} onClaim={(id) => {
-            const isCoupon = aiCouponRewards.some(r => r.id === id);
-            return isCoupon ? claimReward(id) : claimOffer(id);
-          }} />
+          <AiRewardBanner
+            rewards={[...aiCouponRewards, ...aiOfferRewards]}
+            onClaim={(id) => {
+              const isCoupon = aiCouponRewards.some(r => r.id === id);
+              return isCoupon ? claimReward(id) : claimOffer(id);
+            }}
+          />
         )}
 
-        {/* Loading */}
         {loading ? (
-          <div className="space-y-3 pt-2">
-            {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-[160px] w-full rounded-[20px]" />
-            ))}
+          <div className="space-y-3 pt-1">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-[130px] w-full rounded-[22px]" />)}
           </div>
-        ) : coupons.length === 0 ? (
-          /* Empty */
+        ) : visible.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col items-center justify-center py-28 gap-4"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
+            className="flex flex-col items-center justify-center py-24 gap-4"
           >
-            <div className="w-16 h-16 rounded-[18px] bg-muted/30 flex items-center justify-center">
-              <Ticket className="w-7 h-7 text-muted-foreground/20" />
+            <div className="relative w-20 h-20 rounded-[20px] flex items-center justify-center"
+                 style={{ background: "linear-gradient(135deg, hsl(var(--shariah-green-600)/0.1), hsl(var(--shariah-gold-500)/0.1))" }}>
+              <Ticket className="w-8 h-8 text-primary/60" />
             </div>
             <div className="text-center space-y-1">
-              <p className="text-[14px] text-foreground/70 font-medium">{t("noCouponsYet")}</p>
-              <p className="text-[12px] text-muted-foreground/50">{t("noCouponsDesc")}</p>
+              <p className="text-[15px] text-foreground font-semibold">{t("noCouponsYet")}</p>
+              <p className="text-[12px] text-muted-foreground">{t("noCouponsDesc")}</p>
             </div>
           </motion.div>
         ) : (
-          /* Cards */
           <AnimatePresence mode="popLayout">
             <div className="space-y-3">
-              {coupons.map((coupon, i) => (
+              {visible.map((coupon, i) => (
                 <CouponCard
                   key={coupon.id}
                   coupon={coupon}
@@ -247,6 +399,7 @@ export default function CouponsPage() {
                   copiedId={copiedId}
                   onCopy={handleCopy}
                   onUse={handleUseNow}
+                  featured={i === 0 && filter === "all"}
                 />
               ))}
             </div>
