@@ -819,24 +819,13 @@ function DpsTab() {
                 className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-400" />
             </div>
 
-            <div className="relative mt-3 flex items-center gap-2">
-              <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90"
-                onClick={(e) => { e.stopPropagation(); setCollectPlan(p); }}>
-                <RefreshCw className="w-3.5 h-3.5 mr-1" />{t("savCollectNow")}
-              </Button>
-              <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
+            <div className="relative mt-3 flex items-center justify-between">
+              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
                 <Calendar className="w-3 h-3" />
-                {daysToNext === 0 ? "Today" : `in ${daysToNext}d`}
+                Next {daysToNext === 0 ? "today" : `in ${daysToNext}d`}
               </span>
-              <button
-                onClick={(e) => { e.stopPropagation(); navigate(`/savings/journey?type=dps&id=${p.id}`); }}
-                aria-label="View installment journey"
-                className="inline-flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline"
-              >
-                <CalendarClock className="w-3.5 h-3.5" /> Journey
-              </button>
               <span className="inline-flex items-center gap-0.5 text-[11px] text-primary font-semibold">
-                Details <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                View timeline <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
           </motion.div>
