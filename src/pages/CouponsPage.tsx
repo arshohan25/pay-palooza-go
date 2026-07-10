@@ -339,28 +339,8 @@ export default function CouponsPage() {
         </div>
       </div>
 
-      {/* ── Filter pills (sticky) ───────────────────────────── */}
-      <div className="sticky top-0 z-30 -mt-3 px-3 pb-2 pt-3 bg-background/85 backdrop-blur-xl border-b border-border/40">
-        <div className="flex gap-1.5 overflow-x-auto">
-          {FILTERS.map(f => {
-            const active = filter === f.id;
-            return (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={`shrink-0 h-8 px-3 rounded-full text-[11px] font-semibold transition-all ${
-                  active
-                    ? "text-primary-foreground shadow-[0_2px_8px_-2px_hsl(var(--shariah-green-600)/0.5)]"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                }`}
-                style={active ? { background: "linear-gradient(135deg, hsl(var(--shariah-green-600)), hsl(var(--shariah-green-800)))" } : undefined}
-              >
-                {t(f.labelKey)}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+
+
 
       <div className="px-4 pt-4 space-y-3">
         {/* AI Recommended */}
