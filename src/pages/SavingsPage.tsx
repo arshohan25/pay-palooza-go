@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Target, Plus, Calendar, TrendingUp, Coins, LineChart,
   AlertCircle, CheckCircle2, Loader2, Lock, RefreshCw, ChevronRight, Info,
-  Wallet, Sparkles, X,
+  Wallet, Sparkles, X, Pause, Play, History, CalendarClock, XCircle, CircleDot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
