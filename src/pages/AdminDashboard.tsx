@@ -1996,6 +1996,7 @@ export default function AdminDashboard() {
 
         {/* ═══ NOTIFICATIONS ═══ */}
         {activeTab === "notify" && <AdminNotificationSender />}
+        {activeTab === "summary_log" && <AdminSummaryNotifLog />}
 
         {/* ═══ ANNOUNCEMENTS ═══ */}
         {activeTab === "announcements" && <AdminAnnouncementManager />}
