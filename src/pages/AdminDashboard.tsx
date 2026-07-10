@@ -116,6 +116,7 @@ import AdminOtpMonitor from "@/components/admin/AdminOtpMonitor";
 import AdminPinHistory from "@/components/admin/AdminPinHistory";
 import AdminCommissionLedger from "@/components/admin/AdminCommissionLedger";
 import AdminAnnouncementManager from "@/components/admin/AdminAnnouncementManager";
+import AdminSummaryNotifLog from "@/components/admin/AdminSummaryNotifLog";
 import AdminBlacklistManager from "@/components/admin/AdminBlacklistManager";
 import AdminAgentLeaderboard from "@/components/admin/AdminAgentLeaderboard";
 import AdminUserFeedback from "@/components/admin/AdminUserFeedback";
@@ -387,6 +388,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "banners", label: "Banners", icon: Image },
       { id: "loyalty", label: "Loyalty", icon: Star },
       { id: "notify", label: "Notify", icon: Bell },
+      { id: "summary_log", label: "Summary Logs", icon: Bell },
       { id: "announcements", label: "Announcements", icon: Megaphone },
       { id: "feedback", label: "Feedback", icon: Star },
       { id: "changelog", label: "Changelog", icon: FileText },
@@ -1994,6 +1996,7 @@ export default function AdminDashboard() {
 
         {/* ═══ NOTIFICATIONS ═══ */}
         {activeTab === "notify" && <AdminNotificationSender />}
+        {activeTab === "summary_log" && <AdminSummaryNotifLog />}
 
         {/* ═══ ANNOUNCEMENTS ═══ */}
         {activeTab === "announcements" && <AdminAnnouncementManager />}
