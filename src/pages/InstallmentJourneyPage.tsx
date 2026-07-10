@@ -330,8 +330,15 @@ export default function InstallmentJourneyPage() {
 
   const displayName = goal?.name ?? (plan ? "DPS Plan" : "");
   const emoji = goal?.emoji ?? "💼";
-  const target = Number(goal?.target_amount ?? (plan ? Number(plan.amount) * (plan.total_installments ?? 12) : 0));
-  const balance = Number(goal?.saved_amount ?? (plan ? Number(plan.amount) * (plan.total_paid ?? 0) : 0));
+  const planTotalInst = Number(plan?.total_installments) || 0;
+  const target = Number(
+    goal?.target_amount ??
+      (plan ? Number(plan.amount) * (planTotalInst || 12) : 0),
+  );
+  const balance = Number(
+    goal?.saved_amount ??
+      (plan ? Number(plan.amount) * (Number(plan.total_paid) || 0) : 0),
+  );
   const pct = target > 0 ? (balance / target) * 100 : 0;
   const outstanding = Math.max(0, target - balance);
   const nextAmount = Number(plan?.amount ?? (linkedPlan?.amount ?? 0));
