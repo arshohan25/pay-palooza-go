@@ -38,14 +38,6 @@ const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof Shopping
   all:      { labelKey: "cpFlowAll",      icon: Tag         },
 };
 
-const FILTERS: { id: string; labelKey: TranslationKey }[] = [
-  { id: "all",      labelKey: "cpFlowAll"      },
-  { id: "shop",     labelKey: "cpFlowShop"     },
-  { id: "payment",  labelKey: "cpFlowPayment"  },
-  { id: "recharge", labelKey: "cpFlowRecharge" },
-  { id: "bill_pay", labelKey: "cpFlowBillPay"  },
-  { id: "cash_out", labelKey: "cpFlowCashOut"  },
-];
 
 /* ────────────────────────────────────────────────────────────
    Premium ticket card — emerald + gold, ticket cutouts,
