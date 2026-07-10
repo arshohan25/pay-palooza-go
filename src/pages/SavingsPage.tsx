@@ -463,29 +463,31 @@ function DpsTab() {
 
   return (
     <div className="space-y-3">
-      <Button onClick={() => { setCreateOpen(true); if (eligibleGoals.length && !goalId) setGoalId(eligibleGoals[0].id); }} className="w-full h-12 rounded-[19px]">
-        <Plus className="w-4 h-4 mr-2" />{t("savNewDpsPlan")}
-      </Button>
+      <button onClick={() => { setCreateOpen(true); if (eligibleGoals.length && !goalId) setGoalId(eligibleGoals[0].id); }}
+        className="group w-full h-14 rounded-[18px] bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.6)] active:scale-[0.99] transition-transform">
+        <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center"><Plus className="w-4 h-4"/></span>
+        {t("savNewDpsPlan")}
+      </button>
 
       {missed.length > 0 && (
-        <div className="rounded-[19px] bg-amber-500/10 border border-amber-500/30 p-4 space-y-2">
-          <div className="flex items-center gap-2 text-amber-500 text-sm font-semibold">
-            <AlertCircle className="w-4 h-4" />{t("savMissedInstallments")} ({missed.length})
+        <div className="rounded-[20px] bg-gradient-to-br from-amber-500/15 to-amber-500/5 border border-amber-500/30 p-4 space-y-2">
+          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm font-semibold">
+            <AlertCircle className="w-4 h-4" />{t("savMissedInstallments")} <span className="ml-auto text-[10px] font-normal opacity-80">{missed.length} pending</span>
           </div>
           {missed.map(m => (
-            <div key={m.id} className="flex items-center justify-between text-sm bg-card/60 rounded-[14px] p-2.5">
+            <div key={m.id} className="flex items-center justify-between text-sm bg-card/80 rounded-[14px] p-3 border border-border/50">
               <div>
-                <div className="font-medium">৳{Number(m.amount).toLocaleString()}</div>
-                <div className="text-xs text-muted-foreground">{t("savDue")} {new Date(m.due_date).toLocaleDateString()}</div>
+                <div className="font-semibold">৳{Number(m.amount).toLocaleString()}</div>
+                <div className="text-[11px] text-muted-foreground">{t("savDue")} {new Date(m.due_date).toLocaleDateString()}</div>
               </div>
-              <Button size="sm" onClick={() => setRepayMissed(m)} className="rounded-full">{t("savRepay")}</Button>
+              <Button size="sm" onClick={() => setRepayMissed(m)} className="rounded-full h-8 bg-amber-500 hover:bg-amber-600 text-white">{t("savRepay")}</Button>
             </div>
           ))}
         </div>
       )}
 
       {activePlans.length === 0 && (
-        <div className="text-center py-10 text-sm text-muted-foreground">
+        <div className="text-center py-12 text-sm text-muted-foreground rounded-[19px] bg-muted/40 border border-dashed border-border">
           <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
           {t("savNoDpsPlans")}
         </div>
@@ -495,24 +497,47 @@ function DpsTab() {
         const goal = goals.find(g => g.id === p.goal_id);
         const pctPlan = p.total_installments ? ((p.total_paid ?? 0) / p.total_installments) * 100 : 0;
         const freqLabel = p.frequency === "daily" ? t("savDailyLabel") : p.frequency === "weekly" ? t("savWeeklyLabel") : t("savMonthlyLabel");
+        const nextDate = new Date(p.next_run_at);
+        const daysToNext = Math.max(0, Math.ceil((nextDate.getTime() - Date.now()) / 86400000));
         return (
-          <motion.div key={p.id} layout className="rounded-[19px] bg-card border border-border p-4 space-y-3">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold truncate">{goal?.emoji} {goal?.name ?? "—"}</div>
-                <div className="text-xs text-muted-foreground">{freqLabel} · ৳{Number(p.amount).toLocaleString()}{t("savPerCycle")}</div>
+          <motion.div key={p.id} layout
+            className="relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)]">
+            <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-emerald-600" />
+            <div className="pointer-events-none absolute -top-16 -right-12 w-40 h-40 rounded-full bg-emerald-500/5 blur-2xl" />
+
+            <div className="relative flex items-start gap-3">
+              <div className="w-14 h-14 rounded-[16px] bg-gradient-to-br from-primary/15 to-emerald-500/10 border border-primary/15 flex items-center justify-center text-2xl shrink-0">
+                {goal?.emoji ?? "💼"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-semibold truncate">{goal?.name ?? "—"}</div>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
+                  <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wide">{freqLabel}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">৳{Number(p.amount).toLocaleString()}{t("savPerCycle")}</span>
+                  {p.strategy && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium capitalize">{p.strategy}</span>}
+                </div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-semibold">{p.total_paid ?? 0}/{p.total_installments ?? "∞"}</div>
-                <div className="text-[10px] text-muted-foreground">{p.strategy ?? "—"}</div>
+                <div className="text-lg font-bold tabular-nums leading-none">
+                  {p.total_paid ?? 0}<span className="text-sm text-muted-foreground">/{p.total_installments ?? "∞"}</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1">installments</div>
               </div>
             </div>
-            <Progress value={pctPlan} className="h-1" />
-            <div className="flex gap-2 text-xs">
-              <Button size="sm" variant="secondary" className="rounded-full" onClick={() => setCollectPlan(p)}>
-                <RefreshCw className="w-3 h-3 mr-1" />{t("savCollectNow")}
+
+            <div className="relative mt-3 h-2 rounded-full bg-muted overflow-hidden">
+              <motion.div initial={{ width: 0 }} animate={{ width: `${pctPlan}%` }} transition={{ duration: 0.7, ease: "easeOut" }}
+                className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-400" />
+            </div>
+
+            <div className="relative mt-3 flex items-center gap-2">
+              <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setCollectPlan(p)}>
+                <RefreshCw className="w-3.5 h-3.5 mr-1" />{t("savCollectNow")}
               </Button>
-              <span className="ml-auto text-muted-foreground self-center">{t("savNextDate")} {new Date(p.next_run_at).toLocaleDateString()}</span>
+              <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
+                <Calendar className="w-3 h-3" />
+                {daysToNext === 0 ? "Today" : `in ${daysToNext}d`}
+              </span>
             </div>
           </motion.div>
         );
