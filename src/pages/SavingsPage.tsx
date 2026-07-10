@@ -526,75 +526,143 @@ function DpsPlanDetailsSheet({
               <div className="flex justify-between p-3"><span className="text-muted-foreground">Ends</span><span className="font-medium">{endsAt ? endsAt.toLocaleDateString() : "—"}</span></div>
             </div>
 
-            {/* Upcoming schedule */}
+            {/* Installment timeline — professional tree view */}
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-3">
                 <CalendarClock className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold">Upcoming schedule</h3>
-                <span className="text-[10px] text-muted-foreground ml-auto">{remaining} left</span>
+                <h3 className="text-sm font-semibold">Installment timeline</h3>
+                <span className="text-[10px] text-muted-foreground ml-auto tabular-nums">
+                  {paid} paid · {remaining} upcoming
+                </span>
               </div>
-              {upcoming.length === 0 ? (
-                <div className="text-xs text-muted-foreground bg-muted/40 rounded-[12px] p-3 text-center">No upcoming installments — plan is complete.</div>
-              ) : (
-                <div className="rounded-[16px] border border-border/70 bg-card overflow-hidden">
-                  {upcoming.map((d, i) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-2.5 border-b border-border/60 last:border-b-0">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold ${i === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                        #{paid + i + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">{d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</div>
-                        <div className="text-[11px] text-muted-foreground">
-                          {i === 0 ? "Next up" : `+${Math.ceil((d.getTime() - Date.now()) / 86400000)} days`}
-                        </div>
-                      </div>
-                      <div className="text-sm font-semibold tabular-nums">৳{Number(plan.amount).toLocaleString()}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* Payment history */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <History className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold">Payment history</h3>
-                <span className="text-[10px] text-muted-foreground ml-auto">{history.length} entries</span>
-              </div>
               {loadingHist ? (
                 <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
-              ) : history.length === 0 ? (
-                <div className="text-xs text-muted-foreground bg-muted/40 rounded-[12px] p-4 text-center">No activity yet.</div>
               ) : (
-                <div className="rounded-[16px] border border-border/70 bg-card overflow-hidden">
-                  {history.map((h) => {
-                    const b = outcomeBadge(h.outcome);
-                    const B = b.Icon;
-                    const d = new Date(h.created_at);
-                    return (
-                      <div key={h.id} className="flex items-center gap-3 px-3 py-2.5 border-b border-border/60 last:border-b-0">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${b.color}`}>
-                          <B className="w-4 h-4" />
+                <div className="rounded-[18px] border border-border/70 bg-card p-4">
+                  <div className="relative">
+                    {/* vertical rail */}
+                    <div className="absolute left-[70px] top-1 bottom-1 w-px bg-gradient-to-b from-border via-border to-transparent" />
+
+                    {/* Upcoming (top, chronological — next first) */}
+                    {upcoming.map((d, i) => {
+                      const installmentNo = paid + i + 1;
+                      const isNext = i === 0;
+                      const daysAway = Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86400000));
+                      return (
+                        <div key={`up-${i}`} className="relative flex items-start gap-3 pb-4 last:pb-0">
+                          {/* Left: date */}
+                          <div className="w-[62px] shrink-0 text-right pt-0.5">
+                            <div className="text-[11px] font-bold text-foreground tabular-nums leading-tight">
+                              {d.toLocaleDateString(undefined, { day: "2-digit", month: "short" })}
+                            </div>
+                            <div className="text-[9px] text-muted-foreground uppercase tracking-wide">
+                              {d.toLocaleDateString(undefined, { year: "numeric" })}
+                            </div>
+                          </div>
+                          {/* Node */}
+                          <div className="relative z-10 shrink-0">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-1 ${
+                              isNext
+                                ? "bg-primary border-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]"
+                                : "bg-background border-border"
+                            }`}>
+                              {isNext && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
+                            </div>
+                          </div>
+                          {/* Right: label + amount */}
+                          <div className="flex-1 min-w-0 flex items-start justify-between gap-3 pt-0.5">
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-foreground leading-tight">
+                                Installment #{installmentNo}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground mt-0.5">
+                                {isNext ? "Scheduled next" : `In ${daysAway} day${daysAway === 1 ? "" : "s"}`}
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="text-sm font-bold tabular-nums text-foreground">
+                                ৳{Number(plan.amount).toLocaleString()}
+                              </div>
+                              <div className="text-[9px] text-muted-foreground uppercase tracking-wide">Upcoming</div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium">
-                            {b.label}
-                            {h.triggered_by && <span className="ml-1.5 text-[10px] text-muted-foreground uppercase tracking-wide">· {h.triggered_by}</span>}
-                          </div>
-                          <div className="text-[11px] text-muted-foreground truncate">
-                            {d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                            {h.tx_reference && ` · ${h.tx_reference}`}
-                          </div>
+                      );
+                    })}
+
+                    {/* Divider between upcoming and history */}
+                    {upcoming.length > 0 && history.length > 0 && (
+                      <div className="relative flex items-center gap-3 py-2">
+                        <div className="w-[62px]" />
+                        <div className="relative z-10 shrink-0 w-4 flex justify-center">
+                          <div className="w-1 h-1 rounded-full bg-border" />
                         </div>
-                        {h.amount > 0 && (
-                          <div className={`text-sm font-semibold tabular-nums ${h.outcome === "missed" ? "text-amber-600 dark:text-amber-400" : "text-foreground"}`}>
-                            ৳{Number(h.amount).toLocaleString()}
-                          </div>
-                        )}
+                        <div className="flex-1 border-t border-dashed border-border/70" />
                       </div>
-                    );
-                  })}
+                    )}
+
+                    {/* History (below, most recent first) */}
+                    {history.map((h) => {
+                      const b = outcomeBadge(h.outcome);
+                      const B = b.Icon;
+                      const d = new Date(h.created_at);
+                      const isMissed = h.outcome === "missed";
+                      const isCollected = h.outcome === "collected" || h.outcome === "settled";
+                      return (
+                        <div key={h.id} className="relative flex items-start gap-3 pb-4 last:pb-0">
+                          <div className="w-[62px] shrink-0 text-right pt-0.5">
+                            <div className="text-[11px] font-bold text-foreground tabular-nums leading-tight">
+                              {d.toLocaleDateString(undefined, { day: "2-digit", month: "short" })}
+                            </div>
+                            <div className="text-[9px] text-muted-foreground tabular-nums">
+                              {d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                          </div>
+                          <div className="relative z-10 shrink-0">
+                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${b.color}`}>
+                              <B className="w-3 h-3" />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-foreground leading-tight">
+                                {b.label}
+                                {h.triggered_by === "manual" && <span className="ml-1.5 text-[9px] font-medium text-muted-foreground uppercase tracking-wide">Manual</span>}
+                              </div>
+                              {h.tx_reference && (
+                                <div className="text-[10px] text-muted-foreground truncate mt-0.5 font-mono">
+                                  {h.tx_reference}
+                                </div>
+                              )}
+                              {h.reason && !h.tx_reference && (
+                                <div className="text-[10px] text-muted-foreground truncate mt-0.5">{h.reason}</div>
+                              )}
+                            </div>
+                            {h.amount > 0 && (
+                              <div className="text-right shrink-0">
+                                <div className={`text-sm font-bold tabular-nums ${
+                                  isMissed ? "text-amber-600 dark:text-amber-400" :
+                                  isCollected ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
+                                }`}>
+                                  {isCollected ? "+" : isMissed ? "" : ""}৳{Number(h.amount).toLocaleString()}
+                                </div>
+                                <div className="text-[9px] text-muted-foreground uppercase tracking-wide">
+                                  {isCollected ? "Collected" : isMissed ? "Due" : "—"}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {upcoming.length === 0 && history.length === 0 && (
+                      <div className="text-xs text-muted-foreground text-center py-6">
+                        No installments yet.
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
