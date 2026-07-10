@@ -486,9 +486,6 @@ function DpsPlanDetailsSheet({
                     </span>
                   </div>
                 </div>
-                <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/15 border border-white/20 flex items-center justify-center">
-                  <X className="w-4 h-4" />
-                </button>
               </div>
               {/* Progress */}
               <div className="relative mt-4">
