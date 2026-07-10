@@ -224,12 +224,14 @@ function GoalsTab() {
 
   return (
     <div className="space-y-3">
-      <Button onClick={() => setCreateOpen(true)} className="w-full h-12 rounded-[19px]">
-        <Plus className="w-4 h-4 mr-2" />{t("savCreateNewGoal")}
-      </Button>
+      <button onClick={() => setCreateOpen(true)}
+        className="group w-full h-14 rounded-[18px] bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.6)] active:scale-[0.99] transition-transform">
+        <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center"><Plus className="w-4 h-4"/></span>
+        {t("savCreateNewGoal")}
+      </button>
 
       {activeGoals.length === 0 && (
-        <div className="text-center py-10 text-sm text-muted-foreground">
+        <div className="text-center py-12 text-sm text-muted-foreground rounded-[19px] bg-muted/40 border border-dashed border-border">
           <Target className="w-10 h-10 mx-auto mb-2 opacity-40" />
           {t("savNoGoalsYet")}
         </div>
@@ -241,40 +243,69 @@ function GoalsTab() {
         const dpsLink = goalHasDps(g.id);
         const dpsDays = dpsLink ? dpsLockDaysLeft(plans.find(p => p.goal_id === g.id)!.created_at) : 0;
         const totalLock = Math.max(lockDays, dpsDays);
+        const isDone = g.status === "completed";
         return (
           <motion.div key={g.id} layout
-            className="rounded-[19px] bg-card border border-border p-4 space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="text-3xl">{g.emoji}</div>
+            className="relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)]">
+            {/* accent stripe */}
+            <div className={`absolute inset-y-0 left-0 w-1 ${isDone ? "bg-emerald-500" : "bg-gradient-to-b from-primary to-emerald-600"}`} />
+            <div className="pointer-events-none absolute -top-14 -right-10 w-40 h-40 rounded-full bg-primary/5 blur-2xl" />
+
+            <div className="relative flex items-start gap-3">
+              <div className="w-14 h-14 rounded-[16px] bg-gradient-to-br from-primary/15 to-emerald-500/10 border border-primary/15 flex items-center justify-center text-3xl shrink-0">
+                {g.emoji}
+              </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold truncate">{g.name}</h3>
-                  {g.status === "completed" && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-semibold text-[15px] truncate">{g.name}</h3>
+                  {isDone && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                  {dpsLink && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wide">DPS</span>
+                  )}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  ৳{Number(g.saved_amount).toLocaleString()} / ৳{Number(g.target_amount).toLocaleString()}
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  ৳{Number(g.saved_amount).toLocaleString()} <span className="opacity-60">of</span> ৳{Number(g.target_amount).toLocaleString()}
                 </div>
               </div>
-              <span className="text-sm font-semibold">{pct.toFixed(0)}%</span>
+              <div className="text-right">
+                <div className="text-xl font-bold tabular-nums leading-none">{pct.toFixed(0)}<span className="text-sm text-muted-foreground">%</span></div>
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  {isDone ? t("savCurrentValue") : `৳${Math.max(0, Number(g.target_amount) - Number(g.saved_amount)).toLocaleString()} left`}
+                </div>
+              </div>
             </div>
-            <Progress value={pct} className="h-1.5" />
-            <div className="flex flex-wrap gap-2">
+
+            {/* Custom progress */}
+            <div className="relative mt-3 h-2 rounded-full bg-muted overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.7, ease: "easeOut" }}
+                className={`h-full rounded-full ${isDone ? "bg-emerald-500" : "bg-gradient-to-r from-primary to-emerald-400"}`} />
+            </div>
+
+            <div className="relative mt-3 flex items-center gap-2">
               {g.status === "active" && (
-                <Button size="sm" variant="secondary" className="rounded-full"
+                <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={() => { setDepositGoal(g); setDepositAmt(""); }}>
-                  <Plus className="w-3 h-3 mr-1" />{t("savDeposit")}
+                  <Plus className="w-3.5 h-3.5 mr-1" />{t("savDeposit")}
                 </Button>
               )}
-              {g.status === "completed" && (
-                <Button size="sm" className="rounded-full" onClick={() => setWithdrawGoal(g)}>
-                  {t("savWithdraw")}
+              {isDone && (
+                <Button size="sm" className="rounded-full h-9 px-4 bg-emerald-500 text-white hover:bg-emerald-600" onClick={() => setWithdrawGoal(g)}>
+                  {t("savWithdraw")} <ChevronRight className="w-3.5 h-3.5 ml-1" />
                 </Button>
               )}
               {g.status === "active" && (
-                <Button size="sm" variant="ghost" className="rounded-full text-destructive"
-                  onClick={() => setCancelGoal(g)} disabled={totalLock > 0}>
-                  {totalLock > 0 ? <><Lock className="w-3 h-3 mr-1" />{totalLock}d</> : t("savCancel")}
-                </Button>
+                totalLock > 0 ? (
+                  <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
+                    <Lock className="w-3 h-3" />{totalLock}d lock
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setCancelGoal(g)}
+                    className="ml-auto text-[11px] text-destructive/80 hover:text-destructive font-medium">
+                    {t("savCancel")}
+                  </button>
+                )
               )}
             </div>
           </motion.div>
@@ -432,29 +463,31 @@ function DpsTab() {
 
   return (
     <div className="space-y-3">
-      <Button onClick={() => { setCreateOpen(true); if (eligibleGoals.length && !goalId) setGoalId(eligibleGoals[0].id); }} className="w-full h-12 rounded-[19px]">
-        <Plus className="w-4 h-4 mr-2" />{t("savNewDpsPlan")}
-      </Button>
+      <button onClick={() => { setCreateOpen(true); if (eligibleGoals.length && !goalId) setGoalId(eligibleGoals[0].id); }}
+        className="group w-full h-14 rounded-[18px] bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.6)] active:scale-[0.99] transition-transform">
+        <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center"><Plus className="w-4 h-4"/></span>
+        {t("savNewDpsPlan")}
+      </button>
 
       {missed.length > 0 && (
-        <div className="rounded-[19px] bg-amber-500/10 border border-amber-500/30 p-4 space-y-2">
-          <div className="flex items-center gap-2 text-amber-500 text-sm font-semibold">
-            <AlertCircle className="w-4 h-4" />{t("savMissedInstallments")} ({missed.length})
+        <div className="rounded-[20px] bg-gradient-to-br from-amber-500/15 to-amber-500/5 border border-amber-500/30 p-4 space-y-2">
+          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm font-semibold">
+            <AlertCircle className="w-4 h-4" />{t("savMissedInstallments")} <span className="ml-auto text-[10px] font-normal opacity-80">{missed.length} pending</span>
           </div>
           {missed.map(m => (
-            <div key={m.id} className="flex items-center justify-between text-sm bg-card/60 rounded-[14px] p-2.5">
+            <div key={m.id} className="flex items-center justify-between text-sm bg-card/80 rounded-[14px] p-3 border border-border/50">
               <div>
-                <div className="font-medium">৳{Number(m.amount).toLocaleString()}</div>
-                <div className="text-xs text-muted-foreground">{t("savDue")} {new Date(m.due_date).toLocaleDateString()}</div>
+                <div className="font-semibold">৳{Number(m.amount).toLocaleString()}</div>
+                <div className="text-[11px] text-muted-foreground">{t("savDue")} {new Date(m.due_date).toLocaleDateString()}</div>
               </div>
-              <Button size="sm" onClick={() => setRepayMissed(m)} className="rounded-full">{t("savRepay")}</Button>
+              <Button size="sm" onClick={() => setRepayMissed(m)} className="rounded-full h-8 bg-amber-500 hover:bg-amber-600 text-white">{t("savRepay")}</Button>
             </div>
           ))}
         </div>
       )}
 
       {activePlans.length === 0 && (
-        <div className="text-center py-10 text-sm text-muted-foreground">
+        <div className="text-center py-12 text-sm text-muted-foreground rounded-[19px] bg-muted/40 border border-dashed border-border">
           <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
           {t("savNoDpsPlans")}
         </div>
@@ -464,24 +497,47 @@ function DpsTab() {
         const goal = goals.find(g => g.id === p.goal_id);
         const pctPlan = p.total_installments ? ((p.total_paid ?? 0) / p.total_installments) * 100 : 0;
         const freqLabel = p.frequency === "daily" ? t("savDailyLabel") : p.frequency === "weekly" ? t("savWeeklyLabel") : t("savMonthlyLabel");
+        const nextDate = new Date(p.next_run_at);
+        const daysToNext = Math.max(0, Math.ceil((nextDate.getTime() - Date.now()) / 86400000));
         return (
-          <motion.div key={p.id} layout className="rounded-[19px] bg-card border border-border p-4 space-y-3">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold truncate">{goal?.emoji} {goal?.name ?? "—"}</div>
-                <div className="text-xs text-muted-foreground">{freqLabel} · ৳{Number(p.amount).toLocaleString()}{t("savPerCycle")}</div>
+          <motion.div key={p.id} layout
+            className="relative overflow-hidden rounded-[22px] bg-card border border-border/70 p-4 shadow-[0_2px_10px_-4px_hsl(var(--foreground)/0.08)]">
+            <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-emerald-600" />
+            <div className="pointer-events-none absolute -top-16 -right-12 w-40 h-40 rounded-full bg-emerald-500/5 blur-2xl" />
+
+            <div className="relative flex items-start gap-3">
+              <div className="w-14 h-14 rounded-[16px] bg-gradient-to-br from-primary/15 to-emerald-500/10 border border-primary/15 flex items-center justify-center text-2xl shrink-0">
+                {goal?.emoji ?? "💼"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-semibold truncate">{goal?.name ?? "—"}</div>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
+                  <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wide">{freqLabel}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">৳{Number(p.amount).toLocaleString()}{t("savPerCycle")}</span>
+                  {p.strategy && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium capitalize">{p.strategy}</span>}
+                </div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-semibold">{p.total_paid ?? 0}/{p.total_installments ?? "∞"}</div>
-                <div className="text-[10px] text-muted-foreground">{p.strategy ?? "—"}</div>
+                <div className="text-lg font-bold tabular-nums leading-none">
+                  {p.total_paid ?? 0}<span className="text-sm text-muted-foreground">/{p.total_installments ?? "∞"}</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1">installments</div>
               </div>
             </div>
-            <Progress value={pctPlan} className="h-1" />
-            <div className="flex gap-2 text-xs">
-              <Button size="sm" variant="secondary" className="rounded-full" onClick={() => setCollectPlan(p)}>
-                <RefreshCw className="w-3 h-3 mr-1" />{t("savCollectNow")}
+
+            <div className="relative mt-3 h-2 rounded-full bg-muted overflow-hidden">
+              <motion.div initial={{ width: 0 }} animate={{ width: `${pctPlan}%` }} transition={{ duration: 0.7, ease: "easeOut" }}
+                className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-400" />
+            </div>
+
+            <div className="relative mt-3 flex items-center gap-2">
+              <Button size="sm" className="rounded-full h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setCollectPlan(p)}>
+                <RefreshCw className="w-3.5 h-3.5 mr-1" />{t("savCollectNow")}
               </Button>
-              <span className="ml-auto text-muted-foreground self-center">{t("savNextDate")} {new Date(p.next_run_at).toLocaleDateString()}</span>
+              <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-muted rounded-full px-2.5 py-1">
+                <Calendar className="w-3 h-3" />
+                {daysToNext === 0 ? "Today" : `in ${daysToNext}d`}
+              </span>
             </div>
           </motion.div>
         );
@@ -883,32 +939,61 @@ const SavingsPage = () => {
       </div>
 
 
-      <div className="p-4 space-y-4">
-        {/* Portfolio summary */}
-        <div className="rounded-[19px] p-5 bg-gradient-to-br from-emerald-500/20 via-primary/10 to-blue-500/10 border border-primary/20">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><Wallet className="w-3 h-3" />{t("savPortfolioValue")}</div>
-          <div className="text-3xl font-bold">৳{Math.round(portfolioValue).toLocaleString()}</div>
-          <div className="grid grid-cols-4 gap-2 mt-4 text-center">
-            <div><div className="text-xs text-muted-foreground">{t("savGoalsLabel")}</div><div className="text-sm font-semibold">{goals.filter(g => g.status === "active").length}</div></div>
-            <div><div className="text-xs text-muted-foreground">{t("savDpsLabel")}</div><div className="text-sm font-semibold">{plans.filter(p => !p.settled).length}</div></div>
-            <div><div className="text-xs text-muted-foreground">{t("savGoldLabel")}</div><div className="text-sm font-semibold">{gold.reduce((s,g) => s + Number(g.grams), 0).toFixed(1)}g</div></div>
-            <div><div className="text-xs text-muted-foreground">{t("savStocksLabel")}</div><div className="text-sm font-semibold">{stocks.length}</div></div>
+      <div className="p-4 space-y-5">
+        {/* Portfolio hero */}
+        <div className="relative overflow-hidden rounded-[24px] p-5 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary)/0.85)_45%,#0b3d2e_100%)] text-primary-foreground shadow-[0_20px_50px_-20px_hsl(var(--primary)/0.55)]">
+          {/* decorative rings */}
+          <div className="pointer-events-none absolute -top-20 -right-16 w-56 h-56 rounded-full bg-white/10 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-10 w-48 h-48 rounded-full bg-amber-300/15 blur-3xl" />
+          <div className="relative">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-primary-foreground/75">
+                <Wallet className="w-3.5 h-3.5" />{t("savPortfolioValue")}
+              </div>
+              <div className="text-[10px] px-2 py-0.5 rounded-full bg-amber-300/20 border border-amber-200/30 text-amber-100 font-medium">
+                Halal · Mudarabah
+              </div>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-[34px] font-bold tracking-tight leading-none">৳{Math.round(portfolioValue).toLocaleString()}</span>
+            </div>
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              {[
+                { k: "savGoalsLabel", v: goals.filter(g => g.status === "active").length, Icon: Target },
+                { k: "savDpsLabel", v: plans.filter(p => !p.settled).length, Icon: Calendar },
+                { k: "savGoldLabel", v: `${gold.reduce((s,g) => s + Number(g.grams), 0).toFixed(1)}g`, Icon: Coins },
+                { k: "savStocksLabel", v: stocks.length, Icon: LineChart },
+              ].map(({ k, v, Icon }) => (
+                <div key={k} className="rounded-[14px] bg-white/10 backdrop-blur-md border border-white/15 px-2 py-2 text-center">
+                  <Icon className="w-3.5 h-3.5 mx-auto opacity-80" />
+                  <div className="text-[10px] uppercase tracking-wide text-primary-foreground/70 mt-1">{t(k as TranslationKey)}</div>
+                  <div className="text-sm font-semibold leading-tight">{v}</div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[10px] text-primary-foreground/70">
+              <span>{t("savWalletBalance")}</span>
+              <span className="font-medium text-primary-foreground/90">৳{Number(walletBal ?? 0).toLocaleString()}</span>
+            </div>
           </div>
-          <div className="text-[10px] text-muted-foreground mt-3">{t("savWalletBalance")}: ৳{Number(walletBal ?? 0).toLocaleString()}</div>
         </div>
 
-        {/* Tabs */}
-        <div className="grid grid-cols-4 gap-2">
+        {/* Segmented tabs */}
+        <div className="relative bg-muted/60 backdrop-blur-md rounded-[16px] p-1 grid grid-cols-4 gap-1 border border-border/60">
           {TABS.map(tb => {
             const Icon = tb.icon;
             const active = tab === tb.id;
             return (
               <button key={tb.id} onClick={() => setTab(tb.id)}
-                className={`h-14 rounded-[14px] flex flex-col items-center justify-center gap-0.5 text-xs ${
-                  active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                className={`relative h-12 rounded-[12px] flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
+                  active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}>
-                <Icon className="w-4 h-4" />
-                <span>{t(tb.labelKey)}</span>
+                {active && (
+                  <motion.div layoutId="tab-pill" transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    className="absolute inset-0 rounded-[12px] bg-primary shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.6)]" />
+                )}
+                <Icon className="w-4 h-4 relative" />
+                <span className="relative">{t(tb.labelKey)}</span>
               </button>
             );
           })}
