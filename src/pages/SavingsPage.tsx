@@ -161,6 +161,7 @@ function ConfirmSheet({ open, onClose, title, summary, warning, requireTerms, te
 // ─────────────────────────────────────────────────────────────────────────────
 function GoalsTab() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { goals, plans, reload } = useSavings();
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
