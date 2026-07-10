@@ -161,6 +161,7 @@ function ConfirmSheet({ open, onClose, title, summary, warning, requireTerms, te
 // ─────────────────────────────────────────────────────────────────────────────
 function GoalsTab() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { goals, plans, reload } = useSavings();
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
@@ -287,6 +288,16 @@ function GoalsTab() {
               <motion.div
                 initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.7, ease: "easeOut" }}
                 className={`h-full rounded-full ${isDone ? "bg-emerald-500" : "bg-gradient-to-r from-primary to-emerald-400"}`} />
+            </div>
+
+            <div className="relative mt-3 flex justify-end">
+              <button
+                onClick={(e) => { e.stopPropagation(); navigate(`/savings/journey?type=goal&id=${g.id}`); }}
+                aria-label={`View journey for ${g.name}`}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+              >
+                <CalendarClock className="w-3.5 h-3.5" /> Journey
+              </button>
             </div>
           </motion.div>
         );
@@ -671,6 +682,7 @@ function DpsPlanDetailsSheet({
 // ─────────────────────────────────────────────────────────────────────────────
 function DpsTab() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { goals, plans, missed, reload } = useSavings();
   const [createOpen, setCreateOpen] = useState(false);
   const [confirmCreate, setConfirmCreate] = useState(false);
@@ -829,6 +841,13 @@ function DpsTab() {
                 <Calendar className="w-3 h-3" />
                 {daysToNext === 0 ? "Today" : `in ${daysToNext}d`}
               </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); navigate(`/savings/journey?type=dps&id=${p.id}`); }}
+                aria-label="View installment journey"
+                className="inline-flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline"
+              >
+                <CalendarClock className="w-3.5 h-3.5" /> Journey
+              </button>
               <span className="inline-flex items-center gap-0.5 text-[11px] text-primary font-semibold">
                 Details <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
@@ -1237,14 +1256,7 @@ const SavingsPage = () => {
               <span className="text-[10px] font-medium tracking-wide text-primary-foreground/95">{t("savShariaMudarabah")}</span>
             </div>
           </div>
-          <button
-            onClick={() => navigate("/savings/journey")}
-            aria-label="Installment Journey"
-            className="h-9 pl-2.5 pr-3 rounded-full bg-white/15 backdrop-blur-md border border-white/20 flex items-center gap-1.5 active:scale-95 transition-transform"
-          >
-            <CalendarClock className="w-4 h-4" />
-            <span className="text-[11px] font-semibold">Journey</span>
-          </button>
+          <div className="w-9" aria-hidden />
         </div>
       </div>
 
