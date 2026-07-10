@@ -10,7 +10,7 @@ import {
   Target,
   Plus,
   Landmark,
-  PiggyBank,
+  Wallet,
   Coins,
   Sparkles,
   TrendingUp,
