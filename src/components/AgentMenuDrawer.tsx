@@ -1,15 +1,20 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Camera, QrCode, ShieldCheck, BarChart3, Bell,
-  Home, LogOut, ChevronRight, Building2, Upload, Activity,
-  Users, Languages,
+  LogOut, ChevronRight, Building2, Upload, Activity,
+  Users, Languages, ArrowDownToLine, ArrowRightLeft, Banknote,
+  Receipt, UserPlus, History, Headphones, LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
