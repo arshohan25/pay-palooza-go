@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ChevronLeft, CheckCircle2, AlertCircle, Upload, Clock,
   Landmark, CreditCard, Wallet, Copy, Check, ShieldAlert, ShieldCheck,
-  XCircle, Loader2,
+  XCircle, Loader2, Lock, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -316,35 +316,59 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         <div className="flex-1 overflow-y-auto scrollbar-none relative">
           {checkoutUrl && (
             <div className="absolute inset-0 z-40 bg-background flex flex-col">
-              <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card">
+              <div className="flex-1 overflow-y-auto scrollbar-none px-6 py-8 flex flex-col items-center justify-center text-center">
+                <motion.div
+                  initial={{ scale: 0.85, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                  className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl shadow-indigo-500/30 mb-5"
+                >
+                  <Lock size={32} className="text-white" strokeWidth={2.5} />
+                </motion.div>
+
+                <h2 className="text-xl font-extrabold text-foreground tracking-tight">
+                  {"Secure checkout ready"}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-2 max-w-xs">
+                  {"You will complete payment on UddoktaPay's secure page, then return here automatically."}
+                </p>
+
+                <div className="mt-6 w-full max-w-xs rounded-2xl bg-card border border-border p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{"Amount"}</span>
+                    <span className="text-lg font-extrabold text-foreground">৳{parseFloat(amount || "0").toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-3 border-t border-border">
+                    <span className="text-xs text-muted-foreground">{"Provider"}</span>
+                    <span className="text-xs font-semibold text-foreground">UddoktaPay</span>
+                  </div>
+                  <div className="flex items-center gap-2 pt-3 border-t border-border">
+                    <ShieldCheck size={14} className="text-emerald-500 shrink-0" />
+                    <span className="text-[11px] text-muted-foreground leading-snug text-left">
+                      {"256-bit encrypted. EasyPay never sees your card or PIN."}
+                    </span>
+                  </div>
+                </div>
+
+                <a
+                  href={checkoutUrl}
+                  target="_top"
+                  rel="noopener noreferrer"
+                  onClick={() => haptics.light()}
+                  className="mt-6 w-full max-w-xs h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-[0.98] transition-transform"
+                >
+                  {"Continue to pay"}
+                  <ExternalLink size={16} />
+                </a>
+
                 <button
                   type="button"
                   onClick={() => { setCheckoutUrl(null); setSubmitting(false); }}
-                  aria-label={t("amGoBack")}
-                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95"
+                  className="mt-3 text-xs font-medium text-muted-foreground hover:text-foreground py-2"
                 >
-                  <ChevronLeft size={18} />
+                  {"Cancel"}
                 </button>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">UddoktaPay</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{(() => { try { return new URL(checkoutUrl).host; } catch { return ""; } })()}</p>
-                </div>
-                <a
-                  href={checkoutUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-medium text-primary px-2 py-1 rounded-lg hover:bg-primary/10"
-                >
-                  Open ↗
-                </a>
               </div>
-              <iframe
-                src={checkoutUrl}
-                title="UddoktaPay Checkout"
-                className="flex-1 w-full border-0 bg-white"
-                allow="payment *; clipboard-write; camera; geolocation"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
             </div>
           )}
             <AnimatePresence custom={direction} mode="wait">
