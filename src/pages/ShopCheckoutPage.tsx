@@ -369,6 +369,24 @@ export default function ShopCheckoutPage() {
               const IconComp = PAY_ICON_MAP[m.icon] || CreditCard;
               const isSelected = payMethod === m.key;
               const isComingSoon = !["wallet", "cod"].includes(m.key);
+              const pmLabelMap: Record<string, string> = {
+                wallet: t("scpPmWalletLabel"),
+                cod: t("scpPmCodLabel"),
+                bkash: t("scpPmBkashLabel"),
+                nagad: t("scpPmNagadLabel"),
+                rocket: t("scpPmRocketLabel"),
+                card: t("scpPmCardLabel"),
+              };
+              const pmDescMap: Record<string, string> = {
+                wallet: t("scpPmWalletDesc"),
+                cod: t("scpPmCodDesc"),
+                bkash: t("scpPmBkashDesc"),
+                nagad: t("scpPmNagadDesc"),
+                rocket: t("scpPmRocketDesc"),
+                card: t("scpPmCardDesc"),
+              };
+              const displayLabel = pmLabelMap[m.key] || m.label;
+              const displayDesc = pmDescMap[m.key] || m.description || "";
               return (
                 <button
                   key={m.id}
@@ -383,13 +401,13 @@ export default function ShopCheckoutPage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-foreground">{m.label}</p>
+                      <p className="text-sm font-bold text-foreground">{displayLabel}</p>
                       {isComingSoon && (
                         <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{t("scpComingSoon")}</span>
                       )}
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      {m.key === "wallet" ? `${t("scpBalance")}: ৳${walletBalance.toLocaleString()}` : m.description || ""}
+                      {m.key === "wallet" ? `${t("scpBalance")}: ৳${walletBalance.toLocaleString()}` : displayDesc}
                     </p>
                   </div>
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-primary" : "border-border"}`}>
