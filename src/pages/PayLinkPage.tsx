@@ -43,6 +43,9 @@ const PayLinkPage = () => {
   const [paying, setPaying] = useState(false);
   const [payments, setPayments] = useState<LinkPaymentRow[]>([]);
   const [success, setSuccess] = useState<{ amount: number; reference: string; payee: string } | null>(null);
+  const [payingUp, setPayingUp] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
 
   const loadPayments = useCallback(async (linkId: string) => {
     const { data } = await supabase
