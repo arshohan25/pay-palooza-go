@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
     });
 
     // 6. Record link payment (trigger updates amount_paid/used_count/is_active and notifies payee)
-    await admin.from("payment_link_payments").insert({
+    const { error: linkPayErr } = await admin.from("payment_link_payments").insert({
       link_id: link.id,
       payer_id: user.id,
       payee_id: link.created_by,
@@ -195,7 +195,38 @@ Deno.serve(async (req) => {
       currency: link.currency ?? "BDT",
       transaction_id: payerTxn?.id ?? null,
       status: "succeeded",
+      idempotency_key: idempotencyKey ?? null,
     });
+    if (linkPayErr) {
+      // Unique-violation on (payer_id, idempotency_key) => concurrent retry landed first.
+      // Roll back the balance movements we just performed and return the prior record.
+      const isDup = (linkPayErr as { code?: string }).code === "23505";
+      await admin.rpc("credit_user_balance", { p_user_id: user.id, p_amount: amount });
+      await admin.rpc("debit_user_balance", { p_user_id: link.created_by, p_amount: amount });
+      if (payerTxn?.id) await admin.from("transactions").delete().eq("id", payerTxn.id);
+      await admin.from("transactions").delete().eq("reference", reference).eq("user_id", link.created_by);
+      if (isDup && idempotencyKey) {
+        const { data: prior } = await admin
+          .from("payment_link_payments")
+          .select("id, amount, currency, status")
+          .eq("payer_id", user.id)
+          .eq("idempotency_key", idempotencyKey)
+          .maybeSingle();
+        if (prior) {
+          return jsonRes({
+            success: prior.status === "succeeded",
+            idempotent_replay: true,
+            amount: Number(prior.amount),
+            currency: prior.currency,
+            reference,
+            payee_name: payeeProfile.name,
+            status: prior.status,
+          });
+        }
+      }
+      return jsonRes({ error: linkPayErr.message }, 500);
+    }
+
 
     return jsonRes({
       success: true,
