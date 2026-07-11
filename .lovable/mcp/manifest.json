@@ -98,6 +98,10 @@
             "only_active": {
               "type": "boolean",
               "description": "If true, only include active links."
+            },
+            "only_mcp": {
+              "type": "boolean",
+              "description": "If true, only include links created via an AI assistant (source = 'mcp')."
             }
           },
           "additionalProperties": false,

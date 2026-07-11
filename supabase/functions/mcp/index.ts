@@ -6,15 +6,163 @@
 import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.20.1";
 
 // src/lib/mcp/tools/create_payment_request.ts
-import { createClient } from "npm:@supabase/supabase-js@^2.97.0";
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.1";
 import { z } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/lib/tool-helpers.ts
+import { createClient } from "npm:@supabase/supabase-js@^2.97.0";
 function sbForUser(ctx) {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
     global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
     auth: { persistSession: false, autoRefreshToken: false }
   });
 }
+function sbService() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+function friendlyError(err) {
+  const raw = err instanceof Error ? err.message : String(err ?? "");
+  const msg = raw.toLowerCase();
+  if (!raw) return "Something went wrong. Please try again.";
+  if (msg.includes("jwt expired") || msg.includes("token is expired") || msg.includes("expired token")) {
+    return "Your sign-in for this assistant has expired. Please reconnect the EasyPay MCP server in your AI client to grant fresh consent.";
+  }
+  if (msg.includes("invalid jwt") || msg.includes("invalid token") || msg.includes("malformed")) {
+    return "The access token supplied to EasyPay is invalid. Reconnect the EasyPay MCP server in your AI client.";
+  }
+  if (msg.includes("not authenticated") || msg.includes("no authorization")) {
+    return "You are not signed in. Reconnect the EasyPay MCP server and approve the consent screen.";
+  }
+  if (msg.includes("permission denied") || msg.includes("row-level security") || msg.includes("row level security") || msg.includes("rls") || msg.includes("not allowed")) {
+    return "You do not have permission to perform this action on your EasyPay account. Check that your account has the required access, then retry.";
+  }
+  if (msg.includes("consent")) {
+    return "This action needs consent that hasn't been granted yet. Approve the EasyPay consent screen in your AI client and try again.";
+  }
+  if (msg.includes("network") || msg.includes("failed to fetch") || msg.includes("timeout")) {
+    return "EasyPay could not be reached right now. Please retry in a moment.";
+  }
+  return `EasyPay could not complete this request: ${raw}`;
+}
+async function writeAudit(entry) {
+  const svc = sbService();
+  if (!svc) return;
+  try {
+    await svc.from("mcp_tool_call_logs").insert({
+      correlation_id: entry.correlationId,
+      user_id: entry.userId,
+      client_id: entry.clientId ?? null,
+      tool_name: entry.toolName,
+      arguments: entry.args,
+      status: entry.status,
+      result_summary: entry.resultSummary ?? null,
+      error: entry.error ?? null,
+      duration_ms: entry.durationMs
+    });
+  } catch (e) {
+    console.error(`[mcp-audit] failed to write log for ${entry.toolName}:`, e);
+  }
+}
+function withToolAudit(toolName, fn) {
+  return async (args, ctx) => {
+    const correlationId = crypto.randomUUID();
+    const started = Date.now();
+    const userId = ctx.isAuthenticated() ? ctx.getUserId() : null;
+    const clientId = ctx.getClientId?.() ?? null;
+    console.log(`[mcp] ${toolName} start`, { correlationId, userId, clientId, args });
+    try {
+      if (!ctx.isAuthenticated()) {
+        const text = friendlyError("not authenticated");
+        await writeAudit({
+          correlationId,
+          toolName,
+          userId: null,
+          clientId,
+          args,
+          status: "failed",
+          error: "not_authenticated",
+          durationMs: Date.now() - started,
+          resultSummary: null
+        });
+        return {
+          content: [{ type: "text", text }],
+          isError: true,
+          structuredContent: { _meta: { correlation_id: correlationId, error_code: "not_authenticated" } }
+        };
+      }
+      const result = await fn(args, ctx);
+      const durationMs = Date.now() - started;
+      const summaryText = result.content?.[0]?.type === "text" ? result.content[0].text.slice(0, 500) : null;
+      if (result.isError) {
+        const friendly = friendlyError(summaryText ?? "unknown error");
+        await writeAudit({
+          correlationId,
+          toolName,
+          userId,
+          clientId,
+          args,
+          status: "failed",
+          error: summaryText,
+          resultSummary: null,
+          durationMs
+        });
+        console.warn(`[mcp] ${toolName} failed`, { correlationId, durationMs, error: summaryText });
+        return {
+          content: [{ type: "text", text: friendly }],
+          isError: true,
+          structuredContent: {
+            ...result.structuredContent ?? {},
+            _meta: { correlation_id: correlationId, error_code: "tool_error" }
+          }
+        };
+      }
+      await writeAudit({
+        correlationId,
+        toolName,
+        userId,
+        clientId,
+        args,
+        status: "succeeded",
+        resultSummary: summaryText,
+        durationMs
+      });
+      console.log(`[mcp] ${toolName} ok`, { correlationId, durationMs });
+      return {
+        ...result,
+        structuredContent: {
+          ...result.structuredContent ?? {},
+          _meta: { correlation_id: correlationId }
+        }
+      };
+    } catch (err) {
+      const durationMs = Date.now() - started;
+      const raw = err instanceof Error ? err.message : String(err);
+      const friendly = friendlyError(err);
+      await writeAudit({
+        correlationId,
+        toolName,
+        userId,
+        clientId,
+        args,
+        status: "failed",
+        error: raw,
+        durationMs,
+        resultSummary: null
+      });
+      console.error(`[mcp] ${toolName} exception`, { correlationId, durationMs, error: raw });
+      return {
+        content: [{ type: "text", text: `${friendly} (ref: ${correlationId})` }],
+        isError: true,
+        structuredContent: { _meta: { correlation_id: correlationId, error_code: "exception" } }
+      };
+    }
+  };
+}
+
+// src/lib/mcp/tools/create_payment_request.ts
 function randomCode(len = 8) {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "";
@@ -33,10 +181,7 @@ var create_payment_request_default = defineTool({
     description: z.string().trim().optional().describe("Optional message shown to the payer.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-  handler: async ({ title, amount, description }, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    }
+  handler: withToolAudit("create_payment_request", async ({ title, amount, description }, ctx) => {
     const sb = sbForUser(ctx);
     const short_code = randomCode();
     const { data, error } = await sb.from("payment_links").insert({
@@ -46,10 +191,11 @@ var create_payment_request_default = defineTool({
       short_code,
       description: description ?? null,
       created_by: ctx.getUserId(),
-      is_active: true
-    }).select("id, short_code, title, amount, currency, is_active, created_at").single();
+      is_active: true,
+      source: "mcp"
+    }).select("id, short_code, title, amount, currency, is_active, created_at, source").single();
     if (error || !data) {
-      return { content: [{ type: "text", text: error?.message ?? "Insert failed" }], isError: true };
+      throw new Error(error?.message ?? "Could not create payment request");
     }
     const url = `https://pay-palooza-go.lovable.app/r/${data.short_code}`;
     return {
@@ -61,19 +207,12 @@ var create_payment_request_default = defineTool({
       ],
       structuredContent: { link: data, url }
     };
-  }
+  })
 });
 
 // src/lib/mcp/tools/get_payment_status.ts
-import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.97.0";
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.20.1";
 import { z as z2 } from "npm:zod@^3.25.76";
-function sbForUser2(ctx) {
-  return createClient2(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
 var get_payment_status_default = defineTool2({
   name: "get_payment_status",
   title: "Get payment request status",
@@ -82,14 +221,16 @@ var get_payment_status_default = defineTool2({
     short_code: z2.string().trim().min(1).describe("Short code from the payment link URL (e.g. the part after /r/).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ short_code }, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+  handler: withToolAudit("get_payment_status", async ({ short_code }, ctx) => {
+    const sb = sbForUser(ctx);
+    const { data: link, error } = await sb.from("payment_links").select("id, title, amount, currency, is_active, amount_paid, used_count, max_uses, deactivated_reason, expires_at, created_at, source").eq("short_code", short_code).eq("created_by", ctx.getUserId()).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!link) {
+      return {
+        content: [{ type: "text", text: `No payment request found with short code "${short_code}" under your account.` }],
+        isError: true
+      };
     }
-    const sb = sbForUser2(ctx);
-    const { data: link, error } = await sb.from("payment_links").select("id, title, amount, currency, is_active, amount_paid, used_count, max_uses, deactivated_reason, expires_at, created_at").eq("short_code", short_code).eq("created_by", ctx.getUserId()).maybeSingle();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!link) return { content: [{ type: "text", text: "Payment request not found" }], isError: true };
     const { data: payments } = await sb.from("payment_link_payments").select("id, amount, status, refunded_amount, created_at, transaction_id").eq("link_id", link.id).order("created_at", { ascending: false }).limit(20);
     const paid = Number(link.amount_paid ?? 0);
     const target = link.amount ? Number(link.amount) : null;
@@ -100,49 +241,42 @@ var get_payment_status_default = defineTool2({
       content: [{ type: "text", text: summary }],
       structuredContent: { link, payments: payments ?? [], paid, remaining, state }
     };
-  }
+  })
 });
 
 // src/lib/mcp/tools/list_payment_requests.ts
-import { createClient as createClient3 } from "npm:@supabase/supabase-js@^2.97.0";
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.20.1";
 import { z as z3 } from "npm:zod@^3.25.76";
-function sbForUser3(ctx) {
-  return createClient3(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
 var list_payment_requests_default = defineTool3({
   name: "list_payment_requests",
   title: "List payment requests",
   description: "List the signed-in user's EasyPay payment links with totals received, remaining balance, and status. Useful for reporting recent activity.",
   inputSchema: {
     limit: z3.number().int().positive().optional().describe("Max rows to return (default 20)."),
-    only_active: z3.boolean().optional().describe("If true, only include active links.")
+    only_active: z3.boolean().optional().describe("If true, only include active links."),
+    only_mcp: z3.boolean().optional().describe("If true, only include links created via an AI assistant (source = 'mcp').")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit, only_active }, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    }
-    const sb = sbForUser3(ctx);
-    let q = sb.from("payment_links").select("id, short_code, title, amount, currency, is_active, amount_paid, used_count, deactivated_reason, created_at").eq("created_by", ctx.getUserId()).order("created_at", { ascending: false }).limit(Math.min(limit ?? 20, 100));
+  handler: withToolAudit("list_payment_requests", async ({ limit, only_active, only_mcp }, ctx) => {
+    const sb = sbForUser(ctx);
+    let q = sb.from("payment_links").select("id, short_code, title, amount, currency, is_active, amount_paid, used_count, deactivated_reason, created_at, source").eq("created_by", ctx.getUserId()).order("created_at", { ascending: false }).limit(Math.min(limit ?? 20, 100));
     if (only_active) q = q.eq("is_active", true);
+    if (only_mcp) q = q.eq("source", "mcp");
     const { data, error } = await q;
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) throw new Error(error.message);
     const rows = data ?? [];
     const totalReceived = rows.reduce((s, r) => s + Number(r.amount_paid ?? 0), 0);
     const lines = rows.map((r) => {
       const paid = Number(r.amount_paid ?? 0);
       const target = r.amount ? Number(r.amount) : null;
       const status = !r.is_active ? `inactive (${r.deactivated_reason ?? "manual"})` : "active";
-      return `\u2022 ${r.short_code} \u2014 ${r.title} \u2014 ${status} \u2014 \u09F3${paid.toFixed(2)}${target != null ? `/\u09F3${Number(target).toFixed(2)}` : ""}`;
+      const badge = r.source === "mcp" ? " [via AI]" : "";
+      return `\u2022 ${r.short_code} \u2014 ${r.title}${badge} \u2014 ${status} \u2014 \u09F3${paid.toFixed(2)}${target != null ? `/\u09F3${Number(target).toFixed(2)}` : ""}`;
     });
     const text = rows.length ? `${rows.length} payment request(s). Total received: \u09F3${totalReceived.toFixed(2)}
 ${lines.join("\n")}` : "No payment requests yet.";
     return { content: [{ type: "text", text }], structuredContent: { total_received: totalReceived, links: rows } };
-  }
+  })
 });
 
 // src/lib/mcp/index.ts

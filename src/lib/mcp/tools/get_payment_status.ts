@@ -1,13 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
-import { defineTool, type ToolContext } from "@lovable.dev/mcp-js";
+import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-
-function sbForUser(ctx: ToolContext) {
-  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
+import { sbForUser, withToolAudit } from "../lib/tool-helpers";
 
 export default defineTool({
   name: "get_payment_status",
@@ -18,19 +11,21 @@ export default defineTool({
     short_code: z.string().trim().min(1).describe("Short code from the payment link URL (e.g. the part after /r/)."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ short_code }, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    }
+  handler: withToolAudit("get_payment_status", async ({ short_code }, ctx) => {
     const sb = sbForUser(ctx);
     const { data: link, error } = await sb
       .from("payment_links")
-      .select("id, title, amount, currency, is_active, amount_paid, used_count, max_uses, deactivated_reason, expires_at, created_at")
+      .select("id, title, amount, currency, is_active, amount_paid, used_count, max_uses, deactivated_reason, expires_at, created_at, source")
       .eq("short_code", short_code)
       .eq("created_by", ctx.getUserId())
       .maybeSingle();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!link) return { content: [{ type: "text", text: "Payment request not found" }], isError: true };
+    if (error) throw new Error(error.message);
+    if (!link) {
+      return {
+        content: [{ type: "text", text: `No payment request found with short code "${short_code}" under your account.` }],
+        isError: true,
+      };
+    }
 
     const { data: payments } = await sb
       .from("payment_link_payments")
@@ -59,5 +54,5 @@ export default defineTool({
       content: [{ type: "text", text: summary }],
       structuredContent: { link, payments: payments ?? [], paid, remaining, state },
     };
-  },
+  }),
 });
