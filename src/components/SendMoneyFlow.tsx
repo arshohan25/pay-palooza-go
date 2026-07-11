@@ -916,6 +916,32 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                 </button>
 
+                {/* Cash Out Charge Summary — shown when toggle ON */}
+                {addCashOutCharge && amtNum > 0 && cashOutExtra > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl border border-primary/30 bg-primary/5 p-3 space-y-2"
+                    aria-label="Cash out charge summary"
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{t("smRecipientGets") ?? "Recipient gets"}</span>
+                      <span className="font-semibold text-foreground tabular-nums">৳{cashOutBaseAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{t("smCashOutCharge") ?? "Cash-out charge"}</span>
+                      <span className="font-semibold text-foreground tabular-nums">+ ৳{cashOutExtra.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="h-px bg-primary/20" />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-semibold text-foreground">{t("smYouPay") ?? "You pay"}</span>
+                      <span className="font-extrabold text-primary tabular-nums">৳{amtNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  </motion.div>
+                )}
+
+
+
 
 
 
