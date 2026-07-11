@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Camera, QrCode, ShieldCheck, BarChart3, Bell,
   Home, LogOut, ChevronRight, Building2, Upload, Activity,
-  Users,
+  Users, Languages,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
