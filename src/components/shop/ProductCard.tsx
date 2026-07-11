@@ -10,6 +10,7 @@ export interface ShopProduct {
   id: string;
   merchant_id: string;
   name: string;
+  name_bn?: string | null;
   price: number;
   original_price?: number | null;
   rating: number;
@@ -17,6 +18,7 @@ export interface ShopProduct {
   emoji: string;
   category: string;
   description?: string | null;
+  description_bn?: string | null;
   badge?: string | null;
   badge_color?: string | null;
   stock: number;
