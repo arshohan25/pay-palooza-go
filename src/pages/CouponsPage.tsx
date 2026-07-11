@@ -388,15 +388,8 @@ export default function CouponsPage() {
         icon={Ticket}
       />
 
-      {/* Rewards ribbon */}
-      <div className="px-4 pt-3">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[hsl(var(--shariah-gold-500)/0.15)] border border-[hsl(var(--shariah-gold-500)/0.35)]">
-          <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-700))]" />
-          <span className="text-[9.5px] font-black uppercase tracking-[0.18em] text-[hsl(var(--shariah-gold-700))]">
-            EasyPay Rewards
-          </span>
-        </div>
-      </div>
+
+
 
 
       <div className="px-4 pt-5 space-y-5">
