@@ -83,7 +83,7 @@ const PaymentRequestsPage = () => {
     setLoading(true);
     const [{ data: linksData, error: le }, { data: paysData }] = await Promise.all([
       supabase.from("payment_links").select("*").eq("created_by", user.id).order("created_at", { ascending: false }),
-      supabase.from("payment_link_payments").select("id,link_id,payer_id,amount,status,created_at,transaction_id").eq("payee_id", user.id).order("created_at", { ascending: false }).limit(500),
+      supabase.from("payment_link_payments").select("id,link_id,payer_id,amount,status,created_at,transaction_id,refunded_at,refund_reason").eq("payee_id", user.id).order("created_at", { ascending: false }).limit(500),
     ]);
     if (le) toast.error(le.message);
     setLinks((linksData ?? []) as PaymentLink[]);
@@ -146,9 +146,38 @@ const PaymentRequestsPage = () => {
   };
 
   const toggleActive = async (l: PaymentLink) => {
-    const { error } = await supabase.from("payment_links").update({ is_active: !l.is_active }).eq("id", l.id);
+    const { error } = await supabase
+      .from("payment_links")
+      .update(l.is_active
+        ? { is_active: false, deactivated_reason: "manual" }
+        : { is_active: true, deactivated_reason: null })
+      .eq("id", l.id);
     if (error) return toast.error(error.message);
     load();
+  };
+
+  const [refundingId, setRefundingId] = useState<string | null>(null);
+  const refund = async (paymentId: string, reason: string) => {
+    setRefundingId(paymentId);
+    try {
+      const { data, error } = await supabase.functions.invoke("refund-link-payment", {
+        body: { payment_id: paymentId, reason },
+      });
+      if (error) {
+        const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;
+        const detail = ctx?.text ? await ctx.text() : error.message;
+        let msg = detail;
+        try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+      if (!data?.success) throw new Error(data?.error ?? "Refund failed");
+      toast.success(`Refunded ৳${data.amount}`);
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setRefundingId(null);
+    }
   };
 
   const paymentsByLink = useMemo(() => {
@@ -156,6 +185,7 @@ const PaymentRequestsPage = () => {
     for (const p of payments) (map[p.link_id] ??= []).push({ ...p, payer_name: payerNames[p.payer_id] });
     return map;
   }, [payments, payerNames]);
+
 
   const filteredPayments = useMemo(() => {
     const cutoff = filterRange === "all" ? null : subDays(new Date(), parseInt(filterRange, 10));
@@ -165,9 +195,16 @@ const PaymentRequestsPage = () => {
   }, [payments, filterLink, filterRange]);
 
   const totals = useMemo(() => {
-    const total = filteredPayments.reduce((s, p) => s + Number(p.amount), 0);
-    return { count: filteredPayments.length, total };
+    const net = filteredPayments.filter(p => p.status !== "refunded");
+    const refunded = filteredPayments.filter(p => p.status === "refunded");
+    return {
+      count: net.length,
+      total: net.reduce((s, p) => s + Number(p.amount), 0),
+      refundedCount: refunded.length,
+      refundedTotal: refunded.reduce((s, p) => s + Number(p.amount), 0),
+    };
   }, [filteredPayments]);
+
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   if (!user) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Sign in to create payment requests.</div>;
@@ -262,9 +299,17 @@ const PaymentRequestsPage = () => {
                         {p.transaction_id && (
                           <p className="text-[10px] font-mono text-muted-foreground">ref {p.transaction_id.slice(0, 8).toUpperCase()}</p>
                         )}
+                        {p.status === "refunded" && (
+                          <p className="text-[10px] text-amber-600">Refunded{p.refund_reason ? ` · ${p.refund_reason}` : ""}</p>
+                        )}
                       </div>
-                      <span className="text-sm font-bold text-emerald-600">+৳{Number(p.amount).toLocaleString()}</span>
+                      {p.status === "refunded" ? (
+                        <span className="text-sm font-bold text-amber-600 line-through">৳{Number(p.amount).toLocaleString()}</span>
+                      ) : (
+                        <span className="text-sm font-bold text-emerald-600">+৳{Number(p.amount).toLocaleString()}</span>
+                      )}
                     </li>
+
                   );
                 })}
               </ul>
@@ -336,7 +381,7 @@ const PaymentRequestsPage = () => {
 
                     {expanded && (
                       <div className="mt-3 pt-3 border-t border-border/40">
-                        <PaymentLinkTimeline payments={linkPays} emptyLabel="No payments on this link yet." />
+                        <PaymentLinkTimeline payments={linkPays} emptyLabel="No payments on this link yet." onRefund={refund} refundingId={refundingId} />
                       </div>
                     )}
                   </motion.li>

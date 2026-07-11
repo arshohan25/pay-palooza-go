@@ -46,12 +46,17 @@ const PayLinkPage = () => {
   const loadPayments = useCallback(async (linkId: string) => {
     const { data } = await supabase
       .from("payment_link_payments")
-      .select("id,amount,status,created_at,transaction_id")
+      .select("id,amount,status,created_at,transaction_id,refunded_at,refund_reason")
       .eq("link_id", linkId)
       .order("created_at", { ascending: false })
       .limit(20);
     setPayments((data ?? []) as LinkPaymentRow[]);
   }, []);
+
+  // Stable idempotency key per attempt: reset only after success or on link change.
+  const [idemKey, setIdemKey] = useState<string>(() => crypto.randomUUID());
+  useEffect(() => { setIdemKey(crypto.randomUUID()); }, [shortCode]);
+
 
   useEffect(() => {
     if (!shortCode) return;
@@ -95,9 +100,15 @@ const PayLinkPage = () => {
         { event: "INSERT", schema: "public", table: "payment_link_payments", filter: `link_id=eq.${link.id}` },
         () => loadPayments(link.id),
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "payment_link_payments", filter: `link_id=eq.${link.id}` },
+        () => loadPayments(link.id),
+      )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [link?.id, loadPayments]);
+
 
   const remaining = useMemo(() => {
     if (!link || link.amount == null) return null;
@@ -133,8 +144,9 @@ const PayLinkPage = () => {
     setPaying(true);
     try {
       const { data, error } = await supabase.functions.invoke("pay-link", {
-        body: { short_code: link.short_code, amount: finalAmount },
+        body: { short_code: link.short_code, amount: finalAmount, idempotency_key: idemKey },
       });
+
       if (error) {
         const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;
         const detail = ctx?.text ? await ctx.text() : error.message;
@@ -147,6 +159,8 @@ const PayLinkPage = () => {
       fireSuccessConfetti();
       playPaymentSuccess();
       setSuccess({ amount: data.amount, reference: data.reference, payee: data.payee_name ?? payeeName ?? "recipient" });
+      setIdemKey(crypto.randomUUID());
+
     } catch (e) {
       playPaymentError();
       toast.error((e as Error).message);

@@ -20,9 +20,15 @@ Deno.serve(async (req) => {
     const shortCode: string | undefined = body?.short_code;
     const amountInput: number | undefined =
       typeof body?.amount === "number" ? body.amount : undefined;
+    const idempotencyKey: string | undefined =
+      (typeof body?.idempotency_key === "string" ? body.idempotency_key : undefined) ??
+      (req.headers.get("idempotency-key") ?? undefined);
 
     if (!shortCode || typeof shortCode !== "string") {
       return jsonRes({ error: "Missing short_code" }, 400);
+    }
+    if (idempotencyKey && (idempotencyKey.length < 8 || idempotencyKey.length > 128)) {
+      return jsonRes({ error: "Invalid idempotency_key length" }, 400);
     }
 
     const admin = createClient(
@@ -35,6 +41,39 @@ Deno.serve(async (req) => {
       error: userErr,
     } = await admin.auth.getUser(authHeader);
     if (userErr || !user) return jsonRes({ error: "Invalid session" }, 401);
+
+    // Idempotency short-circuit: if we've already recorded a payment for this
+    // (payer, idempotency_key), return the original result instead of charging again.
+    if (idempotencyKey) {
+      const { data: prior } = await admin
+        .from("payment_link_payments")
+        .select("id, amount, currency, status, transaction_id, link_id")
+        .eq("payer_id", user.id)
+        .eq("idempotency_key", idempotencyKey)
+        .maybeSingle();
+      if (prior) {
+        const { data: priorLink } = await admin
+          .from("payment_links")
+          .select("short_code, created_by")
+          .eq("id", prior.link_id)
+          .maybeSingle();
+        const { data: priorTxn } = prior.transaction_id
+          ? await admin.from("transactions").select("reference").eq("id", prior.transaction_id).maybeSingle()
+          : { data: null };
+        const { data: payeeName } = priorLink?.created_by
+          ? await admin.from("profiles").select("name").eq("user_id", priorLink.created_by).maybeSingle()
+          : { data: null };
+        return jsonRes({
+          success: prior.status === "succeeded",
+          idempotent_replay: true,
+          amount: Number(prior.amount),
+          currency: prior.currency,
+          reference: priorTxn?.reference ?? `PL-${priorLink?.short_code ?? ""}`,
+          payee_name: payeeName?.name ?? null,
+          status: prior.status,
+        });
+      }
+    }
 
     // 1. Load link
     const { data: link, error: linkErr } = await admin
@@ -55,6 +94,7 @@ Deno.serve(async (req) => {
     if (link.created_by === user.id) {
       return jsonRes({ error: "You cannot pay your own link" }, 400);
     }
+
 
     // 2. Resolve remaining and amount
     const linkAmount = link.amount != null ? Number(link.amount) : null;
@@ -147,7 +187,7 @@ Deno.serve(async (req) => {
     });
 
     // 6. Record link payment (trigger updates amount_paid/used_count/is_active and notifies payee)
-    await admin.from("payment_link_payments").insert({
+    const { error: linkPayErr } = await admin.from("payment_link_payments").insert({
       link_id: link.id,
       payer_id: user.id,
       payee_id: link.created_by,
@@ -155,7 +195,38 @@ Deno.serve(async (req) => {
       currency: link.currency ?? "BDT",
       transaction_id: payerTxn?.id ?? null,
       status: "succeeded",
+      idempotency_key: idempotencyKey ?? null,
     });
+    if (linkPayErr) {
+      // Unique-violation on (payer_id, idempotency_key) => concurrent retry landed first.
+      // Roll back the balance movements we just performed and return the prior record.
+      const isDup = (linkPayErr as { code?: string }).code === "23505";
+      await admin.rpc("credit_user_balance", { p_user_id: user.id, p_amount: amount });
+      await admin.rpc("debit_user_balance", { p_user_id: link.created_by, p_amount: amount });
+      if (payerTxn?.id) await admin.from("transactions").delete().eq("id", payerTxn.id);
+      await admin.from("transactions").delete().eq("reference", reference).eq("user_id", link.created_by);
+      if (isDup && idempotencyKey) {
+        const { data: prior } = await admin
+          .from("payment_link_payments")
+          .select("id, amount, currency, status")
+          .eq("payer_id", user.id)
+          .eq("idempotency_key", idempotencyKey)
+          .maybeSingle();
+        if (prior) {
+          return jsonRes({
+            success: prior.status === "succeeded",
+            idempotent_replay: true,
+            amount: Number(prior.amount),
+            currency: prior.currency,
+            reference,
+            payee_name: payeeProfile.name,
+            status: prior.status,
+          });
+        }
+      }
+      return jsonRes({ error: linkPayErr.message }, 500);
+    }
+
 
     return jsonRes({
       success: true,
