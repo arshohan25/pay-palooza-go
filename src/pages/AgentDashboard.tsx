@@ -341,7 +341,7 @@ const AgentDashboard = () => {
                   ) : (
                     <motion.div key="hidden" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.22 }} className="glass-hero rounded-2xl px-4 py-2 flex items-center gap-2 bg-muted/60 border border-border/40">
                       <Eye size={14} className="text-muted-foreground" />
-                      <span className="text-xs font-semibold text-muted-foreground">Tap to see balance</span>
+                      <span className="text-xs font-semibold text-muted-foreground">{t("tapToSeeBalance")}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -349,9 +349,9 @@ const AgentDashboard = () => {
             </div>
             <div className="flex flex-col items-end gap-1">
               <Badge variant="outline" className={`text-[9px] font-bold ${floatPct > 50 ? "text-primary border-primary/30" : floatPct > 20 ? "text-accent border-accent/30" : "text-destructive border-destructive/30"}`}>
-                {floatPct > 50 ? "Healthy" : floatPct > 20 ? "Low" : "Critical"}
+                {floatPct > 50 ? t("agdHealthy") : floatPct > 20 ? t("agdLow") : t("agdCritical")}
               </Badge>
-              <p className="text-[10px] text-muted-foreground">Max ৳{fmt(agentInfo?.max_float ?? 500000)}</p>
+              <p className="text-[10px] text-muted-foreground">{t("agdMax")} ৳{fmt(agentInfo?.max_float ?? 500000)}</p>
             </div>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
