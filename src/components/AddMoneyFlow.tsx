@@ -75,48 +75,24 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
-  const [popupState, setPopupState] = useState<"idle" | "open" | "closed" | "blocked">("idle");
+  const [popupState, setPopupState] = useState<"idle" | "preparing" | "open" | "closed" | "blocked">("idle");
   const popupRef = useRef<Window | null>(null);
   const popupTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const openCheckoutPopup = (url: string) => {
-    let parsed: URL;
-    try {
-      parsed = new URL(url);
-      if (parsed.protocol !== "https:") throw new Error("Checkout URL must be secure");
-    } catch {
-      toast.error("Invalid checkout link. Please try again.");
-      return false;
-    }
-
+  const popupFeatures = () => {
     const w = 480, h = 720;
     const dualLeft = window.screenLeft ?? window.screenX ?? 0;
     const dualTop = window.screenTop ?? window.screenY ?? 0;
     const width = window.innerWidth || document.documentElement.clientWidth || screen.width;
     const height = window.innerHeight || document.documentElement.clientHeight || screen.height;
-    const left = dualLeft + (width - w) / 2;
-    const top = dualTop + (height - h) / 2;
-    const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes,noopener=no`;
+    const left = Math.max(0, dualLeft + (width - w) / 2);
+    const top = Math.max(0, dualTop + (height - h) / 2);
+    return `popup=yes,width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes,noopener=no`;
+  };
 
-    const token = crypto.randomUUID();
-    localStorage.setItem(`${CHECKOUT_POPUP_STORAGE_PREFIX}${token}`, JSON.stringify({
-      url: parsed.toString(),
-      amount: parseFloat(amount || "0"),
-      provider: "UddoktaPay",
-      expiresAt: Date.now() + 10 * 60 * 1000,
-    }));
-
-    const popupUrl = `${window.location.origin}/payment-popup?token=${encodeURIComponent(token)}`;
-    const popup = window.open(popupUrl, "easypay_uddoktapay_checkout", features);
-    if (!popup || popup.closed) {
-      localStorage.removeItem(`${CHECKOUT_POPUP_STORAGE_PREFIX}${token}`);
-      setPopupState("blocked");
-      toast.error("Popup blocked. Please allow popups for EasyPay and try again.");
-      return false;
-    }
+  const watchPopup = (popup: Window) => {
     popupRef.current = popup;
     popup.focus?.();
-    setPopupState("open");
     if (popupTimerRef.current) clearInterval(popupTimerRef.current);
     popupTimerRef.current = setInterval(() => {
       if (popup.closed) {
@@ -126,7 +102,47 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         setPopupState("closed");
       }
     }, 500);
+  };
+
+  const openCheckoutShell = (token: string) => {
+    const popupUrl = `${window.location.origin}/payment-popup?token=${encodeURIComponent(token)}`;
+    const popup = window.open(popupUrl, "easypay_uddoktapay_checkout", popupFeatures());
+    if (!popup || popup.closed) {
+      setPopupState("blocked");
+      toast.error("Popup blocked. Please allow popups for EasyPay and try again.");
+      return false;
+    }
+    watchPopup(popup);
+    setPopupState("preparing");
     return true;
+  };
+
+  const deliverCheckoutToPopup = (token: string, url: string) => {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+      if (parsed.protocol !== "https:") throw new Error("Checkout URL must be secure");
+    } catch {
+      toast.error("Invalid checkout link. Please try again.");
+      return false;
+    }
+
+    const payload = {
+      url: parsed.toString(),
+      amount: parseFloat(amount || "0"),
+      provider: "UddoktaPay",
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    };
+    localStorage.setItem(`${CHECKOUT_POPUP_STORAGE_PREFIX}${token}`, JSON.stringify(payload));
+    popupRef.current?.postMessage({ type: "EASYPAY_CHECKOUT_READY", token, payload }, window.location.origin);
+    setPopupState("open");
+    return true;
+  };
+
+  const openCheckoutPopup = (url: string) => {
+    const token = crypto.randomUUID();
+    if (!openCheckoutShell(token)) return false;
+    return deliverCheckoutToPopup(token, url);
   };
 
   useEffect(() => {
@@ -184,6 +200,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const handleSourceContinue = async () => {
     if (!source) { setError(t("amSelectSource")); return; }
     if (source === "uddoktapay") {
+      const popupToken = crypto.randomUUID();
+      const popupOpened = openCheckoutShell(popupToken);
       setSubmitting(true);
       try {
         const { data, error: fnErr } = await supabase.functions.invoke("uddoktapay-addmoney-init", {
@@ -196,7 +214,10 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
           localStorage.setItem("pending_uddoktapay_addmoney_request", data.request_id as string);
         }
         setCheckoutUrl(data.payment_url as string);
+        if (popupOpened) deliverCheckoutToPopup(popupToken, data.payment_url as string);
+        setSubmitting(false);
       } catch (e: any) {
+        if (popupOpened && popupRef.current && !popupRef.current.closed) popupRef.current.close();
         setError(e.message || "Failed to start UddoktaPay checkout");
         setSubmitting(false);
       }
@@ -446,7 +467,9 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   }}
                   className="mt-6 w-full max-w-xs h-12 rounded-2xl gradient-addmoney text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-glow active:scale-[0.98] transition-transform"
                 >
-                  {popupState === "open" ? (
+                  {popupState === "preparing" ? (
+                    <><Loader2 size={16} className="animate-spin" /> Preparing checkout…</>
+                  ) : popupState === "open" ? (
                     <><Loader2 size={16} className="animate-spin" /> Waiting for payment…</>
                   ) : popupState === "closed" ? (
                     <>Reopen checkout <ExternalLink size={16} /></>
