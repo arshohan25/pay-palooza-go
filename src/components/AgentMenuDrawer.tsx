@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Camera, QrCode, ShieldCheck, BarChart3, Bell,
   Home, LogOut, ChevronRight, Building2, Upload, Activity,
-  Users,
+  Users, Languages,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,7 +40,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const profile = useProfile();
   const navigate = useNavigate();
   const { isDisabled } = useGlobalToggles();
-  const { t } = useI18n();
+  const { t, lang, toggleLang } = useI18n();
 
   const [qrOpen, setQrOpen] = useState(false);
   const [avatarSheetOpen, setAvatarSheetOpen] = useState(false);
@@ -109,7 +109,8 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     { icon: ShieldCheck, label: t("agCustomerKyc"), action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
     { icon: BarChart3, label: t("agAnalytics"), action: () => { onClose(); navigate("/agent/analytics"); }, toggleKey: "agent_analytics" },
     { icon: Bell, label: t("agNotifications"), action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
-  ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
+    { icon: Languages, label: lang === "en" ? "বাংলা" : "English", action: () => toggleLang(), rightLabel: lang === "en" ? "EN" : "বাং" },
+  ].filter(item => !("toggleKey" in item) || !item.toggleKey || !isDisabled(item.toggleKey));
 
   const bottomItems = [
     { icon: Home, label: t("agBackHome"), action: () => { onClose(); navigate("/"); } },
@@ -185,7 +186,11 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                         <item.icon size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                       <span className="text-sm font-semibold text-foreground flex-1 text-left">{item.label}</span>
-                      <ChevronRight size={14} className="text-muted-foreground/40" />
+                      {"rightLabel" in item && item.rightLabel ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary">{item.rightLabel}</span>
+                      ) : (
+                        <ChevronRight size={14} className="text-muted-foreground/40" />
+                      )}
                     </button>
                   ))}
                 </div>
