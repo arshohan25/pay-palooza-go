@@ -564,6 +564,20 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const handlePinConfirm = async () => {
     if (pin.length < 4) { setError(t("enterYour4DigitPin")); return; }
     if (processing) return;
+
+    // ─── Wallet-ID format gate ────────────────────────────────────────────────
+    // If the recipient is (or resolved to) a wallet ID, it must match
+    // EZP-XXXX-XXXX. Agent (EZP-AGDH-XXXX) or merchant (EZP-MRCD-XXXX) wallets
+    // are not valid send-money recipients — use Cash Out or Pay instead.
+    const walletCandidate = resolvedWalletId || (inputType === "walletId" ? inputVal : "");
+    if (walletCandidate) {
+      const wv = validateWalletId(walletCandidate, "user");
+      if (!wv.ok) {
+        setError(wv.reason === "role_mismatch" ? t("smWalletNotFound") : t("smWalletNotFound"));
+        return;
+      }
+    }
+
     setProcessing(true);
 
     const pinValid = await verifyPin(pin);
