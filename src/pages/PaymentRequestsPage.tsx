@@ -29,6 +29,7 @@ type PaymentLink = {
   expires_at: string | null;
   created_at: string;
   description: string | null;
+  source?: string | null;
 };
 
 type ReceivedPayment = LinkPaymentRow & { link_id: string; payer_id: string };
@@ -103,16 +104,39 @@ const PaymentRequestsPage = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  // Realtime: keep links + payments fresh
+  // Realtime: keep links + payments fresh, and toast MCP-created status changes
   useEffect(() => {
     if (!user) return;
+    const mcpLinkIds = new Set(links.filter(l => l.source === "mcp").map(l => l.id));
+    const linkById = new Map(links.map(l => [l.id, l] as const));
     const ch = supabase
       .channel(`pr-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "payment_links", filter: `created_by=eq.${user.id}` }, () => load())
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "payment_link_payments", filter: `payee_id=eq.${user.id}` }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_links", filter: `created_by=eq.${user.id}` }, (payload) => {
+        const row: any = payload.new ?? payload.old;
+        if (payload.eventType === "UPDATE" && row?.source === "mcp") {
+          const prev = linkById.get(row.id);
+          const paidNow = row.amount != null && Number(row.amount_paid ?? 0) >= Number(row.amount);
+          const paidBefore = prev?.amount != null && Number(prev?.amount_paid ?? 0) >= Number(prev?.amount);
+          if (paidNow && !paidBefore) toast.success(`🤖 AI request "${row.title}" fully paid`);
+          else if (prev?.is_active && row.is_active === false) toast.error(`🤖 AI request "${row.title}" deactivated`);
+        }
+        load();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "payment_link_payments", filter: `payee_id=eq.${user.id}` }, (payload) => {
+        const p: any = payload.new;
+        if (mcpLinkIds.has(p?.link_id)) {
+          const link = linkById.get(p.link_id);
+          if (p.status === "succeeded" || p.status === "completed") {
+            toast.success(`🤖 AI request "${link?.title ?? "payment"}" received ৳${p.amount}`);
+          } else if (p.status === "failed") {
+            toast.error(`🤖 AI request "${link?.title ?? "payment"}" failed`);
+          }
+        }
+        load();
+      })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user, load]);
+  }, [user, load, links]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
