@@ -46,12 +46,17 @@ const PayLinkPage = () => {
   const loadPayments = useCallback(async (linkId: string) => {
     const { data } = await supabase
       .from("payment_link_payments")
-      .select("id,amount,status,created_at,transaction_id")
+      .select("id,amount,status,created_at,transaction_id,refunded_at,refund_reason")
       .eq("link_id", linkId)
       .order("created_at", { ascending: false })
       .limit(20);
     setPayments((data ?? []) as LinkPaymentRow[]);
   }, []);
+
+  // Stable idempotency key per attempt: reset only after success or on link change.
+  const [idemKey, setIdemKey] = useState<string>(() => crypto.randomUUID());
+  useEffect(() => { setIdemKey(crypto.randomUUID()); }, [shortCode]);
+
 
   useEffect(() => {
     if (!shortCode) return;
