@@ -4404,6 +4404,7 @@ export type Database = {
       payment_links: {
         Row: {
           amount: number | null
+          amount_paid: number
           created_at: string
           created_by: string | null
           currency: string
@@ -4421,6 +4422,7 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
+          amount_paid?: number
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -4438,6 +4440,7 @@ export type Database = {
         }
         Update: {
           amount?: number | null
+          amount_paid?: number
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -6807,6 +6810,7 @@ export type Database = {
           total_amount: number
         }[]
       }
+      expire_payment_links: { Args: never; Returns: undefined }
       expire_stale_payment_sessions: { Args: never; Returns: number }
       expire_stale_promotions: { Args: never; Returns: undefined }
       find_chat_user_by_phone: { Args: { p_phone: string }; Returns: Json }
