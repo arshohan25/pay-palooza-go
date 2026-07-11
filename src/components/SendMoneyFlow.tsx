@@ -925,16 +925,16 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     aria-label="Cash out charge summary"
                   >
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{t("smRecipientGets") ?? "Recipient gets"}</span>
+                      <span className="text-muted-foreground">Recipient gets</span>
                       <span className="font-semibold text-foreground tabular-nums">৳{cashOutBaseAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{t("smCashOutCharge") ?? "Cash-out charge"}</span>
+                      <span className="text-muted-foreground">Cash-out charge</span>
                       <span className="font-semibold text-foreground tabular-nums">+ ৳{cashOutExtra.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="h-px bg-primary/20" />
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-semibold text-foreground">{t("smYouPay") ?? "You pay"}</span>
+                      <span className="font-semibold text-foreground">You pay</span>
                       <span className="font-extrabold text-primary tabular-nums">৳{amtNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   </motion.div>
