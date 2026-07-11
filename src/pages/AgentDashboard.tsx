@@ -476,8 +476,8 @@ const AgentDashboard = () => {
                 <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
                   <Clock className="w-7 h-7 text-muted-foreground" />
                 </motion.div>
-                <p className="text-sm font-semibold text-foreground">No transactions yet</p>
-                <p className="text-xs text-muted-foreground mt-1">Your activity will appear here</p>
+                <p className="text-sm font-semibold text-foreground">{t("noTransactions")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("agdYourActivity")}</p>
               </motion.div>
             ) : (
               <div className="divide-y divide-border/50">
@@ -492,7 +492,7 @@ const AgentDashboard = () => {
                       default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
                     }
                   })();
-                  const typeLabels: Record<string, string> = { cashin: "Cash In", cashout: "Cash Out", banktransfer: "Bank Transfer", paybill: "Bill Pay" };
+                  const typeLabels: Record<string, string> = { cashin: t("cashIn"), cashout: t("cashOut"), banktransfer: t("bankTransfer"), paybill: t("agdBillPay") };
                   return (
                     <button key={tx.id} onClick={() => setSelectedTxn(tx)} className="flex items-center gap-3 px-4 py-3 w-full text-left press-effect hover:bg-muted/20 transition-colors">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${txIcon.cls}`}>
