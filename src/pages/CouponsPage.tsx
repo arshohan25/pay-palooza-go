@@ -3,8 +3,9 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Ticket, Copy, CheckCircle2, Sparkles, Clock, Flame,
-  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, ChevronRight, Search, Plus, Loader2,
+  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, ChevronRight, Plus, Loader2,
 } from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
