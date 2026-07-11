@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
 
     const origin = req.headers.get("origin")
       ?? new URL(req.url).origin.replace(/functions\..*/, "");
-    const returnBase = body?.return_origin || origin || "https://app.local";
+    const returnBase = sanitizeReturnOrigin(body?.return_origin || origin || "https://app.local");
 
     const apiKey = Deno.env.get("UDDOKTAPAY_API_KEY")!;
     const baseUrl = (Deno.env.get("UDDOKTAPAY_BASE_URL") ?? "").replace(/\/$/, "");
@@ -63,7 +63,8 @@ Deno.serve(async (req) => {
         request_id: fr.id,
         user_id: userId,
       },
-      redirect_url: `${returnBase}/?addmoney=success&provider=uddoktapay&request_id=${fr.id}`,
+      redirect_url: `${returnBase}/payment-return?addmoney=success&provider=uddoktapay&request_id=${fr.id}`,
+      return_type: "GET",
       cancel_url: `${returnBase}/?addmoney=cancel&provider=uddoktapay&request_id=${fr.id}`,
       webhook_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/uddoktapay-ipn`,
     };
@@ -94,4 +95,14 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function sanitizeReturnOrigin(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Invalid return origin");
+    return url.origin;
+  } catch {
+    return "https://app.local";
+  }
 }

@@ -55,6 +55,8 @@ const KycFlow = lazy(() => import("@/components/KycFlow"));
 const AuthPage = lazy(() => retryLazyImport(() => import("@/pages/AuthPage")));
 const InboxPage = lazy(() => import("@/pages/InboxPage"));
 
+const ADD_MONEY_RETURN_STORAGE_KEY = "easypay_addmoney_return";
+
 // ── Tab pages: lazy (prefetched during idle) ──
 const TransactionHistory = lazy(() => import("@/pages/TransactionHistory"));
 const AccountPage = lazy(() => import("@/pages/AccountPage"));
@@ -165,6 +167,42 @@ const Index = () => {
 
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
+  }, [handleUddoktapayAddMoneyReturn, navigate]);
+
+  useEffect(() => {
+    const consumeStoredReturn = (raw: string | null) => {
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw) as {
+          createdAt?: number;
+          detail?: { type?: string; status?: string; requestId?: string | null; invoiceId?: string | null };
+        };
+        if (parsed.detail?.type !== "EASYPAY_ADD_MONEY_RETURN") return;
+        if (parsed.createdAt && Date.now() - parsed.createdAt > 10 * 60 * 1000) {
+          localStorage.removeItem(ADD_MONEY_RETURN_STORAGE_KEY);
+          return;
+        }
+
+        handleUddoktapayAddMoneyReturn({
+          status: parsed.detail.status,
+          requestId: parsed.detail.requestId,
+          invoiceId: parsed.detail.invoiceId,
+        });
+        localStorage.removeItem(ADD_MONEY_RETURN_STORAGE_KEY);
+        navigate("/", { replace: true });
+      } catch {
+        localStorage.removeItem(ADD_MONEY_RETURN_STORAGE_KEY);
+      }
+    };
+
+    consumeStoredReturn(localStorage.getItem(ADD_MONEY_RETURN_STORAGE_KEY));
+
+    const storageHandler = (event: StorageEvent) => {
+      if (event.key === ADD_MONEY_RETURN_STORAGE_KEY) consumeStoredReturn(event.newValue);
+    };
+
+    window.addEventListener("storage", storageHandler);
+    return () => window.removeEventListener("storage", storageHandler);
   }, [handleUddoktapayAddMoneyReturn, navigate]);
 
   // ── UddoktaPay add-money return handler ──
