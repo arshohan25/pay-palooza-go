@@ -78,7 +78,8 @@ export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, o
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="border-t pt-4 space-y-3">
