@@ -73,6 +73,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const duplicateCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const { accounts: depositAccounts, loading: depositLoading } = useDepositAccounts(source ?? undefined);
 
   
