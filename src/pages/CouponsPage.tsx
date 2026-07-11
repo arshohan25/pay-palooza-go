@@ -540,11 +540,12 @@ export default function CouponsPage() {
             </div>
             <div className="text-center space-y-1">
               <p className="text-[15px] text-foreground font-semibold">
-                {query ? "No matches found" : t("noCouponsYet")}
+                {t("noCouponsYet")}
               </p>
               <p className="text-[12px] text-muted-foreground max-w-[240px]">
-                {query ? "Try a different keyword or category." : t("noCouponsDesc")}
+                {t("noCouponsDesc")}
               </p>
+
             </div>
           </motion.div>
         ) : (
