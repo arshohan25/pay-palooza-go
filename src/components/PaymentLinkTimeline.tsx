@@ -100,40 +100,69 @@ const PaymentLinkTimeline = ({ payments, emptyLabel = "No payments yet.", curren
                       Leave the amount blank to refund the full remaining balance. Partial refunds keep the payment open for future refunds.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Amount ({currency})</label>
-                    <Input
-                      type="number" min="1" step="1" inputMode="numeric"
-                      max={refundable}
-                      placeholder={`Full refund: ${refundable.toLocaleString()}`}
-                      value={refundAmount}
-                      onChange={(e) => setRefundAmount(e.target.value)}
-                    />
-                    <Textarea
-                      placeholder="Reason (optional)"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      rows={2}
-                      maxLength={500}
-                    />
-                  </div>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      disabled={refundingId === p.id}
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        const parsed = refundAmount.trim() ? parseFloat(refundAmount) : refundable;
-                        if (!Number.isFinite(parsed) || parsed <= 0 || parsed > refundable + 0.00001) {
-                          return;
-                        }
-                        await onRefund(p.id, reason.trim(), parsed);
-                        setOpenId(null);
-                      }}
-                    >
-                      {refundingId === p.id ? "Refunding…" : "Confirm refund"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
+                  {(() => {
+                    const raw = refundAmount.trim();
+                    const parsed = raw ? parseFloat(raw) : refundable;
+                    const validNumber = Number.isFinite(parsed) && parsed > 0;
+                    const overCap = validNumber && parsed > refundable + 0.00001;
+                    const effective = validNumber && !overCap ? parsed : 0;
+                    const remainingAfter = Math.max(refundable - effective, 0);
+                    const canSubmit = validNumber && !overCap;
+                    return (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium text-muted-foreground">Amount ({currency})</label>
+                          <Input
+                            type="number" min="1" step="1" inputMode="numeric"
+                            max={refundable}
+                            placeholder={`Full refund: ${refundable.toLocaleString()}`}
+                            value={refundAmount}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (v === "") return setRefundAmount("");
+                              const n = parseFloat(v);
+                              if (!Number.isFinite(n)) return setRefundAmount(v);
+                              // Clamp to refundable so users can't exceed
+                              const clamped = Math.min(n, refundable);
+                              setRefundAmount(String(clamped));
+                            }}
+                            aria-invalid={overCap}
+                          />
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className={overCap ? "text-destructive" : "text-muted-foreground"}>
+                              {overCap
+                                ? `Exceeds refundable balance (${currency}${refundable.toLocaleString()})`
+                                : `Refundable: ${currency}${refundable.toLocaleString()}`}
+                            </span>
+                            <span className="text-muted-foreground">
+                              Remaining after: <span className="font-medium text-foreground">{currency}{remainingAfter.toLocaleString()}</span>
+                            </span>
+                          </div>
+                          <Textarea
+                            placeholder="Reason (optional)"
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            rows={2}
+                            maxLength={500}
+                          />
+                        </div>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            disabled={refundingId === p.id || !canSubmit}
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              if (!canSubmit) return;
+                              await onRefund(p.id, reason.trim(), effective);
+                              setOpenId(null);
+                            }}
+                          >
+                            {refundingId === p.id ? "Refunding…" : "Confirm refund"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </>
+                    );
+                  })()}
                 </AlertDialogContent>
               </AlertDialog>
             )}
