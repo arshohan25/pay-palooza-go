@@ -307,11 +307,11 @@ const AgentDashboard = () => {
                 <Building2 size={22} className="text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-base font-bold text-primary-foreground truncate">{agentInfo?.business_name || "Agent Portal"}</h1>
+                <h1 className="text-base font-bold text-primary-foreground truncate">{agentInfo?.business_name || t("agdAgentPortal")}</h1>
                 <div className="flex items-center gap-2 mt-0.5">
                   <Badge className="bg-white/15 text-primary-foreground border-0 text-[9px] px-1.5 py-0 font-semibold backdrop-blur-sm">{agentInfo?.territory_code || "BD"}</Badge>
                   <span className="text-[10px] text-primary-foreground/70 capitalize">{agentInfo?.status || "active"}</span>
-                  <span className="text-[10px] text-primary-foreground/70">• {txnCount} txns today</span>
+                  <span className="text-[10px] text-primary-foreground/70">• {txnCount} {t("agdTxnsToday")}</span>
                 </div>
               </div>
             </div>
