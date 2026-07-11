@@ -74,6 +74,45 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [popupState, setPopupState] = useState<"idle" | "open" | "closed">("idle");
+  const popupRef = useRef<Window | null>(null);
+  const popupTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const openCheckoutPopup = (url: string) => {
+    const w = 480, h = 720;
+    const dualLeft = window.screenLeft ?? window.screenX ?? 0;
+    const dualTop = window.screenTop ?? window.screenY ?? 0;
+    const width = window.innerWidth || document.documentElement.clientWidth || screen.width;
+    const height = window.innerHeight || document.documentElement.clientHeight || screen.height;
+    const left = dualLeft + (width - w) / 2;
+    const top = dualTop + (height - h) / 2;
+    const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes,noopener=no`;
+    const popup = window.open(url, "uddoktapay_checkout", features);
+    if (!popup || popup.closed) {
+      // Popup blocked — fall back to top-level navigation
+      window.open(url, "_blank", "noopener,noreferrer");
+      return false;
+    }
+    popupRef.current = popup;
+    popup.focus?.();
+    setPopupState("open");
+    if (popupTimerRef.current) clearInterval(popupTimerRef.current);
+    popupTimerRef.current = setInterval(() => {
+      if (popup.closed) {
+        if (popupTimerRef.current) clearInterval(popupTimerRef.current);
+        popupTimerRef.current = null;
+        popupRef.current = null;
+        setPopupState("closed");
+      }
+    }, 500);
+    return true;
+  };
+
+  useEffect(() => () => {
+    if (popupTimerRef.current) clearInterval(popupTimerRef.current);
+    if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+  }, []);
+
   const { accounts: depositAccounts, loading: depositLoading } = useDepositAccounts(source ?? undefined);
 
   
@@ -350,24 +389,54 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   </div>
                 </div>
 
-                <a
-                  href={checkoutUrl}
-                  target="_top"
-                  rel="noopener noreferrer"
-                  onClick={() => haptics.light()}
+                <button
+                  type="button"
+                  onClick={() => {
+                    haptics.light();
+                    if (popupRef.current && !popupRef.current.closed) {
+                      popupRef.current.focus();
+                      return;
+                    }
+                    openCheckoutPopup(checkoutUrl);
+                  }}
                   className="mt-6 w-full max-w-xs h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-[0.98] transition-transform"
                 >
-                  {"Continue to pay"}
-                  <ExternalLink size={16} />
-                </a>
+                  {popupState === "open" ? (
+                    <><Loader2 size={16} className="animate-spin" /> Waiting for payment…</>
+                  ) : popupState === "closed" ? (
+                    <>Reopen checkout <ExternalLink size={16} /></>
+                  ) : (
+                    <>Open secure checkout <ExternalLink size={16} /></>
+                  )}
+                </button>
+
+                {popupState === "open" && (
+                  <p className="mt-3 text-[11px] text-muted-foreground max-w-xs">
+                    Complete payment in the popup window. This screen will update automatically.
+                  </p>
+                )}
+                {popupState === "closed" && (
+                  <p className="mt-3 text-[11px] text-emerald-600 dark:text-emerald-400 max-w-xs">
+                    Popup closed. If you completed payment, your balance will update shortly.
+                  </p>
+                )}
 
                 <button
                   type="button"
-                  onClick={() => { setCheckoutUrl(null); setSubmitting(false); }}
+                  onClick={() => {
+                    if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+                    if (popupTimerRef.current) clearInterval(popupTimerRef.current);
+                    popupTimerRef.current = null;
+                    popupRef.current = null;
+                    setPopupState("idle");
+                    setCheckoutUrl(null);
+                    setSubmitting(false);
+                  }}
                   className="mt-3 text-xs font-medium text-muted-foreground hover:text-foreground py-2"
                 >
-                  {"Cancel"}
+                  {popupState === "open" ? "Cancel payment" : "Close"}
                 </button>
+
               </div>
             </div>
           )}
