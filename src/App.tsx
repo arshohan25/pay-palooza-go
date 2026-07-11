@@ -61,6 +61,8 @@ const SavingsPage = lazy(() => import("./pages/SavingsPage"));
 const InstallmentJourneyPage = lazy(() => import("./pages/InstallmentJourneyPage"));
 const RecipientHarness = lazy(() => import("./pages/RecipientHarness"));
 const CashOutHarness = lazy(() => import("./pages/CashOutHarness"));
+const PaymentRequestsPage = lazy(() => import("./pages/PaymentRequestsPage"));
+const PayLinkPage = lazy(() => import("./pages/PayLinkPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -118,7 +120,10 @@ const App = () => (
                       <Route path="account" element={<AccountPage />} />
                       <Route path="savings" element={<SavingsPage />} />
                       <Route path="savings/journey" element={<InstallmentJourneyPage />} />
+                      <Route path="payment-requests" element={<PaymentRequestsPage />} />
                     </Route>
+
+                    <Route path="/r/:shortCode" element={<PayLinkPage />} />
 
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
                     <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]}><AdminUserProfilePage /></RoleGuard>} />
