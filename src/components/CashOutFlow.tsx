@@ -349,6 +349,13 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const handlePinConfirm = async () => {
     if (pin.length < 4) { setError(t("coEnterPin")); return; }
     if (processing) return;
+
+    // Wallet-ID format gate: if the selected agent identifier looks like a
+    // wallet ID it MUST match EZP-AGDH-XXXX.
+    const agentIdent = agent?.agentId || agentIdInput || "";
+    const walletErr = rejectIfWrongAgentWallet(agentIdent);
+    if (walletErr) { setError(walletErr); return; }
+
     setProcessing(true);
 
     const pinValid = await verifyPin(pin);
