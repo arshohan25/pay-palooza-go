@@ -57,7 +57,7 @@ export default function ProductCard({ product, isWishlisted, onAddToCart, onTogg
         <ProductImage
           imageUrl={product.image_url}
           emoji={product.emoji}
-          alt={product.name}
+          alt={displayName}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         {product.badge && (
@@ -85,7 +85,7 @@ export default function ProductCard({ product, isWishlisted, onAddToCart, onTogg
 
       {/* Info */}
       <div className="p-3 space-y-1.5">
-        <h3 className="text-sm font-medium text-foreground truncate leading-tight">{product.name}</h3>
+        <h3 className="text-sm font-medium text-foreground truncate leading-tight">{displayName}</h3>
         <div className="flex items-center gap-1">
           <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
           <span className="text-xs text-muted-foreground">{product.rating.toFixed(1)} ({product.review_count})</span>
