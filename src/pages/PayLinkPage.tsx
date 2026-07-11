@@ -354,14 +354,32 @@ const PayLinkPage = () => {
                     <Button
                       className="w-full rounded-xl h-12 text-base font-semibold"
                       onClick={pay}
-                      disabled={paying || !(finalAmount > 0)}
+                      disabled={paying || payingUp || !(finalAmount > 0)}
                     >
                       {paying ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing…</>)
                         : user ? (<>Pay ৳{finalAmount > 0 ? finalAmount.toLocaleString() : ""} from wallet <ArrowRight className="w-4 h-4 ml-2" /></>)
                         : (<>Sign in to pay <ArrowRight className="w-4 h-4 ml-2" /></>)}
                     </Button>
+
+                    <div className="relative py-1">
+                      <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/60" /></div>
+                      <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
+                        <span className="bg-card px-2 text-muted-foreground">or</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-xl h-12 text-base font-semibold"
+                      onClick={payWithUddoktapay}
+                      disabled={paying || payingUp || !(finalAmount > 0)}
+                    >
+                      {payingUp ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Redirecting…</>)
+                        : (<>Pay with bKash / Nagad / Card <ArrowRight className="w-4 h-4 ml-2" /></>)}
+                    </Button>
                   </>
                 )}
+
               </CardContent>
             </Card>
 
