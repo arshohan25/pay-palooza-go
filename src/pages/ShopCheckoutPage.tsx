@@ -19,6 +19,7 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ProductImage from "@/components/ProductImage";
 import { useI18n } from "@/lib/i18n";
+import { pickLocalizedName } from "@/lib/localizedProduct";
 
 interface Address {
   id: string;
@@ -64,7 +65,7 @@ export default function ShopCheckoutPage() {
   const location = useLocation();
   const { user } = useAuth();
   const cart = useCart();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   // Buy Now: a single product passed via navigation state bypasses the cart entirely.
   // Capture once on mount so re-renders / state-loss don't drop the item.
@@ -421,19 +422,21 @@ export default function ShopCheckoutPage() {
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
             {t("scpItemsLabel")} ({count})
           </p>
-          {items.map((item) => (
+          {items.map((item) => {
+            const itemName = pickLocalizedName(item, lang);
+            return (
             <div key={item.id} className="flex items-center justify-between py-1">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg overflow-hidden bg-muted shrink-0">
                   <ProductImage
                     imageUrl={item.image_url}
                     emoji={item.emoji}
-                    alt={item.name}
+                    alt={itemName}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-foreground leading-tight">{item.name}</p>
+                  <p className="text-xs font-semibold text-foreground leading-tight">{itemName}</p>
                   <p className="text-[10px] text-muted-foreground">
                     {t("scpQty")}: {item.qty} · {item.vendor_name}
                   </p>
@@ -443,7 +446,8 @@ export default function ShopCheckoutPage() {
                 ৳{(item.price * item.qty).toLocaleString()}
               </p>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Coupon */}
