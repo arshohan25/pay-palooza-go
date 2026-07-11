@@ -363,18 +363,8 @@ export default function CouponsPage() {
       setRedeeming(false);
     }
   };
+  const filtered = coupons;
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return coupons.filter((c) => {
-      if (category !== "all" && (c.applicable_flow || "shop") !== category) return false;
-      if (!q) return true;
-      return (
-        c.code.toLowerCase().includes(q) ||
-        (c.description || "").toLowerCase().includes(q)
-      );
-    });
-  }, [coupons, category, query]);
 
   const featured = filtered[0];
   const rest = filtered.slice(1);
