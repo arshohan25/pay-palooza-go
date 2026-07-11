@@ -63,6 +63,8 @@ const RecipientHarness = lazy(() => import("./pages/RecipientHarness"));
 const CashOutHarness = lazy(() => import("./pages/CashOutHarness"));
 const PaymentRequestsPage = lazy(() => import("./pages/PaymentRequestsPage"));
 const PayLinkPage = lazy(() => import("./pages/PayLinkPage"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -124,6 +126,8 @@ const App = () => (
                     </Route>
 
                     <Route path="/r/:shortCode" element={<PayLinkPage />} />
+                    <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+
 
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
                     <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]}><AdminUserProfilePage /></RoleGuard>} />
