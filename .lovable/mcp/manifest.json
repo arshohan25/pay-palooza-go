@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://lmgsxyzytssddijjxbzc.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "easypay-mcp",
+      "version": "0.1.0",
+      "title": "EasyPay Payments"
+    },
+    "tools": [
+      {
+        "name": "create_payment_request",
+        "title": "Create payment request",
+        "description": "Create an EasyPay payment link for the signed-in user. Returns the short code and shareable URL customers can use to pay.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Short title shown to the payer."
+            },
+            "amount": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Requested amount in BDT. Omit for pay-what-you-want (payer chooses)."
+            },
+            "description": {
+              "type": "string",
+              "description": "Optional message shown to the payer."
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_payment_status",
+        "title": "Get payment request status",
+        "description": "Look up an EasyPay payment link by short code and return its current state, total received, remaining balance, and recent payment attempts.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "short_code": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Short code from the payment link URL (e.g. the part after /r/)."
+            }
+          },
+          "required": [
+            "short_code"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_payment_requests",
+        "title": "List payment requests",
+        "description": "List the signed-in user's EasyPay payment links with totals received, remaining balance, and status. Useful for reporting recent activity.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Max rows to return (default 20)."
+            },
+            "only_active": {
+              "type": "boolean",
+              "description": "If true, only include active links."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
