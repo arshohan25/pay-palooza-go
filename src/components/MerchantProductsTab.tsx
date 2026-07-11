@@ -19,7 +19,9 @@ interface Product {
   id: string;
   merchant_id: string;
   name: string;
+  name_bn: string | null;
   description: string | null;
+  description_bn: string | null;
   price: number;
   original_price: number | null;
   category: string;
@@ -213,7 +215,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [form, setForm] = useState({
-    name: "", description: "", price: "", original_price: "",
+    name: "", name_bn: "", description: "", description_bn: "", price: "", original_price: "",
     category: "General", emoji: "📦", stock: "0",
     badge: "", badge_color: "", is_active: true,
     images: [] as string[],
@@ -222,7 +224,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
 
   const resetForm = () => {
     setForm({
-      name: "", description: "", price: "", original_price: "",
+      name: "", name_bn: "", description: "", description_bn: "", price: "", original_price: "",
       category: "General", emoji: "📦", stock: "0",
       badge: "", badge_color: "", is_active: true,
       images: [],
@@ -321,7 +323,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const openEdit = (p: Product) => {
     setEditing(p);
     setForm({
-      name: p.name, description: p.description || "",
+      name: p.name, name_bn: p.name_bn || "", description: p.description || "", description_bn: p.description_bn || "",
       price: String(p.price), original_price: p.original_price ? String(p.original_price) : "",
       category: p.category, emoji: p.emoji, stock: String(p.stock),
       badge: p.badge || "", badge_color: p.badge_color || "", is_active: p.is_active,
@@ -341,7 +343,9 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
     const payload = {
       merchant_id: merchantId,
       name: form.name.trim(),
+      name_bn: form.name_bn.trim() || null,
       description: form.description.trim() || null,
+      description_bn: form.description_bn.trim() || null,
       price: Number(form.price),
       original_price: form.original_price ? Number(form.original_price) : null,
       category: form.category,
@@ -650,15 +654,28 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Name *</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Name (English) *</label>
               <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Product name" className="mt-1.5 rounded-xl" />
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Description</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Name (বাংলা)</label>
+              <Input value={form.name_bn} onChange={e => setForm(f => ({ ...f, name_bn: e.target.value }))}
+                placeholder="বাংলা নাম (ঐচ্ছিক)" className="mt-1.5 rounded-xl" />
+              <p className="text-[10px] text-muted-foreground mt-1">Shown to buyers who use the app in Bangla. Leave blank to fall back to English.</p>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Description (English)</label>
               <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 placeholder="Optional description" rows={2} className="mt-1.5 rounded-xl" />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Description (বাংলা)</label>
+              <Textarea value={form.description_bn} onChange={e => setForm(f => ({ ...f, description_bn: e.target.value }))}
+                placeholder="বাংলা বিবরণ (ঐচ্ছিক)" rows={2} className="mt-1.5 rounded-xl" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">

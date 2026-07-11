@@ -3,12 +3,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ProductImage from "@/components/ProductImage";
 import { useI18n } from "@/lib/i18n";
+import { pickLocalizedName } from "@/lib/localizedProduct";
 import { cn } from "@/lib/utils";
 
 export interface ShopProduct {
   id: string;
   merchant_id: string;
   name: string;
+  name_bn?: string | null;
   price: number;
   original_price?: number | null;
   rating: number;
@@ -16,6 +18,7 @@ export interface ShopProduct {
   emoji: string;
   category: string;
   description?: string | null;
+  description_bn?: string | null;
   badge?: string | null;
   badge_color?: string | null;
   stock: number;
@@ -38,7 +41,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, isWishlisted, onAddToCart, onToggleWishlist, onNavigate }: ProductCardProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const displayName = pickLocalizedName(product, lang);
   const discount = product.original_price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
@@ -53,7 +57,7 @@ export default function ProductCard({ product, isWishlisted, onAddToCart, onTogg
         <ProductImage
           imageUrl={product.image_url}
           emoji={product.emoji}
-          alt={product.name}
+          alt={displayName}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         {product.badge && (
@@ -81,7 +85,7 @@ export default function ProductCard({ product, isWishlisted, onAddToCart, onTogg
 
       {/* Info */}
       <div className="p-3 space-y-1.5">
-        <h3 className="text-sm font-medium text-foreground truncate leading-tight">{product.name}</h3>
+        <h3 className="text-sm font-medium text-foreground truncate leading-tight">{displayName}</h3>
         <div className="flex items-center gap-1">
           <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
           <span className="text-xs text-muted-foreground">{product.rating.toFixed(1)} ({product.review_count})</span>

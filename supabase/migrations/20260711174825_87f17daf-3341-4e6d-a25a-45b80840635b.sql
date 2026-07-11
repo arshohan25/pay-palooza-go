@@ -1,0 +1,1 @@
+ALTER TABLE public.merchant_products ADD COLUMN IF NOT EXISTS name_bn TEXT, ADD COLUMN IF NOT EXISTS description_bn TEXT;

@@ -25,6 +25,7 @@ import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { useI18n } from "@/lib/i18n";
+import { pickLocalizedName } from "@/lib/localizedProduct";
 import { cn } from "@/lib/utils";
 
 type SortOption = "popular" | "price_low" | "price_high" | "newest" | "rating";
@@ -43,7 +44,8 @@ const Section = ({ children, delay = 0, className }: { children: React.ReactNode
 
 /* ── Mini product card for trending row ── */
 function FlashCard({ product, onNavigate }: { product: ShopProduct; onNavigate: (path: string) => void }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const displayName = pickLocalizedName(product, lang);
   const discount = product.original_price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
@@ -56,7 +58,7 @@ function FlashCard({ product, onNavigate }: { product: ShopProduct; onNavigate: 
     >
       <div className="relative aspect-square bg-muted/20 flex items-center justify-center overflow-hidden">
         {product.image_url ? (
-          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          <img src={product.image_url} alt={displayName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         ) : (
           <span className="text-3xl">{product.emoji}</span>
         )}
@@ -67,7 +69,7 @@ function FlashCard({ product, onNavigate }: { product: ShopProduct; onNavigate: 
         )}
       </div>
       <div className="p-2.5 space-y-1">
-        <p className="text-xs font-semibold text-foreground truncate">{product.name}</p>
+        <p className="text-xs font-semibold text-foreground truncate">{displayName}</p>
         <p className="text-xs font-extrabold text-primary">৳{product.price.toLocaleString()}</p>
         {product.original_price && (
           <p className="text-[10px] text-muted-foreground line-through">৳{product.original_price.toLocaleString()}</p>

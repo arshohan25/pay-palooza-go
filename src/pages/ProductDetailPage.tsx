@@ -28,6 +28,7 @@ import { useChat } from "@/hooks/use-chat";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
+import { pickLocalizedName, pickLocalizedDescription } from "@/lib/localizedProduct";
 
 interface Variant {
   id: string;
@@ -56,7 +57,7 @@ function getEstimatedDelivery() {
 }
 
 export default function ProductDetailPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -243,19 +244,22 @@ export default function ProductDetailPage() {
     setTimeout(() => setAddedToCart(false), 600);
   };
 
+  const displayName = pickLocalizedName(product, lang);
+  const displayDescription = pickLocalizedDescription(product, lang);
+
   return (
     <div className="min-h-screen bg-background pb-28">
       <Seo
-        title={`${product.name} – EasyPay Shop`}
-        description={(product.description ?? `Buy ${product.name} on EasyPay Shop. Secure checkout, fast delivery across Bangladesh.`).slice(0, 160)}
+        title={`${displayName} – EasyPay Shop`}
+        description={(displayDescription || `Buy ${displayName} on EasyPay Shop. Secure checkout, fast delivery across Bangladesh.`).slice(0, 160)}
         path={`/product/${product.id}`}
         type="product"
         image={images[0]}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Product",
-          name: product.name,
-          description: product.description ?? undefined,
+          name: displayName,
+          description: displayDescription || undefined,
           image: images[0],
           offers: {
             "@type": "Offer",
@@ -279,7 +283,7 @@ export default function ProductDetailPage() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <h1 className="flex-1 min-w-0 text-[15px] font-semibold text-primary-foreground truncate">
-                {product?.name ?? t("pdpProduct")}
+                {displayName || t("pdpProduct")}
               </h1>
               <div className="flex items-center gap-1">
                 <motion.div whileTap={{ scale: 0.75 }} className="relative">
@@ -317,7 +321,7 @@ export default function ProductDetailPage() {
             <motion.img
               key={imgIdx}
               src={images[imgIdx] || "/placeholder.svg"}
-              alt={product.name}
+              alt={displayName}
               className="absolute inset-0 w-full h-full object-contain"
               initial={{ opacity: 0, x: swipeDir * 80, scale: 0.96 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -382,7 +386,7 @@ export default function ProductDetailPage() {
 
         {/* Title */}
         <motion.h1 custom={2} variants={fadeUp} initial="hidden" animate="show" className="text-lg font-bold text-foreground leading-snug">
-          {product.name}
+          {displayName}
         </motion.h1>
 
         {/* Rating */}
@@ -553,7 +557,7 @@ export default function ProductDetailPage() {
                   <span className="text-xs font-semibold text-foreground">{t("pdpProductDetails")}</span>
                 </div>
                 {(() => {
-                  const lines = (product.description || t("pdpNoDescription")).split("\n").filter(Boolean);
+                  const lines = (displayDescription || t("pdpNoDescription")).split("\n").filter(Boolean);
                   if (lines.length <= 1) {
                     return (
                       <div className="px-3.5 py-3 border-l-2 border-primary/40 ml-3 my-3">
@@ -705,7 +709,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-2.5 px-4 py-2 bg-muted/30 border-b border-border/30 shrink-0">
               <span className="text-lg">{product.emoji || "📦"}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-foreground truncate">{product.name}</p>
+                <p className="text-xs font-medium text-foreground truncate">{displayName}</p>
                 <p className="text-[11px] text-primary font-bold">৳{product.price?.toLocaleString()}</p>
               </div>
             </div>
