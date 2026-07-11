@@ -1,4 +1,5 @@
 import { validateRecipient } from "@/lib/recipientValidation";
+import { WALLET_ID_RE, AGENT_WALLET_RE, validateWalletId } from "@/lib/walletId";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFeeConfig } from "@/hooks/use-fee-config";
