@@ -327,25 +327,25 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                 </motion.div>
 
                 <h2 className="text-xl font-extrabold text-foreground tracking-tight">
-                  {t("amUddoktapayReady") || "Secure checkout ready"}
+                  {"Secure checkout ready"}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-2 max-w-xs">
-                  {t("amUddoktapayDesc") || "You'll complete payment on UddoktaPay's secure page. We'll bring you back automatically."}
+                  {"You will complete payment on UddoktaPay's secure page, then return here automatically."}
                 </p>
 
                 <div className="mt-6 w-full max-w-xs rounded-2xl bg-card border border-border p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{t("amAmount") || "Amount"}</span>
+                    <span className="text-xs text-muted-foreground">{"Amount"}</span>
                     <span className="text-lg font-extrabold text-foreground">৳{parseFloat(amount || "0").toLocaleString()}</span>
                   </div>
                   <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <span className="text-xs text-muted-foreground">{t("amProvider") || "Provider"}</span>
+                    <span className="text-xs text-muted-foreground">{"Provider"}</span>
                     <span className="text-xs font-semibold text-foreground">UddoktaPay</span>
                   </div>
                   <div className="flex items-center gap-2 pt-3 border-t border-border">
                     <ShieldCheck size={14} className="text-emerald-500 shrink-0" />
                     <span className="text-[11px] text-muted-foreground leading-snug text-left">
-                      {t("amEncryptedNotice") || "256-bit encrypted. EasyPay never sees your card or PIN."}
+                      {"256-bit encrypted. EasyPay never sees your card or PIN."}
                     </span>
                   </div>
                 </div>
@@ -357,7 +357,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   onClick={() => haptics.light()}
                   className="mt-6 w-full max-w-xs h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-[0.98] transition-transform"
                 >
-                  {t("amContinueToPay") || "Continue to pay"}
+                  {"Continue to pay"}
                   <ExternalLink size={16} />
                 </a>
 
@@ -366,7 +366,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   onClick={() => { setCheckoutUrl(null); setSubmitting(false); }}
                   className="mt-3 text-xs font-medium text-muted-foreground hover:text-foreground py-2"
                 >
-                  {t("amCancel") || "Cancel"}
+                  {"Cancel"}
                 </button>
               </div>
             </div>
