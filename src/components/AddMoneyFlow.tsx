@@ -87,7 +87,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     const height = window.innerHeight || document.documentElement.clientHeight || screen.height;
     const left = Math.max(0, dualLeft + (width - w) / 2);
     const top = Math.max(0, dualTop + (height - h) / 2);
-    return `popup=yes,width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes,noopener=no`;
+    return `popup=yes,width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes`;
   };
 
   const watchPopup = (popup: Window) => {
@@ -134,7 +134,11 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
       expiresAt: Date.now() + 10 * 60 * 1000,
     };
     localStorage.setItem(`${CHECKOUT_POPUP_STORAGE_PREFIX}${token}`, JSON.stringify(payload));
-    popupRef.current?.postMessage({ type: "EASYPAY_CHECKOUT_READY", token, payload }, window.location.origin);
+    try {
+      popupRef.current?.postMessage({ type: "EASYPAY_CHECKOUT_READY", token, payload }, window.location.origin);
+    } catch {
+      // The storage payload above is the reliable fallback for mobile/PWA popup bridges.
+    }
     setPopupState("open");
     return true;
   };

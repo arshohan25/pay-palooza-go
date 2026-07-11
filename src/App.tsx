@@ -66,6 +66,7 @@ const PayLinkPage = lazy(() => import("./pages/PayLinkPage"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const AdminMcpActivityLog = lazy(() => import("./pages/AdminMcpActivityLog"));
 const PaymentPopupPage = lazy(() => import("./pages/PaymentPopupPage"));
+const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
 
 
 
@@ -130,6 +131,7 @@ const App = () => (
 
                     <Route path="/r/:shortCode" element={<PayLinkPage />} />
                     <Route path="/payment-popup" element={<PaymentPopupPage />} />
+                    <Route path="/payment-return" element={<PaymentReturnPage />} />
                     <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 
 
