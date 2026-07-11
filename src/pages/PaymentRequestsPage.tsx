@@ -381,7 +381,7 @@ const PaymentRequestsPage = () => {
 
                     {expanded && (
                       <div className="mt-3 pt-3 border-t border-border/40">
-                        <PaymentLinkTimeline payments={linkPays} emptyLabel="No payments on this link yet." />
+                        <PaymentLinkTimeline payments={linkPays} emptyLabel="No payments on this link yet." onRefund={refund} refundingId={refundingId} />
                       </div>
                     )}
                   </motion.li>
