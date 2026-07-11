@@ -380,7 +380,9 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
         onClose={() => setQrOpen(false)}
         userId={user?.id || ""}
         userName={agentInfo?.business_name || profile.displayName}
+        phone={profile.phone || ""}
       />
+
 
       {/* Avatar Upload Sheet */}
       <Sheet open={avatarSheetOpen} onOpenChange={setAvatarSheetOpen}>

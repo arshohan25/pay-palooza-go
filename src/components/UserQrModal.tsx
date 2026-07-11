@@ -1,31 +1,41 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, CheckCheck, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { renderQrWithLogo } from "@/lib/qrWithLogo";
 import { useI18n } from "@/lib/i18n";
 import { activityTracker } from "@/lib/activityTracker";
+import { generateWalletId } from "@/lib/walletId";
+import { useProfile } from "@/hooks/use-profile";
 
 interface UserQrModalProps {
   open: boolean;
   onClose: () => void;
   userId: string;
   userName: string;
+  /** Optional explicit phone seed. Falls back to the current user's profile phone. */
+  phone?: string;
 }
 
-const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
+const UserQrModal = ({ open, onClose, userId, userName, phone }: UserQrModalProps) => {
   const { t } = useI18n();
+  const profile = useProfile();
   const [copied, setCopied] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const walletId = userId;
+  // Correct format: EZP-XXXX-XXXX (13 chars), deterministically derived from phone.
+  const walletId = useMemo(() => {
+    const seed = (phone || profile.phone || userId || "").toString().trim();
+    return seed ? generateWalletId(seed) : "";
+  }, [phone, profile.phone, userId]);
 
   useEffect(() => {
-    if (!open || !canvasRef.current) return;
+    if (!open || !canvasRef.current || !walletId) return;
     const payload = JSON.stringify({ walletId, name: userName, app: "EasyPay" });
     renderQrWithLogo(canvasRef.current, payload, 200).catch(console.error);
     activityTracker.qr("qr_opened", { kind: "user_wallet", walletId });
-  }, [open, userId, userName]);
+  }, [open, walletId, userName]);
+
 
   const handleCopy = async () => {
     try {
