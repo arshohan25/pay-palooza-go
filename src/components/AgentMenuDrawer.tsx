@@ -109,8 +109,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     { icon: ShieldCheck, label: t("agCustomerKyc"), action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
     { icon: BarChart3, label: t("agAnalytics"), action: () => { onClose(); navigate("/agent/analytics"); }, toggleKey: "agent_analytics" },
     { icon: Bell, label: t("agNotifications"), action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
-    { icon: Languages, label: lang === "en" ? "বাংলা" : "English", action: () => toggleLang(), rightLabel: lang === "en" ? "EN" : "বাং" },
-  ].filter(item => !("toggleKey" in item) || !item.toggleKey || !isDisabled(item.toggleKey));
+  ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
 
   const bottomItems = [
     { icon: Home, label: t("agBackHome"), action: () => { onClose(); navigate("/"); } },
