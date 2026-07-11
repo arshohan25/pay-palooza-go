@@ -100,9 +100,15 @@ const PayLinkPage = () => {
         { event: "INSERT", schema: "public", table: "payment_link_payments", filter: `link_id=eq.${link.id}` },
         () => loadPayments(link.id),
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "payment_link_payments", filter: `link_id=eq.${link.id}` },
+        () => loadPayments(link.id),
+      )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [link?.id, loadPayments]);
+
 
   const remaining = useMemo(() => {
     if (!link || link.amount == null) return null;
