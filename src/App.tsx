@@ -64,6 +64,8 @@ const CashOutHarness = lazy(() => import("./pages/CashOutHarness"));
 const PaymentRequestsPage = lazy(() => import("./pages/PaymentRequestsPage"));
 const PayLinkPage = lazy(() => import("./pages/PayLinkPage"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const AdminMcpActivityLog = lazy(() => import("./pages/AdminMcpActivityLog"));
+
 
 
 const queryClient = new QueryClient({
