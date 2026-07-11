@@ -3176,6 +3176,31 @@ const translations = {
   thFree: { en: "Free", bn: "ফ্রি" },
   thFeeBreakdown: { en: "Fee Breakdown", bn: "ফি বিভাজন" },
   thCommissionBreakdown: { en: "Commission Breakdown", bn: "কমিশন বিভাজন" },
+
+  // ── Agent Dashboard ──
+  agdAgentPortal: { en: "Agent Portal", bn: "এজেন্ট পোর্টাল" },
+  agdFloatBalance: { en: "Float Balance", bn: "ফ্লোট ব্যালেন্স" },
+  agdMax: { en: "Max", bn: "সর্বোচ্চ" },
+  agdHealthy: { en: "Healthy", bn: "স্বাস্থ্যকর" },
+  agdLow: { en: "Low", bn: "কম" },
+  agdCritical: { en: "Critical", bn: "সংকটজনক" },
+  agdTxnsToday: { en: "txns today", bn: "লেনদেন আজ" },
+  agdB2BSend: { en: "B2B Send", bn: "বি২বি সেন্ড" },
+  agdBillPay: { en: "Bill Pay", bn: "বিল পে" },
+  agdRegister: { en: "Register", bn: "রেজিস্টার" },
+  agdFloatReq: { en: "Float Req", bn: "ফ্লোট রিক" },
+  agdSupport: { en: "Support", bn: "সাপোর্ট" },
+  agdTodaysTxns: { en: "Today's Txns", bn: "আজকের লেনদেন" },
+  agdVolume: { en: "Volume", bn: "ভলিউম" },
+  agdEarnedToday: { en: "Earned Today", bn: "আজ আয়" },
+  agdCustomers: { en: "Customers", bn: "গ্রাহক" },
+  agdAgentCommission: { en: "Agent Commission", bn: "এজেন্ট কমিশন" },
+  agdCommissionRates: { en: "0.49% Cash In/Out · 0.019% Bill Pay", bn: "০.৪৯% ক্যাশ ইন/আউট · ০.০১৯% বিল পে" },
+  agdTotalEarned: { en: "Total earned", bn: "মোট আয়" },
+  agd7DayTrend: { en: "7-Day Commission Trend", bn: "৭-দিনের কমিশন প্রবণতা" },
+  agd7DayTotal: { en: "7-Day Total", bn: "৭-দিনের মোট" },
+  agdRecentActivity: { en: "Recent Activity", bn: "সাম্প্রতিক লেনদেন" },
+  agdYourActivity: { en: "Your activity will appear here", bn: "আপনার কার্যক্রম এখানে দেখাবে" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
