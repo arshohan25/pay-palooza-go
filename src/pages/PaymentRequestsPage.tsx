@@ -160,8 +160,12 @@ const PaymentRequestsPage = () => {
   const refund = async (paymentId: string, reason: string, amount: number) => {
     setRefundingId(paymentId);
     try {
+      const idempotencyKey =
+        (globalThis.crypto?.randomUUID?.() as string | undefined) ??
+        `${paymentId}-${amount}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const { data, error } = await supabase.functions.invoke("refund-link-payment", {
-        body: { payment_id: paymentId, reason, amount },
+        body: { payment_id: paymentId, reason, amount, idempotency_key: idempotencyKey },
+        headers: { "Idempotency-Key": idempotencyKey },
       });
       if (error) {
         const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;

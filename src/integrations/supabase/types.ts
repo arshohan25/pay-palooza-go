@@ -4419,6 +4419,53 @@ export type Database = {
           },
         ]
       }
+      payment_link_refund_idempotency: {
+        Row: {
+          actor_id: string
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          id: string
+          idempotency_key: string
+          payment_id: string
+          requested_amount: number | null
+          response: Json | null
+          status: string
+        }
+        Insert: {
+          actor_id: string
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          idempotency_key: string
+          payment_id: string
+          requested_amount?: number | null
+          response?: Json | null
+          status?: string
+        }
+        Update: {
+          actor_id?: string
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          idempotency_key?: string
+          payment_id?: string
+          requested_amount?: number | null
+          response?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_link_refund_idempotency_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment_link_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_links: {
         Row: {
           amount: number | null
