@@ -72,7 +72,8 @@ const GRADIENTS = ["gradient-send", "gradient-cashout", "gradient-payment", "gra
 const QUICK_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
-const WALLET_ID_RE = /^EZP-[A-Z]{4}-[A-Z]{4}$/i;
+import { WALLET_ID_RE, USER_WALLET_RE, validateWalletId } from "@/lib/walletId";
+const WALLET_ID_RE_LOCAL = WALLET_ID_RE;
 const BD_PHONE_RE  = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, "");
