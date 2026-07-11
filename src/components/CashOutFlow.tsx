@@ -377,6 +377,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     const effectiveAmtVal = Math.max(0, amtVal - couponDiscVal);
     const commissionVal = getAgentCommission("cashout", amtVal);
     try {
+      const agentWalletCandidate = AGENT_WALLET_RE.test((agent?.agentId || "").trim().toUpperCase())
+        ? agent!.agentId
+        : undefined;
       await transferMoney({
         recipientPhone: (resolvedAgentPhone || agent?.agentId) ?? "",
         amount: effectiveAmtVal,
@@ -387,9 +390,15 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         reference: txnId.current,
         recipientType: "cashin",
         commission: commissionVal,
+        recipientWalletId: agentWalletCandidate,
+        expectedWalletRole: agentWalletCandidate ? "agent" : undefined,
       });
     } catch (e: any) {
-      setError(e.message || t("coCashOutFailed"));
+      if (e?.code === "bad_format" || e?.code === "role_mismatch") {
+        setError(walletFormatError("agent", lang));
+      } else {
+        setError(e.message || t("coCashOutFailed"));
+      }
       setPin("");
       setProcessing(false);
       return;
