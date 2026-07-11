@@ -462,12 +462,12 @@ const AgentDashboard = () => {
         {/* ── Recent Activity ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-foreground">Recent Activity</h3>
+            <h3 className="text-sm font-bold text-foreground">{t("agdRecentActivity")}</h3>
             <button
               onClick={() => navigate("/agent/history")}
               className="flex items-center gap-0.5 text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors press-effect"
             >
-              See All <ChevronRight size={13} strokeWidth={2.5} />
+              {t("seeAll")} <ChevronRight size={13} strokeWidth={2.5} />
             </button>
           </div>
           <Card className="border-0 shadow-card rounded-2xl overflow-hidden">
