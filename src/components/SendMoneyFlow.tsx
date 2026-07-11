@@ -344,7 +344,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const recentFiltered = filteredContacts.filter((c) => c.source === "recent");
   const contactsFiltered = filteredContacts.filter((c) => c.source === "contacts").sort((a, b) => a.name.localeCompare(b.name));
 
-  const isNameSearch = inputVal.trim().length >= 2 && !/^\+?\d/.test(inputVal.trim()) && !WALLET_ID_RE.test(inputVal.trim());
+  const isNameSearch = inputVal.trim().length >= 2 && !/^\+?\d/.test(inputVal.trim()) && !WALLET_ID_RE.test(inputVal.trim().toUpperCase());
 
   // Check if input is a valid number for the "Send to this number" row
   const manualRecipientType = detectRecipientType(inputVal);
