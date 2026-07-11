@@ -62,8 +62,8 @@ const KycBadge = ({ status, loading }: { status: KycStatus; loading?: boolean })
   const { t } = useI18n();
   if (loading) return <Skeleton className="w-16 h-4 rounded-full" />;
   if (status === "verified") return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/12 text-primary border border-primary/20">
-      <BadgeCheck size={11} /> {t("verified")}
+    <span className="relative inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-white text-primary border border-white/80 shadow-[0_0_0_2px_rgba(255,255,255,0.35),0_4px_14px_rgba(0,0,0,0.15)] ring-1 ring-primary/30 animate-[pulse_2.4s_ease-in-out_infinite]">
+      <BadgeCheck size={12} className="drop-shadow-sm" /> {t("verified")}
     </span>
   );
   if (status === "pending") return (
