@@ -173,6 +173,58 @@ const PayLinkPage = () => {
     }
   };
 
+  const payWithUddoktapay = async () => {
+    if (!user) {
+      navigate(`/?next=${encodeURIComponent(`/r/${shortCode}`)}`);
+      return;
+    }
+    if (!link) return;
+    if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+      return toast.error("Enter a valid amount");
+    }
+    if (remaining !== null && finalAmount > remaining) {
+      return toast.error(`Only ৳${remaining} remaining`);
+    }
+    setPayingUp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("uddoktapay-init", {
+        body: {
+          short_code: link.short_code,
+          amount: finalAmount,
+          return_origin: window.location.origin,
+        },
+      });
+      if (error) {
+        const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;
+        const detail = ctx?.text ? await ctx.text() : error.message;
+        let msg = detail;
+        try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+      if (!data?.payment_url) throw new Error("No checkout URL returned");
+      window.location.href = data.payment_url as string;
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPayingUp(false);
+    }
+  };
+
+  // Handle return from UddoktaPay hosted checkout
+  useEffect(() => {
+    const up = searchParams.get("up");
+    if (!up) return;
+    if (up === "success") {
+      toast.success("Payment received — updating…");
+      if (link?.id) loadPayments(link.id);
+    } else if (up === "cancel") {
+      toast.error("Payment cancelled");
+    }
+    searchParams.delete("up");
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams, link?.id, loadPayments]);
+
+
+
   if (loading || authLoading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   }
