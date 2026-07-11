@@ -29,6 +29,7 @@ type PaymentLink = {
   expires_at: string | null;
   created_at: string;
   description: string | null;
+  source?: string | null;
 };
 
 type ReceivedPayment = LinkPaymentRow & { link_id: string; payer_id: string };
