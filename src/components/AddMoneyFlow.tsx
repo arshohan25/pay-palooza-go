@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ChevronLeft, CheckCircle2, AlertCircle, Upload, Clock,
   Landmark, CreditCard, Wallet, Copy, Check, ShieldAlert, ShieldCheck,
-  XCircle, Loader2,
+  XCircle, Loader2, Lock, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
