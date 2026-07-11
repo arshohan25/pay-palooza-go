@@ -244,19 +244,22 @@ export default function ProductDetailPage() {
     setTimeout(() => setAddedToCart(false), 600);
   };
 
+  const displayName = pickLocalizedName(product, lang);
+  const displayDescription = pickLocalizedDescription(product, lang);
+
   return (
     <div className="min-h-screen bg-background pb-28">
       <Seo
-        title={`${product.name} – EasyPay Shop`}
-        description={(product.description ?? `Buy ${product.name} on EasyPay Shop. Secure checkout, fast delivery across Bangladesh.`).slice(0, 160)}
+        title={`${displayName} – EasyPay Shop`}
+        description={(displayDescription || `Buy ${displayName} on EasyPay Shop. Secure checkout, fast delivery across Bangladesh.`).slice(0, 160)}
         path={`/product/${product.id}`}
         type="product"
         image={images[0]}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Product",
-          name: product.name,
-          description: product.description ?? undefined,
+          name: displayName,
+          description: displayDescription || undefined,
           image: images[0],
           offers: {
             "@type": "Offer",
