@@ -23,8 +23,8 @@ export default function PaymentPopupPage() {
     }
 
     const storageKey = `${CHECKOUT_POPUP_STORAGE_PREFIX}${token}`;
-    let redirectTimer: ReturnType<typeof window.setTimeout> | null = null;
-    let expiryTimer: ReturnType<typeof window.setTimeout> | null = null;
+    let redirectTimer: number | null = null;
+    let expiryTimer: number | null = null;
 
     const openPayload = (rawPayload: CheckoutPayload | string) => {
       try {
