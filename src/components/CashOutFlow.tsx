@@ -271,14 +271,14 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
   /**
    * Reject wallet IDs that don't match the required agent format
-   * (EZP-AGDH-XXXX). Personal user (EZP-XXXX-XXXX) and merchant
-   * (EZP-MRCD-XXXX) wallets cannot receive a cash-out.
+   * (EZP-AGN{RR}-XXXX). Personal user (EZP-XXXX-XXXX) and merchant
+   * (EZP-MRC{RR}-XXXX) wallets cannot receive a cash-out.
    */
   const rejectIfWrongAgentWallet = (raw: string): string | null => {
     const v = (raw || "").trim().toUpperCase();
     if (!WALLET_ID_RE.test(v)) return null; // not a wallet-shaped input — allow (phone/territory)
     const wv = validateWalletId(v, "agent");
-    if (!wv.ok) return t("coAgentNotFound");
+    if (!wv.ok) return walletFormatError("agent", lang);
     return null;
   };
 
