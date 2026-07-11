@@ -39,7 +39,7 @@ import {
   InsuranceIcon,
   GiftCardsIcon,
 } from "./QuickActionIcons";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { haptics } from "@/lib/haptics";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
