@@ -219,21 +219,24 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
 
                 {/* Account */}
                 <div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-1.5">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
                     {lang === "bn" ? "অ্যাকাউন্ট" : "Account"}
                   </p>
-                  <div className="space-y-0.5">
+                  <div className="bg-muted/30 border border-border/50 rounded-2xl overflow-hidden divide-y divide-border/40">
                     {accountItems.map(item => (
                       <button
                         key={item.label}
                         onClick={() => item.action()}
-                        className="w-full flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-muted/60 active:scale-[0.99] transition-all group"
+                        className="w-full flex items-center gap-3 px-3 py-3 hover:bg-muted/60 active:scale-[0.99] transition-all group text-left"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10">
-                          <item.icon size={14} className="text-muted-foreground group-hover:text-primary" />
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.tint}`}>
+                          <item.icon size={15} strokeWidth={2.2} />
                         </div>
-                        <span className="text-[13px] font-semibold text-foreground flex-1 text-left truncate">{item.label}</span>
-                        <ChevronRight size={13} className="text-muted-foreground/40 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-bold text-foreground truncate leading-tight">{item.label}</p>
+                          <p className="text-[10.5px] text-muted-foreground truncate mt-0.5">{item.sub}</p>
+                        </div>
+                        <ChevronRight size={14} className="text-muted-foreground/40 shrink-0 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                       </button>
                     ))}
                   </div>
