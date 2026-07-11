@@ -386,7 +386,7 @@ export default function ProductDetailPage() {
 
         {/* Title */}
         <motion.h1 custom={2} variants={fadeUp} initial="hidden" animate="show" className="text-lg font-bold text-foreground leading-snug">
-          {product.name}
+          {displayName}
         </motion.h1>
 
         {/* Rating */}
