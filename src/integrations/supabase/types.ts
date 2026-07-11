@@ -2754,6 +2754,48 @@ export type Database = {
         }
         Relationships: []
       }
+      mcp_tool_call_logs: {
+        Row: {
+          arguments: Json | null
+          client_id: string | null
+          correlation_id: string
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          result_summary: string | null
+          status: string
+          tool_name: string
+          user_id: string | null
+        }
+        Insert: {
+          arguments?: Json | null
+          client_id?: string | null
+          correlation_id: string
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          result_summary?: string | null
+          status: string
+          tool_name: string
+          user_id?: string | null
+        }
+        Update: {
+          arguments?: Json | null
+          client_id?: string | null
+          correlation_id?: string
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          result_summary?: string | null
+          status?: string
+          tool_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       merchant_api_access_requests: {
         Row: {
           created_at: string
@@ -4483,6 +4525,7 @@ export type Database = {
           merchant_id: string | null
           note: string | null
           short_code: string
+          source: string
           title: string
           used_count: number
         }
@@ -4502,6 +4545,7 @@ export type Database = {
           merchant_id?: string | null
           note?: string | null
           short_code: string
+          source?: string
           title: string
           used_count?: number
         }
@@ -4521,6 +4565,7 @@ export type Database = {
           merchant_id?: string | null
           note?: string | null
           short_code?: string
+          source?: string
           title?: string
           used_count?: number
         }
