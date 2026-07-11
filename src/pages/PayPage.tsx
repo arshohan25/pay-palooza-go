@@ -10,6 +10,7 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
 import QRCode from "qrcode";
 import { useI18n } from "@/lib/i18n";
+import { WALLET_ID_RE, validateWalletId } from "@/lib/walletId";
 
 const NotFoundView = ({ merchantCode, onHome }: { merchantCode: string; onHome: () => void }) => {
   const { t } = useI18n();
