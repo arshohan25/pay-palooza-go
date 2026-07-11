@@ -481,7 +481,31 @@ const PaymentRequestsPage = () => {
                     </div>
 
                     {expanded && (
-                      <div className="mt-3 pt-3 border-t border-border/40">
+                      <div className="mt-3 pt-3 border-t border-border/40 space-y-3">
+                        {l.source === "mcp" && (
+                          <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5 text-[11px] space-y-1">
+                            <div className="flex items-center gap-1.5 text-foreground font-medium">
+                              <span aria-hidden>🤖</span> Created via AI assistant (MCP)
+                            </div>
+                            {(mcpLogsByLink[l.id] ?? []).slice(0, 1).map(log => (
+                              <div key={log.correlation_id} className="flex items-center justify-between gap-2">
+                                <span className="text-muted-foreground">
+                                  correlation: <code className="font-mono text-foreground">{log.correlation_id.slice(0, 8)}…</code>
+                                </span>
+                                <a
+                                  href={`/admin/mcp-activity?cid=${log.correlation_id}`}
+                                  onClick={(e) => { e.preventDefault(); window.open(`/admin/mcp-activity?cid=${log.correlation_id}`, "_blank"); }}
+                                  className="text-primary hover:underline inline-flex items-center gap-1"
+                                >
+                                  View in Admin Activity Log <ExternalLink className="w-3 h-3" />
+                                </a>
+                              </div>
+                            ))}
+                            {!(mcpLogsByLink[l.id]?.length) && (
+                              <p className="text-muted-foreground">No correlation ID recorded for this link.</p>
+                            )}
+                          </div>
+                        )}
                         <PaymentLinkTimeline payments={linkPays} emptyLabel="No payments on this link yet." onRefund={refund} refundingId={refundingId} />
                       </div>
                     )}
