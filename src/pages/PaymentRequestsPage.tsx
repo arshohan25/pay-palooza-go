@@ -135,8 +135,8 @@ const PaymentRequestsPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Seo title="Payment Requests" description="Create shareable payment request links and track their status." />
-      <FlowHeader title="Payment Requests" subtitle="Share a link to get paid" />
+      <Seo title="Payment Requests" description="Create shareable payment request links and track their status." path="/payment-requests" />
+      <FlowHeader title="Payment Requests" tagline="Share a link to get paid" />
 
       <div className="max-w-md mx-auto px-4 pt-4 space-y-6">
         <Card className="border-border/40 shadow-card">

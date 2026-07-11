@@ -90,9 +90,8 @@ const PayLinkPage = () => {
         body: { short_code: link.short_code, amount: link.amount == null ? finalAmount : undefined },
       });
       if (error) {
-        // functions.invoke wraps non-2xx; try to read body
-        // @ts-expect-error - context is present on FunctionsHttpError at runtime
-        const detail = error?.context?.text ? await error.context.text() : error.message;
+        const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;
+        const detail = ctx?.text ? await ctx.text() : error.message;
         let msg = detail;
         try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
         throw new Error(msg);
@@ -131,7 +130,7 @@ const PayLinkPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background flex items-center justify-center p-4">
-      <Seo title={`Pay: ${link.title}`} description={`Pay ${link.title} securely from your wallet.`} />
+      <Seo title={`Pay: ${link.title}`} description={`Pay ${link.title} securely from your wallet.`} path={`/r/${link.short_code}`} />
       <AnimatePresence mode="wait">
         {success ? (
           <motion.div
