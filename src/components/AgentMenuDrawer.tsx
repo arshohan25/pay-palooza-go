@@ -186,7 +186,11 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                         <item.icon size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                       <span className="text-sm font-semibold text-foreground flex-1 text-left">{item.label}</span>
-                      <ChevronRight size={14} className="text-muted-foreground/40" />
+                      {"rightLabel" in item && item.rightLabel ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary">{item.rightLabel}</span>
+                      ) : (
+                        <ChevronRight size={14} className="text-muted-foreground/40" />
+                      )}
                     </button>
                   ))}
                 </div>
