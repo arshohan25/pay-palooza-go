@@ -567,6 +567,73 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* KYC Category Modal */}
+      <Sheet open={kycModal !== null} onOpenChange={(o) => !o && setKycModal(null)}>
+        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 max-h-[85vh] overflow-hidden flex flex-col">
+          <SheetHeader className="mb-3 text-left">
+            <SheetTitle className="text-base font-extrabold flex items-center gap-2">
+              {kycModal === "verified" && <CheckCircle2 size={16} className="text-emerald-500" />}
+              {kycModal === "pending" && <Clock size={16} className="text-amber-500" />}
+              {kycModal === "rejected" && <XCircle size={16} className="text-rose-500" />}
+              {kycModal === "verified" && (lang === "bn" ? "যাচাইকৃত গ্রাহক" : "Verified Customers")}
+              {kycModal === "pending" && (lang === "bn" ? "অপেক্ষমাণ গ্রাহক" : "Pending Customers")}
+              {kycModal === "rejected" && (lang === "bn" ? "প্রত্যাখ্যাত গ্রাহক" : "Rejected Customers")}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="relative mb-3">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={kycSearch}
+              onChange={(e) => setKycSearch(e.target.value)}
+              placeholder={lang === "bn" ? "নাম বা ফোন খুঁজুন..." : "Search by name or phone..."}
+              className="pl-9 h-10 rounded-xl text-sm"
+            />
+          </div>
+          <div className="flex-1 overflow-y-auto -mx-2 px-2 space-y-1.5">
+            {(() => {
+              const q = kycSearch.trim().toLowerCase();
+              const list = kycCustomers
+                .filter((c) => (kycModal === "verified" ? c.status === "verified" : kycModal === "rejected" ? c.status === "rejected" : c.status !== "verified" && c.status !== "rejected"))
+                .filter((c) => !q || (c.name || "").toLowerCase().includes(q) || (c.phone || "").toLowerCase().includes(q))
+                .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
+              if (list.length === 0) {
+                return (
+                  <div className="text-center py-10 text-xs text-muted-foreground">
+                    {lang === "bn" ? "কোনো গ্রাহক পাওয়া যায়নি" : "No customers found"}
+                  </div>
+                );
+              }
+              return list.map((c) => (
+                <div key={c.user_id} className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 flex items-start gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    c.status === "verified" ? "bg-emerald-500/15 text-emerald-500" :
+                    c.status === "rejected" ? "bg-rose-500/15 text-rose-500" :
+                    "bg-amber-500/15 text-amber-500"
+                  }`}>
+                    {c.status === "verified" ? <CheckCircle2 size={15} /> : c.status === "rejected" ? <XCircle size={15} /> : <Clock size={15} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-bold text-foreground truncate">{c.name || (lang === "bn" ? "নামহীন" : "Unnamed")}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{c.phone || "—"}</p>
+                    {c.status === "rejected" && c.rejection_reason && (
+                      <p className="text-[10.5px] text-rose-500 mt-1 leading-snug">
+                        <AlertTriangle size={9} className="inline mr-1 -mt-0.5" />
+                        {c.rejection_reason}
+                      </p>
+                    )}
+                  </div>
+                  {c.updated_at && (
+                    <p className="text-[9.5px] text-muted-foreground shrink-0 mt-1">
+                      {new Date(c.updated_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD", { day: "2-digit", month: "short" })}
+                    </p>
+                  )}
+                </div>
+              ));
+            })()}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };
