@@ -35,15 +35,7 @@ Deno.serve(async (req) => {
 
     const status = String(verified?.status ?? "").toUpperCase();
     const metadata = verified?.metadata ?? {};
-    const linkId = metadata?.link_id;
-    const payerId = metadata?.payer_id;
-    const payeeId = metadata?.payee_id;
     const amount = Number(verified?.amount ?? 0);
-
-    if (!linkId || !payerId || !payeeId || !Number.isFinite(amount) || amount <= 0) {
-      console.error("uddoktapay-ipn: missing metadata", { linkId, payerId, payeeId, amount });
-      return json({ error: "invalid metadata" }, 400);
-    }
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -51,9 +43,34 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
-    const idemKey = `uddoktapay:${invoiceId}`;
+    // Branch: add-money top-up vs payment-link
+    if (metadata?.kind === "addmoney") {
+      const requestId = metadata?.request_id;
+      if (!requestId) return json({ error: "request_id missing" }, 400);
+      if (status !== "COMPLETED") {
+        console.log("uddoktapay-ipn addmoney non-terminal", status);
+        return json({ ok: true, status });
+      }
+      const { data, error } = await admin.rpc("system_approve_addmoney_request", {
+        p_request_id: requestId,
+        p_gateway_ref: invoiceId,
+      });
+      if (error) {
+        console.error("system_approve_addmoney_request failed", error);
+        return json({ error: error.message }, 500);
+      }
+      return json({ ok: true, addmoney: data });
+    }
 
-    // Idempotency: bail if we've already recorded this invoice.
+    const linkId = metadata?.link_id;
+    const payerId = metadata?.payer_id;
+    const payeeId = metadata?.payee_id;
+    if (!linkId || !payerId || !payeeId || !Number.isFinite(amount) || amount <= 0) {
+      console.error("uddoktapay-ipn: missing metadata", { linkId, payerId, payeeId, amount });
+      return json({ error: "invalid metadata" }, 400);
+    }
+
+    const idemKey = `uddoktapay:${invoiceId}`;
     const { data: existing } = await admin
       .from("payment_link_payments")
       .select("id,status")
@@ -64,7 +81,6 @@ Deno.serve(async (req) => {
       return json({ ok: true, already: true });
     }
 
-    // Only record on COMPLETED. PENDING/FAILED just ack (no ledger effect).
     if (status !== "COMPLETED") {
       console.log("uddoktapay-ipn: non-terminal status", status);
       return json({ ok: true, status });
@@ -91,6 +107,7 @@ Deno.serve(async (req) => {
     }
 
     return json({ ok: true });
+
   } catch (e) {
     console.error("uddoktapay-ipn error", e);
     return json({ error: (e as Error).message }, 500);
