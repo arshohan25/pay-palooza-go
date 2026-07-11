@@ -129,3 +129,23 @@ export const verifyCachedWalletId = (
   const useRoute = route ?? (extractWalletRoute(cached) || "DH");
   return cached === normalizeWalletId(generateWalletId(seed, role, useRoute));
 };
+
+/** Human-readable expected format for a role, used inline in error messages. */
+export const walletFormatHint = (role: WalletRole): string => {
+  if (role === "agent")    return "EZP-AGN{RR}-XXXX (e.g. EZP-AGNDH-ABCD)";
+  if (role === "merchant") return "EZP-MRC{RR}-XXXX (e.g. EZP-MRCDH-ABCD)";
+  return "EZP-XXXX-XXXX (e.g. EZP-ABCD-EFGH)";
+};
+
+/** Localized (English + Bangla) error message for an invalid wallet ID. */
+export const walletFormatError = (
+  role: WalletRole,
+  lang: "en" | "bn" = "en",
+): string => {
+  const roleName = { user: "personal", agent: "agent", merchant: "merchant" }[role];
+  const roleNameBn = { user: "ব্যক্তিগত", agent: "এজেন্ট", merchant: "মার্চেন্ট" }[role];
+  if (lang === "bn") {
+    return `অবৈধ ${roleNameBn} ওয়ালেট আইডি। প্রত্যাশিত ফরম্যাট: ${walletFormatHint(role)}`;
+  }
+  return `Invalid ${roleName} wallet ID. Expected format: ${walletFormatHint(role)}`;
+};
