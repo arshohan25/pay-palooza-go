@@ -42,14 +42,8 @@ const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof Shopping
   all:      { labelKey: "cpFlowAll",      icon: Tag,         tint: "hsl(var(--shariah-green-600))" },
 };
 
-const CATEGORIES: { id: FlowKey; icon: typeof ShoppingBag; labelKey: TranslationKey }[] = [
-  { id: "all",      icon: Sparkles,    labelKey: "cpFlowAll"      },
-  { id: "shop",     icon: ShoppingBag, labelKey: "cpFlowShop"     },
-  { id: "payment",  icon: CreditCard,  labelKey: "cpFlowPayment"  },
-  { id: "recharge", icon: Smartphone,  labelKey: "cpFlowRecharge" },
-  { id: "bill_pay", icon: FileText,    labelKey: "cpFlowBillPay"  },
-  { id: "cash_out", icon: Zap,         labelKey: "cpFlowCashOut"  },
-];
+
+
 
 function daysLeft(iso: string) {
   return Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
