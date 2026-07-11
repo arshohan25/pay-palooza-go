@@ -58,7 +58,7 @@ const AgentDashboard = () => {
   const navigate = useNavigate();
   useUserSessionTimeout("agent");
   const { isDisabled } = useGlobalToggles();
-  const { lang, toggleLang } = useI18n();
+  const { lang, toggleLang, t } = useI18n();
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const futureFeatures = useFutureFeatures();
@@ -232,21 +232,21 @@ const AgentDashboard = () => {
   const todayCommission = todayTxns.reduce((sum, t) => sum + (t.commission || 0), 0);
 
   const quickActions = [
-    { icon: ArrowDownToLine, label: "Cash In", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", path: "/agent/cashin", toggleKey: "agent_cash_in" },
-    { icon: ArrowRightLeft, label: "B2B Send", bg: "rgba(233,30,99,0.12)", ring: "1px solid rgba(233,30,99,0.25)", path: "/agent/b2b", toggleKey: "agent_b2b" },
-    { icon: Banknote, label: "Bank", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", path: "/agent/bank", toggleKey: "agent_bank_transfer" },
-    { icon: Receipt, label: "Bill Pay", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", path: "/agent/billpay", toggleKey: "agent_bill_pay" },
-    { icon: UserPlus, label: "Register", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/agent/register", toggleKey: "agent_register" },
-    { icon: CircleDollarSign, label: "Float Req", bg: "rgba(255,87,34,0.12)", ring: "1px solid rgba(255,87,34,0.25)", action: "float" as const, toggleKey: "agent_float_request" },
-    { icon: History, label: "History", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", path: "/agent/history", toggleKey: "agent_history" },
-    { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const, toggleKey: "agent_support" },
+    { icon: ArrowDownToLine, label: t("cashIn"), bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", path: "/agent/cashin", toggleKey: "agent_cash_in" },
+    { icon: ArrowRightLeft, label: t("agdB2BSend"), bg: "rgba(233,30,99,0.12)", ring: "1px solid rgba(233,30,99,0.25)", path: "/agent/b2b", toggleKey: "agent_b2b" },
+    { icon: Banknote, label: t("bank"), bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", path: "/agent/bank", toggleKey: "agent_bank_transfer" },
+    { icon: Receipt, label: t("agdBillPay"), bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", path: "/agent/billpay", toggleKey: "agent_bill_pay" },
+    { icon: UserPlus, label: t("agdRegister"), bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/agent/register", toggleKey: "agent_register" },
+    { icon: CircleDollarSign, label: t("agdFloatReq"), bg: "rgba(255,87,34,0.12)", ring: "1px solid rgba(255,87,34,0.25)", action: "float" as const, toggleKey: "agent_float_request" },
+    { icon: History, label: t("history"), bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", path: "/agent/history", toggleKey: "agent_history" },
+    { icon: Headphones, label: t("agdSupport"), bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const, toggleKey: "agent_support" },
   ].filter(a => !a.toggleKey || !isDisabled(a.toggleKey));
 
   const stats = [
-    { label: "Today's Txns", value: txnCount.toString(), icon: Activity, color: "bg-primary/10 text-primary" },
-    { label: "Volume", value: `৳${fmt(todayVolume)}`, icon: BarChart3, color: "bg-accent/10 text-accent" },
-    { label: "Earned Today", value: `৳${fmt(todayCommission)}`, icon: TrendingUp, color: "bg-primary/10 text-primary" },
-    { label: "Customers", value: (agentInfo?.customers_onboarded ?? 0).toString(), icon: Users, color: "bg-accent/10 text-accent" },
+    { label: t("agdTodaysTxns"), value: txnCount.toString(), icon: Activity, color: "bg-primary/10 text-primary" },
+    { label: t("agdVolume"), value: `৳${fmt(todayVolume)}`, icon: BarChart3, color: "bg-accent/10 text-accent" },
+    { label: t("agdEarnedToday"), value: `৳${fmt(todayCommission)}`, icon: TrendingUp, color: "bg-primary/10 text-primary" },
+    { label: t("agdCustomers"), value: (agentInfo?.customers_onboarded ?? 0).toString(), icon: Users, color: "bg-accent/10 text-accent" },
   ];
 
   return (
@@ -307,11 +307,11 @@ const AgentDashboard = () => {
                 <Building2 size={22} className="text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-base font-bold text-primary-foreground truncate">{agentInfo?.business_name || "Agent Portal"}</h1>
+                <h1 className="text-base font-bold text-primary-foreground truncate">{agentInfo?.business_name || t("agdAgentPortal")}</h1>
                 <div className="flex items-center gap-2 mt-0.5">
                   <Badge className="bg-white/15 text-primary-foreground border-0 text-[9px] px-1.5 py-0 font-semibold backdrop-blur-sm">{agentInfo?.territory_code || "BD"}</Badge>
                   <span className="text-[10px] text-primary-foreground/70 capitalize">{agentInfo?.status || "active"}</span>
-                  <span className="text-[10px] text-primary-foreground/70">• {txnCount} txns today</span>
+                  <span className="text-[10px] text-primary-foreground/70">• {txnCount} {t("agdTxnsToday")}</span>
                 </div>
               </div>
             </div>
@@ -324,7 +324,7 @@ const AgentDashboard = () => {
         <Card className="p-5 border-0 shadow-elevated bg-card rounded-2xl">
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Float Balance</p>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{t("agdFloatBalance")}</p>
               <motion.button
                 onClick={toggleBalance}
                 whileTap={{ scale: 0.97 }}
@@ -341,7 +341,7 @@ const AgentDashboard = () => {
                   ) : (
                     <motion.div key="hidden" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.22 }} className="glass-hero rounded-2xl px-4 py-2 flex items-center gap-2 bg-muted/60 border border-border/40">
                       <Eye size={14} className="text-muted-foreground" />
-                      <span className="text-xs font-semibold text-muted-foreground">Tap to see balance</span>
+                      <span className="text-xs font-semibold text-muted-foreground">{t("tapToSeeBalance")}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -349,9 +349,9 @@ const AgentDashboard = () => {
             </div>
             <div className="flex flex-col items-end gap-1">
               <Badge variant="outline" className={`text-[9px] font-bold ${floatPct > 50 ? "text-primary border-primary/30" : floatPct > 20 ? "text-accent border-accent/30" : "text-destructive border-destructive/30"}`}>
-                {floatPct > 50 ? "Healthy" : floatPct > 20 ? "Low" : "Critical"}
+                {floatPct > 50 ? t("agdHealthy") : floatPct > 20 ? t("agdLow") : t("agdCritical")}
               </Badge>
-              <p className="text-[10px] text-muted-foreground">Max ৳{fmt(agentInfo?.max_float ?? 500000)}</p>
+              <p className="text-[10px] text-muted-foreground">{t("agdMax")} ৳{fmt(agentInfo?.max_float ?? 500000)}</p>
             </div>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -418,19 +418,19 @@ const AgentDashboard = () => {
               <Banknote size={18} className="text-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-foreground">Agent Commission</p>
-              <p className="text-[10px] text-muted-foreground">0.49% Cash In/Out · 0.019% Bill Pay</p>
+              <p className="text-xs font-bold text-foreground">{t("agdAgentCommission")}</p>
+              <p className="text-[10px] text-muted-foreground">{t("agdCommissionRates")}</p>
             </div>
             <div className="text-right shrink-0">
               <p className="text-sm font-extrabold text-primary">৳{fmt(agentInfo?.commission_earned ?? 0)}</p>
-              <p className="text-[9px] text-muted-foreground">Total earned</p>
+              <p className="text-[9px] text-muted-foreground">{t("agdTotalEarned")}</p>
             </div>
           </div>
         </Card>
 
         {/* ── 7-Day Commission Trend ── */}
         <div>
-          <h3 className="text-sm font-bold text-foreground mb-3">7-Day Commission Trend</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("agd7DayTrend")}</h3>
           <Card className="border-0 shadow-card rounded-2xl p-4">
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
@@ -445,7 +445,7 @@ const AgentDashboard = () => {
                   <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} tickFormatter={v => `৳${v}`} />
                   <Tooltip
                     contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,.1)", fontSize: 11, background: "hsl(var(--card))" }}
-                    formatter={(v: number) => [`৳${fmt(v)}`, "Commission"]}
+                    formatter={(v: number) => [`৳${fmt(v)}`, t("commission")]}
                     labelStyle={{ fontWeight: 700, color: "hsl(var(--foreground))" }}
                   />
                   <Area type="monotone" dataKey="commission" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#commGrad)" dot={{ r: 3, fill: "hsl(var(--primary))", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
@@ -453,7 +453,7 @@ const AgentDashboard = () => {
               </ResponsiveContainer>
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/40">
-              <span className="text-[10px] text-muted-foreground font-semibold">7-Day Total</span>
+              <span className="text-[10px] text-muted-foreground font-semibold">{t("agd7DayTotal")}</span>
               <span className="text-sm font-extrabold text-primary">৳{fmt(chartData.reduce((s, d) => s + d.commission, 0))}</span>
             </div>
           </Card>
@@ -462,12 +462,12 @@ const AgentDashboard = () => {
         {/* ── Recent Activity ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-foreground">Recent Activity</h3>
+            <h3 className="text-sm font-bold text-foreground">{t("agdRecentActivity")}</h3>
             <button
               onClick={() => navigate("/agent/history")}
               className="flex items-center gap-0.5 text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors press-effect"
             >
-              See All <ChevronRight size={13} strokeWidth={2.5} />
+              {t("seeAll")} <ChevronRight size={13} strokeWidth={2.5} />
             </button>
           </div>
           <Card className="border-0 shadow-card rounded-2xl overflow-hidden">
@@ -476,8 +476,8 @@ const AgentDashboard = () => {
                 <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
                   <Clock className="w-7 h-7 text-muted-foreground" />
                 </motion.div>
-                <p className="text-sm font-semibold text-foreground">No transactions yet</p>
-                <p className="text-xs text-muted-foreground mt-1">Your activity will appear here</p>
+                <p className="text-sm font-semibold text-foreground">{t("noTransactions")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("agdYourActivity")}</p>
               </motion.div>
             ) : (
               <div className="divide-y divide-border/50">
@@ -492,7 +492,7 @@ const AgentDashboard = () => {
                       default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
                     }
                   })();
-                  const typeLabels: Record<string, string> = { cashin: "Cash In", cashout: "Cash Out", banktransfer: "Bank Transfer", paybill: "Bill Pay" };
+                  const typeLabels: Record<string, string> = { cashin: t("cashIn"), cashout: t("cashOut"), banktransfer: t("bankTransfer"), paybill: t("agdBillPay") };
                   return (
                     <button key={tx.id} onClick={() => setSelectedTxn(tx)} className="flex items-center gap-3 px-4 py-3 w-full text-left press-effect hover:bg-muted/20 transition-colors">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${txIcon.cls}`}>
