@@ -222,6 +222,22 @@ const PaymentRequestsPage = () => {
       <FlowHeader title="Payment Requests" tagline="Share a link to get paid" />
 
       <div className="max-w-md mx-auto px-4 pt-4 space-y-6">
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4 text-xs text-muted-foreground space-y-1">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <span aria-hidden>🤖</span> Agent tools (MCP)
+            </div>
+            <p>
+              The <strong>create request</strong> form below and the live status list share the same
+              operations exposed to AI assistants over MCP:
+              <code className="mx-1">create_payment_request</code>,
+              <code className="mx-1">get_payment_status</code>,
+              <code className="mx-1">list_payment_requests</code>. Anything created here — or via an
+              assistant — appears here in real time.
+            </p>
+          </CardContent>
+        </Card>
+
         <Card className="border-border/40 shadow-card">
           <CardContent className="p-5">
             <form onSubmit={submit} className="space-y-3">
