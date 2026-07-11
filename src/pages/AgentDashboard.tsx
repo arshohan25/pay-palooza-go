@@ -324,7 +324,7 @@ const AgentDashboard = () => {
         <Card className="p-5 border-0 shadow-elevated bg-card rounded-2xl">
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Float Balance</p>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{t("agdFloatBalance")}</p>
               <motion.button
                 onClick={toggleBalance}
                 whileTap={{ scale: 0.97 }}
