@@ -23,29 +23,53 @@ export default function PaymentPopupPage() {
     }
 
     const storageKey = `${CHECKOUT_POPUP_STORAGE_PREFIX}${token}`;
-    const raw = localStorage.getItem(storageKey);
-    localStorage.removeItem(storageKey);
+    let redirectTimer: ReturnType<typeof window.setTimeout> | null = null;
+    let expiryTimer: ReturnType<typeof window.setTimeout> | null = null;
 
-    if (!raw) {
-      setError("Checkout session expired. Please start again from EasyPay.");
-      return;
-    }
+    const openPayload = (rawPayload: CheckoutPayload | string) => {
+      try {
+        const parsed = typeof rawPayload === "string" ? JSON.parse(rawPayload) as CheckoutPayload : rawPayload;
+        const checkoutUrl = new URL(parsed.url);
+        if (checkoutUrl.protocol !== "https:") throw new Error("Insecure checkout URL");
+        if (parsed.expiresAt && parsed.expiresAt < Date.now()) throw new Error("Checkout session expired");
 
-    try {
-      const parsed = JSON.parse(raw) as CheckoutPayload;
-      const checkoutUrl = new URL(parsed.url);
-      if (checkoutUrl.protocol !== "https:") throw new Error("Insecure checkout URL");
-      if (parsed.expiresAt && parsed.expiresAt < Date.now()) throw new Error("Checkout session expired");
+        localStorage.removeItem(storageKey);
+        setPayload(parsed);
+        setError("");
+        redirectTimer = window.setTimeout(() => {
+          window.location.replace(checkoutUrl.toString());
+        }, 650);
+      } catch {
+        setError("Checkout link is invalid. Please start again from EasyPay.");
+      }
+    };
 
-      setPayload(parsed);
-      const timer = window.setTimeout(() => {
-        window.location.replace(checkoutUrl.toString());
-      }, 650);
+    const initial = localStorage.getItem(storageKey);
+    if (initial) openPayload(initial);
 
-      return () => window.clearTimeout(timer);
-    } catch {
-      setError("Checkout link is invalid. Please start again from EasyPay.");
-    }
+    const storageHandler = (event: StorageEvent) => {
+      if (event.key === storageKey && event.newValue) openPayload(event.newValue);
+    };
+
+    const messageHandler = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "EASYPAY_CHECKOUT_READY") return;
+      if (event.data?.token !== token || !event.data?.payload) return;
+      openPayload(event.data.payload as CheckoutPayload);
+    };
+
+    window.addEventListener("storage", storageHandler);
+    window.addEventListener("message", messageHandler);
+    expiryTimer = window.setTimeout(() => {
+      if (!payload) setError("Checkout took too long to prepare. Please close this popup and try again.");
+    }, 60000);
+
+    return () => {
+      window.removeEventListener("storage", storageHandler);
+      window.removeEventListener("message", messageHandler);
+      if (redirectTimer) window.clearTimeout(redirectTimer);
+      if (expiryTimer) window.clearTimeout(expiryTimer);
+    };
   }, [token]);
 
   return (
@@ -61,7 +85,7 @@ export default function PaymentPopupPage() {
 
         <div className="space-y-2">
           <h1 className="text-xl font-extrabold tracking-tight">
-            {error ? "Checkout unavailable" : "Opening secure checkout"}
+            {error ? "Checkout unavailable" : payload ? "Opening secure checkout" : "Preparing secure checkout"}
           </h1>
           <p className="text-sm text-muted-foreground">
             {error || "Keep this popup open. You will return to EasyPay Home with the transaction status."}
@@ -85,7 +109,7 @@ export default function PaymentPopupPage() {
 
         {!error ? (
           <div className="flex items-center justify-center gap-2 text-sm font-medium text-primary">
-            <Loader2 className="h-4 w-4 animate-spin" /> Redirecting…
+            <Loader2 className="h-4 w-4 animate-spin" /> {payload ? "Redirecting…" : "Waiting for checkout…"}
           </div>
         ) : (
           <Button className="w-full" onClick={() => window.close()}>
