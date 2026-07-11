@@ -6939,6 +6939,17 @@ export type Database = {
         Args: { p_phone: string }
         Returns: string
       }
+      get_agent_customer_kyc: {
+        Args: { _agent_id: string }
+        Returns: {
+          name: string
+          phone: string
+          rejection_reason: string
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_autosave_cron_secret: { Args: never; Returns: string }
       get_blocked_user_profiles: {
         Args: { p_user_ids: string[] }
