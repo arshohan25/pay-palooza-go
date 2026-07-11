@@ -68,6 +68,7 @@ const PaymentRequestsPage = () => {
   const [links, setLinks] = useState<PaymentLink[]>([]);
   const [payments, setPayments] = useState<ReceivedPayment[]>([]);
   const [payerNames, setPayerNames] = useState<Record<string, string>>({});
+  const [mcpLogsByLink, setMcpLogsByLink] = useState<Record<string, { correlation_id: string; created_at: string }[]>>({});
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
