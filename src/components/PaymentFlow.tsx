@@ -9,7 +9,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
-import { calcCouponDiscount, clearPendingCoupon, recordCouponRedemption, type PendingCoupon } from "@/lib/couponStore";
+import { calcCouponDiscount, clearPendingCoupon, getPendingCoupon, recordCouponRedemption, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 
@@ -125,7 +125,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
   const [note, setNote]           = useState("");
   const [pin, setPin]             = useState("");
   const [error, setError]         = useState("");
-  const [pendingCoupon, setPendingCoupon] = useState<PendingCoupon | null>(null);
+  const [pendingCoupon, setPendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("payment"));
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [recentMerchants, setRecentMerchants] = useState<Merchant[]>([]);
