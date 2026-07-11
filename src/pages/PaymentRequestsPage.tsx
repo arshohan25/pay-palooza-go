@@ -83,7 +83,7 @@ const PaymentRequestsPage = () => {
     setLoading(true);
     const [{ data: linksData, error: le }, { data: paysData }] = await Promise.all([
       supabase.from("payment_links").select("*").eq("created_by", user.id).order("created_at", { ascending: false }),
-      supabase.from("payment_link_payments").select("id,link_id,payer_id,amount,status,created_at,transaction_id").eq("payee_id", user.id).order("created_at", { ascending: false }).limit(500),
+      supabase.from("payment_link_payments").select("id,link_id,payer_id,amount,status,created_at,transaction_id,refunded_at,refund_reason").eq("payee_id", user.id).order("created_at", { ascending: false }).limit(500),
     ]);
     if (le) toast.error(le.message);
     setLinks((linksData ?? []) as PaymentLink[]);
