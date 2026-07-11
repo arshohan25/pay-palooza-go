@@ -59,38 +59,64 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [kycCounts, setKycCounts] = useState<{ verified: number; pending: number; rejected: number; total: number }>({ verified: 0, pending: 0, rejected: 0, total: 0 });
+  type KycCustomer = {
+    user_id: string;
+    name: string | null;
+    phone: string | null;
+    status: "verified" | "pending" | "rejected" | "none";
+    rejection_reason: string | null;
+    updated_at: string | null;
+  };
+  const [kycCustomers, setKycCustomers] = useState<KycCustomer[]>([]);
+  const [kycModal, setKycModal] = useState<null | "verified" | "pending" | "rejected">(null);
+  const [kycSearch, setKycSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Fetch customer KYC status summary (customers referred/onboarded by this agent)
+  const kycCounts = useMemo(() => {
+    const c = { verified: 0, pending: 0, rejected: 0, total: kycCustomers.length };
+    kycCustomers.forEach((k) => {
+      if (k.status === "verified") c.verified++;
+      else if (k.status === "rejected") c.rejected++;
+      else c.pending++;
+    });
+    return c;
+  }, [kycCustomers]);
+
+  const latestRejection = useMemo(() => {
+    return kycCustomers
+      .filter((k) => k.status === "rejected")
+      .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""))[0] || null;
+  }, [kycCustomers]);
+
+  const fetchCustomerKyc = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await (supabase as any).rpc("get_agent_customer_kyc", { _agent_id: user.id });
+    if (!error && Array.isArray(data)) {
+      setKycCustomers(data as KycCustomer[]);
+    }
+  }, [user]);
+
+  // Fetch + realtime subscribe so counts update automatically
   useEffect(() => {
-    if (!open || !user) return;
-    let cancelled = false;
-    (async () => {
-      const { data: refs } = await supabase
-        .from("referrals")
-        .select("referee_id")
-        .eq("referrer_id", user.id);
-      const ids = (refs || []).map((r: any) => r.referee_id).filter(Boolean);
-      if (ids.length === 0) {
-        if (!cancelled) setKycCounts({ verified: 0, pending: 0, rejected: 0, total: 0 });
-        return;
-      }
-      const { data: kycs } = await supabase
-        .from("kyc_verifications")
-        .select("status,user_id")
-        .in("user_id", ids);
-      const counts = { verified: 0, pending: 0, rejected: 0, total: ids.length };
-      (kycs || []).forEach((k: any) => {
-        const s = (k.status || "").toLowerCase();
-        if (s === "verified" || s === "approved") counts.verified++;
-        else if (s === "rejected" || s === "denied") counts.rejected++;
-        else counts.pending++;
-      });
-      if (!cancelled) setKycCounts(counts);
-    })();
-    return () => { cancelled = true; };
-  }, [open, user]);
+    if (!user) return;
+    fetchCustomerKyc();
+    const channel = supabase
+      .channel(`agent-kyc-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "referrals", filter: `referrer_id=eq.${user.id}` }, () => fetchCustomerKyc())
+      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => fetchCustomerKyc())
+      .subscribe();
+    const onFocus = () => fetchCustomerKyc();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [user, fetchCustomerKyc]);
+
+  useEffect(() => {
+    if (open) fetchCustomerKyc();
+  }, [open, fetchCustomerKyc]);
+
 
 
 
