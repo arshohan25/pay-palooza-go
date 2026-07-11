@@ -430,7 +430,7 @@ const AgentDashboard = () => {
 
         {/* ── 7-Day Commission Trend ── */}
         <div>
-          <h3 className="text-sm font-bold text-foreground mb-3">7-Day Commission Trend</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("agd7DayTrend")}</h3>
           <Card className="border-0 shadow-card rounded-2xl p-4">
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
