@@ -136,7 +136,9 @@ Deno.serve(async (req) => {
       p_actor: user.id,
       p_reason: reason || null,
       p_refund_txn_id: refundTxn?.id ?? null,
+      p_amount: amount,
     });
+
     if (rpcErr) {
       // Best-effort rollback of the wallet movement
       await admin.rpc("credit_user_balance", { p_user_id: user.id, p_amount: amount });
