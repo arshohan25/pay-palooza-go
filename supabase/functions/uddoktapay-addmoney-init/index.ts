@@ -63,8 +63,8 @@ Deno.serve(async (req) => {
         request_id: fr.id,
         user_id: userId,
       },
-      redirect_url: `${returnBase}/?addmoney=success`,
-      cancel_url: `${returnBase}/?addmoney=cancel`,
+      redirect_url: `${returnBase}/?addmoney=success&provider=uddoktapay&request_id=${fr.id}`,
+      cancel_url: `${returnBase}/?addmoney=cancel&provider=uddoktapay&request_id=${fr.id}`,
       webhook_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/uddoktapay-ipn`,
     };
 

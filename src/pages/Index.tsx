@@ -133,6 +133,69 @@ const Index = () => {
   const [refreshKey, setRefreshKey]       = useState(0);
   const mainRef = useRef<HTMLElement>(null);
 
+  const handleUddoktapayAddMoneyReturn = useCallback((detail: { status?: string; requestId?: string | null; invoiceId?: string | null }) => {
+    setActiveTab("home");
+    setShowAddMoney(false);
+    localStorage.removeItem("pending_uddoktapay_addmoney_request");
+
+    if (detail.status === "success") {
+      toast.success("Payment received — checking transaction status…");
+      fetchBalance();
+      setRefreshKey((k) => k + 1);
+    } else if (detail.status === "cancel") {
+      toast.error(t("idxPaymentCancelled"));
+    } else {
+      toast.error(t("idxVerificationFailed"));
+    }
+
+    window.dispatchEvent(new CustomEvent("easypay:addmoney-return", { detail }));
+  }, [t]);
+
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "EASYPAY_ADD_MONEY_RETURN") return;
+      handleUddoktapayAddMoneyReturn({
+        status: event.data.status,
+        requestId: event.data.requestId,
+        invoiceId: event.data.invoiceId,
+      });
+      navigate("/", { replace: true });
+    };
+
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [handleUddoktapayAddMoneyReturn, navigate]);
+
+  // ── UddoktaPay add-money return handler ──
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const addMoneyStatus = params.get("addmoney");
+    if (!addMoneyStatus) return;
+
+    const detail = {
+      type: "EASYPAY_ADD_MONEY_RETURN",
+      provider: "uddoktapay",
+      status: addMoneyStatus,
+      requestId: params.get("request_id") || params.get("requestId") || localStorage.getItem("pending_uddoktapay_addmoney_request"),
+      invoiceId: params.get("invoice_id") || params.get("transaction_id") || params.get("transactionId"),
+    };
+
+    ["addmoney", "provider", "request_id", "requestId", "invoice_id", "transaction_id", "transactionId"].forEach((key) => params.delete(key));
+    const cleanSearch = params.toString();
+    const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, "", cleanUrl || "/");
+
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(detail, window.location.origin);
+      window.setTimeout(() => window.close(), 150);
+      return;
+    }
+
+    handleUddoktapayAddMoneyReturn(detail);
+    if (window.location.pathname !== "/") navigate("/", { replace: true });
+  }, [handleUddoktapayAddMoneyReturn, navigate]);
+
   // ── AsthaPay return redirect handler ──
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

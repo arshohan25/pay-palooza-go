@@ -20,6 +20,7 @@ import { verifyPin } from "@/lib/verifyPin";
 type Step = "amount" | "source" | "send_to" | "proof" | "pin" | "success";
 const STEPS: Step[] = ["amount", "source", "send_to", "proof", "pin"];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
+const CHECKOUT_POPUP_STORAGE_PREFIX = "easypay_uddoktapay_checkout_";
 
 type SourceId = "uddoktapay" | "bank_transfer" | "bkash" | "nagad" | "rocket" | "upay" | "card";
 const SOURCE_OPTIONS: { id: SourceId; labelKey: string; icon: any; color: string; online?: boolean }[] = [
@@ -74,11 +75,20 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
-  const [popupState, setPopupState] = useState<"idle" | "open" | "closed">("idle");
+  const [popupState, setPopupState] = useState<"idle" | "open" | "closed" | "blocked">("idle");
   const popupRef = useRef<Window | null>(null);
   const popupTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const openCheckoutPopup = (url: string) => {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+      if (parsed.protocol !== "https:") throw new Error("Checkout URL must be secure");
+    } catch {
+      toast.error("Invalid checkout link. Please try again.");
+      return false;
+    }
+
     const w = 480, h = 720;
     const dualLeft = window.screenLeft ?? window.screenX ?? 0;
     const dualTop = window.screenTop ?? window.screenY ?? 0;
@@ -87,10 +97,21 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     const left = dualLeft + (width - w) / 2;
     const top = dualTop + (height - h) / 2;
     const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes,noopener=no`;
-    const popup = window.open(url, "uddoktapay_checkout", features);
+
+    const token = crypto.randomUUID();
+    localStorage.setItem(`${CHECKOUT_POPUP_STORAGE_PREFIX}${token}`, JSON.stringify({
+      url: parsed.toString(),
+      amount: parseFloat(amount || "0"),
+      provider: "UddoktaPay",
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    }));
+
+    const popupUrl = `${window.location.origin}/payment-popup?token=${encodeURIComponent(token)}`;
+    const popup = window.open(popupUrl, "easypay_uddoktapay_checkout", features);
     if (!popup || popup.closed) {
-      // Popup blocked — fall back to top-level navigation
-      window.open(url, "_blank", "noopener,noreferrer");
+      localStorage.removeItem(`${CHECKOUT_POPUP_STORAGE_PREFIX}${token}`);
+      setPopupState("blocked");
+      toast.error("Popup blocked. Please allow popups for EasyPay and try again.");
       return false;
     }
     popupRef.current = popup;
@@ -107,6 +128,26 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     }, 500);
     return true;
   };
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { status?: string; requestId?: string } | undefined;
+      if (!detail) return;
+      if (popupTimerRef.current) clearInterval(popupTimerRef.current);
+      popupTimerRef.current = null;
+      popupRef.current = null;
+      setSubmitting(false);
+      setCheckoutUrl(null);
+      if (detail.requestId) setSubmittedRequestId(detail.requestId);
+      if (detail.status === "success") {
+        haptics.success();
+      } else {
+        haptics.error();
+      }
+    };
+    window.addEventListener("easypay:addmoney-return", handler);
+    return () => window.removeEventListener("easypay:addmoney-return", handler);
+  }, []);
 
   useEffect(() => () => {
     if (popupTimerRef.current) clearInterval(popupTimerRef.current);
@@ -150,6 +191,10 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         });
         if (fnErr) throw fnErr;
         if (!data?.payment_url) throw new Error(data?.error || "Failed to start checkout");
+        if (data?.request_id) {
+          setSubmittedRequestId(data.request_id as string);
+          localStorage.setItem("pending_uddoktapay_addmoney_request", data.request_id as string);
+        }
         setCheckoutUrl(data.payment_url as string);
       } catch (e: any) {
         setError(e.message || "Failed to start UddoktaPay checkout");
@@ -360,16 +405,16 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   initial={{ scale: 0.85, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 300, damping: 22 }}
-                  className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl shadow-indigo-500/30 mb-5"
+                  className="w-20 h-20 rounded-3xl gradient-addmoney flex items-center justify-center shadow-glow mb-5"
                 >
-                  <Lock size={32} className="text-white" strokeWidth={2.5} />
+                  <Lock size={32} className="text-primary-foreground" strokeWidth={2.5} />
                 </motion.div>
 
                 <h2 className="text-xl font-extrabold text-foreground tracking-tight">
                   {"Secure checkout ready"}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-2 max-w-xs">
-                  {"You will complete payment on UddoktaPay's secure page, then return here automatically."}
+                  {"UddoktaPay will open in a secure EasyPay popup and return you to Home with the payment status."}
                 </p>
 
                 <div className="mt-6 w-full max-w-xs rounded-2xl bg-card border border-border p-4 space-y-3">
@@ -382,7 +427,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     <span className="text-xs font-semibold text-foreground">UddoktaPay</span>
                   </div>
                   <div className="flex items-center gap-2 pt-3 border-t border-border">
-                    <ShieldCheck size={14} className="text-emerald-500 shrink-0" />
+                    <ShieldCheck size={14} className="text-primary shrink-0" />
                     <span className="text-[11px] text-muted-foreground leading-snug text-left">
                       {"256-bit encrypted. EasyPay never sees your card or PIN."}
                     </span>
@@ -399,12 +444,14 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     }
                     openCheckoutPopup(checkoutUrl);
                   }}
-                  className="mt-6 w-full max-w-xs h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-[0.98] transition-transform"
+                  className="mt-6 w-full max-w-xs h-12 rounded-2xl gradient-addmoney text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-glow active:scale-[0.98] transition-transform"
                 >
                   {popupState === "open" ? (
                     <><Loader2 size={16} className="animate-spin" /> Waiting for payment…</>
                   ) : popupState === "closed" ? (
                     <>Reopen checkout <ExternalLink size={16} /></>
+                  ) : popupState === "blocked" ? (
+                    <>Try opening popup again <ExternalLink size={16} /></>
                   ) : (
                     <>Open secure checkout <ExternalLink size={16} /></>
                   )}
@@ -416,8 +463,13 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   </p>
                 )}
                 {popupState === "closed" && (
-                  <p className="mt-3 text-[11px] text-emerald-600 dark:text-emerald-400 max-w-xs">
+                  <p className="mt-3 text-[11px] text-primary max-w-xs">
                     Popup closed. If you completed payment, your balance will update shortly.
+                  </p>
+                )}
+                {popupState === "blocked" && (
+                  <p className="mt-3 text-[11px] text-destructive max-w-xs">
+                    EasyPay could not open the payment popup. Allow popups for this app, then try again.
                   </p>
                 )}
 
