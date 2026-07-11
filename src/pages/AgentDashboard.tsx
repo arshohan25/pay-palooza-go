@@ -445,7 +445,7 @@ const AgentDashboard = () => {
                   <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} tickFormatter={v => `৳${v}`} />
                   <Tooltip
                     contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,.1)", fontSize: 11, background: "hsl(var(--card))" }}
-                    formatter={(v: number) => [`৳${fmt(v)}`, "Commission"]}
+                    formatter={(v: number) => [`৳${fmt(v)}`, t("commission")]}
                     labelStyle={{ fontWeight: 700, color: "hsl(var(--foreground))" }}
                   />
                   <Area type="monotone" dataKey="commission" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#commGrad)" dot={{ r: 3, fill: "hsl(var(--primary))", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
