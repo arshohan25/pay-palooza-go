@@ -110,17 +110,37 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     setTimeout(fn, 300);
   };
 
-  const menuItems = [
+  const goto = (path: string) => { onClose(); navigate(path); };
+
+  const navItems = [
+    { icon: LayoutDashboard, label: t("agdAgentPortal"), action: () => goto("/agent"), toggleKey: null },
+    { icon: ArrowDownToLine, label: t("cashIn"), action: () => goto("/agent/cashin"), toggleKey: "agent_cash_in" },
+    { icon: ArrowRightLeft, label: t("agdB2BSend"), action: () => goto("/agent/b2b"), toggleKey: "agent_b2b" },
+    { icon: Banknote, label: t("bank"), action: () => goto("/agent/bank"), toggleKey: "agent_bank_transfer" },
+    { icon: Receipt, label: t("agdBillPay"), action: () => goto("/agent/billpay"), toggleKey: "agent_bill_pay" },
+    { icon: UserPlus, label: t("agdRegister"), action: () => goto("/agent/register"), toggleKey: "agent_register" },
+    { icon: History, label: t("history"), action: () => goto("/agent/history"), toggleKey: "agent_history" },
+    { icon: BarChart3, label: t("agAnalytics"), action: () => goto("/agent/analytics"), toggleKey: "agent_analytics" },
+  ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
+
+  const accountItems = [
     { icon: Camera, label: t("agEditAvatar"), action: () => openAfterClose(() => setAvatarSheetOpen(true)), toggleKey: "agent_edit_avatar" },
     { icon: QrCode, label: t("agShareQr"), action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
     { icon: ShieldCheck, label: t("agCustomerKyc"), action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
-    { icon: BarChart3, label: t("agAnalytics"), action: () => { onClose(); navigate("/agent/analytics"); }, toggleKey: "agent_analytics" },
     { icon: Bell, label: t("agNotifications"), action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
   ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
 
-  const bottomItems = [
-    { icon: LogOut, label: t("agSignOut"), action: async () => { await signOut(); navigate("/"); }, danger: true },
-  ];
+  const handleLogout = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+      navigate("/");
+    } finally {
+      setSigningOut(false);
+      setLogoutOpen(false);
+    }
+  };
+
 
   return (
     <>
