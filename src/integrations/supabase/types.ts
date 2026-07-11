@@ -7369,6 +7369,10 @@ export type Database = {
         Args: { p_cart_total: number; p_code: string; p_merchant_id?: string }
         Returns: Json
       }
+      validate_wallet_id_format: {
+        Args: { _expected_role?: string; _wallet_id: string }
+        Returns: Json
+      }
       withdraw_completed_goal: { Args: { p_goal_id: string }; Returns: Json }
     }
     Enums: {
