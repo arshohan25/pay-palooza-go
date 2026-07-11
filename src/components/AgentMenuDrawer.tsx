@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,7 +6,9 @@ import {
   LogOut, ChevronRight, Building2, Upload, Activity,
   Users, Languages, ArrowDownToLine, ArrowRightLeft, Banknote,
   Receipt, UserPlus, History, Headphones, LayoutDashboard,
+  CheckCircle2, Clock, XCircle, ArrowUpRight,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
