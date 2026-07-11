@@ -144,8 +144,9 @@ const PayLinkPage = () => {
     setPaying(true);
     try {
       const { data, error } = await supabase.functions.invoke("pay-link", {
-        body: { short_code: link.short_code, amount: finalAmount },
+        body: { short_code: link.short_code, amount: finalAmount, idempotency_key: idemKey },
       });
+
       if (error) {
         const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;
         const detail = ctx?.text ? await ctx.text() : error.message;
