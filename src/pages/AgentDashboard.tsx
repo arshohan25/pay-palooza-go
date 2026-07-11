@@ -58,6 +58,9 @@ const AgentDashboard = () => {
   const navigate = useNavigate();
   useUserSessionTimeout("agent");
   const { isDisabled } = useGlobalToggles();
+  const { lang, toggleLang } = useI18n();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const futureFeatures = useFutureFeatures();
   void futureFeatures.visibility.future_agent_liquidity_intel;
 
