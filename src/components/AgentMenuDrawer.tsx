@@ -1,15 +1,20 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Camera, QrCode, ShieldCheck, BarChart3, Bell,
-  Home, LogOut, ChevronRight, Building2, Upload, Activity,
-  Users, Languages,
+  LogOut, ChevronRight, Building2, Upload, Activity,
+  Users, Languages, ArrowDownToLine, ArrowRightLeft, Banknote,
+  Receipt, UserPlus, History, Headphones, LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
@@ -48,6 +53,8 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [notifSheetOpen, setNotifSheetOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
 
@@ -103,17 +110,37 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     setTimeout(fn, 300);
   };
 
-  const menuItems = [
+  const goto = (path: string) => { onClose(); navigate(path); };
+
+  const navItems = [
+    { icon: LayoutDashboard, label: t("agdAgentPortal"), action: () => goto("/agent"), toggleKey: null },
+    { icon: ArrowDownToLine, label: t("cashIn"), action: () => goto("/agent/cashin"), toggleKey: "agent_cash_in" },
+    { icon: ArrowRightLeft, label: t("agdB2BSend"), action: () => goto("/agent/b2b"), toggleKey: "agent_b2b" },
+    { icon: Banknote, label: t("bank"), action: () => goto("/agent/bank"), toggleKey: "agent_bank_transfer" },
+    { icon: Receipt, label: t("agdBillPay"), action: () => goto("/agent/billpay"), toggleKey: "agent_bill_pay" },
+    { icon: UserPlus, label: t("agdRegister"), action: () => goto("/agent/register"), toggleKey: "agent_register" },
+    { icon: History, label: t("history"), action: () => goto("/agent/history"), toggleKey: "agent_history" },
+    { icon: BarChart3, label: t("agAnalytics"), action: () => goto("/agent/analytics"), toggleKey: "agent_analytics" },
+  ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
+
+  const accountItems = [
     { icon: Camera, label: t("agEditAvatar"), action: () => openAfterClose(() => setAvatarSheetOpen(true)), toggleKey: "agent_edit_avatar" },
     { icon: QrCode, label: t("agShareQr"), action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
     { icon: ShieldCheck, label: t("agCustomerKyc"), action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
-    { icon: BarChart3, label: t("agAnalytics"), action: () => { onClose(); navigate("/agent/analytics"); }, toggleKey: "agent_analytics" },
     { icon: Bell, label: t("agNotifications"), action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
   ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
 
-  const bottomItems = [
-    { icon: LogOut, label: t("agSignOut"), action: async () => { await signOut(); navigate("/"); }, danger: true },
-  ];
+  const handleLogout = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+      navigate("/");
+    } finally {
+      setSigningOut(false);
+      setLogoutOpen(false);
+    }
+  };
+
 
   return (
     <>
@@ -132,69 +159,97 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 340, damping: 34 }}
-              className="fixed top-0 left-0 bottom-0 w-[85vw] max-w-sm z-[71] bg-card shadow-float overflow-y-auto"
+              className="fixed top-0 left-0 bottom-0 w-[86vw] max-w-sm z-[71] bg-card shadow-float flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-5 py-5 space-y-5">
-                {/* Close */}
-                <div className="flex justify-end">
-                  <button onClick={onClose} className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
-                    <X size={15} />
-                  </button>
-                </div>
-
-                {/* Profile Section */}
-                <div className="flex items-center gap-3">
+              {/* Sticky header with profile */}
+              <div className="px-4 pt-4 pb-3 border-b border-border/50 bg-card">
+                <div className="flex items-start justify-between mb-3">
                   <button
                     onClick={() => setAvatarSheetOpen(true)}
-                    className="relative w-14 h-14 rounded-2xl overflow-hidden bg-muted flex items-center justify-center group shrink-0"
+                    className="relative w-12 h-12 rounded-2xl overflow-hidden bg-muted flex items-center justify-center group shrink-0"
                   >
                     {profile.avatar_url ? (
                       <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <Building2 size={24} className="text-muted-foreground" />
+                      <Building2 size={20} className="text-muted-foreground" />
                     )}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Camera size={16} className="text-white" />
+                      <Camera size={14} className="text-white" />
                     </div>
                   </button>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-foreground truncate">
-                      {agentInfo?.business_name || t("agAgentPortal")}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge className="bg-primary/10 text-primary border-0 text-[9px] px-1.5 py-0 font-semibold">
-                        {agentInfo?.territory_code || "BD"}
-                      </Badge>
-                      <span className="text-[10px] text-muted-foreground capitalize">{agentInfo?.status || t("agActive")}</span>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{profile.phone || "—"}</p>
+                  <button onClick={onClose} className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                    <X size={15} />
+                  </button>
+                </div>
+                <h3 className="text-sm font-bold text-foreground truncate">
+                  {agentInfo?.business_name || t("agAgentPortal")}
+                </h3>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <Badge className="bg-primary/10 text-primary border-0 text-[9px] px-1.5 py-0 font-semibold">
+                    {agentInfo?.territory_code || "BD"}
+                  </Badge>
+                  <span className="text-[10px] text-muted-foreground capitalize">{agentInfo?.status || t("agActive")}</span>
+                  <span className="text-[10px] text-muted-foreground truncate">· {profile.phone || "—"}</span>
+                </div>
+              </div>
+
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+                {/* Navigate */}
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-1.5">
+                    {t("agdRecentActivity").length > 0 ? (lang === "bn" ? "নেভিগেশন" : "Navigate") : "Navigate"}
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {navItems.map(item => (
+                      <button
+                        key={item.label}
+                        onClick={item.action}
+                        className="flex items-center gap-2 px-2.5 py-2.5 rounded-xl bg-muted/40 hover:bg-primary/10 active:scale-[0.98] transition-all group text-left"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center shrink-0 group-hover:bg-primary/15">
+                          <item.icon size={14} className="text-muted-foreground group-hover:text-primary" />
+                        </div>
+                        <span className="text-[11.5px] font-semibold text-foreground flex-1 truncate">{item.label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* Menu Items */}
-                <div className="space-y-1">
-                  {menuItems.map(item => (
-                    <button
-                      key={item.label}
-                      onClick={() => item.action()}
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted/60 transition-colors group"
-                    >
-                      <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
-                        <item.icon size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                      <span className="text-sm font-semibold text-foreground flex-1 text-left">{item.label}</span>
-                      <ChevronRight size={14} className="text-muted-foreground/40" />
-                    </button>
-                  ))}
+                {/* Account */}
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-1.5">
+                    {lang === "bn" ? "অ্যাকাউন্ট" : "Account"}
+                  </p>
+                  <div className="space-y-0.5">
+                    {accountItems.map(item => (
+                      <button
+                        key={item.label}
+                        onClick={() => item.action()}
+                        className="w-full flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-muted/60 active:scale-[0.99] transition-all group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10">
+                          <item.icon size={14} className="text-muted-foreground group-hover:text-primary" />
+                        </div>
+                        <span className="text-[13px] font-semibold text-foreground flex-1 text-left truncate">{item.label}</span>
+                        <ChevronRight size={13} className="text-muted-foreground/40 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                  {/* Language segmented toggle */}
-                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
-                    <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                      <Languages size={16} className="text-muted-foreground" />
+                {/* Preferences */}
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-1.5">
+                    {lang === "bn" ? "পছন্দসমূহ" : "Preferences"}
+                  </p>
+                  <div className="flex items-center gap-3 px-2 py-2.5 rounded-xl">
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Languages size={14} className="text-muted-foreground" />
                     </div>
-                    <span className="text-sm font-semibold text-foreground flex-1 text-left">{t("language")}</span>
-                    <div className="relative flex items-center bg-muted/70 border border-border/60 rounded-full p-0.5">
+                    <span className="text-[13px] font-semibold text-foreground flex-1 text-left truncate">{t("language")}</span>
+                    <div className="relative flex items-center bg-muted/70 border border-border/60 rounded-full p-0.5 shrink-0">
                       <motion.div
                         layout
                         transition={{ type: "spring", stiffness: 500, damping: 34 }}
@@ -203,37 +258,32 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                       />
                       <button
                         onClick={() => lang !== "en" && toggleLang()}
-                        className={`relative z-10 px-3 h-7 text-[11px] font-bold rounded-full transition-colors ${lang === "en" ? "text-primary-foreground" : "text-muted-foreground"}`}
+                        className={`relative z-10 px-2.5 h-6 text-[10.5px] font-bold rounded-full transition-colors ${lang === "en" ? "text-primary-foreground" : "text-muted-foreground"}`}
                       >
                         EN
                       </button>
                       <button
                         onClick={() => lang !== "bn" && toggleLang()}
-                        className={`relative z-10 px-3 h-7 text-[11px] font-bold rounded-full transition-colors ${lang === "bn" ? "text-primary-foreground" : "text-muted-foreground"}`}
+                        className={`relative z-10 px-2.5 h-6 text-[10.5px] font-bold rounded-full transition-colors ${lang === "bn" ? "text-primary-foreground" : "text-muted-foreground"}`}
                       >
                         বাং
                       </button>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="border-t border-border/50" />
-
-                {/* Bottom Items */}
-                <div className="space-y-1">
-                  {bottomItems.map(item => (
-                    <button
-                      key={item.label}
-                      onClick={item.action}
-                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted/60 transition-colors group ${item.danger ? "" : ""}`}
-                    >
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.danger ? "bg-destructive/10" : "bg-muted"}`}>
-                        <item.icon size={16} className={item.danger ? "text-destructive" : "text-muted-foreground"} />
-                      </div>
-                      <span className={`text-sm font-semibold flex-1 text-left ${item.danger ? "text-destructive" : "text-foreground"}`}>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
+              {/* Sticky bottom logout */}
+              <div className="px-3 py-3 border-t border-border/50 bg-card">
+                <button
+                  onClick={() => setLogoutOpen(true)}
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-destructive/8 hover:bg-destructive/15 active:scale-[0.99] transition-all group"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-destructive/15 flex items-center justify-center shrink-0">
+                    <LogOut size={15} className="text-destructive" />
+                  </div>
+                  <span className="text-sm font-bold text-destructive flex-1 text-left">{t("agSignOut")}</span>
+                </button>
               </div>
             </motion.div>
           </>
@@ -335,6 +385,32 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
           <NotificationPreferences scope="agent" />
         </SheetContent>
       </Sheet>
+
+      {/* Logout Confirmation */}
+      <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <AlertDialogContent className="rounded-2xl max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("agSignOut")}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {lang === "bn"
+                ? "আপনি কি নিশ্চিতভাবে সাইন আউট করতে চান? পুনরায় প্রবেশ করতে আপনাকে আবার লগইন করতে হবে।"
+                : "Are you sure you want to sign out? You'll need to log in again to continue."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={signingOut} className="rounded-xl">
+              {lang === "bn" ? "বাতিল" : "Cancel"}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={signingOut}
+              onClick={(e) => { e.preventDefault(); handleLogout(); }}
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {signingOut ? (lang === "bn" ? "সাইন আউট হচ্ছে..." : "Signing out...") : t("agSignOut")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
