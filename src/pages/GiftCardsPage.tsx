@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
+import FlowHeader from "@/components/FlowHeader";
+
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 import imgAll from "@/assets/giftcard/all.jpg";
@@ -143,22 +145,12 @@ const GiftCardsPage = () => {
         description="Buy and send digital gift cards across 17 categories – fashion, food, gaming, travel and more – instantly with EasyPay."
         path="/giftcards"
       />
-      {/* Header */}
-      <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur-xl border-b border-primary/30 shadow-glow">
-        <div className="px-4 py-3 flex items-center gap-3">
-          <motion.button whileTap={{ scale: 0.9 }} onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full bg-white/15 backdrop-blur flex items-center justify-center ring-1 ring-white/20">
-            <ArrowLeft className="w-5 h-5 text-primary-foreground" />
-          </motion.button>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-primary-foreground tracking-tight">{t("giftCardsTitle")}</h1>
-            <p className="text-[10px] text-primary-foreground/80">{t("giftCardsTagline")}</p>
-          </div>
-          <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center ring-1 ring-white/20">
-            <Gift className="w-4 h-4 text-primary-foreground" />
-          </div>
-        </div>
-      </div>
+      <FlowHeader
+        title={t("giftCardsTitle")}
+        tagline={t("giftCardsTagline")}
+        icon={Gift}
+      />
+
 
       <div className="max-w-md mx-auto p-4 space-y-5">
         {/* Tabs */}
