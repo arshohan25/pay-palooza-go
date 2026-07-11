@@ -272,12 +272,16 @@ const PayPage = () => {
     if (!merchantCode) { setStep("not_found"); return; }
 
     // Wallet-ID format gate: if the identifier looks like an EasyPay wallet,
-    // it MUST match the merchant format (EZP-MRCD-XXXX). Personal user
-    // (EZP-XXXX-XXXX) and agent (EZP-AGDH-XXXX) wallets are not valid
+    // it MUST match the merchant format (EZP-MRC{RR}-XXXX). Personal user
+    // (EZP-XXXX-XXXX) and agent (EZP-AGN{RR}-XXXX) wallets are not valid
     // payment recipients.
     if (WALLET_ID_RE.test(merchantCode.trim().toUpperCase())) {
       const wv = validateWalletId(merchantCode, "merchant");
-      if (!wv.ok) { setStep("not_found"); return; }
+      if (!wv.ok) {
+        setErrorMsg(walletFormatError("merchant", lang));
+        setStep("error");
+        return;
+      }
     }
 
     (async () => {
