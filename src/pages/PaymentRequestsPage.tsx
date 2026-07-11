@@ -195,9 +195,16 @@ const PaymentRequestsPage = () => {
   }, [payments, filterLink, filterRange]);
 
   const totals = useMemo(() => {
-    const total = filteredPayments.reduce((s, p) => s + Number(p.amount), 0);
-    return { count: filteredPayments.length, total };
+    const net = filteredPayments.filter(p => p.status !== "refunded");
+    const refunded = filteredPayments.filter(p => p.status === "refunded");
+    return {
+      count: net.length,
+      total: net.reduce((s, p) => s + Number(p.amount), 0),
+      refundedCount: refunded.length,
+      refundedTotal: refunded.reduce((s, p) => s + Number(p.amount), 0),
+    };
   }, [filteredPayments]);
+
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   if (!user) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Sign in to create payment requests.</div>;
