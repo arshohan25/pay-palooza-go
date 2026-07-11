@@ -271,9 +271,8 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<FlowKey>("all");
   const [redeemCode, setRedeemCode] = useState("");
+
   const [redeeming, setRedeeming] = useState(false);
   const { rewards: aiCouponRewards, claimReward } = useAiRewards("coupon");
   const { rewards: aiOfferRewards, claimReward: claimOffer } = useAiRewards("offer");
