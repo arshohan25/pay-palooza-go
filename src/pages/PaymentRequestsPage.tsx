@@ -157,11 +157,11 @@ const PaymentRequestsPage = () => {
   };
 
   const [refundingId, setRefundingId] = useState<string | null>(null);
-  const refund = async (paymentId: string, reason: string) => {
+  const refund = async (paymentId: string, reason: string, amount: number) => {
     setRefundingId(paymentId);
     try {
       const { data, error } = await supabase.functions.invoke("refund-link-payment", {
-        body: { payment_id: paymentId, reason },
+        body: { payment_id: paymentId, reason, amount },
       });
       if (error) {
         const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;
@@ -171,7 +171,7 @@ const PaymentRequestsPage = () => {
         throw new Error(msg);
       }
       if (!data?.success) throw new Error(data?.error ?? "Refund failed");
-      toast.success(`Refunded ৳${data.amount}`);
+      toast.success(data.fully_refunded ? `Refunded ৳${data.amount}` : `Partial refund of ৳${data.amount} issued`);
       load();
     } catch (e) {
       toast.error((e as Error).message);
@@ -195,15 +195,18 @@ const PaymentRequestsPage = () => {
   }, [payments, filterLink, filterRange]);
 
   const totals = useMemo(() => {
-    const net = filteredPayments.filter(p => p.status !== "refunded");
-    const refunded = filteredPayments.filter(p => p.status === "refunded");
-    return {
-      count: net.length,
-      total: net.reduce((s, p) => s + Number(p.amount), 0),
-      refundedCount: refunded.length,
-      refundedTotal: refunded.reduce((s, p) => s + Number(p.amount), 0),
-    };
+    let net = 0, refundedTotal = 0, count = 0, refundedCount = 0;
+    for (const p of filteredPayments) {
+      const amt = Number(p.amount);
+      const refunded = Number(p.refunded_amount ?? 0);
+      net += Math.max(amt - refunded, 0);
+      refundedTotal += refunded;
+      if (p.status !== "refunded") count++;
+      if (refunded > 0) refundedCount++;
+    }
+    return { count, total: net, refundedCount, refundedTotal };
   }, [filteredPayments]);
+
 
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
