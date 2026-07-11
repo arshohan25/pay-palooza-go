@@ -46,7 +46,7 @@ const PayLinkPage = () => {
   const loadPayments = useCallback(async (linkId: string) => {
     const { data } = await supabase
       .from("payment_link_payments")
-      .select("id,amount,status,created_at,transaction_id,refunded_at,refund_reason")
+      .select("id,amount,status,created_at,transaction_id,refunded_at,refund_reason,refunded_amount")
       .eq("link_id", linkId)
       .order("created_at", { ascending: false })
       .limit(20);

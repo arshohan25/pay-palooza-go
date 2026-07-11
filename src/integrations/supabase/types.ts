@@ -4362,6 +4362,7 @@ export type Database = {
           payer_id: string
           refund_reason: string | null
           refund_transaction_id: string | null
+          refunded_amount: number
           refunded_at: string | null
           refunded_by: string | null
           status: string
@@ -4378,6 +4379,7 @@ export type Database = {
           payer_id: string
           refund_reason?: string | null
           refund_transaction_id?: string | null
+          refunded_amount?: number
           refunded_at?: string | null
           refunded_by?: string | null
           status?: string
@@ -4394,6 +4396,7 @@ export type Database = {
           payer_id?: string
           refund_reason?: string | null
           refund_transaction_id?: string | null
+          refunded_amount?: number
           refunded_at?: string | null
           refunded_by?: string | null
           status?: string
@@ -7108,15 +7111,26 @@ export type Database = {
             Returns: Json
           }
       redeem_gift_card: { Args: { p_code: string }; Returns: Json }
-      refund_payment_link_payment: {
-        Args: {
-          p_actor: string
-          p_payment_id: string
-          p_reason: string
-          p_refund_txn_id: string
-        }
-        Returns: Json
-      }
+      refund_payment_link_payment:
+        | {
+            Args: {
+              p_actor: string
+              p_payment_id: string
+              p_reason: string
+              p_refund_txn_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_actor: string
+              p_amount?: number
+              p_payment_id: string
+              p_reason: string
+              p_refund_txn_id: string
+            }
+            Returns: Json
+          }
       reject_business_kyc: {
         Args: { p_merchant_id: string; p_reason: string }
         Returns: Json

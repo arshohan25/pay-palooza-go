@@ -18,8 +18,13 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const paymentId: string | undefined = body?.payment_id;
     const reason: string = typeof body?.reason === "string" ? body.reason.slice(0, 500) : "";
+    const amountInput: number | undefined =
+      typeof body?.amount === "number" && Number.isFinite(body.amount) ? body.amount : undefined;
 
     if (!paymentId) return jsonRes({ error: "Missing payment_id" }, 400);
+    if (amountInput != null && amountInput <= 0) {
+      return jsonRes({ error: "Refund amount must be positive" }, 400);
+    }
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -32,16 +37,27 @@ Deno.serve(async (req) => {
     // Load the payment + link
     const { data: pay, error: payErr } = await admin
       .from("payment_link_payments")
-      .select("id, link_id, payer_id, payee_id, amount, currency, status, transaction_id")
+      .select("id, link_id, payer_id, payee_id, amount, currency, status, transaction_id, refunded_amount")
       .eq("id", paymentId)
       .maybeSingle();
     if (payErr) return jsonRes({ error: payErr.message }, 500);
     if (!pay) return jsonRes({ error: "Payment not found" }, 404);
     if (pay.payee_id !== user.id) return jsonRes({ error: "Only the payee can refund" }, 403);
-    if (pay.status !== "succeeded") return jsonRes({ error: `Payment cannot be refunded (${pay.status})` }, 400);
+    if (pay.status !== "succeeded" && pay.status !== "partially_refunded") {
+      return jsonRes({ error: `Payment cannot be refunded (${pay.status})` }, 400);
+    }
 
-    const amount = Number(pay.amount);
-    if (!Number.isFinite(amount) || amount <= 0) return jsonRes({ error: "Invalid payment amount" }, 400);
+    const paidAmount = Number(pay.amount);
+    const alreadyRefunded = Number(pay.refunded_amount ?? 0);
+    const refundable = Math.max(paidAmount - alreadyRefunded, 0);
+    if (refundable <= 0) return jsonRes({ error: "Payment already fully refunded" }, 400);
+
+    const amount = amountInput ?? refundable;
+    if (!Number.isFinite(amount) || amount <= 0) return jsonRes({ error: "Invalid refund amount" }, 400);
+    if (amount > refundable + 0.00001) {
+      return jsonRes({ error: `Refund amount exceeds refundable balance (৳${refundable})` }, 400);
+    }
+
 
     const { data: link } = await admin
       .from("payment_links")
@@ -120,7 +136,9 @@ Deno.serve(async (req) => {
       p_actor: user.id,
       p_reason: reason || null,
       p_refund_txn_id: refundTxn?.id ?? null,
+      p_amount: amount,
     });
+
     if (rpcErr) {
       // Best-effort rollback of the wallet movement
       await admin.rpc("credit_user_balance", { p_user_id: user.id, p_amount: amount });
