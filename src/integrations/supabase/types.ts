@@ -3525,6 +3525,7 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          description_bn: string | null
           emoji: string
           id: string
           image_url: string | null
@@ -3532,6 +3533,7 @@ export type Database = {
           is_active: boolean
           merchant_id: string
           name: string
+          name_bn: string | null
           original_price: number | null
           price: number
           rating: number
@@ -3550,6 +3552,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          description_bn?: string | null
           emoji?: string
           id?: string
           image_url?: string | null
@@ -3557,6 +3560,7 @@ export type Database = {
           is_active?: boolean
           merchant_id: string
           name: string
+          name_bn?: string | null
           original_price?: number | null
           price?: number
           rating?: number
@@ -3575,6 +3579,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          description_bn?: string | null
           emoji?: string
           id?: string
           image_url?: string | null
@@ -3582,6 +3587,7 @@ export type Database = {
           is_active?: boolean
           merchant_id?: string
           name?: string
+          name_bn?: string | null
           original_price?: number | null
           price?: number
           rating?: number
