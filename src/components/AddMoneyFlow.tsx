@@ -103,10 +103,6 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const handleSourceContinue = async () => {
     if (!source) { setError(t("amSelectSource")); return; }
     if (source === "uddoktapay") {
-      const checkoutWindow = window.open("about:blank", "_blank");
-      if (checkoutWindow) {
-        checkoutWindow.opener = null;
-      }
       setSubmitting(true);
       try {
         const { data, error: fnErr } = await supabase.functions.invoke("uddoktapay-addmoney-init", {
@@ -115,14 +111,18 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         if (fnErr) throw fnErr;
         if (!data?.payment_url) throw new Error(data?.error || "Failed to start checkout");
         const checkoutUrl = data.payment_url as string;
-        if (checkoutWindow) {
-          checkoutWindow.location.replace(checkoutUrl);
-          onClose();
-        } else {
-          window.open(checkoutUrl, "_blank", "noopener,noreferrer");
+        // Navigate the top-level window so we escape the preview iframe's
+        // cross-origin navigation restrictions. Fall back to a new tab.
+        const popup = window.open(checkoutUrl, "_blank", "noopener,noreferrer");
+        if (!popup) {
+          try {
+            (window.top ?? window).location.href = checkoutUrl;
+          } catch {
+            window.location.href = checkoutUrl;
+          }
         }
+        onClose();
       } catch (e: any) {
-        checkoutWindow?.close();
         setError(e.message || "Failed to start UddoktaPay checkout");
         setSubmitting(false);
       }
