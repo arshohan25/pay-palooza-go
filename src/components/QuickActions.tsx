@@ -603,7 +603,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                         )}
                       </AnimatePresence>
                       <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${moreGlobalOff ? "opacity-50 grayscale" : ""}`}>
-                        {item.label}
+                        {"labelKey" in item && (item as any).labelKey ? t((item as any).labelKey as TranslationKey) : item.label}
                       </span>
                     </motion.button>
                   );
