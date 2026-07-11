@@ -274,7 +274,54 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                       </button>
                     ))}
                   </div>
+
+                  {/* Customer KYC Status Summary */}
+                  <div className="mt-2 rounded-2xl border border-border/50 bg-gradient-to-br from-emerald-500/[0.06] via-muted/20 to-amber-500/[0.06] p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-foreground truncate">
+                          {lang === "bn" ? "গ্রাহক KYC স্ট্যাটাস" : "Customer KYC Status"}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {lang === "bn"
+                            ? `মোট ${kycCounts.total} জন গ্রাহক`
+                            : `${kycCounts.total} total customer${kycCounts.total === 1 ? "" : "s"}`}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => goto("/agent/register")}
+                        className="flex items-center gap-1 px-2.5 h-7 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-[10.5px] font-bold shrink-0 transition-colors"
+                      >
+                        {lang === "bn" ? "আপডেট" : "Update"}
+                        <ArrowUpRight size={11} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2 text-center">
+                        <CheckCircle2 size={13} className="mx-auto text-emerald-500 mb-0.5" strokeWidth={2.4} />
+                        <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none">{kycCounts.verified}</p>
+                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                          {lang === "bn" ? "যাচাইকৃত" : "Verified"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2 text-center">
+                        <Clock size={13} className="mx-auto text-amber-500 mb-0.5" strokeWidth={2.4} />
+                        <p className="text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none">{kycCounts.pending}</p>
+                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                          {lang === "bn" ? "অপেক্ষমাণ" : "Pending"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2 text-center">
+                        <XCircle size={13} className="mx-auto text-rose-500 mb-0.5" strokeWidth={2.4} />
+                        <p className="text-sm font-extrabold text-rose-600 dark:text-rose-400 leading-none">{kycCounts.rejected}</p>
+                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                          {lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
 
                 {/* Preferences */}
                 <div>
