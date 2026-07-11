@@ -57,7 +57,39 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [kycCounts, setKycCounts] = useState<{ verified: number; pending: number; rejected: number; total: number }>({ verified: 0, pending: 0, rejected: 0, total: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Fetch customer KYC status summary (customers referred/onboarded by this agent)
+  useEffect(() => {
+    if (!open || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data: refs } = await supabase
+        .from("referrals")
+        .select("referee_id")
+        .eq("referrer_id", user.id);
+      const ids = (refs || []).map((r: any) => r.referee_id).filter(Boolean);
+      if (ids.length === 0) {
+        if (!cancelled) setKycCounts({ verified: 0, pending: 0, rejected: 0, total: 0 });
+        return;
+      }
+      const { data: kycs } = await supabase
+        .from("kyc_verifications")
+        .select("status,user_id")
+        .in("user_id", ids);
+      const counts = { verified: 0, pending: 0, rejected: 0, total: ids.length };
+      (kycs || []).forEach((k: any) => {
+        const s = (k.status || "").toLowerCase();
+        if (s === "verified" || s === "approved") counts.verified++;
+        else if (s === "rejected" || s === "denied") counts.rejected++;
+        else counts.pending++;
+      });
+      if (!cancelled) setKycCounts(counts);
+    })();
+    return () => { cancelled = true; };
+  }, [open, user]);
+
 
 
   // Avatar upload
