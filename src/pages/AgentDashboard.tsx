@@ -418,12 +418,12 @@ const AgentDashboard = () => {
               <Banknote size={18} className="text-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-foreground">Agent Commission</p>
-              <p className="text-[10px] text-muted-foreground">0.49% Cash In/Out · 0.019% Bill Pay</p>
+              <p className="text-xs font-bold text-foreground">{t("agdAgentCommission")}</p>
+              <p className="text-[10px] text-muted-foreground">{t("agdCommissionRates")}</p>
             </div>
             <div className="text-right shrink-0">
               <p className="text-sm font-extrabold text-primary">৳{fmt(agentInfo?.commission_earned ?? 0)}</p>
-              <p className="text-[9px] text-muted-foreground">Total earned</p>
+              <p className="text-[9px] text-muted-foreground">{t("agdTotalEarned")}</p>
             </div>
           </div>
         </Card>
