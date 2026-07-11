@@ -488,19 +488,37 @@ const PaymentRequestsPage = () => {
                               <span aria-hidden>🤖</span> Created via AI assistant (MCP)
                             </div>
                             {(mcpLogsByLink[l.id] ?? []).slice(0, 1).map(log => (
-                              <div key={log.correlation_id} className="flex items-center justify-between gap-2">
+                              <div key={log.correlation_id} className="flex items-center justify-between gap-2 flex-wrap">
                                 <span className="text-muted-foreground">
                                   correlation: <code className="font-mono text-foreground">{log.correlation_id.slice(0, 8)}…</code>
                                 </span>
-                                <a
-                                  href={`/admin/mcp-activity?cid=${log.correlation_id}`}
-                                  onClick={(e) => { e.preventDefault(); window.open(`/admin/mcp-activity?cid=${log.correlation_id}`, "_blank"); }}
-                                  className="text-primary hover:underline inline-flex items-center gap-1"
-                                >
-                                  View in Admin Activity Log <ExternalLink className="w-3 h-3" />
-                                </a>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        await navigator.clipboard.writeText(log.correlation_id);
+                                        toast.success("Correlation ID copied");
+                                      } catch {
+                                        toast.error("Failed to copy");
+                                      }
+                                    }}
+                                    className="text-primary hover:underline inline-flex items-center gap-1"
+                                    aria-label="Copy correlation ID"
+                                  >
+                                    <Copy className="w-3 h-3" /> Copy ID
+                                  </button>
+                                  <a
+                                    href={`/admin/mcp-activity?cid=${log.correlation_id}`}
+                                    onClick={(e) => { e.preventDefault(); window.open(`/admin/mcp-activity?cid=${log.correlation_id}`, "_blank"); }}
+                                    className="text-primary hover:underline inline-flex items-center gap-1"
+                                  >
+                                    View in Admin Activity Log <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                </div>
                               </div>
                             ))}
+
                             {!(mcpLogsByLink[l.id]?.length) && (
                               <p className="text-muted-foreground">No correlation ID recorded for this link.</p>
                             )}
