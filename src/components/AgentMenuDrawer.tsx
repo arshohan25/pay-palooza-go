@@ -112,7 +112,6 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
 
   const bottomItems = [
-    { icon: Home, label: t("agBackHome"), action: () => { onClose(); navigate("/"); } },
     { icon: LogOut, label: t("agSignOut"), action: async () => { await signOut(); navigate("/"); }, danger: true },
   ];
 
