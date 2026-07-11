@@ -41,7 +41,9 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, isWishlisted, onAddToCart, onToggleWishlist, onNavigate }: ProductCardProps) {
-  const { t } = useI18n();
+export default function ProductCard({ product, isWishlisted, onAddToCart, onToggleWishlist, onNavigate }: ProductCardProps) {
+  const { t, lang } = useI18n();
+  const displayName = pickLocalizedName(product, lang);
   const discount = product.original_price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
