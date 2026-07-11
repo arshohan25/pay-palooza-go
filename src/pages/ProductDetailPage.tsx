@@ -28,6 +28,7 @@ import { useChat } from "@/hooks/use-chat";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
+import { pickLocalizedName, pickLocalizedDescription } from "@/lib/localizedProduct";
 
 interface Variant {
   id: string;
@@ -56,7 +57,7 @@ function getEstimatedDelivery() {
 }
 
 export default function ProductDetailPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
