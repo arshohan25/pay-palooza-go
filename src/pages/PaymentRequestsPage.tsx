@@ -292,6 +292,10 @@ const PaymentRequestsPage = () => {
               <ul className="divide-y divide-border/50">
                 {filteredPayments.slice(0, 25).map(p => {
                   const link = links.find(l => l.id === p.link_id);
+                  const refunded = Number(p.refunded_amount ?? 0);
+                  const net = Math.max(Number(p.amount) - refunded, 0);
+                  const fully = p.status === "refunded" || net <= 0;
+                  const partial = !fully && refunded > 0;
                   return (
                     <li key={p.id} className="py-2 flex items-center justify-between gap-2">
                       <div className="min-w-0">
@@ -302,16 +306,25 @@ const PaymentRequestsPage = () => {
                         {p.transaction_id && (
                           <p className="text-[10px] font-mono text-muted-foreground">ref {p.transaction_id.slice(0, 8).toUpperCase()}</p>
                         )}
-                        {p.status === "refunded" && (
+                        {fully && (
                           <p className="text-[10px] text-amber-600">Refunded{p.refund_reason ? ` · ${p.refund_reason}` : ""}</p>
                         )}
+                        {partial && (
+                          <p className="text-[10px] text-amber-600">Partial refund: ৳{refunded.toLocaleString()} of ৳{Number(p.amount).toLocaleString()}</p>
+                        )}
                       </div>
-                      {p.status === "refunded" ? (
+                      {fully ? (
                         <span className="text-sm font-bold text-amber-600 line-through">৳{Number(p.amount).toLocaleString()}</span>
+                      ) : partial ? (
+                        <div className="text-right">
+                          <span className="text-sm font-bold text-emerald-600">+৳{net.toLocaleString()}</span>
+                          <p className="text-[10px] text-muted-foreground line-through">৳{Number(p.amount).toLocaleString()}</p>
+                        </div>
                       ) : (
                         <span className="text-sm font-bold text-emerald-600">+৳{Number(p.amount).toLocaleString()}</span>
                       )}
                     </li>
+
 
                   );
                 })}
