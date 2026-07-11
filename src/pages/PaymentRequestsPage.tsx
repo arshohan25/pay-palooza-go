@@ -146,9 +146,38 @@ const PaymentRequestsPage = () => {
   };
 
   const toggleActive = async (l: PaymentLink) => {
-    const { error } = await supabase.from("payment_links").update({ is_active: !l.is_active }).eq("id", l.id);
+    const { error } = await supabase
+      .from("payment_links")
+      .update(l.is_active
+        ? { is_active: false, deactivated_reason: "manual" }
+        : { is_active: true, deactivated_reason: null })
+      .eq("id", l.id);
     if (error) return toast.error(error.message);
     load();
+  };
+
+  const [refundingId, setRefundingId] = useState<string | null>(null);
+  const refund = async (paymentId: string, reason: string) => {
+    setRefundingId(paymentId);
+    try {
+      const { data, error } = await supabase.functions.invoke("refund-link-payment", {
+        body: { payment_id: paymentId, reason },
+      });
+      if (error) {
+        const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;
+        const detail = ctx?.text ? await ctx.text() : error.message;
+        let msg = detail;
+        try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+      if (!data?.success) throw new Error(data?.error ?? "Refund failed");
+      toast.success(`Refunded ৳${data.amount}`);
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setRefundingId(null);
+    }
   };
 
   const paymentsByLink = useMemo(() => {
@@ -156,6 +185,7 @@ const PaymentRequestsPage = () => {
     for (const p of payments) (map[p.link_id] ??= []).push({ ...p, payer_name: payerNames[p.payer_id] });
     return map;
   }, [payments, payerNames]);
+
 
   const filteredPayments = useMemo(() => {
     const cutoff = filterRange === "all" ? null : subDays(new Date(), parseInt(filterRange, 10));
