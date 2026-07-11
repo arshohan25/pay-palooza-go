@@ -69,7 +69,7 @@ function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
       className="w-full text-left relative rounded-[26px] overflow-hidden active:scale-[0.99] transition-transform"
       style={{
         background:
-          "linear-gradient(135deg, hsl(var(--shariah-green-900)) 0%, hsl(var(--shariah-green-700)) 55%, hsl(var(--shariah-green-800)) 100%)",
+          "linear-gradient(135deg, hsl(var(--shariah-green-900)) 0%, hsl(var(--shariah-green-600)) 55%, hsl(var(--shariah-green-800)) 100%)",
       }}
     >
       {/* Foil sheen */}
@@ -384,7 +384,7 @@ export default function CouponsPage() {
         className="relative overflow-hidden"
         style={{
           background:
-            "linear-gradient(140deg, hsl(var(--shariah-green-900)) 0%, hsl(var(--shariah-green-700)) 55%, hsl(var(--shariah-green-800)) 100%)",
+            "linear-gradient(140deg, hsl(var(--shariah-green-900)) 0%, hsl(var(--shariah-green-600)) 55%, hsl(var(--shariah-green-800)) 100%)",
         }}
       >
         {/* Foil sheen */}
@@ -471,13 +471,13 @@ export default function CouponsPage() {
           className="relative rounded-2xl p-[1px] overflow-hidden"
           style={{
             background:
-              "linear-gradient(135deg, hsl(var(--shariah-green-700)) 0%, hsl(var(--shariah-gold-500)) 50%, hsl(var(--shariah-green-700)) 100%)",
+              "linear-gradient(135deg, hsl(var(--shariah-green-600)) 0%, hsl(var(--shariah-gold-500)) 50%, hsl(var(--shariah-green-600)) 100%)",
           }}
         >
           <div className="relative rounded-2xl bg-card p-3">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-6 h-6 rounded-lg bg-[hsl(var(--shariah-gold-500)/0.15)] flex items-center justify-center">
-                <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-600))]" />
+                <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-700))]" />
               </div>
               <div className="flex-1">
                 <p className="text-[11.5px] font-black uppercase tracking-wider text-foreground">
