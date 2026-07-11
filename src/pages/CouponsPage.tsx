@@ -14,6 +14,8 @@ import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
+import FlowHeader from "@/components/FlowHeader";
+
 
 interface Coupon {
   id: string;
