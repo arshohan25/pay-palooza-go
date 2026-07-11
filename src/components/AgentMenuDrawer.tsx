@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,8 +6,10 @@ import {
   LogOut, ChevronRight, Building2, Upload, Activity,
   Users, Languages, ArrowDownToLine, ArrowRightLeft, Banknote,
   Receipt, UserPlus, History, Headphones, LayoutDashboard,
-  CheckCircle2, Clock, XCircle, ArrowUpRight,
+  CheckCircle2, Clock, XCircle, ArrowUpRight, AlertTriangle, Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -57,38 +59,64 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [kycCounts, setKycCounts] = useState<{ verified: number; pending: number; rejected: number; total: number }>({ verified: 0, pending: 0, rejected: 0, total: 0 });
+  type KycCustomer = {
+    user_id: string;
+    name: string | null;
+    phone: string | null;
+    status: "verified" | "pending" | "rejected" | "none";
+    rejection_reason: string | null;
+    updated_at: string | null;
+  };
+  const [kycCustomers, setKycCustomers] = useState<KycCustomer[]>([]);
+  const [kycModal, setKycModal] = useState<null | "verified" | "pending" | "rejected">(null);
+  const [kycSearch, setKycSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Fetch customer KYC status summary (customers referred/onboarded by this agent)
+  const kycCounts = useMemo(() => {
+    const c = { verified: 0, pending: 0, rejected: 0, total: kycCustomers.length };
+    kycCustomers.forEach((k) => {
+      if (k.status === "verified") c.verified++;
+      else if (k.status === "rejected") c.rejected++;
+      else c.pending++;
+    });
+    return c;
+  }, [kycCustomers]);
+
+  const latestRejection = useMemo(() => {
+    return kycCustomers
+      .filter((k) => k.status === "rejected")
+      .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""))[0] || null;
+  }, [kycCustomers]);
+
+  const fetchCustomerKyc = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await (supabase as any).rpc("get_agent_customer_kyc", { _agent_id: user.id });
+    if (!error && Array.isArray(data)) {
+      setKycCustomers(data as KycCustomer[]);
+    }
+  }, [user]);
+
+  // Fetch + realtime subscribe so counts update automatically
   useEffect(() => {
-    if (!open || !user) return;
-    let cancelled = false;
-    (async () => {
-      const { data: refs } = await supabase
-        .from("referrals")
-        .select("referee_id")
-        .eq("referrer_id", user.id);
-      const ids = (refs || []).map((r: any) => r.referee_id).filter(Boolean);
-      if (ids.length === 0) {
-        if (!cancelled) setKycCounts({ verified: 0, pending: 0, rejected: 0, total: 0 });
-        return;
-      }
-      const { data: kycs } = await supabase
-        .from("kyc_verifications")
-        .select("status,user_id")
-        .in("user_id", ids);
-      const counts = { verified: 0, pending: 0, rejected: 0, total: ids.length };
-      (kycs || []).forEach((k: any) => {
-        const s = (k.status || "").toLowerCase();
-        if (s === "verified" || s === "approved") counts.verified++;
-        else if (s === "rejected" || s === "denied") counts.rejected++;
-        else counts.pending++;
-      });
-      if (!cancelled) setKycCounts(counts);
-    })();
-    return () => { cancelled = true; };
-  }, [open, user]);
+    if (!user) return;
+    fetchCustomerKyc();
+    const channel = supabase
+      .channel(`agent-kyc-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "referrals", filter: `referrer_id=eq.${user.id}` }, () => fetchCustomerKyc())
+      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => fetchCustomerKyc())
+      .subscribe();
+    const onFocus = () => fetchCustomerKyc();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [user, fetchCustomerKyc]);
+
+  useEffect(() => {
+    if (open) fetchCustomerKyc();
+  }, [open, fetchCustomerKyc]);
+
 
 
 
@@ -296,29 +324,71 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                         <ArrowUpRight size={11} strokeWidth={2.5} />
                       </button>
                     </div>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2 text-center">
-                        <CheckCircle2 size={13} className="mx-auto text-emerald-500 mb-0.5" strokeWidth={2.4} />
-                        <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none">{kycCounts.verified}</p>
-                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
-                          {lang === "bn" ? "যাচাইকৃত" : "Verified"}
+                    <TooltipProvider delayDuration={150}>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => { setKycSearch(""); setKycModal("verified"); }}
+                          className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2 text-center hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
+                        >
+                          <CheckCircle2 size={13} className="mx-auto text-emerald-500 mb-0.5" strokeWidth={2.4} />
+                          <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none">{kycCounts.verified}</p>
+                          <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                            {lang === "bn" ? "যাচাইকৃত" : "Verified"}
+                          </p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setKycSearch(""); setKycModal("pending"); }}
+                          className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2 text-center hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+                        >
+                          <Clock size={13} className="mx-auto text-amber-500 mb-0.5" strokeWidth={2.4} />
+                          <p className="text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none">{kycCounts.pending}</p>
+                          <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                            {lang === "bn" ? "অপেক্ষমাণ" : "Pending"}
+                          </p>
+                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => { setKycSearch(""); setKycModal("rejected"); }}
+                              className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2 text-center hover:bg-rose-500/15 active:scale-[0.98] transition-all relative"
+                            >
+                              <XCircle size={13} className="mx-auto text-rose-500 mb-0.5" strokeWidth={2.4} />
+                              <p className="text-sm font-extrabold text-rose-600 dark:text-rose-400 leading-none">{kycCounts.rejected}</p>
+                              <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                                {lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected"}
+                              </p>
+                            </button>
+                          </TooltipTrigger>
+                          {latestRejection && (
+                            <TooltipContent side="top" className="max-w-[220px] text-[11px] leading-snug">
+                              <p className="font-bold mb-0.5">
+                                {lang === "bn" ? "সর্বশেষ প্রত্যাখ্যানের কারণ" : "Latest rejection reason"}
+                              </p>
+                              <p className="text-muted-foreground">
+                                {latestRejection.rejection_reason || (lang === "bn" ? "কোনো কারণ দেওয়া হয়নি" : "No reason provided")}
+                              </p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
+
+                    {latestRejection && kycCounts.rejected > 0 && (
+                      <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-rose-500/8 border border-rose-500/20 px-2 py-1.5">
+                        <AlertTriangle size={11} className="text-rose-500 shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-snug">
+                          <span className="font-bold">
+                            {lang === "bn" ? "সর্বশেষ কারণ: " : "Latest reason: "}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {latestRejection.rejection_reason || (lang === "bn" ? "কারণ উল্লেখ করা হয়নি" : "No reason provided")}
+                          </span>
                         </p>
                       </div>
-                      <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2 text-center">
-                        <Clock size={13} className="mx-auto text-amber-500 mb-0.5" strokeWidth={2.4} />
-                        <p className="text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none">{kycCounts.pending}</p>
-                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
-                          {lang === "bn" ? "অপেক্ষমাণ" : "Pending"}
-                        </p>
-                      </div>
-                      <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2 text-center">
-                        <XCircle size={13} className="mx-auto text-rose-500 mb-0.5" strokeWidth={2.4} />
-                        <p className="text-sm font-extrabold text-rose-600 dark:text-rose-400 leading-none">{kycCounts.rejected}</p>
-                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
-                          {lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected"}
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
@@ -497,6 +567,73 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* KYC Category Modal */}
+      <Sheet open={kycModal !== null} onOpenChange={(o) => !o && setKycModal(null)}>
+        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 max-h-[85vh] overflow-hidden flex flex-col">
+          <SheetHeader className="mb-3 text-left">
+            <SheetTitle className="text-base font-extrabold flex items-center gap-2">
+              {kycModal === "verified" && <CheckCircle2 size={16} className="text-emerald-500" />}
+              {kycModal === "pending" && <Clock size={16} className="text-amber-500" />}
+              {kycModal === "rejected" && <XCircle size={16} className="text-rose-500" />}
+              {kycModal === "verified" && (lang === "bn" ? "যাচাইকৃত গ্রাহক" : "Verified Customers")}
+              {kycModal === "pending" && (lang === "bn" ? "অপেক্ষমাণ গ্রাহক" : "Pending Customers")}
+              {kycModal === "rejected" && (lang === "bn" ? "প্রত্যাখ্যাত গ্রাহক" : "Rejected Customers")}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="relative mb-3">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={kycSearch}
+              onChange={(e) => setKycSearch(e.target.value)}
+              placeholder={lang === "bn" ? "নাম বা ফোন খুঁজুন..." : "Search by name or phone..."}
+              className="pl-9 h-10 rounded-xl text-sm"
+            />
+          </div>
+          <div className="flex-1 overflow-y-auto -mx-2 px-2 space-y-1.5">
+            {(() => {
+              const q = kycSearch.trim().toLowerCase();
+              const list = kycCustomers
+                .filter((c) => (kycModal === "verified" ? c.status === "verified" : kycModal === "rejected" ? c.status === "rejected" : c.status !== "verified" && c.status !== "rejected"))
+                .filter((c) => !q || (c.name || "").toLowerCase().includes(q) || (c.phone || "").toLowerCase().includes(q))
+                .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
+              if (list.length === 0) {
+                return (
+                  <div className="text-center py-10 text-xs text-muted-foreground">
+                    {lang === "bn" ? "কোনো গ্রাহক পাওয়া যায়নি" : "No customers found"}
+                  </div>
+                );
+              }
+              return list.map((c) => (
+                <div key={c.user_id} className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 flex items-start gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    c.status === "verified" ? "bg-emerald-500/15 text-emerald-500" :
+                    c.status === "rejected" ? "bg-rose-500/15 text-rose-500" :
+                    "bg-amber-500/15 text-amber-500"
+                  }`}>
+                    {c.status === "verified" ? <CheckCircle2 size={15} /> : c.status === "rejected" ? <XCircle size={15} /> : <Clock size={15} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-bold text-foreground truncate">{c.name || (lang === "bn" ? "নামহীন" : "Unnamed")}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{c.phone || "—"}</p>
+                    {c.status === "rejected" && c.rejection_reason && (
+                      <p className="text-[10.5px] text-rose-500 mt-1 leading-snug">
+                        <AlertTriangle size={9} className="inline mr-1 -mt-0.5" />
+                        {c.rejection_reason}
+                      </p>
+                    )}
+                  </div>
+                  {c.updated_at && (
+                    <p className="text-[9.5px] text-muted-foreground shrink-0 mt-1">
+                      {new Date(c.updated_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD", { day: "2-digit", month: "short" })}
+                    </p>
+                  )}
+                </div>
+              ));
+            })()}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };

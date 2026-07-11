@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.get_agent_customer_kyc(uuid) FROM PUBLIC, anon;
