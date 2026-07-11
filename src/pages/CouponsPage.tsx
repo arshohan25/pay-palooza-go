@@ -379,89 +379,23 @@ export default function CouponsPage() {
         path="/coupons"
       />
 
-      {/* ── Premium branded hero header ────────────────────── */}
-      <div
-        className="relative overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(140deg, hsl(var(--shariah-green-900)) 0%, hsl(var(--shariah-green-600)) 55%, hsl(var(--shariah-green-800)) 100%)",
-        }}
-      >
-        {/* Foil sheen */}
-        <div
-          className="absolute inset-0 opacity-40 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(115deg, transparent 30%, hsl(var(--shariah-gold-500)/0.35) 50%, transparent 70%)",
-          }}
-        />
-        {/* Gold blob */}
-        <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[hsl(var(--shariah-gold-500)/0.25)] blur-3xl pointer-events-none" />
-        {/* Micro dots */}
-        <div
-          className="absolute inset-0 opacity-[0.07] pointer-events-none"
-          style={{ backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)", backgroundSize: "12px 12px" }}
-        />
+      {/* ── Unified EasyPay flow header ─────────────────────── */}
+      <FlowHeader
+        title={t("coupons")}
+        tagline={loading ? "…" : `${coupons.length} live offers • refreshed in real-time`}
+        icon={Ticket}
+      />
 
-        <div className="relative px-4 pt-3 pb-6">
-          {/* Nav row */}
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 backdrop-blur hover:bg-white/15 active:scale-95 transition"
-            >
-              <ArrowLeft className="w-[18px] h-[18px] text-white" />
-            </button>
-            <img
-              src="/icons/easypay-logo.webp"
-              alt="EasyPay"
-              className="h-6 object-contain brightness-0 invert opacity-95"
-            />
-            <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur flex items-center justify-center">
-              <Ticket className="w-4 h-4 text-white" />
-            </div>
-          </div>
-
-          {/* Brand title */}
-          <div className="mt-5">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[hsl(var(--shariah-gold-500)/0.18)] border border-[hsl(var(--shariah-gold-300)/0.4)] mb-2.5">
-              <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-300))]" />
-              <span className="text-[9.5px] font-black uppercase tracking-[0.18em] text-[hsl(var(--shariah-gold-300))]">
-                EasyPay Rewards
-              </span>
-            </div>
-            <h1 className="text-[28px] font-black tracking-tight text-white leading-[1.02]">
-              {t("coupons")}
-            </h1>
-            <p className="mt-1.5 text-[12px] text-white/70 leading-snug max-w-[280px]">
-              Handpicked premium offers, refreshed for you in real-time.
-            </p>
-          </div>
-
-
-          {/* Stats strip */}
-          <div className="mt-4 flex items-center gap-2">
-            <div className="flex-1 rounded-xl bg-white/10 backdrop-blur border border-white/10 px-3 py-2">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-white/60">Live</p>
-              <p className="text-[16px] font-black text-white tabular-nums leading-none mt-0.5">
-                {loading ? "…" : coupons.length}
-              </p>
-            </div>
-            <div className="flex-1 rounded-xl bg-white/10 backdrop-blur border border-white/10 px-3 py-2">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-white/60">Ending soon</p>
-              <p className="text-[16px] font-black text-[hsl(var(--shariah-gold-300))] tabular-nums leading-none mt-0.5">
-                {loading
-                  ? "…"
-                  : coupons.filter(c => c.expires_at && daysLeft(c.expires_at) > 0 && daysLeft(c.expires_at) <= 3).length}
-              </p>
-            </div>
-            <div className="flex-1 rounded-xl bg-white/10 backdrop-blur border border-white/10 px-3 py-2">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-white/60">Curated</p>
-              <p className="text-[16px] font-black text-white tabular-nums leading-none mt-0.5">24/7</p>
-            </div>
-          </div>
+      {/* Rewards ribbon */}
+      <div className="px-4 pt-3">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[hsl(var(--shariah-gold-500)/0.15)] border border-[hsl(var(--shariah-gold-500)/0.35)]">
+          <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-700))]" />
+          <span className="text-[9.5px] font-black uppercase tracking-[0.18em] text-[hsl(var(--shariah-gold-700))]">
+            EasyPay Rewards
+          </span>
         </div>
       </div>
+
 
       <div className="px-4 pt-5 space-y-5">
 
