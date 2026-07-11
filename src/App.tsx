@@ -64,6 +64,8 @@ const CashOutHarness = lazy(() => import("./pages/CashOutHarness"));
 const PaymentRequestsPage = lazy(() => import("./pages/PaymentRequestsPage"));
 const PayLinkPage = lazy(() => import("./pages/PayLinkPage"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const AdminMcpActivityLog = lazy(() => import("./pages/AdminMcpActivityLog"));
+
 
 
 const queryClient = new QueryClient({
@@ -131,6 +133,8 @@ const App = () => (
 
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
                     <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]}><AdminUserProfilePage /></RoleGuard>} />
+                    <Route path="/admin/mcp-activity" element={<RoleGuard roles={["admin", "developer", "audit"]}><AdminMcpActivityLog /></RoleGuard>} />
+
 
                     <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} />}>
                       <Route index element={<AgentDashboard />} />

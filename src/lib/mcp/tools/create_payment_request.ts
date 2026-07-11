@@ -1,13 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
-import { defineTool, type ToolContext } from "@lovable.dev/mcp-js";
+import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-
-function sbForUser(ctx: ToolContext) {
-  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
+import { sbForUser, withToolAudit } from "../lib/tool-helpers";
 
 function randomCode(len = 8) {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -33,10 +26,7 @@ export default defineTool({
     description: z.string().trim().optional().describe("Optional message shown to the payer."),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-  handler: async ({ title, amount, description }, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    }
+  handler: withToolAudit("create_payment_request", async ({ title, amount, description }, ctx) => {
     const sb = sbForUser(ctx);
     const short_code = randomCode();
     const { data, error } = await sb
@@ -49,11 +39,13 @@ export default defineTool({
         description: description ?? null,
         created_by: ctx.getUserId(),
         is_active: true,
+        source: "mcp",
       })
-      .select("id, short_code, title, amount, currency, is_active, created_at")
+      .select("id, short_code, title, amount, currency, is_active, created_at, source")
       .single();
     if (error || !data) {
-      return { content: [{ type: "text", text: error?.message ?? "Insert failed" }], isError: true };
+      // Let withToolAudit map to a friendly message.
+      throw new Error(error?.message ?? "Could not create payment request");
     }
     const url = `https://pay-palooza-go.lovable.app/r/${data.short_code}`;
     return {
@@ -65,5 +57,5 @@ export default defineTool({
       ],
       structuredContent: { link: data, url },
     };
-  },
+  }),
 });
