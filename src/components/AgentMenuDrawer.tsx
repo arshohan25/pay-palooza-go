@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,8 +6,10 @@ import {
   LogOut, ChevronRight, Building2, Upload, Activity,
   Users, Languages, ArrowDownToLine, ArrowRightLeft, Banknote,
   Receipt, UserPlus, History, Headphones, LayoutDashboard,
-  CheckCircle2, Clock, XCircle, ArrowUpRight,
+  CheckCircle2, Clock, XCircle, ArrowUpRight, AlertTriangle, Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
