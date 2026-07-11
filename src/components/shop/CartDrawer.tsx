@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProductImage from "@/components/ProductImage";
 import { useI18n } from "@/lib/i18n";
+import { pickLocalizedName } from "@/lib/localizedProduct";
 import type { ShopProduct } from "./ProductCard";
 
 export interface CartItem extends ShopProduct {
@@ -22,7 +23,7 @@ interface CartDrawerProps {
 
 export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, open, onOpenChange }: CartDrawerProps) {
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const total = items.reduce((s, i) => s + i.price * i.qty, 0);
   const count = items.reduce((s, i) => s + i.qty, 0);
 
@@ -52,13 +53,15 @@ export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, o
         ) : (
           <>
             <div className="flex-1 overflow-y-auto space-y-3 py-4">
-              {items.map((item) => (
+              {items.map((item) => {
+                const itemName = pickLocalizedName(item, lang);
+                return (
                 <div key={item.id} className="flex gap-3 p-3 bg-muted/30 rounded-lg">
                   <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
-                    <ProductImage imageUrl={item.image_url} emoji={item.emoji} alt={item.name} className="w-full h-full object-cover" />
+                    <ProductImage imageUrl={item.image_url} emoji={item.emoji} alt={itemName} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground line-clamp-1 cursor-pointer hover:text-primary transition-colors" onClick={() => { onOpenChange(false); navigate(`/product/${item.id}`); }}>{item.name}</p>
+                    <p className="text-sm font-medium text-foreground line-clamp-1 cursor-pointer hover:text-primary transition-colors" onClick={() => { onOpenChange(false); navigate(`/product/${item.id}`); }}>{itemName}</p>
                     {item.vendor_name && <p className="text-[11px] text-muted-foreground">{item.vendor_name}</p>}
                     <p className="text-sm font-bold text-foreground mt-0.5">৳{(item.price * item.qty).toLocaleString()}</p>
                     <div className="flex items-center gap-2 mt-1">
