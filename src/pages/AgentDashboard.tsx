@@ -232,21 +232,21 @@ const AgentDashboard = () => {
   const todayCommission = todayTxns.reduce((sum, t) => sum + (t.commission || 0), 0);
 
   const quickActions = [
-    { icon: ArrowDownToLine, label: "Cash In", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", path: "/agent/cashin", toggleKey: "agent_cash_in" },
-    { icon: ArrowRightLeft, label: "B2B Send", bg: "rgba(233,30,99,0.12)", ring: "1px solid rgba(233,30,99,0.25)", path: "/agent/b2b", toggleKey: "agent_b2b" },
-    { icon: Banknote, label: "Bank", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", path: "/agent/bank", toggleKey: "agent_bank_transfer" },
-    { icon: Receipt, label: "Bill Pay", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", path: "/agent/billpay", toggleKey: "agent_bill_pay" },
-    { icon: UserPlus, label: "Register", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/agent/register", toggleKey: "agent_register" },
-    { icon: CircleDollarSign, label: "Float Req", bg: "rgba(255,87,34,0.12)", ring: "1px solid rgba(255,87,34,0.25)", action: "float" as const, toggleKey: "agent_float_request" },
-    { icon: History, label: "History", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", path: "/agent/history", toggleKey: "agent_history" },
-    { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const, toggleKey: "agent_support" },
+    { icon: ArrowDownToLine, label: t("cashIn"), bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", path: "/agent/cashin", toggleKey: "agent_cash_in" },
+    { icon: ArrowRightLeft, label: t("agdB2BSend"), bg: "rgba(233,30,99,0.12)", ring: "1px solid rgba(233,30,99,0.25)", path: "/agent/b2b", toggleKey: "agent_b2b" },
+    { icon: Banknote, label: t("bank"), bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", path: "/agent/bank", toggleKey: "agent_bank_transfer" },
+    { icon: Receipt, label: t("agdBillPay"), bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", path: "/agent/billpay", toggleKey: "agent_bill_pay" },
+    { icon: UserPlus, label: t("agdRegister"), bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/agent/register", toggleKey: "agent_register" },
+    { icon: CircleDollarSign, label: t("agdFloatReq"), bg: "rgba(255,87,34,0.12)", ring: "1px solid rgba(255,87,34,0.25)", action: "float" as const, toggleKey: "agent_float_request" },
+    { icon: History, label: t("history"), bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", path: "/agent/history", toggleKey: "agent_history" },
+    { icon: Headphones, label: t("agdSupport"), bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const, toggleKey: "agent_support" },
   ].filter(a => !a.toggleKey || !isDisabled(a.toggleKey));
 
   const stats = [
-    { label: "Today's Txns", value: txnCount.toString(), icon: Activity, color: "bg-primary/10 text-primary" },
-    { label: "Volume", value: `৳${fmt(todayVolume)}`, icon: BarChart3, color: "bg-accent/10 text-accent" },
-    { label: "Earned Today", value: `৳${fmt(todayCommission)}`, icon: TrendingUp, color: "bg-primary/10 text-primary" },
-    { label: "Customers", value: (agentInfo?.customers_onboarded ?? 0).toString(), icon: Users, color: "bg-accent/10 text-accent" },
+    { label: t("agdTodaysTxns"), value: txnCount.toString(), icon: Activity, color: "bg-primary/10 text-primary" },
+    { label: t("agdVolume"), value: `৳${fmt(todayVolume)}`, icon: BarChart3, color: "bg-accent/10 text-accent" },
+    { label: t("agdEarnedToday"), value: `৳${fmt(todayCommission)}`, icon: TrendingUp, color: "bg-primary/10 text-primary" },
+    { label: t("agdCustomers"), value: (agentInfo?.customers_onboarded ?? 0).toString(), icon: Users, color: "bg-accent/10 text-accent" },
   ];
 
   return (
