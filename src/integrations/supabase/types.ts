@@ -7326,6 +7326,10 @@ export type Database = {
         }
         Returns: Json
       }
+      system_approve_addmoney_request: {
+        Args: { p_gateway_ref: string; p_request_id: string }
+        Returns: Json
+      }
       transfer_money: {
         Args: {
           p_amount: number
