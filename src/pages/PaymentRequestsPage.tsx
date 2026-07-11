@@ -299,9 +299,17 @@ const PaymentRequestsPage = () => {
                         {p.transaction_id && (
                           <p className="text-[10px] font-mono text-muted-foreground">ref {p.transaction_id.slice(0, 8).toUpperCase()}</p>
                         )}
+                        {p.status === "refunded" && (
+                          <p className="text-[10px] text-amber-600">Refunded{p.refund_reason ? ` · ${p.refund_reason}` : ""}</p>
+                        )}
                       </div>
-                      <span className="text-sm font-bold text-emerald-600">+৳{Number(p.amount).toLocaleString()}</span>
+                      {p.status === "refunded" ? (
+                        <span className="text-sm font-bold text-amber-600 line-through">৳{Number(p.amount).toLocaleString()}</span>
+                      ) : (
+                        <span className="text-sm font-bold text-emerald-600">+৳{Number(p.amount).toLocaleString()}</span>
+                      )}
                     </li>
+
                   );
                 })}
               </ul>
