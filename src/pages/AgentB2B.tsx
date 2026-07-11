@@ -82,8 +82,10 @@ const AgentB2B = () => {
       resolve();
     }
   }, [phone, transferType]);
-  const { calcFee, getFeeLabel } = useFeeConfig();
-  const fee = calcFee("send", Number(amount));
+  const { calcFee } = useFeeConfig();
+  const fee = transferType === "agent"
+    ? (Number(amount) > 0 ? 5 : 0)
+    : calcFee("send", Number(amount));
 
   const handleConfirm = async () => {
     if (processing) return;
@@ -230,8 +232,8 @@ const AgentB2B = () => {
               <div>
                 <Label className="text-xs font-semibold">Amount (৳)</Label>
                 <Input type="text" inputMode="numeric" placeholder="Enter amount" value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
-                {fee > 0 && <p className="text-[10px] text-muted-foreground mt-1.5">Fee: {getFeeLabel("send")}</p>}
               </div>
+
               <div>
                 <Label className="text-xs font-semibold">Note (Optional)</Label>
                 <Input placeholder="e.g. Float repayment" value={note} onChange={e => setNote(e.target.value)} maxLength={50} className="rounded-xl h-11 mt-1" />
