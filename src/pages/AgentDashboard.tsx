@@ -28,6 +28,9 @@ import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 import { haptics } from "@/lib/haptics";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useFutureFeatures } from "@/hooks/use-future-features";
+import { useI18n } from "@/lib/i18n";
+import { useTheme } from "next-themes";
+import { Sun, Moon, Languages } from "lucide-react";
 
 /* ─── Types ─── */
 interface AgentInfo {
@@ -55,6 +58,9 @@ const AgentDashboard = () => {
   const navigate = useNavigate();
   useUserSessionTimeout("agent");
   const { isDisabled } = useGlobalToggles();
+  const { lang, toggleLang } = useI18n();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const futureFeatures = useFutureFeatures();
   void futureFeatures.visibility.future_agent_liquidity_intel;
 
@@ -258,6 +264,23 @@ const AgentDashboard = () => {
                 <Menu size={20} />
               </button>
               <div className="flex items-center gap-2">
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
+                  onClick={() => { haptics.light(); toggleLang(); }}
+                  aria-label="Toggle language"
+                  className="h-9 px-2.5 rounded-2xl glass-hero flex items-center gap-1 text-primary-foreground/90 hover:text-primary-foreground transition-colors"
+                >
+                  <Languages size={15} />
+                  <span className="text-[11px] font-bold uppercase">{lang === "en" ? "বাং" : "EN"}</span>
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
+                  onClick={() => { haptics.light(); setTheme(isDark ? "light" : "dark"); }}
+                  aria-label="Toggle theme"
+                  className="w-9 h-9 rounded-2xl glass-hero flex items-center justify-center text-primary-foreground/90 hover:text-primary-foreground transition-colors"
+                >
+                  {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.88 }}
                   onClick={() => { setNotifOpen(true); setUnreadCount(0); }}
