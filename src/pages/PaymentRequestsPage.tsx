@@ -68,6 +68,7 @@ const PaymentRequestsPage = () => {
   const [links, setLinks] = useState<PaymentLink[]>([]);
   const [payments, setPayments] = useState<ReceivedPayment[]>([]);
   const [payerNames, setPayerNames] = useState<Record<string, string>>({});
+  const [mcpLogsByLink, setMcpLogsByLink] = useState<Record<string, { correlation_id: string; created_at: string }[]>>({});
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
@@ -99,6 +100,32 @@ const PaymentRequestsPage = () => {
       (profs ?? []).forEach((p: any) => { if (p.name) map[p.user_id] = p.name; });
       setPayerNames(map);
     }
+
+    // Fetch MCP correlation IDs for links created via the AI assistant
+    const mcpLinks = ((linksData ?? []) as PaymentLink[]).filter(l => l.source === "mcp");
+    if (mcpLinks.length) {
+      const codes = mcpLinks.map(l => l.short_code);
+      const { data: logs } = await supabase
+        .from("mcp_tool_call_logs")
+        .select("correlation_id, created_at, result_summary, arguments, tool_name")
+        .eq("user_id", user.id)
+        .eq("tool_name", "create_payment_request")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const byLink: Record<string, { correlation_id: string; created_at: string }[]> = {};
+      for (const log of (logs ?? []) as any[]) {
+        const summary: string = log.result_summary ?? "";
+        for (const code of codes) {
+          if (summary.includes(`/r/${code}`)) {
+            const link = mcpLinks.find(l => l.short_code === code)!;
+            (byLink[link.id] ??= []).push({ correlation_id: log.correlation_id, created_at: log.created_at });
+          }
+        }
+      }
+      setMcpLogsByLink(byLink);
+    } else {
+      setMcpLogsByLink({});
+    }
     setLoading(false);
   }, [user]);
 
@@ -109,6 +136,23 @@ const PaymentRequestsPage = () => {
     if (!user) return;
     const mcpLinkIds = new Set(links.filter(l => l.source === "mcp").map(l => l.id));
     const linkById = new Map(links.map(l => [l.id, l] as const));
+    const paymentById = new Map(payments.map(p => [p.id, p] as const));
+    const toastForMcpPayment = (p: any, prevStatus?: string) => {
+      if (!mcpLinkIds.has(p?.link_id)) return;
+      const link = linkById.get(p.link_id);
+      const label = `🤖 AI request "${link?.title ?? "payment"}"`;
+      const status = String(p.status ?? "").toLowerCase();
+      if (status === prevStatus) return;
+      if (status === "pending" || status === "initiated") {
+        toast(`${label} · payment pending ৳${p.amount}`, { icon: "⏳" });
+      } else if (status === "processing" || status === "in_progress") {
+        toast(`${label} · processing ৳${p.amount}`, { icon: "⚙️" });
+      } else if (status === "succeeded" || status === "completed" || status === "paid") {
+        toast.success(`${label} received ৳${p.amount}`);
+      } else if (status === "failed" || status === "declined" || status === "cancelled") {
+        toast.error(`${label} failed`);
+      }
+    };
     const ch = supabase
       .channel(`pr-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "payment_links", filter: `created_by=eq.${user.id}` }, (payload) => {
@@ -123,20 +167,17 @@ const PaymentRequestsPage = () => {
         load();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "payment_link_payments", filter: `payee_id=eq.${user.id}` }, (payload) => {
-        const p: any = payload.new;
-        if (mcpLinkIds.has(p?.link_id)) {
-          const link = linkById.get(p.link_id);
-          if (p.status === "succeeded" || p.status === "completed") {
-            toast.success(`🤖 AI request "${link?.title ?? "payment"}" received ৳${p.amount}`);
-          } else if (p.status === "failed") {
-            toast.error(`🤖 AI request "${link?.title ?? "payment"}" failed`);
-          }
-        }
+        toastForMcpPayment(payload.new);
+        load();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "payment_link_payments", filter: `payee_id=eq.${user.id}` }, (payload) => {
+        const prev = paymentById.get((payload.new as any)?.id);
+        toastForMcpPayment(payload.new, prev?.status?.toLowerCase());
         load();
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user, load, links]);
+  }, [user, load, links, payments]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -440,7 +481,31 @@ const PaymentRequestsPage = () => {
                     </div>
 
                     {expanded && (
-                      <div className="mt-3 pt-3 border-t border-border/40">
+                      <div className="mt-3 pt-3 border-t border-border/40 space-y-3">
+                        {l.source === "mcp" && (
+                          <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5 text-[11px] space-y-1">
+                            <div className="flex items-center gap-1.5 text-foreground font-medium">
+                              <span aria-hidden>🤖</span> Created via AI assistant (MCP)
+                            </div>
+                            {(mcpLogsByLink[l.id] ?? []).slice(0, 1).map(log => (
+                              <div key={log.correlation_id} className="flex items-center justify-between gap-2">
+                                <span className="text-muted-foreground">
+                                  correlation: <code className="font-mono text-foreground">{log.correlation_id.slice(0, 8)}…</code>
+                                </span>
+                                <a
+                                  href={`/admin/mcp-activity?cid=${log.correlation_id}`}
+                                  onClick={(e) => { e.preventDefault(); window.open(`/admin/mcp-activity?cid=${log.correlation_id}`, "_blank"); }}
+                                  className="text-primary hover:underline inline-flex items-center gap-1"
+                                >
+                                  View in Admin Activity Log <ExternalLink className="w-3 h-3" />
+                                </a>
+                              </div>
+                            ))}
+                            {!(mcpLogsByLink[l.id]?.length) && (
+                              <p className="text-muted-foreground">No correlation ID recorded for this link.</p>
+                            )}
+                          </div>
+                        )}
                         <PaymentLinkTimeline payments={linkPays} emptyLabel="No payments on this link yet." onRefund={refund} refundingId={refundingId} />
                       </div>
                     )}
