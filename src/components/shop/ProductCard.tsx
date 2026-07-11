@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ProductImage from "@/components/ProductImage";
 import { useI18n } from "@/lib/i18n";
+import { pickLocalizedName } from "@/lib/localizedProduct";
 import { cn } from "@/lib/utils";
 
 export interface ShopProduct {
