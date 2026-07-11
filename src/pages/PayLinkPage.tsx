@@ -159,6 +159,8 @@ const PayLinkPage = () => {
       fireSuccessConfetti();
       playPaymentSuccess();
       setSuccess({ amount: data.amount, reference: data.reference, payee: data.payee_name ?? payeeName ?? "recipient" });
+      setIdemKey(crypto.randomUUID());
+
     } catch (e) {
       playPaymentError();
       toast.error((e as Error).message);
