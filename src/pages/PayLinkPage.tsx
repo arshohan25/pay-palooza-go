@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/use-auth";
 import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,9 @@ const PayLinkPage = () => {
   const [paying, setPaying] = useState(false);
   const [payments, setPayments] = useState<LinkPaymentRow[]>([]);
   const [success, setSuccess] = useState<{ amount: number; reference: string; payee: string } | null>(null);
+  const [payingUp, setPayingUp] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
 
   const loadPayments = useCallback(async (linkId: string) => {
     const { data } = await supabase
@@ -168,6 +172,58 @@ const PayLinkPage = () => {
       setPaying(false);
     }
   };
+
+  const payWithUddoktapay = async () => {
+    if (!user) {
+      navigate(`/?next=${encodeURIComponent(`/r/${shortCode}`)}`);
+      return;
+    }
+    if (!link) return;
+    if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+      return toast.error("Enter a valid amount");
+    }
+    if (remaining !== null && finalAmount > remaining) {
+      return toast.error(`Only ৳${remaining} remaining`);
+    }
+    setPayingUp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("uddoktapay-init", {
+        body: {
+          short_code: link.short_code,
+          amount: finalAmount,
+          return_origin: window.location.origin,
+        },
+      });
+      if (error) {
+        const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;
+        const detail = ctx?.text ? await ctx.text() : error.message;
+        let msg = detail;
+        try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+      if (!data?.payment_url) throw new Error("No checkout URL returned");
+      window.location.href = data.payment_url as string;
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPayingUp(false);
+    }
+  };
+
+  // Handle return from UddoktaPay hosted checkout
+  useEffect(() => {
+    const up = searchParams.get("up");
+    if (!up) return;
+    if (up === "success") {
+      toast.success("Payment received — updating…");
+      if (link?.id) loadPayments(link.id);
+    } else if (up === "cancel") {
+      toast.error("Payment cancelled");
+    }
+    searchParams.delete("up");
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams, link?.id, loadPayments]);
+
+
 
   if (loading || authLoading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
@@ -298,14 +354,32 @@ const PayLinkPage = () => {
                     <Button
                       className="w-full rounded-xl h-12 text-base font-semibold"
                       onClick={pay}
-                      disabled={paying || !(finalAmount > 0)}
+                      disabled={paying || payingUp || !(finalAmount > 0)}
                     >
                       {paying ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing…</>)
                         : user ? (<>Pay ৳{finalAmount > 0 ? finalAmount.toLocaleString() : ""} from wallet <ArrowRight className="w-4 h-4 ml-2" /></>)
                         : (<>Sign in to pay <ArrowRight className="w-4 h-4 ml-2" /></>)}
                     </Button>
+
+                    <div className="relative py-1">
+                      <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/60" /></div>
+                      <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
+                        <span className="bg-card px-2 text-muted-foreground">or</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-xl h-12 text-base font-semibold"
+                      onClick={payWithUddoktapay}
+                      disabled={paying || payingUp || !(finalAmount > 0)}
+                    >
+                      {payingUp ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Redirecting…</>)
+                        : (<>Pay with bKash / Nagad / Card <ArrowRight className="w-4 h-4 ml-2" /></>)}
+                    </Button>
                   </>
                 )}
+
               </CardContent>
             </Card>
 

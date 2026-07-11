@@ -77,3 +77,7 @@ verify_jwt = false
 
 [functions.mcp]
 verify_jwt = false
+
+[functions.uddoktapay-ipn]
+verify_jwt = false
+
