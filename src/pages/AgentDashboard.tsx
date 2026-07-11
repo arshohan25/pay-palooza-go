@@ -58,7 +58,7 @@ const AgentDashboard = () => {
   const navigate = useNavigate();
   useUserSessionTimeout("agent");
   const { isDisabled } = useGlobalToggles();
-  const { lang, toggleLang } = useI18n();
+  const { lang, toggleLang, t } = useI18n();
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const futureFeatures = useFutureFeatures();
