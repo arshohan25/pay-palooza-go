@@ -1,4 +1,5 @@
 import { validateRecipient } from "@/lib/recipientValidation";
+import { WALLET_ID_RE, AGENT_WALLET_RE, validateWalletId } from "@/lib/walletId";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFeeConfig } from "@/hooks/use-fee-config";
@@ -268,10 +269,26 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     return { exists: false };
   };
 
+  /**
+   * Reject wallet IDs that don't match the required agent format
+   * (EZP-AGDH-XXXX). Personal user (EZP-XXXX-XXXX) and merchant
+   * (EZP-MRCD-XXXX) wallets cannot receive a cash-out.
+   */
+  const rejectIfWrongAgentWallet = (raw: string): string | null => {
+    const v = (raw || "").trim().toUpperCase();
+    if (!WALLET_ID_RE.test(v)) return null; // not a wallet-shaped input — allow (phone/territory)
+    const wv = validateWalletId(v, "agent");
+    if (!wv.ok) return t("coAgentNotFound");
+    return null;
+  };
+
   const handleQrScan = async (result: string) => {
     setAgentIdInput(result);
     setValidating(true);
     setError("");
+
+    const walletErr = rejectIfWrongAgentWallet(result);
+    if (walletErr) { setValidating(false); setError(walletErr); return; }
 
     const validation = await validateAgentExists(result);
     setValidating(false);
@@ -294,6 +311,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const handleAgentIdContinue = async () => {
     const trimmed = agentIdInput.trim();
     if (trimmed.length < 5) { setError(t("coEnterValidAgentId")); return; }
+
+    const walletErr = rejectIfWrongAgentWallet(trimmed);
+    if (walletErr) { setError(walletErr); return; }
 
     setValidating(true);
     setError("");
@@ -329,6 +349,13 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const handlePinConfirm = async () => {
     if (pin.length < 4) { setError(t("coEnterPin")); return; }
     if (processing) return;
+
+    // Wallet-ID format gate: if the selected agent identifier looks like a
+    // wallet ID it MUST match EZP-AGDH-XXXX.
+    const agentIdent = agent?.agentId || agentIdInput || "";
+    const walletErr = rejectIfWrongAgentWallet(agentIdent);
+    if (walletErr) { setError(walletErr); return; }
+
     setProcessing(true);
 
     const pinValid = await verifyPin(pin);

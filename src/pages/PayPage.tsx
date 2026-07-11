@@ -10,6 +10,7 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
 import QRCode from "qrcode";
 import { useI18n } from "@/lib/i18n";
+import { WALLET_ID_RE, validateWalletId } from "@/lib/walletId";
 
 const NotFoundView = ({ merchantCode, onHome }: { merchantCode: string; onHome: () => void }) => {
   const { t } = useI18n();
@@ -269,6 +270,16 @@ const PayPage = () => {
   // Resolve merchant
   useEffect(() => {
     if (!merchantCode) { setStep("not_found"); return; }
+
+    // Wallet-ID format gate: if the identifier looks like an EasyPay wallet,
+    // it MUST match the merchant format (EZP-MRCD-XXXX). Personal user
+    // (EZP-XXXX-XXXX) and agent (EZP-AGDH-XXXX) wallets are not valid
+    // payment recipients.
+    if (WALLET_ID_RE.test(merchantCode.trim().toUpperCase())) {
+      const wv = validateWalletId(merchantCode, "merchant");
+      if (!wv.ok) { setStep("not_found"); return; }
+    }
+
     (async () => {
       try {
         const { data, error } = await supabase.rpc("resolve_payment_merchant", {

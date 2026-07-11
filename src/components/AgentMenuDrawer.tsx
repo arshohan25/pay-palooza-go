@@ -451,6 +451,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
         userId={user?.id || ""}
         userName={agentInfo?.business_name || profile.displayName}
         phone={profile.phone || ""}
+        role="agent"
       />
 
 

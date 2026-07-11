@@ -72,7 +72,7 @@ const GRADIENTS = ["gradient-send", "gradient-cashout", "gradient-payment", "gra
 const QUICK_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
-const WALLET_ID_RE = /^EZP-[A-Z]{4}-[A-Z]{4}$/i;
+import { WALLET_ID_RE, validateWalletId } from "@/lib/walletId";
 const BD_PHONE_RE  = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, "");
@@ -80,7 +80,7 @@ const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, "");
 type RecipientType = "phone" | "walletId";
 
 const detectRecipientType = (val: string): RecipientType | null => {
-  const v = val.trim();
+  const v = val.trim().toUpperCase();
   if (WALLET_ID_RE.test(v)) return "walletId";
   if (BD_PHONE_RE.test(normalizePhone(v))) return "phone";
   return null;
@@ -344,7 +344,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const recentFiltered = filteredContacts.filter((c) => c.source === "recent");
   const contactsFiltered = filteredContacts.filter((c) => c.source === "contacts").sort((a, b) => a.name.localeCompare(b.name));
 
-  const isNameSearch = inputVal.trim().length >= 2 && !/^\+?\d/.test(inputVal.trim()) && !WALLET_ID_RE.test(inputVal.trim());
+  const isNameSearch = inputVal.trim().length >= 2 && !/^\+?\d/.test(inputVal.trim()) && !WALLET_ID_RE.test(inputVal.trim().toUpperCase());
 
   // Check if input is a valid number for the "Send to this number" row
   const manualRecipientType = detectRecipientType(inputVal);
@@ -564,6 +564,20 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const handlePinConfirm = async () => {
     if (pin.length < 4) { setError(t("enterYour4DigitPin")); return; }
     if (processing) return;
+
+    // ─── Wallet-ID format gate ────────────────────────────────────────────────
+    // If the recipient is (or resolved to) a wallet ID, it must match
+    // EZP-XXXX-XXXX. Agent (EZP-AGDH-XXXX) or merchant (EZP-MRCD-XXXX) wallets
+    // are not valid send-money recipients — use Cash Out or Pay instead.
+    const walletCandidate = resolvedWalletId || (inputType === "walletId" ? inputVal : "");
+    if (walletCandidate) {
+      const wv = validateWalletId(walletCandidate, "user");
+      if (!wv.ok) {
+        setError(wv.reason === "role_mismatch" ? t("smWalletNotFound") : t("smWalletNotFound"));
+        return;
+      }
+    }
+
     setProcessing(true);
 
     const pinValid = await verifyPin(pin);

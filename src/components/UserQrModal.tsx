@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { renderQrWithLogo } from "@/lib/qrWithLogo";
 import { useI18n } from "@/lib/i18n";
 import { activityTracker } from "@/lib/activityTracker";
-import { generateWalletId } from "@/lib/walletId";
+import { generateWalletId, validateWalletId, type WalletRole } from "@/lib/walletId";
 import { useProfile } from "@/hooks/use-profile";
+import { toast } from "sonner";
 
 interface UserQrModalProps {
   open: boolean;
@@ -15,19 +16,24 @@ interface UserQrModalProps {
   userName: string;
   /** Optional explicit phone seed. Falls back to the current user's profile phone. */
   phone?: string;
+  /** Wallet role — controls the ID format: user (EZP-XXXX-XXXX), agent (EZP-AGDH-XXXX), merchant (EZP-MRCD-XXXX). */
+  role?: WalletRole;
 }
 
-const UserQrModal = ({ open, onClose, userId, userName, phone }: UserQrModalProps) => {
+const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user" }: UserQrModalProps) => {
   const { t } = useI18n();
   const profile = useProfile();
   const [copied, setCopied] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Correct format: EZP-XXXX-XXXX (13 chars), deterministically derived from phone.
+  // Deterministic wallet ID derived from the phone seed + role.
   const walletId = useMemo(() => {
     const seed = (phone || profile.phone || userId || "").toString().trim();
-    return seed ? generateWalletId(seed) : "";
-  }, [phone, profile.phone, userId]);
+    if (!seed) return "";
+    const id = generateWalletId(seed, role);
+    // Guard: if generator ever produced a malformed ID, block it.
+    return validateWalletId(id, role).ok ? id : "";
+  }, [phone, profile.phone, userId, role]);
 
   useEffect(() => {
     if (!open || !canvasRef.current || !walletId) return;
