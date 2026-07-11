@@ -124,10 +124,10 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
 
   const accountItems = [
-    { icon: Camera, label: t("agEditAvatar"), action: () => openAfterClose(() => setAvatarSheetOpen(true)), toggleKey: "agent_edit_avatar" },
-    { icon: QrCode, label: t("agShareQr"), action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
-    { icon: ShieldCheck, label: t("agCustomerKyc"), action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
-    { icon: Bell, label: t("agNotifications"), action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
+    { icon: Camera, label: t("agEditAvatar"), sub: lang === "bn" ? "প্রোফাইল ছবি আপডেট করুন" : "Update your profile photo", tint: "bg-blue-500/10 text-blue-500", action: () => openAfterClose(() => setAvatarSheetOpen(true)), toggleKey: "agent_edit_avatar" },
+    { icon: QrCode, label: t("agShareQr"), sub: lang === "bn" ? "গ্রাহকদের সাথে QR শেয়ার করুন" : "Share your agent QR code", tint: "bg-violet-500/10 text-violet-500", action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
+    { icon: ShieldCheck, label: t("agCustomerKyc"), sub: lang === "bn" ? "যাচাইকরণের স্ট্যাটাস দেখুন" : "Track verification status", tint: "bg-emerald-500/10 text-emerald-500", action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
+    { icon: Bell, label: t("agNotifications"), sub: lang === "bn" ? "সতর্কতা পছন্দ ব্যবস্থাপনা" : "Manage alert preferences", tint: "bg-amber-500/10 text-amber-500", action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
   ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
 
   const handleLogout = async () => {
