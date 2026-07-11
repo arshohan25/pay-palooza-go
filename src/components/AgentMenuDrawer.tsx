@@ -385,6 +385,32 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
           <NotificationPreferences scope="agent" />
         </SheetContent>
       </Sheet>
+
+      {/* Logout Confirmation */}
+      <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <AlertDialogContent className="rounded-2xl max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("agSignOut")}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {lang === "bn"
+                ? "আপনি কি নিশ্চিতভাবে সাইন আউট করতে চান? পুনরায় প্রবেশ করতে আপনাকে আবার লগইন করতে হবে।"
+                : "Are you sure you want to sign out? You'll need to log in again to continue."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={signingOut} className="rounded-xl">
+              {lang === "bn" ? "বাতিল" : "Cancel"}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={signingOut}
+              onClick={(e) => { e.preventDefault(); handleLogout(); }}
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {signingOut ? (lang === "bn" ? "সাইন আউট হচ্ছে..." : "Signing out...") : t("agSignOut")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
