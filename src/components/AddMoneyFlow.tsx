@@ -73,6 +73,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const duplicateCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const { accounts: depositAccounts, loading: depositLoading } = useDepositAccounts(source ?? undefined);
 
   
@@ -110,18 +111,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         });
         if (fnErr) throw fnErr;
         if (!data?.payment_url) throw new Error(data?.error || "Failed to start checkout");
-        const checkoutUrl = data.payment_url as string;
-        // Navigate the top-level window so we escape the preview iframe's
-        // cross-origin navigation restrictions. Fall back to a new tab.
-        const popup = window.open(checkoutUrl, "_blank", "noopener,noreferrer");
-        if (!popup) {
-          try {
-            (window.top ?? window).location.href = checkoutUrl;
-          } catch {
-            window.location.href = checkoutUrl;
-          }
-        }
-        onClose();
+        setCheckoutUrl(data.payment_url as string);
       } catch (e: any) {
         setError(e.message || "Failed to start UddoktaPay checkout");
         setSubmitting(false);
@@ -323,7 +313,40 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
           </motion.div>
         )}
 
-        <div className="flex-1 overflow-y-auto scrollbar-none">
+        <div className="flex-1 overflow-y-auto scrollbar-none relative">
+          {checkoutUrl && (
+            <div className="absolute inset-0 z-40 bg-background flex flex-col">
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card">
+                <button
+                  type="button"
+                  onClick={() => { setCheckoutUrl(null); setSubmitting(false); }}
+                  aria-label={t("amGoBack")}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">UddoktaPay</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{(() => { try { return new URL(checkoutUrl).host; } catch { return ""; } })()}</p>
+                </div>
+                <a
+                  href={checkoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium text-primary px-2 py-1 rounded-lg hover:bg-primary/10"
+                >
+                  Open ↗
+                </a>
+              </div>
+              <iframe
+                src={checkoutUrl}
+                title="UddoktaPay Checkout"
+                className="flex-1 w-full border-0 bg-white"
+                allow="payment *; clipboard-write; camera; geolocation"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          )}
             <AnimatePresence custom={direction} mode="wait">
               <motion.div key={step} custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit"
                 transition={{ type: "spring", stiffness: 320, damping: 32 }} className="px-4 pt-6 pb-32">
