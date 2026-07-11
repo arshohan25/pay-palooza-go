@@ -654,15 +654,28 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Name *</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Name (English) *</label>
               <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Product name" className="mt-1.5 rounded-xl" />
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Description</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Name (বাংলা)</label>
+              <Input value={form.name_bn} onChange={e => setForm(f => ({ ...f, name_bn: e.target.value }))}
+                placeholder="বাংলা নাম (ঐচ্ছিক)" className="mt-1.5 rounded-xl" />
+              <p className="text-[10px] text-muted-foreground mt-1">Shown to buyers who use the app in Bangla. Leave blank to fall back to English.</p>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Description (English)</label>
               <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 placeholder="Optional description" rows={2} className="mt-1.5 rounded-xl" />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Description (বাংলা)</label>
+              <Textarea value={form.description_bn} onChange={e => setForm(f => ({ ...f, description_bn: e.target.value }))}
+                placeholder="বাংলা বিবরণ (ঐচ্ছিক)" rows={2} className="mt-1.5 rounded-xl" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
