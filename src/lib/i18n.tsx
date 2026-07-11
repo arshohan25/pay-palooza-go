@@ -449,6 +449,9 @@ const translations = {
   amSourceRocket: { en: "Rocket", bn: "রকেট" },
   amSourceUpay: { en: "Upay", bn: "উপায়" },
   amSourceCard: { en: "Card / Other", bn: "কার্ড / অন্যান্য" },
+  amSourceUddoktapay: { en: "Pay Online (UddoktaPay)", bn: "অনলাইন পেমেন্ট (উদ্দোক্তাপে)" },
+  amPayNowUddoktapay: { en: "Pay Now with UddoktaPay", bn: "উদ্দোক্তাপে দিয়ে পেমেন্ট করুন" },
+
   amAmountLabel: { en: "Amount", bn: "পরিমাণ" },
   amSourceLabel: { en: "Source", bn: "উৎস" },
   amSendToAccount: { en: "Send money to this account", bn: "এই অ্যাকাউন্টে টাকা পাঠান" },
