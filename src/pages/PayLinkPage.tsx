@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -6,17 +6,20 @@ import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, XCircle, Lock, Wallet, ArrowRight, Home } from "lucide-react";
+import { CheckCircle2, XCircle, Wallet, ArrowRight, Home, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
+import PaymentLinkTimeline, { LinkPaymentRow } from "@/components/PaymentLinkTimeline";
 
 type Link = {
   id: string;
   title: string;
   amount: number | null;
+  amount_paid: number | null;
   currency: string;
   short_code: string;
   is_active: boolean;
@@ -37,7 +40,18 @@ const PayLinkPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [paying, setPaying] = useState(false);
+  const [payments, setPayments] = useState<LinkPaymentRow[]>([]);
   const [success, setSuccess] = useState<{ amount: number; reference: string; payee: string } | null>(null);
+
+  const loadPayments = useCallback(async (linkId: string) => {
+    const { data } = await supabase
+      .from("payment_link_payments")
+      .select("id,amount,status,created_at,transaction_id")
+      .eq("link_id", linkId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setPayments((data ?? []) as LinkPaymentRow[]);
+  }, []);
 
   useEffect(() => {
     if (!shortCode) return;
@@ -45,13 +59,14 @@ const PayLinkPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("payment_links")
-        .select("id,title,amount,currency,short_code,is_active,used_count,max_uses,expires_at,description,created_by")
+        .select("id,title,amount,amount_paid,currency,short_code,is_active,used_count,max_uses,expires_at,description,created_by")
         .eq("short_code", shortCode)
         .maybeSingle();
       if (error) setError(error.message);
       else if (!data) setError("This payment link doesn't exist.");
       else {
         setLink(data as Link);
+        loadPayments(data.id);
         if (data.created_by) {
           const { data: p } = await supabase
             .from("profiles")
@@ -63,17 +78,45 @@ const PayLinkPage = () => {
       }
       setLoading(false);
     })();
-  }, [shortCode]);
+  }, [shortCode, loadPayments]);
+
+  // Live updates for this link + its payments
+  useEffect(() => {
+    if (!link?.id) return;
+    const ch = supabase
+      .channel(`paylink-${link.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "payment_links", filter: `id=eq.${link.id}` },
+        (payload) => setLink((prev) => (prev ? { ...prev, ...(payload.new as Link) } : prev)),
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "payment_link_payments", filter: `link_id=eq.${link.id}` },
+        () => loadPayments(link.id),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [link?.id, loadPayments]);
+
+  const remaining = useMemo(() => {
+    if (!link || link.amount == null) return null;
+    return Math.max(Number(link.amount) - Number(link.amount_paid ?? 0), 0);
+  }, [link]);
 
   const status = useMemo(() => {
     if (!link) return "loading";
+    if (paying) return "processing";
+    if (link.amount != null && remaining !== null && remaining <= 0) return "paid";
     if (!link.is_active) return "inactive";
     if (link.expires_at && new Date(link.expires_at) < new Date()) return "expired";
     if (link.max_uses != null && link.used_count >= link.max_uses) return "exhausted";
-    return "ready";
-  }, [link]);
+    return "active";
+  }, [link, remaining, paying]);
 
-  const finalAmount = link?.amount != null ? Number(link.amount) : parseFloat(customAmount || "0");
+  const finalAmount = link?.amount != null
+    ? (customAmount ? parseFloat(customAmount) : (remaining ?? Number(link.amount)))
+    : parseFloat(customAmount || "0");
 
   const pay = async () => {
     if (!user) {
@@ -84,10 +127,13 @@ const PayLinkPage = () => {
     if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
       return toast.error("Enter a valid amount");
     }
+    if (remaining !== null && finalAmount > remaining) {
+      return toast.error(`Only ৳${remaining} remaining`);
+    }
     setPaying(true);
     try {
       const { data, error } = await supabase.functions.invoke("pay-link", {
-        body: { short_code: link.short_code, amount: link.amount == null ? finalAmount : undefined },
+        body: { short_code: link.short_code, amount: finalAmount },
       });
       if (error) {
         const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;
@@ -128,26 +174,32 @@ const PayLinkPage = () => {
     );
   }
 
+  const statusPill = () => {
+    const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
+      active: { label: "Active", cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> },
+      processing: { label: "Processing", cls: "bg-amber-500/10 text-amber-600 border-amber-500/30", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+      paid: { label: "Paid", cls: "bg-primary/10 text-primary border-primary/30", icon: <CheckCircle2 className="w-3 h-3" /> },
+      expired: { label: "Expired", cls: "bg-muted text-muted-foreground border-border", icon: <XCircle className="w-3 h-3" /> },
+      exhausted: { label: "Fully paid", cls: "bg-primary/10 text-primary border-primary/30", icon: <CheckCircle2 className="w-3 h-3" /> },
+      inactive: { label: "Inactive", cls: "bg-muted text-muted-foreground border-border", icon: <XCircle className="w-3 h-3" /> },
+    };
+    const cfg = map[status] ?? map.inactive;
+    return (
+      <Badge variant="outline" className={`${cfg.cls} gap-1.5`}>{cfg.icon} {cfg.label}</Badge>
+    );
+  };
+
+  const canPay = status === "active" || status === "processing";
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background flex items-start justify-center p-4 py-8">
       <Seo title={`Pay: ${link.title}`} description={`Pay ${link.title} securely from your wallet.`} path={`/r/${link.short_code}`} />
       <AnimatePresence mode="wait">
         {success ? (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            className="w-full max-w-sm"
-          >
+          <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="w-full max-w-sm">
             <Card className="border-emerald-500/30 shadow-xl">
               <CardContent className="p-8 text-center space-y-4">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 260 }}
-                  className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto"
-                >
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260 }} className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-9 h-9 text-emerald-500" />
                 </motion.div>
                 <div>
@@ -164,13 +216,7 @@ const PayLinkPage = () => {
             </Card>
           </motion.div>
         ) : (
-          <motion.div
-            key="pay"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="w-full max-w-sm"
-          >
+          <motion.div key="pay" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="w-full max-w-sm space-y-4">
             <Card className="shadow-xl border-border/40">
               <CardContent className="p-6 space-y-5">
                 <div className="text-center space-y-1">
@@ -180,37 +226,53 @@ const PayLinkPage = () => {
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">Payment request</p>
                   <h1 className="text-lg font-bold text-foreground">{link.title}</h1>
                   {payeeName && <p className="text-sm text-muted-foreground">from {payeeName}</p>}
+                  <div className="pt-2 flex justify-center">{statusPill()}</div>
                 </div>
 
                 {link.description && (
-                  <p className="text-sm text-center text-muted-foreground bg-muted/50 rounded-xl p-3">
-                    {link.description}
-                  </p>
+                  <p className="text-sm text-center text-muted-foreground bg-muted/50 rounded-xl p-3">{link.description}</p>
                 )}
 
-                {status !== "ready" ? (
-                  <div className="bg-destructive/10 text-destructive rounded-xl p-4 text-sm text-center">
+                {link.amount != null && (
+                  <div className="bg-muted/40 rounded-xl p-3 text-center space-y-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Requested / Paid</p>
+                    <p className="text-sm font-medium text-foreground">
+                      ৳{Number(link.amount).toLocaleString()} · paid ৳{Number(link.amount_paid ?? 0).toLocaleString()}
+                    </p>
+                    {remaining !== null && remaining > 0 && (
+                      <p className="text-xs text-primary font-semibold">৳{remaining.toLocaleString()} remaining</p>
+                    )}
+                  </div>
+                )}
+
+                {!canPay ? (
+                  <div className="bg-muted rounded-xl p-4 text-sm text-center text-muted-foreground">
                     {status === "expired" && "This link has expired."}
-                    {status === "exhausted" && "This link has already been paid."}
+                    {status === "exhausted" && "This link reached its use limit."}
+                    {status === "paid" && "This request has been fully paid."}
                     {status === "inactive" && "This link is no longer active."}
                   </div>
                 ) : (
                   <>
                     {link.amount != null ? (
-                      <div className="text-center py-4">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Amount</p>
-                        <p className="text-4xl font-bold text-foreground mt-1">
-                          ৳{Number(link.amount).toLocaleString()}
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium">Pay amount (BDT)</label>
+                        <Input
+                          type="number" min="1" step="1" inputMode="numeric"
+                          value={customAmount}
+                          onChange={(e) => setCustomAmount(e.target.value)}
+                          className="text-center text-2xl h-14 font-bold"
+                          placeholder={remaining ? String(remaining) : ""}
+                        />
+                        <p className="text-[11px] text-muted-foreground text-center">
+                          Leave blank to pay the full remaining ৳{remaining?.toLocaleString()}
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-1.5">
                         <label className="text-sm font-medium">Enter amount (BDT)</label>
                         <Input
-                          type="number"
-                          min="1"
-                          step="1"
-                          inputMode="numeric"
+                          type="number" min="1" step="1" inputMode="numeric"
                           value={customAmount}
                           onChange={(e) => setCustomAmount(e.target.value)}
                           className="text-center text-2xl h-14 font-bold"
@@ -222,22 +284,24 @@ const PayLinkPage = () => {
                     <Button
                       className="w-full rounded-xl h-12 text-base font-semibold"
                       onClick={pay}
-                      disabled={paying || (link.amount == null && !(finalAmount > 0))}
+                      disabled={paying || !(finalAmount > 0)}
                     >
-                      {paying ? (
-                        "Processing…"
-                      ) : user ? (
-                        <>Pay from wallet <ArrowRight className="w-4 h-4 ml-2" /></>
-                      ) : (
-                        <>Sign in to pay <ArrowRight className="w-4 h-4 ml-2" /></>
-                      )}
+                      {paying ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing…</>)
+                        : user ? (<>Pay ৳{finalAmount > 0 ? finalAmount.toLocaleString() : ""} from wallet <ArrowRight className="w-4 h-4 ml-2" /></>)
+                        : (<>Sign in to pay <ArrowRight className="w-4 h-4 ml-2" /></>)}
                     </Button>
-
-                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                      <Lock className="w-3 h-3" /> Secured by EasyPay
-                    </div>
                   </>
                 )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/40">
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground">Payment timeline</h3>
+                  <span className="text-[11px] text-muted-foreground">Live · {payments.length}</span>
+                </div>
+                <PaymentLinkTimeline payments={payments} emptyLabel="No payments recorded yet." />
               </CardContent>
             </Card>
           </motion.div>
