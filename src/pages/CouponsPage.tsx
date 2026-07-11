@@ -506,29 +506,8 @@ export default function CouponsPage() {
           </div>
         </div>
 
-        {/* Category chips */}
-        <div className="-mx-4 px-4 overflow-x-auto">
-          <div className="flex gap-2 min-w-max">
-            {CATEGORIES.map((c) => {
-              const Icon = c.icon;
-              const active = category === c.id;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setCategory(c.id)}
-                  className={`shrink-0 flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[11.5px] font-bold transition-all ${
-                    active
-                      ? "bg-primary text-primary-foreground shadow-[0_2px_8px_-2px_hsl(var(--shariah-green-600)/0.5)]"
-                      : "bg-muted/60 text-foreground/70 hover:bg-muted"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {t(c.labelKey)}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+
+
 
         {/* AI Recommended */}
         {(aiCouponRewards.length > 0 || aiOfferRewards.length > 0) && (
