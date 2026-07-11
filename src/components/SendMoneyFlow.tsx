@@ -199,9 +199,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       haptics.error?.();
       return;
     }
-    if (current > 0) {
-      setAmount(formatAmountInput(nextEnabled ? getAmountWithCashOutCharge(current) : getBaseAmountFromTotal(current)));
+    if (nextEnabled && current > 0) {
+      setAmount(formatAmountInput(getAmountWithCashOutCharge(current)));
     }
+    // When turning OFF, keep the typed amount as-is (do not reduce it).
     setAddCashOutCharge(nextEnabled);
     haptics.light();
     setError("");
