@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,7 +6,9 @@ import {
   LogOut, ChevronRight, Building2, Upload, Activity,
   Users, Languages, ArrowDownToLine, ArrowRightLeft, Banknote,
   Receipt, UserPlus, History, Headphones, LayoutDashboard,
+  CheckCircle2, Clock, XCircle, ArrowUpRight,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +57,39 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [kycCounts, setKycCounts] = useState<{ verified: number; pending: number; rejected: number; total: number }>({ verified: 0, pending: 0, rejected: 0, total: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Fetch customer KYC status summary (customers referred/onboarded by this agent)
+  useEffect(() => {
+    if (!open || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data: refs } = await supabase
+        .from("referrals")
+        .select("referee_id")
+        .eq("referrer_id", user.id);
+      const ids = (refs || []).map((r: any) => r.referee_id).filter(Boolean);
+      if (ids.length === 0) {
+        if (!cancelled) setKycCounts({ verified: 0, pending: 0, rejected: 0, total: 0 });
+        return;
+      }
+      const { data: kycs } = await supabase
+        .from("kyc_verifications")
+        .select("status,user_id")
+        .in("user_id", ids);
+      const counts = { verified: 0, pending: 0, rejected: 0, total: ids.length };
+      (kycs || []).forEach((k: any) => {
+        const s = (k.status || "").toLowerCase();
+        if (s === "verified" || s === "approved") counts.verified++;
+        else if (s === "rejected" || s === "denied") counts.rejected++;
+        else counts.pending++;
+      });
+      if (!cancelled) setKycCounts(counts);
+    })();
+    return () => { cancelled = true; };
+  }, [open, user]);
+
 
 
   // Avatar upload
@@ -240,7 +274,54 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                       </button>
                     ))}
                   </div>
+
+                  {/* Customer KYC Status Summary */}
+                  <div className="mt-2 rounded-2xl border border-border/50 bg-gradient-to-br from-emerald-500/[0.06] via-muted/20 to-amber-500/[0.06] p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-foreground truncate">
+                          {lang === "bn" ? "গ্রাহক KYC স্ট্যাটাস" : "Customer KYC Status"}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {lang === "bn"
+                            ? `মোট ${kycCounts.total} জন গ্রাহক`
+                            : `${kycCounts.total} total customer${kycCounts.total === 1 ? "" : "s"}`}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => goto("/agent/register")}
+                        className="flex items-center gap-1 px-2.5 h-7 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-[10.5px] font-bold shrink-0 transition-colors"
+                      >
+                        {lang === "bn" ? "আপডেট" : "Update"}
+                        <ArrowUpRight size={11} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2 text-center">
+                        <CheckCircle2 size={13} className="mx-auto text-emerald-500 mb-0.5" strokeWidth={2.4} />
+                        <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none">{kycCounts.verified}</p>
+                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                          {lang === "bn" ? "যাচাইকৃত" : "Verified"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2 text-center">
+                        <Clock size={13} className="mx-auto text-amber-500 mb-0.5" strokeWidth={2.4} />
+                        <p className="text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none">{kycCounts.pending}</p>
+                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                          {lang === "bn" ? "অপেক্ষমাণ" : "Pending"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2 text-center">
+                        <XCircle size={13} className="mx-auto text-rose-500 mb-0.5" strokeWidth={2.4} />
+                        <p className="text-sm font-extrabold text-rose-600 dark:text-rose-400 leading-none">{kycCounts.rejected}</p>
+                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                          {lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
 
                 {/* Preferences */}
                 <div>
