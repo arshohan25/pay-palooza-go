@@ -16,24 +16,26 @@ interface UserQrModalProps {
   userName: string;
   /** Optional explicit phone seed. Falls back to the current user's profile phone. */
   phone?: string;
-  /** Wallet role — controls the ID format: user (EZP-XXXX-XXXX), agent (EZP-AGDH-XXXX), merchant (EZP-MRCD-XXXX). */
+  /** Wallet role — controls the ID format: user (EZP-XXXX-XXXX), agent (EZP-AGN{RR}-XXXX), merchant (EZP-MRC{RR}-XXXX). */
   role?: WalletRole;
+  /** 2-letter route code (DH/KH/NR/…). Only used for agent + merchant. Defaults to DH. */
+  route?: string;
 }
 
-const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user" }: UserQrModalProps) => {
+const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", route = "DH" }: UserQrModalProps) => {
   const { t } = useI18n();
   const profile = useProfile();
   const [copied, setCopied] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Deterministic wallet ID derived from the phone seed + role.
+  // Deterministic wallet ID derived from the phone seed + role + route.
   const walletId = useMemo(() => {
     const seed = (phone || profile.phone || userId || "").toString().trim();
     if (!seed) return "";
-    const id = generateWalletId(seed, role);
+    const id = generateWalletId(seed, role, route);
     // Guard: if generator ever produced a malformed ID, block it.
     return validateWalletId(id, role).ok ? id : "";
-  }, [phone, profile.phone, userId, role]);
+  }, [phone, profile.phone, userId, role, route]);
 
   useEffect(() => {
     if (!open || !canvasRef.current || !walletId) return;

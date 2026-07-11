@@ -122,7 +122,33 @@ export async function transferMoney(params: {
   recipientName?: string;
   recipientType?: "receive" | "cashout" | "cashin";
   commission?: number;
+  /** Optional wallet ID of the recipient. When provided, its format is
+   *  verified server-side before the transfer is created. */
+  recipientWalletId?: string;
+  /** Optional expected role for the wallet ID
+   *  ("user" for send, "agent" for cashout, "merchant" for payment). */
+  expectedWalletRole?: "user" | "agent" | "merchant";
 }): Promise<{ success: boolean; recipientFound: boolean; senderBalance: number }> {
+  // ─── Server-side wallet-ID format gate ───────────────────────────────────
+  if (params.recipientWalletId) {
+    const { data: fmt, error: fmtErr } = await supabase.rpc(
+      "validate_wallet_id_format" as any,
+      { _wallet_id: params.recipientWalletId, _expected_role: params.expectedWalletRole ?? null },
+    );
+    if (fmtErr) throw fmtErr;
+    const parsed = typeof fmt === "string" ? JSON.parse(fmt) : fmt;
+    if (!parsed?.ok) {
+      const err: any = new Error(
+        parsed?.reason === "role_mismatch"
+          ? `WALLET_ROLE_MISMATCH:${params.expectedWalletRole}`
+          : "WALLET_BAD_FORMAT",
+      );
+      err.code = parsed?.reason || "bad_format";
+      err.walletValidation = parsed;
+      throw err;
+    }
+  }
+
   const { data, error } = await supabase.rpc("transfer_money", {
     p_recipient_phone: params.recipientPhone,
     p_amount: params.amount,

@@ -16,7 +16,8 @@ export interface QrParseResult {
 }
 
 const PHONE_RE = /^(?:\+?880|0)?1[3-9]\d{8}$/;
-const WALLET_RE = /^EZP-[A-Z]{4}-[A-Z]{4}$/i;
+// Accepts personal (EZP-XXXX-XXXX), agent (EZP-AGN{RR}-XXXX) and merchant (EZP-MRC{RR}-XXXX) wallet IDs.
+const WALLET_RE = /^EZP-[A-Z]{4,5}-[A-Z]{4}$/i;
 const MRC_RE = /^MRC-?/i;
 
 /**

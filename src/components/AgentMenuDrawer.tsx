@@ -452,6 +452,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
         userName={agentInfo?.business_name || profile.displayName}
         phone={profile.phone || ""}
         role="agent"
+        route={(agentInfo?.territory_code || "DH").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2) || "DH"}
       />
 
 

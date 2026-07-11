@@ -72,7 +72,7 @@ const GRADIENTS = ["gradient-send", "gradient-cashout", "gradient-payment", "gra
 const QUICK_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
-import { WALLET_ID_RE, validateWalletId } from "@/lib/walletId";
+import { WALLET_ID_RE, validateWalletId, walletFormatError } from "@/lib/walletId";
 const BD_PHONE_RE  = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, "");
@@ -565,15 +565,15 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     if (pin.length < 4) { setError(t("enterYour4DigitPin")); return; }
     if (processing) return;
 
-    // ─── Wallet-ID format gate ────────────────────────────────────────────────
+    // ─── Wallet-ID format gate (client-side pre-check) ────────────────────────
     // If the recipient is (or resolved to) a wallet ID, it must match
-    // EZP-XXXX-XXXX. Agent (EZP-AGDH-XXXX) or merchant (EZP-MRCD-XXXX) wallets
-    // are not valid send-money recipients — use Cash Out or Pay instead.
+    // EZP-XXXX-XXXX. Agent (EZP-AGN{RR}-XXXX) or merchant (EZP-MRC{RR}-XXXX)
+    // wallets are not valid send-money recipients — use Cash Out or Pay instead.
     const walletCandidate = resolvedWalletId || (inputType === "walletId" ? inputVal : "");
     if (walletCandidate) {
       const wv = validateWalletId(walletCandidate, "user");
       if (!wv.ok) {
-        setError(wv.reason === "role_mismatch" ? t("smWalletNotFound") : t("smWalletNotFound"));
+        setError(walletFormatError("user", lang));
         return;
       }
     }
@@ -605,13 +605,19 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         recipientName: recipient?.name,
         reference: txnId.current,
         description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (note || "") + (resolvedWalletId ? ` [Wallet: ${resolvedWalletId}]` : ""),
+        recipientWalletId: walletCandidate || undefined,
+        expectedWalletRole: walletCandidate ? "user" : undefined,
       });
       onSuccess?.(actualSendAmount);
       showTxnToast({ type: t("flowSendMoney"), amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
       setDirection(1);
       setStep("success");
     } catch (err: any) {
-      setError(err?.message || t("smTransactionFailed"));
+      if (err?.code === "bad_format" || err?.code === "role_mismatch") {
+        setError(walletFormatError("user", lang));
+      } else {
+        setError(err?.message || t("smTransactionFailed"));
+      }
       setPin("");
       setProcessing(false);
       return;

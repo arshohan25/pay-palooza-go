@@ -10,7 +10,7 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
 import QRCode from "qrcode";
 import { useI18n } from "@/lib/i18n";
-import { WALLET_ID_RE, validateWalletId } from "@/lib/walletId";
+import { WALLET_ID_RE, validateWalletId, walletFormatError } from "@/lib/walletId";
 
 const NotFoundView = ({ merchantCode, onHome }: { merchantCode: string; onHome: () => void }) => {
   const { t } = useI18n();
@@ -272,12 +272,16 @@ const PayPage = () => {
     if (!merchantCode) { setStep("not_found"); return; }
 
     // Wallet-ID format gate: if the identifier looks like an EasyPay wallet,
-    // it MUST match the merchant format (EZP-MRCD-XXXX). Personal user
-    // (EZP-XXXX-XXXX) and agent (EZP-AGDH-XXXX) wallets are not valid
+    // it MUST match the merchant format (EZP-MRC{RR}-XXXX). Personal user
+    // (EZP-XXXX-XXXX) and agent (EZP-AGN{RR}-XXXX) wallets are not valid
     // payment recipients.
     if (WALLET_ID_RE.test(merchantCode.trim().toUpperCase())) {
       const wv = validateWalletId(merchantCode, "merchant");
-      if (!wv.ok) { setStep("not_found"); return; }
+      if (!wv.ok) {
+        setErrorMsg(walletFormatError("merchant", lang));
+        setStep("error");
+        return;
+      }
     }
 
     (async () => {
