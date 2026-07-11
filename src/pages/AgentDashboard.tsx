@@ -266,6 +266,23 @@ const AgentDashboard = () => {
               <div className="flex items-center gap-2">
                 <motion.button
                   whileTap={{ scale: 0.88 }}
+                  onClick={() => { haptics.light(); toggleLang(); }}
+                  aria-label="Toggle language"
+                  className="h-9 px-2.5 rounded-2xl glass-hero flex items-center gap-1 text-primary-foreground/90 hover:text-primary-foreground transition-colors"
+                >
+                  <Languages size={15} />
+                  <span className="text-[11px] font-bold uppercase">{lang === "en" ? "বাং" : "EN"}</span>
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
+                  onClick={() => { haptics.light(); setTheme(isDark ? "light" : "dark"); }}
+                  aria-label="Toggle theme"
+                  className="w-9 h-9 rounded-2xl glass-hero flex items-center justify-center text-primary-foreground/90 hover:text-primary-foreground transition-colors"
+                >
+                  {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
                   onClick={() => { setNotifOpen(true); setUnreadCount(0); }}
                   className="relative w-9 h-9 rounded-2xl glass-hero flex items-center justify-center text-primary-foreground/80 hover:text-primary-foreground transition-colors"
                 >
