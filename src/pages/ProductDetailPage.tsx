@@ -557,7 +557,7 @@ export default function ProductDetailPage() {
                   <span className="text-xs font-semibold text-foreground">{t("pdpProductDetails")}</span>
                 </div>
                 {(() => {
-                  const lines = (product.description || t("pdpNoDescription")).split("\n").filter(Boolean);
+                  const lines = (displayDescription || t("pdpNoDescription")).split("\n").filter(Boolean);
                   if (lines.length <= 1) {
                     return (
                       <div className="px-3.5 py-3 border-l-2 border-primary/40 ml-3 my-3">
@@ -709,7 +709,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-2.5 px-4 py-2 bg-muted/30 border-b border-border/30 shrink-0">
               <span className="text-lg">{product.emoji || "📦"}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-foreground truncate">{product.name}</p>
+                <p className="text-xs font-medium text-foreground truncate">{displayName}</p>
                 <p className="text-[11px] text-primary font-bold">৳{product.price?.toLocaleString()}</p>
               </div>
             </div>
