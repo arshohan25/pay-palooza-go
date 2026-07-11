@@ -110,18 +110,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         });
         if (fnErr) throw fnErr;
         if (!data?.payment_url) throw new Error(data?.error || "Failed to start checkout");
-        const checkoutUrl = data.payment_url as string;
-        // Navigate the top-level window so we escape the preview iframe's
-        // cross-origin navigation restrictions. Fall back to a new tab.
-        const popup = window.open(checkoutUrl, "_blank", "noopener,noreferrer");
-        if (!popup) {
-          try {
-            (window.top ?? window).location.href = checkoutUrl;
-          } catch {
-            window.location.href = checkoutUrl;
-          }
-        }
-        onClose();
+        setCheckoutUrl(data.payment_url as string);
       } catch (e: any) {
         setError(e.message || "Failed to start UddoktaPay checkout");
         setSubmitting(false);
