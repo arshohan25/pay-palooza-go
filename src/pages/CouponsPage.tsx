@@ -412,12 +412,11 @@ export default function CouponsPage() {
             >
               <ArrowLeft className="w-[18px] h-[18px] text-white" />
             </button>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[hsl(var(--shariah-gold-500)/0.18)] border border-[hsl(var(--shariah-gold-300)/0.4)]">
-              <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-300))]" />
-              <span className="text-[9.5px] font-black uppercase tracking-[0.16em] text-[hsl(var(--shariah-gold-300))]">
-                EasyPay Rewards
-              </span>
-            </div>
+            <img
+              src="/icons/easypay-logo.webp"
+              alt="EasyPay"
+              className="h-6 object-contain brightness-0 invert opacity-95"
+            />
             <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur flex items-center justify-center">
               <Ticket className="w-4 h-4 text-white" />
             </div>
@@ -425,13 +424,20 @@ export default function CouponsPage() {
 
           {/* Brand title */}
           <div className="mt-5">
-            <h1 className="text-[26px] font-black tracking-tight text-white leading-[1.05]">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[hsl(var(--shariah-gold-500)/0.18)] border border-[hsl(var(--shariah-gold-300)/0.4)] mb-2.5">
+              <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-300))]" />
+              <span className="text-[9.5px] font-black uppercase tracking-[0.18em] text-[hsl(var(--shariah-gold-300))]">
+                EasyPay Rewards
+              </span>
+            </div>
+            <h1 className="text-[28px] font-black tracking-tight text-white leading-[1.02]">
               {t("coupons")}
             </h1>
-            <p className="mt-1 text-[12px] text-white/70 leading-snug max-w-[260px]">
+            <p className="mt-1.5 text-[12px] text-white/70 leading-snug max-w-[280px]">
               Handpicked premium offers, refreshed for you in real-time.
             </p>
           </div>
+
 
           {/* Stats strip */}
           <div className="mt-4 flex items-center gap-2">
