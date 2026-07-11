@@ -453,7 +453,7 @@ const AgentDashboard = () => {
               </ResponsiveContainer>
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/40">
-              <span className="text-[10px] text-muted-foreground font-semibold">7-Day Total</span>
+              <span className="text-[10px] text-muted-foreground font-semibold">{t("agd7DayTotal")}</span>
               <span className="text-sm font-extrabold text-primary">৳{fmt(chartData.reduce((s, d) => s + d.commission, 0))}</span>
             </div>
           </Card>
