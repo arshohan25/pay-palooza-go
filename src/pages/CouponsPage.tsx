@@ -3,8 +3,9 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Ticket, Copy, CheckCircle2, Sparkles, Clock, Flame,
-  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, ChevronRight, Search, Plus, Loader2,
+  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, ChevronRight, Plus, Loader2,
 } from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,14 +42,8 @@ const FLOW_MAP: Record<string, { labelKey: TranslationKey; icon: typeof Shopping
   all:      { labelKey: "cpFlowAll",      icon: Tag,         tint: "hsl(var(--shariah-green-600))" },
 };
 
-const CATEGORIES: { id: FlowKey; icon: typeof ShoppingBag; labelKey: TranslationKey }[] = [
-  { id: "all",      icon: Sparkles,    labelKey: "cpFlowAll"      },
-  { id: "shop",     icon: ShoppingBag, labelKey: "cpFlowShop"     },
-  { id: "payment",  icon: CreditCard,  labelKey: "cpFlowPayment"  },
-  { id: "recharge", icon: Smartphone,  labelKey: "cpFlowRecharge" },
-  { id: "bill_pay", icon: FileText,    labelKey: "cpFlowBillPay"  },
-  { id: "cash_out", icon: Zap,         labelKey: "cpFlowCashOut"  },
-];
+
+
 
 function daysLeft(iso: string) {
   return Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
@@ -276,9 +271,8 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<FlowKey>("all");
   const [redeemCode, setRedeemCode] = useState("");
+
   const [redeeming, setRedeeming] = useState(false);
   const { rewards: aiCouponRewards, claimReward } = useAiRewards("coupon");
   const { rewards: aiOfferRewards, claimReward: claimOffer } = useAiRewards("offer");
@@ -369,18 +363,8 @@ export default function CouponsPage() {
       setRedeeming(false);
     }
   };
+  const filtered = coupons;
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return coupons.filter((c) => {
-      if (category !== "all" && (c.applicable_flow || "shop") !== category) return false;
-      if (!q) return true;
-      return (
-        c.code.toLowerCase().includes(q) ||
-        (c.description || "").toLowerCase().includes(q)
-      );
-    });
-  }, [coupons, category, query]);
 
   const featured = filtered[0];
   const rest = filtered.slice(1);
@@ -395,43 +379,86 @@ export default function CouponsPage() {
         path="/coupons"
       />
 
-      {/* ── Minimal branded header ────────────────────────── */}
-      <div className="sticky top-0 z-40 bg-background/85 backdrop-blur-xl border-b border-border/40">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-2.5">
+      {/* ── Premium branded hero header ────────────────────── */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(140deg, hsl(var(--shariah-green-900)) 0%, hsl(var(--shariah-green-700)) 55%, hsl(var(--shariah-green-800)) 100%)",
+        }}
+      >
+        {/* Foil sheen */}
+        <div
+          className="absolute inset-0 opacity-40 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(115deg, transparent 30%, hsl(var(--shariah-gold-500)/0.35) 50%, transparent 70%)",
+          }}
+        />
+        {/* Gold blob */}
+        <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[hsl(var(--shariah-gold-500)/0.25)] blur-3xl pointer-events-none" />
+        {/* Micro dots */}
+        <div
+          className="absolute inset-0 opacity-[0.07] pointer-events-none"
+          style={{ backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)", backgroundSize: "12px 12px" }}
+        />
+
+        <div className="relative px-4 pt-3 pb-6">
+          {/* Nav row */}
+          <div className="flex items-center justify-between">
             <button
               onClick={() => navigate(-1)}
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-muted/60 hover:bg-muted active:scale-95 transition"
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 backdrop-blur hover:bg-white/15 active:scale-95 transition"
             >
-              <ArrowLeft className="w-[18px] h-[18px] text-foreground" />
+              <ArrowLeft className="w-[18px] h-[18px] text-white" />
             </button>
-            <div>
-              <h1 className="text-[16px] font-bold tracking-tight text-foreground leading-none">
-                {t("coupons")}
-              </h1>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                {loading ? "…" : `${coupons.length} live offers`}
-              </p>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[hsl(var(--shariah-gold-500)/0.18)] border border-[hsl(var(--shariah-gold-300)/0.4)]">
+              <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-300))]" />
+              <span className="text-[9.5px] font-black uppercase tracking-[0.16em] text-[hsl(var(--shariah-gold-300))]">
+                EasyPay Rewards
+              </span>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur flex items-center justify-center">
+              <Ticket className="w-4 h-4 text-white" />
             </div>
           </div>
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-            <Ticket className="w-4 h-4 text-primary" />
+
+          {/* Brand title */}
+          <div className="mt-5">
+            <h1 className="text-[26px] font-black tracking-tight text-white leading-[1.05]">
+              {t("coupons")}
+            </h1>
+            <p className="mt-1 text-[12px] text-white/70 leading-snug max-w-[260px]">
+              Handpicked premium offers, refreshed for you in real-time.
+            </p>
+          </div>
+
+          {/* Stats strip */}
+          <div className="mt-4 flex items-center gap-2">
+            <div className="flex-1 rounded-xl bg-white/10 backdrop-blur border border-white/10 px-3 py-2">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/60">Live</p>
+              <p className="text-[16px] font-black text-white tabular-nums leading-none mt-0.5">
+                {loading ? "…" : coupons.length}
+              </p>
+            </div>
+            <div className="flex-1 rounded-xl bg-white/10 backdrop-blur border border-white/10 px-3 py-2">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/60">Ending soon</p>
+              <p className="text-[16px] font-black text-[hsl(var(--shariah-gold-300))] tabular-nums leading-none mt-0.5">
+                {loading
+                  ? "…"
+                  : coupons.filter(c => c.expires_at && daysLeft(c.expires_at) > 0 && daysLeft(c.expires_at) <= 3).length}
+              </p>
+            </div>
+            <div className="flex-1 rounded-xl bg-white/10 backdrop-blur border border-white/10 px-3 py-2">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/60">Curated</p>
+              <p className="text-[16px] font-black text-white tabular-nums leading-none mt-0.5">24/7</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="px-4 pt-4 space-y-5">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search coupons or codes"
-            className="w-full h-11 pl-10 pr-3 rounded-2xl bg-muted/60 border border-transparent focus:border-primary/30 focus:bg-card focus:outline-none text-[13px] font-medium text-foreground placeholder:text-muted-foreground/60 transition-all"
-          />
-        </div>
+      <div className="px-4 pt-5 space-y-5">
+
 
         {/* Redeem by code — premium ticket input */}
         <div
@@ -479,29 +506,8 @@ export default function CouponsPage() {
           </div>
         </div>
 
-        {/* Category chips */}
-        <div className="-mx-4 px-4 overflow-x-auto">
-          <div className="flex gap-2 min-w-max">
-            {CATEGORIES.map((c) => {
-              const Icon = c.icon;
-              const active = category === c.id;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setCategory(c.id)}
-                  className={`shrink-0 flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[11.5px] font-bold transition-all ${
-                    active
-                      ? "bg-primary text-primary-foreground shadow-[0_2px_8px_-2px_hsl(var(--shariah-green-600)/0.5)]"
-                      : "bg-muted/60 text-foreground/70 hover:bg-muted"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {t(c.labelKey)}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+
+
 
         {/* AI Recommended */}
         {(aiCouponRewards.length > 0 || aiOfferRewards.length > 0) && (
@@ -534,11 +540,12 @@ export default function CouponsPage() {
             </div>
             <div className="text-center space-y-1">
               <p className="text-[15px] text-foreground font-semibold">
-                {query ? "No matches found" : t("noCouponsYet")}
+                {t("noCouponsYet")}
               </p>
               <p className="text-[12px] text-muted-foreground max-w-[240px]">
-                {query ? "Try a different keyword or category." : t("noCouponsDesc")}
+                {t("noCouponsDesc")}
               </p>
+
             </div>
           </motion.div>
         ) : (
@@ -593,7 +600,7 @@ export default function CouponsPage() {
                       <Tag className="w-3 h-3 text-primary" />
                     </div>
                     <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">
-                      {category === "all" ? "All offers" : t(FLOW_MAP[category].labelKey)}
+                      All offers
                     </h3>
                   </div>
                   <span className="text-[10px] font-semibold text-muted-foreground">{everythingElse.length}</span>
