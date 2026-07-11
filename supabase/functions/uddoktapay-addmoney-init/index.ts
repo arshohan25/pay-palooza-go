@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
       },
       redirect_url: `${returnBase}/payment-return?addmoney=success&provider=uddoktapay&request_id=${fr.id}`,
       return_type: "GET",
-      cancel_url: `${returnBase}/?addmoney=cancel&provider=uddoktapay&request_id=${fr.id}`,
+      cancel_url: `${returnBase}/payment-return?addmoney=cancel&provider=uddoktapay&request_id=${fr.id}`,
       webhook_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/uddoktapay-ipn`,
     };
 
