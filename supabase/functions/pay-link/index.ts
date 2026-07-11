@@ -56,11 +56,30 @@ Deno.serve(async (req) => {
       return jsonRes({ error: "You cannot pay your own link" }, 400);
     }
 
-    // 2. Resolve amount
-    const amount =
-      link.amount != null ? Number(link.amount) : amountInput ?? 0;
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return jsonRes({ error: "Invalid amount" }, 400);
+    // 2. Resolve remaining and amount
+    const linkAmount = link.amount != null ? Number(link.amount) : null;
+    const amountPaid = Number(link.amount_paid ?? 0);
+    const remaining = linkAmount != null ? Math.max(linkAmount - amountPaid, 0) : null;
+
+    if (linkAmount != null && remaining !== null && remaining <= 0) {
+      return jsonRes({ error: "Link fully paid" }, 400);
+    }
+
+    let amount: number;
+    if (linkAmount != null) {
+      // Fixed-amount link: allow partial payment up to remaining
+      amount = amountInput != null ? amountInput : (remaining ?? linkAmount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return jsonRes({ error: "Invalid amount" }, 400);
+      }
+      if (remaining !== null && amount > remaining + 0.0001) {
+        return jsonRes({ error: `Only ৳${remaining} remaining on this link` }, 400);
+      }
+    } else {
+      amount = amountInput ?? 0;
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return jsonRes({ error: "Invalid amount" }, 400);
+      }
     }
 
     // 3. Check payer balance
@@ -96,13 +115,12 @@ Deno.serve(async (req) => {
       p_amount: amount,
     });
     if (creditErr) {
-      // rollback debit
       await admin.rpc("credit_user_balance", { p_user_id: user.id, p_amount: amount });
       return jsonRes({ error: creditErr.message }, 500);
     }
 
-    // 5. Insert transactions (payer=payment, payee=receive)
-    const reference = `PL-${link.short_code}`;
+    // 5. Transactions
+    const reference = `PL-${link.short_code}-${Date.now().toString(36).toUpperCase()}`;
     const { data: payerTxn } = await admin
       .from("transactions")
       .insert({
@@ -128,7 +146,7 @@ Deno.serve(async (req) => {
       reference,
     });
 
-    // 6. Record link payment + bump used_count
+    // 6. Record link payment (trigger updates amount_paid/used_count/is_active and notifies payee)
     await admin.from("payment_link_payments").insert({
       link_id: link.id,
       payer_id: user.id,
@@ -139,13 +157,6 @@ Deno.serve(async (req) => {
       status: "succeeded",
     });
 
-    const nextUsed = (link.used_count ?? 0) + 1;
-    const linkUpdate: Record<string, unknown> = { used_count: nextUsed };
-    if (link.max_uses != null && nextUsed >= link.max_uses) {
-      linkUpdate.is_active = false;
-    }
-    await admin.from("payment_links").update(linkUpdate).eq("id", link.id);
-
     return jsonRes({
       success: true,
       amount,
@@ -154,6 +165,7 @@ Deno.serve(async (req) => {
       reference,
       payee_name: payeeProfile.name,
     });
+
   } catch (e) {
     console.error("pay-link error", e);
     return jsonRes({ error: (e as Error).message ?? "Unexpected error" }, 500);
