@@ -21,8 +21,9 @@ type Step = "amount" | "source" | "send_to" | "proof" | "pin" | "success";
 const STEPS: Step[] = ["amount", "source", "send_to", "proof", "pin"];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
 
-type SourceId = "bank_transfer" | "bkash" | "nagad" | "rocket" | "upay" | "card";
-const SOURCE_OPTIONS: { id: SourceId; labelKey: string; icon: any; color: string }[] = [
+type SourceId = "uddoktapay" | "bank_transfer" | "bkash" | "nagad" | "rocket" | "upay" | "card";
+const SOURCE_OPTIONS: { id: SourceId; labelKey: string; icon: any; color: string; online?: boolean }[] = [
+  { id: "uddoktapay", labelKey: "amSourceUddoktapay", icon: CreditCard, color: "bg-gradient-to-br from-indigo-500 to-purple-600", online: true },
   { id: "bank_transfer", labelKey: "amSourceBank", icon: Landmark, color: "bg-blue-500" },
   { id: "bkash", labelKey: "amSourceBkash", icon: Wallet, color: "bg-[#E2136E]" },
   { id: "nagad", labelKey: "amSourceNagad", icon: Wallet, color: "bg-[#F6921E]" },
@@ -30,6 +31,7 @@ const SOURCE_OPTIONS: { id: SourceId; labelKey: string; icon: any; color: string
   { id: "upay", labelKey: "amSourceUpay", icon: Wallet, color: "bg-[#00A859]" },
   { id: "card", labelKey: "amSourceCard", icon: CreditCard, color: "bg-slate-600" },
 ];
+
 
 // TxnID validation patterns per provider
 const TXNID_PATTERNS: Record<string, { regex: RegExp; hintKey: string }> = {
@@ -98,10 +100,26 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     goTo("source");
   };
 
-  const handleSourceContinue = () => {
+  const handleSourceContinue = async () => {
     if (!source) { setError(t("amSelectSource")); return; }
+    if (source === "uddoktapay") {
+      setSubmitting(true);
+      try {
+        const { data, error: fnErr } = await supabase.functions.invoke("uddoktapay-addmoney-init", {
+          body: { amount: parseFloat(amount), return_origin: window.location.origin },
+        });
+        if (fnErr) throw fnErr;
+        if (!data?.payment_url) throw new Error(data?.error || "Failed to start checkout");
+        window.location.href = data.payment_url as string;
+      } catch (e: any) {
+        setError(e.message || "Failed to start UddoktaPay checkout");
+        setSubmitting(false);
+      }
+      return;
+    }
     goTo("send_to");
   };
+
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -350,7 +368,11 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       </div>
                       {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
                     </div>
-                    <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={handleSourceContinue}>{t("amContinue")}</Button>
+                    <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={handleSourceContinue} disabled={submitting}>
+                      {submitting ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
+                      {source === "uddoktapay" ? t("amPayNowUddoktapay") : t("amContinue")}
+                    </Button>
+
                   </div>
                 )}
 
