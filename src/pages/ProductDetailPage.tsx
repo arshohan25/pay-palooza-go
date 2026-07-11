@@ -283,7 +283,7 @@ export default function ProductDetailPage() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <h1 className="flex-1 min-w-0 text-[15px] font-semibold text-primary-foreground truncate">
-                {product?.name ?? t("pdpProduct")}
+                {displayName || t("pdpProduct")}
               </h1>
               <div className="flex items-center gap-1">
                 <motion.div whileTap={{ scale: 0.75 }} className="relative">
@@ -321,7 +321,7 @@ export default function ProductDetailPage() {
             <motion.img
               key={imgIdx}
               src={images[imgIdx] || "/placeholder.svg"}
-              alt={product.name}
+              alt={displayName}
               className="absolute inset-0 w-full h-full object-contain"
               initial={{ opacity: 0, x: swipeDir * 80, scale: 0.96 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
