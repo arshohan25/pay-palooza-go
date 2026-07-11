@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
+import FlowHeader from "@/components/FlowHeader";
+
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 import imgAll from "@/assets/giftcard/all.jpg";
