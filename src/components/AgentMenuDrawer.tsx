@@ -185,13 +185,37 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                         <item.icon size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                       <span className="text-sm font-semibold text-foreground flex-1 text-left">{item.label}</span>
-                      {"rightLabel" in item && item.rightLabel ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary">{item.rightLabel}</span>
-                      ) : (
-                        <ChevronRight size={14} className="text-muted-foreground/40" />
-                      )}
+                      <ChevronRight size={14} className="text-muted-foreground/40" />
                     </button>
                   ))}
+
+                  {/* Language segmented toggle */}
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
+                    <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                      <Languages size={16} className="text-muted-foreground" />
+                    </div>
+                    <span className="text-sm font-semibold text-foreground flex-1 text-left">{t("language")}</span>
+                    <div className="relative flex items-center bg-muted/70 border border-border/60 rounded-full p-0.5">
+                      <motion.div
+                        layout
+                        transition={{ type: "spring", stiffness: 500, damping: 34 }}
+                        className="absolute top-0.5 bottom-0.5 gradient-primary rounded-full shadow-glow"
+                        style={{ width: "calc(50% - 2px)", left: lang === "en" ? 2 : "calc(50% + 0px)" }}
+                      />
+                      <button
+                        onClick={() => lang !== "en" && toggleLang()}
+                        className={`relative z-10 px-3 h-7 text-[11px] font-bold rounded-full transition-colors ${lang === "en" ? "text-primary-foreground" : "text-muted-foreground"}`}
+                      >
+                        EN
+                      </button>
+                      <button
+                        onClick={() => lang !== "bn" && toggleLang()}
+                        className={`relative z-10 px-3 h-7 text-[11px] font-bold rounded-full transition-colors ${lang === "bn" ? "text-primary-foreground" : "text-muted-foreground"}`}
+                      >
+                        বাং
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="border-t border-border/50" />
