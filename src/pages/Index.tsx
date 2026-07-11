@@ -304,6 +304,20 @@ const Index = () => {
     }
   }, [isAuthenticated]);
 
+  // ── After sign-in, honor ?next= (used by OAuth consent to return the user) ──
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const url = new URL(window.location.href);
+    const next = url.searchParams.get("next");
+    if (!next) return;
+    // Only allow same-origin absolute paths.
+    if (!next.startsWith("/") || next.startsWith("//")) return;
+    url.searchParams.delete("next");
+    window.history.replaceState(null, "", url.toString());
+    window.location.replace(next);
+  }, [isAuthenticated]);
+
+
   const triggerRefresh = useCallback(() => {
     if (isPulling) return;
     setIsPulling(true);
