@@ -142,6 +142,26 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
     return () => clearInterval(t);
   }, [resendIn]);
 
+  // Lockout countdown
+  useEffect(() => {
+    if (!lockedUntil) { setLockedRemaining(0); return; }
+    const tick = () => {
+      const rem = Math.max(0, Math.ceil((lockedUntil - Date.now()) / 1000));
+      setLockedRemaining(rem);
+      if (rem === 0) { setLockedUntil(null); setOtpError(""); }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lockedUntil]);
+
+  const isLocked = lockedRemaining > 0;
+  const lockedMmSs = (() => {
+    const m = Math.floor(lockedRemaining / 60);
+    const s = lockedRemaining % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  })();
+
   const goTo = (next: Step, dir = 1) => {
     haptics.medium();
     setDir(dir);
