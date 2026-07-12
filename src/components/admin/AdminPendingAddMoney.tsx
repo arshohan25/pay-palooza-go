@@ -117,9 +117,12 @@ export default function AdminPendingAddMoney() {
           <h2 className="text-lg font-bold">Pending Add Money</h2>
           <p className="text-xs text-muted-foreground">{rows.length} pending · shows invoice ID for gateway matching</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw size={14} className={`mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+          <Button size="sm" variant="destructive" onClick={bulkReject} disabled={busy || selected.size === 0} data-testid="bulk-reject">
+            <XCircle size={14} className="mr-1" /> Bulk Reject ({selected.size})
           </Button>
           <Button size="sm" onClick={bulkApprove} disabled={busy || selected.size === 0} className="bg-emerald-600 hover:bg-emerald-700">
             {busy ? <Loader2 size={14} className="animate-spin mr-1" /> : <CheckCircle2 size={14} className="mr-1" />}
