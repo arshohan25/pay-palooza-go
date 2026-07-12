@@ -74,6 +74,12 @@ const AgentDashboard = () => {
 
   // Float Request & Support sheets
   const [floatSheetOpen, setFloatSheetOpen] = useState(false);
+  useEffect(() => {
+    const h = () => setFloatSheetOpen(true);
+    window.addEventListener("agent-open-float-request", h);
+    return () => window.removeEventListener("agent-open-float-request", h);
+  }, []);
+
   const [supportSheetOpen, setSupportSheetOpen] = useState(false);
   const [supportTab, setSupportTab] = useState<"faq" | "chat">("faq");
   const [floatAmount, setFloatAmount] = useState("");
