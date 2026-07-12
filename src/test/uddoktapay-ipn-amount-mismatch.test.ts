@@ -49,7 +49,7 @@ async function processIpn(payload: { invoice_id: string; amount: number; status:
     return { ok: false, error: "amount_mismatch", paid: payload.amount, expected: Number(fr.amount) };
   }
 
-  await supabase.rpc("system_approve_addmoney_request", { p_request_id: fr.id });
+  await supabase.rpc("system_approve_addmoney_request", { p_request_id: fr.id, p_gateway_ref: payload.invoice_id });
   return { ok: true, credited: true };
 }
 
