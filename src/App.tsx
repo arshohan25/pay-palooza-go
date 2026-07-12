@@ -61,6 +61,7 @@ const SavingsPage = lazy(() => import("./pages/SavingsPage"));
 const InstallmentJourneyPage = lazy(() => import("./pages/InstallmentJourneyPage"));
 const RecipientHarness = lazy(() => import("./pages/RecipientHarness"));
 const CashOutHarness = lazy(() => import("./pages/CashOutHarness"));
+const WalletSetupHarness = lazy(() => import("./pages/WalletSetupHarness"));
 const PaymentRequestsPage = lazy(() => import("./pages/PaymentRequestsPage"));
 const PayLinkPage = lazy(() => import("./pages/PayLinkPage"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
@@ -179,6 +180,10 @@ const App = () => (
                         <Route
                           path="/__test/cashout-harness"
                           element={<CashOutHarness />}
+                        />
+                        <Route
+                          path="/__test/wallet-setup-harness"
+                          element={<WalletSetupHarness />}
                         />
                       </>
                     )}
