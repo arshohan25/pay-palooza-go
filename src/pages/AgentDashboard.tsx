@@ -239,7 +239,7 @@ const AgentDashboard = () => {
 
   const quickActions = [
     { icon: ArrowDownToLine, label: t("cashIn"), bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", path: "/agent/cashin", toggleKey: "agent_cash_in" },
-    { icon: ArrowUpFromLine, label: t("cashOut"), bg: "rgba(255,152,0,0.12)", ring: "1px solid rgba(255,152,0,0.25)", path: "/agent/cashout", toggleKey: "agent_cash_out" },
+    
     { icon: ArrowRightLeft, label: t("agdB2BSend"), bg: "rgba(233,30,99,0.12)", ring: "1px solid rgba(233,30,99,0.25)", path: "/agent/b2b", toggleKey: "agent_b2b" },
     { icon: Banknote, label: t("bank"), bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", path: "/agent/bank", toggleKey: "agent_bank_transfer" },
     { icon: Receipt, label: t("agdBillPay"), bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", path: "/agent/billpay", toggleKey: "agent_bill_pay" },
