@@ -505,7 +505,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       <Sheet open={kycSheetOpen} onOpenChange={setKycSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 max-h-[90vh] overflow-y-auto" data-testid="customer-kyc-sheet" aria-labelledby="customer-kyc-title">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-base font-extrabold">{t("agCustomerKycStatus")}</SheetTitle>
+            <SheetTitle id="customer-kyc-title" className="text-base font-extrabold">{t("agCustomerKycStatus")}</SheetTitle>
           </SheetHeader>
 
           {kycLoading && !kycLoaded ? (
