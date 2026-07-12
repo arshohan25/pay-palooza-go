@@ -54,25 +54,14 @@ const AgentTransactionHistory = () => {
 
   return (
     <div className="min-h-screen bg-background pb-6">
-      {/* Header */}
-      <div className="px-4 pt-5 pb-3 flex items-center gap-3">
-        <motion.button
-          whileTap={{ scale: 0.88 }}
-          onClick={() => navigate("/agent")}
-          className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft size={18} />
-        </motion.button>
-        <div className="flex items-center gap-2">
-          <Building2 size={18} className="text-primary" />
-          <h1 className="text-base font-bold text-foreground">Agent Transactions</h1>
-          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
-            ৳{fmt(summary.totalCommission)} earned
-          </Badge>
-        </div>
-      </div>
+      <FlowHeader
+        title="Agent Transactions"
+        tagline={`৳${fmt(summary.totalCommission)} earned`}
+        icon={Building2}
+        onBack={() => navigate("/agent")}
+      />
 
-      <div className="max-w-xl mx-auto px-4">
+      <div className="max-w-xl mx-auto px-4 pt-4">
         {/* Commission Summary Card */}
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -80,7 +69,6 @@ const AgentTransactionHistory = () => {
         >
           <div className="flex items-center justify-between mb-3">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Earnings Summary</p>
-            <p className="text-[10px] text-muted-foreground font-medium"><span className="text-[10px] text-muted-foreground font-medium">Cash In/Out: 0.49% · Bill Pay: 0.019%</span></p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {statItems.map(({ icon: Icon, label, value, accent }) => (
