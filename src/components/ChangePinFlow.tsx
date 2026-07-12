@@ -121,6 +121,8 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [devOtp, setDevOtp] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null); // epoch ms
+  const [lockedRemaining, setLockedRemaining] = useState(0); // seconds
 
   const STEPS: Step[] = ["current", "otp", "new", "confirm"];
   const stepIndex = STEPS.indexOf(step);
