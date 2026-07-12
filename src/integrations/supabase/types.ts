@@ -666,10 +666,13 @@ export type Database = {
           customers_onboarded: number
           distributor_id: string | null
           id: string
+          is_available: boolean
           latitude: number | null
+          location_updated_at: string | null
           longitude: number | null
           max_float: number
           nid_number: string | null
+          shop_name: string | null
           status: Database["public"]["Enums"]["agent_status"]
           territory_code: string | null
           total_ratings: number | null
@@ -687,10 +690,13 @@ export type Database = {
           customers_onboarded?: number
           distributor_id?: string | null
           id?: string
+          is_available?: boolean
           latitude?: number | null
+          location_updated_at?: string | null
           longitude?: number | null
           max_float?: number
           nid_number?: string | null
+          shop_name?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory_code?: string | null
           total_ratings?: number | null
@@ -708,10 +714,13 @@ export type Database = {
           customers_onboarded?: number
           distributor_id?: string | null
           id?: string
+          is_available?: boolean
           latitude?: number | null
+          location_updated_at?: string | null
           longitude?: number | null
           max_float?: number
           nid_number?: string | null
+          shop_name?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory_code?: string | null
           total_ratings?: number | null
@@ -763,6 +772,42 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      aml_reports: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          reason: string
+          severity: string
+          status: string
+          subject_user_id: string | null
+          transaction_id: string | null
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reason: string
+          severity?: string
+          status?: string
+          subject_user_id?: string | null
+          transaction_id?: string | null
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reason?: string
+          severity?: string
+          status?: string
+          subject_user_id?: string | null
+          transaction_id?: string | null
         }
         Relationships: []
       }
@@ -7075,6 +7120,18 @@ export type Database = {
         Args: { p_amount: number; p_customer_phone: string }
         Returns: Json
       }
+      agent_leaderboard: {
+        Args: { _territory_code: string }
+        Returns: {
+          agent_user_id: string
+          display_name: string
+          is_me: boolean
+          masked_uid: string
+          rank: number
+          txn_count: number
+          txn_volume: number
+        }[]
+      }
       apply_loan: {
         Args: {
           p_amount: number
@@ -7408,6 +7465,22 @@ export type Database = {
         Returns: {
           found: boolean
           full_name: string
+        }[]
+      }
+      nearby_agents: {
+        Args: { _lat: number; _lng: number; _radius_km?: number }
+        Returns: {
+          address: string
+          agent_id: string
+          avg_rating: number
+          display_name: string
+          distance_km: number
+          easypay_uid: string
+          latitude: number
+          longitude: number
+          shop_name: string
+          total_ratings: number
+          user_id: string
         }[]
       }
       normalize_bd_phone: { Args: { p_raw: string }; Returns: string }
