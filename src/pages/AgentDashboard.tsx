@@ -563,13 +563,32 @@ const AgentDashboard = () => {
               className="w-full h-12 rounded-xl text-sm font-bold gradient-primary text-primary-foreground"
               disabled={!floatAmount || Number(floatAmount) <= 0 || floatSubmitting}
               onClick={async () => {
+                if (!user) return;
                 setFloatSubmitting(true);
-                await new Promise(r => setTimeout(r, 800));
-                toast.success(`Float request of ৳${fmt(Number(floatAmount))} sent to distributor`);
-                setFloatAmount("");
-                setFloatNote("");
-                setFloatSheetOpen(false);
-                setFloatSubmitting(false);
+                try {
+                  const { data: agentRow, error: agentErr } = await supabase
+                    .from("agents")
+                    .select("id, distributor_id")
+                    .eq("user_id", user.id)
+                    .single();
+                  if (agentErr || !agentRow) throw agentErr || new Error("Agent record not found");
+                  const { error } = await supabase.from("agent_float_requests").insert({
+                    agent_id: agentRow.id,
+                    agent_user_id: user.id,
+                    distributor_id: agentRow.distributor_id,
+                    amount: Number(floatAmount),
+                    note: floatNote || null,
+                  });
+                  if (error) throw error;
+                  toast.success(`Float request of ৳${fmt(Number(floatAmount))} sent to distributor`);
+                  setFloatAmount("");
+                  setFloatNote("");
+                  setFloatSheetOpen(false);
+                } catch (err: any) {
+                  toast.error(err?.message || "Failed to submit float request");
+                } finally {
+                  setFloatSubmitting(false);
+                }
               }}
             >
               {floatSubmitting ? "Submitting..." : "Submit Request"}
