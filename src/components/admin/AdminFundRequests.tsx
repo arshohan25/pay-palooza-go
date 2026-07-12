@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminIncomingMfs from "./AdminIncomingMfs";
+import AdminPendingAddMoney from "./AdminPendingAddMoney";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -159,10 +160,17 @@ export default function AdminFundRequests() {
           Fund Requests
           {pendingCount > 0 && <Badge variant="destructive" className="text-[10px] px-1">{pendingCount}</Badge>}
         </TabsTrigger>
+        <TabsTrigger value="pending_addmoney" className="gap-1.5">
+          Pending Add Money
+        </TabsTrigger>
         <TabsTrigger value="incoming" className="gap-1.5">
           <Radio size={12} /> Incoming MFS
         </TabsTrigger>
       </TabsList>
+
+      <TabsContent value="pending_addmoney">
+        <AdminPendingAddMoney />
+      </TabsContent>
 
       <TabsContent value="requests">
       <div className="space-y-4">

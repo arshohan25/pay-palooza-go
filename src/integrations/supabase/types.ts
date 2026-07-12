@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      addmoney_reconciliation_log: {
+        Row: {
+          created_at: string
+          detail: Json | null
+          id: string
+          invoice_id: string | null
+          request_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          invoice_id?: string | null
+          request_id?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          invoice_id?: string | null
+          request_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       admin_approval_requests: {
         Row: {
           action_type: string
@@ -2592,6 +2619,36 @@ export type Database = {
           requirements?: string | null
           title?: string
           type?: string | null
+        }
+        Relationships: []
+      }
+      kyc_exempt_audit: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_value: boolean
+          previous_value: boolean | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_value: boolean
+          previous_value?: boolean | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_value?: boolean
+          previous_value?: boolean | null
+          reason?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -6847,6 +6904,10 @@ export type Database = {
       }
       admin_approve_fund_request: {
         Args: { p_admin_note?: string; p_request_id: string }
+        Returns: Json
+      }
+      admin_bulk_approve_addmoney: {
+        Args: { p_admin_note?: string; p_request_ids: string[] }
         Returns: Json
       }
       admin_chargeback: {
