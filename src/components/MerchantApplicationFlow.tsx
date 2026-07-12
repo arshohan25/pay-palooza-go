@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Store, Clock, CheckCircle, XCircle, Loader2, ChevronsUpDown, Check } from "lucide-react";
+import DistrictRoutePicker from "@/components/DistrictRoutePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
