@@ -189,6 +189,7 @@ const ForgotPinPage = () => {
       <Seo
         title="Forgot PIN – Reset your transaction PIN"
         description="Recover access by verifying your phone and setting a new 4-digit PIN."
+        path="/forgot-pin"
       />
 
       <motion.header
