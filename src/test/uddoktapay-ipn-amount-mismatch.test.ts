@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 //      expected values so it surfaces in Admin → Fund Requests history.
 
 const rpcMock = vi.fn();
-const updateMock = vi.fn(() => ({ eq: () => Promise.resolve({ error: null }) }));
+const updateMock = vi.fn((_patch: unknown) => ({ eq: () => Promise.resolve({ error: null }) }));
 const selectMaybeSingle = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
