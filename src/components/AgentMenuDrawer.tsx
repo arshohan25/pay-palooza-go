@@ -75,7 +75,36 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [kycJustRefreshed, setKycJustRefreshed] = useState(false);
   const [kycModal, setKycModal] = useState<null | "verified" | "pending" | "rejected">(null);
   const [kycSearch, setKycSearch] = useState("");
+  const [kycMainSearch, setKycMainSearch] = useState("");
   const [rejectionExpanded, setRejectionExpanded] = useState(false);
+
+  // Retry cooldown so repeated fetch failures can't spam the backend.
+  const [retryAttempts, setRetryAttempts] = useState(0);
+  const [retryCooldownUntil, setRetryCooldownUntil] = useState(0);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const cooldownRemainingMs = Math.max(0, retryCooldownUntil - nowTick);
+  const cooldownSeconds = Math.ceil(cooldownRemainingMs / 1000);
+  const inCooldown = cooldownRemainingMs > 0;
+  useEffect(() => {
+    if (!inCooldown) return;
+    const iv = setInterval(() => setNowTick(Date.now()), 500);
+    return () => clearInterval(iv);
+  }, [inCooldown]);
+
+  type KycAuditRow = {
+    id: string;
+    user_id: string;
+    customer_name: string | null;
+    customer_phone: string | null;
+    previous_status: string | null;
+    new_status: string;
+    reviewer_notes: string | null;
+    changed_by: string | null;
+    changed_by_role: string | null;
+    created_at: string;
+  };
+  const [kycAudit, setKycAudit] = useState<KycAuditRow[]>([]);
+  const [kycAuditLoading, setKycAuditLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const kycCounts = useMemo(() => {
@@ -94,40 +123,67 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""))[0] || null;
   }, [kycCustomers]);
 
-  const fetchCustomerKyc = useCallback(async (opts?: { silent?: boolean; markRefresh?: boolean }) => {
+  // Cooldown schedule: 2s, 5s, 15s, 30s, 60s (capped) on successive failures.
+  const cooldownForAttempt = (n: number) =>
+    ({ 1: 2000, 2: 5000, 3: 15000, 4: 30000 }[n] ?? 60000);
+
+  const fetchCustomerKyc = useCallback(async (opts?: { silent?: boolean; markRefresh?: boolean; manual?: boolean }) => {
     if (!user) return;
+    // Reject manual retries while cooling down — prevents spamming the backend.
+    if (opts?.manual && Date.now() < retryCooldownUntil) return;
     if (!opts?.silent) setKycLoading(true);
     setKycError(null);
     try {
       const { data, error } = await (supabase as any).rpc("get_agent_customer_kyc", { _agent_id: user.id });
       if (error) throw error;
       if (Array.isArray(data)) setKycCustomers(data as KycCustomer[]);
+      setRetryAttempts(0);
+      setRetryCooldownUntil(0);
       if (opts?.markRefresh) {
         setKycJustRefreshed(true);
         toast.success(lang === "bn" ? "গ্রাহক KYC আপডেট হয়েছে" : "Customer KYC updated");
         setTimeout(() => setKycJustRefreshed(false), 4000);
       }
     } catch (err: any) {
+      const nextAttempt = retryAttempts + 1;
+      setRetryAttempts(nextAttempt);
+      setRetryCooldownUntil(Date.now() + cooldownForAttempt(nextAttempt));
       setKycError(err?.message || (lang === "bn" ? "লোড ব্যর্থ হয়েছে" : "Failed to load"));
     } finally {
       setKycLoading(false);
       setKycLoaded(true);
     }
-  }, [user, lang]);
+  }, [user, lang, retryAttempts, retryCooldownUntil]);
+
+  const fetchKycAudit = useCallback(async () => {
+    if (!user) return;
+    setKycAuditLoading(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("get_agent_kyc_audit", { _agent_id: user.id, _limit: 25 });
+      if (!error && Array.isArray(data)) setKycAudit(data as KycAuditRow[]);
+    } finally {
+      setKycAuditLoading(false);
+    }
+  }, [user]);
 
   // Fetch + realtime subscribe so counts update automatically.
   // Also clear any previous agent's data on user change to prevent leakage.
   useEffect(() => {
     setKycCustomers([]);
+    setKycAudit([]);
     setKycLoaded(false);
     setKycError(null);
     setRejectionExpanded(false);
+    setKycMainSearch("");
+    setRetryAttempts(0);
+    setRetryCooldownUntil(0);
     if (!user) { setKycLoading(false); return; }
     fetchCustomerKyc();
     const channel = supabase
       .channel(`agent-kyc-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "referrals", filter: `referrer_id=eq.${user.id}` }, () => fetchCustomerKyc({ silent: true }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => fetchCustomerKyc({ silent: true }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => { fetchCustomerKyc({ silent: true }); fetchKycAudit(); })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "kyc_status_audit", filter: `agent_id=eq.${user.id}` }, () => fetchKycAudit())
       .subscribe();
     const onFocus = () => fetchCustomerKyc({ silent: true });
     window.addEventListener("focus", onFocus);
@@ -135,12 +191,20 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       supabase.removeChannel(channel);
       window.removeEventListener("focus", onFocus);
     };
-  }, [user, fetchCustomerKyc]);
+  }, [user, fetchCustomerKyc, fetchKycAudit]);
 
   useEffect(() => {
-    if (open) fetchCustomerKyc({ silent: kycLoaded });
+    if (open) {
+      fetchCustomerKyc({ silent: kycLoaded });
+      fetchKycAudit();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  useEffect(() => {
+    if (kycSheetOpen) fetchKycAudit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kycSheetOpen]);
 
 
 
