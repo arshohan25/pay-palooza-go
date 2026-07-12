@@ -53,6 +53,8 @@ const AgentRegister = () => {
   const [devOtp, setDevOtp] = useState("");
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [otpError, setOtpError] = useState<{ kind: "invalid" | "expired" | "network"; message: string } | null>(null);
+  const [otpAttempts, setOtpAttempts] = useState(0);
 
   // Info step
   const [name, setName] = useState("");
@@ -192,6 +194,7 @@ const AgentRegister = () => {
   const handleVerifyOtp = async () => {
     if (otpValue.length !== 6) return;
     setVerifyingOtp(true);
+    setOtpError(null);
     try {
       const cleanedPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
       const { data, error } = await supabase.functions.invoke("verify-otp", {
@@ -199,15 +202,25 @@ const AgentRegister = () => {
       });
       if (error) throw error;
       if (!data?.verified) {
-        toast({ title: "Invalid OTP", description: data?.error || "Verification failed.", variant: "destructive" });
+        const raw = (data?.error || "").toString().toLowerCase();
+        const kind: "invalid" | "expired" = raw.includes("expired") || raw.includes("no pending") ? "expired" : "invalid";
+        setOtpError({
+          kind,
+          message: kind === "expired"
+            ? "This code has expired. Tap Resend to get a new one."
+            : "Incorrect code. Please double-check and try again.",
+        });
+        setOtpAttempts(a => a + 1);
         setOtpValue("");
+        haptics.error();
         setVerifyingOtp(false);
         return;
       }
       haptics.success();
       goTo("info");
     } catch (err: any) {
-      toast({ title: "Verification Failed", description: err.message, variant: "destructive" });
+      setOtpError({ kind: "network", message: err.message || "Couldn't verify right now. Please try again." });
+      haptics.error();
     } finally {
       setVerifyingOtp(false);
     }
@@ -216,6 +229,8 @@ const AgentRegister = () => {
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;
     setOtpValue("");
+    setOtpError(null);
+    setOtpAttempts(0);
     setSendingOtp(true);
     try {
       const cleanedPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
@@ -431,49 +446,116 @@ const AgentRegister = () => {
                     <p className="text-lg font-mono font-bold text-accent tracking-[0.3em]">{devOtp}</p>
                   </motion.div>
                 )}
-                <div className="relative">
-                  {/* ambient glow */}
-                  <div aria-hidden className="pointer-events-none absolute inset-x-6 -top-3 h-16 rounded-[40px] bg-gradient-to-r from-primary/20 via-accent/25 to-primary/20 blur-2xl opacity-70" />
-                  <div className="relative flex justify-center rounded-2xl border border-border/60 bg-gradient-to-b from-background/70 to-muted/40 p-3 shadow-inner backdrop-blur-md">
+                <motion.div
+                  animate={otpError ? { x: [0, -8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+                  transition={{ duration: 0.45 }}
+                  className="relative"
+                >
+                  <div className="mx-auto w-fit rounded-2xl border border-border/70 bg-background/60 p-2.5 shadow-[0_1px_0_hsl(var(--background))_inset,0_10px_30px_-18px_hsl(var(--foreground)/0.35)]">
                     <InputOTP
                       maxLength={6}
                       value={otpValue}
-                      onChange={setOtpValue}
+                      onChange={(v) => { setOtpValue(v); if (otpError) setOtpError(null); }}
                       disabled={verifyingOtp}
-                      containerClassName="justify-center gap-2"
+                      containerClassName="justify-center gap-1.5"
                     >
-                      <InputOTPGroup className="gap-2">
+                      <InputOTPGroup className="gap-1.5">
                         {[0, 1, 2, 3, 4, 5].map(i => {
                           const filled = otpValue.length > i;
+                          const active = otpValue.length === i && !otpError;
+                          const err = !!otpError;
                           return (
-                            <div key={i} className="relative">
-                              <InputOTPSlot
-                                index={i}
-                                className={`h-14 w-11 rounded-xl border-2 bg-card/80 text-xl font-bold tracking-widest text-foreground shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.35)] transition-all duration-300 first:rounded-l-xl last:rounded-r-xl focus-within:-translate-y-0.5 focus-within:border-primary focus-within:shadow-[0_10px_28px_-10px_hsl(var(--primary)/0.65)] ${filled ? "border-primary/70 bg-gradient-to-b from-primary/10 to-accent/5" : "border-border/70"}`}
-                              />
-                              <span
-                                aria-hidden
-                                className={`pointer-events-none absolute inset-x-3 -bottom-1 h-[3px] rounded-full transition-all duration-300 ${filled ? "bg-gradient-to-r from-primary to-accent opacity-100" : "bg-border/60 opacity-60"}`}
-                              />
-                            </div>
+                            <InputOTPSlot
+                              key={i}
+                              index={i}
+                              className={[
+                                "h-12 w-10 rounded-xl border bg-card text-lg font-semibold text-foreground",
+                                "first:rounded-l-xl last:rounded-r-xl transition-all duration-200",
+                                "focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary",
+                                err
+                                  ? "border-destructive/70 bg-destructive/5 text-destructive"
+                                  : filled
+                                    ? "border-primary/60 bg-primary/[0.04]"
+                                    : "border-border/70",
+                                active ? "ring-2 ring-primary/30 border-primary" : "",
+                              ].join(" ")}
+                            />
                           );
                         })}
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
-                </div>
-                {verifyingOtp && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 size={16} className="animate-spin text-primary" />
-                    <span>Verifying...</span>
-                  </div>
-                )}
-                <div className="text-center">
+                </motion.div>
+
+                <AnimatePresence mode="wait">
+                  {otpError ? (
+                    <motion.div
+                      key="err"
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      role="alert"
+                      aria-live="polite"
+                      className="mx-auto flex max-w-sm items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/[0.06] px-3 py-2.5"
+                    >
+                      <AlertTriangle size={16} className="mt-[1px] shrink-0 text-destructive" />
+                      <div className="flex-1 space-y-1.5">
+                        <p className="text-[12.5px] font-medium leading-snug text-destructive">
+                          {otpError.message}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px]">
+                          <button
+                            type="button"
+                            onClick={() => { setOtpError(null); setOtpValue(""); }}
+                            className="font-semibold text-destructive underline-offset-2 hover:underline"
+                          >
+                            Re-enter code
+                          </button>
+                          {(otpError.kind === "expired" || otpAttempts >= 2) && resendTimer === 0 && (
+                            <button
+                              type="button"
+                              onClick={handleResendOtp}
+                              disabled={sendingOtp}
+                              className="inline-flex items-center gap-1 font-semibold text-primary disabled:opacity-60"
+                            >
+                              {sendingOtp ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+                              Send a new code
+                            </button>
+                          )}
+                          {otpError.kind === "network" && (
+                            <button
+                              type="button"
+                              onClick={handleVerifyOtp}
+                              disabled={verifyingOtp || otpValue.length !== 6}
+                              className="font-semibold text-primary disabled:opacity-60"
+                            >
+                              Try again
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : verifyingOtp ? (
+                    <motion.div
+                      key="verify"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
+                    >
+                      <Loader2 size={16} className="animate-spin text-primary" />
+                      <span>Verifying...</span>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+
+                <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                  <Clock size={12} />
                   {resendTimer > 0 ? (
-                    <p className="text-xs text-muted-foreground">Resend in <span className="font-bold text-foreground">{resendTimer}s</span></p>
+                    <span>Resend available in <span className="font-semibold text-foreground">{resendTimer}s</span></span>
                   ) : (
-                    <button onClick={handleResendOtp} disabled={sendingOtp} className="text-xs font-semibold text-primary flex items-center gap-1.5 mx-auto active:scale-95 transition-transform">
-                      <RefreshCw size={12} /> Resend OTP
+                    <button onClick={handleResendOtp} disabled={sendingOtp} className="inline-flex items-center gap-1.5 font-semibold text-primary active:scale-95 transition-transform disabled:opacity-60">
+                      <RefreshCw size={12} className={sendingOtp ? "animate-spin" : ""} /> Resend code
                     </button>
                   )}
                 </div>
