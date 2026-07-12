@@ -119,3 +119,18 @@ function sanitizeReturnOrigin(value: string) {
     return "https://app.local";
   }
 }
+
+function extractInvoiceIdFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return (
+      u.searchParams.get("invoice_id") ??
+      u.searchParams.get("invoiceId") ??
+      u.pathname.split("/").filter(Boolean).pop() ??
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
