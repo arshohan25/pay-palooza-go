@@ -7,6 +7,7 @@ import {
   Users, Languages, ArrowDownToLine, ArrowRightLeft, Banknote,
   Receipt, UserPlus, History, Headphones, LayoutDashboard,
   CheckCircle2, Clock, XCircle, ArrowUpRight, AlertTriangle, Search,
+  RefreshCw, AlertCircle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -70,8 +71,11 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [kycCustomers, setKycCustomers] = useState<KycCustomer[]>([]);
   const [kycLoading, setKycLoading] = useState(true);
   const [kycLoaded, setKycLoaded] = useState(false);
+  const [kycError, setKycError] = useState<string | null>(null);
+  const [kycJustRefreshed, setKycJustRefreshed] = useState(false);
   const [kycModal, setKycModal] = useState<null | "verified" | "pending" | "rejected">(null);
   const [kycSearch, setKycSearch] = useState("");
+  const [rejectionExpanded, setRejectionExpanded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const kycCounts = useMemo(() => {
@@ -90,27 +94,42 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""))[0] || null;
   }, [kycCustomers]);
 
-  const fetchCustomerKyc = useCallback(async () => {
+  const fetchCustomerKyc = useCallback(async (opts?: { silent?: boolean; markRefresh?: boolean }) => {
     if (!user) return;
-    setKycLoading(true);
-    const { data, error } = await (supabase as any).rpc("get_agent_customer_kyc", { _agent_id: user.id });
-    if (!error && Array.isArray(data)) {
-      setKycCustomers(data as KycCustomer[]);
+    if (!opts?.silent) setKycLoading(true);
+    setKycError(null);
+    try {
+      const { data, error } = await (supabase as any).rpc("get_agent_customer_kyc", { _agent_id: user.id });
+      if (error) throw error;
+      if (Array.isArray(data)) setKycCustomers(data as KycCustomer[]);
+      if (opts?.markRefresh) {
+        setKycJustRefreshed(true);
+        toast.success(lang === "bn" ? "গ্রাহক KYC আপডেট হয়েছে" : "Customer KYC updated");
+        setTimeout(() => setKycJustRefreshed(false), 4000);
+      }
+    } catch (err: any) {
+      setKycError(err?.message || (lang === "bn" ? "লোড ব্যর্থ হয়েছে" : "Failed to load"));
+    } finally {
+      setKycLoading(false);
+      setKycLoaded(true);
     }
-    setKycLoading(false);
-    setKycLoaded(true);
-  }, [user]);
+  }, [user, lang]);
 
-  // Fetch + realtime subscribe so counts update automatically
+  // Fetch + realtime subscribe so counts update automatically.
+  // Also clear any previous agent's data on user change to prevent leakage.
   useEffect(() => {
-    if (!user) return;
+    setKycCustomers([]);
+    setKycLoaded(false);
+    setKycError(null);
+    setRejectionExpanded(false);
+    if (!user) { setKycLoading(false); return; }
     fetchCustomerKyc();
     const channel = supabase
       .channel(`agent-kyc-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "referrals", filter: `referrer_id=eq.${user.id}` }, () => fetchCustomerKyc())
-      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => fetchCustomerKyc())
+      .on("postgres_changes", { event: "*", schema: "public", table: "referrals", filter: `referrer_id=eq.${user.id}` }, () => fetchCustomerKyc({ silent: true }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => fetchCustomerKyc({ silent: true }))
       .subscribe();
-    const onFocus = () => fetchCustomerKyc();
+    const onFocus = () => fetchCustomerKyc({ silent: true });
     window.addEventListener("focus", onFocus);
     return () => {
       supabase.removeChannel(channel);
@@ -119,8 +138,9 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   }, [user, fetchCustomerKyc]);
 
   useEffect(() => {
-    if (open) fetchCustomerKyc();
-  }, [open, fetchCustomerKyc]);
+    if (open) fetchCustomerKyc({ silent: kycLoaded });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
 
 
@@ -441,6 +461,33 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                 </div>
               </div>
             </div>
+          ) : kycError && kycCustomers.length === 0 ? (
+            /* Error state with retry */
+            <div className="space-y-4" data-testid="customer-kyc-error" role="alert">
+              <Card className="p-6 border-0 shadow-card rounded-2xl text-center bg-rose-500/[0.04] border border-rose-500/20">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 flex items-center justify-center mb-3">
+                  <AlertCircle size={24} className="text-rose-500" />
+                </div>
+                <p className="text-sm font-bold text-foreground">
+                  {lang === "bn" ? "KYC ডেটা লোড করা যায়নি" : "Couldn't load KYC data"}
+                </p>
+                <p
+                  className="text-[11px] text-muted-foreground mt-1 leading-snug break-words"
+                  data-testid="kyc-error-message"
+                >
+                  {kycError}
+                </p>
+                <Button
+                  data-testid="kyc-retry-btn"
+                  onClick={() => fetchCustomerKyc()}
+                  disabled={kycLoading}
+                  className="mt-4 h-10 rounded-xl gradient-primary text-primary-foreground font-bold text-xs px-4 inline-flex items-center gap-1.5"
+                >
+                  <RefreshCw size={12} className={kycLoading ? "animate-spin" : ""} />
+                  {lang === "bn" ? "আবার চেষ্টা করুন" : "Retry"}
+                </Button>
+              </Card>
+            </div>
           ) : kycCounts.total === 0 ? (
             /* Empty state */
             <div className="space-y-4" data-testid="customer-kyc-empty">
@@ -466,6 +513,19 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
             </div>
           ) : (
             <div className="space-y-4" data-testid="customer-kyc-content">
+              {kycJustRefreshed && (
+                <div
+                  data-testid="kyc-updated-banner"
+                  role="status"
+                  className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 px-3 py-2"
+                >
+                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                  <p className="text-[11.5px] font-semibold text-emerald-700 dark:text-emerald-400">
+                    {lang === "bn" ? "গ্রাহক KYC সফলভাবে আপডেট হয়েছে" : "Customer KYC updated successfully"}
+                  </p>
+                </div>
+              )}
+
               <Card className="p-5 border-0 shadow-card rounded-2xl text-center">
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
                   <Users size={24} className="text-primary" />
@@ -491,8 +551,12 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                     data-testid="kyc-update-btn"
                     onClick={() => {
                       setKycSheetOpen(false);
-                      // Ensure counts refresh when the agent returns from the update flow.
-                      const refresh = () => { fetchCustomerKyc(); window.removeEventListener("focus", refresh); };
+                      // Ensure counts refresh (with confirmation toast + inline banner)
+                      // when the agent returns from the update flow.
+                      const refresh = () => {
+                        fetchCustomerKyc({ markRefresh: true });
+                        window.removeEventListener("focus", refresh);
+                      };
                       window.addEventListener("focus", refresh);
                       navigate("/agent/register");
                     }}
@@ -557,22 +621,51 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                   </div>
                 </TooltipProvider>
 
-                {latestRejection && kycCounts.rejected > 0 && (
-                  <div
-                    className="mt-2 flex items-start gap-1.5 rounded-lg bg-rose-500/8 border border-rose-500/20 px-2 py-1.5"
-                    data-testid="kyc-latest-rejection"
-                  >
-                    <AlertTriangle size={11} className="text-rose-500 shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-snug">
-                      <span className="font-bold">
-                        {lang === "bn" ? "সর্বশেষ কারণ: " : "Latest reason: "}
-                      </span>
-                      <span className="text-muted-foreground" data-testid="kyc-latest-rejection-reason">
-                        {latestRejection.rejection_reason || (lang === "bn" ? "কারণ উল্লেখ করা হয়নি" : "No reason provided")}
-                      </span>
-                    </p>
-                  </div>
-                )}
+                {latestRejection && kycCounts.rejected > 0 && (() => {
+                  const reason = latestRejection.rejection_reason
+                    || (lang === "bn" ? "কারণ উল্লেখ করা হয়নি" : "No reason provided");
+                  const LONG = 120;
+                  const isLong = reason.length > LONG;
+                  const shown = !isLong || rejectionExpanded ? reason : reason.slice(0, LONG).trimEnd() + "…";
+                  return (
+                    <div
+                      className="mt-2 flex items-start gap-1.5 rounded-lg bg-rose-500/8 border border-rose-500/20 px-2 py-1.5"
+                      data-testid="kyc-latest-rejection"
+                      data-expanded={rejectionExpanded ? "true" : "false"}
+                      data-long={isLong ? "true" : "false"}
+                    >
+                      <AlertTriangle size={11} className="text-rose-500 shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-snug">
+                          <span className="font-bold">
+                            {lang === "bn" ? "সর্বশেষ কারণ: " : "Latest reason: "}
+                          </span>
+                          <span
+                            className={`text-muted-foreground break-words ${
+                              isLong && !rejectionExpanded ? "line-clamp-2" : ""
+                            }`}
+                            data-testid="kyc-latest-rejection-reason"
+                            title={isLong ? reason : undefined}
+                          >
+                            {shown}
+                          </span>
+                        </p>
+                        {isLong && (
+                          <button
+                            type="button"
+                            data-testid="kyc-rejection-toggle"
+                            onClick={() => setRejectionExpanded((v) => !v)}
+                            className="mt-1 text-[10px] font-bold text-primary hover:underline"
+                          >
+                            {rejectionExpanded
+                              ? (lang === "bn" ? "কম দেখান" : "Show less")
+                              : (lang === "bn" ? "আরও দেখুন" : "Show more")}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <p className="text-[10px] text-muted-foreground text-center">
