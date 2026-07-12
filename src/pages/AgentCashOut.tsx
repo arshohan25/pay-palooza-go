@@ -39,11 +39,13 @@ const AgentCashOut = () => {
 
   useEffect(() => {
     if (phone.length === 11 && phone.startsWith("01")) {
-      supabase.rpc("resolve_transfer_recipient", { p_identifier: phone, p_flow: "send" })
-        .then(({ data }) => {
+      (async () => {
+        try {
+          const { data } = await supabase.rpc("resolve_transfer_recipient", { p_identifier: phone, p_flow: "send" });
           const res = data as any;
           setResolvedName(res?.found ? res.recipient_name : "");
-        }).catch(() => setResolvedName(""));
+        } catch { setResolvedName(""); }
+      })();
     }
   }, [phone]);
 
