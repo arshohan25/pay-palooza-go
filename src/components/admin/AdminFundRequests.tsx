@@ -100,6 +100,12 @@ export default function AdminFundRequests() {
   const filtered = requests.filter(r => {
     if (filter !== "all" && r.status !== filter) return false;
     if (typeFilter !== "all" && r.type !== typeFilter) return false;
+    if (gatewayTxnSearch) {
+      const g = gatewayTxnSearch.trim().toLowerCase();
+      const inProof = r.transaction_id_proof?.toLowerCase().includes(g);
+      const inNote = r.admin_note?.toLowerCase().includes(g);
+      if (!inProof && !inNote) return false;
+    }
     if (search) {
       const profile = profiles[r.user_id];
       const q = search.toLowerCase();
