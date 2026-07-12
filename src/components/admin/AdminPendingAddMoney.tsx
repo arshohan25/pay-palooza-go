@@ -160,8 +160,18 @@ export default function AdminPendingAddMoney() {
                       </p>
                       <p className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end gap-1">
                       <p className="text-base font-bold">৳{Number(r.amount).toLocaleString()}</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                        onClick={() => rejectOne(r.id)}
+                        disabled={busy}
+                        data-testid={`reject-${r.id}`}
+                      >
+                        <XCircle size={12} className="mr-1" /> Reject
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
