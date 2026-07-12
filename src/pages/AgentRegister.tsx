@@ -53,6 +53,8 @@ const AgentRegister = () => {
   const [devOtp, setDevOtp] = useState("");
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [otpError, setOtpError] = useState<{ kind: "invalid" | "expired" | "network"; message: string } | null>(null);
+  const [otpAttempts, setOtpAttempts] = useState(0);
 
   // Info step
   const [name, setName] = useState("");
