@@ -263,23 +263,14 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
 
   const goto = (path: string) => { onClose(); navigate(path); };
 
-  const navItems = [
-    { icon: ArrowDownToLine, label: t("cashIn"), action: () => goto("/agent/cashin"), toggleKey: "agent_cash_in" },
-    { icon: ArrowRightLeft, label: t("agdB2BSend"), action: () => goto("/agent/b2b"), toggleKey: "agent_b2b" },
-    { icon: Banknote, label: t("bank"), action: () => goto("/agent/bank"), toggleKey: "agent_bank_transfer" },
-    { icon: Receipt, label: t("agdBillPay"), action: () => goto("/agent/billpay"), toggleKey: "agent_bill_pay" },
-    { icon: UserPlus, label: t("agdRegister"), action: () => goto("/agent/register"), toggleKey: "agent_register" },
-    { icon: CircleDollarSign, label: t("agdFloatReq"), action: () => { onClose(); window.dispatchEvent(new CustomEvent("agent-open-float-request")); }, toggleKey: "agent_float_request" },
-    { icon: History, label: t("history"), action: () => goto("/agent/history"), toggleKey: "agent_history" },
-  ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
-
   const accountItems = [
-    { icon: BarChart3, label: t("agAnalytics"), sub: lang === "bn" ? "কর্মক্ষমতা ও কমিশন দেখুন" : "View performance & commissions", tint: "bg-indigo-500/10 text-indigo-500", action: () => openAfterClose(() => navigate("/agent/analytics")), toggleKey: "agent_analytics" },
     { icon: Camera, label: t("agEditAvatar"), sub: lang === "bn" ? "প্রোফাইল ছবি আপডেট করুন" : "Update your profile photo", tint: "bg-blue-500/10 text-blue-500", action: () => openAfterClose(() => setAvatarSheetOpen(true)), toggleKey: "agent_edit_avatar" },
     { icon: QrCode, label: t("agShareQr"), sub: lang === "bn" ? "গ্রাহকদের সাথে QR শেয়ার করুন" : "Share your agent QR code", tint: "bg-violet-500/10 text-violet-500", action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
+    { icon: BarChart3, label: t("agAnalytics"), sub: lang === "bn" ? "কর্মক্ষমতা ও কমিশন দেখুন" : "View performance & commissions", tint: "bg-indigo-500/10 text-indigo-500", action: () => openAfterClose(() => navigate("/agent/analytics")), toggleKey: "agent_analytics" },
     { icon: ShieldCheck, label: t("agCustomerKyc"), sub: lang === "bn" ? "যাচাইকরণের স্ট্যাটাস দেখুন" : "Track verification status", tint: "bg-emerald-500/10 text-emerald-500", action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
     { icon: Bell, label: t("agNotifications"), sub: lang === "bn" ? "সতর্কতা পছন্দ ব্যবস্থাপনা" : "Manage alert preferences", tint: "bg-amber-500/10 text-amber-500", action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
   ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
+
 
 
   const handleLogout = async () => {
@@ -348,26 +339,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
 
               {/* Scrollable content */}
               <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
-                {/* Navigate */}
-                <div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-1.5">
-                    {t("agdRecentActivity").length > 0 ? (lang === "bn" ? "নেভিগেশন" : "Navigate") : "Navigate"}
-                  </p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {navItems.map(item => (
-                      <button
-                        key={item.label}
-                        onClick={item.action}
-                        className="flex items-center gap-2 px-2.5 py-2.5 rounded-xl bg-muted/40 hover:bg-primary/10 active:scale-[0.98] transition-all group text-left"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center shrink-0 group-hover:bg-primary/15">
-                          <item.icon size={14} className="text-muted-foreground group-hover:text-primary" />
-                        </div>
-                        <span className="text-[11.5px] font-semibold text-foreground flex-1 truncate">{item.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
 
                 {/* Account */}
                 <div>
