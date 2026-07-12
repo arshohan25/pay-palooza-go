@@ -649,11 +649,13 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                       window.addEventListener("focus", refresh);
                       navigate("/agent/register");
                     }}
-                    className="flex items-center gap-1 px-2.5 h-7 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-[10.5px] font-bold shrink-0 transition-colors"
+                    aria-label={lang === "bn" ? "গ্রাহক KYC আপডেট করুন" : "Update customer KYC"}
+                    className="flex items-center gap-1 px-2.5 min-h-11 h-8 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-[10.5px] font-bold shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     {lang === "bn" ? "আপডেট" : "Update"}
-                    <ArrowUpRight size={11} strokeWidth={2.5} />
+                    <ArrowUpRight size={11} strokeWidth={2.5} aria-hidden="true" />
                   </button>
+
                 </div>
                 <TooltipProvider delayDuration={150}>
                   <div className="grid grid-cols-3 gap-1.5">
