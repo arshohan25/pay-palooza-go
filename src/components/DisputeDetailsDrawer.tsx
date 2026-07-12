@@ -52,14 +52,30 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const [body, setBody] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [txn, setTxn] = useState<any | null>(null);
+  const [txnLoading, setTxnLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, []);
+
+  // Load referenced transaction details
+  useEffect(() => {
+    if (!open || !dispute?.transaction_id) { setTxn(null); return; }
+    setTxnLoading(true);
+    supabase
+      .from("transactions")
+      .select("id, short_id, type, amount, fee, commission, status, recipient_phone, recipient_name, description, reference, created_at")
+      .eq("id", dispute.transaction_id)
+      .maybeSingle()
+      .then(({ data }) => { setTxn(data); setTxnLoading(false); });
+  }, [open, dispute?.transaction_id]);
+
 
   const load = async (id: string) => {
     setLoading(true);
