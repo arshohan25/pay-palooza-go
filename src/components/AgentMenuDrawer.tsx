@@ -224,12 +224,12 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     if (!fileRef.current?.files?.[0] || !user) return;
     setUploading(true);
     const file = fileRef.current.files[0];
-    const ext = file.name.split(".").pop();
+    const ext = (file.name.split(".").pop() || "png").toLowerCase();
     const path = `avatars/${user.id}.${ext}`;
 
     const { error: uploadErr } = await supabase.storage
       .from("product-images")
-      .upload(path, file, { upsert: true });
+      .upload(path, file, { upsert: true, contentType: file.type || `image/${ext}` });
 
     if (uploadErr) {
       toast.error(t("agUploadFailed"));
@@ -238,18 +238,22 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     }
 
     const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+    // cache-buster so <img> reloads immediately
+    const publicUrl = `${urlData.publicUrl}?v=${Date.now()}`;
 
     const { error: updateErr } = await supabase
       .from("profiles")
-      .update({ avatar_url: urlData.publicUrl })
+      .update({ avatar_url: publicUrl })
       .eq("user_id", user.id);
 
     if (updateErr) {
       toast.error(t("agProfileUpdateFailed"));
-    } else {
-      toast.success(t("agAvatarUpdated"));
-      window.dispatchEvent(new CustomEvent("profile-updated", { detail: {} }));
+      setUploading(false);
+      return;
     }
+    toast.success(t("agAvatarUpdated"));
+    window.dispatchEvent(new CustomEvent("profile-updated", { detail: { avatar_url: publicUrl } }));
+    if (fileRef.current) fileRef.current.value = "";
     setPreviewUrl(null);
     setAvatarSheetOpen(false);
     setUploading(false);
@@ -313,8 +317,9 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               <div className="px-4 pt-4 pb-3 border-b border-border/50 bg-card">
                 <div className="flex items-start justify-between mb-3">
                   <button
-                    onClick={() => setAvatarSheetOpen(true)}
+                    onClick={() => openAfterClose(() => setAvatarSheetOpen(true))}
                     className="relative w-12 h-12 rounded-2xl overflow-hidden bg-muted flex items-center justify-center group shrink-0"
+                    aria-label={t("agChangeAvatar")}
                   >
                     {profile.avatar_url ? (
                       <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
