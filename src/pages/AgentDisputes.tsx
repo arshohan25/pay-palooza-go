@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, AlertCircle, Plus, Clock, CheckCircle2, XCircle, Paperclip, FileCheck2, Loader2, Search } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plus, Clock, CheckCircle2, XCircle, Paperclip, FileCheck2, Loader2, Search, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTransactions } from "@/hooks/use-transactions";
+import DisputeDetailsDrawer, { type DisputeDetail } from "@/components/DisputeDetailsDrawer";
 
 type DisputeStatus = "open" | "under_review" | "resolved" | "rejected";
 
@@ -117,6 +118,9 @@ const AgentDisputes = () => {
   const [customSubject, setCustomSubject] = useState("");
   const [description, setDescription] = useState("");
   const [evidence, setEvidence] = useState<File | null>(null);
+
+  const [detail, setDetail] = useState<DisputeDetail | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   // --- API layer ---------------------------------------------------------
   const fetchDisputes = async (): Promise<Dispute[]> => {
@@ -330,19 +334,35 @@ const AgentDisputes = () => {
                 </div>
               )}
 
-              {d.status === "open" && (
+              <div className="flex items-center gap-2 pt-1">
                 <Button
-                  variant="ghost" size="sm"
-                  onClick={() => cancelDispute(d)}
-                  className="h-7 text-[10px] text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 rounded-lg"
+                  variant="outline" size="sm"
+                  onClick={() => { setDetail(d as unknown as DisputeDetail); setDetailOpen(true); }}
+                  className="h-7 text-[10px] rounded-lg gap-1"
                 >
-                  Cancel dispute
+                  <MessageSquare size={11} /> View details
                 </Button>
-              )}
+                {d.status === "open" && (
+                  <Button
+                    variant="ghost" size="sm"
+                    onClick={() => cancelDispute(d)}
+                    className="h-7 text-[10px] text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 rounded-lg ml-auto"
+                  >
+                    Cancel dispute
+                  </Button>
+                )}
+              </div>
             </Card>
           ))
         )}
       </div>
+
+      <DisputeDetailsDrawer
+        dispute={detail && (rows.find(r => r.id === detail.id) as unknown as DisputeDetail) || detail}
+        open={detailOpen}
+        onOpenChange={(o) => { setDetailOpen(o); if (!o) setDetail(null); }}
+      />
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md rounded-2xl">
