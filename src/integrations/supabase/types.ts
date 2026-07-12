@@ -7246,6 +7246,10 @@ export type Database = {
       expire_stale_promotions: { Args: never; Returns: undefined }
       find_chat_user_by_phone: { Args: { p_phone: string }; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
+      generate_role_wallet_id_from_phone: {
+        Args: { p_phone: string; p_role?: string; p_route?: string }
+        Returns: string
+      }
       generate_short_id: { Args: never; Returns: string }
       generate_wallet_id_from_phone: {
         Args: { p_phone: string }
