@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck, MessageSquare, Loader2, ShieldAlert, Timer } from "lucide-react";
+import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck, MessageSquare, Loader2, ShieldAlert, Timer, HelpCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 import { signIn, changePin as changePinAuth } from "@/lib/auth";
 import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useOtpLockout, parseLockout } from "@/hooks/use-otp-lockout";
 
 const getPhone = () => localStorage.getItem("mfs_device_phone") ?? "";
 
