@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Shield, TrendingUp, Banknote, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Building2, Shield, TrendingUp, Banknote, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { motion } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useTransactions } from "@/hooks/use-transactions";
 import TransactionHistory from "./TransactionHistory";
+import FlowHeader from "@/components/FlowHeader";
 
 const fmt = (n: number) => n.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
