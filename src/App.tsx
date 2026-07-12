@@ -31,6 +31,8 @@ const AgentAnalyticsPage = lazy(() => import("./pages/AgentAnalyticsPage"));
 const AgentStatement = lazy(() => import("./pages/AgentStatement"));
 const AgentSecurity = lazy(() => import("./pages/AgentSecurity"));
 const AgentDisputes = lazy(() => import("./pages/AgentDisputes"));
+const AgentLeaderboard = lazy(() => import("./pages/AgentLeaderboard"));
+const NearbyAgentsPage = lazy(() => import("./pages/NearbyAgentsPage"));
 const DistributorDashboard = lazy(() => import("./pages/DistributorDashboard"));
 const DistributorCreateAgent = lazy(() => import("./pages/DistributorCreateAgent"));
 const SuperDistributorDashboard = lazy(() => import("./pages/SuperDistributorDashboard"));
@@ -163,7 +165,10 @@ const App = () => (
                       <Route path="statement" element={<AgentStatement />} />
                       <Route path="security" element={<AgentSecurity />} />
                       <Route path="disputes" element={<AgentDisputes />} />
+                      <Route path="leaderboard" element={<AgentLeaderboard />} />
                     </Route>
+
+                    <Route path="/agents/nearby" element={<NearbyAgentsPage />} />
 
                     <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} />}>
                       <Route index element={<DistributorDashboard />} />
