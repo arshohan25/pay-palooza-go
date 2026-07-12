@@ -1,0 +1,50 @@
+name: DB Wallet ID Validation
+
+# Runs the migration-time test suite for `validate_wallet_id_format`.
+# The migration at `supabase/migrations/*_test_validate_wallet_id_format.sql`
+# defines `public.test_validate_wallet_id_format()` and asserts inside a
+# `DO $$ PERFORM ... $$` block at apply-time. If any assertion fails,
+# `supabase db reset` exits non-zero and the CI step fails — keeping
+# database-level wallet-ID validation enforced on every change.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - ".github/workflows/db-wallet-validation.yml"
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - ".github/workflows/db-wallet-validation.yml"
+  workflow_dispatch:
+
+jobs:
+  validate-wallet-id-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase stack
+        run: supabase start
+
+      - name: Apply migrations (runs test_validate_wallet_id_format assertions)
+        # `db reset` re-applies every migration from scratch against the local
+        # stack. The DO block inside the test migration raises if any assertion
+        # fails, which causes this step to exit non-zero.
+        run: supabase db reset --no-seed
+
+      - name: Re-run wallet-ID validation test function explicitly
+        # Belt-and-suspenders: call the function directly so a rename or
+        # accidental removal of the DO block still fails CI.
+        run: |
+          supabase db execute --sql "SELECT public.test_validate_wallet_id_format();"
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup
