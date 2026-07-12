@@ -10,7 +10,7 @@ import { haptics } from "@/lib/haptics";
 import { isWeakPin } from "@/lib/pinValidation";
 import { signIn } from "@/lib/auth";
 import { useOtpLockout, parseLockout } from "@/hooks/use-otp-lockout";
-import { Seo } from "@/components/Seo";
+import Seo from "@/components/Seo";
 
 type Step = "phone" | "otp" | "new" | "confirm" | "success" | "locked";
 
