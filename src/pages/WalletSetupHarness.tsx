@@ -56,7 +56,9 @@ export default function WalletSetupHarness() {
     });
   };
 
-  const canContinue = routeValid && seed.length > 0;
+  // Submit is always available (once a seed exists) so unknown route codes
+  // still flow through validation and surface `unknown_route` in the UI.
+  const canContinue = seed.length > 0;
   const nextReady = !!saved && saved.validationOk;
 
   return (
