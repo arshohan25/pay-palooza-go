@@ -69,6 +69,7 @@ const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const AdminMcpActivityLog = lazy(() => import("./pages/AdminMcpActivityLog"));
 const PaymentPopupPage = lazy(() => import("./pages/PaymentPopupPage"));
 const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
+const AddMoneyStatusPage = lazy(() => import("./pages/AddMoneyStatusPage"));
 
 
 
