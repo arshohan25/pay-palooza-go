@@ -7,7 +7,7 @@ import {
   Users, Languages, ArrowDownToLine, ArrowRightLeft, Banknote,
   Receipt, UserPlus, History, Headphones, LayoutDashboard, CircleDollarSign,
   CheckCircle2, Clock, XCircle, ArrowUpRight, AlertTriangle, Search,
-  RefreshCw, AlertCircle, FileText,
+  RefreshCw, AlertCircle, FileText, Shield,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
