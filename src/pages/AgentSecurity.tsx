@@ -32,15 +32,15 @@ const AgentSecurity = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [fp, { data }] = await Promise.all([
+      const [fp, res] = await Promise.all([
         getDeviceFingerprint(),
-        supabase.from("device_registrations")
+        (supabase as any).from("device_registrations")
           .select("id, device_fp, portal, last_seen_at, created_at, token_expires_at, revoked_at")
           .eq("user_id", user.id)
           .order("last_seen_at", { ascending: false, nullsFirst: false }),
       ]);
       setCurrentFp(fp);
-      setDevices((data as Device[]) || []);
+      setDevices((res?.data as Device[]) || []);
     } catch (err: any) {
       toast({ title: "Failed to load devices", description: err.message, variant: "destructive" });
     } finally {
