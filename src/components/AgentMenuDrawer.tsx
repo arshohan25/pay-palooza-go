@@ -766,9 +766,153 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                 })()}
               </div>
 
+              {/* Search box — find any customer and see their current KYC status */}
+              <div>
+                <label htmlFor="kyc-main-search" className="sr-only">
+                  {lang === "bn" ? "গ্রাহক খুঁজুন" : "Search customers"}
+                </label>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    id="kyc-main-search"
+                    data-testid="kyc-main-search"
+                    value={kycMainSearch}
+                    onChange={(e) => setKycMainSearch(e.target.value)}
+                    placeholder={lang === "bn" ? "নাম বা ফোন দিয়ে খুঁজুন..." : "Find a customer by name or phone…"}
+                    className="pl-9 h-10 rounded-xl text-sm"
+                    autoComplete="off"
+                  />
+                </div>
+                {kycMainSearch.trim() && (() => {
+                  const q = kycMainSearch.trim().toLowerCase();
+                  const results = kycCustomers
+                    .filter((c) => (c.name || "").toLowerCase().includes(q) || (c.phone || "").toLowerCase().includes(q))
+                    .slice(0, 8);
+                  if (results.length === 0) {
+                    return (
+                      <p
+                        data-testid="kyc-main-search-empty"
+                        role="status"
+                        aria-live="polite"
+                        className="mt-2 text-[11px] text-muted-foreground text-center py-3"
+                      >
+                        {lang === "bn" ? "কোনো গ্রাহক পাওয়া যায়নি" : "No customers match your search"}
+                      </p>
+                    );
+                  }
+                  return (
+                    <ul
+                      data-testid="kyc-main-search-results"
+                      aria-label={lang === "bn" ? "গ্রাহক অনুসন্ধান ফলাফল" : "Customer search results"}
+                      className="mt-2 space-y-1 max-h-48 overflow-y-auto"
+                    >
+                      {results.map((c) => {
+                        const status = c.status;
+                        const badge =
+                          status === "verified"
+                            ? { cls: "bg-emerald-500/15 text-emerald-600", Icon: CheckCircle2, label: lang === "bn" ? "যাচাইকৃত" : "Verified" }
+                            : status === "rejected"
+                            ? { cls: "bg-rose-500/15 text-rose-600", Icon: XCircle, label: lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected" }
+                            : { cls: "bg-amber-500/15 text-amber-600", Icon: Clock, label: lang === "bn" ? "অপেক্ষমাণ" : "Pending" };
+                        return (
+                          <li key={c.user_id} className="flex items-center gap-2 rounded-xl bg-muted/30 border border-border/50 px-2.5 py-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-bold text-foreground truncate">
+                                {c.name || (lang === "bn" ? "নামহীন" : "Unnamed")}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground truncate">{c.phone || "—"}</p>
+                            </div>
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${badge.cls}`}>
+                              <badge.Icon size={10} aria-hidden="true" />
+                              {badge.label}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  );
+                })()}
+              </div>
+
+              {/* Audit log — who updated KYC, when, and previous → new status */}
+              <section aria-labelledby="kyc-audit-heading" data-testid="kyc-audit-section">
+                <h3 id="kyc-audit-heading" className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1 mb-1.5">
+                  {lang === "bn" ? "সাম্প্রতিক আপডেট" : "Recent KYC updates"}
+                </h3>
+                {kycAuditLoading && kycAudit.length === 0 ? (
+                  <div className="space-y-1.5" data-testid="kyc-audit-loading" aria-busy="true">
+                    <div className="h-12 rounded-xl bg-muted animate-pulse" />
+                    <div className="h-12 rounded-xl bg-muted animate-pulse" />
+                  </div>
+                ) : kycAudit.length === 0 ? (
+                  <p data-testid="kyc-audit-empty" className="text-[11px] text-muted-foreground text-center py-3">
+                    {lang === "bn" ? "এখনও কোনো আপডেট নেই" : "No updates yet — status changes will appear here."}
+                  </p>
+                ) : (
+                  <ul data-testid="kyc-audit-list" className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {kycAudit.map((row) => {
+                      const who = row.changed_by_role === "admin"
+                        ? (lang === "bn" ? "অ্যাডমিন" : "Admin")
+                        : row.changed_by_role === "agent"
+                        ? (lang === "bn" ? "আপনি (এজেন্ট)" : "You (agent)")
+                        : row.changed_by_role === "system"
+                        ? (lang === "bn" ? "সিস্টেম" : "System")
+                        : (lang === "bn" ? "ব্যবহারকারী" : "User");
+                      const when = new Date(row.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-BD", {
+                        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+                      });
+                      return (
+                        <li
+                          key={row.id}
+                          data-testid="kyc-audit-row"
+                          className="rounded-xl bg-muted/30 border border-border/50 px-2.5 py-2"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[12px] font-bold text-foreground truncate">
+                              {row.customer_name || (lang === "bn" ? "নামহীন" : "Unnamed")}
+                            </p>
+                            <time
+                              className="text-[10px] text-muted-foreground shrink-0"
+                              dateTime={row.created_at}
+                            >
+                              {when}
+                            </time>
+                          </div>
+                          <p className="text-[10.5px] text-muted-foreground mt-0.5 flex items-center gap-1 flex-wrap">
+                            <span className="font-semibold text-foreground">{who}</span>
+                            <span aria-hidden="true">·</span>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9.5px] font-semibold capitalize">
+                                {row.previous_status || (lang === "bn" ? "নতুন" : "new")}
+                              </span>
+                              <ArrowUpRight size={10} className="rotate-45" aria-label={lang === "bn" ? "থেকে" : "changed to"} />
+                              <span
+                                className={`rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold capitalize ${
+                                  row.new_status === "verified" ? "bg-emerald-500/15 text-emerald-600"
+                                  : row.new_status === "rejected" ? "bg-rose-500/15 text-rose-600"
+                                  : "bg-amber-500/15 text-amber-600"
+                                }`}
+                              >
+                                {row.new_status}
+                              </span>
+                            </span>
+                          </p>
+                          {row.reviewer_notes && (
+                            <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
+                              {row.reviewer_notes}
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
               <p className="text-[10px] text-muted-foreground text-center">
                 {t("agKycTrackingSoon")}
               </p>
+
             </div>
           )}
         </SheetContent>
