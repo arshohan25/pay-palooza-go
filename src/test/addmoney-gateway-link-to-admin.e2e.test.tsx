@@ -98,17 +98,15 @@ describe("AddMoney → Admin gateway Txn link e2e", () => {
     expect(link.getAttribute("href")).toBe(`/admin?gateway_txn=${encodeURIComponent(TRX)}#fund_requests`);
     unmount();
 
-    // Simulate landing on the admin page from that link
+    // Simulate landing on the admin page from that link.
+    // AdminFundRequests reads window.location.search to prefill gateway_txn, so set it BEFORE render.
+    window.history.replaceState({}, "", `/admin?gateway_txn=${encodeURIComponent(TRX)}#fund_requests`);
     render(
       <MemoryRouter initialEntries={[`/admin?gateway_txn=${encodeURIComponent(TRX)}#fund_requests`]}>
         <AppShell />
       </MemoryRouter>
     );
 
-    // The gateway-search input reads from window.location.search — set it too.
-    window.history.replaceState({}, "", `/admin?gateway_txn=${encodeURIComponent(TRX)}#fund_requests`);
-    // Re-fire the effect by re-rendering
-    // The prefill effect runs on mount, so wait for filter to narrow.
 
     await waitFor(() => {
       // Only the matching row should be visible via export count button
