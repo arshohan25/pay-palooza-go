@@ -58,6 +58,7 @@ export default function AdminFundRequests() {
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [typeFilter, setTypeFilter] = useState<"all" | "add_money" | "withdraw">("all");
   const [search, setSearch] = useState("");
+  const [gatewayTxnSearch, setGatewayTxnSearch] = useState("");
   const [approveTarget, setApproveTarget] = useState<FundRequestRow | null>(null);
   const [rejectTarget, setRejectTarget] = useState<FundRequestRow | null>(null);
   const [adminNote, setAdminNote] = useState("");
@@ -99,6 +100,12 @@ export default function AdminFundRequests() {
   const filtered = requests.filter(r => {
     if (filter !== "all" && r.status !== filter) return false;
     if (typeFilter !== "all" && r.type !== typeFilter) return false;
+    if (gatewayTxnSearch) {
+      const g = gatewayTxnSearch.trim().toLowerCase();
+      const inProof = r.transaction_id_proof?.toLowerCase().includes(g);
+      const inNote = r.admin_note?.toLowerCase().includes(g);
+      if (!inProof && !inNote) return false;
+    }
     if (search) {
       const profile = profiles[r.user_id];
       const q = search.toLowerCase();
@@ -208,9 +215,21 @@ export default function AdminFundRequests() {
         </div>
       </div>
 
-      <div className="relative">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search by name, phone, TxnID…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Search by name, phone, TxnID…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+        </div>
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Gateway transaction ID (UddoktaPay trxID / invoice)…"
+            value={gatewayTxnSearch}
+            onChange={e => setGatewayTxnSearch(e.target.value)}
+            className="pl-9 h-9 text-sm font-mono"
+            data-testid="gateway-txn-search"
+          />
+        </div>
       </div>
 
       {/* Request Cards */}

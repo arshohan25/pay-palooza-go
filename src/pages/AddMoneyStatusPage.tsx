@@ -24,6 +24,9 @@ export default function AddMoneyStatusPage() {
   const [verifying, setVerifying] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const [gatewayTrxId, setGatewayTrxId] = useState<string | null>(null);
+  const [mismatch, setMismatch] = useState<{ paid: number; expected: number } | null>(null);
+
   const load = useCallback(async () => {
     if (!requestId) { setLoading(false); return; }
     const { data } = await supabase
@@ -43,8 +46,12 @@ export default function AddMoneyStatusPage() {
         body: { request_id: requestId },
       });
       if (error) throw error;
-      const res = data as { credited?: boolean; status?: string };
-      if (res?.credited) toast.success("Balance credited");
+      const res = data as { credited?: boolean; status?: string; gateway_trx_id?: string | null; error?: string; paid?: number; expected?: number };
+      if (res?.gateway_trx_id) setGatewayTrxId(res.gateway_trx_id);
+      if (res?.error === "amount_mismatch") {
+        setMismatch({ paid: Number(res.paid), expected: Number(res.expected) });
+        toast.error(`Amount mismatch — paid ৳${res.paid}, expected ৳${res.expected}`);
+      } else if (res?.credited) toast.success("Balance credited");
       else if (res?.status && res.status !== "COMPLETED") toast.info(`Payment status: ${res.status}`);
       await load();
     } catch (e: any) {
@@ -110,10 +117,16 @@ export default function AddMoneyStatusPage() {
       </Card>
 
       <div className="text-xs text-muted-foreground space-y-1 px-2">
-        <div className="flex justify-between"><span>Invoice</span><span className="font-mono">{row.transaction_id_proof || "—"}</span></div>
+        <div className="flex justify-between"><span>Gateway Txn ID</span><span className="font-mono" data-testid="gateway-trx-id">{gatewayTrxId || row.transaction_id_proof || "—"}</span></div>
         <div className="flex justify-between"><span>Method</span><span>{row.source_method || "—"}</span></div>
         <div className="flex justify-between"><span>Created</span><span>{new Date(row.created_at).toLocaleString()}</span></div>
       </div>
+
+      {mismatch && (
+        <div className="text-xs p-3 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900" data-testid="mismatch-banner">
+          Amount mismatch: paid ৳{mismatch.paid.toLocaleString()} but expected ৳{mismatch.expected.toLocaleString()}. Balance was not credited.
+        </div>
+      )}
 
       {!isApproved && !isRejected && (
         <Button className="w-full" onClick={verify} disabled={verifying} data-testid="verify-btn">
