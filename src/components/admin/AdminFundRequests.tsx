@@ -58,6 +58,7 @@ export default function AdminFundRequests() {
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [typeFilter, setTypeFilter] = useState<"all" | "add_money" | "withdraw">("all");
   const [search, setSearch] = useState("");
+  const [gatewayTxnSearch, setGatewayTxnSearch] = useState("");
   const [approveTarget, setApproveTarget] = useState<FundRequestRow | null>(null);
   const [rejectTarget, setRejectTarget] = useState<FundRequestRow | null>(null);
   const [adminNote, setAdminNote] = useState("");
