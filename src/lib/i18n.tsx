@@ -200,7 +200,7 @@ const translations = {
   // ─── QR Modal ───
   myQrCode: { en: "My QR Code", bn: "আমার কিউআর কোড" },
   scanToSendMoney: { en: "Scan this code to send money to me", bn: "আমাকে টাকা পাঠাতে এই কোড স্ক্যান করুন" },
-  scanToPayAgent: { en: "Scan to cash in with this agent", bn: "এই এজেন্টে ক্যাশ ইন করতে স্ক্যান করুন" },
+  scanToPayAgent: { en: "Scan to cash in or cash out with this agent", bn: "এই এজেন্টে ক্যাশ ইন বা ক্যাশ আউট করতে স্ক্যান করুন" },
   scanToPayMerchant: { en: "Scan to pay this merchant", bn: "এই মার্চেন্টে পেমেন্ট করতে স্ক্যান করুন" },
   yourWalletId: { en: "Your Wallet ID", bn: "আপনার ওয়ালেট আইডি" },
   walletIdCopied: { en: "✓ Wallet ID copied to clipboard!", bn: "✓ ওয়ালেট আইডি কপি হয়েছে!" },
