@@ -338,11 +338,13 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
 
   const handleAgentIdContinue = async () => {
-    const trimmed = agentIdInput.trim();
+    const trimmed = parseQrPayload(agentIdInput);
+    if (trimmed !== agentIdInput.trim()) setAgentIdInput(trimmed);
     if (trimmed.length < 5) { setError(t("coEnterValidAgentId")); return; }
 
     const walletErr = rejectIfWrongAgentWallet(trimmed);
     if (walletErr) { setError(walletErr); return; }
+
 
     setValidating(true);
     setError("");
