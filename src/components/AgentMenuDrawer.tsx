@@ -68,6 +68,8 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     updated_at: string | null;
   };
   const [kycCustomers, setKycCustomers] = useState<KycCustomer[]>([]);
+  const [kycLoading, setKycLoading] = useState(true);
+  const [kycLoaded, setKycLoaded] = useState(false);
   const [kycModal, setKycModal] = useState<null | "verified" | "pending" | "rejected">(null);
   const [kycSearch, setKycSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
