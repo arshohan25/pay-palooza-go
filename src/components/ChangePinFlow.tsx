@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck, MessageSquare, Loader2 } from "lucide-react";
+import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck, MessageSquare, Loader2, ShieldAlert, Timer } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 import { signIn, changePin as changePinAuth } from "@/lib/auth";
@@ -121,6 +121,8 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [devOtp, setDevOtp] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null); // epoch ms
+  const [lockedRemaining, setLockedRemaining] = useState(0); // seconds
 
   const STEPS: Step[] = ["current", "otp", "new", "confirm"];
   const stepIndex = STEPS.indexOf(step);
@@ -140,6 +142,26 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
     return () => clearInterval(t);
   }, [resendIn]);
 
+  // Lockout countdown
+  useEffect(() => {
+    if (!lockedUntil) { setLockedRemaining(0); return; }
+    const tick = () => {
+      const rem = Math.max(0, Math.ceil((lockedUntil - Date.now()) / 1000));
+      setLockedRemaining(rem);
+      if (rem === 0) { setLockedUntil(null); setOtpError(""); }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lockedUntil]);
+
+  const isLocked = lockedRemaining > 0;
+  const lockedMmSs = (() => {
+    const m = Math.floor(lockedRemaining / 60);
+    const s = lockedRemaining % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  })();
+
   const goTo = (next: Step, dir = 1) => {
     haptics.medium();
     setDir(dir);
@@ -155,7 +177,16 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
     if (step === "confirm") { setNewPin(""); goTo("new", -1); return; }
   };
 
+  const applyLockout = (minutes: number, message?: string) => {
+    const mins = Math.max(1, Number(minutes) || 15);
+    setLockedUntil(Date.now() + mins * 60 * 1000);
+    setOtpError(message || `Too many failed attempts. Try again in ${mins} minutes.`);
+    setOtp("");
+    haptics.error();
+  };
+
   const sendOtp = async () => {
+    if (isLocked) return;
     const phone = getPhone();
     if (!phone) { setOtpError("Missing phone number"); return; }
     setOtpSending(true); setOtpError(""); setDevOtp(null);
@@ -176,6 +207,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   };
 
   const verifyOtp = async (code: string) => {
+    if (isLocked) return;
     const phone = getPhone();
     if (!phone) return;
     setOtpVerifying(true); setOtpError("");
@@ -183,8 +215,22 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       const { data, error: invokeErr } = await supabase.functions.invoke("verify-otp", {
         body: { phone, code, purpose: OTP_PURPOSE },
       });
-      if (invokeErr) throw invokeErr;
-      const payload = data as any;
+
+      // Try to read payload from either successful data or the error response body
+      let payload: any = data;
+      if (invokeErr) {
+        const ctx: any = (invokeErr as any)?.context;
+        if (ctx && typeof ctx.json === "function") {
+          try { payload = await ctx.json(); } catch { /* ignore */ }
+        }
+        if (!payload) throw invokeErr;
+      }
+
+      if (payload?.locked) {
+        applyLockout(payload.retry_after_minutes ?? 15, payload.error);
+        return;
+      }
+
       if (!payload?.verified) {
         haptics.error();
         setOtpError(payload?.error || "Incorrect code");
@@ -201,6 +247,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       setOtpVerifying(false);
     }
   };
+
 
   const handleCurrentPin = (p: string) => {
     if (p.length > currentPin.length) haptics.light();
@@ -224,6 +271,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   };
 
   const handleOtpChange = (v: string) => {
+    if (isLocked) return;
     const clean = v.replace(/\D/g, "").slice(0, 6);
     setOtp(clean);
     setOtpError("");
@@ -346,7 +394,56 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
               </div>
             )}
 
-            {step === "otp" && (
+            {step === "otp" && isLocked && (
+              <div className="flex flex-col gap-6 pt-10 pb-8 px-4">
+                <div className="text-center space-y-2">
+                  <motion.div
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                    className="w-16 h-16 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-center justify-center text-destructive mx-auto"
+                  >
+                    <ShieldAlert size={30} />
+                  </motion.div>
+                  <h2 className="text-xl font-bold text-foreground">Verification locked</h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                    Too many incorrect codes. For your security, verification is temporarily paused.
+                  </p>
+                </div>
+
+                <div className="mx-auto rounded-2xl border border-destructive/25 bg-destructive/[0.06] px-5 py-4 flex flex-col items-center gap-2 min-w-[220px]">
+                  <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-destructive/80 font-semibold">
+                    <Timer size={12} /> Try again in
+                  </div>
+                  <div className="font-mono text-3xl font-bold tabular-nums text-destructive">
+                    {lockedMmSs}
+                  </div>
+                  <div className="w-full h-1 rounded-full bg-destructive/15 overflow-hidden mt-1">
+                    <motion.div
+                      key={lockedUntil}
+                      initial={{ width: "100%" }}
+                      animate={{ width: "0%" }}
+                      transition={{ duration: lockedRemaining, ease: "linear" }}
+                      className="h-full bg-destructive/70 rounded-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="text-center space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    You can resume verification once the timer ends.
+                  </p>
+                  <button
+                    onClick={onClose}
+                    className="text-xs font-semibold text-primary active:scale-95 transition-transform"
+                  >
+                    Close and return later
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === "otp" && !isLocked && (
               <div className="flex flex-col gap-7 pt-10 pb-8">
                 <div className="text-center space-y-2 px-4">
                   <div className="w-14 h-14 gradient-send rounded-2xl flex items-center justify-center text-primary-foreground mx-auto shadow-glow">
@@ -399,7 +496,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                   <button
                     type="button"
                     onClick={sendOtp}
-                    disabled={otpSending || resendIn > 0}
+                    disabled={otpSending || resendIn > 0 || isLocked}
                     className="text-xs font-semibold text-primary disabled:text-muted-foreground disabled:opacity-60"
                   >
                     {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
@@ -407,6 +504,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                 </div>
               </div>
             )}
+
 
             {step === "new" && (
               <div className="flex flex-col gap-7 pt-10 pb-8">
