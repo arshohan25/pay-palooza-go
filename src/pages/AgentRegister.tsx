@@ -431,14 +431,36 @@ const AgentRegister = () => {
                     <p className="text-lg font-mono font-bold text-accent tracking-[0.3em]">{devOtp}</p>
                   </motion.div>
                 )}
-                <div className="flex justify-center">
-                  <InputOTP maxLength={6} value={otpValue} onChange={setOtpValue} disabled={verifyingOtp}>
-                    <InputOTPGroup>
-                      {[0, 1, 2, 3, 4, 5].map(i => (
-                        <InputOTPSlot key={i} index={i} className="w-11 h-13 text-lg font-bold rounded-xl border-2" />
-                      ))}
-                    </InputOTPGroup>
-                  </InputOTP>
+                <div className="relative">
+                  {/* ambient glow */}
+                  <div aria-hidden className="pointer-events-none absolute inset-x-6 -top-3 h-16 rounded-[40px] bg-gradient-to-r from-primary/20 via-accent/25 to-primary/20 blur-2xl opacity-70" />
+                  <div className="relative flex justify-center rounded-2xl border border-border/60 bg-gradient-to-b from-background/70 to-muted/40 p-3 shadow-inner backdrop-blur-md">
+                    <InputOTP
+                      maxLength={6}
+                      value={otpValue}
+                      onChange={setOtpValue}
+                      disabled={verifyingOtp}
+                      containerClassName="justify-center gap-2"
+                    >
+                      <InputOTPGroup className="gap-2">
+                        {[0, 1, 2, 3, 4, 5].map(i => {
+                          const filled = otpValue.length > i;
+                          return (
+                            <div key={i} className="relative">
+                              <InputOTPSlot
+                                index={i}
+                                className={`h-14 w-11 rounded-xl border-2 bg-card/80 text-xl font-bold tracking-widest text-foreground shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.35)] transition-all duration-300 first:rounded-l-xl last:rounded-r-xl focus-within:-translate-y-0.5 focus-within:border-primary focus-within:shadow-[0_10px_28px_-10px_hsl(var(--primary)/0.65)] ${filled ? "border-primary/70 bg-gradient-to-b from-primary/10 to-accent/5" : "border-border/70"}`}
+                              />
+                              <span
+                                aria-hidden
+                                className={`pointer-events-none absolute inset-x-3 -bottom-1 h-[3px] rounded-full transition-all duration-300 ${filled ? "bg-gradient-to-r from-primary to-accent opacity-100" : "bg-border/60 opacity-60"}`}
+                              />
+                            </div>
+                          );
+                        })}
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
                 </div>
                 {verifyingOtp && (
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
