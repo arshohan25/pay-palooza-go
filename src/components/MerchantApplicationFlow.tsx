@@ -234,6 +234,17 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                     <Label>{t("mafBusinessAddress")}</Label>
                     <Input value={form.business_address} onChange={e => set("business_address", e.target.value)} placeholder={t("mafBusinessAddressPh")} maxLength={300} />
                   </div>
+                  <div>
+                    <Label>District (route code)</Label>
+                    <DistrictRoutePicker
+                      value={form.route_code}
+                      onChange={(code) => set("route_code", code)}
+                      placeholder="Select district"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Used to build your merchant wallet ID: EZP-MRC{"{RR}"}-XXXX
+                    </p>
+                  </div>
                 </div>
 
                 {/* Contact Information */}
