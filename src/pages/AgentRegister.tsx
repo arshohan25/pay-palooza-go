@@ -495,7 +495,51 @@ const AgentRegister = () => {
                 </motion.div>
 
                 <AnimatePresence mode="wait">
-                  {otpError ? (
+                  {otpSuccess ? (
+                    <motion.div
+                      key="success"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="mx-auto flex max-w-sm flex-col items-center gap-3"
+                    >
+                      <motion.div
+                        initial={{ scale: 0, rotate: -20 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                        className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-[0_8px_24px_-6px_rgba(16,185,129,0.55)]"
+                      >
+                        <motion.span
+                          initial={{ scale: 0.6, opacity: 0.6 }}
+                          animate={{ scale: 1.6, opacity: 0 }}
+                          transition={{ duration: 0.9, ease: "easeOut" }}
+                          className="absolute inset-0 rounded-full bg-emerald-400/50"
+                        />
+                        <motion.svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                          <motion.path
+                            d="M5 13.5L11 19L21 7"
+                            stroke="white"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            initial={{ pathLength: 0 }}
+                            animate={{ pathLength: 1 }}
+                            transition={{ duration: 0.45, ease: "easeOut", delay: 0.1 }}
+                          />
+                        </motion.svg>
+                      </motion.div>
+                      <p className="text-sm font-semibold text-foreground">Verified successfully</p>
+                      <div className="h-1 w-40 overflow-hidden rounded-full bg-muted">
+                        <motion.div
+                          initial={{ width: "0%" }}
+                          animate={{ width: "100%" }}
+                          transition={{ duration: 1, ease: "easeInOut" }}
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
+                        />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">Moving to next step…</p>
+                    </motion.div>
+                  ) : otpError ? (
                     <motion.div
                       key="err"
                       initial={{ opacity: 0, y: -4 }}
@@ -506,41 +550,9 @@ const AgentRegister = () => {
                       className="mx-auto flex max-w-sm items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/[0.06] px-3 py-2.5"
                     >
                       <AlertTriangle size={16} className="mt-[1px] shrink-0 text-destructive" />
-                      <div className="flex-1 space-y-1.5">
-                        <p className="text-[12.5px] font-medium leading-snug text-destructive">
-                          {otpError.message}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px]">
-                          <button
-                            type="button"
-                            onClick={() => { setOtpError(null); setOtpValue(""); }}
-                            className="font-semibold text-destructive underline-offset-2 hover:underline"
-                          >
-                            Re-enter code
-                          </button>
-                          {(otpError.kind === "expired" || otpAttempts >= 2) && resendTimer === 0 && (
-                            <button
-                              type="button"
-                              onClick={handleResendOtp}
-                              disabled={sendingOtp}
-                              className="inline-flex items-center gap-1 font-semibold text-primary disabled:opacity-60"
-                            >
-                              {sendingOtp ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
-                              Send a new code
-                            </button>
-                          )}
-                          {otpError.kind === "network" && (
-                            <button
-                              type="button"
-                              onClick={handleVerifyOtp}
-                              disabled={verifyingOtp || otpValue.length !== 6}
-                              className="font-semibold text-primary disabled:opacity-60"
-                            >
-                              Try again
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                      <p className="flex-1 text-[12.5px] font-medium leading-snug text-destructive">
+                        {otpError.message}
+                      </p>
                     </motion.div>
                   ) : verifyingOtp ? (
                     <motion.div
@@ -557,7 +569,6 @@ const AgentRegister = () => {
                 </AnimatePresence>
 
                 <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                  <Clock size={12} />
                   {resendTimer > 0 ? (
                     <span>Resend available in <span className="font-semibold text-foreground">{resendTimer}s</span></span>
                   ) : (
@@ -566,6 +577,7 @@ const AgentRegister = () => {
                     </button>
                   )}
                 </div>
+
               </Card>
             </motion.div>
           )}
