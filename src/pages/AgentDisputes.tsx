@@ -119,6 +119,9 @@ const AgentDisputes = () => {
   const [description, setDescription] = useState("");
   const [evidence, setEvidence] = useState<File | null>(null);
 
+  const [detail, setDetail] = useState<DisputeDetail | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
   // --- API layer ---------------------------------------------------------
   const fetchDisputes = async (): Promise<Dispute[]> => {
     const { data: { user } } = await supabase.auth.getUser();
