@@ -112,9 +112,10 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
 // ─── CashOutFlow ──────────────────────────────────────────────────────────────
 interface CashOutFlowProps {
   onClose: () => void;
+  prefilledAgentId?: string;
 }
 
-const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
+const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
   const { t, lang } = useI18n();
   const dateLocale = lang === "bn" ? "bn-BD" : "en-GB";
   const timeLocale = lang === "bn" ? "bn-BD" : "en-US";
@@ -124,7 +125,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [step, setStep] = useState<Step>("agent");
   const [direction, setDirection] = useState(1);
   const [agent, setAgent] = useState<Agent | null>(null);
-  const [agentIdInput, setAgentIdInput] = useState("");
+  const [agentIdInput, setAgentIdInput] = useState(prefilledAgentId ?? "");
   const [searchQuery, setSearchQuery] = useState("");
   const [amount, setAmount] = useState("");
   const [pin, setPin] = useState("");
@@ -337,8 +338,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   };
 
 
-  const handleAgentIdContinue = async () => {
-    const trimmed = parseQrPayload(agentIdInput);
+  const handleAgentIdContinue = async (overrideAgentId?: string) => {
+    const source = overrideAgentId ?? agentIdInput;
+    const trimmed = parseQrPayload(source);
     if (trimmed !== agentIdInput.trim()) setAgentIdInput(trimmed);
     if (trimmed.length < 5) { setError(t("coEnterValidAgentId")); return; }
 
@@ -365,6 +367,15 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     }
     goTo("amount");
   };
+
+  const handledPrefillRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const raw = (prefilledAgentId || "").trim();
+    if (!raw || handledPrefillRef.current === raw) return;
+    handledPrefillRef.current = raw;
+    void handleAgentIdContinue(raw);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefilledAgentId]);
 
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
@@ -587,7 +598,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                         {v.isValid && (
                           <Button
                             className="w-full h-11 gradient-cashout border-0 text-white font-semibold animate-fade-in"
-                            onClick={handleAgentIdContinue}
+                            onClick={() => handleAgentIdContinue()}
                           >
                             {t("continue")}
                           </Button>
