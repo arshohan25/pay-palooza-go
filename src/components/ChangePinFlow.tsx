@@ -419,7 +419,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                   </div>
                   <div className="w-full h-1 rounded-full bg-destructive/15 overflow-hidden mt-1">
                     <motion.div
-                      key={lockedUntil}
+                      key={lockedRemaining > 0 ? "on" : "off"}
                       initial={{ width: "100%" }}
                       animate={{ width: "0%" }}
                       transition={{ duration: lockedRemaining, ease: "linear" }}
@@ -427,6 +427,34 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                     />
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowLockoutHelp(v => !v)}
+                  className="mx-auto flex items-center gap-1.5 text-xs font-semibold text-primary"
+                >
+                  <HelpCircle size={13} /> Why is OTP locked?
+                </button>
+                <AnimatePresence>
+                  {showLockoutHelp && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mx-4 rounded-xl bg-muted/60 border border-border px-4 py-3 text-[11.5px] leading-relaxed text-muted-foreground space-y-1.5"
+                    >
+                      <p>
+                        For your protection, OTP verification is temporarily
+                        paused after several incorrect codes. This helps stop
+                        anyone from guessing your codes.
+                      </p>
+                      <p>
+                        Wait for the timer to end, then request a fresh code.
+                        If this keeps happening, contact support.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div className="text-center space-y-2">
                   <p className="text-xs text-muted-foreground">
@@ -441,6 +469,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                 </div>
               </div>
             )}
+
 
             {step === "otp" && !isLocked && (
               <div className="flex flex-col gap-7 pt-10 pb-8">
