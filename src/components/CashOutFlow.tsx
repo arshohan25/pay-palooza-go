@@ -282,15 +282,43 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     return null;
   };
 
+  const parseQrPayload = (raw: string): string => {
+    const s = (raw || "").trim();
+    if (!s) return s;
+    // Try JSON payload from agent QR codes
+    if (s.startsWith("{")) {
+      try {
+        const obj = JSON.parse(s);
+        const val =
+          obj.WALLETID || obj.walletId || obj.walletID ||
+          obj.AGENTID || obj.agentId || obj.agent_id ||
+          obj.PHONE || obj.phone || obj.identifier || "";
+        if (val) return String(val).trim();
+      } catch {}
+    }
+    // Try URL payload like https://.../pay?walletId=...
+    try {
+      const u = new URL(s);
+      const val =
+        u.searchParams.get("walletId") ||
+        u.searchParams.get("WALLETID") ||
+        u.searchParams.get("agentId") ||
+        u.searchParams.get("phone");
+      if (val) return val.trim();
+    } catch {}
+    return s;
+  };
+
   const handleQrScan = async (result: string) => {
-    setAgentIdInput(result);
+    const parsed = parseQrPayload(result);
+    setAgentIdInput(parsed);
     setValidating(true);
     setError("");
 
-    const walletErr = rejectIfWrongAgentWallet(result);
+    const walletErr = rejectIfWrongAgentWallet(parsed);
     if (walletErr) { setValidating(false); setError(walletErr); return; }
 
-    const validation = await validateAgentExists(result);
+    const validation = await validateAgentExists(parsed);
     setValidating(false);
 
     if (!validation.exists) {
@@ -299,14 +327,15 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     }
 
     setResolvedAgentPhone(validation.phone || "");
-    const found = recentAgents.find((a) => a.agentId.toLowerCase() === result.toLowerCase());
+    const found = recentAgents.find((a) => a.agentId.toLowerCase() === parsed.toLowerCase());
     if (found) {
       setAgent(found);
     } else {
-      setAgent({ id: "qr", name: validation.name || "Agent", agentId: result, address: "", distance: "", initials: "AG", gradient: "gradient-cashout", rating: 0 });
+      setAgent({ id: "qr", name: validation.name || "Agent", agentId: parsed, address: "", distance: "", initials: "AG", gradient: "gradient-cashout", rating: 0 });
     }
     goTo("amount");
   };
+
 
   const handleAgentIdContinue = async () => {
     const trimmed = agentIdInput.trim();
