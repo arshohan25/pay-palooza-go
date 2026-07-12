@@ -513,6 +513,13 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     // Extract clean identifier from structured QR payloads (JSON, URL, etc.)
     const { parseQrData } = await import("@/lib/qrParser");
     const parsed = parseQrData(rawResult);
+
+    // 🚫 Hard guard: agent/merchant QR codes must never be accepted in Send Money.
+    if (parsed.flow === "cashout") { setError(t("smQrIsAgent")); return; }
+    if (parsed.flow === "payment" || parsed.flow === "dynamic_payment") {
+      setError(t("smQrIsMerchant")); return;
+    }
+
     const result = parsed.flow !== "unknown" ? parsed.identifier : rawResult;
     const type = detectRecipientType(result);
     setInputVal(result);
