@@ -52,14 +52,30 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const [body, setBody] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [txn, setTxn] = useState<any | null>(null);
+  const [txnLoading, setTxnLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, []);
+
+  // Load referenced transaction details
+  useEffect(() => {
+    if (!open || !dispute?.transaction_id) { setTxn(null); return; }
+    setTxnLoading(true);
+    supabase
+      .from("transactions")
+      .select("id, short_id, type, amount, fee, commission, status, recipient_phone, recipient_name, description, reference, created_at")
+      .eq("id", dispute.transaction_id)
+      .maybeSingle()
+      .then(({ data }) => { setTxn(data); setTxnLoading(false); });
+  }, [open, dispute?.transaction_id]);
+
 
   const load = async (id: string) => {
     setLoading(true);
@@ -100,6 +116,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
   const send = async () => {
     if (!dispute || !userId || !body.trim()) return;
     setPosting(true);
+    setSendError(null);
     try {
       const { error } = await supabase.from("dispute_messages" as any).insert({
         dispute_id: dispute.id,
@@ -110,11 +127,13 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
       if (error) throw error;
       setBody("");
     } catch (e: any) {
+      setSendError(e.message || "Failed to send");
       toast({ title: "Send failed", description: e.message, variant: "destructive" });
     } finally {
       setPosting(false);
     }
   };
+
 
   if (!dispute) return null;
 
@@ -207,6 +226,38 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
             </div>
           </div>
 
+          {/* Referenced transaction */}
+          {dispute.transaction_id && (
+            <div className="rounded-2xl border border-border/40 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Referenced transaction</p>
+              {txnLoading ? (
+                <div className="text-[11px] text-muted-foreground flex items-center gap-2 py-2">
+                  <Loader2 size={12} className="animate-spin" /> Loading transaction…
+                </div>
+              ) : !txn ? (
+                <p className="text-[11px] text-muted-foreground">Transaction not found or no longer accessible.</p>
+              ) : (
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground uppercase text-[10px]">{txn.type}</span>
+                    <Badge variant="outline" className="text-[9px] rounded-full">{txn.status}</Badge>
+                  </div>
+                  <p className="text-lg font-bold text-foreground">৳{Number(txn.amount).toFixed(2)}</p>
+                  <div className="grid grid-cols-2 gap-1 pt-1 text-[10px] text-muted-foreground">
+                    <div>Ref: <span className="font-mono text-foreground">{txn.short_id || txn.reference || "—"}</span></div>
+                    <div>Fee: ৳{Number(txn.fee || 0).toFixed(2)}</div>
+                    {txn.commission > 0 && <div>Commission: ৳{Number(txn.commission).toFixed(2)}</div>}
+                    <div>{new Date(txn.created_at).toLocaleString()}</div>
+                    {txn.recipient_name && <div className="col-span-2">To: {txn.recipient_name}</div>}
+                    {txn.recipient_phone && <div className="col-span-2 font-mono">{txn.recipient_phone}</div>}
+                    {txn.description && <div className="col-span-2">{txn.description}</div>}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+
           {/* Resolution */}
           {dispute.resolution_notes && (
             <div className="rounded-2xl p-3 bg-emerald-500/10 border border-emerald-500/20">
@@ -276,7 +327,14 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
                 {posting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               </Button>
             </div>
-            <p className="text-[9px] text-muted-foreground mt-1 text-right">{body.length}/500</p>
+            <div className="flex items-center justify-between mt-1">
+              {sendError ? (
+                <p className="text-[9px] text-rose-600 flex items-center gap-1">
+                  <XCircle size={9} /> {sendError}
+                </p>
+              ) : <span />}
+              <p className="text-[9px] text-muted-foreground">{body.length}/500</p>
+            </div>
           </div>
         )}
       </SheetContent>
