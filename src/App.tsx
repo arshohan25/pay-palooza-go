@@ -160,6 +160,8 @@ const App = () => (
                       <Route path="analytics" element={<AgentAnalyticsPage />} />
                       <Route path="statement" element={<AgentStatement />} />
                       <Route path="security" element={<AgentSecurity />} />
+                      <Route path="security" element={<AgentSecurity />} />
+                      <Route path="disputes" element={<AgentDisputes />} />
                     </Route>
 
                     <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} />}>
