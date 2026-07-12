@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, AlertCircle, Plus, Clock, CheckCircle2, XCircle, Paperclip, FileCheck2, Loader2, Search } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plus, Clock, CheckCircle2, XCircle, Paperclip, FileCheck2, Loader2, Search, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
