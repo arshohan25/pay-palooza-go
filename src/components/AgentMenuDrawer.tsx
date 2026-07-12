@@ -92,10 +92,13 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
 
   const fetchCustomerKyc = useCallback(async () => {
     if (!user) return;
+    setKycLoading(true);
     const { data, error } = await (supabase as any).rpc("get_agent_customer_kyc", { _agent_id: user.id });
     if (!error && Array.isArray(data)) {
       setKycCustomers(data as KycCustomer[]);
     }
+    setKycLoading(false);
+    setKycLoaded(true);
   }, [user]);
 
   // Fetch + realtime subscribe so counts update automatically
