@@ -76,15 +76,19 @@ function AppShell() {
 
 describe("AddMoney → Admin gateway Txn link e2e", () => {
   beforeEach(() => {
-    // capture blob text
     (globalThis as any).__lastBlobText = "";
-    (globalThis as any).URL.createObjectURL = (b: Blob) => {
-      b.text().then(t => { (globalThis as any).__lastBlobText = t; });
-      return "blob:mock";
+    const OrigBlob = globalThis.Blob;
+    (globalThis as any).Blob = class extends OrigBlob {
+      constructor(parts: any[], opts?: any) {
+        super(parts, opts);
+        (globalThis as any).__lastBlobText = parts.map((p) => String(p)).join("");
+      }
     };
+    (globalThis as any).URL.createObjectURL = () => "blob:mock";
     (globalThis as any).URL.revokeObjectURL = () => {};
     HTMLAnchorElement.prototype.click = function () {};
   });
+
 
   it("links from status page to admin filtered view and exports matching CSV row", async () => {
     const { unmount } = render(
