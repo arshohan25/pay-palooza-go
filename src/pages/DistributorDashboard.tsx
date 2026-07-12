@@ -25,6 +25,7 @@ import SupportChat from "@/components/SupportChat";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import TransactionHistory from "./TransactionHistory";
+import DistributorFloatRequests from "@/components/DistributorFloatRequests";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 
 /* ─── Types ─── */
