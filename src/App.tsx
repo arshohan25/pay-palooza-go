@@ -148,6 +148,7 @@ const App = () => (
                     <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} />}>
                       <Route index element={<AgentDashboard />} />
                       <Route path="cashin" element={<AgentCashIn />} />
+                      <Route path="cashout" element={<AgentCashOut />} />
                       <Route path="b2b" element={<AgentB2B />} />
                       <Route path="register" element={<AgentRegister />} />
                       <Route path="billpay" element={<AgentBillPay />} />
