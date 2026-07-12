@@ -723,13 +723,14 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                       data-expanded={rejectionExpanded ? "true" : "false"}
                       data-long={isLong ? "true" : "false"}
                     >
-                      <AlertTriangle size={11} className="text-rose-500 shrink-0 mt-0.5" />
+                      <AlertTriangle size={11} className="text-rose-500 shrink-0 mt-0.5" aria-hidden="true" />
                       <div className="min-w-0 flex-1">
                         <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-snug">
                           <span className="font-bold">
                             {lang === "bn" ? "সর্বশেষ কারণ: " : "Latest reason: "}
                           </span>
                           <span
+                            id="kyc-latest-rejection-reason-text"
                             className={`text-muted-foreground break-words ${
                               isLong && !rejectionExpanded ? "line-clamp-2" : ""
                             }`}
@@ -744,7 +745,14 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                             type="button"
                             data-testid="kyc-rejection-toggle"
                             onClick={() => setRejectionExpanded((v) => !v)}
-                            className="mt-1 text-[10px] font-bold text-primary hover:underline"
+                            aria-expanded={rejectionExpanded}
+                            aria-controls="kyc-latest-rejection-reason-text"
+                            aria-label={
+                              rejectionExpanded
+                                ? (lang === "bn" ? "প্রত্যাখ্যানের কারণ কম দেখান" : "Show less of the rejection reason")
+                                : (lang === "bn" ? "প্রত্যাখ্যানের কারণের সম্পূর্ণ পাঠ দেখান" : "Show the full rejection reason")
+                            }
+                            className="mt-1 min-h-[24px] px-1 -mx-1 text-[10px] font-bold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
                           >
                             {rejectionExpanded
                               ? (lang === "bn" ? "কম দেখান" : "Show less")
@@ -753,6 +761,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                         )}
                       </div>
                     </div>
+
                   );
                 })()}
               </div>
