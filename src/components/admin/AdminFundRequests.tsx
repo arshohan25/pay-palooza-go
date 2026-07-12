@@ -104,6 +104,27 @@ export default function AdminFundRequests() {
     if (g) setGatewayTxnSearch(g);
   }, []);
 
+  const filtered = requests.filter(r => {
+    if (filter !== "all" && r.status !== filter) return false;
+    if (typeFilter !== "all" && r.type !== typeFilter) return false;
+    if (gatewayTxnSearch) {
+      const g = gatewayTxnSearch.trim().toLowerCase();
+      const inProof = r.transaction_id_proof?.toLowerCase().includes(g);
+      const inNote = r.admin_note?.toLowerCase().includes(g);
+      if (!inProof && !inNote) return false;
+    }
+    if (search) {
+      const profile = profiles[r.user_id];
+      const q = search.toLowerCase();
+      const match = (profile?.name?.toLowerCase().includes(q)) ||
+        (profile?.phone?.includes(q)) ||
+        (r.transaction_id_proof?.toLowerCase().includes(q)) ||
+        (r.bank_name?.toLowerCase().includes(q));
+      if (!match) return false;
+    }
+    return true;
+  });
+
   const exportCsv = useCallback(() => {
     const headers = [
       "id", "created_at", "type", "status", "amount",
@@ -133,29 +154,7 @@ export default function AdminFundRequests() {
     a.click();
     URL.revokeObjectURL(url);
     toast.success(`Exported ${filtered.length} rows`);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered, profiles]);
-
-  const filtered = requests.filter(r => {
-    if (filter !== "all" && r.status !== filter) return false;
-    if (typeFilter !== "all" && r.type !== typeFilter) return false;
-    if (gatewayTxnSearch) {
-      const g = gatewayTxnSearch.trim().toLowerCase();
-      const inProof = r.transaction_id_proof?.toLowerCase().includes(g);
-      const inNote = r.admin_note?.toLowerCase().includes(g);
-      if (!inProof && !inNote) return false;
-    }
-    if (search) {
-      const profile = profiles[r.user_id];
-      const q = search.toLowerCase();
-      const match = (profile?.name?.toLowerCase().includes(q)) ||
-        (profile?.phone?.includes(q)) ||
-        (r.transaction_id_proof?.toLowerCase().includes(q)) ||
-        (r.bank_name?.toLowerCase().includes(q));
-      if (!match) return false;
-    }
-    return true;
-  });
 
   const handleApprove = async () => {
     if (!approveTarget) return;
