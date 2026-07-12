@@ -218,7 +218,13 @@ const AgentRegister = () => {
         return;
       }
       haptics.success();
-      goTo("info");
+      setVerifyingOtp(false);
+      setOtpSuccess(true);
+      setTimeout(() => {
+        setOtpSuccess(false);
+        goTo("info");
+      }, 1100);
+      return;
     } catch (err: any) {
       setOtpError({ kind: "network", message: err.message || "Couldn't verify right now. Please try again." });
       haptics.error();
