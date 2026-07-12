@@ -603,14 +603,17 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                 <div
                   data-testid="kyc-updated-banner"
                   role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
                   className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 px-3 py-2"
                 >
-                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0" aria-hidden="true" />
                   <p className="text-[11.5px] font-semibold text-emerald-700 dark:text-emerald-400">
                     {lang === "bn" ? "গ্রাহক KYC সফলভাবে আপডেট হয়েছে" : "Customer KYC updated successfully"}
                   </p>
                 </div>
               )}
+
 
               <Card className="p-5 border-0 shadow-card rounded-2xl text-center">
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
