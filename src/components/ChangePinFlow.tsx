@@ -271,6 +271,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   };
 
   const handleOtpChange = (v: string) => {
+    if (isLocked) return;
     const clean = v.replace(/\D/g, "").slice(0, 6);
     setOtp(clean);
     setOtpError("");
