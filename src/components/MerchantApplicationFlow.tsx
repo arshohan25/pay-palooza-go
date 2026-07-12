@@ -109,6 +109,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       contact_number: parsed.data.contact_number || null,
       contact_email: parsed.data.contact_email || null,
       business_address: parsed.data.business_address || null,
+      route_code: parsed.data.route_code || null,
       bank_name: parsed.data.bank_name || null,
       bank_branch: parsed.data.bank_branch || null,
       bank_account_holder: parsed.data.bank_account_holder || null,
