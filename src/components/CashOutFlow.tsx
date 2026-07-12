@@ -598,7 +598,7 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
                         {v.isValid && (
                           <Button
                             className="w-full h-11 gradient-cashout border-0 text-white font-semibold animate-fade-in"
-                            onClick={handleAgentIdContinue}
+                            onClick={() => handleAgentIdContinue()}
                           >
                             {t("continue")}
                           </Button>
