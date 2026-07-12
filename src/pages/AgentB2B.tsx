@@ -92,6 +92,13 @@ const AgentB2B = () => {
     if (processing) return;
     setProcessing(true);
     try {
+      const ok = await verifyPin(pin);
+      if (!ok) {
+        toast({ title: "Incorrect PIN", description: "Please try again.", variant: "destructive" });
+        setPin("");
+        setProcessing(false);
+        return;
+      }
       const { error } = await supabase.rpc("transfer_money", {
         p_recipient_phone: phone,
         p_amount: Number(amount),
