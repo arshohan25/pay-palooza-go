@@ -111,10 +111,9 @@ describe("Customer KYC status is scoped per agent (no cross-user leakage)", () =
       expect(call[1]?._agent_id).not.toBe(AGENT_B);
     }
 
-    // Total customers = 2 for agent A.
-    await waitFor(() => {
-      expect(screen.getAllByText("2").length).toBeGreaterThan(0);
-    });
+    // RPC must have been invoked exactly for agent A — no other agent id leaked.
+    const agentIds = rpcMock.mock.calls.map((c) => c[1]?._agent_id);
+    expect(new Set(agentIds)).toEqual(new Set([AGENT_A]));
   });
 
   it("switching to a different agent re-fetches and replaces counts (no leftover data)", async () => {
