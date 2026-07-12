@@ -37,7 +37,7 @@ const rpcMock = vi.fn(async (name: string, params: any) => {
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    rpc: (...args: any[]) => rpcMock(...args),
+    rpc: (name: string, params?: any) => rpcMock(name, params),
     channel: () => ({ on() { return this; }, subscribe() { return this; } }),
     removeChannel: vi.fn(),
     auth: {
