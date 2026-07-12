@@ -55,6 +55,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     contact_number: z.string().trim().min(6, t("mafErrContactNumber")).max(20),
     contact_email: z.string().email(t("mafErrEmail")).max(255).optional().or(z.literal("")),
     business_address: z.string().trim().max(300).optional(),
+    route_code: z.string().regex(/^[A-Z]{2}$/, "Select a district").optional().or(z.literal("")),
     bank_name: z.string().max(100).optional(),
     bank_branch: z.string().max(100).optional(),
     bank_account_number: z.string().max(30).optional(),
