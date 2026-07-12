@@ -594,16 +594,22 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
                       value={agentIdInput}
                       onChange={(e) => {
                         const raw = e.target.value;
-                        const parsed = raw.startsWith("{") || raw.startsWith("http") ? parseQrPayload(raw) : raw;
-                        setAgentIdInput(parsed);
-                        setError("");
+                        if (raw.startsWith("{") || raw.startsWith("http")) {
+                          const { value, error: qrErr } = parseQrPayload(raw);
+                          setAgentIdInput(value);
+                          setError(qrErr || "");
+                        } else {
+                          setAgentIdInput(raw);
+                          setError("");
+                        }
                       }}
                       onPaste={(e) => {
                         const raw = e.clipboardData.getData("text");
                         if (raw && (raw.trim().startsWith("{") || raw.trim().startsWith("http"))) {
                           e.preventDefault();
-                          setAgentIdInput(parseQrPayload(raw));
-                          setError("");
+                          const { value, error: qrErr } = parseQrPayload(raw);
+                          setAgentIdInput(value);
+                          setError(qrErr || "");
                         }
                       }}
                       className="pl-9 pr-12 h-12 text-base bg-card border-border uppercase"
