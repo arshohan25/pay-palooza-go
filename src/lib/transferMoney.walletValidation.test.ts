@@ -13,6 +13,10 @@ vi.mock("@/integrations/supabase/client", () => ({
     rpc: (...args: any[]) => rpcMock(...args),
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }),
     channel: () => ({ on: () => ({ subscribe: () => ({}) }) }),
+    auth: {
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      getSession: async () => ({ data: { session: null }, error: null }),
+    },
   },
 }));
 vi.mock("@/hooks/use-auth", () => ({
