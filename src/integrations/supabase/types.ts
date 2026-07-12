@@ -3014,6 +3014,7 @@ export type Database = {
           reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          route_code: string | null
           status: string
           trade_license: string | null
           updated_at: string | null
@@ -3037,6 +3038,7 @@ export type Database = {
           reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          route_code?: string | null
           status?: string
           trade_license?: string | null
           updated_at?: string | null
@@ -3060,12 +3062,21 @@ export type Database = {
           reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          route_code?: string | null
           status?: string
           trade_license?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "merchant_applications_route_code_fkey"
+            columns: ["route_code"]
+            isOneToOne: false
+            referencedRelation: "wallet_route_codes"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       merchant_apply_config: {
         Row: {

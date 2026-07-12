@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Store, Clock, CheckCircle, XCircle, Loader2, ChevronsUpDown, Check } from "lucide-react";
+import DistrictRoutePicker from "@/components/DistrictRoutePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -37,6 +38,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     contact_number: "",
     contact_email: "",
     business_address: "",
+    route_code: "",
     bank_name: "",
     bank_branch: "",
     bank_account_number: "",
@@ -53,6 +55,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     contact_number: z.string().trim().min(6, t("mafErrContactNumber")).max(20),
     contact_email: z.string().email(t("mafErrEmail")).max(255).optional().or(z.literal("")),
     business_address: z.string().trim().max(300).optional(),
+    route_code: z.string().regex(/^[A-Z]{2}$/, "Select a district").optional().or(z.literal("")),
     bank_name: z.string().max(100).optional(),
     bank_branch: z.string().max(100).optional(),
     bank_account_number: z.string().max(30).optional(),
@@ -106,6 +109,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       contact_number: parsed.data.contact_number || null,
       contact_email: parsed.data.contact_email || null,
       business_address: parsed.data.business_address || null,
+      route_code: parsed.data.route_code || null,
       bank_name: parsed.data.bank_name || null,
       bank_branch: parsed.data.bank_branch || null,
       bank_account_holder: parsed.data.bank_account_holder || null,
@@ -229,6 +233,17 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                   <div>
                     <Label>{t("mafBusinessAddress")}</Label>
                     <Input value={form.business_address} onChange={e => set("business_address", e.target.value)} placeholder={t("mafBusinessAddressPh")} maxLength={300} />
+                  </div>
+                  <div>
+                    <Label>District (route code)</Label>
+                    <DistrictRoutePicker
+                      value={form.route_code}
+                      onChange={(code) => set("route_code", code)}
+                      placeholder="Select district"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Used to build your merchant wallet ID: EZP-MRC{"{RR}"}-XXXX
+                    </p>
                   </div>
                 </div>
 

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
+import DistrictRoutePicker from "@/components/DistrictRoutePicker";
 
 const DistributorCreateAgent = () => {
   const navigate = useNavigate();
@@ -48,6 +49,7 @@ const DistributorCreateAgent = () => {
           business_name: businessName || name || phone,
           nid_number: nid || null,
           territory_code: territory || null,
+          route_code: territory || null,
           trade_license: tradeLicense || null,
           max_float: Number(maxFloat) || 500000,
         }),
@@ -152,8 +154,12 @@ const DistributorCreateAgent = () => {
                   <Input type="text" inputMode="numeric" placeholder="NID" value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">Territory Code</Label>
-                  <Input placeholder="e.g. DHK-N" value={territory} onChange={e => setTerritory(e.target.value)} className="rounded-xl h-11 mt-1" />
+                  <Label className="text-xs font-semibold">District (route code)</Label>
+                  <DistrictRoutePicker
+                    value={territory}
+                    onChange={(code) => setTerritory(code)}
+                    placeholder="Select district"
+                  />
                 </div>
               </div>
 

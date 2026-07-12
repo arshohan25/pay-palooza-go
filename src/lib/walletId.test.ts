@@ -7,6 +7,8 @@ import {
   extractWalletRoute,
   walletFormatHint,
   walletFormatError,
+  isKnownRouteCode,
+  KNOWN_ROUTE_CODES,
   WALLET_ID_RE,
   AGENT_WALLET_RE,
   MERCHANT_WALLET_RE,
@@ -186,5 +188,69 @@ describe("walletId — user-friendly format hints", () => {
     expect(walletFormatError("agent", "en")).toContain("EZP-AGN{RR}-XXXX");
     expect(walletFormatError("merchant", "bn")).toContain("মার্চেন্ট");
     expect(walletFormatError("merchant", "bn")).toContain("EZP-MRC{RR}-XXXX");
+  });
+});
+
+describe("walletId — 64-district route coverage", () => {
+  const ALL = Array.from(KNOWN_ROUTE_CODES);
+  const UNKNOWN = ["ZZ", "QQ", "XY", "AA", "IZ"] as const; // not seeded
+
+  it("includes exactly 64 Bangladesh district codes", () => {
+    expect(ALL).toHaveLength(64);
+    for (const c of ALL) expect(c).toMatch(/^[A-Z]{2}$/);
+  });
+
+  it("generates and validates an agent + merchant wallet for every district", () => {
+    const seed = "01711223344";
+    for (const route of ALL) {
+      const agent = generateWalletId(seed, "agent", route);
+      const merch = generateWalletId(seed, "merchant", route);
+
+      expect(agent).toBe(`EZP-AGN${route}-${agent.slice(-4)}`);
+      expect(merch).toBe(`EZP-MRC${route}-${merch.slice(-4)}`);
+
+      const va = validateWalletId(agent, "agent");
+      expect(va.ok, `agent ${route} should validate`).toBe(true);
+      expect(va.route).toBe(route);
+
+      const vm = validateWalletId(merch, "merchant");
+      expect(vm.ok, `merchant ${route} should validate`).toBe(true);
+      expect(vm.route).toBe(route);
+    }
+  });
+
+  it.each(UNKNOWN)("rejects agent + merchant IDs with unknown route %s", (route) => {
+    expect(isKnownRouteCode(route)).toBe(false);
+
+    const agent = `EZP-AGN${route}-ABCD`;
+    const merch = `EZP-MRC${route}-WXYZ`;
+
+    const va = validateWalletId(agent, "agent");
+    expect(va.ok).toBe(false);
+    expect(va.reason).toBe("unknown_route");
+    expect(va.role).toBe("agent");
+    expect(va.route).toBe(route);
+
+    const vm = validateWalletId(merch, "merchant");
+    expect(vm.ok).toBe(false);
+    expect(vm.reason).toBe("unknown_route");
+    expect(vm.role).toBe("merchant");
+  });
+
+  it("does NOT apply route rules to personal user wallets", () => {
+    // Personal wallets have no route segment, so 'unknown_route' can never fire.
+    const u = validateWalletId("EZP-ABCD-EFGH", "user");
+    expect(u.ok).toBe(true);
+    expect(u.route).toBeNull();
+    expect(extractWalletRoute("EZP-ABCD-EFGH")).toBeNull();
+  });
+
+  it("isKnownRouteCode is case-insensitive and rejects garbage", () => {
+    expect(isKnownRouteCode("dh")).toBe(true);
+    expect(isKnownRouteCode("DH")).toBe(true);
+    expect(isKnownRouteCode("zz")).toBe(false);
+    expect(isKnownRouteCode("")).toBe(false);
+    expect(isKnownRouteCode(null)).toBe(false);
+    expect(isKnownRouteCode(undefined)).toBe(false);
   });
 });
