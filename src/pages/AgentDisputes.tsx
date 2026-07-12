@@ -334,19 +334,35 @@ const AgentDisputes = () => {
                 </div>
               )}
 
-              {d.status === "open" && (
+              <div className="flex items-center gap-2 pt-1">
                 <Button
-                  variant="ghost" size="sm"
-                  onClick={() => cancelDispute(d)}
-                  className="h-7 text-[10px] text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 rounded-lg"
+                  variant="outline" size="sm"
+                  onClick={() => { setDetail(d as unknown as DisputeDetail); setDetailOpen(true); }}
+                  className="h-7 text-[10px] rounded-lg gap-1"
                 >
-                  Cancel dispute
+                  <MessageSquare size={11} /> View details
                 </Button>
-              )}
+                {d.status === "open" && (
+                  <Button
+                    variant="ghost" size="sm"
+                    onClick={() => cancelDispute(d)}
+                    className="h-7 text-[10px] text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 rounded-lg ml-auto"
+                  >
+                    Cancel dispute
+                  </Button>
+                )}
+              </div>
             </Card>
           ))
         )}
       </div>
+
+      <DisputeDetailsDrawer
+        dispute={detail && (rows.find(r => r.id === detail.id) as unknown as DisputeDetail) || detail}
+        open={detailOpen}
+        onOpenChange={(o) => { setDetailOpen(o); if (!o) setDetail(null); }}
+      />
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md rounded-2xl">
