@@ -114,16 +114,21 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     }
   }, [user, lang]);
 
-  // Fetch + realtime subscribe so counts update automatically
+  // Fetch + realtime subscribe so counts update automatically.
+  // Also clear any previous agent's data on user change to prevent leakage.
   useEffect(() => {
-    if (!user) return;
+    setKycCustomers([]);
+    setKycLoaded(false);
+    setKycError(null);
+    setRejectionExpanded(false);
+    if (!user) { setKycLoading(false); return; }
     fetchCustomerKyc();
     const channel = supabase
       .channel(`agent-kyc-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "referrals", filter: `referrer_id=eq.${user.id}` }, () => fetchCustomerKyc())
-      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => fetchCustomerKyc())
+      .on("postgres_changes", { event: "*", schema: "public", table: "referrals", filter: `referrer_id=eq.${user.id}` }, () => fetchCustomerKyc({ silent: true }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => fetchCustomerKyc({ silent: true }))
       .subscribe();
-    const onFocus = () => fetchCustomerKyc();
+    const onFocus = () => fetchCustomerKyc({ silent: true });
     window.addEventListener("focus", onFocus);
     return () => {
       supabase.removeChannel(channel);
@@ -132,8 +137,9 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   }, [user, fetchCustomerKyc]);
 
   useEffect(() => {
-    if (open) fetchCustomerKyc();
-  }, [open, fetchCustomerKyc]);
+    if (open) fetchCustomerKyc({ silent: kycLoaded });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
 
 
