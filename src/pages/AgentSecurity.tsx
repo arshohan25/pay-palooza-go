@@ -74,7 +74,7 @@ const AgentSecurity = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { error } = await supabase.from("device_registrations")
+      const { error } = await (supabase as any).from("device_registrations")
         .update({ revoked_at: new Date().toISOString() })
         .eq("user_id", user.id)
         .neq("device_fp", currentFp)
