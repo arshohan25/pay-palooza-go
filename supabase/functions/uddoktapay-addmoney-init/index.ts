@@ -83,7 +83,20 @@ Deno.serve(async (req) => {
       console.error("uddoktapay-addmoney-init failed", resp.status, data);
       return json({ error: data?.message ?? "Failed to create checkout" }, 502);
     }
-    return json({ payment_url: data.payment_url, request_id: fr.id });
+
+    // Persist the invoice_id so the client can confirm the payment on return
+    // even if UddoktaPay's IPN webhook is delayed or blocked.
+    const invoiceId: string | null =
+      data?.invoice_id ?? data?.invoiceId ?? extractInvoiceIdFromUrl(data.payment_url);
+    if (invoiceId) {
+      await admin
+        .from("fund_requests")
+        .update({ transaction_id_proof: String(invoiceId) })
+        .eq("id", fr.id);
+    }
+
+    return json({ payment_url: data.payment_url, request_id: fr.id, invoice_id: invoiceId });
+
   } catch (e) {
     console.error("uddoktapay-addmoney-init error", e);
     return json({ error: (e as Error).message }, 500);
