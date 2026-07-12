@@ -149,19 +149,6 @@ export const validateWalletId = (
   }
   return { ok: true, role, normalized, route };
 };
-export const validateWalletId = (
-  id: string | null | undefined,
-  expectedRole?: WalletRole,
-): WalletValidation => {
-  if (!id || !id.trim()) return { ok: false, reason: "empty" };
-  const normalized = normalizeWalletId(id);
-  const role = detectWalletRole(normalized);
-  if (!role) return { ok: false, reason: "bad_format", normalized };
-  if (expectedRole && role !== expectedRole) {
-    return { ok: false, role, normalized, route: extractWalletRoute(normalized), reason: "role_mismatch" };
-  }
-  return { ok: true, role, normalized, route: extractWalletRoute(normalized) };
-};
 
 /**
  * Verify a displayed/cached wallet ID matches the ID that would be
