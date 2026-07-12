@@ -133,13 +133,7 @@ const NearbyAgentsPage = () => {
             <Loader2 size={22} className="animate-spin text-primary" />
           </div>
         )}
-        {!BROWSER_KEY ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">
-            Map key not configured. Agents list below still works.
-          </div>
-        ) : (
-          <div ref={mapEl} className="w-full h-[45vh] bg-muted" />
-        )}
+        <div ref={mapEl} className="w-full h-[45vh] bg-muted" />
 
         <div className="max-w-xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-2">

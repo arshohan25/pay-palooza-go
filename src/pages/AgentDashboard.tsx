@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
-import AvailabilityCard from "@/components/agent/AvailabilityCard";
+
 import AgentMenuDrawer from "@/components/AgentMenuDrawer";
 import { useNavigate } from "react-router-dom";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
@@ -390,8 +390,6 @@ const AgentDashboard = () => {
           </div>
         </div>
 
-        {/* ── Availability (Nearby-agent locator) ── */}
-        <AvailabilityCard />
 
 
 
