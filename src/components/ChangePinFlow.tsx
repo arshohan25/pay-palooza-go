@@ -394,7 +394,56 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
               </div>
             )}
 
-            {step === "otp" && (
+            {step === "otp" && isLocked && (
+              <div className="flex flex-col gap-6 pt-10 pb-8 px-4">
+                <div className="text-center space-y-2">
+                  <motion.div
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                    className="w-16 h-16 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-center justify-center text-destructive mx-auto"
+                  >
+                    <ShieldAlert size={30} />
+                  </motion.div>
+                  <h2 className="text-xl font-bold text-foreground">Verification locked</h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                    Too many incorrect codes. For your security, verification is temporarily paused.
+                  </p>
+                </div>
+
+                <div className="mx-auto rounded-2xl border border-destructive/25 bg-destructive/[0.06] px-5 py-4 flex flex-col items-center gap-2 min-w-[220px]">
+                  <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-destructive/80 font-semibold">
+                    <Timer size={12} /> Try again in
+                  </div>
+                  <div className="font-mono text-3xl font-bold tabular-nums text-destructive">
+                    {lockedMmSs}
+                  </div>
+                  <div className="w-full h-1 rounded-full bg-destructive/15 overflow-hidden mt-1">
+                    <motion.div
+                      key={lockedUntil}
+                      initial={{ width: "100%" }}
+                      animate={{ width: "0%" }}
+                      transition={{ duration: lockedRemaining, ease: "linear" }}
+                      className="h-full bg-destructive/70 rounded-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="text-center space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    You can resume verification once the timer ends.
+                  </p>
+                  <button
+                    onClick={onClose}
+                    className="text-xs font-semibold text-primary active:scale-95 transition-transform"
+                  >
+                    Close and return later
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === "otp" && !isLocked && (
               <div className="flex flex-col gap-7 pt-10 pb-8">
                 <div className="text-center space-y-2 px-4">
                   <div className="w-14 h-14 gradient-send rounded-2xl flex items-center justify-center text-primary-foreground mx-auto shadow-glow">
@@ -447,7 +496,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                   <button
                     type="button"
                     onClick={sendOtp}
-                    disabled={otpSending || resendIn > 0}
+                    disabled={otpSending || resendIn > 0 || isLocked}
                     className="text-xs font-semibold text-primary disabled:text-muted-foreground disabled:opacity-60"
                   >
                     {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
@@ -455,6 +504,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                 </div>
               </div>
             )}
+
 
             {step === "new" && (
               <div className="flex flex-col gap-7 pt-10 pb-8">
