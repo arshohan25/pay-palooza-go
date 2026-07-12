@@ -21,6 +21,35 @@ const ROLE_TYPE_PREFIX: Record<Exclude<WalletRole, "user">, string> = {
   merchant: "MRC",
 };
 
+/**
+ * All 64 Bangladesh district route codes, mirroring `wallet_route_codes` in
+ * the database. Kept as the client-side source of truth so wallet-ID
+ * validation can reject unknown routes without a round-trip.
+ *
+ * Keep this list in sync with the `wallet_route_codes` seed migration.
+ */
+export const KNOWN_ROUTE_CODES: ReadonlySet<string> = new Set([
+  // Barisal
+  "BG","BR","BH","JL","PK","PJ",
+  // Chittagong
+  "BN","BB","CP","CT","CM","CX","FN","KG","LK","NK","RM",
+  // Dhaka
+  "DH","FP","GZ","GP","KS","MP","MG","MJ","NR","NS","RB","SP","TG",
+  // Khulna
+  "BT","CD","JS","JH","KH","KT","MA","MH","NL","SK",
+  // Mymensingh
+  "JP","MM","NT","SR",
+  // Rajshahi
+  "BO","CN","JT","NG","NO","PB","RS","SG",
+  // Rangpur
+  "DJ","GB","KM","LM","NP","PG","RP","TK",
+  // Sylhet
+  "HB","MV","SN","SY",
+]);
+
+export const isKnownRouteCode = (code: string | null | undefined): boolean =>
+  !!code && KNOWN_ROUTE_CODES.has(code.toUpperCase());
+
 const hashBlock = (seed: string): string => {
   let h = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -86,18 +115,40 @@ export interface WalletValidation {
   route?: string | null;
   normalized?: string;
   /** i18n-friendly stable reason code. */
-  reason?: "empty" | "bad_format" | "role_mismatch";
+  reason?: "empty" | "bad_format" | "role_mismatch" | "unknown_route";
 }
 
 /**
  * Validate a wallet ID's format and (optionally) that it belongs to the
  * expected role for the current flow.
  *
+ * For agent/merchant wallets the embedded 2-letter route code MUST be one of
+ * the known Bangladesh district codes (see `KNOWN_ROUTE_CODES`) — this
+ * mirrors the DB-side `validate_wallet_id_format` check. Personal user
+ * wallets have no route segment, so they skip that check.
+ *
  *   validateWalletId(id)                 // format-only
  *   validateWalletId(id, "agent")        // must be an agent wallet
  *   validateWalletId(id, "merchant")     // must be a merchant wallet
  *   validateWalletId(id, "user")         // must be a personal user wallet
  */
+export const validateWalletId = (
+  id: string | null | undefined,
+  expectedRole?: WalletRole,
+): WalletValidation => {
+  if (!id || !id.trim()) return { ok: false, reason: "empty" };
+  const normalized = normalizeWalletId(id);
+  const role = detectWalletRole(normalized);
+  if (!role) return { ok: false, reason: "bad_format", normalized };
+  const route = extractWalletRoute(normalized);
+  if (role !== "user" && route && !isKnownRouteCode(route)) {
+    return { ok: false, role, route, normalized, reason: "unknown_route" };
+  }
+  if (expectedRole && role !== expectedRole) {
+    return { ok: false, role, normalized, route, reason: "role_mismatch" };
+  }
+  return { ok: true, role, normalized, route };
+};
 export const validateWalletId = (
   id: string | null | undefined,
   expectedRole?: WalletRole,
