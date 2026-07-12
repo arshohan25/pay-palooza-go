@@ -1,12 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Shield, TrendingUp, Banknote, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Building2, Shield, TrendingUp, Banknote, ArrowDownToLine, ArrowUpFromLine, AlertOctagon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useTransactions } from "@/hooks/use-transactions";
 import TransactionHistory from "./TransactionHistory";
 import FlowHeader from "@/components/FlowHeader";
+import FlagSuspiciousSheet from "@/components/agent/FlagSuspiciousSheet";
 
 const fmt = (n: number) => n.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -14,6 +15,7 @@ const AgentTransactionHistory = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { transactions } = useTransactions();
+  const [flagOpen, setFlagOpen] = useState(false);
 
   // Compute commission summary from agent-relevant transactions
   const summary = useMemo(() => {
@@ -85,9 +87,20 @@ const AgentTransactionHistory = () => {
           </div>
         </motion.div>
 
+        <Button
+          variant="outline"
+          className="w-full rounded-2xl h-11 mb-4 border-rose-500/30 text-rose-500 hover:bg-rose-500/10 hover:text-rose-500"
+          onClick={() => setFlagOpen(true)}
+        >
+          <AlertOctagon size={16} className="mr-2" />
+          Flag suspicious activity
+        </Button>
+
         {/* Transaction list */}
         <TransactionHistory filterTypes={["cashin", "cashout", "banktransfer", "paybill"]} agentView />
       </div>
+
+      <FlagSuspiciousSheet open={flagOpen} onClose={() => setFlagOpen(false)} />
     </div>
   );
 };
