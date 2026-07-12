@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminIncomingMfs from "./AdminIncomingMfs";
+import AdminPendingAddMoney from "./AdminPendingAddMoney";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
