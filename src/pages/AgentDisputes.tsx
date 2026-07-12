@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTransactions } from "@/hooks/use-transactions";
+import DisputeDetailsDrawer, { type DisputeDetail } from "@/components/DisputeDetailsDrawer";
 
 type DisputeStatus = "open" | "under_review" | "resolved" | "rejected";
 
