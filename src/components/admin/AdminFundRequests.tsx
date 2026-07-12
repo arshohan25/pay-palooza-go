@@ -215,9 +215,21 @@ export default function AdminFundRequests() {
         </div>
       </div>
 
-      <div className="relative">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search by name, phone, TxnID…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Search by name, phone, TxnID…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+        </div>
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Gateway transaction ID (UddoktaPay trxID / invoice)…"
+            value={gatewayTxnSearch}
+            onChange={e => setGatewayTxnSearch(e.target.value)}
+            className="pl-9 h-9 text-sm font-mono"
+            data-testid="gateway-txn-search"
+          />
+        </div>
       </div>
 
       {/* Request Cards */}
