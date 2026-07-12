@@ -181,6 +181,10 @@ const App = () => (
                           path="/__test/cashout-harness"
                           element={<CashOutHarness />}
                         />
+                        <Route
+                          path="/__test/wallet-setup-harness"
+                          element={<WalletSetupHarness />}
+                        />
                       </>
                     )}
                     <Route path="*" element={<NotFound />} />
