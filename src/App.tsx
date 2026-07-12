@@ -135,6 +135,7 @@ const App = () => (
                     <Route path="/r/:shortCode" element={<PayLinkPage />} />
                     <Route path="/payment-popup" element={<PaymentPopupPage />} />
                     <Route path="/payment-return" element={<PaymentReturnPage />} />
+                    <Route path="/addmoney/status" element={<AddMoneyStatusPage />} />
                     <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 
 
