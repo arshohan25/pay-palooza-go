@@ -283,10 +283,30 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
     return null;
   };
 
-  const parseQrPayload = (raw: string): string => {
+  /**
+   * Parse a raw scanned/pasted string into an agent identifier.
+   * Returns { value, error } where `error` is a translated user-facing message
+   * when the payload is clearly the wrong kind of QR (merchant, personal, etc).
+   */
+  const parseQrPayload = (raw: string): { value: string; error?: string } => {
     const s = (raw || "").trim();
-    if (!s) return s;
-    // Try JSON payload from agent QR codes
+    if (!s) return { value: s };
+
+    // Use shared parser first — it classifies the flow.
+    try {
+      // Lazy require to avoid circular imports; qrParser is a pure module.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { parseQrData } = require("@/lib/qrParser") as typeof import("@/lib/qrParser");
+      const parsed = parseQrData(s);
+      if (parsed.flow === "cashout") return { value: parsed.identifier };
+      if (parsed.flow === "send" || parsed.flow === "payment" || parsed.flow === "dynamic_payment") {
+        return { value: parsed.identifier || s, error: t("coQrNotAgent") };
+      }
+    } catch {
+      // fall through to legacy extraction
+    }
+
+    // Legacy JSON extraction (agent QR payloads that predate parseQrData)
     if (s.startsWith("{")) {
       try {
         const obj = JSON.parse(s);
@@ -294,10 +314,15 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
           obj.WALLETID || obj.walletId || obj.walletID ||
           obj.AGENTID || obj.agentId || obj.agent_id ||
           obj.PHONE || obj.phone || obj.identifier || "";
-        if (val) return String(val).trim();
+        if (val) {
+          const v = String(val).trim();
+          if (AGENT_WALLET_RE.test(v)) return { value: v };
+          if (WALLET_ID_RE.test(v)) return { value: v, error: t("coQrNotAgent") };
+          return { value: v };
+        }
       } catch {}
     }
-    // Try URL payload like https://.../pay?walletId=...
+    // Legacy URL extraction
     try {
       const u = new URL(s);
       const val =
@@ -305,14 +330,20 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
         u.searchParams.get("WALLETID") ||
         u.searchParams.get("agentId") ||
         u.searchParams.get("phone");
-      if (val) return val.trim();
+      if (val) {
+        const v = val.trim();
+        if (WALLET_ID_RE.test(v) && !AGENT_WALLET_RE.test(v)) return { value: v, error: t("coQrNotAgent") };
+        return { value: v };
+      }
     } catch {}
-    return s;
+    return { value: s };
   };
 
   const handleQrScan = async (result: string) => {
-    const parsed = parseQrPayload(result);
+    const { value: parsed, error: qrErr } = parseQrPayload(result);
     setAgentIdInput(parsed);
+    if (qrErr) { setError(qrErr); return; }
+    if (!parsed) { setError(t("coQrUnreadable")); return; }
     setValidating(true);
     setError("");
 
@@ -336,6 +367,7 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
     }
     goTo("amount");
   };
+
 
 
   const handleAgentIdContinue = async (overrideAgentId?: string) => {
