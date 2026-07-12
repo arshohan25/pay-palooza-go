@@ -188,6 +188,40 @@ export default function AdminPendingAddMoney() {
           </div>
         </>
       )}
+
+      <AlertDialog open={!!confirmReject} onOpenChange={(o) => !o && setConfirmReject(null)}>
+        <AlertDialogContent data-testid="reject-confirm-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmReject?.mode === "bulk"
+                ? `Reject ${selected.size} pending request${selected.size === 1 ? "" : "s"}?`
+                : "Reject this pending request?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the request{confirmReject?.mode === "bulk" ? "s" : ""} as rejected and notify the user. Your admin account and the rejection time will be recorded in history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="reject-confirm-action"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async (e) => {
+                e.preventDefault();
+                const c = confirmReject;
+                setConfirmReject(null);
+                if (!c) return;
+                if (c.mode === "one") await rejectOne(c.id);
+                else await bulkReject();
+              }}
+            >
+              {busy ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
+              Confirm reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
