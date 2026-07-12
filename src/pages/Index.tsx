@@ -141,9 +141,28 @@ const Index = () => {
     localStorage.removeItem("pending_uddoktapay_addmoney_request");
 
     if (detail.status === "success") {
-      toast.success("Payment received — checking transaction status…");
-      fetchBalance();
-      setRefreshKey((k) => k + 1);
+      toast.loading("Verifying payment…", { id: "addmoney-verify" });
+      (async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke("uddoktapay-confirm-addmoney", {
+            body: { request_id: detail.requestId, invoice_id: detail.invoiceId },
+          });
+          if (error) throw error;
+          if (data?.credited || data?.already) {
+            toast.success("Balance credited", { id: "addmoney-verify" });
+          } else if (data?.status && data.status !== "COMPLETED") {
+            toast.error(`Payment ${String(data.status).toLowerCase()} — balance not credited`, { id: "addmoney-verify" });
+          } else {
+            toast.success("Payment received — checking transaction status…", { id: "addmoney-verify" });
+          }
+        } catch (e) {
+          console.error("addmoney confirm failed", e);
+          toast.error("Could not confirm payment. Please contact support if amount was deducted.", { id: "addmoney-verify" });
+        } finally {
+          await fetchBalance();
+          setRefreshKey((k) => k + 1);
+        }
+      })();
     } else if (detail.status === "cancel") {
       toast.error(t("idxPaymentCancelled"));
     } else {
@@ -152,6 +171,7 @@ const Index = () => {
 
     window.dispatchEvent(new CustomEvent("easypay:addmoney-return", { detail }));
   }, [t]);
+
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
