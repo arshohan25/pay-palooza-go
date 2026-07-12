@@ -348,26 +348,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
 
               {/* Scrollable content */}
               <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
-                {/* Navigate */}
-                <div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-1.5">
-                    {t("agdRecentActivity").length > 0 ? (lang === "bn" ? "নেভিগেশন" : "Navigate") : "Navigate"}
-                  </p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {navItems.map(item => (
-                      <button
-                        key={item.label}
-                        onClick={item.action}
-                        className="flex items-center gap-2 px-2.5 py-2.5 rounded-xl bg-muted/40 hover:bg-primary/10 active:scale-[0.98] transition-all group text-left"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center shrink-0 group-hover:bg-primary/15">
-                          <item.icon size={14} className="text-muted-foreground group-hover:text-primary" />
-                        </div>
-                        <span className="text-[11.5px] font-semibold text-foreground flex-1 truncate">{item.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
 
                 {/* Account */}
                 <div>
