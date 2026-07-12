@@ -116,6 +116,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
   const send = async () => {
     if (!dispute || !userId || !body.trim()) return;
     setPosting(true);
+    setSendError(null);
     try {
       const { error } = await supabase.from("dispute_messages" as any).insert({
         dispute_id: dispute.id,
@@ -126,11 +127,13 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
       if (error) throw error;
       setBody("");
     } catch (e: any) {
+      setSendError(e.message || "Failed to send");
       toast({ title: "Send failed", description: e.message, variant: "destructive" });
     } finally {
       setPosting(false);
     }
   };
+
 
   if (!dispute) return null;
 
