@@ -13,6 +13,7 @@ import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import QrScannerModal from "@/components/QrScannerModal";
 import { parseQrData } from "@/lib/qrParser";
 import { useFeeConfig } from "@/hooks/use-fee-config";
+import { verifyPin } from "@/lib/verifyPin";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
