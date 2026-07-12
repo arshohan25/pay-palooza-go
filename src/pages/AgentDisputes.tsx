@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, AlertCircle, Plus, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plus, Clock, CheckCircle2, XCircle, Paperclip, FileCheck2, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,15 +18,19 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTransactions } from "@/hooks/use-transactions";
 
+type DisputeStatus = "open" | "under_review" | "resolved" | "rejected";
+
 type Dispute = {
   id: string;
   subject: string;
   description: string | null;
-  status: string;
+  status: DisputeStatus;
   transaction_id: string | null;
   resolution_notes: string | null;
   resolved_at: string | null;
+  evidence_url: string | null;
   created_at: string;
+  updated_at: string;
 };
 
 const SUBJECTS = [
@@ -39,19 +43,60 @@ const SUBJECTS = [
   "Other",
 ];
 
-const StatusPill = ({ s }: { s: string }) => {
-  const map: Record<string, { cls: string; icon: any; label: string }> = {
-    open: { cls: "bg-amber-500/15 text-amber-600 border-amber-500/30", icon: Clock, label: "Open" },
-    in_progress: { cls: "bg-blue-500/15 text-blue-600 border-blue-500/30", icon: Clock, label: "In progress" },
-    resolved: { cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", icon: CheckCircle2, label: "Resolved" },
-    closed: { cls: "bg-muted text-muted-foreground border-border", icon: XCircle, label: "Closed" },
-  };
-  const m = map[s] || map.open;
+const STATUS_META: Record<DisputeStatus, { cls: string; icon: any; label: string }> = {
+  open: { cls: "bg-amber-500/15 text-amber-600 border-amber-500/30", icon: Clock, label: "Submitted" },
+  under_review: { cls: "bg-blue-500/15 text-blue-600 border-blue-500/30", icon: Search, label: "Under review" },
+  resolved: { cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", icon: CheckCircle2, label: "Resolved" },
+  rejected: { cls: "bg-rose-500/15 text-rose-600 border-rose-500/30", icon: XCircle, label: "Rejected" },
+};
+
+const StatusPill = ({ s }: { s: DisputeStatus }) => {
+  const m = STATUS_META[s] || STATUS_META.open;
   const Icon = m.icon;
   return (
     <Badge variant="outline" className={`${m.cls} text-[10px] gap-1 rounded-full`}>
       <Icon size={10} /> {m.label}
     </Badge>
+  );
+};
+
+const Timeline = ({ d }: { d: Dispute }) => {
+  const submittedAt = d.created_at;
+  const reviewingAt = d.status === "under_review" || d.status === "resolved" || d.status === "rejected" ? d.updated_at : null;
+  const closedAt = d.status === "resolved" || d.status === "rejected" ? (d.resolved_at ?? d.updated_at) : null;
+
+  const steps = [
+    { key: "submitted", label: "Submitted", at: submittedAt, done: true, icon: FileCheck2 },
+    { key: "review", label: "Under review", at: reviewingAt, done: !!reviewingAt, icon: Search },
+    {
+      key: "closed",
+      label: d.status === "rejected" ? "Rejected" : "Resolved",
+      at: closedAt,
+      done: !!closedAt,
+      icon: d.status === "rejected" ? XCircle : CheckCircle2,
+    },
+  ];
+
+  return (
+    <div className="mt-2 pt-2 border-t border-border/40">
+      <div className="flex items-start justify-between gap-1">
+        {steps.map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.key} className="flex-1 flex flex-col items-center relative">
+              {i > 0 && (
+                <div className={`absolute right-1/2 top-3 h-0.5 w-full ${steps[i - 1].done ? "bg-emerald-500/50" : "bg-border"}`} />
+              )}
+              <div className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center border-2 ${s.done ? "bg-emerald-500 border-emerald-500 text-white" : "bg-background border-border text-muted-foreground"}`}>
+                <Icon size={12} />
+              </div>
+              <p className={`text-[9px] mt-1 text-center ${s.done ? "text-foreground font-medium" : "text-muted-foreground"}`}>{s.label}</p>
+              {s.at && <p className="text-[8px] text-muted-foreground">{new Date(s.at).toLocaleDateString()}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 
@@ -65,28 +110,109 @@ const AgentDisputes = () => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const userIdRef = useRef<string | null>(null);
 
   const [txnId, setTxnId] = useState<string>(params.get("txn") || "");
   const [subject, setSubject] = useState(SUBJECTS[0]);
   const [customSubject, setCustomSubject] = useState("");
   const [description, setDescription] = useState("");
+  const [evidence, setEvidence] = useState<File | null>(null);
 
-  const load = async () => {
-    setLoading(true);
+  // --- API layer ---------------------------------------------------------
+  const fetchDisputes = async (): Promise<Dispute[]> => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    if (!user) return [];
+    userIdRef.current = user.id;
     const { data, error } = await supabase
       .from("disputes")
-      .select("id, subject, description, status, transaction_id, resolution_notes, resolved_at, created_at")
+      .select("id, subject, description, status, transaction_id, resolution_notes, resolved_at, evidence_url, created_at, updated_at")
       .eq("complainant_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
-    if (error) toast({ title: "Load failed", description: error.message, variant: "destructive" });
-    setRows((data as Dispute[]) || []);
-    setLoading(false);
+    if (error) throw error;
+    return (data as Dispute[]) || [];
   };
 
-  useEffect(() => { load(); if (params.get("txn")) setOpen(true); /* eslint-disable-next-line */ }, []);
+  const uploadEvidence = async (userId: string, file: File): Promise<string> => {
+    const ext = file.name.split(".").pop() || "bin";
+    const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabase.storage.from("dispute-evidence").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+    if (error) throw error;
+    return path;
+  };
+
+  const createDispute = async (payload: {
+    subject: string;
+    description: string;
+    transactionId: string | null;
+    evidenceFile: File | null;
+  }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not signed in");
+    let evidence_url: string | null = null;
+    if (payload.evidenceFile) {
+      evidence_url = await uploadEvidence(user.id, payload.evidenceFile);
+    }
+    const { data, error } = await supabase.from("disputes").insert({
+      complainant_id: user.id,
+      subject: payload.subject,
+      description: payload.description,
+      transaction_id: payload.transactionId,
+      evidence_url,
+    } as any).select().single();
+    if (error) throw error;
+    return data;
+  };
+
+  const updateDisputeStatus = async (id: string, status: DisputeStatus) => {
+    const { error } = await supabase
+      .from("disputes")
+      .update({ status } as any)
+      .eq("id", id);
+    if (error) throw error;
+  };
+
+  const openEvidence = async (path: string) => {
+    const { data, error } = await supabase.storage.from("dispute-evidence").createSignedUrl(path, 60);
+    if (error) return toast({ title: "Cannot open file", description: error.message, variant: "destructive" });
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  // --- lifecycle ---------------------------------------------------------
+  const load = async () => {
+    setLoading(true);
+    try {
+      const list = await fetchDisputes();
+      setRows(list);
+    } catch (e: any) {
+      toast({ title: "Load failed", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    if (params.get("txn")) setOpen(true);
+    // eslint-disable-next-line
+  }, []);
+
+  // realtime status updates
+  useEffect(() => {
+    if (!userIdRef.current) return;
+    const ch = supabase
+      .channel(`disputes-${userIdRef.current}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "disputes", filter: `complainant_id=eq.${userIdRef.current}` },
+        () => load()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [rows.length === 0 ? 0 : 1]); // re-subscribe once we have user id
 
   const agentTxns = useMemo(
     () => transactions
@@ -99,25 +225,35 @@ const AgentDisputes = () => {
     const finalSubject = subject === "Other" ? customSubject.trim() : subject;
     if (!finalSubject) return toast({ title: "Subject required", variant: "destructive" });
     if (description.trim().length < 10) return toast({ title: "Add more detail (min 10 chars)", variant: "destructive" });
+    if (evidence && evidence.size > 5 * 1024 * 1024) return toast({ title: "File too large (max 5MB)", variant: "destructive" });
+
     setSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not signed in");
-      const { error } = await supabase.from("disputes").insert({
-        complainant_id: user.id,
+      await createDispute({
         subject: finalSubject,
         description: description.trim(),
-        transaction_id: txnId || null,
+        transactionId: txnId || null,
+        evidenceFile: evidence,
       });
-      if (error) throw error;
       toast({ title: "Dispute filed", description: "Support will review within 24h" });
       setOpen(false);
-      setDescription(""); setCustomSubject(""); setTxnId(""); setSubject(SUBJECTS[0]);
+      setDescription(""); setCustomSubject(""); setTxnId(""); setSubject(SUBJECTS[0]); setEvidence(null);
       load();
     } catch (err: any) {
       toast({ title: "Failed", description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const cancelDispute = async (d: Dispute) => {
+    if (d.status !== "open") return;
+    try {
+      await updateDisputeStatus(d.id, "rejected");
+      toast({ title: "Dispute cancelled" });
+      load();
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
     }
   };
 
@@ -149,7 +285,9 @@ const AgentDisputes = () => {
 
       <div className="max-w-xl mx-auto px-4 py-5 space-y-3">
         {loading ? (
-          <p className="text-xs text-muted-foreground py-8 text-center">Loading…</p>
+          <p className="text-xs text-muted-foreground py-8 text-center flex items-center justify-center gap-2">
+            <Loader2 size={14} className="animate-spin" /> Loading…
+          </p>
         ) : rows.length === 0 ? (
           <Card className="p-6 border-0 shadow-elevated rounded-2xl text-center space-y-2">
             <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
@@ -169,15 +307,37 @@ const AgentDisputes = () => {
                 <StatusPill s={d.status} />
               </div>
               {d.description && <p className="text-[11px] text-muted-foreground line-clamp-3">{d.description}</p>}
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
+
+              <div className="flex items-center flex-wrap gap-2 text-[10px] text-muted-foreground">
                 <span>Filed: {new Date(d.created_at).toLocaleDateString()}</span>
                 {d.transaction_id && <span className="font-mono">TX: {d.transaction_id.slice(0, 8)}…</span>}
+                {d.evidence_url && (
+                  <button
+                    onClick={() => openEvidence(d.evidence_url!)}
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                  >
+                    <Paperclip size={10} /> Evidence
+                  </button>
+                )}
               </div>
+
+              <Timeline d={d} />
+
               {d.resolution_notes && (
                 <div className="mt-1 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                   <p className="text-[10px] font-bold text-emerald-600 mb-0.5">Resolution</p>
                   <p className="text-[11px] text-foreground">{d.resolution_notes}</p>
                 </div>
+              )}
+
+              {d.status === "open" && (
+                <Button
+                  variant="ghost" size="sm"
+                  onClick={() => cancelDispute(d)}
+                  className="h-7 text-[10px] text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 rounded-lg"
+                >
+                  Cancel dispute
+                </Button>
               )}
             </Card>
           ))
@@ -205,7 +365,7 @@ const AgentDisputes = () => {
               </Select>
             </div>
             <div>
-              <Label className="text-[11px]">Subject</Label>
+              <Label className="text-[11px]">Reason</Label>
               <Select value={subject} onValueChange={setSubject}>
                 <SelectTrigger className="h-10 rounded-xl mt-1 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -215,7 +375,7 @@ const AgentDisputes = () => {
             </div>
             {subject === "Other" && (
               <div>
-                <Label className="text-[11px]">Custom subject</Label>
+                <Label className="text-[11px]">Custom reason</Label>
                 <Input value={customSubject} onChange={e => setCustomSubject(e.target.value)}
                   maxLength={80} className="h-10 rounded-xl mt-1 text-xs" placeholder="Describe briefly" />
               </div>
@@ -227,11 +387,27 @@ const AgentDisputes = () => {
                 placeholder="What happened? Include amount, counterparty, and time if relevant." />
               <p className="text-[9px] text-muted-foreground mt-1 text-right">{description.length}/800</p>
             </div>
+            <div>
+              <Label className="text-[11px]">Evidence (optional, max 5MB)</Label>
+              <div className="mt-1 flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={e => setEvidence(e.target.files?.[0] || null)}
+                  className="h-10 rounded-xl text-xs file:text-xs file:mr-2"
+                />
+              </div>
+              {evidence && (
+                <p className="text-[9px] text-muted-foreground mt-1 flex items-center gap-1">
+                  <Paperclip size={9} /> {evidence.name} · {(evidence.size / 1024).toFixed(0)} KB
+                </p>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)} className="rounded-xl h-10">Cancel</Button>
             <Button onClick={submit} disabled={submitting} className="rounded-xl h-10 gap-1">
-              {submitting ? "Submitting…" : "File dispute"}
+              {submitting ? <><Loader2 size={12} className="animate-spin" /> Submitting…</> : "File dispute"}
             </Button>
           </DialogFooter>
         </DialogContent>

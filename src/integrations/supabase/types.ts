@@ -1750,6 +1750,7 @@ export type Database = {
           complainant_id: string
           created_at: string
           description: string | null
+          evidence_url: string | null
           id: string
           resolution_notes: string | null
           resolved_at: string | null
@@ -1763,6 +1764,7 @@ export type Database = {
           complainant_id: string
           created_at?: string
           description?: string | null
+          evidence_url?: string | null
           id?: string
           resolution_notes?: string | null
           resolved_at?: string | null
@@ -1776,6 +1778,7 @@ export type Database = {
           complainant_id?: string
           created_at?: string
           description?: string | null
+          evidence_url?: string | null
           id?: string
           resolution_notes?: string | null
           resolved_at?: string | null
