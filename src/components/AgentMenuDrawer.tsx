@@ -423,21 +423,96 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
                 <Users size={24} className="text-primary" />
               </div>
-              <p className="text-3xl font-extrabold text-foreground">{agentInfo?.customers_onboarded ?? 0}</p>
+              <p className="text-3xl font-extrabold text-foreground">{kycCounts.total}</p>
               <p className="text-xs text-muted-foreground font-semibold mt-1">{t("agCustomersOnboarded")}</p>
             </Card>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Card className="p-4 border-0 shadow-card rounded-xl text-center">
-                <ShieldCheck size={20} className="mx-auto text-primary mb-2" />
-                <p className="text-lg font-extrabold text-foreground">{agentInfo?.customers_onboarded ?? 0}</p>
-                <p className="text-[10px] text-muted-foreground font-semibold">{t("agRegistered")}</p>
-              </Card>
-              <Card className="p-4 border-0 shadow-card rounded-xl text-center">
-                <Activity size={20} className="mx-auto text-accent mb-2" />
-                <p className="text-lg font-extrabold text-foreground">—</p>
-                <p className="text-[10px] text-muted-foreground font-semibold">{t("agKycVerified")}</p>
-              </Card>
+            {/* Customer KYC Status Summary */}
+            <div className="rounded-2xl border border-border/50 bg-gradient-to-br from-emerald-500/[0.06] via-muted/20 to-amber-500/[0.06] p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-foreground truncate">
+                    {lang === "bn" ? "গ্রাহক KYC স্ট্যাটাস" : "Customer KYC Status"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {lang === "bn"
+                      ? `মোট ${kycCounts.total} জন গ্রাহক`
+                      : `${kycCounts.total} total customer${kycCounts.total === 1 ? "" : "s"}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setKycSheetOpen(false); navigate("/agent/register"); }}
+                  className="flex items-center gap-1 px-2.5 h-7 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-[10.5px] font-bold shrink-0 transition-colors"
+                >
+                  {lang === "bn" ? "আপডেট" : "Update"}
+                  <ArrowUpRight size={11} strokeWidth={2.5} />
+                </button>
+              </div>
+              <TooltipProvider delayDuration={150}>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { setKycSearch(""); setKycModal("verified"); }}
+                    className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2 text-center hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
+                  >
+                    <CheckCircle2 size={13} className="mx-auto text-emerald-500 mb-0.5" strokeWidth={2.4} />
+                    <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none">{kycCounts.verified}</p>
+                    <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                      {lang === "bn" ? "যাচাইকৃত" : "Verified"}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setKycSearch(""); setKycModal("pending"); }}
+                    className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2 text-center hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+                  >
+                    <Clock size={13} className="mx-auto text-amber-500 mb-0.5" strokeWidth={2.4} />
+                    <p className="text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none">{kycCounts.pending}</p>
+                    <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                      {lang === "bn" ? "অপেক্ষমাণ" : "Pending"}
+                    </p>
+                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => { setKycSearch(""); setKycModal("rejected"); }}
+                        className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2 text-center hover:bg-rose-500/15 active:scale-[0.98] transition-all relative"
+                      >
+                        <XCircle size={13} className="mx-auto text-rose-500 mb-0.5" strokeWidth={2.4} />
+                        <p className="text-sm font-extrabold text-rose-600 dark:text-rose-400 leading-none">{kycCounts.rejected}</p>
+                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                          {lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected"}
+                        </p>
+                      </button>
+                    </TooltipTrigger>
+                    {latestRejection && (
+                      <TooltipContent side="top" className="max-w-[220px] text-[11px] leading-snug">
+                        <p className="font-bold mb-0.5">
+                          {lang === "bn" ? "সর্বশেষ প্রত্যাখ্যানের কারণ" : "Latest rejection reason"}
+                        </p>
+                        <p className="text-muted-foreground">
+                          {latestRejection.rejection_reason || (lang === "bn" ? "কোনো কারণ দেওয়া হয়নি" : "No reason provided")}
+                        </p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+
+              {latestRejection && kycCounts.rejected > 0 && (
+                <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-rose-500/8 border border-rose-500/20 px-2 py-1.5">
+                  <AlertTriangle size={11} className="text-rose-500 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-snug">
+                    <span className="font-bold">
+                      {lang === "bn" ? "সর্বশেষ কারণ: " : "Latest reason: "}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {latestRejection.rejection_reason || (lang === "bn" ? "কারণ উল্লেখ করা হয়নি" : "No reason provided")}
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
 
             <p className="text-[10px] text-muted-foreground text-center">
