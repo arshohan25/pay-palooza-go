@@ -85,7 +85,7 @@ describe("uddoktapay-ipn amount mismatch", () => {
 
     // Failure reason MUST have been written to admin_note
     expect(updateMock).toHaveBeenCalledTimes(1);
-    const patch = updateMock.mock.calls[0][0];
+    const patch = updateMock.mock.calls[0][0] as { admin_note: string };
     expect(patch.admin_note).toContain("amount mismatch");
     expect(patch.admin_note).toContain("paid=11");
     expect(patch.admin_note).toContain("expected=10");
