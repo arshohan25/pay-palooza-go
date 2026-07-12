@@ -142,7 +142,10 @@ const FundRequestHistory = ({ onBack }: { onBack: () => void }) => {
                           <Detail label={t("frhHolder")} value={r.account_holder} />
                         )}
                         {r.transaction_id_proof && (
-                          <Detail label={t("frhTxnId")} value={r.transaction_id_proof} />
+                          <Detail
+                            label={r.source_method === "uddoktapay" && r.status === "approved" ? "Gateway Txn ID" : t("frhTxnId")}
+                            value={r.transaction_id_proof}
+                          />
                         )}
                         {r.admin_note && (
                           <div className="bg-destructive/8 rounded-xl px-3 py-2">
