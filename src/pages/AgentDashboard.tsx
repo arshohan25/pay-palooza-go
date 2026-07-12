@@ -67,6 +67,7 @@ const AgentDashboard = () => {
 
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
   const [balance, setBalance] = useState(0);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showBalance, setShowBalance] = useState(false);
   const [isAgent, setIsAgent] = useState<boolean | null>(null);
   const [recentTxns, setRecentTxns] = useState<any[]>([]);
@@ -125,12 +126,13 @@ const AgentDashboard = () => {
     setLoading(true);
     const [roleRes, profileRes, agentRes, txnRes] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "agent"),
-      supabase.from("profiles").select("balance").eq("user_id", user.id).single(),
+      supabase.from("profiles").select("balance, avatar_url").eq("user_id", user.id).single(),
       supabase.from("agents").select("*").eq("user_id", user.id).single(),
       supabase.from("transactions").select("*").eq("user_id", user.id).in("type", ["cashin", "cashout", "banktransfer", "paybill"]).order("created_at", { ascending: false }).limit(20),
     ]);
     setIsAgent((roleRes.data?.length ?? 0) > 0);
     setBalance(profileRes.data?.balance ?? 0);
+    setAvatarUrl((profileRes.data as any)?.avatar_url ?? null);
     setAgentInfo(agentRes.data as AgentInfo | null);
     const txns = txnRes.data ?? [];
     setRecentTxns(txns);
@@ -164,9 +166,13 @@ const AgentDashboard = () => {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` }, (payload) => {
         const newBal = parseFloat(String(payload.new.balance));
         if (!isNaN(newBal)) setBalance(newBal);
+        const newAvatar = (payload.new as any)?.avatar_url;
+        if (newAvatar !== undefined) setAvatarUrl(newAvatar);
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const onProfileUpdated = () => loadData();
+    window.addEventListener("profile-updated", onProfileUpdated);
+    return () => { supabase.removeChannel(channel); window.removeEventListener("profile-updated", onProfileUpdated); };
   }, [user, loadData]);
 
   /* ── 7-day commission chart data ── */
@@ -299,8 +305,12 @@ const AgentDashboard = () => {
 
             {/* Agent identity */}
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl glass-hero flex items-center justify-center">
-                <Building2 size={22} className="text-primary-foreground" />
+              <div className="w-12 h-12 rounded-2xl glass-hero flex items-center justify-center overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 size={22} className="text-primary-foreground" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <h1 className="text-base font-bold text-primary-foreground truncate">{agentInfo?.business_name || t("agdAgentPortal")}</h1>
