@@ -73,6 +73,41 @@ export default function AdminPendingAddMoney() {
     }
   };
 
+  const rejectOne = async (id: string) => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc("admin_reject_fund_request", {
+        p_request_id: id,
+        p_admin_note: "Rejected by admin",
+      });
+      if (error) throw error;
+      toast.success("Rejected");
+      setSelected(s => { const n = new Set(s); n.delete(id); return n; });
+      await load();
+    } catch (e: any) {
+      toast.error(e.message || "Reject failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const bulkReject = async () => {
+    if (selected.size === 0) return;
+    setBusy(true);
+    let ok = 0, fail = 0;
+    for (const id of [...selected]) {
+      const { error } = await supabase.rpc("admin_reject_fund_request", {
+        p_request_id: id,
+        p_admin_note: "Rejected by admin",
+      });
+      if (error) fail++; else ok++;
+    }
+    toast.success(`Rejected ${ok}${fail ? `, failed ${fail}` : ""}`);
+    setSelected(new Set());
+    await load();
+    setBusy(false);
+  };
+
   const totalSelected = rows.filter(r => selected.has(r.id)).reduce((s, r) => s + Number(r.amount), 0);
 
   return (
