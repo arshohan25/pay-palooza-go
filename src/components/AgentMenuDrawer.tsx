@@ -70,8 +70,11 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [kycCustomers, setKycCustomers] = useState<KycCustomer[]>([]);
   const [kycLoading, setKycLoading] = useState(true);
   const [kycLoaded, setKycLoaded] = useState(false);
+  const [kycError, setKycError] = useState<string | null>(null);
+  const [kycJustRefreshed, setKycJustRefreshed] = useState(false);
   const [kycModal, setKycModal] = useState<null | "verified" | "pending" | "rejected">(null);
   const [kycSearch, setKycSearch] = useState("");
+  const [rejectionExpanded, setRejectionExpanded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const kycCounts = useMemo(() => {
@@ -90,16 +93,26 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""))[0] || null;
   }, [kycCustomers]);
 
-  const fetchCustomerKyc = useCallback(async () => {
+  const fetchCustomerKyc = useCallback(async (opts?: { silent?: boolean; markRefresh?: boolean }) => {
     if (!user) return;
-    setKycLoading(true);
-    const { data, error } = await (supabase as any).rpc("get_agent_customer_kyc", { _agent_id: user.id });
-    if (!error && Array.isArray(data)) {
-      setKycCustomers(data as KycCustomer[]);
+    if (!opts?.silent) setKycLoading(true);
+    setKycError(null);
+    try {
+      const { data, error } = await (supabase as any).rpc("get_agent_customer_kyc", { _agent_id: user.id });
+      if (error) throw error;
+      if (Array.isArray(data)) setKycCustomers(data as KycCustomer[]);
+      if (opts?.markRefresh) {
+        setKycJustRefreshed(true);
+        toast.success(lang === "bn" ? "গ্রাহক KYC আপডেট হয়েছে" : "Customer KYC updated");
+        setTimeout(() => setKycJustRefreshed(false), 4000);
+      }
+    } catch (err: any) {
+      setKycError(err?.message || (lang === "bn" ? "লোড ব্যর্থ হয়েছে" : "Failed to load"));
+    } finally {
+      setKycLoading(false);
+      setKycLoaded(true);
     }
-    setKycLoading(false);
-    setKycLoaded(true);
-  }, [user]);
+  }, [user, lang]);
 
   // Fetch + realtime subscribe so counts update automatically
   useEffect(() => {
