@@ -24,6 +24,9 @@ export default function AddMoneyStatusPage() {
   const [verifying, setVerifying] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const [gatewayTrxId, setGatewayTrxId] = useState<string | null>(null);
+  const [mismatch, setMismatch] = useState<{ paid: number; expected: number } | null>(null);
+
   const load = useCallback(async () => {
     if (!requestId) { setLoading(false); return; }
     const { data } = await supabase
@@ -43,8 +46,12 @@ export default function AddMoneyStatusPage() {
         body: { request_id: requestId },
       });
       if (error) throw error;
-      const res = data as { credited?: boolean; status?: string };
-      if (res?.credited) toast.success("Balance credited");
+      const res = data as { credited?: boolean; status?: string; gateway_trx_id?: string | null; error?: string; paid?: number; expected?: number };
+      if (res?.gateway_trx_id) setGatewayTrxId(res.gateway_trx_id);
+      if (res?.error === "amount_mismatch") {
+        setMismatch({ paid: Number(res.paid), expected: Number(res.expected) });
+        toast.error(`Amount mismatch — paid ৳${res.paid}, expected ৳${res.expected}`);
+      } else if (res?.credited) toast.success("Balance credited");
       else if (res?.status && res.status !== "COMPLETED") toast.info(`Payment status: ${res.status}`);
       await load();
     } catch (e: any) {
