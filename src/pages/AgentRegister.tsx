@@ -55,6 +55,7 @@ const AgentRegister = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [otpError, setOtpError] = useState<{ kind: "invalid" | "expired" | "network"; message: string } | null>(null);
   const [otpAttempts, setOtpAttempts] = useState(0);
+  const [otpSuccess, setOtpSuccess] = useState(false);
 
   // Info step
   const [name, setName] = useState("");
