@@ -207,6 +207,10 @@ const App = () => (
                           path="/__test/agent-kyc-harness"
                           element={<AgentKycHarness />}
                         />
+                        <Route
+                          path="/__test/qr-scan-router-harness"
+                          element={<QrScanRouterHarness />}
+                        />
                       </>
                     )}
                     <Route path="*" element={<NotFound />} />
