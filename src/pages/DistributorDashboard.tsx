@@ -492,6 +492,9 @@ const DistributorDashboard = () => {
                 </div>
               </Card>
 
+              {/* ═══ Float Requests ═══ */}
+              {distInfo && <DistributorFloatRequests distributorId={distInfo.id} onProcessed={loadData} />}
+
               {/* ═══ Network Health ═══ */}
               <Card className="p-4 border-0 shadow-card mb-5">
                 <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
