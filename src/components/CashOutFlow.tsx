@@ -547,7 +547,20 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       type="text"
                       placeholder={t("coAgentIdPlaceholder")}
                       value={agentIdInput}
-                      onChange={(e) => { setAgentIdInput(e.target.value); setError(""); }}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const parsed = raw.startsWith("{") || raw.startsWith("http") ? parseQrPayload(raw) : raw;
+                        setAgentIdInput(parsed);
+                        setError("");
+                      }}
+                      onPaste={(e) => {
+                        const raw = e.clipboardData.getData("text");
+                        if (raw && (raw.trim().startsWith("{") || raw.trim().startsWith("http"))) {
+                          e.preventDefault();
+                          setAgentIdInput(parseQrPayload(raw));
+                          setError("");
+                        }
+                      }}
                       className="pl-9 pr-12 h-12 text-base bg-card border-border uppercase"
                     />
                     <button
