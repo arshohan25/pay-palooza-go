@@ -38,6 +38,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     contact_number: "",
     contact_email: "",
     business_address: "",
+    route_code: "",
     bank_name: "",
     bank_branch: "",
     bank_account_number: "",
