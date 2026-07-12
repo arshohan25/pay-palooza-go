@@ -12,7 +12,8 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 const TRX = "TRX-LINK-123";
 const ROW_MATCH = {
-  id: "fr-match", user_id: "u1", type: "add_money", amount: 500, status: "approved",
+  id: "fr-match", user_id: "u1", type: "add_money", amount: 500, status: "pending",
+
   source_method: "uddoktapay", proof_url: null,
   transaction_id_proof: TRX, bank_name: null, account_number: null, account_holder: null,
   admin_note: `invoice=inv-1 trx=${TRX}`, reviewed_by: "admin", reviewed_at: "2026-07-12T12:00:00Z",
