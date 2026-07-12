@@ -7,7 +7,7 @@ import {
   Users, Languages, ArrowDownToLine, ArrowRightLeft, Banknote,
   Receipt, UserPlus, History, Headphones, LayoutDashboard, CircleDollarSign,
   CheckCircle2, Clock, XCircle, ArrowUpRight, AlertTriangle, Search,
-  RefreshCw, AlertCircle, FileText,
+  RefreshCw, AlertCircle, FileText, Shield,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -268,6 +268,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     { icon: QrCode, label: t("agShareQr"), sub: lang === "bn" ? "গ্রাহকদের সাথে QR শেয়ার করুন" : "Share your agent QR code", tint: "bg-violet-500/10 text-violet-500", action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
     { icon: BarChart3, label: t("agAnalytics"), sub: lang === "bn" ? "কর্মক্ষমতা ও কমিশন দেখুন" : "View performance & commissions", tint: "bg-indigo-500/10 text-indigo-500", action: () => goto("/agent/analytics"), toggleKey: "agent_analytics" },
     { icon: FileText, label: lang === "bn" ? "স্টেটমেন্ট ও EOD" : "Statement & EOD", sub: lang === "bn" ? "CSV/PDF রপ্তানি ও ক্যাশ মিলানো" : "Export CSV/PDF, reconcile cash", tint: "bg-teal-500/10 text-teal-500", action: () => goto("/agent/statement"), toggleKey: "agent_statement" },
+    { icon: Shield, label: lang === "bn" ? "সিকিউরিটি ও সেশন" : "Security & Sessions", sub: lang === "bn" ? "PIN পরিবর্তন ও ডিভাইস ব্যবস্থাপনা" : "Change PIN & manage devices", tint: "bg-rose-500/10 text-rose-500", action: () => goto("/agent/security"), toggleKey: "agent_security" },
     { icon: ShieldCheck, label: t("agCustomerKyc"), sub: lang === "bn" ? "যাচাইকরণের স্ট্যাটাস দেখুন" : "Track verification status", tint: "bg-emerald-500/10 text-emerald-500", action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
     { icon: Bell, label: t("agNotifications"), sub: lang === "bn" ? "সতর্কতা পছন্দ ব্যবস্থাপনা" : "Manage alert preferences", tint: "bg-amber-500/10 text-amber-500", action: () => openAfterClose(() => setNotifSheetOpen(true)), toggleKey: "agent_notifications" },
   ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));

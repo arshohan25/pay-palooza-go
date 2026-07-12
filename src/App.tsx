@@ -29,6 +29,7 @@ const AgentTransactionHistory = lazy(() => import("./pages/AgentTransactionHisto
 const AgentBankTransfer = lazy(() => import("./pages/AgentBankTransfer"));
 const AgentAnalyticsPage = lazy(() => import("./pages/AgentAnalyticsPage"));
 const AgentStatement = lazy(() => import("./pages/AgentStatement"));
+const AgentSecurity = lazy(() => import("./pages/AgentSecurity"));
 const DistributorDashboard = lazy(() => import("./pages/DistributorDashboard"));
 const DistributorCreateAgent = lazy(() => import("./pages/DistributorCreateAgent"));
 const SuperDistributorDashboard = lazy(() => import("./pages/SuperDistributorDashboard"));
@@ -157,6 +158,7 @@ const App = () => (
                       <Route path="bank" element={<AgentBankTransfer />} />
                       <Route path="analytics" element={<AgentAnalyticsPage />} />
                       <Route path="statement" element={<AgentStatement />} />
+                      <Route path="security" element={<AgentSecurity />} />
                     </Route>
 
                     <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} />}>
