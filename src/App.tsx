@@ -74,6 +74,7 @@ const AdminMcpActivityLog = lazy(() => import("./pages/AdminMcpActivityLog"));
 const PaymentPopupPage = lazy(() => import("./pages/PaymentPopupPage"));
 const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
 const AddMoneyStatusPage = lazy(() => import("./pages/AddMoneyStatusPage"));
+const ForgotPinPage = lazy(() => import("./pages/ForgotPinPage"));
 
 
 
