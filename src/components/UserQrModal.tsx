@@ -114,7 +114,7 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
               </div>
               <div className="text-center space-y-1">
                 <p className="text-base font-bold text-foreground">{userName}</p>
-                <p className="text-xs text-muted-foreground">{t("scanToSendMoney")}</p>
+                <p className="text-xs text-muted-foreground">{t(role === "agent" ? "scanToPayAgent" : role === "merchant" ? "scanToPayMerchant" : "scanToSendMoney")}</p>
               </div>
             </div>
 
