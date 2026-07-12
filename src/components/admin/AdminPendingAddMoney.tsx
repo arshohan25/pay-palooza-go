@@ -29,6 +29,8 @@ export default function AdminPendingAddMoney() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [confirmReject, setConfirmReject] = useState<{ mode: "one"; id: string } | { mode: "bulk" } | null>(null);
+
 
   const load = useCallback(async () => {
     setLoading(true);
