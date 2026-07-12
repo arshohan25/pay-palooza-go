@@ -372,8 +372,9 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
 
   const handleAgentIdContinue = async (overrideAgentId?: string) => {
     const source = overrideAgentId ?? agentIdInput;
-    const trimmed = parseQrPayload(source);
+    const { value: trimmed, error: qrErr } = parseQrPayload(source);
     if (trimmed !== agentIdInput.trim()) setAgentIdInput(trimmed);
+    if (qrErr) { setError(qrErr); return; }
     if (trimmed.length < 5) { setError(t("coEnterValidAgentId")); return; }
 
     const walletErr = rejectIfWrongAgentWallet(trimmed);
@@ -399,6 +400,7 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
     }
     goTo("amount");
   };
+
 
   const handledPrefillRef = useRef<string | undefined>(undefined);
   useEffect(() => {
