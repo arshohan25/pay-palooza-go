@@ -7347,6 +7347,7 @@ export type Database = {
         Args: { p_gateway_ref: string; p_request_id: string }
         Returns: Json
       }
+      test_validate_wallet_id_format: { Args: never; Returns: string }
       transfer_money: {
         Args: {
           p_amount: number
