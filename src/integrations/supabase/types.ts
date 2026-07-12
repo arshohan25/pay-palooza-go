@@ -6717,6 +6717,33 @@ export type Database = {
           },
         ]
       }
+      wallet_route_codes: {
+        Row: {
+          code: string
+          created_at: string
+          district: string
+          division: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          district: string
+          division: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          district?: string
+          division?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       wishlists: {
         Row: {
           created_at: string
