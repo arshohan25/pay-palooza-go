@@ -526,16 +526,17 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               </div>
             </div>
           ) : kycError && kycCustomers.length === 0 ? (
-            /* Error state with retry */
-            <div className="space-y-4" data-testid="customer-kyc-error" role="alert">
+            /* Error state with retry + cooldown */
+            <div className="space-y-4" data-testid="customer-kyc-error" role="alert" aria-live="assertive">
               <Card className="p-6 border-0 shadow-card rounded-2xl text-center bg-rose-500/[0.04] border border-rose-500/20">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 flex items-center justify-center mb-3">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 flex items-center justify-center mb-3" aria-hidden="true">
                   <AlertCircle size={24} className="text-rose-500" />
                 </div>
                 <p className="text-sm font-bold text-foreground">
                   {lang === "bn" ? "KYC ডেটা লোড করা যায়নি" : "Couldn't load KYC data"}
                 </p>
                 <p
+                  id="kyc-error-desc"
                   className="text-[11px] text-muted-foreground mt-1 leading-snug break-words"
                   data-testid="kyc-error-message"
                 >
@@ -543,15 +544,36 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                 </p>
                 <Button
                   data-testid="kyc-retry-btn"
-                  onClick={() => fetchCustomerKyc()}
-                  disabled={kycLoading}
-                  className="mt-4 h-10 rounded-xl gradient-primary text-primary-foreground font-bold text-xs px-4 inline-flex items-center gap-1.5"
+                  onClick={() => fetchCustomerKyc({ manual: true })}
+                  disabled={kycLoading || inCooldown}
+                  aria-describedby="kyc-error-desc kyc-retry-cooldown"
+                  aria-label={
+                    inCooldown
+                      ? (lang === "bn" ? `${cooldownSeconds} সেকেন্ডে আবার চেষ্টা করুন` : `Retry available in ${cooldownSeconds} seconds`)
+                      : (lang === "bn" ? "KYC ডেটা পুনরায় লোড করুন" : "Retry loading KYC data")
+                  }
+                  className="mt-4 h-10 min-h-11 rounded-xl gradient-primary text-primary-foreground font-bold text-xs px-4 inline-flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-60"
                 >
-                  <RefreshCw size={12} className={kycLoading ? "animate-spin" : ""} />
-                  {lang === "bn" ? "আবার চেষ্টা করুন" : "Retry"}
+                  <RefreshCw size={12} className={kycLoading ? "animate-spin" : ""} aria-hidden="true" />
+                  {inCooldown
+                    ? (lang === "bn" ? `আবার চেষ্টা করুন (${cooldownSeconds}s)` : `Retry (${cooldownSeconds}s)`)
+                    : (lang === "bn" ? "আবার চেষ্টা করুন" : "Retry")}
                 </Button>
+                <p
+                  id="kyc-retry-cooldown"
+                  data-testid="kyc-retry-cooldown"
+                  aria-live="polite"
+                  className="mt-2 text-[10px] text-muted-foreground min-h-[14px]"
+                >
+                  {inCooldown
+                    ? (lang === "bn"
+                        ? `ব্যাকএন্ড সুরক্ষার জন্য অপেক্ষা করুন — ${cooldownSeconds} সেকেন্ড`
+                        : `Waiting to avoid overloading the server — ${cooldownSeconds}s`)
+                    : ""}
+                </p>
               </Card>
             </div>
+
           ) : kycCounts.total === 0 ? (
             /* Empty state */
             <div className="space-y-4" data-testid="customer-kyc-empty">
