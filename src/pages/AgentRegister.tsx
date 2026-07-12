@@ -194,6 +194,7 @@ const AgentRegister = () => {
   const handleVerifyOtp = async () => {
     if (otpValue.length !== 6) return;
     setVerifyingOtp(true);
+    setOtpError(null);
     try {
       const cleanedPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
       const { data, error } = await supabase.functions.invoke("verify-otp", {
@@ -201,15 +202,25 @@ const AgentRegister = () => {
       });
       if (error) throw error;
       if (!data?.verified) {
-        toast({ title: "Invalid OTP", description: data?.error || "Verification failed.", variant: "destructive" });
+        const raw = (data?.error || "").toString().toLowerCase();
+        const kind: "invalid" | "expired" = raw.includes("expired") || raw.includes("no pending") ? "expired" : "invalid";
+        setOtpError({
+          kind,
+          message: kind === "expired"
+            ? "This code has expired. Tap Resend to get a new one."
+            : "Incorrect code. Please double-check and try again.",
+        });
+        setOtpAttempts(a => a + 1);
         setOtpValue("");
+        haptics.error();
         setVerifyingOtp(false);
         return;
       }
       haptics.success();
       goTo("info");
     } catch (err: any) {
-      toast({ title: "Verification Failed", description: err.message, variant: "destructive" });
+      setOtpError({ kind: "network", message: err.message || "Couldn't verify right now. Please try again." });
+      haptics.error();
     } finally {
       setVerifyingOtp(false);
     }
