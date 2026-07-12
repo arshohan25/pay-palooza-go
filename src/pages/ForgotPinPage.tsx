@@ -226,32 +226,15 @@ const ForgotPinPage = () => {
                   </p>
                 </div>
                 <div className="space-y-1.5">
-                  <label htmlFor="forgot-phone" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Phone</label>
-                  <div className="relative">
-                    <input
-                      id="forgot-phone"
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      autoFocus
-                      maxLength={11}
-                      value={phone}
-                      onChange={(e) => { setError(""); setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); }}
-                      placeholder="01XXXXXXXXX"
-                      className="w-full h-12 rounded-xl border border-border bg-background pl-4 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    />
-                    {phone && (
-                      <button
-                        type="button"
-                        aria-label="Clear phone number"
-                        onClick={() => { setPhone(""); setError(""); }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-lg leading-none"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">Tap to edit if this isn't your number.</p>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Phone</label>
+                  <input
+                    inputMode="numeric"
+                    maxLength={11}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                    placeholder="01XXXXXXXXX"
+                    className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
                 </div>
                 {error && (
                   <p className="text-xs text-destructive flex items-center gap-1.5">
