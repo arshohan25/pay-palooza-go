@@ -53,7 +53,7 @@ const AgentSecurity = () => {
   const revoke = async (id: string, isCurrent: boolean) => {
     if (isCurrent && !confirm("Sign out from THIS device? You will be logged out immediately.")) return;
     try {
-      const { error } = await supabase.from("device_registrations")
+      const { error } = await (supabase as any).from("device_registrations")
         .update({ revoked_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
