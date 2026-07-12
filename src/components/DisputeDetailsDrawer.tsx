@@ -327,7 +327,14 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
                 {posting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               </Button>
             </div>
-            <p className="text-[9px] text-muted-foreground mt-1 text-right">{body.length}/500</p>
+            <div className="flex items-center justify-between mt-1">
+              {sendError ? (
+                <p className="text-[9px] text-rose-600 flex items-center gap-1">
+                  <XCircle size={9} /> {sendError}
+                </p>
+              ) : <span />}
+              <p className="text-[9px] text-muted-foreground">{body.length}/500</p>
+            </div>
           </div>
         )}
       </SheetContent>
