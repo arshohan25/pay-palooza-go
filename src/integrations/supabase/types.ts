@@ -2595,6 +2595,53 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_status_audit: {
+        Row: {
+          agent_id: string | null
+          changed_by: string | null
+          changed_by_role: string | null
+          created_at: string
+          id: string
+          kyc_verification_id: string
+          new_status: string
+          previous_status: string | null
+          reviewer_notes: string | null
+          user_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          changed_by?: string | null
+          changed_by_role?: string | null
+          created_at?: string
+          id?: string
+          kyc_verification_id: string
+          new_status: string
+          previous_status?: string | null
+          reviewer_notes?: string | null
+          user_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          changed_by?: string | null
+          changed_by_role?: string | null
+          created_at?: string
+          id?: string
+          kyc_verification_id?: string
+          new_status?: string
+          previous_status?: string | null
+          reviewer_notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_status_audit_kyc_verification_id_fkey"
+            columns: ["kyc_verification_id"]
+            isOneToOne: false
+            referencedRelation: "kyc_verifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kyc_verifications: {
         Row: {
           created_at: string
@@ -6985,6 +7032,21 @@ export type Database = {
           rejection_reason: string
           status: string
           updated_at: string
+          user_id: string
+        }[]
+      }
+      get_agent_kyc_audit: {
+        Args: { _agent_id: string; _limit?: number }
+        Returns: {
+          changed_by: string
+          changed_by_role: string
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          new_status: string
+          previous_status: string
+          reviewer_notes: string
           user_id: string
         }[]
       }

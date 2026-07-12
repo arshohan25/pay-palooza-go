@@ -75,7 +75,36 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [kycJustRefreshed, setKycJustRefreshed] = useState(false);
   const [kycModal, setKycModal] = useState<null | "verified" | "pending" | "rejected">(null);
   const [kycSearch, setKycSearch] = useState("");
+  const [kycMainSearch, setKycMainSearch] = useState("");
   const [rejectionExpanded, setRejectionExpanded] = useState(false);
+
+  // Retry cooldown so repeated fetch failures can't spam the backend.
+  const [retryAttempts, setRetryAttempts] = useState(0);
+  const [retryCooldownUntil, setRetryCooldownUntil] = useState(0);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const cooldownRemainingMs = Math.max(0, retryCooldownUntil - nowTick);
+  const cooldownSeconds = Math.ceil(cooldownRemainingMs / 1000);
+  const inCooldown = cooldownRemainingMs > 0;
+  useEffect(() => {
+    if (!inCooldown) return;
+    const iv = setInterval(() => setNowTick(Date.now()), 500);
+    return () => clearInterval(iv);
+  }, [inCooldown]);
+
+  type KycAuditRow = {
+    id: string;
+    user_id: string;
+    customer_name: string | null;
+    customer_phone: string | null;
+    previous_status: string | null;
+    new_status: string;
+    reviewer_notes: string | null;
+    changed_by: string | null;
+    changed_by_role: string | null;
+    created_at: string;
+  };
+  const [kycAudit, setKycAudit] = useState<KycAuditRow[]>([]);
+  const [kycAuditLoading, setKycAuditLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const kycCounts = useMemo(() => {
@@ -94,40 +123,67 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""))[0] || null;
   }, [kycCustomers]);
 
-  const fetchCustomerKyc = useCallback(async (opts?: { silent?: boolean; markRefresh?: boolean }) => {
+  // Cooldown schedule: 2s, 5s, 15s, 30s, 60s (capped) on successive failures.
+  const cooldownForAttempt = (n: number) =>
+    ({ 1: 2000, 2: 5000, 3: 15000, 4: 30000 }[n] ?? 60000);
+
+  const fetchCustomerKyc = useCallback(async (opts?: { silent?: boolean; markRefresh?: boolean; manual?: boolean }) => {
     if (!user) return;
+    // Reject manual retries while cooling down — prevents spamming the backend.
+    if (opts?.manual && Date.now() < retryCooldownUntil) return;
     if (!opts?.silent) setKycLoading(true);
     setKycError(null);
     try {
       const { data, error } = await (supabase as any).rpc("get_agent_customer_kyc", { _agent_id: user.id });
       if (error) throw error;
       if (Array.isArray(data)) setKycCustomers(data as KycCustomer[]);
+      setRetryAttempts(0);
+      setRetryCooldownUntil(0);
       if (opts?.markRefresh) {
         setKycJustRefreshed(true);
         toast.success(lang === "bn" ? "গ্রাহক KYC আপডেট হয়েছে" : "Customer KYC updated");
         setTimeout(() => setKycJustRefreshed(false), 4000);
       }
     } catch (err: any) {
+      const nextAttempt = retryAttempts + 1;
+      setRetryAttempts(nextAttempt);
+      setRetryCooldownUntil(Date.now() + cooldownForAttempt(nextAttempt));
       setKycError(err?.message || (lang === "bn" ? "লোড ব্যর্থ হয়েছে" : "Failed to load"));
     } finally {
       setKycLoading(false);
       setKycLoaded(true);
     }
-  }, [user, lang]);
+  }, [user, lang, retryAttempts, retryCooldownUntil]);
+
+  const fetchKycAudit = useCallback(async () => {
+    if (!user) return;
+    setKycAuditLoading(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("get_agent_kyc_audit", { _agent_id: user.id, _limit: 25 });
+      if (!error && Array.isArray(data)) setKycAudit(data as KycAuditRow[]);
+    } finally {
+      setKycAuditLoading(false);
+    }
+  }, [user]);
 
   // Fetch + realtime subscribe so counts update automatically.
   // Also clear any previous agent's data on user change to prevent leakage.
   useEffect(() => {
     setKycCustomers([]);
+    setKycAudit([]);
     setKycLoaded(false);
     setKycError(null);
     setRejectionExpanded(false);
+    setKycMainSearch("");
+    setRetryAttempts(0);
+    setRetryCooldownUntil(0);
     if (!user) { setKycLoading(false); return; }
     fetchCustomerKyc();
     const channel = supabase
       .channel(`agent-kyc-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "referrals", filter: `referrer_id=eq.${user.id}` }, () => fetchCustomerKyc({ silent: true }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => fetchCustomerKyc({ silent: true }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => { fetchCustomerKyc({ silent: true }); fetchKycAudit(); })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "kyc_status_audit", filter: `agent_id=eq.${user.id}` }, () => fetchKycAudit())
       .subscribe();
     const onFocus = () => fetchCustomerKyc({ silent: true });
     window.addEventListener("focus", onFocus);
@@ -135,12 +191,20 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
       supabase.removeChannel(channel);
       window.removeEventListener("focus", onFocus);
     };
-  }, [user, fetchCustomerKyc]);
+  }, [user, fetchCustomerKyc, fetchKycAudit]);
 
   useEffect(() => {
-    if (open) fetchCustomerKyc({ silent: kycLoaded });
+    if (open) {
+      fetchCustomerKyc({ silent: kycLoaded });
+      fetchKycAudit();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  useEffect(() => {
+    if (kycSheetOpen) fetchKycAudit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kycSheetOpen]);
 
 
 
@@ -439,9 +503,9 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
 
       {/* Customer KYC Sheet */}
       <Sheet open={kycSheetOpen} onOpenChange={setKycSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8" data-testid="customer-kyc-sheet">
+        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 max-h-[90vh] overflow-y-auto" data-testid="customer-kyc-sheet" aria-labelledby="customer-kyc-title">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-base font-extrabold">{t("agCustomerKycStatus")}</SheetTitle>
+            <SheetTitle id="customer-kyc-title" className="text-base font-extrabold">{t("agCustomerKycStatus")}</SheetTitle>
           </SheetHeader>
 
           {kycLoading && !kycLoaded ? (
@@ -462,16 +526,17 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               </div>
             </div>
           ) : kycError && kycCustomers.length === 0 ? (
-            /* Error state with retry */
-            <div className="space-y-4" data-testid="customer-kyc-error" role="alert">
+            /* Error state with retry + cooldown */
+            <div className="space-y-4" data-testid="customer-kyc-error" role="alert" aria-live="assertive">
               <Card className="p-6 border-0 shadow-card rounded-2xl text-center bg-rose-500/[0.04] border border-rose-500/20">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 flex items-center justify-center mb-3">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 flex items-center justify-center mb-3" aria-hidden="true">
                   <AlertCircle size={24} className="text-rose-500" />
                 </div>
                 <p className="text-sm font-bold text-foreground">
                   {lang === "bn" ? "KYC ডেটা লোড করা যায়নি" : "Couldn't load KYC data"}
                 </p>
                 <p
+                  id="kyc-error-desc"
                   className="text-[11px] text-muted-foreground mt-1 leading-snug break-words"
                   data-testid="kyc-error-message"
                 >
@@ -479,15 +544,36 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                 </p>
                 <Button
                   data-testid="kyc-retry-btn"
-                  onClick={() => fetchCustomerKyc()}
-                  disabled={kycLoading}
-                  className="mt-4 h-10 rounded-xl gradient-primary text-primary-foreground font-bold text-xs px-4 inline-flex items-center gap-1.5"
+                  onClick={() => fetchCustomerKyc({ manual: true })}
+                  disabled={kycLoading || inCooldown}
+                  aria-describedby="kyc-error-desc kyc-retry-cooldown"
+                  aria-label={
+                    inCooldown
+                      ? (lang === "bn" ? `${cooldownSeconds} সেকেন্ডে আবার চেষ্টা করুন` : `Retry available in ${cooldownSeconds} seconds`)
+                      : (lang === "bn" ? "KYC ডেটা পুনরায় লোড করুন" : "Retry loading KYC data")
+                  }
+                  className="mt-4 h-10 min-h-11 rounded-xl gradient-primary text-primary-foreground font-bold text-xs px-4 inline-flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-60"
                 >
-                  <RefreshCw size={12} className={kycLoading ? "animate-spin" : ""} />
-                  {lang === "bn" ? "আবার চেষ্টা করুন" : "Retry"}
+                  <RefreshCw size={12} className={kycLoading ? "animate-spin" : ""} aria-hidden="true" />
+                  {inCooldown
+                    ? (lang === "bn" ? `আবার চেষ্টা করুন (${cooldownSeconds}s)` : `Retry (${cooldownSeconds}s)`)
+                    : (lang === "bn" ? "আবার চেষ্টা করুন" : "Retry")}
                 </Button>
+                <p
+                  id="kyc-retry-cooldown"
+                  data-testid="kyc-retry-cooldown"
+                  aria-live="polite"
+                  className="mt-2 text-[10px] text-muted-foreground min-h-[14px]"
+                >
+                  {inCooldown
+                    ? (lang === "bn"
+                        ? `ব্যাকএন্ড সুরক্ষার জন্য অপেক্ষা করুন — ${cooldownSeconds} সেকেন্ড`
+                        : `Waiting to avoid overloading the server — ${cooldownSeconds}s`)
+                    : ""}
+                </p>
               </Card>
             </div>
+
           ) : kycCounts.total === 0 ? (
             /* Empty state */
             <div className="space-y-4" data-testid="customer-kyc-empty">
@@ -517,14 +603,17 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                 <div
                   data-testid="kyc-updated-banner"
                   role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
                   className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 px-3 py-2"
                 >
-                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0" aria-hidden="true" />
                   <p className="text-[11.5px] font-semibold text-emerald-700 dark:text-emerald-400">
                     {lang === "bn" ? "গ্রাহক KYC সফলভাবে আপডেট হয়েছে" : "Customer KYC updated successfully"}
                   </p>
                 </div>
               )}
+
 
               <Card className="p-5 border-0 shadow-card rounded-2xl text-center">
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
@@ -560,11 +649,13 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                       window.addEventListener("focus", refresh);
                       navigate("/agent/register");
                     }}
-                    className="flex items-center gap-1 px-2.5 h-7 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-[10.5px] font-bold shrink-0 transition-colors"
+                    aria-label={lang === "bn" ? "গ্রাহক KYC আপডেট করুন" : "Update customer KYC"}
+                    className="flex items-center gap-1 px-2.5 min-h-11 h-8 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-[10.5px] font-bold shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     {lang === "bn" ? "আপডেট" : "Update"}
-                    <ArrowUpRight size={11} strokeWidth={2.5} />
+                    <ArrowUpRight size={11} strokeWidth={2.5} aria-hidden="true" />
                   </button>
+
                 </div>
                 <TooltipProvider delayDuration={150}>
                   <div className="grid grid-cols-3 gap-1.5">
@@ -634,13 +725,14 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                       data-expanded={rejectionExpanded ? "true" : "false"}
                       data-long={isLong ? "true" : "false"}
                     >
-                      <AlertTriangle size={11} className="text-rose-500 shrink-0 mt-0.5" />
+                      <AlertTriangle size={11} className="text-rose-500 shrink-0 mt-0.5" aria-hidden="true" />
                       <div className="min-w-0 flex-1">
                         <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-snug">
                           <span className="font-bold">
                             {lang === "bn" ? "সর্বশেষ কারণ: " : "Latest reason: "}
                           </span>
                           <span
+                            id="kyc-latest-rejection-reason-text"
                             className={`text-muted-foreground break-words ${
                               isLong && !rejectionExpanded ? "line-clamp-2" : ""
                             }`}
@@ -655,7 +747,14 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                             type="button"
                             data-testid="kyc-rejection-toggle"
                             onClick={() => setRejectionExpanded((v) => !v)}
-                            className="mt-1 text-[10px] font-bold text-primary hover:underline"
+                            aria-expanded={rejectionExpanded}
+                            aria-controls="kyc-latest-rejection-reason-text"
+                            aria-label={
+                              rejectionExpanded
+                                ? (lang === "bn" ? "প্রত্যাখ্যানের কারণ কম দেখান" : "Show less of the rejection reason")
+                                : (lang === "bn" ? "প্রত্যাখ্যানের কারণের সম্পূর্ণ পাঠ দেখান" : "Show the full rejection reason")
+                            }
+                            className="mt-1 min-h-[24px] px-1 -mx-1 text-[10px] font-bold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
                           >
                             {rejectionExpanded
                               ? (lang === "bn" ? "কম দেখান" : "Show less")
@@ -664,13 +763,158 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                         )}
                       </div>
                     </div>
+
                   );
                 })()}
               </div>
 
+              {/* Search box — find any customer and see their current KYC status */}
+              <div>
+                <label htmlFor="kyc-main-search" className="sr-only">
+                  {lang === "bn" ? "গ্রাহক খুঁজুন" : "Search customers"}
+                </label>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    id="kyc-main-search"
+                    data-testid="kyc-main-search"
+                    value={kycMainSearch}
+                    onChange={(e) => setKycMainSearch(e.target.value)}
+                    placeholder={lang === "bn" ? "নাম বা ফোন দিয়ে খুঁজুন..." : "Find a customer by name or phone…"}
+                    className="pl-9 h-10 rounded-xl text-sm"
+                    autoComplete="off"
+                  />
+                </div>
+                {kycMainSearch.trim() && (() => {
+                  const q = kycMainSearch.trim().toLowerCase();
+                  const results = kycCustomers
+                    .filter((c) => (c.name || "").toLowerCase().includes(q) || (c.phone || "").toLowerCase().includes(q))
+                    .slice(0, 8);
+                  if (results.length === 0) {
+                    return (
+                      <p
+                        data-testid="kyc-main-search-empty"
+                        role="status"
+                        aria-live="polite"
+                        className="mt-2 text-[11px] text-muted-foreground text-center py-3"
+                      >
+                        {lang === "bn" ? "কোনো গ্রাহক পাওয়া যায়নি" : "No customers match your search"}
+                      </p>
+                    );
+                  }
+                  return (
+                    <ul
+                      data-testid="kyc-main-search-results"
+                      aria-label={lang === "bn" ? "গ্রাহক অনুসন্ধান ফলাফল" : "Customer search results"}
+                      className="mt-2 space-y-1 max-h-48 overflow-y-auto"
+                    >
+                      {results.map((c) => {
+                        const status = c.status;
+                        const badge =
+                          status === "verified"
+                            ? { cls: "bg-emerald-500/15 text-emerald-600", Icon: CheckCircle2, label: lang === "bn" ? "যাচাইকৃত" : "Verified" }
+                            : status === "rejected"
+                            ? { cls: "bg-rose-500/15 text-rose-600", Icon: XCircle, label: lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected" }
+                            : { cls: "bg-amber-500/15 text-amber-600", Icon: Clock, label: lang === "bn" ? "অপেক্ষমাণ" : "Pending" };
+                        return (
+                          <li key={c.user_id} className="flex items-center gap-2 rounded-xl bg-muted/30 border border-border/50 px-2.5 py-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-bold text-foreground truncate">
+                                {c.name || (lang === "bn" ? "নামহীন" : "Unnamed")}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground truncate">{c.phone || "—"}</p>
+                            </div>
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${badge.cls}`}>
+                              <badge.Icon size={10} aria-hidden="true" />
+                              {badge.label}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  );
+                })()}
+              </div>
+
+              {/* Audit log — who updated KYC, when, and previous → new status */}
+              <section aria-labelledby="kyc-audit-heading" data-testid="kyc-audit-section">
+                <h3 id="kyc-audit-heading" className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1 mb-1.5">
+                  {lang === "bn" ? "সাম্প্রতিক আপডেট" : "Recent KYC updates"}
+                </h3>
+                {kycAuditLoading && kycAudit.length === 0 ? (
+                  <div className="space-y-1.5" data-testid="kyc-audit-loading" aria-busy="true">
+                    <div className="h-12 rounded-xl bg-muted animate-pulse" />
+                    <div className="h-12 rounded-xl bg-muted animate-pulse" />
+                  </div>
+                ) : kycAudit.length === 0 ? (
+                  <p data-testid="kyc-audit-empty" className="text-[11px] text-muted-foreground text-center py-3">
+                    {lang === "bn" ? "এখনও কোনো আপডেট নেই" : "No updates yet — status changes will appear here."}
+                  </p>
+                ) : (
+                  <ul data-testid="kyc-audit-list" className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {kycAudit.map((row) => {
+                      const who = row.changed_by_role === "admin"
+                        ? (lang === "bn" ? "অ্যাডমিন" : "Admin")
+                        : row.changed_by_role === "agent"
+                        ? (lang === "bn" ? "আপনি (এজেন্ট)" : "You (agent)")
+                        : row.changed_by_role === "system"
+                        ? (lang === "bn" ? "সিস্টেম" : "System")
+                        : (lang === "bn" ? "ব্যবহারকারী" : "User");
+                      const when = new Date(row.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-BD", {
+                        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+                      });
+                      return (
+                        <li
+                          key={row.id}
+                          data-testid="kyc-audit-row"
+                          className="rounded-xl bg-muted/30 border border-border/50 px-2.5 py-2"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[12px] font-bold text-foreground truncate">
+                              {row.customer_name || (lang === "bn" ? "নামহীন" : "Unnamed")}
+                            </p>
+                            <time
+                              className="text-[10px] text-muted-foreground shrink-0"
+                              dateTime={row.created_at}
+                            >
+                              {when}
+                            </time>
+                          </div>
+                          <p className="text-[10.5px] text-muted-foreground mt-0.5 flex items-center gap-1 flex-wrap">
+                            <span className="font-semibold text-foreground">{who}</span>
+                            <span aria-hidden="true">·</span>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9.5px] font-semibold capitalize">
+                                {row.previous_status || (lang === "bn" ? "নতুন" : "new")}
+                              </span>
+                              <ArrowUpRight size={10} className="rotate-45" aria-label={lang === "bn" ? "থেকে" : "changed to"} />
+                              <span
+                                className={`rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold capitalize ${
+                                  row.new_status === "verified" ? "bg-emerald-500/15 text-emerald-600"
+                                  : row.new_status === "rejected" ? "bg-rose-500/15 text-rose-600"
+                                  : "bg-amber-500/15 text-amber-600"
+                                }`}
+                              >
+                                {row.new_status}
+                              </span>
+                            </span>
+                          </p>
+                          {row.reviewer_notes && (
+                            <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
+                              {row.reviewer_notes}
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
               <p className="text-[10px] text-muted-foreground text-center">
                 {t("agKycTrackingSoon")}
               </p>
+
             </div>
           )}
         </SheetContent>
