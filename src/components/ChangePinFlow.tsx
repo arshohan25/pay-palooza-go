@@ -175,8 +175,11 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
   const applyLockout = (minutes: number, message?: string) => {
     const mins = Math.max(1, Number(minutes) || 15);
-    setLockedUntil(Date.now() + mins * 60 * 1000);
-    setOtpError(message || `Too many failed attempts. Try again in ${mins} minutes.`);
+    lockout.lock(
+      mins,
+      message || `Too many failed attempts. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`,
+    );
+    setOtpError(message || `Too many failed attempts. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`);
     setOtp("");
     haptics.error();
   };
