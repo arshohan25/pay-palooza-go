@@ -554,6 +554,69 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_float_requests: {
+        Row: {
+          agent_id: string
+          agent_user_id: string
+          amount: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          distributor_id: string | null
+          id: string
+          note: string | null
+          reject_reason: string | null
+          status: string
+          txn_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          agent_user_id: string
+          amount: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          distributor_id?: string | null
+          id?: string
+          note?: string | null
+          reject_reason?: string | null
+          status?: string
+          txn_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          agent_user_id?: string
+          amount?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          distributor_id?: string | null
+          id?: string
+          note?: string | null
+          reject_reason?: string | null
+          status?: string
+          txn_reference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_float_requests_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_float_requests_distributor_id_fkey"
+            columns: ["distributor_id"]
+            isOneToOne: false
+            referencedRelation: "distributors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_ratings: {
         Row: {
           agent_id: string

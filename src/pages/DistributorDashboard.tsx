@@ -25,6 +25,7 @@ import SupportChat from "@/components/SupportChat";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import TransactionHistory from "./TransactionHistory";
+import DistributorFloatRequests from "@/components/DistributorFloatRequests";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 
 /* ─── Types ─── */
@@ -490,6 +491,9 @@ const DistributorDashboard = () => {
                   </ResponsiveContainer>
                 </div>
               </Card>
+
+              {/* ═══ Float Requests ═══ */}
+              {distInfo && <DistributorFloatRequests distributorId={distInfo.id} onProcessed={loadData} />}
 
               {/* ═══ Network Health ═══ */}
               <Card className="p-4 border-0 shadow-card mb-5">
