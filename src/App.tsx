@@ -156,6 +156,7 @@ const App = () => (
                       <Route path="history" element={<AgentTransactionHistory />} />
                       <Route path="bank" element={<AgentBankTransfer />} />
                       <Route path="analytics" element={<AgentAnalyticsPage />} />
+                      <Route path="statement" element={<AgentStatement />} />
                     </Route>
 
                     <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} />}>
