@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck } from "lucide-react";
+import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck, MessageSquare, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 import { signIn, changePin as changePinAuth } from "@/lib/auth";
 import { isWeakPin } from "@/lib/pinValidation";
+import { supabase } from "@/integrations/supabase/client";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const getPhone = () => localStorage.getItem("mfs_device_phone") ?? "";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = "current" | "new" | "confirm" | "success";
+type Step = "current" | "otp" | "new" | "confirm" | "success";
 
 // ─── Slide animation ──────────────────────────────────────────────────────────
 const slideVariants = {
@@ -100,6 +102,9 @@ const PinField = ({ value, onChange, gradient, error, autoFocus }: PinFieldProps
 // ─── Main component ───────────────────────────────────────────────────────────
 interface ChangePinFlowProps { onClose: () => void; }
 
+const OTP_PURPOSE = "pin_reset";
+const RESEND_SECONDS = 60;
+
 const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const { t } = useI18n();
   const [step, setStep]         = useState<Step>("current");
@@ -109,15 +114,31 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError]       = useState("");
 
-  const STEPS: Step[] = ["current", "new", "confirm"];
+  // OTP state
+  const [otp, setOtp] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState(0);
+
+  const STEPS: Step[] = ["current", "otp", "new", "confirm"];
   const stepIndex = STEPS.indexOf(step);
 
   const stepMeta = {
     current: { heading: t("enterCurrentPin"), sub: t("confirmCurrentPinSub"), gradient: "gradient-send", iconGradient: "gradient-send" },
+    otp:     { heading: "Verify it's you", sub: `Enter the 6-digit code we sent to ${getPhone() || "your phone"}`, gradient: "gradient-send", iconGradient: "gradient-send" },
     new:     { heading: t("setNewPin"), sub: t("chooseStrongPin"), gradient: "gradient-primary", iconGradient: "gradient-primary" },
     confirm: { heading: t("confirmNewPin"), sub: t("reenterNewPin"), gradient: "gradient-addmoney", iconGradient: "gradient-addmoney" },
     success: { heading: "", sub: "", gradient: "", iconGradient: "" },
   };
+
+  // Resend countdown
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendIn]);
 
   const goTo = (next: Step, dir = 1) => {
     haptics.medium();
@@ -129,8 +150,56 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const goBack = () => {
     haptics.medium();
     if (step === "current") { onClose(); return; }
-    if (step === "new")     { setCurrentPin(""); goTo("current", -1); return; }
+    if (step === "otp")     { setOtp(""); setOtpError(""); goTo("current", -1); return; }
+    if (step === "new")     { setCurrentPin(""); setOtp(""); goTo("current", -1); return; }
     if (step === "confirm") { setNewPin(""); goTo("new", -1); return; }
+  };
+
+  const sendOtp = async () => {
+    const phone = getPhone();
+    if (!phone) { setOtpError("Missing phone number"); return; }
+    setOtpSending(true); setOtpError(""); setDevOtp(null);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke("send-otp", {
+        body: { phone, purpose: OTP_PURPOSE },
+      });
+      if (invokeErr) throw invokeErr;
+      const payload = data as any;
+      if (payload?.error) throw new Error(payload.error);
+      if (payload?.dev_otp) setDevOtp(String(payload.dev_otp));
+      setResendIn(RESEND_SECONDS);
+    } catch (err: any) {
+      setOtpError(err?.message || "Failed to send code");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const verifyOtp = async (code: string) => {
+    const phone = getPhone();
+    if (!phone) return;
+    setOtpVerifying(true); setOtpError("");
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke("verify-otp", {
+        body: { phone, code, purpose: OTP_PURPOSE },
+      });
+      if (invokeErr) throw invokeErr;
+      const payload = data as any;
+      if (!payload?.verified) {
+        haptics.error();
+        setOtpError(payload?.error || "Incorrect code");
+        setTimeout(() => setOtp(""), 500);
+        return;
+      }
+      haptics.success();
+      goTo("new");
+    } catch (err: any) {
+      haptics.error();
+      setOtpError(err?.message || "Verification failed");
+      setTimeout(() => setOtp(""), 500);
+    } finally {
+      setOtpVerifying(false);
+    }
   };
 
   const handleCurrentPin = (p: string) => {
@@ -141,14 +210,25 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       setTimeout(async () => {
         try {
           await signIn(getPhone(), p);
-          goTo("new");
+          // Advance to OTP step and trigger send
+          goTo("otp");
           setCurrentPin("");
+          sendOtp();
         } catch {
           haptics.error();
           setError(t("incorrectPin"));
           setTimeout(() => setCurrentPin(""), 600);
         }
       }, 280);
+    }
+  };
+
+  const handleOtpChange = (v: string) => {
+    const clean = v.replace(/\D/g, "").slice(0, 6);
+    setOtp(clean);
+    setOtpError("");
+    if (clean.length === 6 && !otpVerifying) {
+      verifyOtp(clean);
     }
   };
 
@@ -263,6 +343,68 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                 <p className="text-center text-xs text-muted-foreground px-4">
                   {t("demoPin")} <span className="font-mono font-bold text-foreground">1234</span>
                 </p>
+              </div>
+            )}
+
+            {step === "otp" && (
+              <div className="flex flex-col gap-7 pt-10 pb-8">
+                <div className="text-center space-y-2 px-4">
+                  <div className="w-14 h-14 gradient-send rounded-2xl flex items-center justify-center text-primary-foreground mx-auto shadow-glow">
+                    <MessageSquare size={26} />
+                  </div>
+                  <h2 className="text-xl font-bold text-foreground">{stepMeta.otp.heading}</h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">{stepMeta.otp.sub}</p>
+                </div>
+
+                <div className="flex flex-col items-center gap-3 px-4">
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={handleOtpChange}
+                    disabled={otpVerifying || otpSending}
+                    autoFocus
+                  >
+                    <InputOTPGroup className="gap-1.5">
+                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                        <InputOTPSlot
+                          key={i}
+                          index={i}
+                          className={`w-10 h-12 text-lg font-bold ${otpError ? "border-destructive" : ""}`}
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
+
+                  {otpSending && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <Loader2 size={12} className="animate-spin" /> Sending code…
+                    </p>
+                  )}
+                  {otpVerifying && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <Loader2 size={12} className="animate-spin" /> Verifying…
+                    </p>
+                  )}
+                  {otpError && (
+                    <p className="text-xs text-destructive flex items-center gap-1.5">
+                      <AlertCircle size={12} /> {otpError}
+                    </p>
+                  )}
+                  {devOtp && (
+                    <p className="text-[10px] text-amber-500 font-mono">DEV code: {devOtp}</p>
+                  )}
+                </div>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={sendOtp}
+                    disabled={otpSending || resendIn > 0}
+                    className="text-xs font-semibold text-primary disabled:text-muted-foreground disabled:opacity-60"
+                  >
+                    {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
+                  </button>
+                </div>
               </div>
             )}
 
