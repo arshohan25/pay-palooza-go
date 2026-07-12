@@ -6,6 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 interface PendingRow {
   id: string;
@@ -24,6 +29,8 @@ export default function AdminPendingAddMoney() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [confirmReject, setConfirmReject] = useState<{ mode: "one"; id: string } | { mode: "bulk" } | null>(null);
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -121,13 +128,14 @@ export default function AdminPendingAddMoney() {
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw size={14} className={`mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
           </Button>
-          <Button size="sm" variant="destructive" onClick={bulkReject} disabled={busy || selected.size === 0} data-testid="bulk-reject">
+          <Button size="sm" variant="destructive" onClick={() => setConfirmReject({ mode: "bulk" })} disabled={busy || selected.size === 0} data-testid="bulk-reject">
             <XCircle size={14} className="mr-1" /> Bulk Reject ({selected.size})
           </Button>
           <Button size="sm" onClick={bulkApprove} disabled={busy || selected.size === 0} className="bg-emerald-600 hover:bg-emerald-700">
             {busy ? <Loader2 size={14} className="animate-spin mr-1" /> : <CheckCircle2 size={14} className="mr-1" />}
             Bulk Approve ({selected.size}) · ৳{totalSelected.toLocaleString()}
           </Button>
+
         </div>
       </div>
 
@@ -166,7 +174,7 @@ export default function AdminPendingAddMoney() {
                         size="sm"
                         variant="ghost"
                         className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                        onClick={() => rejectOne(r.id)}
+                        onClick={() => setConfirmReject({ mode: "one", id: r.id })}
                         disabled={busy}
                         data-testid={`reject-${r.id}`}
                       >
@@ -180,6 +188,40 @@ export default function AdminPendingAddMoney() {
           </div>
         </>
       )}
+
+      <AlertDialog open={!!confirmReject} onOpenChange={(o) => !o && setConfirmReject(null)}>
+        <AlertDialogContent data-testid="reject-confirm-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmReject?.mode === "bulk"
+                ? `Reject ${selected.size} pending request${selected.size === 1 ? "" : "s"}?`
+                : "Reject this pending request?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the request{confirmReject?.mode === "bulk" ? "s" : ""} as rejected and notify the user. Your admin account and the rejection time will be recorded in history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="reject-confirm-action"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async (e) => {
+                e.preventDefault();
+                const c = confirmReject;
+                setConfirmReject(null);
+                if (!c) return;
+                if (c.mode === "one") await rejectOne(c.id);
+                else await bulkReject();
+              }}
+            >
+              {busy ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
+              Confirm reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
