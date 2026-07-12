@@ -30,6 +30,7 @@ const AgentBankTransfer = lazy(() => import("./pages/AgentBankTransfer"));
 const AgentAnalyticsPage = lazy(() => import("./pages/AgentAnalyticsPage"));
 const AgentStatement = lazy(() => import("./pages/AgentStatement"));
 const AgentSecurity = lazy(() => import("./pages/AgentSecurity"));
+const AgentDisputes = lazy(() => import("./pages/AgentDisputes"));
 const DistributorDashboard = lazy(() => import("./pages/DistributorDashboard"));
 const DistributorCreateAgent = lazy(() => import("./pages/DistributorCreateAgent"));
 const SuperDistributorDashboard = lazy(() => import("./pages/SuperDistributorDashboard"));
