@@ -118,6 +118,7 @@ const Index = () => {
   const [sendMoneyPrefilledPhone, setSendMoneyPrefilledPhone] = useState<string | undefined>(undefined);
   const [sendMoneyOnComplete, setSendMoneyOnComplete] = useState<((amount: number) => void) | undefined>(undefined);
   const [showCashOut, setShowCashOut]     = useState(false);
+  const [cashOutPrefilledAgent, setCashOutPrefilledAgent] = useState<string | undefined>(undefined);
   const [showPayment, setShowPayment]     = useState(false);
   const [paymentPrefilledMerchant, setPaymentPrefilledMerchant] = useState<string | undefined>(undefined);
   const [showRecharge, setShowRecharge]   = useState(false);
@@ -692,7 +693,7 @@ const Index = () => {
       <Suspense fallback={null}>
         <AnimatePresence mode="wait" initial={false}>
           {showSendMoney && <SendMoneyFlow key="send-money-flow" prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
-          {showCashOut   && <CashOutFlow key="cash-out-flow" onClose={() => setShowCashOut(false)} />}
+          {showCashOut   && <CashOutFlow key="cash-out-flow" prefilledAgentId={cashOutPrefilledAgent} onClose={() => { setShowCashOut(false); setCashOutPrefilledAgent(undefined); }} />}
           {showPayment   && <PaymentFlow key="payment-flow" prefilledMerchantId={paymentPrefilledMerchant} onClose={() => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); }} onDynamicQr={(session) => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); setDynamicQrSession(session); }} />}
           {showRecharge  && <MobileRechargeFlow key="recharge-flow" onClose={() => setShowRecharge(false)} />}
           {showPayBill   && <PayBillFlow key="paybill-flow" onClose={() => setShowPayBill(false)} />}
@@ -723,6 +724,9 @@ const Index = () => {
             } else if (parsed.flow === "payment") {
               setPaymentPrefilledMerchant(parsed.identifier);
               setShowPayment(true);
+            } else if (parsed.flow === "cashout") {
+              setCashOutPrefilledAgent(parsed.identifier);
+              setShowCashOut(true);
             } else if (parsed.flow === "send") {
               setSendMoneyPrefilledPhone(parsed.identifier);
               setShowSendMoney(true);
