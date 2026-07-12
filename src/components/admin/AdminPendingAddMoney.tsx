@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Loader2, RefreshCw } from "lucide-react";
+import { CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface PendingRow {
@@ -73,6 +73,41 @@ export default function AdminPendingAddMoney() {
     }
   };
 
+  const rejectOne = async (id: string) => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc("admin_reject_fund_request", {
+        p_request_id: id,
+        p_admin_note: "Rejected by admin",
+      });
+      if (error) throw error;
+      toast.success("Rejected");
+      setSelected(s => { const n = new Set(s); n.delete(id); return n; });
+      await load();
+    } catch (e: any) {
+      toast.error(e.message || "Reject failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const bulkReject = async () => {
+    if (selected.size === 0) return;
+    setBusy(true);
+    let ok = 0, fail = 0;
+    for (const id of [...selected]) {
+      const { error } = await supabase.rpc("admin_reject_fund_request", {
+        p_request_id: id,
+        p_admin_note: "Rejected by admin",
+      });
+      if (error) fail++; else ok++;
+    }
+    toast.success(`Rejected ${ok}${fail ? `, failed ${fail}` : ""}`);
+    setSelected(new Set());
+    await load();
+    setBusy(false);
+  };
+
   const totalSelected = rows.filter(r => selected.has(r.id)).reduce((s, r) => s + Number(r.amount), 0);
 
   return (
@@ -82,9 +117,12 @@ export default function AdminPendingAddMoney() {
           <h2 className="text-lg font-bold">Pending Add Money</h2>
           <p className="text-xs text-muted-foreground">{rows.length} pending · shows invoice ID for gateway matching</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw size={14} className={`mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+          <Button size="sm" variant="destructive" onClick={bulkReject} disabled={busy || selected.size === 0} data-testid="bulk-reject">
+            <XCircle size={14} className="mr-1" /> Bulk Reject ({selected.size})
           </Button>
           <Button size="sm" onClick={bulkApprove} disabled={busy || selected.size === 0} className="bg-emerald-600 hover:bg-emerald-700">
             {busy ? <Loader2 size={14} className="animate-spin mr-1" /> : <CheckCircle2 size={14} className="mr-1" />}
@@ -122,8 +160,18 @@ export default function AdminPendingAddMoney() {
                       </p>
                       <p className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end gap-1">
                       <p className="text-base font-bold">৳{Number(r.amount).toLocaleString()}</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                        onClick={() => rejectOne(r.id)}
+                        disabled={busy}
+                        data-testid={`reject-${r.id}`}
+                      >
+                        <XCircle size={12} className="mr-1" /> Reject
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

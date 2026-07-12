@@ -117,7 +117,22 @@ export default function AddMoneyStatusPage() {
       </Card>
 
       <div className="text-xs text-muted-foreground space-y-1 px-2">
-        <div className="flex justify-between"><span>Gateway Txn ID</span><span className="font-mono" data-testid="gateway-trx-id">{gatewayTrxId || row.transaction_id_proof || "—"}</span></div>
+        <div className="flex justify-between items-center gap-2">
+          <span>Gateway Txn ID</span>
+          {(() => {
+            const trx = gatewayTrxId || row.transaction_id_proof;
+            return trx ? (
+              <Link
+                to={`/admin?gateway_txn=${encodeURIComponent(trx)}#fund_requests`}
+                className="font-mono text-primary hover:underline truncate max-w-[60%] text-right"
+                data-testid="gateway-trx-id"
+                title="Open in admin fund requests"
+              >
+                {trx}
+              </Link>
+            ) : <span className="font-mono" data-testid="gateway-trx-id">—</span>;
+          })()}
+        </div>
         <div className="flex justify-between"><span>Method</span><span>{row.source_method || "—"}</span></div>
         <div className="flex justify-between"><span>Created</span><span>{new Date(row.created_at).toLocaleString()}</span></div>
       </div>

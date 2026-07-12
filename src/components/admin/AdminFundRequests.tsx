@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2, XCircle, Clock, Search, Filter, Image as ImageIcon,
-  ChevronDown, AlertCircle, Wallet, Landmark, ExternalLink, Radio,
+  ChevronDown, AlertCircle, Wallet, Landmark, ExternalLink, Radio, Download,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminIncomingMfs from "./AdminIncomingMfs";
@@ -97,6 +97,13 @@ export default function AdminFundRequests() {
     return () => { supabase.removeChannel(ch); };
   }, [fetchRequests]);
 
+  // Deep-link: /admin?gateway_txn=<id>#fund_requests populates the gateway search box.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const g = params.get("gateway_txn");
+    if (g) setGatewayTxnSearch(g);
+  }, []);
+
   const filtered = requests.filter(r => {
     if (filter !== "all" && r.status !== filter) return false;
     if (typeFilter !== "all" && r.type !== typeFilter) return false;
@@ -117,6 +124,37 @@ export default function AdminFundRequests() {
     }
     return true;
   });
+
+  const exportCsv = useCallback(() => {
+    const headers = [
+      "id", "created_at", "type", "status", "amount",
+      "user_name", "user_phone", "source_method",
+      "gateway_txn_id", "bank_name", "account_number", "account_holder",
+      "admin_note", "reviewed_at",
+    ];
+    const escape = (v: unknown) => {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [headers.join(",")];
+    filtered.forEach(r => {
+      const p = profiles[r.user_id];
+      lines.push([
+        r.id, r.created_at, r.type, r.status, r.amount,
+        p?.name ?? "", p?.phone ?? "", r.source_method ?? "",
+        r.transaction_id_proof ?? "", r.bank_name ?? "", r.account_number ?? "", r.account_holder ?? "",
+        r.admin_note ?? "", r.reviewed_at ?? "",
+      ].map(escape).join(","));
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fund-requests-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filtered.length} rows`);
+  }, [filtered, profiles]);
 
   const handleApprove = async () => {
     if (!approveTarget) return;
@@ -194,6 +232,9 @@ export default function AdminFundRequests() {
           Fund Requests
           {pendingCount > 0 && <Badge variant="destructive" className="text-xs">{pendingCount} pending</Badge>}
         </h2>
+        <Button size="sm" variant="outline" onClick={exportCsv} disabled={filtered.length === 0} data-testid="export-csv">
+          <Download size={14} className="mr-1" /> Export CSV ({filtered.length})
+        </Button>
       </div>
 
       {/* Filters */}
