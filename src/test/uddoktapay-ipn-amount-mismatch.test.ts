@@ -14,12 +14,12 @@ const selectMaybeSingle = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    rpc: (...a: any[]) => rpcMock(...a),
+    rpc: (name: string, args: unknown) => rpcMock(name, args),
     from: () => ({
       select: () => ({
         eq: () => ({ maybeSingle: () => selectMaybeSingle() }),
       }),
-      update: (...a: any[]) => updateMock(...a),
+      update: (patch: unknown) => updateMock(patch),
     }),
   },
 }));
