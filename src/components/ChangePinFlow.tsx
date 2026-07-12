@@ -177,7 +177,16 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
     if (step === "confirm") { setNewPin(""); goTo("new", -1); return; }
   };
 
+  const applyLockout = (minutes: number, message?: string) => {
+    const mins = Math.max(1, Number(minutes) || 15);
+    setLockedUntil(Date.now() + mins * 60 * 1000);
+    setOtpError(message || `Too many failed attempts. Try again in ${mins} minutes.`);
+    setOtp("");
+    haptics.error();
+  };
+
   const sendOtp = async () => {
+    if (isLocked) return;
     const phone = getPhone();
     if (!phone) { setOtpError("Missing phone number"); return; }
     setOtpSending(true); setOtpError(""); setDevOtp(null);
@@ -198,6 +207,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   };
 
   const verifyOtp = async (code: string) => {
+    if (isLocked) return;
     const phone = getPhone();
     if (!phone) return;
     setOtpVerifying(true); setOtpError("");
@@ -205,8 +215,22 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       const { data, error: invokeErr } = await supabase.functions.invoke("verify-otp", {
         body: { phone, code, purpose: OTP_PURPOSE },
       });
-      if (invokeErr) throw invokeErr;
-      const payload = data as any;
+
+      // Try to read payload from either successful data or the error response body
+      let payload: any = data;
+      if (invokeErr) {
+        const ctx: any = (invokeErr as any)?.context;
+        if (ctx && typeof ctx.json === "function") {
+          try { payload = await ctx.json(); } catch { /* ignore */ }
+        }
+        if (!payload) throw invokeErr;
+      }
+
+      if (payload?.locked) {
+        applyLockout(payload.retry_after_minutes ?? 15, payload.error);
+        return;
+      }
+
       if (!payload?.verified) {
         haptics.error();
         setOtpError(payload?.error || "Incorrect code");
@@ -223,6 +247,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       setOtpVerifying(false);
     }
   };
+
 
   const handleCurrentPin = (p: string) => {
     if (p.length > currentPin.length) haptics.light();
