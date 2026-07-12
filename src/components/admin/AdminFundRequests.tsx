@@ -232,6 +232,9 @@ export default function AdminFundRequests() {
           Fund Requests
           {pendingCount > 0 && <Badge variant="destructive" className="text-xs">{pendingCount} pending</Badge>}
         </h2>
+        <Button size="sm" variant="outline" onClick={exportCsv} disabled={filtered.length === 0} data-testid="export-csv">
+          <Download size={14} className="mr-1" /> Export CSV ({filtered.length})
+        </Button>
       </div>
 
       {/* Filters */}
