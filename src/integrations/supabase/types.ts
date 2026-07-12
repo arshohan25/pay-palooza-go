@@ -7029,6 +7029,14 @@ export type Database = {
         Returns: Json
       }
       admin_user_metrics: { Args: never; Returns: Json }
+      agent_cashout_confirm: {
+        Args: { p_amount: number; p_customer_phone: string; p_otp: string }
+        Returns: Json
+      }
+      agent_cashout_initiate: {
+        Args: { p_amount: number; p_customer_phone: string }
+        Returns: Json
+      }
       apply_loan: {
         Args: {
           p_amount: number
