@@ -229,6 +229,8 @@ const AgentRegister = () => {
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;
     setOtpValue("");
+    setOtpError(null);
+    setOtpAttempts(0);
     setSendingOtp(true);
     try {
       const cleanedPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
