@@ -186,6 +186,10 @@ const App = () => (
                           path="/__test/wallet-setup-harness"
                           element={<WalletSetupHarness />}
                         />
+                        <Route
+                          path="/__test/agent-kyc-harness"
+                          element={<AgentKycHarness />}
+                        />
                       </>
                     )}
                     <Route path="*" element={<NotFound />} />
