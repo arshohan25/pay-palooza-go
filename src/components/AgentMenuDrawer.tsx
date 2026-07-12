@@ -5,7 +5,7 @@ import {
   X, Camera, QrCode, ShieldCheck, BarChart3, Bell,
   LogOut, ChevronRight, Building2, Upload, Activity,
   Users, Languages, ArrowDownToLine, ArrowRightLeft, Banknote,
-  Receipt, UserPlus, History, Headphones, LayoutDashboard,
+  Receipt, UserPlus, History, Headphones, LayoutDashboard, CircleDollarSign,
   CheckCircle2, Clock, XCircle, ArrowUpRight, AlertTriangle, Search,
   RefreshCw, AlertCircle,
 } from "lucide-react";
