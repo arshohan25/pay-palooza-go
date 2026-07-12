@@ -174,7 +174,7 @@ export default function AdminPendingAddMoney() {
                         size="sm"
                         variant="ghost"
                         className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                        onClick={() => rejectOne(r.id)}
+                        onClick={() => setConfirmReject({ mode: "one", id: r.id })}
                         disabled={busy}
                         data-testid={`reject-${r.id}`}
                       >
