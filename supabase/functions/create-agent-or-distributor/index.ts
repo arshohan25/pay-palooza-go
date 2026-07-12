@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
       business_name,
       nid_number,
       territory_code,
+      route_code,
       trade_license,
       max_float,
       commission_rate,
