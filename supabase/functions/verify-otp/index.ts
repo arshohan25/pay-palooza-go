@@ -44,6 +44,43 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // ── Brute-force protection for pin_reset OTPs ─────────────────────────
+    // Track failed verifications via pin_reset_attempts. Lock after 5 failed
+    // attempts within a 15-minute rolling window.
+    const RATE_LIMITED_PURPOSES = new Set(["pin_reset"]);
+    const MAX_FAILED_ATTEMPTS = 5;
+    const LOCKOUT_WINDOW_MINUTES = 15;
+    const rateLimited = RATE_LIMITED_PURPOSES.has(validPurpose);
+    if (rateLimited) {
+      const windowStart = new Date(
+        Date.now() - LOCKOUT_WINDOW_MINUTES * 60 * 1000,
+      ).toISOString();
+      const { count: failedCount } = await supabaseAdmin
+        .from("pin_reset_attempts")
+        .select("*", { count: "exact", head: true })
+        .eq("phone", phone)
+        .eq("success", false)
+        .gte("attempted_at", windowStart);
+      if ((failedCount ?? 0) >= MAX_FAILED_ATTEMPTS) {
+        return new Response(
+          JSON.stringify({
+            verified: false,
+            locked: true,
+            error: `Too many failed attempts. Try again in ${LOCKOUT_WINDOW_MINUTES} minutes.`,
+            retry_after_minutes: LOCKOUT_WINDOW_MINUTES,
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    const recordFailure = async () => {
+      if (!rateLimited) return;
+      await supabaseAdmin
+        .from("pin_reset_attempts")
+        .insert({ phone, success: false });
+    };
+
     const { data: otpRecord, error: fetchError } = await supabaseAdmin
       .from("otp_codes")
       .select("id, code, expires_at")
@@ -57,17 +94,21 @@ Deno.serve(async (req) => {
     if (fetchError) throw fetchError;
 
     if (!otpRecord) {
+      await recordFailure();
       return new Response(JSON.stringify({ verified: false, error: "No pending OTP found. Please request again." }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     if (new Date(otpRecord.expires_at) < new Date()) {
+      await recordFailure();
       return new Response(JSON.stringify({ verified: false, error: "OTP has expired. Please request a new one." }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     if (otpRecord.code !== code) {
+      await recordFailure();
       return new Response(JSON.stringify({ verified: false, error: "Incorrect OTP code." }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
 
     await supabaseAdmin.from("otp_codes").update({ verified: true }).eq("id", otpRecord.id);
 
