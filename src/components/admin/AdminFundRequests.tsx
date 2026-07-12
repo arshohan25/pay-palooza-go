@@ -8,6 +8,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminIncomingMfs from "./AdminIncomingMfs";
 import AdminPendingAddMoney from "./AdminPendingAddMoney";
+import AdminReconcileRuns from "./AdminReconcileRuns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -166,10 +167,17 @@ export default function AdminFundRequests() {
         <TabsTrigger value="incoming" className="gap-1.5">
           <Radio size={12} /> Incoming MFS
         </TabsTrigger>
+        <TabsTrigger value="reconcile" className="gap-1.5">
+          Reconcile Runs
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="pending_addmoney">
         <AdminPendingAddMoney />
+      </TabsContent>
+
+      <TabsContent value="reconcile">
+        <AdminReconcileRuns />
       </TabsContent>
 
       <TabsContent value="requests">
