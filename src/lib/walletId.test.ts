@@ -7,6 +7,8 @@ import {
   extractWalletRoute,
   walletFormatHint,
   walletFormatError,
+  isKnownRouteCode,
+  KNOWN_ROUTE_CODES,
   WALLET_ID_RE,
   AGENT_WALLET_RE,
   MERCHANT_WALLET_RE,
