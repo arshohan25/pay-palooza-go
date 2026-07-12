@@ -21,6 +21,7 @@ const AdminDashboard = lazy(() => retryLazyImport(() => import("./pages/AdminDas
 const AdminUserProfilePage = lazy(() => import("./pages/AdminUserProfilePage"));
 const AgentDashboard = lazy(() => import("./pages/AgentDashboard"));
 const AgentCashIn = lazy(() => import("./pages/AgentCashIn"));
+const AgentCashOut = lazy(() => import("./pages/AgentCashOut"));
 const AgentB2B = lazy(() => import("./pages/AgentB2B"));
 const AgentRegister = lazy(() => import("./pages/AgentRegister"));
 const AgentBillPay = lazy(() => import("./pages/AgentBillPay"));
