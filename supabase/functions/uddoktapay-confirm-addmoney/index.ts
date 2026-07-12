@@ -67,19 +67,45 @@ Deno.serve(async (req) => {
       return json({ error: "verify failed" }, 502);
     }
     const status = String(verified?.status ?? "").toUpperCase();
+    const gatewayTrxId: string | null =
+      verified?.transaction_id ?? verified?.trx_id ?? verified?.trxID ?? null;
+    const paidAmount = Number(verified?.amount ?? 0);
     if (status !== "COMPLETED") {
       return json({ ok: true, status, credited: false });
     }
+    // Amount guard: refuse to credit if gateway amount doesn't match the request.
+    if (!Number.isFinite(paidAmount) || Math.abs(paidAmount - Number(fr.amount)) > 0.01) {
+      console.error("uddoktapay amount mismatch", { paidAmount, expected: fr.amount, requestId });
+      await admin
+        .from("fund_requests")
+        .update({
+          admin_note:
+            `[uddoktapay amount mismatch: paid=${paidAmount} expected=${fr.amount} invoice=${invoiceId} trx=${gatewayTrxId ?? "-"}]`,
+        })
+        .eq("id", requestId);
+      return json({ ok: false, error: "amount_mismatch", paid: paidAmount, expected: Number(fr.amount) }, 409);
+    }
 
+    // Record both invoice id and the gateway trx id (bKash/Nagad/etc trxID) so
+    // admin history shows the real payment reference, not just the invoice.
+    const gatewayRef = gatewayTrxId
+      ? `invoice=${invoiceId} trx=${gatewayTrxId}`
+      : String(invoiceId);
     const { data: approved, error: rpcErr } = await admin.rpc(
       "system_approve_addmoney_request",
-      { p_request_id: requestId, p_gateway_ref: String(invoiceId) },
+      { p_request_id: requestId, p_gateway_ref: gatewayRef },
     );
     if (rpcErr) {
       console.error("system_approve_addmoney_request failed", rpcErr);
       return json({ error: rpcErr.message }, 500);
     }
-    return json({ ok: true, status: "COMPLETED", credited: true, addmoney: approved });
+    if (gatewayTrxId) {
+      await admin
+        .from("fund_requests")
+        .update({ transaction_id_proof: String(gatewayTrxId) })
+        .eq("id", requestId);
+    }
+    return json({ ok: true, status: "COMPLETED", credited: true, gateway_trx_id: gatewayTrxId, addmoney: approved });
   } catch (e) {
     console.error("uddoktapay-confirm-addmoney error", e);
     return json({ error: (e as Error).message }, 500);

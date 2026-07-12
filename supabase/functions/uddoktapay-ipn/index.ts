@@ -51,15 +51,42 @@ Deno.serve(async (req) => {
         console.log("uddoktapay-ipn addmoney non-terminal", status);
         return json({ ok: true, status });
       }
+      const gatewayTrxId: string | null =
+        verified?.transaction_id ?? verified?.trx_id ?? verified?.trxID ?? null;
+      // Load the request so we can verify the gateway amount matches.
+      const { data: fr } = await admin
+        .from("fund_requests")
+        .select("id,amount,status")
+        .eq("id", requestId)
+        .maybeSingle();
+      if (!fr) return json({ error: "Request not found" }, 404);
+      if (!Number.isFinite(amount) || Math.abs(amount - Number(fr.amount)) > 0.01) {
+        console.error("uddoktapay-ipn amount mismatch", { paid: amount, expected: fr.amount, requestId });
+        await admin
+          .from("fund_requests")
+          .update({
+            admin_note:
+              `[uddoktapay amount mismatch: paid=${amount} expected=${fr.amount} invoice=${invoiceId} trx=${gatewayTrxId ?? "-"}]`,
+          })
+          .eq("id", requestId);
+        return json({ ok: false, error: "amount_mismatch" }, 409);
+      }
+      const gatewayRef = gatewayTrxId ? `invoice=${invoiceId} trx=${gatewayTrxId}` : String(invoiceId);
       const { data, error } = await admin.rpc("system_approve_addmoney_request", {
         p_request_id: requestId,
-        p_gateway_ref: invoiceId,
+        p_gateway_ref: gatewayRef,
       });
       if (error) {
         console.error("system_approve_addmoney_request failed", error);
         return json({ error: error.message }, 500);
       }
-      return json({ ok: true, addmoney: data });
+      if (gatewayTrxId) {
+        await admin
+          .from("fund_requests")
+          .update({ transaction_id_proof: String(gatewayTrxId) })
+          .eq("id", requestId);
+      }
+      return json({ ok: true, addmoney: data, gateway_trx_id: gatewayTrxId });
     }
 
     const linkId = metadata?.link_id;
