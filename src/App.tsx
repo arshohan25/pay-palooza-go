@@ -74,6 +74,7 @@ const AdminMcpActivityLog = lazy(() => import("./pages/AdminMcpActivityLog"));
 const PaymentPopupPage = lazy(() => import("./pages/PaymentPopupPage"));
 const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
 const AddMoneyStatusPage = lazy(() => import("./pages/AddMoneyStatusPage"));
+const ForgotPinPage = lazy(() => import("./pages/ForgotPinPage"));
 
 
 
@@ -141,6 +142,7 @@ const App = () => (
                     <Route path="/payment-return" element={<PaymentReturnPage />} />
                     <Route path="/addmoney/status" element={<AddMoneyStatusPage />} />
                     <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+                    <Route path="/forgot-pin" element={<ForgotPinPage />} />
 
 
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />

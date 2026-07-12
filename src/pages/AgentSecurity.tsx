@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, KeyRound, Smartphone, LogOut, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Shield, KeyRound, Smartphone, LogOut, CheckCircle2, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -127,6 +127,21 @@ const AgentSecurity = () => {
             <span className="text-muted-foreground text-lg">›</span>
           </button>
         </Card>
+
+        {/* Forgot PIN */}
+        <Card className="p-4 border-0 shadow-elevated rounded-2xl">
+          <button onClick={() => navigate("/forgot-pin")} className="w-full flex items-center gap-3 text-left">
+            <div className="w-11 h-11 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive">
+              <HelpCircle size={18} />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-foreground">Forgot PIN?</p>
+              <p className="text-[11px] text-muted-foreground">Reset with OTP verification if you can't remember it</p>
+            </div>
+            <span className="text-muted-foreground text-lg">›</span>
+          </button>
+        </Card>
+
 
         {/* Sessions */}
         <Card className="p-4 border-0 shadow-elevated rounded-2xl space-y-3">

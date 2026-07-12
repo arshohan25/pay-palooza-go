@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck, MessageSquare, Loader2, ShieldAlert, Timer } from "lucide-react";
+import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck, MessageSquare, Loader2, ShieldAlert, Timer, HelpCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 import { signIn, changePin as changePinAuth } from "@/lib/auth";
 import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useOtpLockout, parseLockout } from "@/hooks/use-otp-lockout";
 
 const getPhone = () => localStorage.getItem("mfs_device_phone") ?? "";
 
@@ -121,8 +122,22 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [devOtp, setDevOtp] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
-  const [lockedUntil, setLockedUntil] = useState<number | null>(null); // epoch ms
-  const [lockedRemaining, setLockedRemaining] = useState(0); // seconds
+  const [showLockoutHelp, setShowLockoutHelp] = useState(false);
+
+  // Persisted OTP lockout (survives page refresh, scoped per phone)
+  const phoneForLockout = getPhone();
+  const lockout = useOtpLockout(phoneForLockout ? `pin_reset:${phoneForLockout}` : "");
+  const isLocked = lockout.isLocked;
+  const lockedRemaining = lockout.remainingSec;
+  const lockedMmSs = lockout.mmss;
+
+  // If lockout is (re)hydrated while user is on the OTP step, mirror the
+  // server error message so the alert stays informative.
+  useEffect(() => {
+    if (isLocked && lockout.message) setOtpError(lockout.message);
+    if (!isLocked && otpError === lockout.message) setOtpError("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLocked, lockout.message]);
 
   const STEPS: Step[] = ["current", "otp", "new", "confirm"];
   const stepIndex = STEPS.indexOf(step);
@@ -142,25 +157,6 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
     return () => clearInterval(t);
   }, [resendIn]);
 
-  // Lockout countdown
-  useEffect(() => {
-    if (!lockedUntil) { setLockedRemaining(0); return; }
-    const tick = () => {
-      const rem = Math.max(0, Math.ceil((lockedUntil - Date.now()) / 1000));
-      setLockedRemaining(rem);
-      if (rem === 0) { setLockedUntil(null); setOtpError(""); }
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [lockedUntil]);
-
-  const isLocked = lockedRemaining > 0;
-  const lockedMmSs = (() => {
-    const m = Math.floor(lockedRemaining / 60);
-    const s = lockedRemaining % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  })();
 
   const goTo = (next: Step, dir = 1) => {
     haptics.medium();
@@ -179,8 +175,11 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
   const applyLockout = (minutes: number, message?: string) => {
     const mins = Math.max(1, Number(minutes) || 15);
-    setLockedUntil(Date.now() + mins * 60 * 1000);
-    setOtpError(message || `Too many failed attempts. Try again in ${mins} minutes.`);
+    lockout.lock(
+      mins,
+      message || `Too many failed attempts. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`,
+    );
+    setOtpError(message || `Too many failed attempts. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`);
     setOtp("");
     haptics.error();
   };
@@ -420,7 +419,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                   </div>
                   <div className="w-full h-1 rounded-full bg-destructive/15 overflow-hidden mt-1">
                     <motion.div
-                      key={lockedUntil}
+                      key={lockedRemaining > 0 ? "on" : "off"}
                       initial={{ width: "100%" }}
                       animate={{ width: "0%" }}
                       transition={{ duration: lockedRemaining, ease: "linear" }}
@@ -428,6 +427,34 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                     />
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowLockoutHelp(v => !v)}
+                  className="mx-auto flex items-center gap-1.5 text-xs font-semibold text-primary"
+                >
+                  <HelpCircle size={13} /> Why is OTP locked?
+                </button>
+                <AnimatePresence>
+                  {showLockoutHelp && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mx-4 rounded-xl bg-muted/60 border border-border px-4 py-3 text-[11.5px] leading-relaxed text-muted-foreground space-y-1.5"
+                    >
+                      <p>
+                        For your protection, OTP verification is temporarily
+                        paused after several incorrect codes. This helps stop
+                        anyone from guessing your codes.
+                      </p>
+                      <p>
+                        Wait for the timer to end, then request a fresh code.
+                        If this keeps happening, contact support.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div className="text-center space-y-2">
                   <p className="text-xs text-muted-foreground">
@@ -442,6 +469,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                 </div>
               </div>
             )}
+
 
             {step === "otp" && !isLocked && (
               <div className="flex flex-col gap-7 pt-10 pb-8">
