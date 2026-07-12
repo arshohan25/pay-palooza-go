@@ -68,6 +68,8 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     updated_at: string | null;
   };
   const [kycCustomers, setKycCustomers] = useState<KycCustomer[]>([]);
+  const [kycLoading, setKycLoading] = useState(true);
+  const [kycLoaded, setKycLoaded] = useState(false);
   const [kycModal, setKycModal] = useState<null | "verified" | "pending" | "rejected">(null);
   const [kycSearch, setKycSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -90,10 +92,13 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
 
   const fetchCustomerKyc = useCallback(async () => {
     if (!user) return;
+    setKycLoading(true);
     const { data, error } = await (supabase as any).rpc("get_agent_customer_kyc", { _agent_id: user.id });
     if (!error && Array.isArray(data)) {
       setKycCustomers(data as KycCustomer[]);
     }
+    setKycLoading(false);
+    setKycLoaded(true);
   }, [user]);
 
   // Fetch + realtime subscribe so counts update automatically
@@ -414,113 +419,170 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
 
       {/* Customer KYC Sheet */}
       <Sheet open={kycSheetOpen} onOpenChange={setKycSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8">
+        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8" data-testid="customer-kyc-sheet">
           <SheetHeader className="mb-4">
             <SheetTitle className="text-base font-extrabold">{t("agCustomerKycStatus")}</SheetTitle>
           </SheetHeader>
-          <div className="space-y-4">
-            <Card className="p-5 border-0 shadow-card rounded-2xl text-center">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
-                <Users size={24} className="text-primary" />
-              </div>
-              <p className="text-3xl font-extrabold text-foreground">{kycCounts.total}</p>
-              <p className="text-xs text-muted-foreground font-semibold mt-1">{t("agCustomersOnboarded")}</p>
-            </Card>
 
-            {/* Customer KYC Status Summary */}
-            <div className="rounded-2xl border border-border/50 bg-gradient-to-br from-emerald-500/[0.06] via-muted/20 to-amber-500/[0.06] p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-foreground truncate">
-                    {lang === "bn" ? "গ্রাহক KYC স্ট্যাটাস" : "Customer KYC Status"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    {lang === "bn"
-                      ? `মোট ${kycCounts.total} জন গ্রাহক`
-                      : `${kycCounts.total} total customer${kycCounts.total === 1 ? "" : "s"}`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => { setKycSheetOpen(false); navigate("/agent/register"); }}
-                  className="flex items-center gap-1 px-2.5 h-7 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-[10.5px] font-bold shrink-0 transition-colors"
-                >
-                  {lang === "bn" ? "আপডেট" : "Update"}
-                  <ArrowUpRight size={11} strokeWidth={2.5} />
-                </button>
-              </div>
-              <TooltipProvider delayDuration={150}>
+          {kycLoading && !kycLoaded ? (
+            /* Loading state */
+            <div className="space-y-4" data-testid="customer-kyc-loading" aria-busy="true">
+              <Card className="p-5 border-0 shadow-card rounded-2xl text-center">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-muted animate-pulse mb-3" />
+                <div className="h-7 w-16 mx-auto bg-muted animate-pulse rounded mb-2" />
+                <div className="h-3 w-32 mx-auto bg-muted animate-pulse rounded" />
+              </Card>
+              <div className="rounded-2xl border border-border/50 bg-muted/20 p-3 space-y-2">
+                <div className="h-4 w-40 bg-muted animate-pulse rounded" />
                 <div className="grid grid-cols-3 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => { setKycSearch(""); setKycModal("verified"); }}
-                    className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2 text-center hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
-                  >
-                    <CheckCircle2 size={13} className="mx-auto text-emerald-500 mb-0.5" strokeWidth={2.4} />
-                    <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none">{kycCounts.verified}</p>
-                    <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
-                      {lang === "bn" ? "যাচাইকৃত" : "Verified"}
-                    </p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setKycSearch(""); setKycModal("pending"); }}
-                    className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2 text-center hover:bg-amber-500/15 active:scale-[0.98] transition-all"
-                  >
-                    <Clock size={13} className="mx-auto text-amber-500 mb-0.5" strokeWidth={2.4} />
-                    <p className="text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none">{kycCounts.pending}</p>
-                    <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
-                      {lang === "bn" ? "অপেক্ষমাণ" : "Pending"}
-                    </p>
-                  </button>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => { setKycSearch(""); setKycModal("rejected"); }}
-                        className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2 text-center hover:bg-rose-500/15 active:scale-[0.98] transition-all relative"
-                      >
-                        <XCircle size={13} className="mx-auto text-rose-500 mb-0.5" strokeWidth={2.4} />
-                        <p className="text-sm font-extrabold text-rose-600 dark:text-rose-400 leading-none">{kycCounts.rejected}</p>
-                        <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
-                          {lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected"}
-                        </p>
-                      </button>
-                    </TooltipTrigger>
-                    {latestRejection && (
-                      <TooltipContent side="top" className="max-w-[220px] text-[11px] leading-snug">
-                        <p className="font-bold mb-0.5">
-                          {lang === "bn" ? "সর্বশেষ প্রত্যাখ্যানের কারণ" : "Latest rejection reason"}
-                        </p>
-                        <p className="text-muted-foreground">
-                          {latestRejection.rejection_reason || (lang === "bn" ? "কোনো কারণ দেওয়া হয়নি" : "No reason provided")}
-                        </p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
+                  <div className="h-16 rounded-xl bg-muted animate-pulse" />
+                  <div className="h-16 rounded-xl bg-muted animate-pulse" />
+                  <div className="h-16 rounded-xl bg-muted animate-pulse" />
                 </div>
-              </TooltipProvider>
-
-              {latestRejection && kycCounts.rejected > 0 && (
-                <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-rose-500/8 border border-rose-500/20 px-2 py-1.5">
-                  <AlertTriangle size={11} className="text-rose-500 shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-snug">
-                    <span className="font-bold">
-                      {lang === "bn" ? "সর্বশেষ কারণ: " : "Latest reason: "}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {latestRejection.rejection_reason || (lang === "bn" ? "কারণ উল্লেখ করা হয়নি" : "No reason provided")}
-                    </span>
-                  </p>
-                </div>
-              )}
+              </div>
             </div>
+          ) : kycCounts.total === 0 ? (
+            /* Empty state */
+            <div className="space-y-4" data-testid="customer-kyc-empty">
+              <Card className="p-6 border-0 shadow-card rounded-2xl text-center">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+                  <Users size={24} className="text-primary" />
+                </div>
+                <p className="text-sm font-bold text-foreground">
+                  {lang === "bn" ? "এখনো কোনো গ্রাহক নেই" : "No customers yet"}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                  {lang === "bn"
+                    ? "নতুন গ্রাহক নিবন্ধন করলে তাদের KYC স্ট্যাটাস এখানে দেখা যাবে।"
+                    : "Register your first customer and their KYC status will appear here."}
+                </p>
+                <Button
+                  onClick={() => { setKycSheetOpen(false); navigate("/agent/register"); }}
+                  className="mt-4 h-10 rounded-xl gradient-primary text-primary-foreground font-bold text-xs px-4"
+                >
+                  {lang === "bn" ? "গ্রাহক নিবন্ধন করুন" : "Register a customer"}
+                </Button>
+              </Card>
+            </div>
+          ) : (
+            <div className="space-y-4" data-testid="customer-kyc-content">
+              <Card className="p-5 border-0 shadow-card rounded-2xl text-center">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+                  <Users size={24} className="text-primary" />
+                </div>
+                <p className="text-3xl font-extrabold text-foreground" data-testid="kyc-total-count">{kycCounts.total}</p>
+                <p className="text-xs text-muted-foreground font-semibold mt-1">{t("agCustomersOnboarded")}</p>
+              </Card>
 
-            <p className="text-[10px] text-muted-foreground text-center">
-              {t("agKycTrackingSoon")}
-            </p>
-          </div>
+              {/* Customer KYC Status Summary */}
+              <div className="rounded-2xl border border-border/50 bg-gradient-to-br from-emerald-500/[0.06] via-muted/20 to-amber-500/[0.06] p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-foreground truncate">
+                      {lang === "bn" ? "গ্রাহক KYC স্ট্যাটাস" : "Customer KYC Status"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {lang === "bn"
+                        ? `মোট ${kycCounts.total} জন গ্রাহক`
+                        : `${kycCounts.total} total customer${kycCounts.total === 1 ? "" : "s"}`}
+                    </p>
+                  </div>
+                  <button
+                    data-testid="kyc-update-btn"
+                    onClick={() => {
+                      setKycSheetOpen(false);
+                      // Ensure counts refresh when the agent returns from the update flow.
+                      const refresh = () => { fetchCustomerKyc(); window.removeEventListener("focus", refresh); };
+                      window.addEventListener("focus", refresh);
+                      navigate("/agent/register");
+                    }}
+                    className="flex items-center gap-1 px-2.5 h-7 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-[10.5px] font-bold shrink-0 transition-colors"
+                  >
+                    {lang === "bn" ? "আপডেট" : "Update"}
+                    <ArrowUpRight size={11} strokeWidth={2.5} />
+                  </button>
+                </div>
+                <TooltipProvider delayDuration={150}>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      data-testid="kyc-verified-tile"
+                      onClick={() => { setKycSearch(""); setKycModal("verified"); }}
+                      className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2 text-center hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
+                    >
+                      <CheckCircle2 size={13} className="mx-auto text-emerald-500 mb-0.5" strokeWidth={2.4} />
+                      <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none" data-testid="kyc-verified-count">{kycCounts.verified}</p>
+                      <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                        {lang === "bn" ? "যাচাইকৃত" : "Verified"}
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="kyc-pending-tile"
+                      onClick={() => { setKycSearch(""); setKycModal("pending"); }}
+                      className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2 text-center hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+                    >
+                      <Clock size={13} className="mx-auto text-amber-500 mb-0.5" strokeWidth={2.4} />
+                      <p className="text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none" data-testid="kyc-pending-count">{kycCounts.pending}</p>
+                      <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                        {lang === "bn" ? "অপেক্ষমাণ" : "Pending"}
+                      </p>
+                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          data-testid="kyc-rejected-tile"
+                          onClick={() => { setKycSearch(""); setKycModal("rejected"); }}
+                          className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2 text-center hover:bg-rose-500/15 active:scale-[0.98] transition-all relative"
+                        >
+                          <XCircle size={13} className="mx-auto text-rose-500 mb-0.5" strokeWidth={2.4} />
+                          <p className="text-sm font-extrabold text-rose-600 dark:text-rose-400 leading-none" data-testid="kyc-rejected-count">{kycCounts.rejected}</p>
+                          <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 truncate">
+                            {lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected"}
+                          </p>
+                        </button>
+                      </TooltipTrigger>
+                      {latestRejection && (
+                        <TooltipContent side="top" className="max-w-[220px] text-[11px] leading-snug">
+                          <p className="font-bold mb-0.5">
+                            {lang === "bn" ? "সর্বশেষ প্রত্যাখ্যানের কারণ" : "Latest rejection reason"}
+                          </p>
+                          <p className="text-muted-foreground">
+                            {latestRejection.rejection_reason || (lang === "bn" ? "কোনো কারণ দেওয়া হয়নি" : "No reason provided")}
+                          </p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+
+                {latestRejection && kycCounts.rejected > 0 && (
+                  <div
+                    className="mt-2 flex items-start gap-1.5 rounded-lg bg-rose-500/8 border border-rose-500/20 px-2 py-1.5"
+                    data-testid="kyc-latest-rejection"
+                  >
+                    <AlertTriangle size={11} className="text-rose-500 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-snug">
+                      <span className="font-bold">
+                        {lang === "bn" ? "সর্বশেষ কারণ: " : "Latest reason: "}
+                      </span>
+                      <span className="text-muted-foreground" data-testid="kyc-latest-rejection-reason">
+                        {latestRejection.rejection_reason || (lang === "bn" ? "কারণ উল্লেখ করা হয়নি" : "No reason provided")}
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                {t("agKycTrackingSoon")}
+              </p>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
+
 
       {/* Notifications Preferences Sheet */}
       <Sheet open={notifSheetOpen} onOpenChange={setNotifSheetOpen}>
