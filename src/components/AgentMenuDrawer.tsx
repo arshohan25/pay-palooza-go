@@ -285,7 +285,11 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     setSigningOut(true);
     try {
       await signOut();
-      navigate("/");
+      const { getBoundAppRole, getLoginPathForRole } = await import("@/lib/appRole");
+      const appRole = getBoundAppRole();
+      const target = appRole ? getLoginPathForRole(appRole) : "/login/agent";
+      // Hard redirect so all in-memory auth state is cleared.
+      window.location.href = target;
     } finally {
       setSigningOut(false);
       setLogoutOpen(false);
