@@ -13,6 +13,7 @@ import {
 } from "@/lib/appRole";
 
 const AuthPage = lazy(() => import("@/pages/AuthPage"));
+const AgentLoginPage = lazy(() => import("@/pages/AgentLoginPage"));
 
 const ROLE_META: Record<
   AppRoleKey,
