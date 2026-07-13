@@ -118,19 +118,36 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
                 {userName}
               </h2>
 
-              <button
-                onClick={handleCopy}
-                className="mt-2 inline-flex items-center gap-2 bg-muted border border-border rounded-full px-3.5 py-1.5 active:scale-95 transition"
-              >
-                <span className="text-xs font-mono font-semibold tracking-[0.15em] text-foreground">
-                  {walletId}
-                </span>
-                {copied
-                  ? <CheckCheck size={13} className="text-primary" />
-                  : <Copy size={13} className="text-muted-foreground" />}
-              </button>
+              {/* Agent ID + Agent number — both bold, big, highlighted */}
+              <div className="w-full mt-4 space-y-2">
+                <button
+                  onClick={handleCopy}
+                  className="w-full flex items-center justify-between gap-3 bg-primary/10 border border-primary/20 rounded-2xl px-4 py-3 active:scale-[0.98] transition text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-primary/80 font-semibold">Agent ID</p>
+                    <p className="text-lg font-mono font-bold tracking-[0.12em] text-primary truncate">
+                      {walletId}
+                    </p>
+                  </div>
+                  {copied
+                    ? <CheckCheck size={18} className="text-primary shrink-0" />
+                    : <Copy size={18} className="text-primary/70 shrink-0" />}
+                </button>
 
-              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mt-3">
+                {(phone || profile.phone) && (
+                  <div className="w-full flex items-center justify-between gap-3 bg-muted border border-border rounded-2xl px-4 py-3">
+                    <div className="min-w-0 text-left">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Agent Number</p>
+                      <p className="text-lg font-bold tracking-wide text-foreground truncate">
+                        {phone || profile.phone}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mt-4">
                 {t(role === "agent" ? "scanToPayAgent" : role === "merchant" ? "scanToPayMerchant" : "scanToSendMoney")}
               </p>
             </div>
