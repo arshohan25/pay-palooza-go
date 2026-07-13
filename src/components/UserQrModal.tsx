@@ -88,61 +88,73 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-card rounded-t-3xl p-6 pb-8 space-y-6"
+            className="w-full max-w-md bg-card rounded-t-[32px] px-8 pt-3 pb-8"
           >
-            <div className="w-10 h-1 rounded-full bg-border mx-auto" />
+            {/* Drag handle */}
+            <div className="flex justify-center pb-2">
+              <div className="w-12 h-1.5 bg-border rounded-full" />
+            </div>
 
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-muted-foreground tracking-wide uppercase">{t("myQrCode")}</h3>
+            {/* Close */}
+            <div className="flex justify-end -mt-1">
               <button
                 onClick={onClose}
+                aria-label="Close"
                 className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition"
               >
                 <X size={16} className="text-muted-foreground" />
               </button>
             </div>
 
-            {/* Identity block — name, wallet ID, tagline — centered above QR */}
-            <div className="flex flex-col items-center text-center space-y-2">
-              <p className="text-xl font-bold text-foreground leading-tight">{userName}</p>
-              <p className="text-base font-mono font-semibold tracking-[0.2em] text-primary">
-                {walletId}
-              </p>
-              <p className="text-xs text-muted-foreground max-w-[240px]">
+            {/* Identity block — avatar, name, wallet ID pill, tagline */}
+            <div className="flex flex-col items-center text-center pt-1">
+              <div className="w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center mb-3">
+                <span className="text-primary font-bold text-lg">
+                  {(userName || "?").trim().charAt(0).toUpperCase()}
+                </span>
+              </div>
+
+              <h2 className="text-xl font-bold text-foreground tracking-tight">
+                {userName}
+              </h2>
+
+              <button
+                onClick={handleCopy}
+                className="mt-2 inline-flex items-center gap-2 bg-muted border border-border rounded-full px-3.5 py-1.5 active:scale-95 transition"
+              >
+                <span className="text-xs font-mono font-semibold tracking-[0.15em] text-foreground">
+                  {walletId}
+                </span>
+                {copied
+                  ? <CheckCheck size={13} className="text-primary" />
+                  : <Copy size={13} className="text-muted-foreground" />}
+              </button>
+
+              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mt-3">
                 {t(role === "agent" ? "scanToPayAgent" : role === "merchant" ? "scanToPayMerchant" : "scanToSendMoney")}
               </p>
             </div>
 
-            {/* QR — centered, premium framed */}
-            <div className="flex justify-center">
-              <div className="relative p-5 bg-gradient-to-br from-background to-muted/40 rounded-3xl shadow-elevated border border-border">
-                <div className="absolute -top-px left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-                <canvas
-                  ref={canvasRef}
-                  width={200}
-                  height={200}
-                  className="rounded-xl block"
-                  style={{ imageRendering: "pixelated" }}
-                />
+            {/* QR — centered, framed like a certified stamp */}
+            <div className="flex justify-center mt-6">
+              <div className="relative">
+                <div className="absolute -inset-3 bg-primary/5 rounded-[36px]" />
+                <div className="relative bg-background p-5 rounded-3xl shadow-elevated border border-border">
+                  <canvas
+                    ref={canvasRef}
+                    width={200}
+                    height={200}
+                    className="rounded-xl block"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                </div>
               </div>
             </div>
 
-            <AnimatePresence>
-              {copied && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="text-xs text-primary text-center font-medium"
-                >
-                  {t("walletIdCopied")}
-                </motion.p>
-              )}
-            </AnimatePresence>
-
-            <div className="flex gap-3 pt-1">
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-3 mt-8">
               <Button
-                className="flex-1 h-12 gradient-primary border-0 text-white font-semibold rounded-2xl"
+                className="h-12 gradient-primary border-0 text-white font-semibold rounded-2xl shadow-lg shadow-primary/20"
                 onClick={handleCopy}
               >
                 {copied
@@ -151,7 +163,7 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
               </Button>
               <Button
                 variant="outline"
-                className="flex-1 h-12 font-semibold rounded-2xl"
+                className="h-12 font-semibold rounded-2xl"
                 onClick={handleShare}
               >
                 <Share2 size={16} /> {t("share")}
