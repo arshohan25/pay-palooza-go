@@ -345,8 +345,19 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
         return { value: normalizeAgentIdentifier(v) };
       }
     } catch {}
+    // Last-resort regex extraction — handles truncated / partially-typed JSON
+    // payloads (e.g. `{"app":"EasyPay","type":"agent","wallet` ) where JSON.parse
+    // fails but the raw text still contains a recognisable agent wallet id or
+    // Bangladeshi phone number.
+    if (s.length > 6) {
+      const wm = s.toUpperCase().match(/EZP-AGN[A-Z]{2}-[A-Z]{4}/);
+      if (wm) return { value: wm[0] };
+      const pm = s.match(/01[3-9]\d{8}/);
+      if (pm) return { value: pm[0] };
+    }
     return { value: s };
   };
+
 
   const handleQrScan = async (result: string) => {
     const { value: parsed, candidates, error: qrErr, name: qrName } = parseQrPayload(result);
@@ -628,13 +639,18 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
                         const raw = e.target.value;
                         if (raw.startsWith("{") || raw.startsWith("http")) {
                           const { value, error: qrErr } = parseQrPayload(raw);
-                          setAgentIdInput(value);
+                          // Only replace with extracted value if we actually pulled
+                          // out a phone or wallet id — otherwise keep raw so a
+                          // half-typed / half-pasted JSON can complete.
+                          const looksResolved = /^01[3-9]\d{8}$/.test(value) || /^EZP-[A-Z]{4,5}-[A-Z]{4}$/i.test(value);
+                          setAgentIdInput(looksResolved ? value : raw);
                           setError(qrErr || "");
                         } else {
                           setAgentIdInput(raw);
                           setError("");
                         }
                       }}
+
                       onPaste={(e) => {
                         const raw = e.clipboardData.getData("text");
                         if (raw && (raw.trim().startsWith("{") || raw.trim().startsWith("http"))) {
