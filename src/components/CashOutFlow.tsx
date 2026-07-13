@@ -353,7 +353,13 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
     const source = overrideAgentId ?? agentIdInput;
     const { value: trimmed, candidates, error: qrErr, name: qrName } = parseQrPayload(source);
     if (trimmed !== agentIdInput.trim()) setAgentIdInput(trimmed);
-    if (qrErr) { setError(qrErr); return; }
+    // If the user typed / pasted a bare phone or wallet-shaped value, ignore any
+    // "not an agent QR" verdict from the QR parser — the RPC is the source of
+    // truth for whether the recipient is an active agent. Only structured QR
+    // payloads (JSON / URL) should surface parser-level errors here.
+    const rawTrim = (source || "").trim();
+    const isBareInput = !/^[{\[]/.test(rawTrim) && !/^[a-z]+:\/\//i.test(rawTrim);
+    if (qrErr && !isBareInput) { setError(qrErr); return; }
     if (trimmed.length < 5) { setError(t("coEnterValidAgentId")); return; }
 
     setValidating(true);
