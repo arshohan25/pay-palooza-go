@@ -84,22 +84,22 @@ const AgentLoginPage = () => {
       </Helmet>
 
       {/* Header */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500 px-6 pt-10 pb-14 text-center">
+      <header className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500 px-6 pt-8 pb-8 text-center rounded-b-[28px]">
         <div className="absolute inset-0 opacity-20 pointer-events-none [background-image:radial-gradient(circle_at_20%_20%,white_1px,transparent_1px)] [background-size:22px_22px]" />
         <div className="relative">
-          <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3 shadow-lg">
-            <ShieldCheck size={28} />
+          <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-2 shadow-lg">
+            <ShieldCheck size={26} />
           </div>
-          <p className="text-xs uppercase tracking-[0.2em] opacity-80">EasyPay</p>
-          <h1 className="text-2xl font-extrabold mt-1">Agent Portal</h1>
-          <p className="text-sm opacity-90 mt-1">
+          <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">EasyPay</p>
+          <h1 className="text-xl font-extrabold mt-0.5">Agent Portal</h1>
+          <p className="text-xs opacity-90 mt-1 max-w-[280px] mx-auto">
             Sign in to serve customers — cash-in, cash-out & bill pay.
           </p>
         </div>
       </header>
 
       {/* Form card */}
-      <div className="flex-1 px-5 -mt-8">
+      <div className="flex-1 px-5 pt-5">
         <motion.form
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
