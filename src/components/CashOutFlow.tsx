@@ -590,23 +590,25 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
                       value={agentIdInput}
                       onChange={(e) => {
                         const raw = e.target.value;
-                        if (raw.startsWith("{") || raw.startsWith("http")) {
+                        const trimmed = raw.trim();
+                        const isStructured = trimmed.startsWith("{") || /^https?:\/\//i.test(trimmed);
+                        if (isStructured) {
                           const { value, error: qrErr } = parseQrPayload(raw);
-                          // Only replace with extracted value if we actually pulled
-                          // out a phone or wallet id — otherwise keep raw so a
-                          // half-typed / half-pasted JSON can complete.
                           const looksResolved = /^01[3-9]\d{8}$/.test(value) || /^EZP-[A-Z]{4,5}-[A-Z]{4}$/i.test(value);
                           setAgentIdInput(looksResolved ? value : raw);
                           setError(qrErr || "");
                         } else {
                           setAgentIdInput(raw);
+                          // Typing a bare phone / wallet id must always clear any
+                          // stale parser error left over from a previous scan.
                           setError("");
                         }
                       }}
 
                       onPaste={(e) => {
                         const raw = e.clipboardData.getData("text");
-                        if (raw && (raw.trim().startsWith("{") || raw.trim().startsWith("http"))) {
+                        const trimmed = (raw || "").trim();
+                        if (trimmed.startsWith("{") || /^https?:\/\//i.test(trimmed)) {
                           e.preventDefault();
                           const { value, error: qrErr } = parseQrPayload(raw);
                           setAgentIdInput(value);
