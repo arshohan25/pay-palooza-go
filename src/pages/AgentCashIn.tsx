@@ -68,6 +68,7 @@ const AgentCashIn = () => {
         p_reference: (() => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; })(),
       });
       if (error) throw error;
+      window.dispatchEvent(new Event("txn:refresh"));
       setStep("done");
       toast({ title: "Cash In Successful", description: `৳${amount} deposited to ${phone}` });
     } catch (err: any) {
