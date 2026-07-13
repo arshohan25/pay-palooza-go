@@ -45,10 +45,18 @@ describe("Agent QR → Cash Out (integration)", () => {
 
     it("has a cashout branch that opens Cash Out and never Send Money", () => {
       // Locate the switch on parsed.flow inside the QrScannerModal onScan.
+      // The branch must open Cash Out — either directly via setShowCashOut(true)
+      // or via the openCashOutFromQr helper (which itself calls setShowCashOut).
       const cashoutBranch = src.match(
-        /parsed\.flow === "cashout"[\s\S]{0,200}?setShowCashOut\(true\)/,
+        /parsed\.flow === "cashout"[\s\S]{0,200}?(setShowCashOut\(true\)|openCashOutFromQr\()/,
       );
-      expect(cashoutBranch, "cashout branch must call setShowCashOut(true)").not.toBeNull();
+      expect(
+        cashoutBranch,
+        "cashout branch must open Cash Out (setShowCashOut(true) or openCashOutFromQr())",
+      ).not.toBeNull();
+
+      // Confirm the helper itself opens Cash Out.
+      expect(src).toMatch(/openCashOutFromQr[\s\S]{0,300}setShowCashOut\(true\)/);
 
       // The same branch must NOT open Send Money.
       const branchText = cashoutBranch?.[0] ?? "";

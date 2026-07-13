@@ -113,9 +113,9 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
 );
 
 // ─── PaymentFlow ──────────────────────────────────────────────────────────────
-interface PaymentFlowProps { onClose: () => void; onDynamicQr?: (session: { sessionId: string; merchantId?: string; amount?: number; ref?: string | null }) => void; prefilledMerchantId?: string; }
+interface PaymentFlowProps { onClose: () => void; onDynamicQr?: (session: { sessionId: string; merchantId?: string; amount?: number; ref?: string | null }) => void; onRouteToCashOut?: (agentId: string) => void; prefilledMerchantId?: string; }
 
-const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowProps) => {
+const PaymentFlow = ({ onClose, onDynamicQr, onRouteToCashOut, prefilledMerchantId }: PaymentFlowProps) => {
   const { t } = useI18n();
   const [step, setStep]           = useState<Step>("merchant");
   const [direction, setDirection] = useState(1);
@@ -341,6 +341,13 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
         amount: parsed.amount,
         ref: parsed.ref,
       });
+      onClose();
+      return;
+    }
+
+    // Agent QR scanned inside Payment flow → route to Cash Out
+    if (parsed.flow === "cashout" && onRouteToCashOut) {
+      onRouteToCashOut(parsed.identifier);
       onClose();
       return;
     }
