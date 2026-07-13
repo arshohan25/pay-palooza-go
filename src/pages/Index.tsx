@@ -146,7 +146,8 @@ const Index = () => {
   const mainRef = useRef<HTMLElement>(null);
 
   const openCashOutFromQr = useCallback((agentId: string) => {
-    const cleanAgentId = agentId.trim();
+    const parsed = parseQrData(agentId);
+    const cleanAgentId = (parsed.flow === "cashout" && parsed.identifier ? parsed.identifier : agentId).trim();
     setShowScanPay(false);
     setShowSendMoney(false);
     setShowPayment(false);
@@ -756,7 +757,7 @@ const Index = () => {
                 });
                 const cashOutRes = parseRpcJson(cashOutData);
                 if (cashOutRes?.found) {
-                  openCashOutFromQr(cashOutRes.recipient_wallet_id || parsed.identifier);
+                  openCashOutFromQr(parsed.identifier || cashOutRes.recipient_phone || cashOutRes.recipient_wallet_id);
                   return;
                 }
               } catch {
@@ -773,7 +774,7 @@ const Index = () => {
                 });
                 const cashOutRes = parseRpcJson(cashOutData);
                 if (cashOutRes?.found) {
-                  openCashOutFromQr(cashOutRes.recipient_wallet_id || parsed.identifier);
+                  openCashOutFromQr(parsed.identifier || cashOutRes.recipient_phone || cashOutRes.recipient_wallet_id);
                   return;
                 }
 

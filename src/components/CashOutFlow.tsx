@@ -300,13 +300,16 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
    * Returns { value, error } where `error` is a translated user-facing message
    * when the payload is clearly the wrong kind of QR (merchant, personal, etc).
    */
-  const parseQrPayload = (raw: string): { value: string; error?: string; name?: string } => {
+  const parseQrPayload = (raw: string): { value: string; candidates?: string[]; error?: string; name?: string } => {
     const s = (raw || "").trim();
     if (!s) return { value: s };
 
     // Use shared parser first — it classifies the flow.
     const parsed = parseQrData(s);
-    if (parsed.flow === "cashout") return { value: normalizeAgentIdentifier(parsed.identifier), name: parsed.name };
+    if (parsed.flow === "cashout") {
+      const candidates = (parsed.candidates?.length ? parsed.candidates : [parsed.identifier]).map(normalizeAgentIdentifier);
+      return { value: candidates[0] || "", candidates, name: parsed.name };
+    }
     if (parsed.flow === "send" || parsed.flow === "payment" || parsed.flow === "dynamic_payment") {
       return { value: parsed.identifier || s, error: t("coQrNotAgent"), name: parsed.name };
     }
@@ -321,7 +324,8 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
           obj.PHONE || obj.phone || obj.identifier || "";
         if (val) {
           const v = String(val).trim();
-          if (AGENT_WALLET_RE.test(v.toUpperCase())) return { value: v.toUpperCase(), name: obj.name || obj.businessName || undefined };
+          const phone = String(obj.phone || obj.PHONE || obj.agentPhone || obj.agent_phone || "").trim();
+          if (AGENT_WALLET_RE.test(v.toUpperCase())) return { value: phone || v.toUpperCase(), candidates: [phone, v.toUpperCase()].filter(Boolean), name: obj.name || obj.businessName || undefined };
           if (WALLET_ID_RE.test(v)) return { value: v, error: t("coQrNotAgent") };
           return { value: v, name: obj.name || obj.businessName || undefined };
         }
@@ -345,26 +349,37 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
   };
 
   const handleQrScan = async (result: string) => {
-    const { value: parsed, error: qrErr, name: qrName } = parseQrPayload(result);
+    const { value: parsed, candidates, error: qrErr, name: qrName } = parseQrPayload(result);
     setAgentIdInput(parsed);
     if (qrErr) { setError(qrErr); return; }
     if (!parsed) { setError(t("coQrUnreadable")); return; }
     setValidating(true);
     setError("");
 
-    const walletErr = rejectIfWrongAgentWallet(parsed);
-    if (walletErr) { setValidating(false); setError(walletErr); return; }
-
-    const validation = await validateAgentExists(parsed);
+    const idsToTry = Array.from(new Set([parsed, ...(candidates || [])].map(normalizeAgentIdentifier).filter(Boolean)));
+    let validation: Awaited<ReturnType<typeof validateAgentExists>> | null = null;
+    let matchedIdentifier = parsed;
+    let walletErr: string | null = null;
+    for (const candidate of idsToTry) {
+      walletErr = rejectIfWrongAgentWallet(candidate);
+      if (walletErr) continue;
+      const attempt = await validateAgentExists(candidate);
+      if (attempt.exists) {
+        validation = attempt;
+        matchedIdentifier = candidate;
+        break;
+      }
+    }
     setValidating(false);
 
-    if (!validation.exists) {
+    if (!validation?.exists) {
+      if (walletErr && idsToTry.length === 1) { setError(walletErr); return; }
       setError(t("coAgentNotFound"));
       return;
     }
 
     setResolvedAgentPhone(validation.phone || "");
-    const displayId = validation.walletId || normalizeAgentIdentifier(parsed);
+    const displayId = validation.walletId || normalizeAgentIdentifier(matchedIdentifier);
     const found = recentAgents.find((a) => a.agentId.toLowerCase() === displayId.toLowerCase());
     if (found) {
       setAgent(found);
@@ -378,27 +393,37 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
 
   const handleAgentIdContinue = async (overrideAgentId?: string) => {
     const source = overrideAgentId ?? agentIdInput;
-    const { value: trimmed, error: qrErr, name: qrName } = parseQrPayload(source);
+    const { value: trimmed, candidates, error: qrErr, name: qrName } = parseQrPayload(source);
     if (trimmed !== agentIdInput.trim()) setAgentIdInput(trimmed);
     if (qrErr) { setError(qrErr); return; }
     if (trimmed.length < 5) { setError(t("coEnterValidAgentId")); return; }
 
-    const walletErr = rejectIfWrongAgentWallet(trimmed);
-    if (walletErr) { setError(walletErr); return; }
-
-
     setValidating(true);
     setError("");
-    const validation = await validateAgentExists(trimmed);
+    const idsToTry = Array.from(new Set([trimmed, ...(candidates || [])].map(normalizeAgentIdentifier).filter(Boolean)));
+    let validation: Awaited<ReturnType<typeof validateAgentExists>> | null = null;
+    let matchedIdentifier = trimmed;
+    let walletErr: string | null = null;
+    for (const candidate of idsToTry) {
+      walletErr = rejectIfWrongAgentWallet(candidate);
+      if (walletErr) continue;
+      const attempt = await validateAgentExists(candidate);
+      if (attempt.exists) {
+        validation = attempt;
+        matchedIdentifier = candidate;
+        break;
+      }
+    }
     setValidating(false);
 
-    if (!validation.exists) {
+    if (!validation?.exists) {
+      if (walletErr && idsToTry.length === 1) { setError(walletErr); return; }
       setError(t("coAgentNotFound"));
       return;
     }
 
     setResolvedAgentPhone(validation.phone || "");
-    const displayId = validation.walletId || normalizeAgentIdentifier(trimmed);
+    const displayId = validation.walletId || normalizeAgentIdentifier(matchedIdentifier);
     const found = recentAgents.find((a) => a.agentId.toLowerCase() === displayId.toLowerCase());
     if (found) {
       setAgent(found);

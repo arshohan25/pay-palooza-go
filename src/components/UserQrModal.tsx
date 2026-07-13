@@ -44,7 +44,7 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
       type: role,
       flow: role === "agent" ? "cashout" : role === "merchant" ? "payment" : "send",
       walletId,
-      ...(role === "agent" ? { agentId: walletId } : {}),
+      ...(role === "agent" && (phone || profile.phone) ? { identifier: phone || profile.phone, agentNumber: phone || profile.phone } : {}),
       ...(phone || profile.phone ? { phone: phone || profile.phone } : {}),
       name: userName,
     });
