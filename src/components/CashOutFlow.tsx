@@ -353,7 +353,13 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
     const source = overrideAgentId ?? agentIdInput;
     const { value: trimmed, candidates, error: qrErr, name: qrName } = parseQrPayload(source);
     if (trimmed !== agentIdInput.trim()) setAgentIdInput(trimmed);
-    if (qrErr) { setError(qrErr); return; }
+    // If the user typed / pasted a bare phone or wallet-shaped value, ignore any
+    // "not an agent QR" verdict from the QR parser — the RPC is the source of
+    // truth for whether the recipient is an active agent. Only structured QR
+    // payloads (JSON / URL) should surface parser-level errors here.
+    const rawTrim = (source || "").trim();
+    const isBareInput = !/^[{\[]/.test(rawTrim) && !/^[a-z]+:\/\//i.test(rawTrim);
+    if (qrErr && !isBareInput) { setError(qrErr); return; }
     if (trimmed.length < 5) { setError(t("coEnterValidAgentId")); return; }
 
     setValidating(true);
@@ -584,23 +590,25 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
                       value={agentIdInput}
                       onChange={(e) => {
                         const raw = e.target.value;
-                        if (raw.startsWith("{") || raw.startsWith("http")) {
+                        const trimmed = raw.trim();
+                        const isStructured = trimmed.startsWith("{") || /^https?:\/\//i.test(trimmed);
+                        if (isStructured) {
                           const { value, error: qrErr } = parseQrPayload(raw);
-                          // Only replace with extracted value if we actually pulled
-                          // out a phone or wallet id — otherwise keep raw so a
-                          // half-typed / half-pasted JSON can complete.
                           const looksResolved = /^01[3-9]\d{8}$/.test(value) || /^EZP-[A-Z]{4,5}-[A-Z]{4}$/i.test(value);
                           setAgentIdInput(looksResolved ? value : raw);
                           setError(qrErr || "");
                         } else {
                           setAgentIdInput(raw);
+                          // Typing a bare phone / wallet id must always clear any
+                          // stale parser error left over from a previous scan.
                           setError("");
                         }
                       }}
 
                       onPaste={(e) => {
                         const raw = e.clipboardData.getData("text");
-                        if (raw && (raw.trim().startsWith("{") || raw.trim().startsWith("http"))) {
+                        const trimmed = (raw || "").trim();
+                        if (trimmed.startsWith("{") || /^https?:\/\//i.test(trimmed)) {
                           e.preventDefault();
                           const { value, error: qrErr } = parseQrPayload(raw);
                           setAgentIdInput(value);
