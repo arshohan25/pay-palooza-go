@@ -234,7 +234,7 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
               )}
 
               {/* Actions */}
-              <div className="grid grid-cols-2 gap-3 mt-7">
+              <div className="grid grid-cols-3 gap-2 mt-7">
                 <Button
                   className="h-12 gradient-primary border-0 text-white font-semibold rounded-2xl shadow-lg shadow-primary/25"
                   onClick={handleCopy}
@@ -250,7 +250,15 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
                 >
                   <Share2 size={16} /> {t("share")}
                 </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 font-semibold rounded-2xl bg-background/60 backdrop-blur border-border/70"
+                  onClick={handlePrint}
+                >
+                  <Printer size={16} /> Print
+                </Button>
               </div>
+
             </div>
           </motion.div>
 
