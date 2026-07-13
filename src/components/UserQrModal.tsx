@@ -106,7 +106,7 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
               </button>
             </div>
 
-            {/* Identity block — avatar, name, wallet ID pill, tagline */}
+            {/* Identity block above QR — name + Agent ID (bold, big) */}
             <div className="flex flex-col items-center text-center pt-1">
               <div className="w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center mb-3">
                 <span className="text-primary font-bold text-lg">
@@ -118,42 +118,28 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
                 {userName}
               </h2>
 
-              {/* Agent ID + Agent number — both bold, big, highlighted */}
-              <div className="w-full mt-4 space-y-2">
-                <button
-                  onClick={handleCopy}
-                  className="w-full flex items-center justify-between gap-3 bg-primary/10 border border-primary/20 rounded-2xl px-4 py-3 active:scale-[0.98] transition text-left"
-                >
-                  <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-primary/80 font-semibold">Agent ID</p>
-                    <p className="text-lg font-mono font-bold tracking-[0.12em] text-primary truncate">
-                      {walletId}
-                    </p>
-                  </div>
-                  {copied
-                    ? <CheckCheck size={18} className="text-primary shrink-0" />
-                    : <Copy size={18} className="text-primary/70 shrink-0" />}
-                </button>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-primary/80 font-semibold mt-3">
+                Agent ID
+              </p>
+              <button
+                onClick={handleCopy}
+                className="mt-1 inline-flex items-center gap-2 active:scale-95 transition"
+              >
+                <span className="text-2xl font-mono font-extrabold tracking-[0.12em] text-primary">
+                  {walletId}
+                </span>
+                {copied
+                  ? <CheckCheck size={18} className="text-primary" />
+                  : <Copy size={16} className="text-primary/60" />}
+              </button>
 
-                {(phone || profile.phone) && (
-                  <div className="w-full flex items-center justify-between gap-3 bg-muted border border-border rounded-2xl px-4 py-3">
-                    <div className="min-w-0 text-left">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Agent Number</p>
-                      <p className="text-lg font-bold tracking-wide text-foreground truncate">
-                        {phone || profile.phone}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mt-4">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mt-3">
                 {t(role === "agent" ? "scanToPayAgent" : role === "merchant" ? "scanToPayMerchant" : "scanToSendMoney")}
               </p>
             </div>
 
             {/* QR — centered, framed like a certified stamp */}
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center mt-5">
               <div className="relative">
                 <div className="absolute -inset-3 bg-primary/5 rounded-[36px]" />
                 <div className="relative bg-background p-5 rounded-3xl shadow-elevated border border-border">
@@ -167,6 +153,18 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
                 </div>
               </div>
             </div>
+
+            {/* Agent Number — below the QR, bold + big */}
+            {(phone || profile.phone) && (
+              <div className="mt-6 flex flex-col items-center text-center">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
+                  Agent Number
+                </p>
+                <p className="text-2xl font-extrabold tracking-wide text-foreground mt-1">
+                  {phone || profile.phone}
+                </p>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="grid grid-cols-2 gap-3 mt-8">
