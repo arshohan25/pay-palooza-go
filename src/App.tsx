@@ -12,7 +12,10 @@ import AppLayout from "@/components/AppLayout";
 import RoleGuardLayout from "@/components/RoleGuardLayout";
 import RoleGuard from "@/components/RoleGuard";
 import MerchantSessionWatchdog from "@/components/MerchantSessionWatchdog";
+import AppRoleEnforcer from "@/components/AppRoleEnforcer";
 import LazyLoadErrorBoundary from "@/components/LazyLoadErrorBoundary";
+
+
 import MissingTranslationsBanner from "@/components/MissingTranslationsBanner";
 import { retryLazyImport } from "@/lib/cacheReset";
 
@@ -113,6 +116,8 @@ const App = () => (
             <MissingTranslationsBanner />
             <BrowserRouter>
               <MerchantSessionWatchdog />
+              <AppRoleEnforcer />
+
               <LazyLoadErrorBoundary>
                 <Suspense fallback={<LazyFallback />}>
                   <Routes>

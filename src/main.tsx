@@ -1,8 +1,12 @@
 import { captureInstallPrompt } from "./lib/installPromptStore";
 import { cleanupCacheRecoveryParams, clearPreviewCacheArtifacts, syncClientCacheVersion } from "./lib/cacheReset";
+import { captureAppRoleFromUrl } from "./lib/appRole";
 
 // Capture before React renders so the event is never lost
 captureInstallPrompt();
+// Persist ?app=<role> from PWA start_url so we can lock the app to that role
+captureAppRoleFromUrl();
+
 
 import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";

@@ -2,7 +2,7 @@
   "name": "EasyPay Agent",
   "short_name": "EP Agent",
   "description": "EasyPay Agent – Cash-in, cash-out, bill pay, and customer onboarding.",
-  "start_url": "/agent",
+  "start_url": "/agent?app=agent",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f3f4f8",

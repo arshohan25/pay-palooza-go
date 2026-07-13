@@ -2,7 +2,7 @@
   "name": "EasyPay Admin",
   "short_name": "EP Admin",
   "description": "EasyPay Admin Dashboard – Manage users, transactions, fraud alerts and platform settings.",
-  "start_url": "/admin",
+  "start_url": "/admin?app=admin",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f3f4f8",
