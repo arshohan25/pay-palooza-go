@@ -516,7 +516,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess, onRouteToCashOut }:
     const parsed = parseQrData(rawResult);
 
     // 🚫 Hard guard: agent/merchant QR codes must never be accepted in Send Money.
-    if (parsed.flow === "cashout") { setError(t("smQrIsAgent")); return; }
+    if (parsed.flow === "cashout") {
+      if (onRouteToCashOut) { onRouteToCashOut(parsed.identifier); onClose(); return; }
+      setError(t("smQrIsAgent")); return;
+    }
     if (parsed.flow === "payment" || parsed.flow === "dynamic_payment") {
       setError(t("smQrIsMerchant")); return;
     }
