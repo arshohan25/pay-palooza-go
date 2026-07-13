@@ -43,7 +43,7 @@ export default function AdminDistributorManagement() {
   // Create
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [createForm, setCreateForm] = useState({ phone: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000" });
+  const [createForm, setCreateForm] = useState<{ phone: string; business_name: string; territory: string; commission_rate: string; max_float: string; role: "distributor" | "super_distributor" }>({ phone: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" });
 
   // Edit inline
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -97,19 +97,39 @@ export default function AdminDistributorManagement() {
     setAgentsLoading(false);
   };
 
-  // Create distributor
+  // Create distributor (also supports super_distributor via createForm.role)
   const handleCreate = async () => {
     const phone = createForm.phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone"); return; }
     if (!createForm.business_name.trim()) { toast.error("Business name required"); return; }
+    const role = ((createForm as any).role === "super_distributor" ? "super_distributor" : "distributor") as "distributor" | "super_distributor";
     setCreating(true);
     try {
-      const pin = String(Math.floor(1000 + Math.random() * 9000));
-      const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: createForm.business_name });
-      if (!authData?.user) throw new Error("Account creation failed");
-      const userId = authData.user.id;
-      await supabase.from("profiles").update({ name: createForm.business_name, phone }).eq("user_id", userId);
-      await supabase.from("user_roles").insert({ user_id: userId, role: "distributor" } as any);
+      const { data: existingProfile } = await supabase
+        .from("profiles").select("user_id").eq("phone", phone).maybeSingle();
+
+      let userId: string;
+      let pin: string | null = null;
+
+      if (existingProfile?.user_id) {
+        userId = existingProfile.user_id;
+        const { data: existingDist } = await supabase
+          .from("distributors").select("id").eq("user_id", userId).maybeSingle();
+        if (existingDist) { toast.error("This user is already a distributor"); setCreating(false); return; }
+        await supabase.from("profiles").update({ name: createForm.business_name }).eq("user_id", userId);
+      } else {
+        pin = String(Math.floor(1000 + Math.random() * 9000));
+        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: createForm.business_name });
+        if (!authData?.user) throw new Error("Account creation failed");
+        userId = authData.user.id;
+        await supabase.from("profiles").update({ name: createForm.business_name, phone }).eq("user_id", userId);
+      }
+
+      const { data: hasRole } = await supabase
+        .from("user_roles").select("id").eq("user_id", userId).eq("role", role as any).maybeSingle();
+      if (!hasRole) {
+        await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
+      }
       await supabase.from("distributors").insert({
         user_id: userId,
         business_name: createForm.business_name.trim(),
@@ -120,11 +140,11 @@ export default function AdminDistributorManagement() {
       });
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "distributor_created", entity_type: "distributor", entity_id: userId, details: { business_name: createForm.business_name } }).then();
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `${role}_created`, entity_type: role, entity_id: userId, details: { business_name: createForm.business_name, promoted_existing: !pin } }).then();
       }
-      toast.success(`Distributor created! Temp PIN: ${pin}`, { duration: 10000 });
+      toast.success(pin ? `${role === "super_distributor" ? "Super distributor" : "Distributor"} created! Temp PIN: ${pin}` : `Existing user promoted to ${role.replace("_", " ")}`, { duration: 10000 });
       setCreateOpen(false);
-      setCreateForm({ phone: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000" });
+      setCreateForm({ phone: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
       load();
     } catch (err: any) {
       toast.error(err.message || "Failed to create distributor");
@@ -352,8 +372,15 @@ export default function AdminDistributorManagement() {
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Create New Distributor</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Create {createForm.role === "super_distributor" ? "Super Distributor" : "Distributor"}</DialogTitle></DialogHeader>
           <div className="space-y-3 pt-2 max-h-[60vh] overflow-y-auto">
+            <div>
+              <Label>Role</Label>
+              <div className="flex gap-2 mt-1">
+                <Button type="button" size="sm" variant={createForm.role === "distributor" ? "default" : "outline"} className="flex-1" onClick={() => setCreateForm(f => ({ ...f, role: "distributor" }))}>Distributor</Button>
+                <Button type="button" size="sm" variant={createForm.role === "super_distributor" ? "default" : "outline"} className="flex-1" onClick={() => setCreateForm(f => ({ ...f, role: "super_distributor" }))}>Super Distributor</Button>
+              </div>
+            </div>
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
             <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div><Label>Territory (comma separated)</Label><Input placeholder="DHK, CTG, SYL" value={createForm.territory} onChange={e => setCreateForm(f => ({ ...f, territory: e.target.value }))} /></div>
@@ -362,7 +389,7 @@ export default function AdminDistributorManagement() {
               <div><Label>Max Float (৳)</Label><Input type="number" value={createForm.max_float} onChange={e => setCreateForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
             <Button className="w-full" onClick={handleCreate} disabled={creating || !createForm.phone || !createForm.business_name.trim()}>
-              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Distributor"}
+              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : `Create ${createForm.role === "super_distributor" ? "Super Distributor" : "Distributor"}`}
             </Button>
           </div>
         </DialogContent>

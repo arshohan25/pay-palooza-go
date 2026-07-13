@@ -129,12 +129,36 @@ function AgentListTab() {
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone number"); return; }
     setCreating(true);
     try {
-      const pin = String(Math.floor(1000 + Math.random() * 9000));
-      const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: form.name || phone });
-      if (!authData?.user) throw new Error("Account creation failed");
-      const userId = authData.user.id;
-      await supabase.from("profiles").update({ name: form.name || null, phone }).eq("user_id", userId);
-      await supabase.from("user_roles").insert({ user_id: userId, role: "agent" } as any);
+      // Look up existing user by phone
+      const { data: existingProfile } = await supabase
+        .from("profiles").select("user_id").eq("phone", phone).maybeSingle();
+
+      let userId: string;
+      let pin: string | null = null;
+
+      if (existingProfile?.user_id) {
+        userId = existingProfile.user_id;
+        // Guard against duplicate agent row
+        const { data: existingAgent } = await supabase
+          .from("agents").select("id").eq("user_id", userId).maybeSingle();
+        if (existingAgent) { toast.error("This user is already an agent"); setCreating(false); return; }
+        if (form.name) {
+          await supabase.from("profiles").update({ name: form.name }).eq("user_id", userId);
+        }
+      } else {
+        pin = String(Math.floor(1000 + Math.random() * 9000));
+        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: form.name || phone });
+        if (!authData?.user) throw new Error("Account creation failed");
+        userId = authData.user.id;
+        await supabase.from("profiles").update({ name: form.name || null, phone }).eq("user_id", userId);
+      }
+
+      // Assign agent role (skip if already present)
+      const { data: hasRole } = await supabase
+        .from("user_roles").select("id").eq("user_id", userId).eq("role", "agent" as any).maybeSingle();
+      if (!hasRole) {
+        await supabase.from("user_roles").insert({ user_id: userId, role: "agent" } as any);
+      }
       await supabase.from("agents").insert({
         user_id: userId, business_name: form.business_name || null, territory_code: form.territory_code || null,
         nid_number: form.nid_number || null, trade_license: form.trade_license || null,
@@ -145,9 +169,9 @@ function AgentListTab() {
       } as any);
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_created", entity_type: "agent", entity_id: userId, details: { phone, business_name: form.business_name } }).then();
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_created", entity_type: "agent", entity_id: userId, details: { phone, business_name: form.business_name, promoted_existing: !pin } }).then();
       }
-      toast.success(`Agent created! Temp PIN: ${pin}`, { duration: 10000 });
+      toast.success(pin ? `Agent created! Temp PIN: ${pin}` : `Existing user promoted to agent`, { duration: 10000 });
       setCreateOpen(false);
       setForm({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
       load();
