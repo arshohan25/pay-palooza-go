@@ -117,6 +117,12 @@ export function parseCashOutQrPayload(
       const candidates = (parsed.candidates?.length ? parsed.candidates : [parsed.identifier || s]).map(
         normalizeAgentIdentifier,
       );
+      const isBareIdentifier = !/^[{\[]/.test(original) && !/^[a-z]+:\/\//i.test(original);
+      const hasPhoneCandidate = candidates.some((candidate) => /^01[3-9]\d{8}$/.test(candidate));
+      if (!isBareIdentifier && !hasPhoneCandidate) {
+        logQrParseOutcome("not_agent", original, { flow: parsed.flow });
+        return { value: candidates[0] || parsed.identifier || s, candidates, error: t("coQrNotAgent"), name: parsed.name, reason: "not_agent" };
+      }
       return { value: candidates[0] || parsed.identifier || s, candidates, name: parsed.name, reason: "ok" };
     }
     // Bare phone / wallet-id typed into the Agent ID field is NOT a QR scan —
