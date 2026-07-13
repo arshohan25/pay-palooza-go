@@ -73,18 +73,21 @@ describe("parseCashOutQrPayload", () => {
     it("accepts hyphen-stripped agent wallet id (EZPAGNDHRWGS)", () => {
       expect(parseCashOutQrPayload("EZPAGNDHRWGS", t).value).toBe(AGENT_WALLET);
     });
-    it("accepts +880-prefixed phone as bare identifier", () => {
-      // Normalises to bare 01… then parseQrData routes as `send` → coQrNotAgent
-      // (a bare phone alone can't be proven to belong to an agent client-side).
+    it("passes a bare +880 phone through for RPC validation (no QR error)", () => {
+      // Manual entry / bare phone paste is NOT a scanned QR — CashOutFlow's
+      // RPC lookup decides whether the number belongs to an agent. We must
+      // not block the user with "not an agent QR" before that runs.
       const r = parseCashOutQrPayload("+8801909709954", t);
       expect(r.value).toBe(AGENT_PHONE);
-      expect(r.error).toBe("coQrNotAgent");
+      expect(r.error).toBeUndefined();
     });
-    it("flags a personal wallet id as not-an-agent QR", () => {
-      expect(parseCashOutQrPayload("EZP-USER-ABCD", t).error).toBe("coQrNotAgent");
+    it("passes a bare personal wallet id through (RPC will reject)", () => {
+      const r = parseCashOutQrPayload("EZP-USER-ABCD", t);
+      expect(r.error).toBeUndefined();
     });
-    it("flags a merchant wallet id as not-an-agent QR", () => {
-      expect(parseCashOutQrPayload("EZP-MRCXX-ABCD", t).error).toBe("coQrNotAgent");
+    it("passes a bare merchant wallet id through (RPC will reject)", () => {
+      const r = parseCashOutQrPayload("EZP-MRCXX-ABCD", t);
+      expect(r.error).toBeUndefined();
     });
   });
 
