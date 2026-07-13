@@ -20,6 +20,7 @@ const AGENT_QR_PAYLOADS: Array<[string, string]> = [
   ["JSON WALLETID", JSON.stringify({ WALLETID: AGENT_WALLET, name: "Agent" })],
   ["JSON walletId camelCase", JSON.stringify({ walletId: AGENT_WALLET })],
   ["JSON with type=agent", JSON.stringify({ type: "agent", walletId: AGENT_WALLET })],
+  ["printable agent JSON", JSON.stringify({ app: "EasyPay", type: "agent", flow: "cashout", walletId: AGENT_WALLET, agentId: AGENT_WALLET, phone: "01909709954", name: "EasyPay Agent Shop" })],
   ["URL ?agentId=", `https://pay.easypay.app/cashout?agentId=${AGENT_WALLET}`],
   ["URL ?agentWallet=", `https://pay.easypay.app/x?agentWallet=${AGENT_WALLET}`],
   ["URL ?agent=", `https://pay.easypay.app/x?agent=${AGENT_WALLET}`],
@@ -56,7 +57,10 @@ describe("Agent QR → Cash Out (integration)", () => {
       ).not.toBeNull();
 
       // Confirm the helper itself opens Cash Out.
-      expect(src).toMatch(/openCashOutFromQr[\s\S]{0,300}setShowCashOut\(true\)/);
+      expect(src).toMatch(/openCashOutFromQr[\s\S]{0,500}setShowCashOut\(true\)/);
+      expect(src).toMatch(/setShowSendMoney\(false\)/);
+      expect(src).toMatch(/setShowPayment\(false\)/);
+      expect(src).toMatch(/parseRpcJson\(cashOutData\)/);
 
       // The same branch must NOT open Send Money.
       const branchText = cashoutBranch?.[0] ?? "";

@@ -39,6 +39,23 @@ describe("Agent QR → Cash Out routing", () => {
     expect(r.identifier).toBe(AGENT_WALLET);
   });
 
+  it("routes printable agent QR payload to cashout without exposing raw JSON", () => {
+    const raw = JSON.stringify({
+      app: "EasyPay",
+      type: "agent",
+      flow: "cashout",
+      walletId: AGENT_WALLET,
+      agentId: AGENT_WALLET,
+      phone: "01909709954",
+      name: "EasyPay Agent Shop",
+    });
+    const r = parseQrData(raw);
+    expect(r.flow).toBe("cashout");
+    expect(r.identifier).toBe(AGENT_WALLET);
+    expect(r.identifier).not.toContain("{");
+    expect(r.name).toBe("EasyPay Agent Shop");
+  });
+
   it("routes URL with ?agentId= to cashout", () => {
     const raw = `https://pay.easypay.app/cashout?agentId=${AGENT_WALLET}`;
     const r = parseQrData(raw);
