@@ -50,8 +50,8 @@ const AgentTransactionHistory = () => {
   const statItems = [
     { icon: TrendingUp, label: "Commission", value: `৳${fmt(summary.totalCommission)}`, accent: true },
     { icon: Banknote, label: "Volume", value: `৳${fmt(summary.totalVolume)}`, accent: false },
-    { icon: ArrowDownToLine, label: "Cash In", value: String(summary.cashInCount), accent: false },
-    { icon: ArrowUpFromLine, label: "Cash Out", value: String(summary.cashOutCount), accent: false },
+    { icon: ArrowDownToLine, label: "Cash Out", value: String(summary.cashInCount), accent: false },
+    { icon: ArrowUpFromLine, label: "Cash In", value: String(summary.cashOutCount), accent: false },
   ];
 
   return (
