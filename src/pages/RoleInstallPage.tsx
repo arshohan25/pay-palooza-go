@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag } from "lucide-react";
+import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, onPromptAvailable, isAppInstalled, clearPrompt } from "@/lib/installPromptStore";
 import { useI18n } from "@/lib/i18n";
+import { getLoginPathForRole, type AppRoleKey } from "@/lib/appRole";
 
 const ROLE_CONFIG: Record<string, {
   name: string;
