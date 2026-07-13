@@ -12,7 +12,8 @@ import AppLayout from "@/components/AppLayout";
 import RoleGuardLayout from "@/components/RoleGuardLayout";
 import RoleGuard from "@/components/RoleGuard";
 import MerchantSessionWatchdog from "@/components/MerchantSessionWatchdog";
-import LazyLoadErrorBoundary from "@/components/LazyLoadErrorBoundary";
+import AppRoleEnforcer from "@/components/AppRoleEnforcer";
+
 import MissingTranslationsBanner from "@/components/MissingTranslationsBanner";
 import { retryLazyImport } from "@/lib/cacheReset";
 
