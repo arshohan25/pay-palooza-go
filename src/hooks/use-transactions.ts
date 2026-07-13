@@ -134,6 +134,25 @@ export function useTransactions(limit?: number, refreshKey?: number, options: Tr
     fetchTxns();
   }, [fetchTxns, refreshKey]);
 
+  // Belt-and-suspenders live refresh: refetch on tab focus, visibility
+  // change, and a global "txn:refresh" event that any flow can dispatch
+  // after completing a transaction (cash out, send money, etc.).
+  useEffect(() => {
+    const onFocus = () => fetchTxns();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchTxns();
+    };
+    const onCustom = () => fetchTxns();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("txn:refresh", onCustom);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("txn:refresh", onCustom);
+    };
+  }, [fetchTxns]);
+
   useEffect(() => {
     const setup = async () => {
       const session = await getCachedSession();
