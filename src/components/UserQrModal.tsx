@@ -88,103 +88,124 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-card rounded-t-[32px] px-8 pt-3 pb-8"
+            className="relative w-full max-w-md rounded-t-[36px] px-6 pt-3 pb-8 overflow-hidden bg-card border-t border-x border-border/60"
           >
-            {/* Drag handle */}
-            <div className="flex justify-center pb-2">
-              <div className="w-12 h-1.5 bg-border rounded-full" />
+            {/* Ambient gradient wash */}
+            <div className="pointer-events-none absolute inset-0 opacity-70">
+              <div className="absolute -top-24 -left-16 w-72 h-72 rounded-full bg-primary/20 blur-3xl" />
+              <div className="absolute -top-10 -right-16 w-64 h-64 rounded-full bg-accent/20 blur-3xl" />
             </div>
 
-            {/* Close */}
-            <div className="flex justify-end -mt-1">
-              <button
-                onClick={onClose}
-                aria-label="Close"
-                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition"
-              >
-                <X size={16} className="text-muted-foreground" />
-              </button>
-            </div>
-
-            {/* Identity block above QR — name + Agent ID (bold, big) */}
-            <div className="flex flex-col items-center text-center pt-1">
-              <div className="w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center mb-3">
-                <span className="text-primary font-bold text-lg">
-                  {(userName || "?").trim().charAt(0).toUpperCase()}
-                </span>
+            <div className="relative">
+              {/* Drag handle */}
+              <div className="flex justify-center pb-2">
+                <div className="w-10 h-1 bg-foreground/15 rounded-full" />
               </div>
 
-              <h2 className="text-xl font-bold text-foreground tracking-tight">
-                {userName}
-              </h2>
+              {/* Close */}
+              <div className="flex justify-end -mt-1">
+                <button
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="w-9 h-9 rounded-full bg-background/60 backdrop-blur border border-border/60 flex items-center justify-center hover:bg-background/90 transition"
+                >
+                  <X size={16} className="text-muted-foreground" />
+                </button>
+              </div>
 
-              <p className="text-[10px] uppercase tracking-[0.2em] text-primary/80 font-semibold mt-3">
-                Agent ID
-              </p>
-              <button
-                onClick={handleCopy}
-                className="mt-1 inline-flex items-center gap-2 active:scale-95 transition"
-              >
-                <span className="text-2xl font-mono font-extrabold tracking-[0.12em] text-primary">
-                  {walletId}
-                </span>
-                {copied
-                  ? <CheckCheck size={18} className="text-primary" />
-                  : <Copy size={16} className="text-primary/60" />}
-              </button>
+              {/* Identity — monogram with gradient ring */}
+              <div className="flex flex-col items-center text-center pt-1">
+                <div className="relative mb-3">
+                  <div className="absolute inset-0 rounded-full gradient-primary blur-md opacity-60" />
+                  <div className="relative w-16 h-16 rounded-full gradient-primary p-[2px]">
+                    <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
+                      <span className="text-xl font-extrabold bg-clip-text text-transparent gradient-primary">
+                        {(userName || "?").trim().charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mt-3">
-                {t(role === "agent" ? "scanToPayAgent" : role === "merchant" ? "scanToPayMerchant" : "scanToSendMoney")}
-              </p>
-            </div>
+                <h2 className="text-xl font-bold text-foreground tracking-tight">
+                  {userName}
+                </h2>
 
-            {/* QR — centered, framed like a certified stamp */}
-            <div className="flex justify-center mt-5">
-              <div className="relative">
-                <div className="absolute -inset-3 bg-primary/5 rounded-[36px]" />
-                <div className="relative bg-background p-5 rounded-3xl shadow-elevated border border-border">
-                  <canvas
-                    ref={canvasRef}
-                    width={200}
-                    height={200}
-                    className="rounded-xl block"
-                    style={{ imageRendering: "pixelated" }}
-                  />
+                <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground/80 font-semibold mt-1">
+                  {t(role === "agent" ? "scanToPayAgent" : role === "merchant" ? "scanToPayMerchant" : "scanToSendMoney")}
+                </p>
+
+                {/* Agent ID chip */}
+                <button
+                  onClick={handleCopy}
+                  className="mt-4 group inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-primary/10 border border-primary/25 backdrop-blur active:scale-[0.98] transition"
+                >
+                  <span className="text-[9px] uppercase tracking-[0.22em] text-primary/70 font-bold">
+                    ID
+                  </span>
+                  <span className="h-4 w-px bg-primary/25" />
+                  <span className="text-lg font-mono font-extrabold tracking-[0.14em] text-primary">
+                    {walletId}
+                  </span>
+                  {copied
+                    ? <CheckCheck size={16} className="text-primary" />
+                    : <Copy size={14} className="text-primary/60 group-hover:text-primary transition" />}
+                </button>
+              </div>
+
+              {/* QR — glass frame with corner accents */}
+              <div className="flex justify-center mt-6">
+                <div className="relative">
+                  <div className="absolute -inset-4 rounded-[40px] bg-gradient-to-br from-primary/20 via-transparent to-accent/20 blur-xl" />
+                  <div className="relative bg-background/95 backdrop-blur p-5 rounded-[28px] border border-border/70 shadow-elevated">
+                    {/* Corner accents */}
+                    <span className="absolute -top-px -left-px w-5 h-5 border-t-2 border-l-2 border-primary rounded-tl-[20px]" />
+                    <span className="absolute -top-px -right-px w-5 h-5 border-t-2 border-r-2 border-primary rounded-tr-[20px]" />
+                    <span className="absolute -bottom-px -left-px w-5 h-5 border-b-2 border-l-2 border-primary rounded-bl-[20px]" />
+                    <span className="absolute -bottom-px -right-px w-5 h-5 border-b-2 border-r-2 border-primary rounded-br-[20px]" />
+                    <canvas
+                      ref={canvasRef}
+                      width={200}
+                      height={200}
+                      className="rounded-xl block"
+                      style={{ imageRendering: "pixelated" }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Agent Number — below the QR, bold + big */}
-            {(phone || profile.phone) && (
-              <div className="mt-6 flex flex-col items-center text-center">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
-                  Agent Number
-                </p>
-                <p className="text-2xl font-extrabold tracking-wide text-foreground mt-1">
-                  {phone || profile.phone}
-                </p>
+              {/* Agent Number — below the QR */}
+              {(phone || profile.phone) && (
+                <div className="mt-6 flex flex-col items-center">
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground font-semibold">
+                    {role === "agent" ? "Agent Number" : role === "merchant" ? "Merchant Number" : "Number"}
+                  </p>
+                  <p className="text-2xl font-extrabold tracking-[0.05em] text-foreground mt-1 tabular-nums">
+                    {phone || profile.phone}
+                  </p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="grid grid-cols-2 gap-3 mt-7">
+                <Button
+                  className="h-12 gradient-primary border-0 text-white font-semibold rounded-2xl shadow-lg shadow-primary/25"
+                  onClick={handleCopy}
+                >
+                  {copied
+                    ? <><CheckCheck size={16} /> {t("walletIdCopied")}</>
+                    : <><Copy size={16} /> {t("copyId")}</>}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 font-semibold rounded-2xl bg-background/60 backdrop-blur border-border/70"
+                  onClick={handleShare}
+                >
+                  <Share2 size={16} /> {t("share")}
+                </Button>
               </div>
-            )}
-
-            {/* Actions */}
-            <div className="grid grid-cols-2 gap-3 mt-8">
-              <Button
-                className="h-12 gradient-primary border-0 text-white font-semibold rounded-2xl shadow-lg shadow-primary/20"
-                onClick={handleCopy}
-              >
-                {copied
-                  ? <><CheckCheck size={16} /> {t("walletIdCopied")}</>
-                  : <><Copy size={16} /> {t("copyId")}</>}
-              </Button>
-              <Button
-                variant="outline"
-                className="h-12 font-semibold rounded-2xl"
-                onClick={handleShare}
-              >
-                <Share2 size={16} /> {t("share")}
-              </Button>
             </div>
           </motion.div>
+
         </motion.div>
       )}
     </AnimatePresence>
