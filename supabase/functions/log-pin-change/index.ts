@@ -43,9 +43,25 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Determine actual user_id (for admin resets, target_user_id is the affected user)
-    const affectedUserId = target_user_id || userId;
-    const changedBy = target_user_id ? userId : null;
+    // Only admins may write PIN-change history for a different user.
+    let affectedUserId = userId;
+    let changedBy: string | null = null;
+    if (target_user_id && target_user_id !== userId) {
+      const { data: isAdmin } = await adminClient
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      affectedUserId = target_user_id;
+      changedBy = userId;
+    }
 
     await adminClient.from("pin_change_history").insert({
       user_id: affectedUserId,

@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { device_fingerprint, user_id } = await req.json();
+    const { device_fingerprint } = await req.json();
 
     if (!device_fingerprint || typeof device_fingerprint !== "string" || device_fingerprint.length < 16) {
       return new Response(
@@ -21,17 +21,32 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!user_id || typeof user_id !== "string") {
-      return new Response(
-        JSON.stringify({ error: "Invalid user ID" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Derive user_id from the caller's verified JWT — never trust body input.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: claims } = await anonClient.auth.getClaims(authHeader.replace("Bearer ", ""));
+    const user_id = claims?.claims?.sub as string | undefined;
+    if (!user_id) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Check if device fingerprint already registered to a different user
     const { data: existing } = await supabaseAdmin
