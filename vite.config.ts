@@ -18,24 +18,18 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom', 'react/jsx-runtime'],
-          'vendor-motion': ['framer-motion'],
-          'vendor-query': ['@tanstack/react-query'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-charts': ['recharts'],
-          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
-          'vendor-dates': ['date-fns'],
-          'vendor-ui': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-select',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-toast',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-accordion',
-          ],
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('lucide-react')) return 'vendor-icons';
+          if (id.includes('framer-motion')) return 'vendor-motion';
+          if (id.includes('@tanstack/react-query')) return 'vendor-query';
+          if (id.includes('@supabase')) return 'vendor-supabase';
+          if (id.includes('recharts') || id.includes('/d3-')) return 'vendor-charts';
+          if (id.includes('@dnd-kit')) return 'vendor-dnd';
+          if (id.includes('date-fns')) return 'vendor-dates';
+          if (id.includes('@radix-ui')) return 'vendor-ui';
+          if (id.match(/node_modules\/(react|react-dom|react-router-dom|scheduler)\//)) return 'vendor-react';
+          return 'vendor';
         },
       },
     },
