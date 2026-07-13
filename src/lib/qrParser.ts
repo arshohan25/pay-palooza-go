@@ -96,12 +96,16 @@ export function parseQrData(raw: string): QrParseResult {
       if (agentHint && (agentId || walletId || obj.phone)) {
         return cashOutResult(
           [
-            isUuid(agentId) ? agentId : "",
+            // Prefer resolvable identifiers (phone / agent wallet id) FIRST.
+            // resolve_transfer_recipient does not accept raw UUIDs, so pushing
+            // a UUID into position 0 made the whole cash-out lookup fail even
+            // when a valid phone/wallet was present in the QR.
             phone,
             AGENT_WALLET_RE.test(String(walletId || "")) ? String(walletId).toUpperCase() : "",
-            agentId,
             walletId,
             obj.phone,
+            agentId,
+            isUuid(agentId) ? agentId : "",
           ],
           obj.name || obj.businessName || undefined,
         );
@@ -181,7 +185,8 @@ export function parseQrData(raw: string): QrParseResult {
     const agent = url.searchParams.get("agentId") || url.searchParams.get("agent") || url.searchParams.get("agentWallet") || url.searchParams.get("agentNumber");
     if (agent) {
       const phone = normalisePhone(url.searchParams.get("phone") || url.searchParams.get("agentPhone"));
-      return cashOutResult([isUuid(agent) ? agent : "", phone, AGENT_WALLET_RE.test(agent) ? agent.toUpperCase() : "", agent]);
+      // Phone / agent wallet come before UUID — RPC lookup can't resolve UUIDs.
+      return cashOutResult([phone, AGENT_WALLET_RE.test(agent) ? agent.toUpperCase() : "", agent, isUuid(agent) ? agent : ""]);
     }
 
     const to = url.searchParams.get("to") || url.searchParams.get("phone") || url.searchParams.get("wallet") || url.searchParams.get("walletId");
