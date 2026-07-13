@@ -3142,7 +3142,7 @@ const translations = {
   thAddMoney: { en: "Add Money", bn: "টাকা যোগ" },
   thDriveCashback: { en: "Drive Cashback", bn: "ড্রাইভ ক্যাশব্যাক" },
   thCashback: { en: "Cashback", bn: "ক্যাশব্যাক" },
-  thCashOutReceived: { en: "CashOut Received", bn: "ক্যাশ আউট গ্রহণ" },
+  thCashOutReceived: { en: "Cash Out Received", bn: "ক্যাশ আউট গ্রহণ" },
   thCashInSent: { en: "Cash In Sent", bn: "ক্যাশ ইন প্রেরিত" },
   thToday: { en: "Today", bn: "আজ" },
   thYesterday: { en: "Yesterday", bn: "গতকাল" },

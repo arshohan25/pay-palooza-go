@@ -27,6 +27,12 @@ type Txn = {
   status: string;
 };
 
+const agentTxnLabel = (type: string) => {
+  if (type === "cashin") return "Cash Out Received";
+  if (type === "cashout") return "Cash In Sent";
+  return type;
+};
+
 const AgentStatement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -69,13 +75,13 @@ const AgentStatement = () => {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
   const summary = useMemo(() => {
-    const s = { cashIn: 0, cashOut: 0, b2bOut: 0, banktransfer: 0, paybill: 0, commission: 0, fees: 0, count: txns.length };
+    const s = { cashOutReceived: 0, cashInSent: 0, b2bOut: 0, banktransfer: 0, paybill: 0, commission: 0, fees: 0, count: txns.length };
     for (const t of txns) {
       const a = Number(t.amount) || 0;
       s.commission += Number(t.commission) || 0;
       s.fees += Number(t.fee) || 0;
-      if (t.type === "cashin") s.cashIn += a;
-      else if (t.type === "cashout") s.cashOut += a;
+      if (t.type === "cashin") s.cashOutReceived += a;
+      else if (t.type === "cashout") s.cashInSent += a;
       else if (t.type === "send") s.b2bOut += a;
       else if (t.type === "banktransfer") s.banktransfer += a;
       else if (t.type === "paybill") s.paybill += a;
@@ -83,15 +89,15 @@ const AgentStatement = () => {
     return s;
   }, [txns]);
 
-  // Cash in hand estimate: cashins deposited (out from agent wallet) - cashouts received (into wallet) + commission
-  const cashInHand = summary.cashIn - summary.cashOut;
+  // Physical cash estimate: Cash In Sent adds cash on hand; Cash Out Received pays cash out.
+  const cashInHand = summary.cashInSent - summary.cashOutReceived;
 
   const exportCSV = () => {
     const rows = [
       ["Date", "Type", "Amount (BDT)", "Fee", "Commission", "Counterparty", "Reference", "Description", "Status"],
       ...txns.map(t => [
         new Date(t.created_at).toISOString(),
-        t.type,
+        agentTxnLabel(t.type),
         String(Number(t.amount) || 0),
         String(Number(t.fee) || 0),
         String(Number(t.commission) || 0),
@@ -125,14 +131,14 @@ const AgentStatement = () => {
       startY: 42,
       head: [["Metric", "Value (BDT)"]],
       body: [
-        ["Cash In (deposited to customers)", fmt(summary.cashIn)],
-        ["Cash Out (withdrawn by customers)", fmt(summary.cashOut)],
+        ["Cash Out Received (wallet in)", fmt(summary.cashOutReceived)],
+        ["Cash In Sent (wallet out)", fmt(summary.cashInSent)],
         ["B2B Send", fmt(summary.b2bOut)],
         ["Bank Transfer", fmt(summary.banktransfer)],
         ["Bill Pay", fmt(summary.paybill)],
         ["Total Commission Earned", fmt(summary.commission)],
         ["Total Fees Paid", fmt(summary.fees)],
-        ["Net Cash in Hand (CashIn - CashOut)", fmt(cashInHand)],
+        ["Net Cash in Hand (Cash In Sent - Cash Out Received)", fmt(cashInHand)],
         ["Current Wallet Balance", fmt(balance)],
         ["Transaction Count", String(summary.count)],
       ],
@@ -145,7 +151,7 @@ const AgentStatement = () => {
       head: [["Date", "Type", "Amount", "Fee", "Comm.", "Party", "Ref"]],
       body: txns.map(t => [
         new Date(t.created_at).toLocaleString("en-GB", { hour12: false }),
-        t.type,
+        agentTxnLabel(t.type),
         fmt(Number(t.amount) || 0),
         fmt(Number(t.fee) || 0),
         fmt(Number(t.commission) || 0),
@@ -219,8 +225,8 @@ const AgentStatement = () => {
             <span className="text-[10px] text-muted-foreground">{summary.count} txns</span>
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <Metric label="Cash In (out to customers)" val={summary.cashIn} tone="destructive" />
-            <Metric label="Cash Out (in from customers)" val={summary.cashOut} tone="primary" />
+            <Metric label="Cash Out Received (wallet in)" val={summary.cashOutReceived} tone="primary" />
+            <Metric label="Cash In Sent (wallet out)" val={summary.cashInSent} tone="destructive" />
             <Metric label="B2B Send" val={summary.b2bOut} />
             <Metric label="Bank Transfer" val={summary.banktransfer} />
             <Metric label="Bill Pay" val={summary.paybill} />
@@ -231,7 +237,7 @@ const AgentStatement = () => {
           <div className="mt-2 p-3 rounded-xl bg-muted/60 border border-border/40">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Net Cash in Hand</p>
             <p className={`text-lg font-extrabold ${cashInHand >= 0 ? "text-primary" : "text-destructive"}`}>৳{fmt(cashInHand)}</p>
-            <p className="text-[10px] text-muted-foreground">Cash In − Cash Out over the selected period</p>
+            <p className="text-[10px] text-muted-foreground">Cash In Sent − Cash Out Received over the selected period</p>
           </div>
         </Card>
 

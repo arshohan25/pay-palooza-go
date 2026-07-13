@@ -59,6 +59,12 @@ const CATEGORY_KEYS: { id: TxCategory; key: string }[] = [
   { id: "addmoney",     key: "thAddMoney" },
 ];
 
+const agentCategoryLabel = (category: TxCategory, fallback: string, t: (k: string) => string) => {
+  if (category === "cashin") return t("thCashOutReceived");
+  if (category === "cashout") return t("thCashInSent");
+  return fallback;
+};
+
 // Illustrated icon config for each transaction category
 const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
   Icon: () => JSX.Element;
@@ -125,24 +131,19 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
             tx.reference?.startsWith("GOLD-SELL-") ||
             tx.reference?.startsWith("STOCK-BUY-") ||
             tx.reference?.startsWith("STOCK-SELL-")) ?? false;
-        const label = isCashback ? t("thDriveCashback") : (CATEGORIES.find((c) => c.id === tx.type)?.label ?? tx.type);
+        const baseLabel = CATEGORIES.find((c) => c.id === tx.type)?.label ?? tx.type;
+        const label = isCashback ? t("thDriveCashback") : agentView ? agentCategoryLabel(tx.type as TxCategory, baseLabel, t) : baseLabel;
         const isCredit = agentView
           ? tx.type === "cashin"
           : tx.type === "addmoney" || tx.type === "receive" || tx.type === "cashin";
-        const agentName = agentView
-          ? (tx.type === "cashin" ? t("thCashOutReceived") : tx.type === "cashout" ? t("thCashInSent") : undefined)
-          : undefined;
-        const agentDetail = agentView
-          ? (tx.type === "cashin" ? t("thCashOutReceived") : tx.type === "cashout" ? t("thCashInSent") : undefined)
-          : undefined;
         return {
           id: tx.id,
           short_id: tx.short_id || tx.id.slice(0, 12).toUpperCase(),
           category: tx.type as Exclude<TxCategory, "all">,
-          name: agentName || (isCashback
+          name: agentView && (tx.type === "cashin" || tx.type === "cashout") ? label : (isCashback
             ? (tx.description?.replace("Drive Cashback: ", "") || t("thCashback"))
             : (tx.recipient_name || tx.description || label)),
-          detail: agentDetail || (isCashback ? t("thDriveCashback") : (tx.description || label)),
+          detail: agentView && (tx.type === "cashin" || tx.type === "cashout") ? label : (isCashback ? t("thDriveCashback") : (tx.description || label)),
           date: tx.created_at,
           amount: isCredit ? tx.amount : -tx.amount,
           fee: tx.fee,
@@ -314,7 +315,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         const commByType: Record<string, number> = {};
         filtered.forEach((tx) => {
           if (tx.commission > 0) {
-            const label = CATEGORIES.find((c) => c.id === tx.category)?.label ?? tx.category;
+            const baseLabel = CATEGORIES.find((c) => c.id === tx.category)?.label ?? tx.category;
+            const label = agentCategoryLabel(tx.category, baseLabel, t);
             commByType[label] = (commByType[label] || 0) + tx.commission;
           }
         });
@@ -402,7 +404,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         >
           {CATEGORIES.filter((cat) => !filterTypes || cat.id === "all" || filterTypes.includes(cat.id)).map((cat) => {
             const active = activeTab === cat.id;
-            const label = customLabels?.[cat.id] ?? cat.label;
+            const label = customLabels?.[cat.id] ?? (agentView ? agentCategoryLabel(cat.id, cat.label, t) : cat.label);
             return (
               <motion.button
                 key={cat.id}
@@ -587,7 +589,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           const summaryFeeLabel = isCredit ? t("thFeeDeducted") : t("thFeeFromBalance");
           const summaryTotalLabel = isCredit ? t("thNetCredited") : t("thTotalDeducted");
           const summaryTotalAmount = isCredit ? Math.max(0, baseAmount - selectedTx.fee) : baseAmount + selectedTx.fee;
-          const catLabel  = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
+          const baseCatLabel = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
+          const catLabel  = agentView ? agentCategoryLabel(selectedTx.category, baseCatLabel, t) : baseCatLabel;
 
           return (
             <>
@@ -769,7 +772,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
       {selectedTx && (() => {
         const txDate = new Date(selectedTx.date);
         const txId   = selectedTx.short_id;
-        const catLabel = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
+        const baseCatLabel = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
+        const catLabel = agentView ? agentCategoryLabel(selectedTx.category, baseCatLabel, t) : baseCatLabel;
         const baseAmount = Math.abs(selectedTx.amount);
         const summaryBaseLabel = selectedTx.amount > 0 ? t("thGrossAmount") : t("thPrincipal");
         const summaryFeeLabel = selectedTx.amount > 0 ? t("thFeeDeducted") : t("thFeeFromBalance");

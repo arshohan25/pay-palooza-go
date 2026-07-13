@@ -746,7 +746,7 @@ TxnDetailModal.displayName = "TxnDetailModal";
 
 /* ── Notification Panel ── */
 const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[]; systemAlerts: { id: string; text: string; time: string }[]; onClose: () => void; onViewTxn: (tx: any) => void }>(({ notifications, systemAlerts, onClose, onViewTxn }, ref) => {
-  const typeLabels: Record<string, string> = { send: "Send Money", receive: "Received", cashout: "Cash Out", cashin: "Cash In", banktransfer: "Bank Transfer", payment: "Payment" };
+  const typeLabels = AGENT_TX_TYPE_LABELS;
   const getTxnIcon = (type: string) => {
     switch (type) {
       case "cashin": case "receive": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
@@ -786,6 +786,7 @@ const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[
             ) : (
               notifications.slice(0, 20).map(n => {
                 const { Icon: NIcon, cls } = getTxnIcon(n.type);
+                const isCredit = isAgentTxnCredit(n.type);
                 return (
                   <Card key={n.id} className="p-3 border-0 shadow-card rounded-xl cursor-pointer press-effect hover:bg-muted/30 transition-colors" onClick={() => onViewTxn(n)}>
                     <div className="flex items-center gap-3">
@@ -797,7 +798,7 @@ const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[
                         <p className="text-[10px] text-muted-foreground">{n.phone || n.name || "—"}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className={`text-xs font-extrabold ${n.type === "receive" || n.type === "cashin" ? "text-primary" : "text-foreground"}`}>৳{fmt(n.amount)}</p>
+                        <p className={`text-xs font-extrabold ${isCredit ? "text-primary" : "text-foreground"}`}>{isCredit ? "+" : "-"}৳{fmt(n.amount)}</p>
                         <p className="text-[9px] text-muted-foreground">{new Date(n.time).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}</p>
                       </div>
                     </div>
