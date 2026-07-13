@@ -36,7 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
-import { parseQrData } from "@/lib/qrParser";
+
 import { useI18n } from "@/lib/i18n";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import FeatureGuard from "@/components/FeatureGuard";
