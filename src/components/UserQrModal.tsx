@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Copy, CheckCheck, Share2 } from "lucide-react";
+import { X, Copy, CheckCheck, Share2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { renderQrWithLogo } from "@/lib/qrWithLogo";
 import { useI18n } from "@/lib/i18n";
@@ -71,6 +71,54 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
     } catch { /* blocked in iframe */ }
     handleCopy();
   };
+
+  const handlePrint = () => {
+    if (!canvasRef.current) return;
+    const dataUrl = canvasRef.current.toDataURL("image/png");
+    const displayNumber = phone || profile.phone || "";
+    const roleLabel = role === "agent" ? "Agent" : role === "merchant" ? "Merchant" : "EasyPay";
+    const numberLabel = role === "agent" ? "Agent Number" : role === "merchant" ? "Merchant Number" : "Number";
+    const w = window.open("", "_blank", "width=760,height=900");
+    if (!w) { toast.error("Please allow pop-ups to print"); return; }
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"/><title>${roleLabel} QR — ${walletId}</title>
+<style>
+  @page { size: A4; margin: 18mm; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0b0b0f;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .sheet{max-width:520px;margin:0 auto;padding:28px;border:1.5px solid #111;border-radius:20px;text-align:center;}
+  .brand{font-size:11px;letter-spacing:.32em;font-weight:800;text-transform:uppercase;color:#111;}
+  .role{margin-top:6px;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#555;font-weight:700;}
+  .name{margin-top:14px;font-size:26px;font-weight:800;letter-spacing:-.01em;}
+  .id{margin-top:6px;font-family:'SF Mono',Menlo,monospace;font-size:20px;font-weight:800;letter-spacing:.12em;color:#111;}
+  .qrwrap{margin:22px auto 10px;padding:16px;border:1.5px solid #111;border-radius:16px;display:inline-block;background:#fff;}
+  .qrwrap img{display:block;width:280px;height:280px;image-rendering:pixelated;}
+  .num-label{margin-top:14px;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:#555;font-weight:700;}
+  .num{margin-top:4px;font-size:22px;font-weight:800;letter-spacing:.05em;font-variant-numeric:tabular-nums;}
+  .foot{margin-top:22px;padding-top:14px;border-top:1px dashed #999;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#777;}
+  @media print{.no-print{display:none!important;}.sheet{border-color:#000;}}
+  .no-print{margin:16px auto 0;text-align:center;}
+  .no-print button{font:600 13px/1 -apple-system,sans-serif;padding:10px 18px;border-radius:10px;border:1px solid #111;background:#111;color:#fff;cursor:pointer;margin:0 4px;}
+  .no-print .ghost{background:#fff;color:#111;}
+</style></head><body>
+<div class="sheet">
+  <div class="brand">EasyPay</div>
+  <div class="role">${roleLabel} QR Code</div>
+  <div class="name">${(userName || "").replace(/</g,"&lt;")}</div>
+  <div class="id">${walletId}</div>
+  <div class="qrwrap"><img src="${dataUrl}" alt="QR"/></div>
+  ${displayNumber ? `<div class="num-label">${numberLabel}</div><div class="num">${displayNumber}</div>` : ""}
+  <div class="foot">Scan with EasyPay app to pay</div>
+</div>
+<div class="no-print">
+  <button onclick="window.print()">Print</button>
+  <button class="ghost" onclick="window.close()">Close</button>
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print();},350);};<\/script>
+</body></html>`);
+    w.document.close();
+    activityTracker.qr("qr_shared", { channel: "print", walletId });
+  };
+
 
   return (
     <AnimatePresence>
@@ -186,7 +234,7 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
               )}
 
               {/* Actions */}
-              <div className="grid grid-cols-2 gap-3 mt-7">
+              <div className="grid grid-cols-3 gap-2 mt-7">
                 <Button
                   className="h-12 gradient-primary border-0 text-white font-semibold rounded-2xl shadow-lg shadow-primary/25"
                   onClick={handleCopy}
@@ -202,7 +250,15 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
                 >
                   <Share2 size={16} /> {t("share")}
                 </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 font-semibold rounded-2xl bg-background/60 backdrop-blur border-border/70"
+                  onClick={handlePrint}
+                >
+                  <Printer size={16} /> Print
+                </Button>
               </div>
+
             </div>
           </motion.div>
 
