@@ -26,11 +26,29 @@ const AppRoleEnforcer = () => {
   // Route-scoping: keep the user inside the installed role's surface area.
   useEffect(() => {
     const appRole = getBoundAppRole();
-    if (!appRole) return;
-
     const path = location.pathname;
+
+    // Installed/standalone PWA opened without a bound role (e.g. manifest
+    // start_url was hit without `?app=<role>`, or storage was wiped).
+    // Send the user to the install/role-picker instead of the customer app.
+    if (!appRole) {
+      let isStandalone = false;
+      try {
+        isStandalone =
+          window.matchMedia?.("(display-mode: standalone)").matches ||
+          // iOS Safari
+          // @ts-expect-error legacy iOS
+          window.navigator.standalone === true;
+      } catch {}
+      if (isStandalone && !path.startsWith("/install") && !path.startsWith("/login/")) {
+        navigate("/install", { replace: true });
+      }
+      return;
+    }
+
     const home = APP_ROLE_HOME[appRole]; // e.g. "/agent"
     const loginPath = `/login/${appRole}`;
+
 
     const allowedPrefixes = [
       home,
