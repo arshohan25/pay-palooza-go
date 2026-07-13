@@ -4,14 +4,40 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 const DEBIT_TYPES = new Set(["send_money", "cash_out", "payment", "mobile_recharge", "pay_bill", "shop_purchase", "donation"]);
 const CREDIT_TYPES = new Set(["receive_money", "cash_in", "add_money", "refund", "commission"]);
 
+async function verifyPrivilegedCaller(req: Request): Promise<boolean> {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const cronHeader = req.headers.get("x-cron-secret") ?? "";
+  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (cronSecret && (cronHeader === cronSecret || authHeader === `Bearer ${cronSecret}`)) return true;
+  if (serviceKey && authHeader === `Bearer ${serviceKey}`) return true;
+  if (!authHeader.startsWith("Bearer ")) return false;
+  try {
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const uc = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
+    const { data: c } = await uc.auth.getClaims(authHeader.replace("Bearer ", ""));
+    if (!c?.claims?.sub) return false;
+    const ac = createClient(url, serviceKey);
+    const { data } = await ac.from("user_roles").select("id").eq("user_id", c.claims.sub as string).eq("role", "admin").maybeSingle();
+    return !!data;
+  } catch { return false; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (!(await verifyPrivilegedCaller(req))) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
 
   try {
     const url = new URL(req.url);
