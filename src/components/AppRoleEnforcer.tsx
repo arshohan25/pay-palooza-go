@@ -42,16 +42,28 @@ const AppRoleEnforcer = () => {
       "/payment-return",
       "/addmoney/status",
       "/r/",
+      "/merchant-login",
+      "/merchant-manager-login",
+      "/team-login",
     ];
 
     const inScope = allowedPrefixes.some(
       (p) => path === p || path.startsWith(p + "/") || path.startsWith(p)
     );
 
-    if (!inScope) {
-      navigate(isAuthenticated ? home : loginPath, { replace: true });
+    // If signed-in user is bounced to home ("/") by a guard's unauthorizedRedirect,
+    // AND their roles don't match this app, funnel them to /login/<role> instead
+    // of the customer app.
+    const rolesMismatch =
+      isAuthenticated &&
+      !rolesLoading &&
+      !isRoleAllowedForApp(appRole, roles as string[]);
+
+    if (!inScope || rolesMismatch) {
+      const target = rolesMismatch || !isAuthenticated ? loginPath : home;
+      if (path !== target) navigate(target, { replace: true });
     }
-  }, [location.pathname, isAuthenticated, navigate]);
+  }, [location.pathname, isAuthenticated, rolesLoading, roles, navigate]);
 
   // Role-matching: sign out users whose roles don't match the installed app.
   useEffect(() => {
