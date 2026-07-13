@@ -345,8 +345,19 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
         return { value: normalizeAgentIdentifier(v) };
       }
     } catch {}
+    // Last-resort regex extraction — handles truncated / partially-typed JSON
+    // payloads (e.g. `{"app":"EasyPay","type":"agent","wallet` ) where JSON.parse
+    // fails but the raw text still contains a recognisable agent wallet id or
+    // Bangladeshi phone number.
+    if (s.length > 6) {
+      const wm = s.toUpperCase().match(/EZP-AGN[A-Z]{2}-[A-Z]{4}/);
+      if (wm) return { value: wm[0] };
+      const pm = s.match(/01[3-9]\d{8}/);
+      if (pm) return { value: pm[0] };
+    }
     return { value: s };
   };
+
 
   const handleQrScan = async (result: string) => {
     const { value: parsed, candidates, error: qrErr, name: qrName } = parseQrPayload(result);
