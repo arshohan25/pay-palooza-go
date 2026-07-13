@@ -345,6 +345,13 @@ const PaymentFlow = ({ onClose, onDynamicQr, onRouteToCashOut, prefilledMerchant
       return;
     }
 
+    // Agent QR scanned inside Payment flow → route to Cash Out
+    if (parsed.flow === "cashout" && onRouteToCashOut) {
+      onRouteToCashOut(parsed.identifier);
+      onClose();
+      return;
+    }
+
     const result = parsed.flow === "payment" ? parsed.identifier : rawResult;
     setMerchantIdInput(result);
     setValidating(true);
