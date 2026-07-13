@@ -110,7 +110,7 @@ describe("parseCashOutQrPayload", () => {
     });
     it("flags JSON with a personal wallet id", () => {
       const r = parseCashOutQrPayload(JSON.stringify({ walletId: "EZP-USER-ZZZZ" }), t);
-      expect(r.error).toBeUndefined();
+      expect(r.error).toBe("coQrNotAgent");
       expect(r.value).toBe("EZP-USER-ZZZZ");
     });
     it("extracts the phone candidate from a generic wallet QR so agent numbers can cash out", () => {
