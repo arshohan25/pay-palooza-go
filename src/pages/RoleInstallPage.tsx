@@ -211,3 +211,77 @@ const RoleInstallPage = () => {
 };
 
 export default RoleInstallPage;
+
+interface ShareLinksSectionProps {
+  roleKey: AppRoleKey;
+  shortName: string;
+}
+
+const ShareLinksSection = ({ roleKey, shortName }: ShareLinksSectionProps) => {
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
+  const installUrl = `${origin}/install/${roleKey}`;
+  const loginUrl = `${origin}${getLoginPathForRole(roleKey)}?app=${roleKey}`;
+
+  const copy = async (url: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success(`${label} link copied`);
+    } catch {
+      toast.error("Could not copy — long-press the link to copy manually");
+    }
+  };
+
+  const share = async (url: string, title: string) => {
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        await navigator.share({ title, url });
+        return;
+      } catch {
+        // user cancelled or share failed — fall back to copy
+      }
+    }
+    await copy(url, title);
+  };
+
+  const rows: { key: string; label: string; url: string }[] = [
+    { key: "install", label: `${shortName} install page`, url: installUrl },
+    { key: "login", label: `${shortName} login`, url: loginUrl },
+  ];
+
+  return (
+    <div className="mb-6" data-testid="share-links">
+      <h2 className="text-sm font-bold text-foreground mb-3">Share this app</h2>
+      <div className="space-y-2">
+        {rows.map((row) => (
+          <div
+            key={row.key}
+            className="flex items-center gap-2 p-3 rounded-2xl bg-muted/50 border border-border"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-foreground">{row.label}</p>
+              <p className="text-[11px] text-muted-foreground truncate font-mono">{row.url}</p>
+            </div>
+            <button
+              type="button"
+              aria-label={`Copy ${row.label} link`}
+              onClick={() => copy(row.url, row.label)}
+              className="p-2 rounded-lg bg-background hover:bg-accent transition-colors"
+            >
+              <Copy size={14} className="text-foreground" />
+            </button>
+            <button
+              type="button"
+              aria-label={`Share ${row.label} link`}
+              onClick={() => share(row.url, row.label)}
+              className="p-2 rounded-lg bg-background hover:bg-accent transition-colors"
+            >
+              <Share2 size={14} className="text-foreground" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
