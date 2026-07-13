@@ -859,8 +859,19 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-foreground text-sm truncate">{agent?.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{agent?.agentId}{agent?.address ? ` · ${agent.address}` : ""}</p>
+                    {resolvedAgentPhone && (
+                      <p className="text-xs font-semibold text-primary mt-0.5 tabular-nums">📞 {resolvedAgentPhone}</p>
+                    )}
                   </div>
                 </div>
+
+                {resolvedAgentPhone && (
+                  <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3 text-center">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Confirm agent number</p>
+                    <p className="text-lg font-extrabold text-foreground tabular-nums mt-0.5">{resolvedAgentPhone}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Please verify this matches the agent before submitting.</p>
+                  </div>
+                )}
 
                 <div className="rounded-2xl bg-card border border-border p-4 space-y-2.5 text-sm">
                   <p className="font-semibold text-foreground">{t("coTransactionSummary")}</p>
