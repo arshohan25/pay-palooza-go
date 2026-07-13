@@ -95,6 +95,7 @@ const AgentCashOut = () => {
       if (error) throw error;
       const res = data as any;
       setResult({ reference: res.reference, fee: Number(res.fee) || 0, commission: Number(res.commission) || 0 });
+      window.dispatchEvent(new Event("txn:refresh"));
       setStep("done");
       toast({ title: "Cash Out Successful", description: `৳${amount} withdrawn by ${phone}` });
     } catch (err: any) {

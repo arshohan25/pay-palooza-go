@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
+import { getAgentDisplayType, isAgentTxnCredit } from "@/lib/agentTransactions";
 import {
   TxSendIcon, TxReceiveIcon, TxCashOutIcon,
   TxRechargeIcon, TxBillIcon, TxBankIcon, TxPaymentIcon, TxBankTransferIcon,
@@ -60,8 +61,8 @@ const CATEGORY_KEYS: { id: TxCategory; key: string }[] = [
 ];
 
 const agentCategoryLabel = (category: TxCategory, fallback: string, t: (k: string) => string) => {
-  if (category === "cashin") return t("thCashOutReceived");
-  if (category === "cashout") return t("thCashInSent");
+  if (category === "cashin") return t("thCashIn");
+  if (category === "cashout") return t("thCashOut");
   return fallback;
 };
 
@@ -118,9 +119,13 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   // Map DB transactions to local Transaction shape
   const allTransactions: Transaction[] = useMemo(() =>
     dbTxns
-      .filter((tx) => !filterTypes || filterTypes.includes(tx.type as TxCategory))
+      .filter((tx) => {
+        const displayType = (agentView ? getAgentDisplayType(tx) : tx.type) as TxCategory;
+        return !filterTypes || filterTypes.includes(displayType);
+      })
       .map((tx) => {
-        const cfg = TX_ICON_MAP[tx.type as Exclude<TxCategory, "all">];
+        const displayType = (agentView ? getAgentDisplayType(tx) : tx.type) as Exclude<TxCategory, "all">;
+        const cfg = TX_ICON_MAP[displayType];
         const isCashback = tx.type === "addmoney" && (tx.description?.startsWith("Drive Cashback:") || tx.reference?.startsWith("CB-") || false);
         const isInvestment =
           (tx.description?.startsWith("Gold Purchase:") ||
@@ -131,19 +136,20 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
             tx.reference?.startsWith("GOLD-SELL-") ||
             tx.reference?.startsWith("STOCK-BUY-") ||
             tx.reference?.startsWith("STOCK-SELL-")) ?? false;
-        const baseLabel = CATEGORIES.find((c) => c.id === tx.type)?.label ?? tx.type;
-        const label = isCashback ? t("thDriveCashback") : agentView ? agentCategoryLabel(tx.type as TxCategory, baseLabel, t) : baseLabel;
+        const baseLabel = CATEGORIES.find((c) => c.id === displayType)?.label ?? displayType;
+        const label = isCashback ? t("thDriveCashback") : agentView ? agentCategoryLabel(displayType as TxCategory, baseLabel, t) : baseLabel;
         const isCredit = agentView
-          ? tx.type === "cashin"
+          ? isAgentTxnCredit(tx)
           : tx.type === "addmoney" || tx.type === "receive" || tx.type === "cashin";
+        const agentParty = tx.recipient_name || tx.recipient_phone || tx.description || label;
         return {
           id: tx.id,
           short_id: tx.short_id || tx.id.slice(0, 12).toUpperCase(),
-          category: tx.type as Exclude<TxCategory, "all">,
-          name: agentView && (tx.type === "cashin" || tx.type === "cashout") ? label : (isCashback
+          category: displayType,
+          name: agentView && (displayType === "cashin" || displayType === "cashout") ? label : (isCashback
             ? (tx.description?.replace("Drive Cashback: ", "") || t("thCashback"))
             : (tx.recipient_name || tx.description || label)),
-          detail: agentView && (tx.type === "cashin" || tx.type === "cashout") ? label : (isCashback ? t("thDriveCashback") : (tx.description || label)),
+          detail: agentView && (displayType === "cashin" || displayType === "cashout") ? agentParty : (isCashback ? t("thDriveCashback") : (tx.description || label)),
           date: tx.created_at,
           amount: isCredit ? tx.amount : -tx.amount,
           fee: tx.fee,

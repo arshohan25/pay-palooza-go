@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useTransactions } from "@/hooks/use-transactions";
+import { getAgentDisplayType } from "@/lib/agentTransactions";
 import TransactionHistory from "./TransactionHistory";
 import FlowHeader from "@/components/FlowHeader";
 import FlagSuspiciousSheet from "@/components/agent/FlagSuspiciousSheet";
@@ -20,11 +21,11 @@ const AgentTransactionHistory = () => {
   // Compute commission summary from agent-relevant transactions
   const summary = useMemo(() => {
     const agentTxns = transactions.filter((t) =>
-      ["cashin", "cashout", "banktransfer", "paybill"].includes(t.type)
+      ["cashin", "cashout", "banktransfer", "paybill"].includes(getAgentDisplayType(t))
     );
     const totalCommission = agentTxns.reduce((sum, t) => sum + (t.commission || 0), 0);
-    const cashInCount = agentTxns.filter((t) => t.type === "cashin").length;
-    const cashOutCount = agentTxns.filter((t) => t.type === "cashout").length;
+    const cashInCount = agentTxns.filter((t) => getAgentDisplayType(t) === "cashin").length;
+    const cashOutCount = agentTxns.filter((t) => getAgentDisplayType(t) === "cashout").length;
     const totalVolume = agentTxns.reduce((sum, t) => sum + t.amount, 0);
     return { totalCommission, cashInCount, cashOutCount, totalVolume, totalTxns: agentTxns.length };
   }, [transactions]);
@@ -50,8 +51,8 @@ const AgentTransactionHistory = () => {
   const statItems = [
     { icon: TrendingUp, label: "Commission", value: `৳${fmt(summary.totalCommission)}`, accent: true },
     { icon: Banknote, label: "Volume", value: `৳${fmt(summary.totalVolume)}`, accent: false },
-    { icon: ArrowDownToLine, label: "Cash Out", value: String(summary.cashInCount), accent: false },
-    { icon: ArrowUpFromLine, label: "Cash In", value: String(summary.cashOutCount), accent: false },
+    { icon: ArrowUpFromLine, label: "Cash Out", value: String(summary.cashOutCount), accent: false },
+    { icon: ArrowDownToLine, label: "Cash In", value: String(summary.cashInCount), accent: false },
   ];
 
   return (

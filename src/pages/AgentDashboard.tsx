@@ -27,6 +27,7 @@ import AgentMenuDrawer from "@/components/AgentMenuDrawer";
 import { useNavigate } from "react-router-dom";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 import { haptics } from "@/lib/haptics";
+import { getAgentDisplayType, getAgentTxnLabel, isAgentTxnCredit } from "@/lib/agentTransactions";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 import { useI18n } from "@/lib/i18n";
@@ -44,20 +45,6 @@ interface AgentInfo {
 }
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
-
-const AGENT_TX_TYPE_LABELS: Record<string, string> = {
-  send: "Send Money",
-  receive: "Received",
-  cashout: "Cash In Sent",
-  cashin: "Cash Out Received",
-  banktransfer: "Bank Transfer",
-  payment: "Payment",
-  recharge: "Recharge",
-  paybill: "Bill Pay",
-  addmoney: "Add Money",
-};
-
-const isAgentTxnCredit = (type: string) => type === "cashin" || type === "receive" || type === "addmoney";
 
 const stagger = {
   hidden: { opacity: 0, y: 16 },
@@ -171,7 +158,7 @@ const AgentDashboard = () => {
         if (!knownTxnIds.current.has(newTxn.id)) {
           knownTxnIds.current.add(newTxn.id);
           haptics.notify();
-          setNotifications(prev => [{ id: newTxn.id, type: newTxn.type, amount: newTxn.amount, time: newTxn.created_at, phone: newTxn.recipient_phone, name: newTxn.recipient_name }, ...prev]);
+          setNotifications(prev => [{ id: newTxn.id, type: newTxn.type, amount: newTxn.amount, time: newTxn.created_at, phone: newTxn.recipient_phone, name: newTxn.recipient_name, description: newTxn.description, commission: newTxn.commission }, ...prev]);
           setUnreadCount(prev => prev + 1);
           if (new Date(newTxn.created_at).toDateString() === new Date().toDateString()) setTxnCount(prev => prev + 1);
         }
@@ -185,8 +172,21 @@ const AgentDashboard = () => {
       })
       .subscribe();
     const onProfileUpdated = () => loadData();
+    const onFocus = () => loadData();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") loadData();
+    };
     window.addEventListener("profile-updated", onProfileUpdated);
-    return () => { supabase.removeChannel(channel); window.removeEventListener("profile-updated", onProfileUpdated); };
+    window.addEventListener("txn:refresh", onProfileUpdated);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("profile-updated", onProfileUpdated);
+      window.removeEventListener("txn:refresh", onProfileUpdated);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [user, loadData]);
 
   /* ── 7-day commission chart data ── */
@@ -210,11 +210,12 @@ const AgentDashboard = () => {
 
   /* ── Share receipt ── */
   const shareTxnReceipt = (tx: any) => {
-    const typeLabels = AGENT_TX_TYPE_LABELS;
+    const displayType = getAgentDisplayType(tx);
+    const label = getAgentTxnLabel(tx);
     const gradients: Record<string, string> = { send: "bg-gradient-to-b from-pink-500 to-rose-500", receive: "bg-gradient-to-b from-emerald-500 to-green-500", cashin: "bg-gradient-to-b from-emerald-500 to-green-500", cashout: "bg-gradient-to-b from-orange-500 to-amber-500", payment: "bg-gradient-to-b from-purple-500 to-violet-500", paybill: "bg-gradient-to-b from-amber-500 to-yellow-500", addmoney: "bg-gradient-to-b from-blue-500 to-indigo-500", banktransfer: "bg-gradient-to-b from-indigo-500 to-blue-600", recharge: "bg-gradient-to-b from-cyan-500 to-teal-500" };
-    const isCredit = isAgentTxnCredit(tx.type);
+    const isCredit = isAgentTxnCredit(tx);
     const rows = [
-      { label: "Type", value: typeLabels[tx.type] || tx.type },
+      { label: "Type", value: label },
       { label: "Status", value: tx.status },
       ...(tx.recipient_phone ? [{ label: "To", value: tx.recipient_phone }] : []),
       ...(tx.recipient_name ? [{ label: "Name", value: tx.recipient_name }] : []),
@@ -222,7 +223,7 @@ const AgentDashboard = () => {
       ...(tx.commission > 0 ? [{ label: "Commission", value: `৳${fmt(tx.commission)}` }] : []),
       { label: "Date", value: new Date(tx.created_at).toLocaleString("en-BD") },
     ];
-    setReceiptData({ title: typeLabels[tx.type] || tx.type, amount: `${isCredit ? "+" : "-"}৳${fmt(tx.amount)}`, gradient: gradients[tx.type] || "bg-gradient-to-b from-gray-500 to-gray-600", rows, txnId: tx.short_id || tx.id });
+    setReceiptData({ title: label, amount: `${isCredit ? "+" : "-"}৳${fmt(tx.amount)}`, gradient: gradients[displayType] || "bg-gradient-to-b from-gray-500 to-gray-600", rows, txnId: tx.short_id || tx.id });
     setReceiptOpen(true);
   };
 
@@ -506,9 +507,10 @@ const AgentDashboard = () => {
             ) : (
               <div className="divide-y divide-border/50">
                 {recentTxns.slice(0, 8).map(tx => {
-                  const isCredit = tx.type === "cashin";
+                  const displayType = getAgentDisplayType(tx);
+                  const isCredit = isAgentTxnCredit(tx);
                   const txIcon = (() => {
-                    switch (tx.type) {
+                    switch (displayType) {
                       case "cashin": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
                       case "cashout": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
                       case "banktransfer": return { Icon: Landmark, cls: "bg-accent/10 text-accent" };
@@ -516,14 +518,13 @@ const AgentDashboard = () => {
                       default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
                     }
                   })();
-                  const typeLabels = AGENT_TX_TYPE_LABELS;
                   return (
                     <button key={tx.id} onClick={() => setSelectedTxn(tx)} className="flex items-center gap-3 px-4 py-3 w-full text-left press-effect hover:bg-muted/20 transition-colors">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${txIcon.cls}`}>
                         <txIcon.Icon size={15} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-foreground truncate">{typeLabels[tx.type] || tx.type}</p>
+                        <p className="text-xs font-bold text-foreground truncate">{getAgentTxnLabel(tx)}</p>
                         <p className="text-[10px] text-muted-foreground">{tx.recipient_phone || "—"}</p>
                       </div>
                       <div className="text-right shrink-0">
@@ -693,8 +694,7 @@ const AgentDashboard = () => {
 /* ── Transaction Detail Modal ── */
 
 const TxnDetailModal = React.forwardRef<HTMLDivElement, { tx: any; onClose: () => void; onShare: (tx: any) => void }>(({ tx, onClose, onShare }, ref) => {
-  const typeLabels = AGENT_TX_TYPE_LABELS;
-  const isCredit = isAgentTxnCredit(tx.type);
+  const isCredit = isAgentTxnCredit(tx);
   return (
     <div ref={ref}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm" onClick={onClose} />
@@ -712,7 +712,7 @@ const TxnDetailModal = React.forwardRef<HTMLDivElement, { tx: any; onClose: () =
           <Card className="border-0 shadow-card rounded-2xl overflow-hidden">
             <div className="divide-y divide-border/50">
               {[
-                { label: "Type", value: typeLabels[tx.type] || tx.type },
+                { label: "Type", value: getAgentTxnLabel(tx) },
                 ...(tx.recipient_name ? [{ label: "Name", value: tx.recipient_name }] : []),
                 ...(tx.recipient_phone ? [{ label: "Phone", value: tx.recipient_phone }] : []),
                 { label: "Amount", value: `৳${fmt(tx.amount)}` },
@@ -746,7 +746,6 @@ TxnDetailModal.displayName = "TxnDetailModal";
 
 /* ── Notification Panel ── */
 const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[]; systemAlerts: { id: string; text: string; time: string }[]; onClose: () => void; onViewTxn: (tx: any) => void }>(({ notifications, systemAlerts, onClose, onViewTxn }, ref) => {
-  const typeLabels = AGENT_TX_TYPE_LABELS;
   const getTxnIcon = (type: string) => {
     switch (type) {
       case "cashin": case "receive": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
@@ -785,8 +784,9 @@ const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[
               </div>
             ) : (
               notifications.slice(0, 20).map(n => {
-                const { Icon: NIcon, cls } = getTxnIcon(n.type);
-                const isCredit = isAgentTxnCredit(n.type);
+                const displayType = getAgentDisplayType(n);
+                const { Icon: NIcon, cls } = getTxnIcon(displayType);
+                const isCredit = isAgentTxnCredit(n);
                 return (
                   <Card key={n.id} className="p-3 border-0 shadow-card rounded-xl cursor-pointer press-effect hover:bg-muted/30 transition-colors" onClick={() => onViewTxn(n)}>
                     <div className="flex items-center gap-3">
@@ -794,7 +794,7 @@ const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[
                         <NIcon size={15} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-foreground">{typeLabels[n.type] || n.type}</p>
+                    <p className="text-xs font-bold text-foreground">{getAgentTxnLabel(n)}</p>
                         <p className="text-[10px] text-muted-foreground">{n.phone || n.name || "—"}</p>
                       </div>
                       <div className="text-right shrink-0">
