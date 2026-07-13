@@ -418,7 +418,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               {/* Sticky bottom logout */}
               <div className="px-3 py-3 border-t border-border/50 bg-card">
                 <button
-                  onClick={() => setLogoutOpen(true)}
+                  onClick={() => { onClose(); setLogoutOpen(true); }}
                   className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-destructive/8 hover:bg-destructive/15 active:scale-[0.99] transition-all group"
                 >
                   <div className="w-9 h-9 rounded-xl bg-destructive/15 flex items-center justify-center shrink-0">
