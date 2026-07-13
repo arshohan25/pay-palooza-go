@@ -43,7 +43,7 @@ export default function AdminDistributorManagement() {
   // Create
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [createForm, setCreateForm] = useState({ phone: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000" });
+  const [createForm, setCreateForm] = useState<{ phone: string; business_name: string; territory: string; commission_rate: string; max_float: string; role: "distributor" | "super_distributor" }>({ phone: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" });
 
   // Edit inline
   const [editingId, setEditingId] = useState<string | null>(null);
