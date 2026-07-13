@@ -2,7 +2,7 @@
   "name": "EasyPay Super Distributor",
   "short_name": "EP SuperDist",
   "description": "EasyPay Super Distributor – Manage distributors, float, and commission networks.",
-  "start_url": "/super-distributor",
+  "start_url": "/super-distributor?app=super-distributor",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f3f4f8",
