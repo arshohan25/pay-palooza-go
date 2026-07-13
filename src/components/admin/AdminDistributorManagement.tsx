@@ -372,8 +372,15 @@ export default function AdminDistributorManagement() {
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Create New Distributor</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Create {createForm.role === "super_distributor" ? "Super Distributor" : "Distributor"}</DialogTitle></DialogHeader>
           <div className="space-y-3 pt-2 max-h-[60vh] overflow-y-auto">
+            <div>
+              <Label>Role</Label>
+              <div className="flex gap-2 mt-1">
+                <Button type="button" size="sm" variant={createForm.role === "distributor" ? "default" : "outline"} className="flex-1" onClick={() => setCreateForm(f => ({ ...f, role: "distributor" }))}>Distributor</Button>
+                <Button type="button" size="sm" variant={createForm.role === "super_distributor" ? "default" : "outline"} className="flex-1" onClick={() => setCreateForm(f => ({ ...f, role: "super_distributor" }))}>Super Distributor</Button>
+              </div>
+            </div>
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
             <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div><Label>Territory (comma separated)</Label><Input placeholder="DHK, CTG, SYL" value={createForm.territory} onChange={e => setCreateForm(f => ({ ...f, territory: e.target.value }))} /></div>
