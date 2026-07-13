@@ -516,7 +516,7 @@ const AgentDashboard = () => {
                       default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
                     }
                   })();
-                  const typeLabels: Record<string, string> = { cashin: t("cashOut"), cashout: t("cashIn"), banktransfer: t("bankTransfer"), paybill: t("agdBillPay") };
+                  const typeLabels = AGENT_TX_TYPE_LABELS;
                   return (
                     <button key={tx.id} onClick={() => setSelectedTxn(tx)} className="flex items-center gap-3 px-4 py-3 w-full text-left press-effect hover:bg-muted/20 transition-colors">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${txIcon.cls}`}>
