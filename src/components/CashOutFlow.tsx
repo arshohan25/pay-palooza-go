@@ -639,13 +639,18 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
                         const raw = e.target.value;
                         if (raw.startsWith("{") || raw.startsWith("http")) {
                           const { value, error: qrErr } = parseQrPayload(raw);
-                          setAgentIdInput(value);
+                          // Only replace with extracted value if we actually pulled
+                          // out a phone or wallet id — otherwise keep raw so a
+                          // half-typed / half-pasted JSON can complete.
+                          const looksResolved = /^01[3-9]\d{8}$/.test(value) || /^EZP-[A-Z]{4,5}-[A-Z]{4}$/i.test(value);
+                          setAgentIdInput(looksResolved ? value : raw);
                           setError(qrErr || "");
                         } else {
                           setAgentIdInput(raw);
                           setError("");
                         }
                       }}
+
                       onPaste={(e) => {
                         const raw = e.clipboardData.getData("text");
                         if (raw && (raw.trim().startsWith("{") || raw.trim().startsWith("http"))) {
