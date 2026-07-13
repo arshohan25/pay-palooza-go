@@ -1,50 +1,94 @@
-import { describe, it, expect } from "vitest";
-import { parseCashOutQrPayload } from "@/lib/cashoutQrPayload";
+import { describe, it, expect, vi } from "vitest";
+import { parseCashOutQrPayload, normalizeCashOutInput } from "@/lib/cashoutQrPayload";
 
-// Identity translator — surfaces the raw i18n key so assertions stay stable.
+// Silence activityTracker inside unit tests — it tries to talk to Supabase
+// on flush, which we don't want and don't need to assert on here.
+vi.mock("@/lib/activityTracker", () => ({
+  activityTracker: { qr: vi.fn() },
+}));
+
 const t = (k: string) => k;
 
 const AGENT_WALLET = "EZP-AGNDH-RWGS";
 const AGENT_PHONE = "01909709954";
 
+describe("normalizeCashOutInput", () => {
+  it("returns empty for empty / whitespace", () => {
+    expect(normalizeCashOutInput("")).toBe("");
+    expect(normalizeCashOutInput("   ")).toBe("");
+  });
+
+  it("strips spaces/hyphens from BD phones", () => {
+    expect(normalizeCashOutInput("019 0970 9954")).toBe(AGENT_PHONE);
+    expect(normalizeCashOutInput("01909-709-954")).toBe(AGENT_PHONE);
+    expect(normalizeCashOutInput("(01909) 709954")).toBe(AGENT_PHONE);
+  });
+
+  it("normalises +880 / 880 / 00880 country-code phones", () => {
+    expect(normalizeCashOutInput("+8801909709954")).toBe(AGENT_PHONE);
+    expect(normalizeCashOutInput("8801909709954")).toBe(AGENT_PHONE);
+    expect(normalizeCashOutInput("008801909709954")).toBe(AGENT_PHONE);
+    expect(normalizeCashOutInput("+880 1909 709 954")).toBe(AGENT_PHONE);
+  });
+
+  it("uppercases and strips whitespace from agent wallet ids", () => {
+    expect(normalizeCashOutInput("ezp-agndh-rwgs")).toBe(AGENT_WALLET);
+    expect(normalizeCashOutInput("EZP -AGNDH- RWGS")).toBe(AGENT_WALLET);
+  });
+
+  it("re-inserts missing hyphens on hyphen-stripped agent ids", () => {
+    expect(normalizeCashOutInput("EZPAGNDHRWGS")).toBe(AGENT_WALLET);
+    expect(normalizeCashOutInput("ezpagndhrwgs")).toBe(AGENT_WALLET);
+  });
+
+  it("leaves URLs and JSON payloads untouched", () => {
+    const url = "https://pay.easypay.app/cashout?agentId=EZP-AGNDH-RWGS";
+    expect(normalizeCashOutInput(url)).toBe(url);
+    const json = '{"walletId":"EZP-AGNDH-RWGS"}';
+    expect(normalizeCashOutInput(json)).toBe(json);
+  });
+
+  it("passes through unrecognised input verbatim (trimmed)", () => {
+    expect(normalizeCashOutInput("  hello world  ")).toBe("hello world");
+  });
+});
+
 describe("parseCashOutQrPayload", () => {
   describe("empty / whitespace", () => {
-    it("returns empty value for empty string", () => {
-      expect(parseCashOutQrPayload("", t)).toEqual({ value: "" });
-    });
-    it("trims and returns empty for whitespace-only", () => {
-      expect(parseCashOutQrPayload("     ", t)).toEqual({ value: "" });
+    it("returns empty with reason=empty", () => {
+      expect(parseCashOutQrPayload("", t)).toMatchObject({ value: "", reason: "empty" });
+      expect(parseCashOutQrPayload("     ", t)).toMatchObject({ value: "", reason: "empty" });
     });
   });
 
-  describe("bare identifiers", () => {
-    it("accepts an agent wallet id verbatim (uppercased)", () => {
+  describe("bare identifiers (post-normalisation)", () => {
+    it("accepts an agent wallet id verbatim", () => {
       const r = parseCashOutQrPayload(AGENT_WALLET, t);
       expect(r.value).toBe(AGENT_WALLET);
       expect(r.error).toBeUndefined();
     });
-    it("accepts a lowercase agent wallet id and normalises casing", () => {
-      const r = parseCashOutQrPayload(AGENT_WALLET.toLowerCase(), t);
-      expect(r.value).toBe(AGENT_WALLET);
+    it("accepts a lowercase agent wallet id", () => {
+      expect(parseCashOutQrPayload(AGENT_WALLET.toLowerCase(), t).value).toBe(AGENT_WALLET);
     });
-    it("flags a bare BD phone as not-an-agent QR (routes to send flow)", () => {
-      // Bare phone alone can't be distinguished from a personal transfer target,
-      // so the shared parser classifies it as `send` and Cash Out refuses it.
-      const r = parseCashOutQrPayload(AGENT_PHONE, t);
+    it("accepts hyphen-stripped agent wallet id (EZPAGNDHRWGS)", () => {
+      expect(parseCashOutQrPayload("EZPAGNDHRWGS", t).value).toBe(AGENT_WALLET);
+    });
+    it("accepts +880-prefixed phone as bare identifier", () => {
+      // Normalises to bare 01… then parseQrData routes as `send` → coQrNotAgent
+      // (a bare phone alone can't be proven to belong to an agent client-side).
+      const r = parseCashOutQrPayload("+8801909709954", t);
       expect(r.value).toBe(AGENT_PHONE);
       expect(r.error).toBe("coQrNotAgent");
     });
     it("flags a personal wallet id as not-an-agent QR", () => {
-      const r = parseCashOutQrPayload("EZP-USER-ABCD", t);
-      expect(r.error).toBe("coQrNotAgent");
+      expect(parseCashOutQrPayload("EZP-USER-ABCD", t).error).toBe("coQrNotAgent");
     });
     it("flags a merchant wallet id as not-an-agent QR", () => {
-      const r = parseCashOutQrPayload("EZP-MRCXX-ABCD", t);
-      expect(r.error).toBe("coQrNotAgent");
+      expect(parseCashOutQrPayload("EZP-MRCXX-ABCD", t).error).toBe("coQrNotAgent");
     });
   });
 
-  describe("well-formed JSON agent payloads", () => {
+  describe("JSON agent payloads", () => {
     it("resolves a printable agent JSON to the phone with wallet candidate", () => {
       const raw = JSON.stringify({
         app: "EasyPay",
@@ -61,21 +105,15 @@ describe("parseCashOutQrPayload", () => {
       expect(r.name).toBe("EasyPay Agent Shop");
       expect(r.error).toBeUndefined();
     });
-    it("resolves JSON with only WALLETID", () => {
-      const r = parseCashOutQrPayload(JSON.stringify({ WALLETID: AGENT_WALLET }), t);
-      expect(r.value.toUpperCase()).toBe(AGENT_WALLET);
-      expect(r.error).toBeUndefined();
-    });
-    it("flags JSON carrying a personal wallet id", () => {
-      const r = parseCashOutQrPayload(JSON.stringify({ walletId: "EZP-USER-ZZZZ" }), t);
-      expect(r.error).toBe("coQrNotAgent");
+    it("flags JSON with a personal wallet id", () => {
+      expect(parseCashOutQrPayload(JSON.stringify({ walletId: "EZP-USER-ZZZZ" }), t).error)
+        .toBe("coQrNotAgent");
     });
     it("flags JSON merchant payload", () => {
-      const r = parseCashOutQrPayload(
+      expect(parseCashOutQrPayload(
         JSON.stringify({ merchantId: "MRC-1234", name: "Shop" }),
         t,
-      );
-      expect(r.error).toBe("coQrNotAgent");
+      ).error).toBe("coQrNotAgent");
     });
   });
 
@@ -89,65 +127,38 @@ describe("parseCashOutQrPayload", () => {
       expect(r.error).toBeUndefined();
     });
     it("flags URL walletId pointing at a personal wallet", () => {
-      const r = parseCashOutQrPayload(
+      expect(parseCashOutQrPayload(
         `https://pay.easypay.app/x?walletId=EZP-USER-ABCD`,
         t,
-      );
-      expect(r.error).toBe("coQrNotAgent");
+      ).error).toBe("coQrNotAgent");
     });
   });
 
-  describe("truncated / malformed payloads (regex fallback)", () => {
-    it("extracts agent wallet id from a truncated JSON tail (no phone field)", () => {
-      const raw = `{"app":"EasyPay","type":"agent","walletId":"${AGENT_WALLET}`;
-      const r = parseCashOutQrPayload(raw, t);
-      // Truncated (no closing brace, no full phone) → JSON.parse fails,
-      // regex fallback extracts the agent wallet id.
+  describe("truncated / malformed payloads", () => {
+    it("extracts agent wallet id from a truncated JSON tail", () => {
+      const r = parseCashOutQrPayload(`{"type":"agent","walletId":"${AGENT_WALLET}`, t);
       expect(r.value).toBe(AGENT_WALLET);
       expect(r.error).toBeUndefined();
     });
-    it("extracts agent wallet from a JSON-ish head-only fragment", () => {
-      const raw = `{"WALLETID":"${AGENT_WALLET}`;
-      const r = parseCashOutQrPayload(raw, t);
-      expect(r.value).toBe(AGENT_WALLET);
-    });
-    it("extracts a BD phone from noisy text without JSON braces", () => {
-      const raw = `garbled scanner output contact ${AGENT_PHONE} thanks`;
-      const r = parseCashOutQrPayload(raw, t);
-      // Noisy text with an embedded phone → shared parser strips non-digits
-      // and classifies as send; caller surfaces coQrNotAgent + the phone.
-      expect(r.value).toBe(AGENT_PHONE);
-      expect(r.error).toBe("coQrNotAgent");
-    });
-    it("prefers agent wallet id over embedded phone in mixed noise", () => {
-      // No digits at all outside the wallet id → phone regex misses,
-      // wallet regex hits inside the regex fallback.
-      const raw = `noise noise ${AGENT_WALLET} tail`;
-      const r = parseCashOutQrPayload(raw, t);
-      expect(r.value).toBe(AGENT_WALLET);
-      expect(r.error).toBeUndefined();
-    });
-    it("returns the raw string for gibberish with no recognisable identifier", () => {
-      const raw = "hello world 12345";
-      const r = parseCashOutQrPayload(raw, t);
-      expect(r.value).toBe(raw);
-      expect(r.error).toBeUndefined();
-    });
-    it("returns short gibberish untouched (below regex-fallback threshold)", () => {
-      const r = parseCashOutQrPayload("abc", t);
-      expect(r).toEqual({ value: "abc" });
-    });
-    it("handles broken JSON that starts with { but never parses", () => {
+    it("returns unreadable for broken JSON with no identifier", () => {
       const r = parseCashOutQrPayload('{"walletId":', t);
-      // No agent id in the fragment → falls through to raw string.
-      expect(r.value).toBe('{"walletId":');
-      expect(r.error).toBeUndefined();
+      expect(r.value).toBe("");
+      expect(r.error).toBe("coQrUnreadable");
+      expect(r.reason).toBe("unreadable");
     });
-    it("never surfaces raw JSON braces in the resolved value when an agent id is present", () => {
-      const raw = `{"type":"agent","walletId":"${AGENT_WALLET}"}`;
-      const r = parseCashOutQrPayload(raw, t);
+    it("never surfaces raw JSON braces as the resolved value", () => {
+      const r = parseCashOutQrPayload(`{"type":"agent","walletId":"${AGENT_WALLET}"}`, t);
       expect(r.value).not.toContain("{");
       expect(r.value).not.toContain('"');
+    });
+    it("returns unreadable for a bare URL with no useful params", () => {
+      const r = parseCashOutQrPayload("https://example.com/", t);
+      expect(r.error).toBe("coQrUnreadable");
+    });
+    it("returns raw string + reason=unreadable for plain gibberish", () => {
+      const r = parseCashOutQrPayload("hello world 12345", t);
+      expect(r.value).toBe("hello world 12345");
+      expect(r.reason).toBe("unreadable");
     });
   });
 });
