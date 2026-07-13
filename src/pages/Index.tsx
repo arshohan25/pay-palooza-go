@@ -734,7 +734,12 @@ const Index = () => {
               setPaymentPrefilledMerchant(parsed.identifier);
               setShowPayment(true);
             } else if (parsed.flow === "cashout") {
-              openCashOutFromQr(parsed.identifier);
+              setShowScanPay(false);
+              setShowSendMoney(false);
+              setSendMoneyPrefilledPhone(undefined);
+              setSendMoneyOnComplete(undefined);
+              setCashOutPrefilledAgent(parsed.identifier);
+              setShowCashOut(true);
             } else if (parsed.flow === "send") {
               try {
                 const { data: cashOutData } = await supabase.rpc("resolve_transfer_recipient", {
