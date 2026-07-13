@@ -158,7 +158,7 @@ const AgentDashboard = () => {
         if (!knownTxnIds.current.has(newTxn.id)) {
           knownTxnIds.current.add(newTxn.id);
           haptics.notify();
-          setNotifications(prev => [{ id: newTxn.id, type: newTxn.type, amount: newTxn.amount, time: newTxn.created_at, phone: newTxn.recipient_phone, name: newTxn.recipient_name }, ...prev]);
+          setNotifications(prev => [{ id: newTxn.id, type: newTxn.type, amount: newTxn.amount, time: newTxn.created_at, phone: newTxn.recipient_phone, name: newTxn.recipient_name, description: newTxn.description, commission: newTxn.commission }, ...prev]);
           setUnreadCount(prev => prev + 1);
           if (new Date(newTxn.created_at).toDateString() === new Date().toDateString()) setTxnCount(prev => prev + 1);
         }
@@ -784,8 +784,9 @@ const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[
               </div>
             ) : (
               notifications.slice(0, 20).map(n => {
-                const { Icon: NIcon, cls } = getTxnIcon(n.type);
-                const isCredit = isAgentTxnCredit(n.type);
+                const displayType = getAgentDisplayType(n);
+                const { Icon: NIcon, cls } = getTxnIcon(displayType);
+                const isCredit = isAgentTxnCredit(n);
                 return (
                   <Card key={n.id} className="p-3 border-0 shadow-card rounded-xl cursor-pointer press-effect hover:bg-muted/30 transition-colors" onClick={() => onViewTxn(n)}>
                     <div className="flex items-center gap-3">
