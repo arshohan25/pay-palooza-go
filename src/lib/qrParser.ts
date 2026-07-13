@@ -21,6 +21,15 @@ const WALLET_RE = /^EZP-[A-Z]{4,5}-[A-Z]{4}$/i;
 const AGENT_WALLET_RE = /^EZP-AGN[A-Z]{2}-[A-Z]{4}$/i;
 const MRC_RE = /^MRC-?/i;
 
+const isAgentHint = (value: unknown) =>
+  typeof value === "string" && /^(agent|cashout|cash_out)$/i.test(value.trim());
+
+const isCashOutUrl = (url: URL) =>
+  /\/(cashout|cash-out)(?:\/|$)/i.test(url.pathname) ||
+  isAgentHint(url.searchParams.get("type")) ||
+  isAgentHint(url.searchParams.get("role")) ||
+  isAgentHint(url.searchParams.get("flow"));
+
 /**
  * Synchronously parse a raw QR string and return routing + extracted identifier.
  * Does NOT call any RPC — the caller should fall back to resolve_transfer_recipient
@@ -54,16 +63,25 @@ export function parseQrData(raw: string): QrParseResult {
       }
       // User / Wallet QR (JSON)
       const walletId = obj.walletId || obj.wallet_id || obj.WALLETID || obj.walletID;
+      const agentId = obj.agentId || obj.agent_id || obj.AGENTID || obj.agentNumber || obj.agent_number;
+      const agentHint = isAgentHint(obj.type) || isAgentHint(obj.role) || isAgentHint(obj.flow);
+      if (agentId) {
+        return {
+          flow: "cashout",
+          identifier: agentId,
+          name: obj.name || obj.businessName || undefined,
+        };
+      }
       if (walletId) {
         return {
-          flow: AGENT_WALLET_RE.test(walletId) ? "cashout" : "send",
+          flow: agentHint || AGENT_WALLET_RE.test(walletId) ? "cashout" : "send",
           identifier: walletId,
           name: obj.name || undefined,
         };
       }
       if (obj.phone) {
         return {
-          flow: "send",
+          flow: agentHint ? "cashout" : "send",
           identifier: obj.phone,
           name: obj.name || undefined,
         };
@@ -105,13 +123,14 @@ export function parseQrData(raw: string): QrParseResult {
     if (pay && MRC_RE.test(pay)) {
       return { flow: "payment", identifier: pay };
     }
-    const agent = url.searchParams.get("agentId") || url.searchParams.get("agent") || url.searchParams.get("agentWallet");
+    const agent = url.searchParams.get("agentId") || url.searchParams.get("agent") || url.searchParams.get("agentWallet") || url.searchParams.get("agentNumber");
     if (agent) {
       return { flow: "cashout", identifier: agent };
     }
 
     const to = url.searchParams.get("to") || url.searchParams.get("phone") || url.searchParams.get("wallet") || url.searchParams.get("walletId");
     if (to) {
+      if (isCashOutUrl(url)) return { flow: "cashout", identifier: to };
       if (WALLET_RE.test(to)) return { flow: AGENT_WALLET_RE.test(to) ? "cashout" : "send", identifier: to };
       if (PHONE_RE.test(to.replace(/[^0-9+]/g, ""))) {
         return { flow: "send", identifier: to.replace(/^\+?880/, "0") };
