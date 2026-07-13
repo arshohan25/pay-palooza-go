@@ -75,6 +75,15 @@ const RoleLoginPage = () => {
 
   if (!roleKey) return <Navigate to="/install" replace />;
 
+  // Dedicated per-role login UIs (no generic customer AuthPage).
+  if (roleKey === "agent") {
+    return (
+      <Suspense fallback={null}>
+        <AgentLoginPage />
+      </Suspense>
+    );
+  }
+
   const meta = ROLE_META[roleKey];
   const Icon = meta.icon;
   const title = `${APP_ROLE_LABEL[roleKey]} — Sign in`;
