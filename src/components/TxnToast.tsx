@@ -14,6 +14,9 @@ let listeners: Array<(t: TxnToastData) => void> = [];
 export const showTxnToast = (data: Omit<TxnToastData, "id">) => {
   const toast: TxnToastData = { ...data, id: `toast-${Date.now()}` };
   listeners.forEach((fn) => fn(toast));
+  // Nudge any mounted useTransactions() to refetch immediately so
+  // History and Recent Transactions reflect the new row without a reload.
+  try { window.dispatchEvent(new Event("txn:refresh")); } catch { /* noop */ }
 };
 
 const TxnToast = () => {
