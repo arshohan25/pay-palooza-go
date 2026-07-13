@@ -389,7 +389,7 @@ export default function AdminDistributorManagement() {
               <div><Label>Max Float (৳)</Label><Input type="number" value={createForm.max_float} onChange={e => setCreateForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
             <Button className="w-full" onClick={handleCreate} disabled={creating || !createForm.phone || !createForm.business_name.trim()}>
-              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Distributor"}
+              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : `Create ${createForm.role === "super_distributor" ? "Super Distributor" : "Distributor"}`}
             </Button>
           </div>
         </DialogContent>
