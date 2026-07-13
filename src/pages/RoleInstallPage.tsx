@@ -168,7 +168,10 @@ const RoleInstallPage = () => {
           </div>
         </div>
 
+        <ShareLinksSection roleKey={role as AppRoleKey} shortName={config.shortName} />
+
         <AnimatePresence mode="wait">
+
           {installed || isStandalone ? (
             <motion.div key="installed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center py-8">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
