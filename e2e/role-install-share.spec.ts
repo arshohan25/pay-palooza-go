@@ -11,16 +11,16 @@ import { test, expect, type Page } from "@playwright/test";
 
 type RoleKey = "admin" | "agent" | "distributor" | "super-distributor" | "merchant";
 
-const ROLES: { role: RoleKey; loginPath: string; heading: RegExp }[] = [
-  { role: "admin", loginPath: "/login/admin", heading: /EasyPay Admin/i },
-  { role: "agent", loginPath: "/login/agent", heading: /EasyPay Agent/i },
-  { role: "distributor", loginPath: "/login/distributor", heading: /EasyPay Distributor/i },
+const ROLES: { role: RoleKey; loginPath: string; bodyText: RegExp }[] = [
+  { role: "admin", loginPath: "/login/admin", bodyText: /EasyPay Admin/i },
+  { role: "agent", loginPath: "/login/agent", bodyText: /EasyPay Agent/i },
+  { role: "distributor", loginPath: "/login/distributor", bodyText: /EasyPay Distributor/i },
   {
     role: "super-distributor",
     loginPath: "/login/super-distributor",
-    heading: /EasyPay Super Distributor/i,
+    bodyText: /EasyPay Super Distributor/i,
   },
-  { role: "merchant", loginPath: "/merchant-login", heading: /Merchant/i },
+  { role: "merchant", loginPath: "/merchant-login", bodyText: /Merchant Portal/i },
 ];
 
 async function grantClipboard(page: Page) {
