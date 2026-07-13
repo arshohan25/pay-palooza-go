@@ -96,12 +96,16 @@ export function parseQrData(raw: string): QrParseResult {
       if (agentHint && (agentId || walletId || obj.phone)) {
         return cashOutResult(
           [
-            isUuid(agentId) ? agentId : "",
+            // Prefer resolvable identifiers (phone / agent wallet id) FIRST.
+            // resolve_transfer_recipient does not accept raw UUIDs, so pushing
+            // a UUID into position 0 made the whole cash-out lookup fail even
+            // when a valid phone/wallet was present in the QR.
             phone,
             AGENT_WALLET_RE.test(String(walletId || "")) ? String(walletId).toUpperCase() : "",
-            agentId,
             walletId,
             obj.phone,
+            agentId,
+            isUuid(agentId) ? agentId : "",
           ],
           obj.name || obj.businessName || undefined,
         );
