@@ -127,13 +127,13 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
             tx.reference?.startsWith("STOCK-SELL-")) ?? false;
         const label = isCashback ? t("thDriveCashback") : (CATEGORIES.find((c) => c.id === tx.type)?.label ?? tx.type);
         const isCredit = agentView
-          ? tx.type === "cashout"
+          ? tx.type === "cashin"
           : tx.type === "addmoney" || tx.type === "receive" || tx.type === "cashin";
         const agentName = agentView
-          ? (tx.type === "cashout" ? t("thCashOutReceived") : tx.type === "cashin" ? t("thCashInSent") : undefined)
+          ? (tx.type === "cashin" ? t("thCashOutReceived") : tx.type === "cashout" ? t("thCashInSent") : undefined)
           : undefined;
         const agentDetail = agentView
-          ? (tx.type === "cashout" ? t("thCashOutReceived") : tx.type === "cashin" ? t("thCashInSent") : undefined)
+          ? (tx.type === "cashin" ? t("thCashOutReceived") : tx.type === "cashout" ? t("thCashInSent") : undefined)
           : undefined;
         return {
           id: tx.id,
