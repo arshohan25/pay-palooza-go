@@ -140,9 +140,10 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
 
 
 
-interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; }
+interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; onRouteToCashOut?: (agentId: string) => void; }
 
-const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProps) => {
+const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess, onRouteToCashOut }: SendMoneyFlowProps) => {
+
   const { t, lang } = useI18n();
   const dateLocale = lang === "bn" ? "bn-BD" : "en-GB";
   const timeLocale = lang === "bn" ? "bn-BD" : "en-US";
@@ -515,7 +516,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const parsed = parseQrData(rawResult);
 
     // 🚫 Hard guard: agent/merchant QR codes must never be accepted in Send Money.
-    if (parsed.flow === "cashout") { setError(t("smQrIsAgent")); return; }
+    if (parsed.flow === "cashout") {
+      if (onRouteToCashOut) { onRouteToCashOut(parsed.identifier); onClose(); return; }
+      setError(t("smQrIsAgent")); return;
+    }
     if (parsed.flow === "payment" || parsed.flow === "dynamic_payment") {
       setError(t("smQrIsMerchant")); return;
     }
