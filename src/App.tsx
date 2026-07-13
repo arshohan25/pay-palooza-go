@@ -162,7 +162,22 @@ const App = () => (
 
 
                     <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} unauthenticatedRedirect="/login/agent" unauthorizedRedirect="/login/agent" />}>
-...
+                      <Route index element={<AgentDashboard />} />
+                      <Route path="cashin" element={<AgentCashIn />} />
+                      <Route path="cashout" element={<AgentCashOut />} />
+                      <Route path="b2b" element={<AgentB2B />} />
+                      <Route path="register" element={<AgentRegister />} />
+                      <Route path="billpay" element={<AgentBillPay />} />
+                      <Route path="history" element={<AgentTransactionHistory />} />
+                      <Route path="bank" element={<AgentBankTransfer />} />
+                      <Route path="analytics" element={<AgentAnalyticsPage />} />
+                      <Route path="statement" element={<AgentStatement />} />
+                      <Route path="security" element={<AgentSecurity />} />
+                      <Route path="disputes" element={<AgentDisputes />} />
+                      <Route path="leaderboard" element={<AgentLeaderboard />} />
+                    </Route>
+
+                    <Route path="/agents/nearby" element={<NearbyAgentsPage />} />
                     <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} unauthenticatedRedirect="/login/distributor" unauthorizedRedirect="/login/distributor" />}>
                       <Route index element={<DistributorDashboard />} />
                       <Route path="create-agent" element={<DistributorCreateAgent />} />
