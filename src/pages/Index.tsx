@@ -136,6 +136,15 @@ const Index = () => {
   const [refreshKey, setRefreshKey]       = useState(0);
   const mainRef = useRef<HTMLElement>(null);
 
+  const openCashOutFromQr = useCallback((agentId: string) => {
+    setShowScanPay(false);
+    setShowSendMoney(false);
+    setSendMoneyPrefilledPhone(undefined);
+    setSendMoneyOnComplete(undefined);
+    setCashOutPrefilledAgent(agentId);
+    setShowCashOut(true);
+  }, []);
+
   const handleUddoktapayAddMoneyReturn = useCallback((detail: { status?: string; requestId?: string | null; invoiceId?: string | null }) => {
     setActiveTab("home");
     setShowAddMoney(false);
@@ -692,7 +701,7 @@ const Index = () => {
       {/* ── Flow overlays ── */}
       <Suspense fallback={null}>
         <AnimatePresence mode="wait" initial={false}>
-          {showSendMoney && <SendMoneyFlow key="send-money-flow" prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onRouteToCashOut={(agentId) => { setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); setCashOutPrefilledAgent(agentId); setShowCashOut(true); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
+          {showSendMoney && <SendMoneyFlow key="send-money-flow" prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onRouteToCashOut={openCashOutFromQr} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
           {showCashOut   && <CashOutFlow key="cash-out-flow" prefilledAgentId={cashOutPrefilledAgent} onClose={() => { setShowCashOut(false); setCashOutPrefilledAgent(undefined); }} />}
           {showPayment   && <PaymentFlow key="payment-flow" prefilledMerchantId={paymentPrefilledMerchant} onClose={() => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); }} onDynamicQr={(session) => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); setDynamicQrSession(session); }} />}
           {showRecharge  && <MobileRechargeFlow key="recharge-flow" onClose={() => setShowRecharge(false)} />}
@@ -725,14 +734,36 @@ const Index = () => {
               setPaymentPrefilledMerchant(parsed.identifier);
               setShowPayment(true);
             } else if (parsed.flow === "cashout") {
-              setCashOutPrefilledAgent(parsed.identifier);
-              setShowCashOut(true);
+              openCashOutFromQr(parsed.identifier);
             } else if (parsed.flow === "send") {
+              try {
+                const { data: cashOutData } = await supabase.rpc("resolve_transfer_recipient", {
+                  p_identifier: parsed.identifier,
+                  p_flow: "cashout",
+                });
+                const cashOutRes = cashOutData as any;
+                if (cashOutRes?.found) {
+                  openCashOutFromQr(parsed.identifier);
+                  return;
+                }
+              } catch {
+                // Fall through to Send Money if the cash-out lookup is unavailable.
+              }
               setSendMoneyPrefilledPhone(parsed.identifier);
               setShowSendMoney(true);
             } else {
               // Unknown — try RPC fallback
               try {
+                const { data: cashOutData } = await supabase.rpc("resolve_transfer_recipient", {
+                  p_identifier: parsed.identifier,
+                  p_flow: "cashout",
+                });
+                const cashOutRes = cashOutData as any;
+                if (cashOutRes?.found) {
+                  openCashOutFromQr(parsed.identifier);
+                  return;
+                }
+
                 const { data } = await supabase.rpc("resolve_transfer_recipient", {
                   p_identifier: parsed.identifier,
                   p_flow: "send",

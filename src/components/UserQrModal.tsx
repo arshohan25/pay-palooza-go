@@ -39,10 +39,18 @@ const UserQrModal = ({ open, onClose, userId, userName, phone, role = "user", ro
 
   useEffect(() => {
     if (!open || !canvasRef.current || !walletId) return;
-    const payload = JSON.stringify({ walletId, name: userName, app: "EasyPay" });
+    const payload = JSON.stringify({
+      app: "EasyPay",
+      type: role,
+      flow: role === "agent" ? "cashout" : role === "merchant" ? "payment" : "send",
+      walletId,
+      ...(role === "agent" ? { agentId: walletId } : {}),
+      ...(phone || profile.phone ? { phone: phone || profile.phone } : {}),
+      name: userName,
+    });
     renderQrWithLogo(canvasRef.current, payload, 200).catch(console.error);
     activityTracker.qr("qr_opened", { kind: "user_wallet", walletId });
-  }, [open, walletId, userName]);
+  }, [open, walletId, userName, role, phone, profile.phone]);
 
 
   const handleCopy = async () => {
