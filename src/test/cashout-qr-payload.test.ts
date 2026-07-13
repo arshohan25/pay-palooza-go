@@ -98,11 +98,12 @@ describe("parseCashOutQrPayload", () => {
   });
 
   describe("truncated / malformed payloads (regex fallback)", () => {
-    it("extracts agent wallet id from a truncated JSON tail", () => {
-      const raw = `{"app":"EasyPay","type":"agent","walletId":"${AGENT_WALLET}","phone":"${AGENT_PHONE}`;
+    it("extracts agent wallet id from a truncated JSON tail (no phone field)", () => {
+      const raw = `{"app":"EasyPay","type":"agent","walletId":"${AGENT_WALLET}`;
       const r = parseCashOutQrPayload(raw, t);
-      // Truncated (no closing brace) → JSON.parse fails, regex extraction wins.
-      expect(r.value === AGENT_WALLET || r.value === AGENT_PHONE).toBe(true);
+      // Truncated (no closing brace, no full phone) → JSON.parse fails,
+      // regex fallback extracts the agent wallet id.
+      expect(r.value).toBe(AGENT_WALLET);
       expect(r.error).toBeUndefined();
     });
     it("extracts agent wallet from a JSON-ish head-only fragment", () => {
@@ -110,15 +111,21 @@ describe("parseCashOutQrPayload", () => {
       const r = parseCashOutQrPayload(raw, t);
       expect(r.value).toBe(AGENT_WALLET);
     });
-    it("extracts a BD phone number embedded in noisy text", () => {
-      const raw = `garbled scanner output ... contact ${AGENT_PHONE} thanks`;
+    it("extracts a BD phone from noisy text without JSON braces", () => {
+      const raw = `garbled scanner output contact ${AGENT_PHONE} thanks`;
       const r = parseCashOutQrPayload(raw, t);
+      // Noisy text with an embedded phone → shared parser strips non-digits
+      // and classifies as send; caller surfaces coQrNotAgent + the phone.
       expect(r.value).toBe(AGENT_PHONE);
+      expect(r.error).toBe("coQrNotAgent");
     });
-    it("prefers agent wallet id over embedded phone when both are present", () => {
-      const raw = `noise ${AGENT_PHONE} noise ${AGENT_WALLET} tail`;
+    it("prefers agent wallet id over embedded phone in mixed noise", () => {
+      // No digits at all outside the wallet id → phone regex misses,
+      // wallet regex hits inside the regex fallback.
+      const raw = `noise noise ${AGENT_WALLET} tail`;
       const r = parseCashOutQrPayload(raw, t);
       expect(r.value).toBe(AGENT_WALLET);
+      expect(r.error).toBeUndefined();
     });
     it("returns the raw string for gibberish with no recognisable identifier", () => {
       const raw = "hello world 12345";
