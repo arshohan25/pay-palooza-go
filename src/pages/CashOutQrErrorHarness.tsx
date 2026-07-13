@@ -1,19 +1,17 @@
 import { useState } from "react";
-import { parseQrData } from "@/lib/qrParser";
+import { parseCashOutQrPayload } from "@/lib/cashoutQrPayload";
 import { useI18n } from "@/lib/i18n";
 
 /**
- * Dev/test-only harness that mirrors CashOutFlow.parseQrPayload +
- * handleQrScan error-surfacing so E2E can prove the user-facing
- * error text is shown (and the flow is NOT advanced) when a
- * malformed / non-agent QR is scanned into Cash Out.
+ * Dev/test-only harness. Drives the SAME `parseCashOutQrPayload` used by
+ * CashOutFlow so E2E can prove the user-facing error text is surfaced (and
+ * the flow is NOT advanced) when a malformed / non-agent QR is scanned.
  *
  * Mounted at /__test/cashout-qr-error-harness in dev builds only.
  */
 type Step = "agent" | "amount";
 
 const AGENT_WALLET_RE = /^EZP-AGN[A-Z]{2}-[A-Z]{4}$/i;
-const WALLET_ID_RE = /^EZP-[A-Z]{4,5}-[A-Z]{4}$/i;
 
 export default function CashOutQrErrorHarness() {
   const { t } = useI18n();
@@ -22,28 +20,15 @@ export default function CashOutQrErrorHarness() {
   const [error, setError] = useState("");
   const [step, setStep] = useState<Step>("agent");
 
-  const parseQrPayload = (raw: string): { value: string; error?: string } => {
-    const s = (raw || "").trim();
-    if (!s) return { value: s };
-    const parsed = parseQrData(s);
-    if (parsed.flow === "cashout") return { value: parsed.identifier };
-    if (parsed.flow === "send" || parsed.flow === "payment" || parsed.flow === "dynamic_payment") {
-      return { value: parsed.identifier || s, error: t("coQrNotAgent") };
-    }
-    // unknown → mirror CashOutFlow legacy checks
-    if (WALLET_ID_RE.test(s) && !AGENT_WALLET_RE.test(s)) {
-      return { value: s, error: t("coQrNotAgent") };
-    }
-    return { value: s };
-  };
-
   const handleScan = () => {
     setError("");
-    const { value, error: qrErr } = parseQrPayload(payload);
+    const { value, error: qrErr } = parseCashOutQrPayload(payload, t);
     setAgentId(value);
     if (qrErr) { setError(qrErr); return; }
     if (!value) { setError(t("coQrUnreadable")); return; }
     if (!AGENT_WALLET_RE.test(value)) {
+      // Bare phone / territory input still advances only when it's a valid
+      // agent wallet — mirrors CashOutFlow's downstream RPC gate.
       setError(t("coQrNotAgent"));
       return;
     }
