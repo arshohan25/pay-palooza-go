@@ -50,6 +50,8 @@ const MerchantLoginPage = lazy(() => retryLazyImport(() => import("./pages/Merch
 const MerchantManagerLoginPage = lazy(() => retryLazyImport(() => import("./pages/MerchantManagerLoginPage")));
 const MerchantSupportPage = lazy(() => retryLazyImport(() => import("./pages/MerchantSupportPage")));
 const RoleInstallPage = lazy(() => import("./pages/RoleInstallPage"));
+const RoleLoginPage = lazy(() => import("./pages/RoleLoginPage"));
+
 const ShopPage = lazy(() => import("./pages/ShopPage"));
 const ShopCheckoutPage = lazy(() => import("./pages/ShopCheckoutPage"));
 const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
@@ -154,12 +156,12 @@ const App = () => (
                     <Route path="/forgot-pin" element={<ForgotPinPage />} />
 
 
-                    <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
-                    <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]}><AdminUserProfilePage /></RoleGuard>} />
-                    <Route path="/admin/mcp-activity" element={<RoleGuard roles={["admin", "developer", "audit"]}><AdminMcpActivityLog /></RoleGuard>} />
+                    <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]} unauthenticatedRedirect="/login/admin"><AdminDashboard /></RoleGuard>} />
+                    <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]} unauthenticatedRedirect="/login/admin"><AdminUserProfilePage /></RoleGuard>} />
+                    <Route path="/admin/mcp-activity" element={<RoleGuard roles={["admin", "developer", "audit"]} unauthenticatedRedirect="/login/admin"><AdminMcpActivityLog /></RoleGuard>} />
 
 
-                    <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} />}>
+                    <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} unauthenticatedRedirect="/login/agent" />}>
                       <Route index element={<AgentDashboard />} />
                       <Route path="cashin" element={<AgentCashIn />} />
                       <Route path="cashout" element={<AgentCashOut />} />
@@ -177,17 +179,20 @@ const App = () => (
 
                     <Route path="/agents/nearby" element={<NearbyAgentsPage />} />
 
-                    <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} />}>
+                    <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} unauthenticatedRedirect="/login/distributor" />}>
                       <Route index element={<DistributorDashboard />} />
                       <Route path="create-agent" element={<DistributorCreateAgent />} />
                     </Route>
 
-                    <Route path="/super-distributor" element={<RoleGuardLayout roles={["super_distributor", "admin"]} />}>
+                    <Route path="/super-distributor" element={<RoleGuardLayout roles={["super_distributor", "admin"]} unauthenticatedRedirect="/login/super-distributor" />}>
                       <Route index element={<SuperDistributorDashboard />} />
                       <Route path="create-distributor" element={<SuperDistributorCreateDistributor />} />
                     </Route>
 
                     <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant-login"><MerchantDashboard /></RoleGuard>} />
+
+                    <Route path="/login/:role" element={<RoleLoginPage />} />
+
 
                     <Route path="/team-login" element={<TeamLoginPage />} />
                     <Route path="/merchant-login" element={<MerchantLoginPage />} />
