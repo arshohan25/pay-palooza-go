@@ -297,66 +297,12 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
 
   /**
    * Parse a raw scanned/pasted string into an agent identifier.
-   * Returns { value, error } where `error` is a translated user-facing message
-   * when the payload is clearly the wrong kind of QR (merchant, personal, etc).
+   * Delegates to the pure `parseCashOutQrPayload` helper so the same logic
+   * is unit-tested in isolation (see src/test/cashout-qr-payload.test.ts).
    */
-  const parseQrPayload = (raw: string): { value: string; candidates?: string[]; error?: string; name?: string } => {
-    const s = (raw || "").trim();
-    if (!s) return { value: s };
+  const parseQrPayload = (raw: string) => parseCashOutQrPayload(raw, t);
 
-    // Use shared parser first — it classifies the flow.
-    const parsed = parseQrData(s);
-    if (parsed.flow === "cashout") {
-      const candidates = (parsed.candidates?.length ? parsed.candidates : [parsed.identifier]).map(normalizeAgentIdentifier);
-      return { value: candidates[0] || "", candidates, name: parsed.name };
-    }
-    if (parsed.flow === "send" || parsed.flow === "payment" || parsed.flow === "dynamic_payment") {
-      return { value: parsed.identifier || s, error: t("coQrNotAgent"), name: parsed.name };
-    }
 
-    // Legacy JSON extraction (agent QR payloads that predate parseQrData)
-    if (s.startsWith("{")) {
-      try {
-        const obj = JSON.parse(s);
-        const val =
-          obj.WALLETID || obj.walletId || obj.walletID ||
-          obj.AGENTID || obj.agentId || obj.agent_id ||
-          obj.PHONE || obj.phone || obj.identifier || "";
-        if (val) {
-          const v = String(val).trim();
-          const phone = String(obj.phone || obj.PHONE || obj.agentPhone || obj.agent_phone || "").trim();
-          if (AGENT_WALLET_RE.test(v.toUpperCase())) return { value: phone || v.toUpperCase(), candidates: [phone, v.toUpperCase()].filter(Boolean), name: obj.name || obj.businessName || undefined };
-          if (WALLET_ID_RE.test(v)) return { value: v, error: t("coQrNotAgent") };
-          return { value: v, name: obj.name || obj.businessName || undefined };
-        }
-      } catch {}
-    }
-    // Legacy URL extraction
-    try {
-      const u = new URL(s);
-      const val =
-        u.searchParams.get("walletId") ||
-        u.searchParams.get("WALLETID") ||
-        u.searchParams.get("agentId") ||
-        u.searchParams.get("phone");
-      if (val) {
-        const v = val.trim();
-        if (WALLET_ID_RE.test(v) && !AGENT_WALLET_RE.test(v.toUpperCase())) return { value: v, error: t("coQrNotAgent") };
-        return { value: normalizeAgentIdentifier(v) };
-      }
-    } catch {}
-    // Last-resort regex extraction — handles truncated / partially-typed JSON
-    // payloads (e.g. `{"app":"EasyPay","type":"agent","wallet` ) where JSON.parse
-    // fails but the raw text still contains a recognisable agent wallet id or
-    // Bangladeshi phone number.
-    if (s.length > 6) {
-      const wm = s.toUpperCase().match(/EZP-AGN[A-Z]{2}-[A-Z]{4}/);
-      if (wm) return { value: wm[0] };
-      const pm = s.match(/01[3-9]\d{8}/);
-      if (pm) return { value: pm[0] };
-    }
-    return { value: s };
-  };
 
 
   const handleQrScan = async (result: string) => {
