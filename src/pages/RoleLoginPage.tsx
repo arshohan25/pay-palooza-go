@@ -14,6 +14,9 @@ import {
 
 const AuthPage = lazy(() => import("@/pages/AuthPage"));
 const AgentLoginPage = lazy(() => import("@/pages/AgentLoginPage"));
+const DistributorLoginPage = lazy(() => import("@/pages/DistributorLoginPage"));
+const SuperDistributorLoginPage = lazy(() => import("@/pages/SuperDistributorLoginPage"));
+const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 
 const ROLE_META: Record<
   AppRoleKey,
@@ -76,10 +79,21 @@ const RoleLoginPage = () => {
   if (!roleKey) return <Navigate to="/install" replace />;
 
   // Dedicated per-role login UIs (no generic customer AuthPage).
-  if (roleKey === "agent") {
+  const DedicatedLogin =
+    roleKey === "agent"
+      ? AgentLoginPage
+      : roleKey === "distributor"
+        ? DistributorLoginPage
+        : roleKey === "super-distributor"
+          ? SuperDistributorLoginPage
+          : roleKey === "admin"
+            ? AdminLoginPage
+            : null;
+
+  if (DedicatedLogin) {
     return (
       <Suspense fallback={null}>
-        <AgentLoginPage />
+        <DedicatedLogin />
       </Suspense>
     );
   }
