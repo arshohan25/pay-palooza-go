@@ -57,6 +57,15 @@ const InboxPage = lazy(() => import("@/pages/InboxPage"));
 
 const ADD_MONEY_RETURN_STORAGE_KEY = "easypay_addmoney_return";
 
+const parseRpcJson = (data: unknown) => {
+  if (typeof data !== "string") return data as any;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return null;
+  }
+};
+
 // ── Tab pages: lazy (prefetched during idle) ──
 const TransactionHistory = lazy(() => import("@/pages/TransactionHistory"));
 const AccountPage = lazy(() => import("@/pages/AccountPage"));
@@ -137,11 +146,15 @@ const Index = () => {
   const mainRef = useRef<HTMLElement>(null);
 
   const openCashOutFromQr = useCallback((agentId: string) => {
+    const cleanAgentId = agentId.trim();
     setShowScanPay(false);
     setShowSendMoney(false);
+    setShowPayment(false);
+    setPaymentPrefilledMerchant(undefined);
     setSendMoneyPrefilledPhone(undefined);
     setSendMoneyOnComplete(undefined);
-    setCashOutPrefilledAgent(agentId);
+    setDynamicQrSession(null);
+    setCashOutPrefilledAgent(cleanAgentId);
     setShowCashOut(true);
   }, []);
 
@@ -741,9 +754,9 @@ const Index = () => {
                   p_identifier: parsed.identifier,
                   p_flow: "cashout",
                 });
-                const cashOutRes = cashOutData as any;
+                const cashOutRes = parseRpcJson(cashOutData);
                 if (cashOutRes?.found) {
-                  openCashOutFromQr(parsed.identifier);
+                  openCashOutFromQr(cashOutRes.recipient_wallet_id || parsed.identifier);
                   return;
                 }
               } catch {
@@ -758,9 +771,9 @@ const Index = () => {
                   p_identifier: parsed.identifier,
                   p_flow: "cashout",
                 });
-                const cashOutRes = cashOutData as any;
+                const cashOutRes = parseRpcJson(cashOutData);
                 if (cashOutRes?.found) {
-                  openCashOutFromQr(parsed.identifier);
+                  openCashOutFromQr(cashOutRes.recipient_wallet_id || parsed.identifier);
                   return;
                 }
 
@@ -768,9 +781,9 @@ const Index = () => {
                   p_identifier: parsed.identifier,
                   p_flow: "send",
                 });
-                const res = data as any;
+                const res = parseRpcJson(data);
                 if (res?.found) {
-                  setSendMoneyPrefilledPhone(res.canonical_phone || parsed.identifier);
+                  setSendMoneyPrefilledPhone(res.canonical_phone || res.recipient_phone || parsed.identifier);
                   setShowSendMoney(true);
                 } else {
                   // Try payment flow
@@ -778,7 +791,7 @@ const Index = () => {
                     p_identifier: parsed.identifier,
                     p_flow: "payment",
                   });
-                  const payRes = payData as any;
+                  const payRes = parseRpcJson(payData);
                   if (payRes?.found) {
                     setPaymentPrefilledMerchant(parsed.identifier);
                     setShowPayment(true);

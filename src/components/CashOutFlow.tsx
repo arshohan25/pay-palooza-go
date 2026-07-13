@@ -35,6 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
+import { parseQrData } from "@/lib/qrParser";
 import { useI18n } from "@/lib/i18n";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import FeatureGuard from "@/components/FeatureGuard";
@@ -257,7 +258,12 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
   const [validating, setValidating] = useState(false);
   const [resolvedAgentPhone, setResolvedAgentPhone] = useState("");
 
-  const validateAgentExists = async (agentId: string): Promise<{ exists: boolean; name?: string; phone?: string }> => {
+  const normalizeAgentIdentifier = (value: string) => {
+    const trimmed = (value || "").trim();
+    return AGENT_WALLET_RE.test(trimmed.toUpperCase()) ? trimmed.toUpperCase() : trimmed;
+  };
+
+  const validateAgentExists = async (agentId: string): Promise<{ exists: boolean; name?: string; phone?: string; walletId?: string; matchedBy?: string }> => {
     const { data, error } = await supabase.rpc("resolve_transfer_recipient", {
       p_identifier: agentId,
       p_flow: "cashout",
@@ -265,7 +271,13 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
     if (error) return { exists: false };
     const result = typeof data === "string" ? JSON.parse(data) : data;
     if (result?.found) {
-      return { exists: true, name: result.recipient_name || undefined, phone: result.recipient_phone };
+      return {
+        exists: true,
+        name: result.recipient_name || undefined,
+        phone: result.recipient_phone,
+        walletId: result.recipient_wallet_id || undefined,
+        matchedBy: result.matched_by || undefined,
+      };
     }
     return { exists: false };
   };
@@ -288,22 +300,15 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
    * Returns { value, error } where `error` is a translated user-facing message
    * when the payload is clearly the wrong kind of QR (merchant, personal, etc).
    */
-  const parseQrPayload = (raw: string): { value: string; error?: string } => {
+  const parseQrPayload = (raw: string): { value: string; error?: string; name?: string } => {
     const s = (raw || "").trim();
     if (!s) return { value: s };
 
     // Use shared parser first — it classifies the flow.
-    try {
-      // Lazy require to avoid circular imports; qrParser is a pure module.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { parseQrData } = require("@/lib/qrParser") as typeof import("@/lib/qrParser");
-      const parsed = parseQrData(s);
-      if (parsed.flow === "cashout") return { value: parsed.identifier };
-      if (parsed.flow === "send" || parsed.flow === "payment" || parsed.flow === "dynamic_payment") {
-        return { value: parsed.identifier || s, error: t("coQrNotAgent") };
-      }
-    } catch {
-      // fall through to legacy extraction
+    const parsed = parseQrData(s);
+    if (parsed.flow === "cashout") return { value: normalizeAgentIdentifier(parsed.identifier), name: parsed.name };
+    if (parsed.flow === "send" || parsed.flow === "payment" || parsed.flow === "dynamic_payment") {
+      return { value: parsed.identifier || s, error: t("coQrNotAgent"), name: parsed.name };
     }
 
     // Legacy JSON extraction (agent QR payloads that predate parseQrData)
@@ -316,9 +321,9 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
           obj.PHONE || obj.phone || obj.identifier || "";
         if (val) {
           const v = String(val).trim();
-          if (AGENT_WALLET_RE.test(v)) return { value: v };
+          if (AGENT_WALLET_RE.test(v.toUpperCase())) return { value: v.toUpperCase(), name: obj.name || obj.businessName || undefined };
           if (WALLET_ID_RE.test(v)) return { value: v, error: t("coQrNotAgent") };
-          return { value: v };
+          return { value: v, name: obj.name || obj.businessName || undefined };
         }
       } catch {}
     }
@@ -332,15 +337,15 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
         u.searchParams.get("phone");
       if (val) {
         const v = val.trim();
-        if (WALLET_ID_RE.test(v) && !AGENT_WALLET_RE.test(v)) return { value: v, error: t("coQrNotAgent") };
-        return { value: v };
+        if (WALLET_ID_RE.test(v) && !AGENT_WALLET_RE.test(v.toUpperCase())) return { value: v, error: t("coQrNotAgent") };
+        return { value: normalizeAgentIdentifier(v) };
       }
     } catch {}
     return { value: s };
   };
 
   const handleQrScan = async (result: string) => {
-    const { value: parsed, error: qrErr } = parseQrPayload(result);
+    const { value: parsed, error: qrErr, name: qrName } = parseQrPayload(result);
     setAgentIdInput(parsed);
     if (qrErr) { setError(qrErr); return; }
     if (!parsed) { setError(t("coQrUnreadable")); return; }
@@ -359,11 +364,12 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
     }
 
     setResolvedAgentPhone(validation.phone || "");
-    const found = recentAgents.find((a) => a.agentId.toLowerCase() === parsed.toLowerCase());
+    const displayId = validation.walletId || normalizeAgentIdentifier(parsed);
+    const found = recentAgents.find((a) => a.agentId.toLowerCase() === displayId.toLowerCase());
     if (found) {
       setAgent(found);
     } else {
-      setAgent({ id: "qr", name: validation.name || "Agent", agentId: parsed, address: "", distance: "", initials: "AG", gradient: "gradient-cashout", rating: 0 });
+      setAgent({ id: "qr", name: validation.name || qrName || "Agent", agentId: displayId, address: "", distance: "", initials: "AG", gradient: "gradient-cashout", rating: 0 });
     }
     goTo("amount");
   };
@@ -372,7 +378,7 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
 
   const handleAgentIdContinue = async (overrideAgentId?: string) => {
     const source = overrideAgentId ?? agentIdInput;
-    const { value: trimmed, error: qrErr } = parseQrPayload(source);
+    const { value: trimmed, error: qrErr, name: qrName } = parseQrPayload(source);
     if (trimmed !== agentIdInput.trim()) setAgentIdInput(trimmed);
     if (qrErr) { setError(qrErr); return; }
     if (trimmed.length < 5) { setError(t("coEnterValidAgentId")); return; }
@@ -392,11 +398,12 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
     }
 
     setResolvedAgentPhone(validation.phone || "");
-    const found = recentAgents.find((a) => a.agentId.toLowerCase() === trimmed.toLowerCase());
+    const displayId = validation.walletId || normalizeAgentIdentifier(trimmed);
+    const found = recentAgents.find((a) => a.agentId.toLowerCase() === displayId.toLowerCase());
     if (found) {
       setAgent(found);
     } else {
-      setAgent({ id: "custom", name: validation.name || "Agent", agentId: trimmed, address: "", distance: "", initials: "AG", gradient: "gradient-primary", rating: 0 });
+      setAgent({ id: "custom", name: validation.name || qrName || "Agent", agentId: displayId, address: "", distance: "", initials: "AG", gradient: "gradient-primary", rating: 0 });
     }
     goTo("amount");
   };
@@ -773,10 +780,10 @@ const CashOutFlow = ({ onClose, prefilledAgentId }: CashOutFlowProps) => {
                     <div className={`${agent.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
                       <Store size={20} />
                     </div>
-                    <div>
+                  <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground">{t("cashingOutAt")}</p>
-                      <p className="text-sm font-bold text-foreground">{agent.name}</p>
-                      <p className="text-xs text-muted-foreground">{agent.agentId} · {agent.address}</p>
+                    <p className="text-sm font-bold text-foreground truncate">{agent.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{agent.agentId}{agent.address ? ` · ${agent.address}` : ""}</p>
                     </div>
                   </div>
                 )}

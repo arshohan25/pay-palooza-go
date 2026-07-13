@@ -22,7 +22,7 @@ const AGENT_WALLET_RE = /^EZP-AGN[A-Z]{2}-[A-Z]{4}$/i;
 const MRC_RE = /^MRC-?/i;
 
 const isAgentHint = (value: unknown) =>
-  typeof value === "string" && /^(agent|cashout|cash_out)$/i.test(value.trim());
+  typeof value === "string" && /^(agent|cashout|cash_out|cash-out|agent_qr|agent-qr)$/i.test(value.trim());
 
 const isCashOutUrl = (url: URL) =>
   /\/(cashout|cash-out)(?:\/|$)/i.test(url.pathname) ||
@@ -53,6 +53,17 @@ export function parseQrData(raw: string): QrParseResult {
           name: obj.name || undefined,
         };
       }
+      // Agent / cash-out QR (JSON) must win before generic wallet/phone routing.
+      const walletId = obj.walletId || obj.wallet_id || obj.WALLETID || obj.walletID;
+      const agentId = obj.agentId || obj.agent_id || obj.AGENTID || obj.agentNumber || obj.agent_number;
+      const agentHint = isAgentHint(obj.type) || isAgentHint(obj.role) || isAgentHint(obj.flow);
+      if (agentHint && (agentId || walletId || obj.phone)) {
+        return {
+          flow: "cashout",
+          identifier: String(agentId || walletId || obj.phone).trim(),
+          name: obj.name || obj.businessName || undefined,
+        };
+      }
       // Merchant QR (JSON)
       if (obj.merchantId || obj.merchant_id) {
         return {
@@ -62,9 +73,6 @@ export function parseQrData(raw: string): QrParseResult {
         };
       }
       // User / Wallet QR (JSON)
-      const walletId = obj.walletId || obj.wallet_id || obj.WALLETID || obj.walletID;
-      const agentId = obj.agentId || obj.agent_id || obj.AGENTID || obj.agentNumber || obj.agent_number;
-      const agentHint = isAgentHint(obj.type) || isAgentHint(obj.role) || isAgentHint(obj.flow);
       if (agentId) {
         return {
           flow: "cashout",
@@ -112,6 +120,11 @@ export function parseQrData(raw: string): QrParseResult {
   // 5️⃣ URL with query params or path-based session
   try {
     const url = new URL(trimmed);
+
+    const cashOutPathAgent = url.pathname.match(/\/(?:cashout|cash-out)\/([^/?#]+)/i);
+    if (cashOutPathAgent) {
+      return { flow: "cashout", identifier: decodeURIComponent(cashOutPathAgent[1]) };
+    }
 
     // Path-based dynamic payment: /pay/qr/{uuid} or /checkout/{uuid}
     const pathMatch = url.pathname.match(/\/(?:pay\/qr|checkout)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
