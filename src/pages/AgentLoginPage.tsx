@@ -196,17 +196,6 @@ const AgentLoginPage = () => {
             <span className="text-white/40">Agents only</span>
           </div>
         </motion.form>
-
-        <p className="text-center text-[11px] text-white/40 mt-6">
-          Not an agent?{" "}
-          <button
-            type="button"
-            onClick={() => navigate("/install")}
-            className="text-white/70 underline"
-          >
-            Choose a different portal
-          </button>
-        </p>
       </div>
     </div>
   );

@@ -164,13 +164,6 @@ const SuperDistributorLoginPage = () => {
             <span className="text-white/40">Super distributors only</span>
           </div>
         </motion.form>
-
-        <p className="text-center text-[11px] text-white/40 mt-6">
-          Wrong portal?{" "}
-          <button type="button" onClick={() => navigate("/install")} className="text-white/70 underline">
-            Choose a different portal
-          </button>
-        </p>
       </div>
     </div>
   );

@@ -164,13 +164,6 @@ const AdminLoginPage = () => {
             <span className="text-white/40">Admins only</span>
           </div>
         </motion.form>
-
-        <p className="text-center text-[11px] text-white/40 mt-6">
-          Not an admin?{" "}
-          <button type="button" onClick={() => navigate("/install")} className="text-white/70 underline">
-            Choose a different portal
-          </button>
-        </p>
       </div>
     </div>
   );
