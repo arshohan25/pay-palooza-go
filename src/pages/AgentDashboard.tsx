@@ -45,6 +45,20 @@ interface AgentInfo {
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
+const AGENT_TX_TYPE_LABELS: Record<string, string> = {
+  send: "Send Money",
+  receive: "Received",
+  cashout: "Cash In Sent",
+  cashin: "Cash Out Received",
+  banktransfer: "Bank Transfer",
+  payment: "Payment",
+  recharge: "Recharge",
+  paybill: "Bill Pay",
+  addmoney: "Add Money",
+};
+
+const isAgentTxnCredit = (type: string) => type === "cashin" || type === "receive" || type === "addmoney";
+
 const stagger = {
   hidden: { opacity: 0, y: 16 },
   visible: (i: number) => ({
@@ -196,8 +210,9 @@ const AgentDashboard = () => {
 
   /* ── Share receipt ── */
   const shareTxnReceipt = (tx: any) => {
-    const typeLabels: Record<string, string> = { send: "Send Money", receive: "Received", cashout: "Cash Out", cashin: "Cash In", banktransfer: "Bank Transfer", payment: "Payment", recharge: "Recharge", paybill: "Bill Pay", addmoney: "Add Money" };
+    const typeLabels = AGENT_TX_TYPE_LABELS;
     const gradients: Record<string, string> = { send: "bg-gradient-to-b from-pink-500 to-rose-500", receive: "bg-gradient-to-b from-emerald-500 to-green-500", cashin: "bg-gradient-to-b from-emerald-500 to-green-500", cashout: "bg-gradient-to-b from-orange-500 to-amber-500", payment: "bg-gradient-to-b from-purple-500 to-violet-500", paybill: "bg-gradient-to-b from-amber-500 to-yellow-500", addmoney: "bg-gradient-to-b from-blue-500 to-indigo-500", banktransfer: "bg-gradient-to-b from-indigo-500 to-blue-600", recharge: "bg-gradient-to-b from-cyan-500 to-teal-500" };
+    const isCredit = isAgentTxnCredit(tx.type);
     const rows = [
       { label: "Type", value: typeLabels[tx.type] || tx.type },
       { label: "Status", value: tx.status },
@@ -207,7 +222,7 @@ const AgentDashboard = () => {
       ...(tx.commission > 0 ? [{ label: "Commission", value: `৳${fmt(tx.commission)}` }] : []),
       { label: "Date", value: new Date(tx.created_at).toLocaleString("en-BD") },
     ];
-    setReceiptData({ title: typeLabels[tx.type] || tx.type, amount: `৳${fmt(tx.amount)}`, gradient: gradients[tx.type] || "bg-gradient-to-b from-gray-500 to-gray-600", rows, txnId: tx.short_id || tx.id });
+    setReceiptData({ title: typeLabels[tx.type] || tx.type, amount: `${isCredit ? "+" : "-"}৳${fmt(tx.amount)}`, gradient: gradients[tx.type] || "bg-gradient-to-b from-gray-500 to-gray-600", rows, txnId: tx.short_id || tx.id });
     setReceiptOpen(true);
   };
 
@@ -501,7 +516,7 @@ const AgentDashboard = () => {
                       default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
                     }
                   })();
-                  const typeLabels: Record<string, string> = { cashin: t("cashOut"), cashout: t("cashIn"), banktransfer: t("bankTransfer"), paybill: t("agdBillPay") };
+                  const typeLabels = AGENT_TX_TYPE_LABELS;
                   return (
                     <button key={tx.id} onClick={() => setSelectedTxn(tx)} className="flex items-center gap-3 px-4 py-3 w-full text-left press-effect hover:bg-muted/20 transition-colors">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${txIcon.cls}`}>
@@ -678,8 +693,8 @@ const AgentDashboard = () => {
 /* ── Transaction Detail Modal ── */
 
 const TxnDetailModal = React.forwardRef<HTMLDivElement, { tx: any; onClose: () => void; onShare: (tx: any) => void }>(({ tx, onClose, onShare }, ref) => {
-  const typeLabels: Record<string, string> = { send: "Send Money", receive: "Received", cashout: "Cash Out", cashin: "Cash In", banktransfer: "Bank Transfer", payment: "Payment", recharge: "Recharge", paybill: "Bill Pay", addmoney: "Add Money" };
-  const isCredit = tx.type === "receive" || tx.type === "addmoney";
+  const typeLabels = AGENT_TX_TYPE_LABELS;
+  const isCredit = isAgentTxnCredit(tx.type);
   return (
     <div ref={ref}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm" onClick={onClose} />
