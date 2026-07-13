@@ -51,7 +51,8 @@ describe("Agent QR → Cash Out routing", () => {
     });
     const r = parseQrData(raw);
     expect(r.flow).toBe("cashout");
-    expect(r.identifier).toBe(AGENT_WALLET);
+    expect(r.identifier).toBe("01909709954");
+    expect(r.candidates).toContain(AGENT_WALLET);
     expect(r.identifier).not.toContain("{");
     expect(r.name).toBe("EasyPay Agent Shop");
   });
