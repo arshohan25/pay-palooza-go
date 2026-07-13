@@ -10,12 +10,16 @@ import {
   getLoginPathForRole,
   APP_ROLE_LABEL,
 } from "@/lib/appRole";
+import { logRoleRedirect, type RedirectReason } from "@/lib/roleRedirectLog";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Locks an installed role PWA to its role:
  *  - Any out-of-scope route (or wrong-role signed-in user) is redirected to
  *    the role's own login page.
  *  - A signed-in user without the required role is signed out with a toast.
+ *  - Every unauthorized redirect is logged (client console + role_redirect_logs
+ *    table) so admins can review misuse.
  */
 const AppRoleEnforcer = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -33,15 +37,37 @@ const AppRoleEnforcer = () => {
         window.navigator.standalone === true;
     } catch {}
 
+    const appRole = getBoundAppRole();
+    const userRoles = (roles as string[]) ?? [];
     const target = computeAppRoleRedirect({
       path: location.pathname,
-      appRole: getBoundAppRole(),
+      appRole,
       isAuthenticated,
       rolesLoading,
-      userRoles: (roles as string[]) ?? [],
+      userRoles,
       isStandalone,
     });
-    if (target) navigate(target, { replace: true });
+    if (target) {
+      if (appRole) {
+        const reason: RedirectReason = !isAuthenticated
+          ? "unauthenticated"
+          : !isRoleAllowedForApp(appRole, userRoles)
+            ? "role_mismatch"
+            : "out_of_scope";
+        // Fire-and-forget: fetch current user id for the log entry.
+        void supabase.auth.getUser().then(({ data }) => {
+          logRoleRedirect({
+            attemptedAppRole: appRole,
+            path: location.pathname,
+            reason,
+            isAuthenticated,
+            userId: data.user?.id ?? null,
+            userRoles,
+          });
+        });
+      }
+      navigate(target, { replace: true });
+    }
   }, [location.pathname, isAuthenticated, rolesLoading, roles, navigate]);
 
   // Role-matching: sign out users whose roles don't match the installed app.
@@ -59,6 +85,16 @@ const AppRoleEnforcer = () => {
       toast.error(
         `This device is set up for ${APP_ROLE_LABEL[appRole]}. Please log in with a ${APP_ROLE_LABEL[appRole]} account.`
       );
+      void supabase.auth.getUser().then(({ data }) => {
+        logRoleRedirect({
+          attemptedAppRole: appRole,
+          path: window.location.pathname,
+          reason: "role_mismatch",
+          isAuthenticated: true,
+          userId: data.user?.id ?? null,
+          userRoles: (roles as string[]) ?? [],
+        });
+      });
       void signOut().then(() => {
         try {
           window.location.href = getLoginPathForRole(appRole);
@@ -66,6 +102,7 @@ const AppRoleEnforcer = () => {
       });
     }
   }, [isAuthenticated, authLoading, rolesLoading, roles]);
+
 
   return null;
 };

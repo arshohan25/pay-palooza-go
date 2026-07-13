@@ -5743,6 +5743,42 @@ export type Database = {
           },
         ]
       }
+      role_redirect_logs: {
+        Row: {
+          attempted_app_role: string
+          created_at: string
+          id: string
+          is_authenticated: boolean
+          path: string
+          reason: string
+          user_agent: string | null
+          user_id: string | null
+          user_roles: string[]
+        }
+        Insert: {
+          attempted_app_role: string
+          created_at?: string
+          id?: string
+          is_authenticated?: boolean
+          path: string
+          reason: string
+          user_agent?: string | null
+          user_id?: string | null
+          user_roles?: string[]
+        }
+        Update: {
+          attempted_app_role?: string
+          created_at?: string
+          id?: string
+          is_authenticated?: boolean
+          path?: string
+          reason?: string
+          user_agent?: string | null
+          user_id?: string | null
+          user_roles?: string[]
+        }
+        Relationships: []
+      }
       saved_bank_accounts: {
         Row: {
           account_holder: string
