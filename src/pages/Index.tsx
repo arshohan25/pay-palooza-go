@@ -692,7 +692,7 @@ const Index = () => {
       {/* ── Flow overlays ── */}
       <Suspense fallback={null}>
         <AnimatePresence mode="wait" initial={false}>
-          {showSendMoney && <SendMoneyFlow key="send-money-flow" prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
+          {showSendMoney && <SendMoneyFlow key="send-money-flow" prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onRouteToCashOut={(agentId) => { setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); setCashOutPrefilledAgent(agentId); setShowCashOut(true); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
           {showCashOut   && <CashOutFlow key="cash-out-flow" prefilledAgentId={cashOutPrefilledAgent} onClose={() => { setShowCashOut(false); setCashOutPrefilledAgent(undefined); }} />}
           {showPayment   && <PaymentFlow key="payment-flow" prefilledMerchantId={paymentPrefilledMerchant} onClose={() => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); }} onDynamicQr={(session) => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); setDynamicQrSession(session); }} />}
           {showRecharge  && <MobileRechargeFlow key="recharge-flow" onClose={() => setShowRecharge(false)} />}
