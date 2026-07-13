@@ -27,10 +27,12 @@ describe("parseCashOutQrPayload", () => {
       const r = parseCashOutQrPayload(AGENT_WALLET.toLowerCase(), t);
       expect(r.value).toBe(AGENT_WALLET);
     });
-    it("accepts a BD phone number verbatim", () => {
+    it("flags a bare BD phone as not-an-agent QR (routes to send flow)", () => {
+      // Bare phone alone can't be distinguished from a personal transfer target,
+      // so the shared parser classifies it as `send` and Cash Out refuses it.
       const r = parseCashOutQrPayload(AGENT_PHONE, t);
       expect(r.value).toBe(AGENT_PHONE);
-      expect(r.error).toBeUndefined();
+      expect(r.error).toBe("coQrNotAgent");
     });
     it("flags a personal wallet id as not-an-agent QR", () => {
       const r = parseCashOutQrPayload("EZP-USER-ABCD", t);
