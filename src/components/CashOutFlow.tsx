@@ -1,5 +1,6 @@
 import { validateRecipient } from "@/lib/recipientValidation";
 import { WALLET_ID_RE, AGENT_WALLET_RE, validateWalletId, walletFormatError } from "@/lib/walletId";
+import { parseCashOutQrPayload } from "@/lib/cashoutQrPayload";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFeeConfig } from "@/hooks/use-fee-config";
