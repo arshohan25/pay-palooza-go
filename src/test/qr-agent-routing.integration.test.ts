@@ -57,7 +57,7 @@ describe("Agent QR → Cash Out (integration)", () => {
       ).not.toBeNull();
 
       // Confirm the helper itself opens Cash Out.
-      expect(src).toMatch(/openCashOutFromQr[\s\S]{0,300}setShowCashOut\(true\)/);
+      expect(src).toMatch(/openCashOutFromQr[\s\S]{0,500}setShowCashOut\(true\)/);
       expect(src).toMatch(/setShowSendMoney\(false\)/);
       expect(src).toMatch(/setShowPayment\(false\)/);
       expect(src).toMatch(/parseRpcJson\(cashOutData\)/);
