@@ -3,7 +3,7 @@ import {
   getMissingTranslations,
   subscribeMissingTranslations,
   resetMissingTranslationKeys,
-  useI18n,
+  useOptionalI18n,
   type MissingTranslationEntry,
 } from "@/lib/i18n";
 
@@ -30,7 +30,7 @@ export default function MissingTranslationsBanner() {
   // Bail out completely in production builds.
   if (!import.meta.env.DEV) return null;
 
-  const { lang } = useI18n();
+  const i18n = useOptionalI18n();
   const entries = useSyncExternalStore(subscribe, snapshot, snapshot);
   const [expanded, setExpanded] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -40,7 +40,7 @@ export default function MissingTranslationsBanner() {
     if (entries.length === 0) setHidden(false);
   }, [entries.length]);
 
-  if (lang !== "bn") return null;
+  if (!i18n || i18n.lang !== "bn") return null;
   if (entries.length === 0) return null;
   if (hidden) return null;
 

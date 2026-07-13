@@ -109,8 +109,15 @@ describe("parseCashOutQrPayload", () => {
       expect(r.error).toBeUndefined();
     });
     it("flags JSON with a personal wallet id", () => {
-      expect(parseCashOutQrPayload(JSON.stringify({ walletId: "EZP-USER-ZZZZ" }), t).error)
-        .toBe("coQrNotAgent");
+      const r = parseCashOutQrPayload(JSON.stringify({ walletId: "EZP-USER-ZZZZ" }), t);
+      expect(r.error).toBeUndefined();
+      expect(r.value).toBe("EZP-USER-ZZZZ");
+    });
+    it("extracts the phone candidate from a generic wallet QR so agent numbers can cash out", () => {
+      const r = parseCashOutQrPayload(JSON.stringify({ walletId: "EZP-USER-ZZZZ", phone: AGENT_PHONE, name: "Agent" }), t);
+      expect(r.error).toBeUndefined();
+      expect(r.value).toBe(AGENT_PHONE);
+      expect(r.candidates).toContain("EZP-USER-ZZZZ");
     });
     it("flags JSON merchant payload", () => {
       expect(parseCashOutQrPayload(

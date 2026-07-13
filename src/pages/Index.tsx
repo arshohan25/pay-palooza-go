@@ -66,6 +66,23 @@ const parseRpcJson = (data: unknown) => {
   }
 };
 
+const uniqueScanCandidates = (...groups: Array<string | undefined | null | string[]>) => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const group of groups) {
+    const values = Array.isArray(group) ? group : [group];
+    for (const value of values) {
+      const trimmed = String(value || "").trim();
+      if (!trimmed) continue;
+      const key = trimmed.toUpperCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(trimmed);
+    }
+  }
+  return out;
+};
+
 // ── Tab pages: lazy (prefetched during idle) ──
 const TransactionHistory = lazy(() => import("@/pages/TransactionHistory"));
 const AccountPage = lazy(() => import("@/pages/AccountPage"));
@@ -751,14 +768,17 @@ const Index = () => {
               openCashOutFromQr(parsed.identifier);
             } else if (parsed.flow === "send") {
               try {
-                const { data: cashOutData } = await supabase.rpc("resolve_transfer_recipient", {
-                  p_identifier: parsed.identifier,
-                  p_flow: "cashout",
-                });
-                const cashOutRes = parseRpcJson(cashOutData);
-                if (cashOutRes?.found) {
-                  openCashOutFromQr(parsed.identifier || cashOutRes.recipient_phone || cashOutRes.recipient_wallet_id);
-                  return;
+                const cashOutCandidates = uniqueScanCandidates(parsed.candidates, parsed.identifier);
+                for (const candidate of cashOutCandidates) {
+                  const { data: cashOutData } = await supabase.rpc("resolve_transfer_recipient", {
+                    p_identifier: candidate,
+                    p_flow: "cashout",
+                  });
+                  const cashOutRes = parseRpcJson(cashOutData);
+                  if (cashOutRes?.found) {
+                    openCashOutFromQr(cashOutRes.recipient_phone || cashOutRes.recipient_wallet_id || candidate);
+                    return;
+                  }
                 }
               } catch {
                 // Fall through to Send Money if the cash-out lookup is unavailable.
@@ -768,14 +788,17 @@ const Index = () => {
             } else {
               // Unknown — try RPC fallback
               try {
-                const { data: cashOutData } = await supabase.rpc("resolve_transfer_recipient", {
-                  p_identifier: parsed.identifier,
-                  p_flow: "cashout",
-                });
-                const cashOutRes = parseRpcJson(cashOutData);
-                if (cashOutRes?.found) {
-                  openCashOutFromQr(parsed.identifier || cashOutRes.recipient_phone || cashOutRes.recipient_wallet_id);
-                  return;
+                const cashOutCandidates = uniqueScanCandidates(parsed.candidates, parsed.identifier);
+                for (const candidate of cashOutCandidates) {
+                  const { data: cashOutData } = await supabase.rpc("resolve_transfer_recipient", {
+                    p_identifier: candidate,
+                    p_flow: "cashout",
+                  });
+                  const cashOutRes = parseRpcJson(cashOutData);
+                  if (cashOutRes?.found) {
+                    openCashOutFromQr(cashOutRes.recipient_phone || cashOutRes.recipient_wallet_id || candidate);
+                    return;
+                  }
                 }
 
                 const { data } = await supabase.rpc("resolve_transfer_recipient", {

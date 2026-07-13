@@ -129,6 +129,7 @@ export function parseQrData(raw: string): QrParseResult {
         return {
           flow: "send",
           identifier: walletId,
+          candidates: uniq([phone, obj.phone, obj.identifier, walletId]),
           name: obj.name || undefined,
         };
       }
@@ -136,7 +137,7 @@ export function parseQrData(raw: string): QrParseResult {
         return {
           flow: agentHint ? "cashout" : "send",
           identifier: agentHint ? (phone || obj.phone) : obj.phone,
-          candidates: agentHint ? uniq([phone, obj.phone]) : undefined,
+          candidates: uniq([phone, obj.phone]),
           name: obj.name || undefined,
         };
       }
@@ -192,9 +193,10 @@ export function parseQrData(raw: string): QrParseResult {
     const to = url.searchParams.get("to") || url.searchParams.get("phone") || url.searchParams.get("wallet") || url.searchParams.get("walletId");
     if (to) {
       if (isCashOutUrl(url)) return cashOutResult([normalisePhone(to), AGENT_WALLET_RE.test(to) ? to.toUpperCase() : "", to]);
-      if (WALLET_RE.test(to)) return { flow: AGENT_WALLET_RE.test(to) ? "cashout" : "send", identifier: to };
+      if (WALLET_RE.test(to)) return { flow: AGENT_WALLET_RE.test(to) ? "cashout" : "send", identifier: to, candidates: uniq([normalisePhone(url.searchParams.get("phone") || url.searchParams.get("agentPhone")), to]) };
       if (PHONE_RE.test(to.replace(/[^0-9+]/g, ""))) {
-        return { flow: "send", identifier: to.replace(/^\+?880/, "0") };
+        const normalized = to.replace(/^\+?880/, "0");
+        return { flow: "send", identifier: normalized, candidates: uniq([normalized, to]) };
       }
     }
   } catch {

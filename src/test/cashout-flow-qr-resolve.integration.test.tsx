@@ -21,6 +21,7 @@ import { render, screen, waitFor, cleanup } from "@testing-library/react";
  */
 
 const AGENT_WALLET = "EZP-AGNDH-RWGS";
+const GENERIC_WALLET = "EZP-USER-ZZZZ";
 const AGENT_PHONE = "01909709954";
 const AGENT_NAME = "EasyPay Agent Shop";
 
@@ -164,6 +165,11 @@ describe("CashOutFlow · QR-prefilled agent resolves and routes to Amount step",
       "URL with ?agentId=",
       `https://pay.easypay.app/cashout?agentId=${AGENT_WALLET}`,
       AGENT_WALLET,
+    ],
+    [
+      "generic wallet QR for an agent account with phone",
+      JSON.stringify({ app: "EasyPay", flow: "send", walletId: GENERIC_WALLET, phone: AGENT_PHONE, name: AGENT_NAME }),
+      AGENT_PHONE,
     ],
   ];
 
