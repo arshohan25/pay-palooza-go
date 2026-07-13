@@ -1,4 +1,4 @@
-name: E2E
+name: Tests
 
 on:
   pull_request:
@@ -6,8 +6,8 @@ on:
     branches: [main]
 
 jobs:
-  playwright:
-    name: Playwright (chromium)
+  test:
+    name: Unit + Integration + Playwright (chromium)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -36,8 +36,8 @@ jobs:
         if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      - name: Run Playwright tests
-        run: npm run test:e2e
+      - name: Run all tests (unit + integration + e2e)
+        run: npm run test:ci
 
       - name: Upload Playwright report
         if: always()

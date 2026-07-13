@@ -14,6 +14,8 @@
     "test:watch": "vitest",
     "test:i18n": "vitest run src/test/i18n-bn.test.tsx",
     "test:e2e": "playwright test",
+    "test:ci": "vitest run && playwright test",
+    "test:all": "vitest run && playwright test",
     "i18n:audit": "node scripts/i18n-audit.mjs"
   },
   "dependencies": {
