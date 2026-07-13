@@ -36,8 +36,8 @@ export function normalizeCashOutInput(raw: string): string {
   const digitsOnly = s.replace(/[\s\-().]/g, "");
   // 00880… → +880…
   const noIddZero = digitsOnly.replace(/^00(?=880)/, "+");
-  // +8801XXXXXXXXX or 8801XXXXXXXXX → 01XXXXXXXXX
-  const phoneMatch = noIddZero.match(/^(?:\+?880)?(1[3-9]\d{8})$/);
+  // +8801XXXXXXXXX / 8801XXXXXXXXX / 01XXXXXXXXX → 01XXXXXXXXX
+  const phoneMatch = noIddZero.match(/^(?:\+?8800?|0)?(1[3-9]\d{8})$/);
   if (phoneMatch) return `0${phoneMatch[1]}`;
 
   // Wallet id: uppercase + strip internal spaces.
