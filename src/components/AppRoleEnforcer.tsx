@@ -6,14 +6,15 @@ import { useUserRoles } from "@/hooks/use-user-roles";
 import {
   getBoundAppRole,
   isRoleAllowedForApp,
+  computeAppRoleRedirect,
+  getLoginPathForRole,
   APP_ROLE_LABEL,
-  APP_ROLE_HOME,
 } from "@/lib/appRole";
 
 /**
  * Locks an installed role PWA to its role:
- *  - Any route outside the role's own scope (or the role's login/install pages)
- *    is redirected to `/login/<role>`.
+ *  - Any out-of-scope route (or wrong-role signed-in user) is redirected to
+ *    the role's own login page.
  *  - A signed-in user without the required role is signed out with a toast.
  */
 const AppRoleEnforcer = () => {
@@ -23,64 +24,24 @@ const AppRoleEnforcer = () => {
   const navigate = useNavigate();
   const kickedRef = useRef(false);
 
-  // Route-scoping: keep the user inside the installed role's surface area.
   useEffect(() => {
-    const appRole = getBoundAppRole();
-    const path = location.pathname;
+    let isStandalone = false;
+    try {
+      isStandalone =
+        window.matchMedia?.("(display-mode: standalone)").matches ||
+        // @ts-expect-error legacy iOS
+        window.navigator.standalone === true;
+    } catch {}
 
-    // Installed/standalone PWA opened without a bound role (e.g. manifest
-    // start_url was hit without `?app=<role>`, or storage was wiped).
-    // Send the user to the install/role-picker instead of the customer app.
-    if (!appRole) {
-      let isStandalone = false;
-      try {
-        isStandalone =
-          window.matchMedia?.("(display-mode: standalone)").matches ||
-          // iOS Safari
-          // @ts-expect-error legacy iOS
-          window.navigator.standalone === true;
-      } catch {}
-      if (isStandalone && !path.startsWith("/install") && !path.startsWith("/login/")) {
-        navigate("/install", { replace: true });
-      }
-      return;
-    }
-
-    const home = APP_ROLE_HOME[appRole]; // e.g. "/agent"
-    const loginPath = `/login/${appRole}`;
-
-
-    const allowedPrefixes = [
-      home,
-      loginPath,
-      "/install",
-      "/forgot-pin",
-      "/.lovable",
-      "/payment-popup",
-      "/payment-return",
-      "/addmoney/status",
-      "/r/",
-      "/merchant-login",
-      "/merchant-manager-login",
-      "/team-login",
-    ];
-
-    const inScope = allowedPrefixes.some(
-      (p) => path === p || path.startsWith(p + "/") || path.startsWith(p)
-    );
-
-    // If signed-in user is bounced to home ("/") by a guard's unauthorizedRedirect,
-    // AND their roles don't match this app, funnel them to /login/<role> instead
-    // of the customer app.
-    const rolesMismatch =
-      isAuthenticated &&
-      !rolesLoading &&
-      !isRoleAllowedForApp(appRole, roles as string[]);
-
-    if (!inScope || rolesMismatch) {
-      const target = rolesMismatch || !isAuthenticated ? loginPath : home;
-      if (path !== target) navigate(target, { replace: true });
-    }
+    const target = computeAppRoleRedirect({
+      path: location.pathname,
+      appRole: getBoundAppRole(),
+      isAuthenticated,
+      rolesLoading,
+      userRoles: (roles as string[]) ?? [],
+      isStandalone,
+    });
+    if (target) navigate(target, { replace: true });
   }, [location.pathname, isAuthenticated, rolesLoading, roles, navigate]);
 
   // Role-matching: sign out users whose roles don't match the installed app.
@@ -100,7 +61,7 @@ const AppRoleEnforcer = () => {
       );
       void signOut().then(() => {
         try {
-          window.location.href = `/login/${appRole}`;
+          window.location.href = getLoginPathForRole(appRole);
         } catch {}
       });
     }

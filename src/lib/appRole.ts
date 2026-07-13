@@ -86,3 +86,65 @@ export function isRoleAllowedForApp(
   const allowed = APP_ROLE_ALLOWED[appRole];
   return userRoles.some((r) => allowed.includes(r));
 }
+
+/** Login path per role (merchant uses the dedicated merchant login). */
+export function getLoginPathForRole(appRole: AppRoleKey): string {
+  return appRole === "merchant" ? "/merchant-login" : `/login/${appRole}`;
+}
+
+export interface EnforcerInput {
+  path: string;
+  appRole: AppRoleKey | null;
+  isAuthenticated: boolean;
+  rolesLoading: boolean;
+  userRoles: string[];
+  isStandalone: boolean;
+}
+
+/**
+ * Pure redirect decision for AppRoleEnforcer. Returns the target path to
+ * navigate to, or null when the current path is already correct.
+ */
+export function computeAppRoleRedirect(input: EnforcerInput): string | null {
+  const { path, appRole, isAuthenticated, rolesLoading, userRoles, isStandalone } = input;
+
+  // No bound app role: only intervene if launched from an installed PWA
+  // that lost its role context.
+  if (!appRole) {
+    if (isStandalone && !path.startsWith("/install") && !path.startsWith("/login/") && path !== "/merchant-login") {
+      return "/install";
+    }
+    return null;
+  }
+
+  const home = APP_ROLE_HOME[appRole];
+  const loginPath = getLoginPathForRole(appRole);
+
+  const allowedPrefixes = [
+    home,
+    loginPath,
+    "/install",
+    "/forgot-pin",
+    "/.lovable",
+    "/payment-popup",
+    "/payment-return",
+    "/addmoney/status",
+    "/r/",
+    "/merchant-login",
+    "/merchant-manager-login",
+    "/team-login",
+  ];
+
+  const inScope = allowedPrefixes.some(
+    (p) => path === p || path.startsWith(p + "/") || path.startsWith(p)
+  );
+
+  const rolesMismatch =
+    isAuthenticated && !rolesLoading && !isRoleAllowedForApp(appRole, userRoles);
+
+  if (!inScope || rolesMismatch) {
+    const target = rolesMismatch || !isAuthenticated ? loginPath : home;
+    if (path !== target) return target;
+  }
+  return null;
+}
