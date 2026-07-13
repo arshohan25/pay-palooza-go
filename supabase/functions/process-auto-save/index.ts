@@ -144,6 +144,11 @@ Deno.serve(async (req) => {
 
     triggeredBy = isCron ? (body.retry ? "retry" : "cron") : callerIsAdmin ? "admin" : "user";
 
+    // Batch mode (no schedule_id) is admin/cron only — regular users can only process their own schedule.
+    if (!body.schedule_id && !isCron && !callerIsAdmin) {
+      return jsonError(403, "FORBIDDEN_ADMIN_REQUIRED", "Batch processing requires admin or cron");
+    }
+
     if (body.force && !callerIsAdmin) return jsonError(403, "FORBIDDEN_ADMIN_REQUIRED", "force requires admin role");
     const force = !!body.force && callerIsAdmin;
 
