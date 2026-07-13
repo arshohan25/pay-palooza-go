@@ -156,40 +156,24 @@ const App = () => (
                     <Route path="/forgot-pin" element={<ForgotPinPage />} />
 
 
-                    <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]} unauthenticatedRedirect="/login/admin"><AdminDashboard /></RoleGuard>} />
-                    <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]} unauthenticatedRedirect="/login/admin"><AdminUserProfilePage /></RoleGuard>} />
-                    <Route path="/admin/mcp-activity" element={<RoleGuard roles={["admin", "developer", "audit"]} unauthenticatedRedirect="/login/admin"><AdminMcpActivityLog /></RoleGuard>} />
+                    <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]} unauthenticatedRedirect="/login/admin" unauthorizedRedirect="/login/admin"><AdminDashboard /></RoleGuard>} />
+                    <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]} unauthenticatedRedirect="/login/admin" unauthorizedRedirect="/login/admin"><AdminUserProfilePage /></RoleGuard>} />
+                    <Route path="/admin/mcp-activity" element={<RoleGuard roles={["admin", "developer", "audit"]} unauthenticatedRedirect="/login/admin" unauthorizedRedirect="/login/admin"><AdminMcpActivityLog /></RoleGuard>} />
 
 
-                    <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} unauthenticatedRedirect="/login/agent" />}>
-                      <Route index element={<AgentDashboard />} />
-                      <Route path="cashin" element={<AgentCashIn />} />
-                      <Route path="cashout" element={<AgentCashOut />} />
-                      <Route path="b2b" element={<AgentB2B />} />
-                      <Route path="register" element={<AgentRegister />} />
-                      <Route path="billpay" element={<AgentBillPay />} />
-                      <Route path="history" element={<AgentTransactionHistory />} />
-                      <Route path="bank" element={<AgentBankTransfer />} />
-                      <Route path="analytics" element={<AgentAnalyticsPage />} />
-                      <Route path="statement" element={<AgentStatement />} />
-                      <Route path="security" element={<AgentSecurity />} />
-                      <Route path="disputes" element={<AgentDisputes />} />
-                      <Route path="leaderboard" element={<AgentLeaderboard />} />
-                    </Route>
-
-                    <Route path="/agents/nearby" element={<NearbyAgentsPage />} />
-
-                    <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} unauthenticatedRedirect="/login/distributor" />}>
+                    <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} unauthenticatedRedirect="/login/agent" unauthorizedRedirect="/login/agent" />}>
+...
+                    <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} unauthenticatedRedirect="/login/distributor" unauthorizedRedirect="/login/distributor" />}>
                       <Route index element={<DistributorDashboard />} />
                       <Route path="create-agent" element={<DistributorCreateAgent />} />
                     </Route>
 
-                    <Route path="/super-distributor" element={<RoleGuardLayout roles={["super_distributor", "admin"]} unauthenticatedRedirect="/login/super-distributor" />}>
+                    <Route path="/super-distributor" element={<RoleGuardLayout roles={["super_distributor", "admin"]} unauthenticatedRedirect="/login/super-distributor" unauthorizedRedirect="/login/super-distributor" />}>
                       <Route index element={<SuperDistributorDashboard />} />
                       <Route path="create-distributor" element={<SuperDistributorCreateDistributor />} />
                     </Route>
 
-                    <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant-login"><MerchantDashboard /></RoleGuard>} />
+                    <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant-login" unauthorizedRedirect="/merchant-login"><MerchantDashboard /></RoleGuard>} />
 
                     <Route path="/login/:role" element={<RoleLoginPage />} />
 
