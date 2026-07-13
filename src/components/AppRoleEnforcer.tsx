@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth, signOut } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-roles";
@@ -6,19 +7,53 @@ import {
   getBoundAppRole,
   isRoleAllowedForApp,
   APP_ROLE_LABEL,
+  APP_ROLE_HOME,
 } from "@/lib/appRole";
 
 /**
- * When the PWA has been installed for a specific role (e.g. Agent app),
- * this component signs out any user whose roles don't match that app.
- * Users who don't have the required role simply cannot log in to another
- * role's installed app.
+ * Locks an installed role PWA to its role:
+ *  - Any route outside the role's own scope (or the role's login/install pages)
+ *    is redirected to `/login/<role>`.
+ *  - A signed-in user without the required role is signed out with a toast.
  */
 const AppRoleEnforcer = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
+  const location = useLocation();
+  const navigate = useNavigate();
   const kickedRef = useRef(false);
 
+  // Route-scoping: keep the user inside the installed role's surface area.
+  useEffect(() => {
+    const appRole = getBoundAppRole();
+    if (!appRole) return;
+
+    const path = location.pathname;
+    const home = APP_ROLE_HOME[appRole]; // e.g. "/agent"
+    const loginPath = `/login/${appRole}`;
+
+    const allowedPrefixes = [
+      home,
+      loginPath,
+      "/install",
+      "/forgot-pin",
+      "/.lovable",
+      "/payment-popup",
+      "/payment-return",
+      "/addmoney/status",
+      "/r/",
+    ];
+
+    const inScope = allowedPrefixes.some(
+      (p) => path === p || path.startsWith(p + "/") || path.startsWith(p)
+    );
+
+    if (!inScope) {
+      navigate(isAuthenticated ? home : loginPath, { replace: true });
+    }
+  }, [location.pathname, isAuthenticated, navigate]);
+
+  // Role-matching: sign out users whose roles don't match the installed app.
   useEffect(() => {
     if (authLoading || rolesLoading) return;
     if (!isAuthenticated) {
@@ -26,13 +61,7 @@ const AppRoleEnforcer = () => {
       return;
     }
     const appRole = getBoundAppRole();
-    if (!appRole) return;
-    if (kickedRef.current) return;
-
-    // Wait until roles have actually loaded for this user
-    if (roles.length === 0) {
-      // Give the query one tick; if still empty, treat as no matching role.
-    }
+    if (!appRole || kickedRef.current) return;
 
     if (!isRoleAllowedForApp(appRole, roles as string[])) {
       kickedRef.current = true;
@@ -41,7 +70,7 @@ const AppRoleEnforcer = () => {
       );
       void signOut().then(() => {
         try {
-          window.location.href = "/";
+          window.location.href = `/login/${appRole}`;
         } catch {}
       });
     }
