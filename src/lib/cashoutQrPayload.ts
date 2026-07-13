@@ -113,6 +113,14 @@ export function parseCashOutQrPayload(
     return { value: candidates[0] || "", candidates, name: parsed.name, reason: "ok" };
   }
   if (parsed.flow === "send" || parsed.flow === "payment" || parsed.flow === "dynamic_payment") {
+    // Bare phone / wallet-id typed into the Agent ID field is NOT a QR scan —
+    // let the RPC lookup decide whether it belongs to an agent. Only surface
+    // "not an agent QR" for structured payloads (JSON / URL) that explicitly
+    // point at a non-agent recipient.
+    const isBareIdentifier = !/^[{\[]/.test(original) && !/^[a-z]+:\/\//i.test(original);
+    if (isBareIdentifier) {
+      return { value: parsed.identifier || s, name: parsed.name, reason: "ok" };
+    }
     logQrParseOutcome("not_agent", original, { flow: parsed.flow });
     return { value: parsed.identifier || s, error: t("coQrNotAgent"), name: parsed.name, reason: "not_agent" };
   }
