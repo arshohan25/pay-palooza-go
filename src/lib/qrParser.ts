@@ -185,7 +185,8 @@ export function parseQrData(raw: string): QrParseResult {
     const agent = url.searchParams.get("agentId") || url.searchParams.get("agent") || url.searchParams.get("agentWallet") || url.searchParams.get("agentNumber");
     if (agent) {
       const phone = normalisePhone(url.searchParams.get("phone") || url.searchParams.get("agentPhone"));
-      return cashOutResult([isUuid(agent) ? agent : "", phone, AGENT_WALLET_RE.test(agent) ? agent.toUpperCase() : "", agent]);
+      // Phone / agent wallet come before UUID — RPC lookup can't resolve UUIDs.
+      return cashOutResult([phone, AGENT_WALLET_RE.test(agent) ? agent.toUpperCase() : "", agent, isUuid(agent) ? agent : ""]);
     }
 
     const to = url.searchParams.get("to") || url.searchParams.get("phone") || url.searchParams.get("wallet") || url.searchParams.get("walletId");
