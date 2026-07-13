@@ -13,6 +13,7 @@ import {
 } from "@/lib/appRole";
 
 const AuthPage = lazy(() => import("@/pages/AuthPage"));
+const AgentLoginPage = lazy(() => import("@/pages/AgentLoginPage"));
 
 const ROLE_META: Record<
   AppRoleKey,
@@ -73,6 +74,15 @@ const RoleLoginPage = () => {
   }, [isAuthenticated, authLoading, rolesLoading, roles, roleKey, navigate]);
 
   if (!roleKey) return <Navigate to="/install" replace />;
+
+  // Dedicated per-role login UIs (no generic customer AuthPage).
+  if (roleKey === "agent") {
+    return (
+      <Suspense fallback={null}>
+        <AgentLoginPage />
+      </Suspense>
+    );
+  }
 
   const meta = ROLE_META[roleKey];
   const Icon = meta.icon;
