@@ -140,9 +140,10 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
 
 
 
-interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; }
+interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; onRouteToCashOut?: (agentId: string) => void; }
 
-const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProps) => {
+const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess, onRouteToCashOut }: SendMoneyFlowProps) => {
+
   const { t, lang } = useI18n();
   const dateLocale = lang === "bn" ? "bn-BD" : "en-GB";
   const timeLocale = lang === "bn" ? "bn-BD" : "en-US";
