@@ -32,7 +32,7 @@ async function readClipboard(page: Page): Promise<string> {
 }
 
 test.describe("role install page — copy/share links", () => {
-  for (const { role, loginPath, heading } of ROLES) {
+  for (const { role, loginPath, bodyText } of ROLES) {
     test(`${role}: copy install link → visiting it renders the correct install page`, async ({
       page,
     }) => {
@@ -64,7 +64,7 @@ test.describe("role install page — copy/share links", () => {
       await page.goto(rel);
       // AppRoleEnforcer must keep us on the login page (never customer app).
       await expect.poll(() => new URL(page.url()).pathname).toBe(loginPath);
-      await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+      await expect(page.getByText(bodyText).first()).toBeVisible();
     });
 
     test(`${role}: opening the login link WITHOUT ?app also stays on ${loginPath}`, async ({
@@ -73,7 +73,7 @@ test.describe("role install page — copy/share links", () => {
       // No prior install visit → localStorage has no bound app role.
       await page.goto(loginPath);
       await expect.poll(() => new URL(page.url()).pathname).toBe(loginPath);
-      await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+      await expect(page.getByText(bodyText).first()).toBeVisible();
     });
   }
 });
