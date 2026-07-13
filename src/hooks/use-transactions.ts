@@ -135,8 +135,9 @@ export function useTransactions(limit?: number, refreshKey?: number, options: Tr
   }, [fetchTxns, refreshKey]);
 
   // Belt-and-suspenders live refresh: refetch on tab focus, visibility
-  // change, and a global "txn:refresh" event that any flow can dispatch
-  // after completing a transaction (cash out, send money, etc.).
+  // change, a global "txn:refresh" event that any flow can dispatch
+  // after completing a transaction, and on auth state changes so the
+  // list reflects the freshly signed-in wallet immediately.
   useEffect(() => {
     const onFocus = () => fetchTxns();
     const onVisibility = () => {
@@ -146,10 +147,26 @@ export function useTransactions(limit?: number, refreshKey?: number, options: Tr
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("txn:refresh", onCustom);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        knownIds.current = new Set();
+        initialLoad.current = true;
+        fetchTxns();
+      } else if (event === "SIGNED_OUT") {
+        knownIds.current = new Set();
+        initialLoad.current = true;
+        setTransactions([]);
+      }
+    });
+
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("txn:refresh", onCustom);
+      subscription.unsubscribe();
     };
   }, [fetchTxns]);
 
