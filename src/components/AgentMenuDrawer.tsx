@@ -919,7 +919,8 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
 
       {/* Logout Confirmation */}
       <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
-        <AlertDialogContent className="rounded-2xl max-w-sm">
+        <AlertDialogContent className="rounded-2xl max-w-sm z-[90]">
+
           <AlertDialogHeader>
             <AlertDialogTitle>{t("agSignOut")}?</AlertDialogTitle>
             <AlertDialogDescription>
