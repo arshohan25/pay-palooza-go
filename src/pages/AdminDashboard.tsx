@@ -2102,6 +2102,7 @@ export default function AdminDashboard() {
 
         {/* ═══ DISTRIBUTORS ═══ */}
         {activeTab === "distributors" && <AdminDistributorManagement />}
+        {activeTab === "super_distributors" && <AdminSuperDistributorHub />}
 
         {/* ═══ SYSTEM HEALTH ═══ */}
         {activeTab === "sys_health" && <AdminSystemHealth />}
