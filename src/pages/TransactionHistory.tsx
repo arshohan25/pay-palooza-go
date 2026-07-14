@@ -142,14 +142,20 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           ? isAgentTxnCredit(tx)
           : tx.type === "addmoney" || tx.type === "receive" || tx.type === "cashin";
         const agentParty = tx.recipient_name || tx.recipient_phone || tx.description || label;
+        const partyLine = tx.recipient_name || tx.recipient_phone || tx.description || "";
         return {
           id: tx.id,
           short_id: tx.short_id || tx.id.slice(0, 12).toUpperCase(),
           category: displayType,
-          name: agentView && (displayType === "cashin" || displayType === "cashout") ? label : (isCashback
-            ? (tx.description?.replace("Drive Cashback: ", "") || t("thCashback"))
-            : (tx.recipient_name || label)),
-          detail: agentView && (displayType === "cashin" || displayType === "cashout") ? agentParty : (isCashback ? t("thDriveCashback") : (tx.description || "")),
+          name: agentView && (displayType === "cashin" || displayType === "cashout")
+            ? label
+            : (isCashback
+              ? (tx.description?.replace("Drive Cashback: ", "") || t("thCashback"))
+              : label),
+          detail: agentView && (displayType === "cashin" || displayType === "cashout")
+            ? agentParty
+            : (isCashback ? t("thDriveCashback") : partyLine),
+
 
 
           date: tx.created_at,
