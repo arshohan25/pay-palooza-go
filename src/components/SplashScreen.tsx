@@ -21,16 +21,25 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
     img.src = logo;
     img.onload = () => setLogoLoaded(true);
     img.onerror = () => setLogoLoaded(true);
-    const fallback = setTimeout(() => setLogoLoaded(true), 2000);
+    const fallback = setTimeout(() => setLogoLoaded(true), 800);
     return () => clearTimeout(fallback);
   }, []);
+
+  // Hard cap: no matter what, splash must exit within 1.5s of mount.
+  useEffect(() => {
+    const hardCap = setTimeout(() => {
+      setExiting(true);
+      setTimeout(onDone, 200);
+    }, 1500);
+    return () => clearTimeout(hardCap);
+  }, [onDone]);
 
   useEffect(() => {
     if (!logoLoaded) return;
     const timer = setTimeout(() => {
       setExiting(true);
-      setTimeout(onDone, 250);
-    }, 500);
+      setTimeout(onDone, 200);
+    }, 400);
     return () => clearTimeout(timer);
   }, [logoLoaded, onDone]);
 
