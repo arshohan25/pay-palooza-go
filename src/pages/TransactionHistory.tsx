@@ -673,7 +673,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   {[
                     { icon: Hash,     label: t("thTransactionId"), value: txId,                                   copy: true  },
                     { icon: User,     label: t("thNameParty"),   value: selectedTx.name,                        copy: false },
-                    ...(selectedTx.recipient_phone ? [{ icon: Phone, label: t("thReceiverNumber"), value: selectedTx.recipient_phone, copy: true }] : []),
+                    ...(selectedTx.recipient_phone ? [{ icon: Phone, label: isCredit ? t("thSenderNumber") : t("thReceiverNumber"), value: selectedTx.recipient_phone, copy: true }] : []),
                     { icon: Tag,      label: t("thCategory"),       value: catLabel,                               copy: false },
                     ...(selectedTx.detail && !selectedTx.detail.includes("[Wallet:") && !selectedTx.detail.includes("Wallet:") && selectedTx.detail !== catLabel
                       ? [{ icon: FileText, label: t("thDescription"), value: selectedTx.detail, copy: false }] : []),
