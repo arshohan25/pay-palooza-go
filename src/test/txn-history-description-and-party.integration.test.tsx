@@ -106,23 +106,10 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import TransactionHistory from "@/pages/TransactionHistory";
 
-const openTxByShortId = (shortId: string) => {
-  const idNode = screen.getByText(shortId);
-  // Row is a clickable ancestor; walk up until we find a clickable element.
-  let el: HTMLElement | null = idNode;
-  while (el && el.tagName !== "BUTTON" && !el.onclick && el.getAttribute("role") !== "button") {
-    // Fire on the closest visible row: bubble up 5 levels max.
-    el = el.parentElement;
-  }
-  fireEvent.click(el ?? idNode);
-};
-
-const getSheet = () => {
-  // The sheet content contains the "thNameParty" label.
-  const label = screen.getByText("thNameParty");
-  let node: HTMLElement | null = label;
-  for (let i = 0; i < 10 && node; i++) node = node.parentElement;
-  return label.closest("div[class*='fixed']") as HTMLElement || (label.parentElement as HTMLElement);
+const openTxByName = (name: string) => {
+  const node = screen.getAllByText(name)[0];
+  const btn = node.closest("button");
+  fireEvent.click(btn ?? node);
 };
 
 describe("TransactionHistory — description row + party name direction", () => {
