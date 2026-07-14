@@ -68,50 +68,111 @@ export default function AdminDistributorManagement() {
   const [bulkTransferFor, setBulkTransferFor] = useState<Distributor | null>(null);
   const [territoryTransfer, setTerritoryTransfer] = useState<string | null>(null);
 
+  // Confirmation state
+  const [unlinkTarget, setUnlinkTarget] = useState<any | null>(null);
+  const [removeTerritoryTarget, setRemoveTerritoryTarget] = useState<string | null>(null);
+
+  // RBAC gate for hiding mutation UI when caller lacks permissions
+  const [canManage, setCanManage] = useState(true);
+  useEffect(() => { canManageDistributors().then(setCanManage); }, []);
+
   const refreshLinkedAgents = useCallback(async (distId: string) => {
     const { data } = await supabase.from("agents").select("id, business_name, status, user_id, commission_earned").eq("distributor_id", distId);
     setLinkedAgents(data ?? []);
   }, []);
 
-  const handleUnlinkAgent = async (agentId: string) => {
-    if (!selectedDist) return;
+  const confirmUnlinkAgent = async () => {
+    if (!selectedDist || !unlinkTarget) return;
+    const agent = unlinkTarget;
+    setUnlinkTarget(null);
     try {
-      await reassignAgent(agentId, selectedDist.id, null);
-      toast.success("Agent unlinked");
+      const res = await reassignAgent(agent.id, selectedDist.id, null);
+      toast.success(`Unlinked ${agent.business_name || "agent"}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await reassignAgent(agent.id, null, res.prevDistId);
+              toast.success("Undo — agent re-linked");
+              refreshLinkedAgents(selectedDist.id);
+            } catch (e: any) { toast.error(e.message || "Undo failed"); }
+          },
+        },
+      });
       refreshLinkedAgents(selectedDist.id);
-    } catch (e: any) { toast.error(e.message || "Failed"); }
+    } catch (e: any) { toast.error(e.message || "Failed to unlink"); }
   };
 
   const handleTransferAgent = async (toDistId: string | null, toName: string) => {
     if (!selectedDist || !transferAgent) return;
+    const agent = transferAgent;
     try {
-      await reassignAgent(transferAgent.id, selectedDist.id, toDistId);
-      toast.success(`Agent moved to ${toName}`);
+      const res = await reassignAgent(agent.id, selectedDist.id, toDistId);
+      toast.success(`Agent moved to ${toName}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await reassignAgent(agent.id, toDistId, res.prevDistId);
+              toast.success("Undo — agent restored");
+              refreshLinkedAgents(selectedDist.id);
+            } catch (e: any) { toast.error(e.message || "Undo failed"); }
+          },
+        },
+      });
       refreshLinkedAgents(selectedDist.id);
       setTransferAgent(null);
-    } catch (e: any) { toast.error(e.message || "Failed"); }
+    } catch (e: any) { toast.error(e.message || "Failed to transfer"); }
   };
 
-  const handleRemoveTerritory = async (code: string) => {
-    if (!selectedDist) return;
+  const confirmRemoveTerritory = async () => {
+    if (!selectedDist || !removeTerritoryTarget) return;
+    const code = removeTerritoryTarget;
+    const distId = selectedDist.id;
+    setRemoveTerritoryTarget(null);
     try {
-      await removeTerritory(code, selectedDist.id);
-      toast.success(`Removed ${code}`);
+      await removeTerritory(code, distId);
+      toast.success(`Removed ${code}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await addTerritory(code, distId);
+              toast.success(`Restored ${code}`);
+              load();
+            } catch (e: any) { toast.error(e.message || "Undo failed"); }
+          },
+        },
+      });
       setSelectedDist({ ...selectedDist, territory: (selectedDist.territory ?? []).filter(c => c !== code) });
       load();
-    } catch (e: any) { toast.error(e.message || "Failed"); }
+    } catch (e: any) { toast.error(e.message || "Failed to remove"); }
   };
 
   const handleMoveTerritory = async (toDistId: string | null, toName: string) => {
     if (!selectedDist || !territoryTransfer || !toDistId) return;
+    const code = territoryTransfer;
+    const fromId = selectedDist.id;
     try {
-      await transferTerritory(territoryTransfer, selectedDist.id, toDistId);
-      toast.success(`Moved ${territoryTransfer} to ${toName}`);
-      setSelectedDist({ ...selectedDist, territory: (selectedDist.territory ?? []).filter(c => c !== territoryTransfer) });
+      await transferTerritory(code, fromId, toDistId);
+      toast.success(`Moved ${code} to ${toName}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await transferTerritory(code, toDistId, fromId);
+              toast.success(`Undo — ${code} restored`);
+              load();
+            } catch (e: any) { toast.error(e.message || "Undo failed"); }
+          },
+        },
+      });
+      setSelectedDist({ ...selectedDist, territory: (selectedDist.territory ?? []).filter(c => c !== code) });
       setTerritoryTransfer(null);
       load();
-    } catch (e: any) { toast.error(e.message || "Failed"); }
+    } catch (e: any) { toast.error(e.message || "Failed to move"); }
   };
+
 
   const load = useCallback(async () => {
     setLoading(true);
