@@ -156,3 +156,116 @@ describe("TransactionHistory — description row + party name direction", () => 
     expect(screen.getAllByText("Rent share")[0]).toBeInTheDocument();
   });
 });
+
+describe("TransactionHistory — phone number formatting per direction", () => {
+  beforeEach(() => cleanup());
+
+  const PHONE_RE = /^01[3-9]\d{8}$/; // Bangladesh mobile format
+
+  it("sent transaction shows Receiver Number with the recipient's phone", () => {
+    render(<TransactionHistory />);
+    openTxByName("Rahim Receiver");
+
+    const label = screen.getByText("thReceiverNumber");
+    // The value sits in the sibling <p> inside the same row container.
+    const row = label.closest("div")!.parentElement!;
+    const value = within(row).getByText(/^01\d{9}$/).textContent!;
+    expect(value).toBe("01711111111");
+    expect(value).toMatch(PHONE_RE);
+    expect(screen.queryByText("thSenderNumber")).not.toBeInTheDocument();
+  });
+
+  it("received transaction shows Sender Number with the sender's phone", () => {
+    render(<TransactionHistory />);
+    openTxByName("Salma Sender");
+
+    const label = screen.getByText("thSenderNumber");
+    const row = label.closest("div")!.parentElement!;
+    const value = within(row).getByText(/^01\d{9}$/).textContent!;
+    expect(value).toBe("01733333333");
+    expect(value).toMatch(PHONE_RE);
+    expect(screen.queryByText("thReceiverNumber")).not.toBeInTheDocument();
+  });
+});
+
+describe("TransactionHistory — row click opens matching detail with correct party mapping", () => {
+  beforeEach(() => cleanup());
+
+  const openAndAssert = (
+    rowName: string,
+    expected: {
+      party: string;
+      phone: string;
+      phoneLabel: "thSenderNumber" | "thReceiverNumber";
+      oppositePhoneLabel: "thSenderNumber" | "thReceiverNumber";
+      sign: "+" | "−";
+      amount: string;
+    },
+  ) => {
+    render(<TransactionHistory />);
+    openTxByName(rowName);
+
+    // Detail sheet is open — Name/Party row present.
+    const partyLabel = screen.getByText("thNameParty");
+    const partyRow = partyLabel.closest("div")!.parentElement!;
+    expect(within(partyRow).getByText(expected.party)).toBeInTheDocument();
+
+    // Phone label matches direction.
+    expect(screen.getByText(expected.phoneLabel)).toBeInTheDocument();
+    expect(screen.queryByText(expected.oppositePhoneLabel)).not.toBeInTheDocument();
+
+    // Phone value belongs to the counterparty of this direction.
+    const phoneLabelEl = screen.getByText(expected.phoneLabel);
+    const phoneRow = phoneLabelEl.closest("div")!.parentElement!;
+    expect(within(phoneRow).getByText(expected.phone)).toBeInTheDocument();
+
+    // Amount sign in the sheet header matches direction.
+    expect(
+      screen.getAllByText(`${expected.sign}৳${expected.amount}`)[0],
+    ).toBeInTheDocument();
+  };
+
+  it("clicking a sent row opens the sent detail mapped to the receiver", () => {
+    openAndAssert("Rahim Receiver", {
+      party: "Rahim Receiver",
+      phone: "01711111111",
+      phoneLabel: "thReceiverNumber",
+      oppositePhoneLabel: "thSenderNumber",
+      sign: "−",
+      amount: "500",
+    });
+  });
+
+  it("clicking a received row opens the received detail mapped to the sender", () => {
+    openAndAssert("Salma Sender", {
+      party: "Salma Sender",
+      phone: "01733333333",
+      phoneLabel: "thSenderNumber",
+      oppositePhoneLabel: "thReceiverNumber",
+      sign: "+",
+      amount: "300",
+    });
+  });
+
+  it("opening one row and then another switches the detail to the new party", () => {
+    render(<TransactionHistory />);
+
+    openTxByName("Karim Receiver");
+    expect(screen.getByText("thReceiverNumber")).toBeInTheDocument();
+    let phoneRow = screen.getByText("thReceiverNumber").closest("div")!.parentElement!;
+    expect(within(phoneRow).getByText("01722222222")).toBeInTheDocument();
+    expect(screen.getAllByText("−৳250")[0]).toBeInTheDocument();
+
+    // Close the sheet, then open a different (received) row.
+    fireEvent.keyDown(document, { key: "Escape" });
+    // Fallback: click the backdrop close by re-selecting via state — just open next row.
+    openTxByName("Nadia Sender");
+
+    expect(screen.getByText("thSenderNumber")).toBeInTheDocument();
+    expect(screen.queryByText("thReceiverNumber")).not.toBeInTheDocument();
+    phoneRow = screen.getByText("thSenderNumber").closest("div")!.parentElement!;
+    expect(within(phoneRow).getByText("01744444444")).toBeInTheDocument();
+    expect(screen.getAllByText("+৳150")[0]).toBeInTheDocument();
+  });
+});
+
