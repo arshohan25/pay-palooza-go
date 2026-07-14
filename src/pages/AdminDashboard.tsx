@@ -2107,6 +2107,8 @@ export default function AdminDashboard() {
         {/* ═══ DISTRIBUTORS ═══ */}
         {activeTab === "distributors" && <AdminDistributorManagement />}
         {activeTab === "super_distributors" && <AdminSuperDistributorHub />}
+        {activeTab === "sd_overview" && <AdminSuperDistributorOverview />}
+        {activeTab === "roles_perms" && <AdminRolesPermissions />}
 
         {/* ═══ SYSTEM HEALTH ═══ */}
         {activeTab === "sys_health" && <AdminSystemHealth />}
