@@ -11,9 +11,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, Users, RefreshCw, ToggleRight, UserPlus, Pencil, Trash2, Loader2, PauseCircle, CheckCircle, XCircle, Save, X } from "lucide-react";
+import { Building2, Users, RefreshCw, ToggleRight, UserPlus, Pencil, Trash2, Loader2, PauseCircle, CheckCircle, XCircle, Save, X, Link2Off, ArrowRightLeft, Shuffle, MapPin } from "lucide-react";
 import { signUpWithPhonePassword, pinToPassword } from "@/lib/auth";
 import { toast } from "sonner";
+import DistributorPickerDialog from "./DistributorPickerDialog";
+import AssignAgentsDialog from "./AssignAgentsDialog";
+import BulkTransferDistributorDialog from "./BulkTransferDistributorDialog";
+import { reassignAgent, removeTerritory, transferTerritory } from "@/lib/distributorAdmin";
 
 interface Distributor {
   id: string;
