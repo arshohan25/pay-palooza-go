@@ -20,6 +20,9 @@ async function setBangla(page: Page) {
   await page.addInitScript(() => {
     try {
       window.localStorage.setItem("mfs_ui_lang", "bn");
+      window.localStorage.setItem("mfs_onboarding_completed", "1");
+      window.localStorage.setItem("mfs_has_authenticated", "1");
+      window.localStorage.setItem("app_cache_version", "20");
     } catch {
       /* ignore */
     }
