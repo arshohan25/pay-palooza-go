@@ -333,7 +333,12 @@ const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
                       </span>
                     )}
                   </div>
-                  <p className="text-[11.5px] text-muted-foreground mt-0.5">{relativeDate(tx.created_at)}</p>
+                  {(tx.recipient_name || tx.recipient_phone) && !display.isCashback && (
+                    <p className="text-[11.5px] text-foreground/80 truncate mt-0.5">
+                      {tx.recipient_name || tx.recipient_phone}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{relativeDate(tx.created_at)}</p>
                   {tx.status === "pending" && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 mt-0.5">
                       <Clock size={9} /> PENDING
