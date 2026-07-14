@@ -505,8 +505,8 @@ export default function AdminDistributorManagement() {
                             <p className="text-sm font-medium text-foreground truncate">{a.business_name || a.id.slice(0, 8)}</p>
                           </div>
                           <Badge variant={a.status === "active" ? "default" : "destructive"} className="text-[10px]">{a.status}</Badge>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Transfer to another distributor" onClick={() => setTransferAgent(a)}><ArrowRightLeft className="w-3.5 h-3.5" /></Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" title="Unlink from this distributor" onClick={() => handleUnlinkAgent(a.id)}><Link2Off className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Transfer to another distributor" disabled={!canManage} onClick={() => setTransferAgent(a)}><ArrowRightLeft className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" title="Unlink from this distributor" disabled={!canManage} onClick={() => setUnlinkTarget(a)}><Link2Off className="w-3.5 h-3.5" /></Button>
                         </div>
                       ))}
                     </div>
