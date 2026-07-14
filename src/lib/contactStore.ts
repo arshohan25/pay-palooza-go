@@ -46,6 +46,8 @@ export function getContactNameByPhone(phone: string | null | undefined): string 
   const key = normalizePhone(phone);
   const match = loadContacts().find((c) => normalizePhone(c.phone) === key);
   return match ? match.name : null;
+}
+
 
 export function getSeedContacts(): StoredContact[] {
   return [];
