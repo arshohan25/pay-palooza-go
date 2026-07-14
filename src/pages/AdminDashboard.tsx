@@ -2113,6 +2113,8 @@ export default function AdminDashboard() {
         {activeTab === "super_distributors" && <AdminSuperDistributorHub />}
         {activeTab === "sd_overview" && <AdminSuperDistributorOverview />}
         {activeTab === "roles_perms" && <AdminRolesPermissions />}
+        {activeTab === "user_roles" && <AdminUserRoleAssignments />}
+        {activeTab === "perm_audit" && <AdminPermissionAuditLog />}
 
         {/* ═══ SYSTEM HEALTH ═══ */}
         {activeTab === "sys_health" && <AdminSystemHealth />}
