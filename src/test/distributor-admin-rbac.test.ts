@@ -100,15 +100,18 @@ import {
   ValidationError,
 } from "@/lib/distributorAdmin";
 
+let _uid = 0;
 beforeEach(() => {
   setScenario({
-    userId: "user-1",
+    // Fresh user id per test — distributorAdmin caches roles per userId.
+    userId: `user-${++_uid}`,
     roles: [],
     hasPermission: false,
     agentRow: { id: "agent-1", distributor_id: "dist-A", status: "active", business_name: "Agent 1" },
     distributorRow: { status: "active", territory: ["DHK", "CTG"] },
   });
 });
+
 
 describe("assertAdmin / canManageDistributors gates", () => {
   it("rejects an unauthenticated caller", async () => {
