@@ -33,6 +33,7 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
     const [copied, setCopied] = useState(false);
     const [copiedId, setCopiedId] = useState(false);
     const [downloading, setDownloading] = useState(false);
+    const [downloadingPdf, setDownloadingPdf] = useState(false);
     const receiptRef = useRef<HTMLDivElement>(null);
 
     const buildText = () => {
