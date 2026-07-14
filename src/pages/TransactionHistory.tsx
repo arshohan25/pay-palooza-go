@@ -16,6 +16,7 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
 import { getAgentDisplayType, isAgentTxnCredit } from "@/lib/agentTransactions";
+import { getContactNameByPhone } from "@/lib/contactStore";
 import {
   TxSendIcon, TxReceiveIcon, TxCashOutIcon,
   TxRechargeIcon, TxBillIcon, TxBankIcon, TxPaymentIcon, TxBankTransferIcon,
@@ -146,7 +147,12 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           ? isAgentTxnCredit(tx)
           : tx.type === "addmoney" || tx.type === "receive" || tx.type === "cashin";
         const agentParty = tx.recipient_name || tx.recipient_phone || tx.description || label;
-        const partyLine = tx.recipient_name || tx.recipient_phone || tx.description || "";
+        // For recharge/paybill, the operator sits in recipient_name — prefer
+        // the saved contact name for the recharged number, then the number.
+        const contactName = getContactNameByPhone(tx.recipient_phone);
+        const partyLine = (tx.type === "recharge" || tx.type === "paybill")
+          ? (contactName || tx.recipient_phone || tx.recipient_name || tx.description || "")
+          : (contactName || tx.recipient_name || tx.recipient_phone || tx.description || "");
         return {
           id: tx.id,
           short_id: tx.short_id || tx.id.slice(0, 12).toUpperCase(),
@@ -159,7 +165,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           detail: agentView && (displayType === "cashin" || displayType === "cashout")
             ? agentParty
             : (isCashback ? t("thDriveCashback") : partyLine),
-          party: tx.recipient_name || tx.recipient_phone || label,
+          party: contactName || tx.recipient_name || tx.recipient_phone || label,
 
 
 
