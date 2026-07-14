@@ -91,6 +91,18 @@ const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
   banktransfer: { Icon: TxBankTransferIcon, ReceiveIcon: TxBankTransferIcon, bg: "rgba(63,81,181,0.12)", ring: "1px solid rgba(63,81,181,0.2)", receiveBg: "rgba(63,81,181,0.12)", receiveRing: "1px solid rgba(63,81,181,0.2)" },
 };
 
+const TX_GRADIENTS: Record<Exclude<TxCategory, "all">, string> = {
+  send: "from-pink-500 to-rose-600",
+  receive: "from-emerald-500 to-green-600",
+  cashout: "from-orange-500 to-amber-600",
+  cashin: "from-emerald-500 to-green-600",
+  payment: "from-purple-500 to-violet-600",
+  recharge: "from-cyan-500 to-teal-600",
+  paybill: "from-yellow-500 to-amber-600",
+  addmoney: "from-blue-500 to-indigo-600",
+  banktransfer: "from-indigo-500 to-blue-600",
+};
+
 const relativeDate = (iso: string, t: (k: string) => string) => {
   const d = new Date(iso);
   const today = new Date();
