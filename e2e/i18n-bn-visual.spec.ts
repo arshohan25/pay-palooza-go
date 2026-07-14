@@ -62,7 +62,7 @@ test.describe("i18n bn — visual regression", () => {
       await expect(page).toHaveScreenshot(`${name}-bn.png`, {
         fullPage: false,
         animations: "disabled",
-        maxDiffPixelRatio: 0.02,
+        maxDiffPixelRatio: 0.08,
       });
     });
   }

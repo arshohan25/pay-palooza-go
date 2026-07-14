@@ -14,7 +14,7 @@ import { test, expect } from "@playwright/test";
  *      `/login/agent` for every agent-scoped route.
  */
 
-const AGENT_ROUTES = ["/agent", "/agent/cash-in", "/agent/cash-out", "/agent/statement"];
+const AGENT_ROUTES = ["/agent", "/agent/cashin", "/agent/cashout", "/agent/statement"];
 
 test.describe("agent sign-out → /login/agent", () => {
   test.beforeEach(async ({ context }) => {
