@@ -3158,6 +3158,7 @@ const translations = {
   thTransactionId: { en: "Transaction ID", bn: "লেনদেন আইডি" },
   thNameParty: { en: "Name / Party", bn: "নাম / পক্ষ" },
   thReceiverNumber: { en: "Receiver Number", bn: "প্রাপকের নম্বর" },
+  thSenderNumber: { en: "Sender Number", bn: "প্রেরকের নম্বর" },
   thCategory: { en: "Category", bn: "ধরন" },
   thDescription: { en: "Description", bn: "বিবরণ" },
   thCommissionEarned: { en: "Commission Earned", bn: "অর্জিত কমিশন" },
