@@ -123,6 +123,10 @@ test.describe("Agent — Customer KYC sheet (E2E)", () => {
     await expect(page.getByTestId("kyc-rejected-count")).toHaveText("2");
     await expect(page.getByTestId("kyc-latest-rejection-reason")).toHaveText("Address mismatch");
 
+    // Close sheet before interacting with the harness controls behind it.
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("customer-kyc-sheet")).toHaveCount(0);
+
     // Switch to Agent B.
     await page.getByTestId("switch-agent-b").click();
     await expect(page.getByTestId("harness-agent")).toHaveText("B");
@@ -148,6 +152,8 @@ test.describe("Agent — Customer KYC sheet (E2E)", () => {
     );
 
     // Switching back to A doesn't carry Agent B's rows over either.
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("customer-kyc-sheet")).toHaveCount(0);
     await page.getByTestId("switch-agent-a").click();
     await expect(page.getByTestId("harness-agent")).toHaveText("A");
     await page.getByTestId("open-kyc").click();
@@ -159,6 +165,7 @@ test.describe("Agent — Customer KYC sheet (E2E)", () => {
   });
 
   test("very long rejection reasons truncate by default and expand on tap", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${HARNESS}?fixture=long-reason`);
     await page.getByTestId("open-kyc").click();
     await expect(page.getByTestId("customer-kyc-content")).toBeVisible();

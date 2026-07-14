@@ -91,7 +91,7 @@ const AgentLoginPage = () => {
             <ShieldCheck size={26} />
           </div>
           <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">EasyPay</p>
-          <h1 className="text-xl font-extrabold mt-0.5">Agent Portal</h1>
+          <h1 className="text-xl font-extrabold mt-0.5">EasyPay Agent Portal</h1>
           <p className="text-xs opacity-90 mt-1 max-w-[280px] mx-auto">
             Sign in to serve customers — cash-in, cash-out & bill pay.
           </p>
