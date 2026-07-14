@@ -374,6 +374,7 @@ export default function AdminDistributorManagement() {
                             <Button size="sm" variant={d.status === "suspended" ? "default" : "destructive"} className="h-7 text-xs" onClick={() => setStatus(d, d.status === "suspended" ? "active" : "suspended")}>
                               {d.status === "suspended" ? "Activate" : "Suspend"}
                             </Button>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Bulk transfer to another distributor" onClick={() => setBulkTransferFor(d)}><Shuffle className="w-3.5 h-3.5" /></Button>
                             <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeleteTarget(d)}><Trash2 className="w-3.5 h-3.5" /></Button>
                           </div>
                         </TableCell>
@@ -400,19 +401,51 @@ export default function AdminDistributorManagement() {
                 <div><p className="text-muted-foreground">Status</p><Badge className={STATUS_COLORS[selectedDist.status]}>{selectedDist.status}</Badge></div>
                 <div><p className="text-muted-foreground">Commission</p><p className="font-medium text-foreground">{selectedDist.commission_rate}%</p></div>
                 <div><p className="text-muted-foreground">Max Float</p><p className="font-medium text-foreground">৳{selectedDist.max_float.toLocaleString()}</p></div>
-                <div><p className="text-muted-foreground">Territory</p><p className="font-medium text-foreground">{selectedDist.territory?.join(", ") || "—"}</p></div>
               </div>
+
+              {/* Territories */}
               <div>
-                <p className="text-sm font-medium text-foreground mb-2">Linked Agents ({linkedAgents.length})</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Territories ({selectedDist.territory?.length ?? 0})</p>
+                </div>
+                {(!selectedDist.territory || selectedDist.territory.length === 0) ? (
+                  <p className="text-xs text-muted-foreground">No territories assigned</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedDist.territory.map((code) => (
+                      <div key={code} className="group flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-muted text-xs font-medium text-foreground">
+                        <span>{code}</span>
+                        <button type="button" title="Move to another distributor" className="h-5 w-5 rounded-full hover:bg-primary/20 flex items-center justify-center" onClick={() => setTerritoryTransfer(code)}>
+                          <ArrowRightLeft className="w-3 h-3" />
+                        </button>
+                        <button type="button" title="Remove" className="h-5 w-5 rounded-full hover:bg-destructive/20 flex items-center justify-center text-destructive" onClick={() => handleRemoveTerritory(code)}>
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Linked Agents */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-foreground">Linked Agents ({linkedAgents.length})</p>
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setAssignOpen(true)}><UserPlus className="w-3.5 h-3.5" /> Assign</Button>
+                </div>
                 {agentsLoading ? <p className="text-xs text-muted-foreground">Loading...</p> : linkedAgents.length === 0 ? (
                   <p className="text-xs text-muted-foreground">No agents linked</p>
                 ) : (
                   <ScrollArea className="max-h-[300px]">
                     <div className="space-y-2">
                       {linkedAgents.map((a: any) => (
-                        <div key={a.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
-                          <span className="text-sm font-medium text-foreground">{a.business_name || a.id.slice(0, 8)}</span>
-                          <Badge variant={a.status === "active" ? "default" : "destructive"} className="text-xs">{a.status}</Badge>
+                        <div key={a.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-muted/30">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-foreground truncate">{a.business_name || a.id.slice(0, 8)}</p>
+                          </div>
+                          <Badge variant={a.status === "active" ? "default" : "destructive"} className="text-[10px]">{a.status}</Badge>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Transfer to another distributor" onClick={() => setTransferAgent(a)}><ArrowRightLeft className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" title="Unlink from this distributor" onClick={() => handleUnlinkAgent(a.id)}><Link2Off className="w-3.5 h-3.5" /></Button>
                         </div>
                       ))}
                     </div>
@@ -423,6 +456,53 @@ export default function AdminDistributorManagement() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Assign agents to selectedDist */}
+      {selectedDist && (
+        <AssignAgentsDialog
+          open={assignOpen}
+          onOpenChange={setAssignOpen}
+          targetDistributorId={selectedDist.id}
+          targetDistributorName={selectedDist.business_name}
+          onDone={() => refreshLinkedAgents(selectedDist.id)}
+        />
+      )}
+
+      {/* Transfer a single agent to another distributor */}
+      {selectedDist && (
+        <DistributorPickerDialog
+          open={!!transferAgent}
+          onOpenChange={(o) => { if (!o) setTransferAgent(null); }}
+          title="Transfer agent"
+          description={`Move ${transferAgent?.business_name || "agent"} to another distributor`}
+          excludeIds={[selectedDist.id]}
+          allowUnassign
+          onPick={handleTransferAgent}
+        />
+      )}
+
+      {/* Move a territory code to another distributor */}
+      {selectedDist && (
+        <DistributorPickerDialog
+          open={!!territoryTransfer}
+          onOpenChange={(o) => { if (!o) setTerritoryTransfer(null); }}
+          title={`Move territory "${territoryTransfer}"`}
+          description="Pick the distributor that will own this territory."
+          excludeIds={[selectedDist.id]}
+          onPick={handleMoveTerritory}
+        />
+      )}
+
+      {/* Bulk transfer everything from a distributor */}
+      {bulkTransferFor && (
+        <BulkTransferDistributorDialog
+          open={!!bulkTransferFor}
+          onOpenChange={(o) => { if (!o) setBulkTransferFor(null); }}
+          fromDistributorId={bulkTransferFor.id}
+          fromDistributorName={bulkTransferFor.business_name}
+          onDone={load}
+        />
+      )}
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
