@@ -35,7 +35,6 @@ const PromoSlider = lazy(() => import("@/components/PromoSlider"));
 const SideNav = lazy(() => import("@/components/SideNav"));
 const PlatformBanner = lazy(() => import("@/components/PlatformBanner"));
 const FestivalOverlay = lazy(() => import("@/components/FestivalOverlay"));
-const SplashScreen = lazy(() => import("@/components/SplashScreen"));
 const OnboardingSlides = lazy(() => import("@/components/OnboardingSlides"));
 
 // ── Flow overlays: lazy (prefetched during idle) ──
@@ -99,7 +98,7 @@ const Index = () => {
   void futureFeatures.visibility.future_scam_shield;
   const { status: kycStatus, rejectionReason, loading: kycLoading } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
-  const [splashDone, setSplashDone]           = useState(true);
+  const [splashDone]           = useState(true);
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
   const hasAuthenticated = localStorage.getItem("mfs_has_authenticated") === "1";
   const [replayOnboarding, setReplayOnboarding] = useState(false);
