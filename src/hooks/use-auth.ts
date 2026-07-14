@@ -34,6 +34,46 @@ export async function signOut() {
   _sessionResolved = true;
 }
 
+/**
+ * Detect a corrupted/invalid Supabase session (e.g. JWT missing `sub`
+ * claim after signing-key rotation). Such a session can't be used and
+ * causes /auth/v1/user to 403 in a loop, wedging the UI. We treat it
+ * as "signed out" and purge it from storage.
+ */
+function isSessionInvalid(session: Session | null): boolean {
+  if (!session) return false;
+  const token = session.access_token;
+  if (!token || typeof token !== "string") return true;
+  const parts = token.split(".");
+  if (parts.length !== 3) return true;
+  try {
+    const payload = JSON.parse(
+      atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+    if (!payload?.sub) return true;
+  } catch {
+    return true;
+  }
+  return false;
+}
+
+async function purgeInvalidSession() {
+  try {
+    await supabase.auth.signOut();
+  } catch {
+    // ignore
+  }
+  try {
+    Object.keys(localStorage).forEach((k) => {
+      if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
+        localStorage.removeItem(k);
+      }
+    });
+  } catch {
+    // ignore
+  }
+}
+
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,10 +81,25 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true;
 
+    // Safety valve: never leave the app stuck in "auth loading" forever.
+    const failsafe = setTimeout(() => {
+      if (!mounted) return;
+      _sessionResolved = true;
+      setLoading(false);
+    }, 4000);
+
     supabase.auth
       .getSession()
-      .then(({ data: { session: restoredSession } }) => {
+      .then(async ({ data: { session: restoredSession } }) => {
         if (!mounted) return;
+        if (isSessionInvalid(restoredSession)) {
+          await purgeInvalidSession();
+          _cachedSession = null;
+          _sessionResolved = true;
+          setSession(null);
+          setLoading(false);
+          return;
+        }
         _cachedSession = restoredSession;
         _sessionResolved = true;
         setSession(restoredSession);
@@ -61,6 +116,15 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (isSessionInvalid(nextSession)) {
+        void purgeInvalidSession();
+        _cachedSession = null;
+        _sessionResolved = true;
+        if (!mounted) return;
+        setSession(null);
+        setLoading(false);
+        return;
+      }
       _cachedSession = nextSession;
       _sessionResolved = true;
 
@@ -71,6 +135,7 @@ export function useAuth() {
 
     return () => {
       mounted = false;
+      clearTimeout(failsafe);
       subscription.unsubscribe();
     };
   }, []);
