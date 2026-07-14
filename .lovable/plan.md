@@ -1,91 +1,59 @@
-# Agent Features: Locator + AML Flag + Leaderboard
+## Goal
+Give admins full control over the agent ↔ distributor relationship and distributor territory ownership from the Distributors section (`/admin#distributors`) and Agent Hub — currently there is no way to link/unlink an agent to a distributor, reassign an agent between distributors, or move territories from one distributor to another.
 
-Building the 3 selected features. Each is independent and shipped as a separate agent page/section.
+## What's missing today
+- `AdminDistributorManagement.tsx` only lists linked agents (read-only). No assign / unassign / move buttons.
+- `AdminAgentHub.tsx` never surfaces `distributor_id`; admins can't see or change which distributor owns an agent.
+- Territories live in `distributors.territory text[]`, edited only as a free-text field per distributor — no way to hand a territory from Dist A to Dist B in one action (and no guard against the same territory being claimed twice).
 
----
+## Features to add
 
-## 1. Nearby-Agent Locator (`#2`)
+### 1. In the Distributor drawer (Linked Agents section)
+- **Unlink** button on each agent row → sets `agents.distributor_id = null` (agent becomes unassigned).
+- **Transfer** button → picker dialog listing other active distributors; moves the agent to the chosen one.
+- **Assign agents…** button at top → dialog with a searchable list of currently unassigned agents (or agents from other distributors), multi-select, "Assign to this distributor".
 
-**Agent side** — `/agent` dashboard gets an "Availability" card:
-- Toggle: Online / Offline (persisted in `agents.is_available`)
-- "Set my shop location" → uses browser geolocation (one-time, stored in `agents.location_lat/lng` + `location_updated_at`)
-- Shows current status pill + last-updated timestamp
+### 2. In the Distributor drawer (Territories section)
+- Show territories as chips with an **×** to remove and a **Move to…** menu that transfers the code to another distributor atomically (removed from current, added to target, deduped).
+- Prevent duplicate ownership: if the target already has the code, no-op with a toast.
 
-**Customer side** — new route `/agents/nearby` (linked from customer home Quick Action "Find Agent"):
-- Google Maps via existing Google Maps connector (already installed per knowledge)
-- Shows customer location + pins for online agents within 5 km
-- Tap pin → drawer with agent name, shop, distance, wallet ID, "Copy ID" + "Cash out here" (deep-links to `/cashout?agent=EP…`)
-- Distance calc via Haversine in the query (Postgres function `nearby_agents(lat, lng, radius_km)`)
+### 3. Bulk transfer between distributors
+- New "Transfer all" action in the distributor row menu → "Transfer all agents / all territories / everything from Distributor A → Distributor B" (with confirmation). Useful when retiring a distributor.
 
-**Schema**
-```sql
-ALTER TABLE agents
-  ADD COLUMN is_available boolean DEFAULT false,
-  ADD COLUMN location_lat numeric(9,6),
-  ADD COLUMN location_lng numeric(9,6),
-  ADD COLUMN location_updated_at timestamptz,
-  ADD COLUMN shop_name text;
+### 4. In Admin Agent Hub (`AdminAgentHub.tsx`)
+- New "Distributor" column showing the current distributor's business name (or "Unassigned").
+- Row action **Change distributor…** opens the same picker (reuses the component from #1).
+- Filter: "Distributor = …/Unassigned".
 
-CREATE FUNCTION public.nearby_agents(_lat numeric, _lng numeric, _radius_km numeric)
-RETURNS TABLE(...) LANGUAGE sql STABLE SECURITY DEFINER ...
-```
-RLS: agents update own row; authenticated users can call `nearby_agents` RPC (returns only online agents with location, no PII beyond shop name + wallet ID).
-
----
-
-## 2. Suspicious-Customer Flag / Quick AML Report (`#10`)
-
-**On every row of Agent Transaction History** — kebab menu → "Flag suspicious":
-- Sheet with reason dropdown (structuring, unknown source, refused ID, other), free-text notes, severity (low/med/high)
-- Submits to new `aml_reports` table (agent_id, subject_user_id, txn_id, reason, notes, severity, status)
-- Toast: "Reported to compliance"
-
-**Admin side** — reports flow into existing `fraud_alerts` pipeline via a DB trigger that inserts a matching `fraud_alerts` row (so admins see it in the fraud queue they already use). No new admin UI needed for v1.
-
-**Schema**
-```sql
-CREATE TABLE aml_reports (id uuid pk, agent_id uuid, subject_user_id uuid,
-  transaction_id uuid, reason text, notes text, severity text,
-  status text default 'pending', created_at timestamptz);
--- + GRANTs + RLS (agent inserts own; admin/compliance select all)
--- + trigger → fraud_alerts
-```
-
----
-
-## 3. District Leaderboard (`#11`)
-
-New agent page `/agent/leaderboard`:
-- Uses existing `agents.route_code` (2-letter district code) — no new geo data needed
-- Ranks agents in same district by last-30-day txn count + volume
-- Shows top 20 + "You are #N of M" row pinned at bottom
-- Podium styling for top 3, matches existing dark/glassmorphism theme
-- Refreshes on pull-to-refresh; realtime not required (leaderboards are laggy by design)
-
-**Data**: new `agent_leaderboard(route_code)` RPC that aggregates `transactions` for last 30 days grouped by agent. SECURITY DEFINER, returns rank + masked agent name (first name + last-4 of wallet ID) — never full PII.
-
----
+### 5. Safety & audit
+- Every link/unlink/transfer writes an `audit_logs` row (`action`: `agent_assigned`, `agent_unassigned`, `agent_transferred`, `territory_transferred`, `distributor_bulk_transferred`) with before/after ids.
+- All mutations wrapped in a small helper `reassignAgent(agentId, fromDistId, toDistId)` / `transferTerritory(code, fromDistId, toDistId)` in `src/lib/distributorAdmin.ts`.
+- Guarded by `useAdmin()` — the existing RLS on `agents`/`distributors` already permits admin updates, so no schema/RLS changes are required.
 
 ## Files touched
 
 **New**
-- `src/pages/AgentLeaderboard.tsx`
-- `src/pages/NearbyAgentsPage.tsx`
-- `src/components/agent/AvailabilityCard.tsx`
-- `src/components/agent/FlagSuspiciousSheet.tsx`
-- `supabase/migrations/…_agent_locator_aml_leaderboard.sql`
+- `src/lib/distributorAdmin.ts` — helpers + audit
+- `src/components/admin/DistributorPickerDialog.tsx` — reusable picker (search + select distributor)
+- `src/components/admin/AssignAgentsDialog.tsx` — multi-select assign
+- `src/components/admin/BulkTransferDistributorDialog.tsx`
 
 **Edited**
-- `src/App.tsx` — 2 new routes (`/agent/leaderboard`, `/agents/nearby`)
-- `src/pages/AgentDashboard.tsx` — mount AvailabilityCard, add Leaderboard tile
-- `src/pages/AgentTransactionHistory.tsx` — kebab → Flag suspicious
-- `src/components/QuickActions.tsx` — add "Find Agent" for customers
-- `src/lib/i18n.tsx` — new strings (EN + BN)
+- `src/components/admin/AdminDistributorManagement.tsx` — new buttons in drawer, row action menu, territory chips with move
+- `src/components/admin/AdminAgentHub.tsx` — Distributor column, filter, Change-distributor action
+- `src/lib/i18n.tsx` — new strings (EN + BN): assign, unassign, transfer, move territory, bulk transfer, confirmations
+
+## Technical details
+- No DB migration needed — `agents.distributor_id` and `distributors.territory` already exist and admin role has update rights via existing RLS.
+- Territory move uses a single Postgres transaction via two `update` calls wrapped in `Promise.all` inside a try/catch; on error we revert client-side state (optimistic UI already used elsewhere in the file).
+- All lists refresh via the existing realtime `postgres_changes` subscription on `agents` and `distributors` — no manual refetch after mutation.
 
 ## Order of build
-1. Migration (schema + RPCs + RLS + GRANTs)
-2. AML flag sheet (smallest, no maps)
-3. Leaderboard page (pure data)
-4. Availability + Nearby locator (biggest, needs maps loader)
+1. `distributorAdmin.ts` helpers + audit
+2. `DistributorPickerDialog` (shared)
+3. Distributor drawer: unlink / transfer / assign / territory chips
+4. Agent Hub: distributor column + change action + filter
+5. Bulk-transfer dialog
+6. i18n strings
 
 Confirm and I'll ship it in that order.

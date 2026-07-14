@@ -10,10 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare } from "lucide-react";
+import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare, Building2, ArrowRightLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signUpWithPhonePassword, pinToPassword } from "@/lib/auth";
 import { toast } from "sonner";
+import DistributorPickerDialog from "./DistributorPickerDialog";
+import { reassignAgent } from "@/lib/distributorAdmin";
 
 interface Agent {
   id: string;
@@ -88,13 +90,21 @@ function AgentListTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
 
+  const [distMap, setDistMap] = useState<Record<string, string>>({});
+  const [distFilter, setDistFilter] = useState<string>("all"); // "all" | "unassigned" | <id>
+  const [changeDistAgent, setChangeDistAgent] = useState<Agent | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from("agents").select("*").order("created_at", { ascending: false });
     if (data) {
       const userIds = data.map(a => a.user_id);
-      const { data: profiles } = await supabase.from("profiles").select("user_id, name, phone, balance, avatar_url").in("user_id", userIds);
+      const [{ data: profiles }, { data: dists }] = await Promise.all([
+        supabase.from("profiles").select("user_id, name, phone, balance, avatar_url").in("user_id", userIds),
+        supabase.from("distributors").select("id, business_name"),
+      ]);
       const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.user_id, p]));
+      setDistMap(Object.fromEntries((dists ?? []).map((d: any) => [d.id, d.business_name])));
       setAgents(data.map(a => ({ ...a, profile: profileMap[a.user_id] })) as Agent[]);
     }
     setLoading(false);
@@ -102,10 +112,23 @@ function AgentListTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = agents.filter(a =>
-    !search || a.business_name?.toLowerCase().includes(search.toLowerCase()) ||
-    a.profile?.phone?.includes(search) || a.profile?.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = agents.filter(a => {
+    if (distFilter === "unassigned" && a.distributor_id) return false;
+    if (distFilter !== "all" && distFilter !== "unassigned" && a.distributor_id !== distFilter) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return !!(a.business_name?.toLowerCase().includes(q) || a.profile?.phone?.includes(search) || a.profile?.name?.toLowerCase().includes(q));
+  });
+
+  const handleChangeDistributor = async (toId: string | null, toName: string) => {
+    if (!changeDistAgent) return;
+    try {
+      await reassignAgent(changeDistAgent.id, changeDistAgent.distributor_id, toId);
+      toast.success(`Agent moved to ${toName}`);
+      setChangeDistAgent(null);
+      load();
+    } catch (e: any) { toast.error(e.message || "Failed"); }
+  };
 
   const statusCounts = {
     active: agents.filter(a => a.status === "active").length,
@@ -264,6 +287,18 @@ function AgentListTab() {
       </div>
       <div className="flex gap-2">
         <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input placeholder="Search agents..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 text-xs" /></div>
+        <select
+          value={distFilter}
+          onChange={(e) => setDistFilter(e.target.value)}
+          className="h-8 text-xs rounded-md border border-input bg-background px-2 max-w-[160px]"
+          title="Filter by distributor"
+        >
+          <option value="all">All distributors</option>
+          <option value="unassigned">Unassigned</option>
+          {Object.entries(distMap).map(([id, name]) => (
+            <option key={id} value={id}>{name}</option>
+          ))}
+        </select>
         <Button size="icon" className="shrink-0 h-8 w-8" onClick={() => setCreateOpen(true)}><UserPlus className="w-3.5 h-3.5" /></Button>
       </div>
 
@@ -291,6 +326,7 @@ function AgentListTab() {
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Agent</th>
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Phone</th>
                 <th className="text-left px-3 py-2.5 font-medium text-xs hidden sm:table-cell">Territory</th>
+                <th className="text-left px-3 py-2.5 font-medium text-xs hidden md:table-cell">Distributor</th>
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Status</th>
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Actions</th>
               </tr></thead>
@@ -305,11 +341,19 @@ function AgentListTab() {
                     <td className="px-3 py-2.5 font-medium text-foreground text-xs">{a.business_name || a.profile?.name || "—"}</td>
                     <td className="px-3 py-2.5 text-muted-foreground text-xs">{a.profile?.phone || "—"}</td>
                     <td className="px-3 py-2.5 text-muted-foreground text-xs hidden sm:table-cell">{a.territory_code || "—"}</td>
+                    <td className="px-3 py-2.5 text-xs hidden md:table-cell">
+                      {a.distributor_id ? (
+                        <span className="inline-flex items-center gap-1 text-foreground"><Building2 className="w-3 h-3 text-muted-foreground" />{distMap[a.distributor_id] || a.distributor_id.slice(0, 8)}</span>
+                      ) : (
+                        <span className="text-muted-foreground italic">Unassigned</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2.5"><Badge className={`text-[10px] ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</Badge></td>
                     <td className="px-3 py-2.5">
                       <div className="flex gap-1 flex-wrap">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDetail(a)}><Eye className="w-3.5 h-3.5" /></Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(a)}><Pencil className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Change distributor" onClick={() => setChangeDistAgent(a)}><ArrowRightLeft className="w-3.5 h-3.5" /></Button>
                         {a.status === "active" && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setStatus(a, "hold")}><PauseCircle className="w-3.5 h-3.5 text-amber-600" /></Button>
                         )}
@@ -327,6 +371,17 @@ function AgentListTab() {
           {!loading && filtered.length === 0 && <EmptyState text="No agents found" />}
         </CardContent>
       </Card>
+
+      {/* Change distributor picker */}
+      <DistributorPickerDialog
+        open={!!changeDistAgent}
+        onOpenChange={(o) => { if (!o) setChangeDistAgent(null); }}
+        title="Change distributor"
+        description={`Assign ${changeDistAgent?.business_name || "agent"} to a distributor.`}
+        excludeIds={changeDistAgent?.distributor_id ? [changeDistAgent.distributor_id] : []}
+        allowUnassign
+        onPick={handleChangeDistributor}
+      />
 
       {/* Agent Detail Sheet */}
       <Sheet open={!!detail} onOpenChange={o => !o && setDetail(null)}>
