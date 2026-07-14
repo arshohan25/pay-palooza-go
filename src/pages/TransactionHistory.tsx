@@ -16,6 +16,7 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
 import { getAgentDisplayType, isAgentTxnCredit } from "@/lib/agentTransactions";
+import { getContactNameByPhone } from "@/lib/contactStore";
 import {
   TxSendIcon, TxReceiveIcon, TxCashOutIcon,
   TxRechargeIcon, TxBillIcon, TxBankIcon, TxPaymentIcon, TxBankTransferIcon,
