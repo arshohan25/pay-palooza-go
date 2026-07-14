@@ -62,6 +62,57 @@ export default function AdminDistributorManagement() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
 
+  // Link / transfer state
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [transferAgent, setTransferAgent] = useState<any | null>(null);
+  const [bulkTransferFor, setBulkTransferFor] = useState<Distributor | null>(null);
+  const [territoryTransfer, setTerritoryTransfer] = useState<string | null>(null);
+
+  const refreshLinkedAgents = useCallback(async (distId: string) => {
+    const { data } = await supabase.from("agents").select("id, business_name, status, user_id, commission_earned").eq("distributor_id", distId);
+    setLinkedAgents(data ?? []);
+  }, []);
+
+  const handleUnlinkAgent = async (agentId: string) => {
+    if (!selectedDist) return;
+    try {
+      await reassignAgent(agentId, selectedDist.id, null);
+      toast.success("Agent unlinked");
+      refreshLinkedAgents(selectedDist.id);
+    } catch (e: any) { toast.error(e.message || "Failed"); }
+  };
+
+  const handleTransferAgent = async (toDistId: string | null, toName: string) => {
+    if (!selectedDist || !transferAgent) return;
+    try {
+      await reassignAgent(transferAgent.id, selectedDist.id, toDistId);
+      toast.success(`Agent moved to ${toName}`);
+      refreshLinkedAgents(selectedDist.id);
+      setTransferAgent(null);
+    } catch (e: any) { toast.error(e.message || "Failed"); }
+  };
+
+  const handleRemoveTerritory = async (code: string) => {
+    if (!selectedDist) return;
+    try {
+      await removeTerritory(code, selectedDist.id);
+      toast.success(`Removed ${code}`);
+      setSelectedDist({ ...selectedDist, territory: (selectedDist.territory ?? []).filter(c => c !== code) });
+      load();
+    } catch (e: any) { toast.error(e.message || "Failed"); }
+  };
+
+  const handleMoveTerritory = async (toDistId: string | null, toName: string) => {
+    if (!selectedDist || !territoryTransfer || !toDistId) return;
+    try {
+      await transferTerritory(territoryTransfer, selectedDist.id, toDistId);
+      toast.success(`Moved ${territoryTransfer} to ${toName}`);
+      setSelectedDist({ ...selectedDist, territory: (selectedDist.territory ?? []).filter(c => c !== territoryTransfer) });
+      setTerritoryTransfer(null);
+      load();
+    } catch (e: any) { toast.error(e.message || "Failed"); }
+  };
+
   const load = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from("distributors").select("*").order("created_at", { ascending: false }).limit(200);
