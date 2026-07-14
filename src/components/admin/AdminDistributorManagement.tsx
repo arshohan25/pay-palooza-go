@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import DistributorPickerDialog from "./DistributorPickerDialog";
 import AssignAgentsDialog from "./AssignAgentsDialog";
 import BulkTransferDistributorDialog from "./BulkTransferDistributorDialog";
-import { reassignAgent, removeTerritory, transferTerritory } from "@/lib/distributorAdmin";
+import { reassignAgent, removeTerritory, transferTerritory, addTerritory, canManageDistributors } from "@/lib/distributorAdmin";
 
 interface Distributor {
   id: string;
