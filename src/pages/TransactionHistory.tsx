@@ -148,8 +148,9 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           category: displayType,
           name: agentView && (displayType === "cashin" || displayType === "cashout") ? label : (isCashback
             ? (tx.description?.replace("Drive Cashback: ", "") || t("thCashback"))
-            : (tx.recipient_name || tx.description || label)),
-          detail: agentView && (displayType === "cashin" || displayType === "cashout") ? agentParty : (isCashback ? t("thDriveCashback") : (tx.description || label)),
+            : label),
+          detail: agentView && (displayType === "cashin" || displayType === "cashout") ? agentParty : (isCashback ? t("thDriveCashback") : (tx.recipient_name || tx.description || label)),
+
           date: tx.created_at,
           amount: isCredit ? tx.amount : -tx.amount,
           fee: tx.fee,
