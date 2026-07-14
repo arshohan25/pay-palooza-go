@@ -125,7 +125,7 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
           logging: false,
         });
         const link = document.createElement("a");
-        link.download = `receipt-${receipt.txnId}.png`;
+        link.download = buildFilename("png");
         link.href = canvas.toDataURL("image/png");
         link.click();
       } catch (error) {
@@ -157,7 +157,7 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
         const imgWidth = pageWidth - margin * 2;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
-        pdf.save(`receipt-${receipt.txnId}.pdf`);
+        pdf.save(buildFilename("pdf"));
       } catch (error) {
         console.error("PDF download failed", error);
       } finally {
