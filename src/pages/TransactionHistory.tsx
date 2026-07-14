@@ -157,6 +157,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           detail: agentView && (displayType === "cashin" || displayType === "cashout")
             ? agentParty
             : (isCashback ? t("thDriveCashback") : partyLine),
+          party: tx.recipient_name || tx.recipient_phone || label,
+
 
 
 
