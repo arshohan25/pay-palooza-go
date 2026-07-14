@@ -861,7 +861,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
               gradient: gradMap[selectedTx.category] ?? "gradient-primary",
               txnId: txId,
               rows: [
-                { label: t("thParty"), value: selectedTx.name },
+                { label: t("thParty"), value: selectedTx.party },
                 ...(selectedTx.recipient_phone ? [{ label: t("thReceiver"), value: selectedTx.recipient_phone }] : []),
                 { label: t("thCategory"), value: catLabel },
                 ...(selectedTx.detail && !selectedTx.detail.includes("[Wallet:") && !selectedTx.detail.includes("Wallet:") && selectedTx.detail !== catLabel
