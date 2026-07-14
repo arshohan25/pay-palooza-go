@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth, isBefore } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
-  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle, Phone,
+  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle, Phone, Shield,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -654,8 +654,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                            md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2
                            md:w-[90vw] md:max-w-md md:rounded-3xl"
               >
-                {/* Gradient hero header */}
-                <div className={`relative bg-gradient-to-br ${TX_GRADIENTS[selectedTx.category] ?? "from-primary to-primary/70"} px-5 pt-5 pb-6`}>
+                {/* Gradient hero header — aligned with Home Recent Transactions detail sheet */}
+                <div className={`relative bg-gradient-to-br ${TX_GRADIENTS[selectedTx.category] ?? "from-primary to-primary/70"} px-5 pt-6 pb-7`}>
                   <div className="absolute inset-0 opacity-10" style={{
                     backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)",
                     backgroundSize: "30px 30px, 40px 40px",
@@ -676,70 +676,94 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   </motion.button>
 
                   <div className="flex flex-col items-center relative z-10">
-                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 border border-white/20">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
+                      className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 border border-white/20"
+                    >
                       <IconComp />
-                    </div>
-                    <p className="text-[28px] font-extrabold text-white tracking-tight">
+                    </motion.div>
+                    <motion.p
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.15 }}
+                      className="text-[32px] font-extrabold text-white tracking-tight"
+                    >
                       {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
-                    </p>
-                    <p className="text-[12px] font-medium text-white/80 mt-0.5">{selectedTx.detail}</p>
-                    {selectedTx.status === "pending" ? (
-                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
-                        <Clock size={11} className="text-white" />
-                        <span className="text-[10px] font-bold text-white">{t("thPending")}</span>
-                      </div>
-                    ) : selectedTx.status === "failed" ? (
-                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-red-500/30 backdrop-blur-sm">
-                        <AlertCircle size={11} className="text-white" />
-                        <span className="text-[10px] font-bold text-white">{t("thRejected")}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
-                        <CheckCircle2 size={11} className="text-white" />
-                        <span className="text-[10px] font-bold text-white">{t("thSuccessful")}</span>
-                      </div>
-                    )}
+                    </motion.p>
+                    <p className="text-[12px] font-medium text-white/70 mt-0.5">{catLabel}</p>
+
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="mt-2.5"
+                    >
+                      {selectedTx.status === "pending" ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
+                          <Clock size={11} className="text-white" />
+                          <span className="text-[10px] font-bold text-white">{t("thPending")}</span>
+                        </div>
+                      ) : selectedTx.status === "failed" ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/30 backdrop-blur-sm">
+                          <AlertCircle size={11} className="text-white" />
+                          <span className="text-[10px] font-bold text-white">{t("thRejected")}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
+                          <CheckCircle2 size={11} className="text-white" />
+                          <span className="text-[10px] font-bold text-white">{t("thSuccessful")}</span>
+                        </div>
+                      )}
+                    </motion.div>
                   </div>
                 </div>
 
-                <div className="px-5 pt-4 pb-8 max-h-[70vh] overflow-y-auto">
-                  {/* Detail rows */}
+                <div className="px-5 pt-4 pb-8 max-h-[55vh] overflow-y-auto">
+                  {/* Detail rows — aligned with Home Recent Transactions detail sheet */}
                   {[
-                    { icon: Hash,     label: t("thTransactionId"), value: txId,                                   copy: true  },
+                    { icon: Hash,     label: t("thTransactionId"), value: txId,                                   copy: true, accent: "text-primary" },
                     { icon: User,     label: t("thNameParty"),   value: selectedTx.party,                       copy: false },
                     ...(selectedTx.recipient_phone ? [{ icon: Phone, label: isCredit ? t("thSenderNumber") : t("thReceiverNumber"), value: selectedTx.recipient_phone, copy: true }] : []),
                     { icon: Tag,      label: t("thCategory"),       value: catLabel,                               copy: false },
                     ...(selectedTx.description && !selectedTx.description.includes("[Wallet:") && !selectedTx.description.includes("Wallet:") && selectedTx.description !== catLabel
                       ? [{ icon: FileText, label: t("thDescription"), value: selectedTx.description, copy: false }] : []),
                     ...(agentView
-                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: t("thCommissionEarned"), value: `+৳${selectedTx.commission.toLocaleString("en-IN")}`, copy: false }] : [])
-                      : (selectedTx.fee > 0 ? [{ icon: Coins, label: t("thChargeFee"), value: `৳${selectedTx.fee.toLocaleString("en-IN")}`, copy: false }] : [])
+                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: t("thCommissionEarned"), value: `+৳${selectedTx.commission.toLocaleString("en-IN")}`, copy: false, accent: "text-emerald-600 dark:text-emerald-400" }] : [])
+                      : (selectedTx.fee > 0 ? [{ icon: Coins, label: t("thChargeFee"), value: `৳${selectedTx.fee.toLocaleString("en-IN")}`, copy: false, accent: "text-amber-600 dark:text-amber-400" }] : [])
                     ),
                     { icon: Clock,    label: t("thDateTime"),    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
-                  ].map(({ icon: RowIcon, label, value, copy }) => (
-                    <div key={label} className="flex items-start gap-3 py-2.5 border-b border-border/50 last:border-0">
-                      <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                  ].map(({ icon: RowIcon, label, value, copy, accent }, idx) => (
+                    <motion.div
+                      key={label}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 * idx, ease: [0.23, 1, 0.32, 1] }}
+                      className="flex items-start gap-3 py-3 border-b border-border/40 last:border-0"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-muted/80 flex items-center justify-center shrink-0 mt-0.5">
                         <RowIcon size={14} className="text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.1em] font-semibold">{label}</p>
-                        <p className="text-[13px] font-semibold text-foreground mt-0.5 break-all leading-snug">{value}</p>
+                        <p className={`text-[13px] font-semibold mt-0.5 break-all leading-snug ${accent || "text-foreground"}`}>{value}</p>
                       </div>
                       {copy && (
                         <motion.button
                           whileTap={{ scale: 0.88 }}
                           onClick={() => handleCopy(value)}
-                          className="shrink-0 w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground tap-target"
+                          className="shrink-0 w-8 h-8 rounded-xl bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground tap-target"
                         >
                           {copied ? <CheckCircle2 size={13} className="text-primary" /> : <Copy size={13} />}
                         </motion.button>
                       )}
-                    </div>
+                    </motion.div>
                   ))}
 
-                  {/* Amount highlight + fee/commission breakdown */}
+                  {/* Amount highlight + fee/commission breakdown — glassmorphism style */}
                   {agentView && selectedTx.commission > 0 ? (
-                    <div className="mt-4 rounded-2xl p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40">
+                    <div className="mt-4 rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-green-50/50 dark:from-emerald-950/40 dark:to-green-950/20 border border-emerald-200/60 dark:border-emerald-800/30 shadow-sm">
                       <div className="flex items-center justify-between text-[12.5px]">
                         <span className="text-muted-foreground font-medium">{t("thTransactionAmount")}</span>
                         <span className="font-semibold text-foreground">৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}</span>
@@ -750,24 +774,24 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                         </span>
                         <span className="font-semibold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString("en-IN")}</span>
                       </div>
-                      <div className="h-px bg-emerald-200/60 dark:bg-emerald-800/40 my-2" />
+                      <div className="h-px bg-emerald-200/60 dark:bg-emerald-800/40 my-2.5" />
                       <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-bold text-foreground">{t("thNetEarned")}</span>
-                        <span className="text-[18px] font-bold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString("en-IN")}</span>
+                        <span className="text-[13px] font-bold text-foreground flex items-center gap-1.5">
+                          <Shield size={13} className="text-emerald-600 dark:text-emerald-400" />
+                          {t("thNetEarned")}
+                        </span>
+                        <span className="text-[20px] font-extrabold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString("en-IN")}</span>
                       </div>
                     </div>
                   ) : agentView ? (
-                    <div className={`mt-4 rounded-2xl p-4 ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-semibold text-muted-foreground">{t("thTotalAmount")}</span>
-                        <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
-                          {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-1 text-right font-medium">{t("thNoCommission")}</p>
+                    <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${isCredit ? "bg-gradient-to-r from-primary/10 to-primary/5" : "bg-muted/50"} border border-border/40`}>
+                      <span className="text-[13px] font-semibold text-muted-foreground">{t("thTotalAmount")}</span>
+                      <span className={`text-[22px] font-extrabold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                        {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
+                      </span>
                     </div>
                   ) : selectedTx.fee > 0 ? (
-                    <div className="mt-4 rounded-2xl p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
+                    <div className="mt-4 rounded-2xl p-4 bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-950/40 dark:to-orange-950/20 border border-amber-200/60 dark:border-amber-800/30 shadow-sm">
                       <div className="flex items-center justify-between text-[12.5px]">
                         <span className="text-muted-foreground font-medium">{summaryBaseLabel}</span>
                         <span className="font-semibold text-foreground">৳{baseAmount.toLocaleString("en-IN")}</span>
@@ -776,21 +800,21 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                         <span className="text-amber-600 dark:text-amber-400 font-medium">{summaryFeeLabel}</span>
                         <span className="font-semibold text-amber-600 dark:text-amber-400">৳{selectedTx.fee.toLocaleString("en-IN")}</span>
                       </div>
-                      <div className="h-px bg-amber-200/60 dark:bg-amber-800/40 my-2" />
+                      <div className="h-px bg-amber-200/60 dark:bg-amber-800/40 my-2.5" />
                       <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-bold text-foreground">{summaryTotalLabel}</span>
-                        <span className="text-[18px] font-bold text-foreground">৳{summaryTotalAmount.toLocaleString("en-IN")}</span>
+                        <span className="text-[13px] font-bold text-foreground flex items-center gap-1.5">
+                          <Shield size={13} className="text-amber-600 dark:text-amber-400" />
+                          {summaryTotalLabel}
+                        </span>
+                        <span className="text-[20px] font-extrabold text-foreground">৳{summaryTotalAmount.toLocaleString("en-IN")}</span>
                       </div>
                     </div>
                   ) : (
-                    <div className={`mt-4 rounded-2xl p-4 ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-semibold text-muted-foreground">{t("thTotalAmount")}</span>
-                        <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
-                          {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-primary mt-1 text-right font-medium">{t("thNoFeeCharged")}</p>
+                    <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${isCredit ? "bg-gradient-to-r from-primary/10 to-primary/5" : "bg-muted/50"} border border-border/40`}>
+                      <span className="text-[13px] font-semibold text-muted-foreground">{t("thTotalAmount")}</span>
+                      <span className={`text-[22px] font-extrabold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                        {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
+                      </span>
                     </div>
                   )}
 
