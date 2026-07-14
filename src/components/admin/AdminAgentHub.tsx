@@ -287,6 +287,18 @@ function AgentListTab() {
       </div>
       <div className="flex gap-2">
         <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input placeholder="Search agents..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 text-xs" /></div>
+        <select
+          value={distFilter}
+          onChange={(e) => setDistFilter(e.target.value)}
+          className="h-8 text-xs rounded-md border border-input bg-background px-2 max-w-[160px]"
+          title="Filter by distributor"
+        >
+          <option value="all">All distributors</option>
+          <option value="unassigned">Unassigned</option>
+          {Object.entries(distMap).map(([id, name]) => (
+            <option key={id} value={id}>{name}</option>
+          ))}
+        </select>
         <Button size="icon" className="shrink-0 h-8 w-8" onClick={() => setCreateOpen(true)}><UserPlus className="w-3.5 h-3.5" /></Button>
       </div>
 
@@ -314,6 +326,7 @@ function AgentListTab() {
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Agent</th>
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Phone</th>
                 <th className="text-left px-3 py-2.5 font-medium text-xs hidden sm:table-cell">Territory</th>
+                <th className="text-left px-3 py-2.5 font-medium text-xs hidden md:table-cell">Distributor</th>
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Status</th>
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Actions</th>
               </tr></thead>
@@ -328,11 +341,19 @@ function AgentListTab() {
                     <td className="px-3 py-2.5 font-medium text-foreground text-xs">{a.business_name || a.profile?.name || "—"}</td>
                     <td className="px-3 py-2.5 text-muted-foreground text-xs">{a.profile?.phone || "—"}</td>
                     <td className="px-3 py-2.5 text-muted-foreground text-xs hidden sm:table-cell">{a.territory_code || "—"}</td>
+                    <td className="px-3 py-2.5 text-xs hidden md:table-cell">
+                      {a.distributor_id ? (
+                        <span className="inline-flex items-center gap-1 text-foreground"><Building2 className="w-3 h-3 text-muted-foreground" />{distMap[a.distributor_id] || a.distributor_id.slice(0, 8)}</span>
+                      ) : (
+                        <span className="text-muted-foreground italic">Unassigned</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2.5"><Badge className={`text-[10px] ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</Badge></td>
                     <td className="px-3 py-2.5">
                       <div className="flex gap-1 flex-wrap">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDetail(a)}><Eye className="w-3.5 h-3.5" /></Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(a)}><Pencil className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Change distributor" onClick={() => setChangeDistAgent(a)}><ArrowRightLeft className="w-3.5 h-3.5" /></Button>
                         {a.status === "active" && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setStatus(a, "hold")}><PauseCircle className="w-3.5 h-3.5 text-amber-600" /></Button>
                         )}
@@ -350,6 +371,17 @@ function AgentListTab() {
           {!loading && filtered.length === 0 && <EmptyState text="No agents found" />}
         </CardContent>
       </Card>
+
+      {/* Change distributor picker */}
+      <DistributorPickerDialog
+        open={!!changeDistAgent}
+        onOpenChange={(o) => { if (!o) setChangeDistAgent(null); }}
+        title="Change distributor"
+        description={`Assign ${changeDistAgent?.business_name || "agent"} to a distributor.`}
+        excludeIds={changeDistAgent?.distributor_id ? [changeDistAgent.distributor_id] : []}
+        allowUnassign
+        onPick={handleChangeDistributor}
+      />
 
       {/* Agent Detail Sheet */}
       <Sheet open={!!detail} onOpenChange={o => !o && setDetail(null)}>
