@@ -172,6 +172,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           _isInvestment: isInvestment,
           status: tx.status,
           recipient_phone: tx.recipient_phone,
+          description: tx.description,
+
         };
       }), [dbTxns, filterTypes, t, agentView, CATEGORIES]);
 
