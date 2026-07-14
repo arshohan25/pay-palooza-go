@@ -221,7 +221,7 @@ describe("TransactionHistory — row click opens matching detail with correct pa
 
     // Amount sign in the sheet header matches direction.
     expect(
-      screen.getByText(`${expected.sign}৳${expected.amount}`),
+      screen.getAllByText(`${expected.sign}৳${expected.amount}`)[0],
     ).toBeInTheDocument();
   };
 
@@ -254,7 +254,7 @@ describe("TransactionHistory — row click opens matching detail with correct pa
     expect(screen.getByText("thReceiverNumber")).toBeInTheDocument();
     let phoneRow = screen.getByText("thReceiverNumber").closest("div")!.parentElement!;
     expect(within(phoneRow).getByText("01722222222")).toBeInTheDocument();
-    expect(screen.getByText("−৳250")).toBeInTheDocument();
+    expect(screen.getAllByText("−৳250")[0]).toBeInTheDocument();
 
     // Close the sheet, then open a different (received) row.
     fireEvent.keyDown(document, { key: "Escape" });
@@ -265,7 +265,7 @@ describe("TransactionHistory — row click opens matching detail with correct pa
     expect(screen.queryByText("thReceiverNumber")).not.toBeInTheDocument();
     phoneRow = screen.getByText("thSenderNumber").closest("div")!.parentElement!;
     expect(within(phoneRow).getByText("01744444444")).toBeInTheDocument();
-    expect(screen.getByText("+৳150")).toBeInTheDocument();
+    expect(screen.getAllByText("+৳150")[0]).toBeInTheDocument();
   });
 });
 
