@@ -1,6 +1,6 @@
 import { useState, useRef, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Copy, CheckCheck, X, Download, Shield } from "lucide-react";
+import { Share2, Copy, CheckCheck, X, Download, Shield, FileText } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
 
