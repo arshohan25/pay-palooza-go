@@ -656,24 +656,8 @@ const Index = () => {
     );
   }
 
-  // Authenticated users skip splash & onboarding entirely
-  if (!isAuthenticated) {
-    if (!splashDone) return null;
-
-    if (!onboardingDone) {
-      return (
-        <Suspense fallback={null}>
-          <AnimatePresence>
-            <OnboardingSlides onDone={() => {
-              setOnboardingDone(true);
-              setReplayOnboarding(false);
-              markOnboardingDone();
-            }} />
-          </AnimatePresence>
-        </Suspense>
-      );
-    }
-  }
+  // Never block the login/app shell behind onboarding after a cache purge.
+  if (!isAuthenticated && !splashDone) return null;
 
   // Allow replay onboarding for authenticated users (from account settings)
   if (replayOnboarding) {
