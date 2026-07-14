@@ -37,6 +37,7 @@ interface Transaction {
   category: Exclude<TxCategory, "all">;
   name: string;
   detail: string;
+  party: string;
   date: string;
   amount: number;
   fee: number;
@@ -45,7 +46,10 @@ interface Transaction {
   _isInvestment?: boolean;
   status: string;
   recipient_phone?: string | null;
+  description?: string | null;
+
 }
+
 
 const CATEGORY_KEYS: { id: TxCategory; key: string }[] = [
   { id: "all",          key: "thAll" },
@@ -142,14 +146,22 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           ? isAgentTxnCredit(tx)
           : tx.type === "addmoney" || tx.type === "receive" || tx.type === "cashin";
         const agentParty = tx.recipient_name || tx.recipient_phone || tx.description || label;
+        const partyLine = tx.recipient_name || tx.recipient_phone || tx.description || "";
         return {
           id: tx.id,
           short_id: tx.short_id || tx.id.slice(0, 12).toUpperCase(),
           category: displayType,
-          name: agentView && (displayType === "cashin" || displayType === "cashout") ? label : (isCashback
-            ? (tx.description?.replace("Drive Cashback: ", "") || t("thCashback"))
-            : (tx.recipient_name || label)),
-          detail: agentView && (displayType === "cashin" || displayType === "cashout") ? agentParty : (isCashback ? t("thDriveCashback") : (tx.description || "")),
+          name: agentView && (displayType === "cashin" || displayType === "cashout")
+            ? label
+            : (isCashback
+              ? (tx.description?.replace("Drive Cashback: ", "") || t("thCashback"))
+              : label),
+          detail: agentView && (displayType === "cashin" || displayType === "cashout")
+            ? agentParty
+            : (isCashback ? t("thDriveCashback") : partyLine),
+          party: tx.recipient_name || tx.recipient_phone || label,
+
+
 
 
           date: tx.created_at,
@@ -160,6 +172,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           _isInvestment: isInvestment,
           status: tx.status,
           recipient_phone: tx.recipient_phone,
+          description: tx.description,
+
         };
       }), [dbTxns, filterTypes, t, agentView, CATEGORIES]);
 
@@ -673,11 +687,11 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   {/* Detail rows */}
                   {[
                     { icon: Hash,     label: t("thTransactionId"), value: txId,                                   copy: true  },
-                    { icon: User,     label: t("thNameParty"),   value: selectedTx.name,                        copy: false },
+                    { icon: User,     label: t("thNameParty"),   value: selectedTx.party,                       copy: false },
                     ...(selectedTx.recipient_phone ? [{ icon: Phone, label: isCredit ? t("thSenderNumber") : t("thReceiverNumber"), value: selectedTx.recipient_phone, copy: true }] : []),
                     { icon: Tag,      label: t("thCategory"),       value: catLabel,                               copy: false },
-                    ...(selectedTx.detail && !selectedTx.detail.includes("[Wallet:") && !selectedTx.detail.includes("Wallet:") && selectedTx.detail !== catLabel
-                      ? [{ icon: FileText, label: t("thDescription"), value: selectedTx.detail, copy: false }] : []),
+                    ...(selectedTx.description && !selectedTx.description.includes("[Wallet:") && !selectedTx.description.includes("Wallet:") && selectedTx.description !== catLabel
+                      ? [{ icon: FileText, label: t("thDescription"), value: selectedTx.description, copy: false }] : []),
                     ...(agentView
                       ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: t("thCommissionEarned"), value: `+৳${selectedTx.commission.toLocaleString("en-IN")}`, copy: false }] : [])
                       : (selectedTx.fee > 0 ? [{ icon: Coins, label: t("thChargeFee"), value: `৳${selectedTx.fee.toLocaleString("en-IN")}`, copy: false }] : [])
