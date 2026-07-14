@@ -58,8 +58,22 @@ export async function clearClientCache(version = CACHE_VERSION) {
 }
 
 export async function syncClientCacheVersion() {
-  const storedVersion = localStorage.getItem(CACHE_VERSION_KEY);
-  if (storedVersion === CACHE_VERSION) return false;
+  let storedVersion: string | null = null;
+  try {
+    storedVersion = localStorage.getItem(CACHE_VERSION_KEY);
+  } catch {
+    return false;
+  }
+
+  const current = Number(CACHE_VERSION);
+  const stored = storedVersion === null ? NaN : Number(storedVersion);
+  const isOlder = Number.isFinite(current) && (!Number.isFinite(stored) || stored < current);
+
+  if (!isOlder && storedVersion === CACHE_VERSION) return false;
+  if (!isOlder) {
+    // Stored is newer or equal-but-non-numeric match already handled; nothing to do.
+    return false;
+  }
 
   await clearClientCache(CACHE_VERSION);
   return true;
