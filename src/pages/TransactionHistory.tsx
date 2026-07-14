@@ -687,11 +687,11 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   {/* Detail rows */}
                   {[
                     { icon: Hash,     label: t("thTransactionId"), value: txId,                                   copy: true  },
-                    { icon: User,     label: t("thNameParty"),   value: selectedTx.name,                        copy: false },
+                    { icon: User,     label: t("thNameParty"),   value: selectedTx.party,                       copy: false },
                     ...(selectedTx.recipient_phone ? [{ icon: Phone, label: isCredit ? t("thSenderNumber") : t("thReceiverNumber"), value: selectedTx.recipient_phone, copy: true }] : []),
                     { icon: Tag,      label: t("thCategory"),       value: catLabel,                               copy: false },
-                    ...(selectedTx.detail && !selectedTx.detail.includes("[Wallet:") && !selectedTx.detail.includes("Wallet:") && selectedTx.detail !== catLabel
-                      ? [{ icon: FileText, label: t("thDescription"), value: selectedTx.detail, copy: false }] : []),
+                    ...(selectedTx.description && !selectedTx.description.includes("[Wallet:") && !selectedTx.description.includes("Wallet:") && selectedTx.description !== catLabel
+                      ? [{ icon: FileText, label: t("thDescription"), value: selectedTx.description, copy: false }] : []),
                     ...(agentView
                       ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: t("thCommissionEarned"), value: `+৳${selectedTx.commission.toLocaleString("en-IN")}`, copy: false }] : [])
                       : (selectedTx.fee > 0 ? [{ icon: Coins, label: t("thChargeFee"), value: `৳${selectedTx.fee.toLocaleString("en-IN")}`, copy: false }] : [])
