@@ -264,7 +264,7 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
                 </div>
 
                 {/* Action buttons — pill style with shadows */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <motion.button
                     whileTap={{ scale: 0.96 }}
                     onClick={handleCopyText}
