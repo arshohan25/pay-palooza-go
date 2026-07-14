@@ -121,12 +121,13 @@ export const test = base.extend<BnFixtures>({
   },
 
   gotoBn: async ({ bnPage }, use) => {
-    const extraWait = Number(process.env.I18N_BN_WAIT_AFTER_LOAD_MS ?? 400);
+    const extraWait = Number(process.env.I18N_BN_WAIT_AFTER_LOAD_MS ?? 1000);
     const fn = async (path: string, opts: { waitMs?: number } = {}) => {
       await bnPage.goto(path, { waitUntil: "networkidle" });
       await freezeUi(bnPage);
       await bnPage.waitForLoadState("networkidle");
       await bnPage.waitForTimeout(opts.waitMs ?? extraWait);
+      // Recheck URL after settle to catch post-mount SPA redirects (auth/KYC).
       const landed = new URL(bnPage.url()).pathname;
       return { landed, redirected: landed !== path };
     };
