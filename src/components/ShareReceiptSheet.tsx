@@ -98,6 +98,20 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
       }
     };
 
+    const buildFilename = (ext: string) => {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const date = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+      const time = `${pad(now.getHours())}${pad(now.getMinutes())}`;
+      const slug = (receipt.title || "receipt")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 40) || "receipt";
+      const idPart = (receipt.txnId || "").replace(/[^a-zA-Z0-9]/g, "").slice(-6);
+      return `easypay-${slug}-${date}-${time}${idPart ? `-${idPart}` : ""}.${ext}`;
+    };
+
     const handleDownload = async () => {
       if (!receiptRef.current || downloading) return;
       haptics.medium();
