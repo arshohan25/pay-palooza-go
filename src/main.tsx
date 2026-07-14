@@ -27,14 +27,9 @@ document.addEventListener("keydown", (e) => {
 
 async function bootstrap() {
   // Only run cache sync on published builds, never in preview (prevents refresh loops)
-  const isPreview =
-    window.location.hostname.includes("id-preview--") ||
-    window.location.hostname.includes("lovableproject.com");
-
   try {
-    if (!isPreview) {
-      await syncClientCacheVersion();
-    }
+    // One-time automatic purge whenever stored cache version is older than CACHE_VERSION.
+    await syncClientCacheVersion();
     cleanupCacheRecoveryParams();
   } catch {
     // Cache recovery must never block app rendering.
