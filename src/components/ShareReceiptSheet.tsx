@@ -1,21 +1,14 @@
 import { useState, useRef, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Copy, CheckCheck, X, Download, Shield, type LucideIcon } from "lucide-react";
+import { Share2, Copy, CheckCheck, X, Download, Shield } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
-
-export interface ReceiptRow {
-  label: string;
-  value: string;
-  icon?: LucideIcon;
-  accent?: string;
-}
 
 export interface ReceiptData {
   title: string;
   amount: string;
   gradient: string;
-  rows: ReceiptRow[];
+  rows: { label: string; value: string }[];
   txnId: string;
 }
 
@@ -187,30 +180,22 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
                     </div>
                   </div>
 
-                  {/* Rows — aligned with Transaction Details styling */}
-                  <div className="px-4 py-2">
-                    {receipt.rows.map((row, idx) => {
-                      const RowIcon = row.icon;
-                      return (
-                        <motion.div
-                          key={row.label}
-                          initial={{ opacity: 0, x: -6 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.03 * idx }}
-                          className="flex items-start gap-3 py-2.5 border-b border-border/40 last:border-0"
-                        >
-                          {RowIcon && (
-                            <div className="w-8 h-8 rounded-xl bg-muted/80 flex items-center justify-center shrink-0 mt-0.5">
-                              <RowIcon size={14} className="text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.1em] font-semibold">{row.label}</p>
-                            <p className={`text-[13px] font-semibold mt-0.5 break-all leading-snug ${row.accent || "text-foreground"}`}>{row.value}</p>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                  {/* Rows with subtle separators */}
+                  <div className="divide-y divide-border/40">
+                    {receipt.rows.map((row, idx) => (
+                      <motion.div
+                        key={row.label}
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.03 * idx }}
+                        className="flex items-center justify-between px-4 py-2.5 gap-2"
+                      >
+                        <span className="text-[11px] text-muted-foreground shrink-0 font-medium">{row.label}</span>
+                        <span className="text-[12px] font-semibold text-foreground text-right break-all max-w-[60%]">
+                          {row.value}
+                        </span>
+                      </motion.div>
+                    ))}
                   </div>
 
                   {/* Transaction ID section — premium mono styling */}

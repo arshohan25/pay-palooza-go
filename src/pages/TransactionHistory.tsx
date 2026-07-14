@@ -861,22 +861,22 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
               gradient: gradMap[selectedTx.category] ?? "gradient-primary",
               txnId: txId,
               rows: [
-                { icon: User, label: t("thParty"), value: selectedTx.name },
-                ...(selectedTx.recipient_phone ? [{ icon: Phone, label: selectedTx.amount > 0 ? t("thSenderNumber") : t("thReceiverNumber"), value: selectedTx.recipient_phone }] : []),
-                { icon: Tag, label: t("thCategory"), value: catLabel },
+                { label: t("thParty"), value: selectedTx.name },
+                ...(selectedTx.recipient_phone ? [{ label: t("thReceiver"), value: selectedTx.recipient_phone }] : []),
+                { label: t("thCategory"), value: catLabel },
                 ...(selectedTx.detail && !selectedTx.detail.includes("[Wallet:") && !selectedTx.detail.includes("Wallet:") && selectedTx.detail !== catLabel
-                  ? [{ icon: FileText, label: t("thNote"), value: selectedTx.detail }] : []),
+                  ? [{ label: t("thNote"), value: selectedTx.detail }] : []),
                 ...(agentView
-                   ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: t("thCommission"), value: `+৳${selectedTx.commission.toLocaleString("en-IN")}`, accent: "text-emerald-600 dark:text-emerald-400" }] : [])
+                   ? (selectedTx.commission > 0 ? [{ label: t("thCommission"), value: `+৳${selectedTx.commission.toLocaleString("en-IN")}` }] : [])
                     : (selectedTx.fee > 0
                       ? [
-                          { icon: BadgeDollarSign, label: summaryBaseLabel, value: `৳${baseAmount.toLocaleString("en-IN")}` },
-                          { icon: Coins, label: summaryFeeLabel, value: `৳${selectedTx.fee.toLocaleString("en-IN")}`, accent: "text-amber-600 dark:text-amber-400" },
-                          { icon: Shield, label: summaryTotalLabel, value: `৳${summaryTotalAmount.toLocaleString("en-IN")}` },
+                          { label: summaryBaseLabel, value: `৳${baseAmount.toLocaleString("en-IN")}` },
+                          { label: summaryFeeLabel, value: `৳${selectedTx.fee.toLocaleString("en-IN")}` },
+                          { label: summaryTotalLabel, value: `৳${summaryTotalAmount.toLocaleString("en-IN")}` },
                         ]
-                     : [{ icon: Coins, label: t("thFee"), value: t("thFree") }])
+                     : [{ label: t("thFee"), value: t("thFree") }])
                 ),
-                { icon: Clock, label: t("thDateTime"), value: format(txDate, "dd MMM yyyy, h:mm a") },
+                { label: t("thDateTime"), value: format(txDate, "dd MMM yyyy, h:mm a") },
               ],
             }}
           />
