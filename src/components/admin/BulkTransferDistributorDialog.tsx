@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowRight } from "lucide-react";
-import { bulkTransferDistributor, fetchDistributorsLite, DistributorLite } from "@/lib/distributorAdmin";
+import { bulkTransferDistributor, fetchDistributorsLite, undoBulkTransfer, DistributorLite } from "@/lib/distributorAdmin";
 import { toast } from "sonner";
 
 interface Props {
