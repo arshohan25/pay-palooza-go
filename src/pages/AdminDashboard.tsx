@@ -105,6 +105,8 @@ import AdminApiRequests from "@/components/admin/AdminApiRequests";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
 import AdminDistributorManagement from "@/components/admin/AdminDistributorManagement";
 import AdminSuperDistributorHub from "@/components/admin/AdminSuperDistributorHub";
+import AdminSuperDistributorOverview from "@/components/admin/AdminSuperDistributorOverview";
+import AdminRolesPermissions from "@/components/admin/AdminRolesPermissions";
 import AdminSystemHealth from "@/components/admin/AdminSystemHealth";
 import AdminDataExport from "@/components/admin/AdminDataExport";
 import AdminUserSessions from "@/components/admin/AdminUserSessions";
@@ -290,6 +292,8 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "merchant_apps", label: "Merchant Apps", icon: Store },
       { id: "distributors", label: "Distributors", icon: Building2 },
       { id: "super_distributors", label: "Super Distributors", icon: Building2 },
+      { id: "sd_overview", label: "SD Overview", icon: Building2 },
+      { id: "roles_perms", label: "Roles & Permissions", icon: Building2 },
       { id: "wallets", label: "Wallets", icon: Wallet },
       { id: "referrals", label: "Referrals", icon: Gift },
     ],
@@ -2103,6 +2107,8 @@ export default function AdminDashboard() {
         {/* ═══ DISTRIBUTORS ═══ */}
         {activeTab === "distributors" && <AdminDistributorManagement />}
         {activeTab === "super_distributors" && <AdminSuperDistributorHub />}
+        {activeTab === "sd_overview" && <AdminSuperDistributorOverview />}
+        {activeTab === "roles_perms" && <AdminRolesPermissions />}
 
         {/* ═══ SYSTEM HEALTH ═══ */}
         {activeTab === "sys_health" && <AdminSystemHealth />}

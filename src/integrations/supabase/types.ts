@@ -404,6 +404,30 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_role_permissions: {
+        Row: {
+          allowed: boolean
+          permission: string
+          role: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allowed?: boolean
+          permission: string
+          role: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allowed?: boolean
+          permission?: string
+          role?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       admin_security_policies: {
         Row: {
           category: string
@@ -7456,6 +7480,10 @@ export type Database = {
         Returns: Json
       }
       has_merchant_api_access: { Args: { _user_id: string }; Returns: boolean }
+      has_permission: {
+        Args: { _permission: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

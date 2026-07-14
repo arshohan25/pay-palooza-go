@@ -40,24 +40,42 @@ async function currentRoles(): Promise<{ userId: string; roles: string[] }> {
   return cachedRoles;
 }
 
-/** Throws UnauthorizedError unless the caller has an authorized admin role. */
-export async function assertAdmin(): Promise<{ userId: string; roles: string[] }> {
+/** Ask the DB whether the current user has a permission. */
+async function hasDbPermission(permission: string): Promise<boolean> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return false;
+  const { data, error } = await supabase.rpc("has_permission" as any, {
+    _user_id: session.user.id,
+    _permission: permission,
+  });
+  if (error) return false;
+  return !!data;
+}
+
+/**
+ * Throws UnauthorizedError unless the caller has the required permission
+ * (via the DB matrix) or is a hardcoded fallback admin role.
+ */
+export async function assertAdmin(permission = "manage_distributors"): Promise<{ userId: string; roles: string[] }> {
   const info = await currentRoles();
-  if (!info.roles.some((r) => AUTHORIZED_ROLES.has(r))) {
-    throw new UnauthorizedError(
-      "Only admins (or operations/compliance/manager) can change distributor links",
-    );
-  }
-  return info;
+  if (info.roles.includes("admin")) return info;
+  if (await hasDbPermission(permission)) return info;
+  if (info.roles.some((r) => AUTHORIZED_ROLES.has(r))) return info;
+  throw new UnauthorizedError(
+    "You don't have permission for this action. Ask an admin to grant it in Roles & Permissions.",
+  );
 }
 
 /** Non-throwing gate for UI (hide/disable actions). */
 export async function canManageDistributors(): Promise<boolean> {
   try {
     const info = await currentRoles();
+    if (info.roles.includes("admin")) return true;
+    if (await hasDbPermission("manage_distributors")) return true;
     return info.roles.some((r) => AUTHORIZED_ROLES.has(r));
   } catch { return false; }
 }
+
 
 /* -------------------------------------------------------------------------- */
 /*  Audit                                                                      */
