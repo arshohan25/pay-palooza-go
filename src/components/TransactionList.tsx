@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
 import { useI18n } from "@/lib/i18n";
+import { getContactNameByPhone } from "@/lib/contactStore";
 import {
   TxSendIcon,
   TxReceiveIcon,
