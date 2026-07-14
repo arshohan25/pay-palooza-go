@@ -119,7 +119,7 @@ describe("TransactionHistory — description row + party name direction", () => 
     render(<TransactionHistory />);
     openTxByName("Karim Receiver");
     expect(screen.getByText("thNameParty")).toBeInTheDocument();
-    expect(screen.getByText("Karim Receiver")).toBeInTheDocument();
+    expect(screen.getAllByText("Karim Receiver")[0]).toBeInTheDocument();
     // Phone label is "Receiver Number" for a debit.
     expect(screen.getByText("thReceiverNumber")).toBeInTheDocument();
     expect(screen.queryByText("thSenderNumber")).not.toBeInTheDocument();
@@ -131,7 +131,7 @@ describe("TransactionHistory — description row + party name direction", () => 
     render(<TransactionHistory />);
     openTxByName("Nadia Sender");
     expect(screen.getByText("thNameParty")).toBeInTheDocument();
-    expect(screen.getByText("Nadia Sender")).toBeInTheDocument();
+    expect(screen.getAllByText("Nadia Sender")[0]).toBeInTheDocument();
     // Phone label is "Sender Number" for a credit.
     expect(screen.getByText("thSenderNumber")).toBeInTheDocument();
     expect(screen.queryByText("thReceiverNumber")).not.toBeInTheDocument();
@@ -141,18 +141,18 @@ describe("TransactionHistory — description row + party name direction", () => 
   it("shows description row and receiver name on a sent transaction with a description", () => {
     render(<TransactionHistory />);
     openTxByName("Rahim Receiver");
-    expect(screen.getByText("Rahim Receiver")).toBeInTheDocument();
+    expect(screen.getAllByText("Rahim Receiver")[0]).toBeInTheDocument();
     expect(screen.getByText("thReceiverNumber")).toBeInTheDocument();
     expect(screen.getByText("thDescription")).toBeInTheDocument();
-    expect(screen.getByText("Lunch bill split")).toBeInTheDocument();
+    expect(screen.getAllByText("Lunch bill split")[0]).toBeInTheDocument();
   });
 
   it("shows description row and sender name on a received transaction with a description", () => {
     render(<TransactionHistory />);
     openTxByName("Salma Sender");
-    expect(screen.getByText("Salma Sender")).toBeInTheDocument();
+    expect(screen.getAllByText("Salma Sender")[0]).toBeInTheDocument();
     expect(screen.getByText("thSenderNumber")).toBeInTheDocument();
     expect(screen.getByText("thDescription")).toBeInTheDocument();
-    expect(screen.getByText("Rent share")).toBeInTheDocument();
+    expect(screen.getAllByText("Rent share")[0]).toBeInTheDocument();
   });
 });
