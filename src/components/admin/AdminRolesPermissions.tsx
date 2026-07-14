@@ -77,10 +77,19 @@ export default function AdminRolesPermissions() {
         const other = prev.filter((r) => !(r.role === role && r.permission === permission));
         return [...other, { role, permission, allowed }];
       });
+      // Audit trail
+      supabase.from("audit_logs").insert({
+        actor_id: session?.user?.id ?? null,
+        action: allowed ? "permission_granted" : "permission_revoked",
+        entity_type: "permission",
+        entity_id: null,
+        details: { role, permission, allowed },
+      } as any).then();
       toast.success(`${allowed ? "Granted" : "Revoked"} ${permission} for ${role}`);
     }
     setSaving(null);
   };
+
 
   const addRole = async () => {
     const name = newRole.trim().toLowerCase().replace(/\s+/g, "_");
