@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay, startOfMonth, isBefore } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
-  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle, Phone,
+  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle, Phone, Shield,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
