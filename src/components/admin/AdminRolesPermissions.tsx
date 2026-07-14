@@ -100,11 +100,20 @@ export default function AdminRolesPermissions() {
       role: name, permission: REGISTERED_PERMISSIONS[0].key, allowed: false,
     } as any);
     if (error) { toast.error(error.message); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    supabase.from("audit_logs").insert({
+      actor_id: session?.user?.id ?? null,
+      action: "role_added",
+      entity_type: "role",
+      entity_id: null,
+      details: { role: name },
+    } as any).then();
     setCustomRoles((c) => [...c, name]);
     setNewRole("");
     setAddOpen(false);
     toast.success(`Role "${name}" added — toggle permissions below.`);
   };
+
 
   return (
     <div className="space-y-4">
