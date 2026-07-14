@@ -609,6 +609,41 @@ export default function AdminDistributorManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Unlink agent confirmation */}
+      <AlertDialog open={!!unlinkTarget} onOpenChange={v => { if (!v) setUnlinkTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unlink agent?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove <strong>{unlinkTarget?.business_name || "this agent"}</strong> from{" "}
+              <strong>{selectedDist?.business_name}</strong>. You can undo this from the toast.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmUnlinkAgent}>Unlink</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove territory confirmation */}
+      <AlertDialog open={!!removeTerritoryTarget} onOpenChange={v => { if (!v) setRemoveTerritoryTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove territory?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove <strong>{removeTerritoryTarget}</strong> from{" "}
+              <strong>{selectedDist?.business_name}</strong>. You can undo this from the toast.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveTerritory} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
