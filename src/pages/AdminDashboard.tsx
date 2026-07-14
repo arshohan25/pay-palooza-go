@@ -104,6 +104,7 @@ import AdminMerchantApplications from "@/components/admin/AdminMerchantApplicati
 import AdminApiRequests from "@/components/admin/AdminApiRequests";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
 import AdminDistributorManagement from "@/components/admin/AdminDistributorManagement";
+import AdminSuperDistributorHub from "@/components/admin/AdminSuperDistributorHub";
 import AdminSystemHealth from "@/components/admin/AdminSystemHealth";
 import AdminDataExport from "@/components/admin/AdminDataExport";
 import AdminUserSessions from "@/components/admin/AdminUserSessions";
