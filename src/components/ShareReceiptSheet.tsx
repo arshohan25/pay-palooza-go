@@ -1,6 +1,6 @@
 import { useState, useRef, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Copy, CheckCheck, X, Download, Shield } from "lucide-react";
+import { Share2, Copy, CheckCheck, X, Download, Shield, FileText } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
 
@@ -33,6 +33,7 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
     const [copied, setCopied] = useState(false);
     const [copiedId, setCopiedId] = useState(false);
     const [downloading, setDownloading] = useState(false);
+    const [downloadingPdf, setDownloadingPdf] = useState(false);
     const receiptRef = useRef<HTMLDivElement>(null);
 
     const buildText = () => {
@@ -117,6 +118,36 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
         console.error("Download failed", error);
       } finally {
         setDownloading(false);
+      }
+    };
+
+    const handleDownloadPdf = async () => {
+      if (!receiptRef.current || downloadingPdf) return;
+      haptics.medium();
+      setDownloadingPdf(true);
+      try {
+        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+          import("html2canvas"),
+          import("jspdf"),
+        ]);
+        const canvas = await html2canvas(receiptRef.current, {
+          backgroundColor: "#ffffff",
+          scale: 3,
+          useCORS: true,
+          logging: false,
+        });
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const margin = 32;
+        const imgWidth = pageWidth - margin * 2;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
+        pdf.save(`receipt-${receipt.txnId}.pdf`);
+      } catch (error) {
+        console.error("PDF download failed", error);
+      } finally {
+        setDownloadingPdf(false);
       }
     };
 
@@ -233,7 +264,7 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
                 </div>
 
                 {/* Action buttons — pill style with shadows */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <motion.button
                     whileTap={{ scale: 0.96 }}
                     onClick={handleCopyText}
@@ -276,6 +307,30 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
                           <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}><Download size={16} /></motion.div><span>{t("saving")}</span></>
                         ) : (
                           <><Download size={16} /><span>{t("savePng")}</span></>
+                        )}
+                      </MotionIcon>
+                    </AnimatePresence>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                    className="flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl bg-muted/80 border border-border/50 text-[11px] font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-60 shadow-sm"
+                  >
+                    <AnimatePresence mode="wait" initial={false}>
+                      <MotionIcon
+                        key={downloadingPdf ? "loading" : "idle"}
+                        initial={{ scale: 0.7, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.7, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="flex flex-col items-center gap-1"
+                      >
+                        {downloadingPdf ? (
+                          <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}><FileText size={16} /></motion.div><span>{t("saving")}</span></>
+                        ) : (
+                          <><FileText size={16} /><span>PDF</span></>
                         )}
                       </MotionIcon>
                     </AnimatePresence>
