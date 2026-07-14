@@ -1,14 +1,21 @@
 import { useState, useRef, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Copy, CheckCheck, X, Download, Shield } from "lucide-react";
+import { Share2, Copy, CheckCheck, X, Download, Shield, type LucideIcon } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
+
+export interface ReceiptRow {
+  label: string;
+  value: string;
+  icon?: LucideIcon;
+  accent?: string;
+}
 
 export interface ReceiptData {
   title: string;
   amount: string;
   gradient: string;
-  rows: { label: string; value: string }[];
+  rows: ReceiptRow[];
   txnId: string;
 }
 
