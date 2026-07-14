@@ -66,7 +66,7 @@ function getTxDisplay(tx: DbTransaction) {
     gradient: cfg.gradient,
     name: cashback
       ? (tx.description?.replace("Drive Cashback: ", "") || "Cashback")
-      : (tx.recipient_name || tx.description || cfg.label),
+      : cfg.label,
     amount: isCredit ? tx.amount : -tx.amount,
     isCashback: cashback,
   };
