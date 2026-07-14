@@ -99,7 +99,7 @@ const Index = () => {
   void futureFeatures.visibility.future_scam_shield;
   const { status: kycStatus, rejectionReason, loading: kycLoading } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
-  const [splashDone, setSplashDone]           = useState(() => localStorage.getItem("splashDone") === "1");
+  const [splashDone, setSplashDone]           = useState(true);
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
   const hasAuthenticated = localStorage.getItem("mfs_has_authenticated") === "1";
   const [replayOnboarding, setReplayOnboarding] = useState(false);
@@ -659,9 +659,7 @@ const Index = () => {
 
   // Authenticated users skip splash & onboarding entirely
   if (!isAuthenticated) {
-    if (!splashDone) {
-      return <Suspense fallback={null}><SplashScreen onDone={() => { localStorage.setItem("splashDone", "1"); setSplashDone(true); }} /></Suspense>;
-    }
+    if (!splashDone) return null;
 
     if (!onboardingDone) {
       return (

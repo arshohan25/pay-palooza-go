@@ -7,8 +7,6 @@ import { purgeInvalidStoredAuthSession } from "./lib/authSessionRecovery";
 purgeInvalidStoredAuthSession();
 // Capture before React renders so the event is never lost
 captureInstallPrompt();
-// Persist ?app=<role> from PWA start_url so we can lock the app to that role
-captureAppRoleFromUrl();
 
 
 import { createRoot } from "react-dom/client";
@@ -41,6 +39,9 @@ async function bootstrap() {
   } catch {
     // Cache recovery must never block app rendering.
   }
+
+  // Persist ?app=<role> after cache recovery so version cleanup doesn't wipe it.
+  captureAppRoleFromUrl();
 
   createRoot(document.getElementById("root")!).render(
     <HelmetProvider>
