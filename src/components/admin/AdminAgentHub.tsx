@@ -10,10 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare } from "lucide-react";
+import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare, Building2, ArrowRightLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signUpWithPhonePassword, pinToPassword } from "@/lib/auth";
 import { toast } from "sonner";
+import DistributorPickerDialog from "./DistributorPickerDialog";
+import { reassignAgent } from "@/lib/distributorAdmin";
 
 interface Agent {
   id: string;
@@ -88,13 +90,21 @@ function AgentListTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
 
+  const [distMap, setDistMap] = useState<Record<string, string>>({});
+  const [distFilter, setDistFilter] = useState<string>("all"); // "all" | "unassigned" | <id>
+  const [changeDistAgent, setChangeDistAgent] = useState<Agent | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from("agents").select("*").order("created_at", { ascending: false });
     if (data) {
       const userIds = data.map(a => a.user_id);
-      const { data: profiles } = await supabase.from("profiles").select("user_id, name, phone, balance, avatar_url").in("user_id", userIds);
+      const [{ data: profiles }, { data: dists }] = await Promise.all([
+        supabase.from("profiles").select("user_id, name, phone, balance, avatar_url").in("user_id", userIds),
+        supabase.from("distributors").select("id, business_name"),
+      ]);
       const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.user_id, p]));
+      setDistMap(Object.fromEntries((dists ?? []).map((d: any) => [d.id, d.business_name])));
       setAgents(data.map(a => ({ ...a, profile: profileMap[a.user_id] })) as Agent[]);
     }
     setLoading(false);
@@ -102,10 +112,23 @@ function AgentListTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = agents.filter(a =>
-    !search || a.business_name?.toLowerCase().includes(search.toLowerCase()) ||
-    a.profile?.phone?.includes(search) || a.profile?.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = agents.filter(a => {
+    if (distFilter === "unassigned" && a.distributor_id) return false;
+    if (distFilter !== "all" && distFilter !== "unassigned" && a.distributor_id !== distFilter) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return !!(a.business_name?.toLowerCase().includes(q) || a.profile?.phone?.includes(search) || a.profile?.name?.toLowerCase().includes(q));
+  });
+
+  const handleChangeDistributor = async (toId: string | null, toName: string) => {
+    if (!changeDistAgent) return;
+    try {
+      await reassignAgent(changeDistAgent.id, changeDistAgent.distributor_id, toId);
+      toast.success(`Agent moved to ${toName}`);
+      setChangeDistAgent(null);
+      load();
+    } catch (e: any) { toast.error(e.message || "Failed"); }
+  };
 
   const statusCounts = {
     active: agents.filter(a => a.status === "active").length,
