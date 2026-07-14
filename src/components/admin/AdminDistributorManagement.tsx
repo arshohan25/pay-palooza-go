@@ -476,10 +476,10 @@ export default function AdminDistributorManagement() {
                     {selectedDist.territory.map((code) => (
                       <div key={code} className="group flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-muted text-xs font-medium text-foreground">
                         <span>{code}</span>
-                        <button type="button" title="Move to another distributor" className="h-5 w-5 rounded-full hover:bg-primary/20 flex items-center justify-center" onClick={() => setTerritoryTransfer(code)}>
+                        <button type="button" title="Move to another distributor" className="h-5 w-5 rounded-full hover:bg-primary/20 flex items-center justify-center disabled:opacity-40" disabled={!canManage} onClick={() => setTerritoryTransfer(code)}>
                           <ArrowRightLeft className="w-3 h-3" />
                         </button>
-                        <button type="button" title="Remove" className="h-5 w-5 rounded-full hover:bg-destructive/20 flex items-center justify-center text-destructive" onClick={() => handleRemoveTerritory(code)}>
+                        <button type="button" title="Remove" className="h-5 w-5 rounded-full hover:bg-destructive/20 flex items-center justify-center text-destructive disabled:opacity-40" disabled={!canManage} onClick={() => setRemoveTerritoryTarget(code)}>
                           <X className="w-3 h-3" />
                         </button>
                       </div>
