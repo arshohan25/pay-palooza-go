@@ -1,0 +1,1 @@
+ALTER FUNCTION public.test_validate_wallet_id_format() SET search_path = public;
