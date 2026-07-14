@@ -314,6 +314,30 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
 
                   <motion.button
                     whileTap={{ scale: 0.96 }}
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                    className="flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl bg-muted/80 border border-border/50 text-[11px] font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-60 shadow-sm"
+                  >
+                    <AnimatePresence mode="wait" initial={false}>
+                      <MotionIcon
+                        key={downloadingPdf ? "loading" : "idle"}
+                        initial={{ scale: 0.7, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.7, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="flex flex-col items-center gap-1"
+                      >
+                        {downloadingPdf ? (
+                          <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}><FileText size={16} /></motion.div><span>{t("saving")}</span></>
+                        ) : (
+                          <><FileText size={16} /><span>PDF</span></>
+                        )}
+                      </MotionIcon>
+                    </AnimatePresence>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
                     onClick={handleNativeShare}
                     className={`flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl ${receipt.gradient} text-white text-[11px] font-semibold shadow-md active:opacity-90 transition-opacity`}
                   >
