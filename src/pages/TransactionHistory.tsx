@@ -91,6 +91,18 @@ const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
   banktransfer: { Icon: TxBankTransferIcon, ReceiveIcon: TxBankTransferIcon, bg: "rgba(63,81,181,0.12)", ring: "1px solid rgba(63,81,181,0.2)", receiveBg: "rgba(63,81,181,0.12)", receiveRing: "1px solid rgba(63,81,181,0.2)" },
 };
 
+const TX_GRADIENTS: Record<Exclude<TxCategory, "all">, string> = {
+  send: "from-pink-500 to-rose-600",
+  receive: "from-emerald-500 to-green-600",
+  cashout: "from-orange-500 to-amber-600",
+  cashin: "from-emerald-500 to-green-600",
+  payment: "from-purple-500 to-violet-600",
+  recharge: "from-cyan-500 to-teal-600",
+  paybill: "from-yellow-500 to-amber-600",
+  addmoney: "from-blue-500 to-indigo-600",
+  banktransfer: "from-indigo-500 to-blue-600",
+};
+
 const relativeDate = (iso: string, t: (k: string) => string) => {
   const d = new Date(iso);
   const today = new Date();
@@ -638,58 +650,59 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: "100%", opacity: 0 }}
                 transition={{ type: "spring", stiffness: 340, damping: 34 }}
-                className="fixed bottom-0 left-0 right-0 z-[71] bg-card rounded-t-3xl shadow-float
+                className="fixed bottom-0 left-0 right-0 z-[71] bg-card rounded-t-3xl shadow-float overflow-hidden
                            md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2
                            md:w-[90vw] md:max-w-md md:rounded-3xl"
               >
-                {/* Drag handle */}
-                <div className="flex justify-center pt-3 pb-1 md:hidden">
-                  <div className="w-10 h-1 rounded-full bg-muted-foreground/25" />
-                </div>
-                <div className="hidden md:block pt-5" />
+                {/* Gradient hero header */}
+                <div className={`relative bg-gradient-to-br ${TX_GRADIENTS[selectedTx.category] ?? "from-primary to-primary/70"} px-5 pt-5 pb-6`}>
+                  <div className="absolute inset-0 opacity-10" style={{
+                    backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)",
+                    backgroundSize: "30px 30px, 40px 40px",
+                  }} />
 
-                {/* Close */}
-                <motion.button
-                  whileTap={{ scale: 0.88 }}
-                  onClick={() => setSelectedTx(null)}
-                  className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground tap-target"
-                >
-                  <X size={15} />
-                </motion.button>
+                  {/* Drag handle */}
+                  <div className="flex justify-center pt-1 pb-2 md:hidden relative z-10">
+                    <div className="w-10 h-1 rounded-full bg-white/30" />
+                  </div>
 
-                <div className="px-5 pt-2 pb-8 max-h-[85vh] overflow-y-auto">
-                  {/* Icon + amount */}
-                  <div className="flex flex-col items-center mb-5">
-                    <div
-                      className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
-                      style={{ background: bgStyle, outline: ringStyle }}
-                    >
+                  {/* Close */}
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    onClick={() => setSelectedTx(null)}
+                    className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white tap-target z-10"
+                  >
+                    <X size={15} />
+                  </motion.button>
+
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 border border-white/20">
                       <IconComp />
                     </div>
-                    <p className="text-[26px] font-bold text-foreground">
+                    <p className="text-[28px] font-extrabold text-white tracking-tight">
                       {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
                     </p>
-                    <p className="text-[12.5px] text-muted-foreground mt-0.5">{selectedTx.detail}</p>
+                    <p className="text-[12px] font-medium text-white/80 mt-0.5">{selectedTx.detail}</p>
                     {selectedTx.status === "pending" ? (
-                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30">
-                        <Clock size={12} className="text-amber-600 dark:text-amber-400" />
-                        <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">{t("thPending")}</span>
+                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
+                        <Clock size={11} className="text-white" />
+                        <span className="text-[10px] font-bold text-white">{t("thPending")}</span>
                       </div>
                     ) : selectedTx.status === "failed" ? (
-                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-destructive/10">
-                        <AlertCircle size={12} className="text-destructive" />
-                        <span className="text-[11px] font-bold text-destructive">{t("thRejected")}</span>
+                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-red-500/30 backdrop-blur-sm">
+                        <AlertCircle size={11} className="text-white" />
+                        <span className="text-[10px] font-bold text-white">{t("thRejected")}</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-primary/10">
-                        <CheckCircle2 size={12} className="text-primary" />
-                        <span className="text-[11px] font-bold text-primary">{t("thSuccessful")}</span>
+                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
+                        <CheckCircle2 size={11} className="text-white" />
+                        <span className="text-[10px] font-bold text-white">{t("thSuccessful")}</span>
                       </div>
                     )}
                   </div>
+                </div>
 
-                  <div className="h-px bg-border/60 mb-3" />
-
+                <div className="px-5 pt-4 pb-8 max-h-[70vh] overflow-y-auto">
                   {/* Detail rows */}
                   {[
                     { icon: Hash,     label: t("thTransactionId"), value: txId,                                   copy: true  },
