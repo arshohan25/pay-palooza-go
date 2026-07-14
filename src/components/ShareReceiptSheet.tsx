@@ -121,6 +121,36 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
       }
     };
 
+    const handleDownloadPdf = async () => {
+      if (!receiptRef.current || downloadingPdf) return;
+      haptics.medium();
+      setDownloadingPdf(true);
+      try {
+        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+          import("html2canvas"),
+          import("jspdf"),
+        ]);
+        const canvas = await html2canvas(receiptRef.current, {
+          backgroundColor: "#ffffff",
+          scale: 3,
+          useCORS: true,
+          logging: false,
+        });
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const margin = 32;
+        const imgWidth = pageWidth - margin * 2;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
+        pdf.save(`receipt-${receipt.txnId}.pdf`);
+      } catch (error) {
+        console.error("PDF download failed", error);
+      } finally {
+        setDownloadingPdf(false);
+      }
+    };
+
     return (
       <AnimatePresence>
         {open && (
