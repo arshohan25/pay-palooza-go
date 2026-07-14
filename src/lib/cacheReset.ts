@@ -35,7 +35,23 @@ async function clearRuntimeCaches() {
   }
 }
 
+const PRESERVED_KEYS = [
+  "mfs_ui_lang",
+  "mfs_onboarding_completed",
+  "mfs_has_authenticated",
+];
+
 export async function clearClientCache(version = CACHE_VERSION) {
+  const preserved: Record<string, string> = {};
+  try {
+    for (const key of PRESERVED_KEYS) {
+      const v = localStorage.getItem(key);
+      if (v !== null) preserved[key] = v;
+    }
+  } catch {
+    // Ignore storage failures
+  }
+
   try {
     localStorage.clear();
   } catch {
@@ -51,6 +67,9 @@ export async function clearClientCache(version = CACHE_VERSION) {
   await clearRuntimeCaches();
 
   try {
+    for (const [k, v] of Object.entries(preserved)) {
+      localStorage.setItem(k, v);
+    }
     localStorage.setItem(CACHE_VERSION_KEY, version);
   } catch {
     // Ignore storage failures
