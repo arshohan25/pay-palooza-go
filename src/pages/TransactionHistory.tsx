@@ -37,6 +37,7 @@ interface Transaction {
   category: Exclude<TxCategory, "all">;
   name: string;
   detail: string;
+  party: string;
   date: string;
   amount: number;
   fee: number;
@@ -46,6 +47,7 @@ interface Transaction {
   status: string;
   recipient_phone?: string | null;
 }
+
 
 const CATEGORY_KEYS: { id: TxCategory; key: string }[] = [
   { id: "all",          key: "thAll" },
