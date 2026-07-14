@@ -122,13 +122,26 @@ function AgentListTab() {
 
   const handleChangeDistributor = async (toId: string | null, toName: string) => {
     if (!changeDistAgent) return;
+    const agent = changeDistAgent;
     try {
-      await reassignAgent(changeDistAgent.id, changeDistAgent.distributor_id, toId);
-      toast.success(`Agent moved to ${toName}`);
+      const res = await reassignAgent(agent.id, agent.distributor_id, toId);
+      toast.success(`Agent moved to ${toName}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await reassignAgent(agent.id, toId, res.prevDistId);
+              toast.success("Undo — agent restored");
+              load();
+            } catch (e: any) { toast.error(e.message || "Undo failed"); }
+          },
+        },
+      });
       setChangeDistAgent(null);
       load();
     } catch (e: any) { toast.error(e.message || "Failed"); }
   };
+
 
   const statusCounts = {
     active: agents.filter(a => a.status === "active").length,

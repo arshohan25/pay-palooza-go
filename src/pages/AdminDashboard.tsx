@@ -104,6 +104,7 @@ import AdminMerchantApplications from "@/components/admin/AdminMerchantApplicati
 import AdminApiRequests from "@/components/admin/AdminApiRequests";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
 import AdminDistributorManagement from "@/components/admin/AdminDistributorManagement";
+import AdminSuperDistributorHub from "@/components/admin/AdminSuperDistributorHub";
 import AdminSystemHealth from "@/components/admin/AdminSystemHealth";
 import AdminDataExport from "@/components/admin/AdminDataExport";
 import AdminUserSessions from "@/components/admin/AdminUserSessions";
@@ -288,6 +289,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "merchants", label: "Merchants", icon: Store },
       { id: "merchant_apps", label: "Merchant Apps", icon: Store },
       { id: "distributors", label: "Distributors", icon: Building2 },
+      { id: "super_distributors", label: "Super Distributors", icon: Building2 },
       { id: "wallets", label: "Wallets", icon: Wallet },
       { id: "referrals", label: "Referrals", icon: Gift },
     ],
@@ -2100,6 +2102,7 @@ export default function AdminDashboard() {
 
         {/* ═══ DISTRIBUTORS ═══ */}
         {activeTab === "distributors" && <AdminDistributorManagement />}
+        {activeTab === "super_distributors" && <AdminSuperDistributorHub />}
 
         {/* ═══ SYSTEM HEALTH ═══ */}
         {activeTab === "sys_health" && <AdminSystemHealth />}

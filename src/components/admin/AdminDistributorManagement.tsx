@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import DistributorPickerDialog from "./DistributorPickerDialog";
 import AssignAgentsDialog from "./AssignAgentsDialog";
 import BulkTransferDistributorDialog from "./BulkTransferDistributorDialog";
-import { reassignAgent, removeTerritory, transferTerritory } from "@/lib/distributorAdmin";
+import { reassignAgent, removeTerritory, transferTerritory, addTerritory, canManageDistributors } from "@/lib/distributorAdmin";
 
 interface Distributor {
   id: string;
@@ -68,50 +68,111 @@ export default function AdminDistributorManagement() {
   const [bulkTransferFor, setBulkTransferFor] = useState<Distributor | null>(null);
   const [territoryTransfer, setTerritoryTransfer] = useState<string | null>(null);
 
+  // Confirmation state
+  const [unlinkTarget, setUnlinkTarget] = useState<any | null>(null);
+  const [removeTerritoryTarget, setRemoveTerritoryTarget] = useState<string | null>(null);
+
+  // RBAC gate for hiding mutation UI when caller lacks permissions
+  const [canManage, setCanManage] = useState(true);
+  useEffect(() => { canManageDistributors().then(setCanManage); }, []);
+
   const refreshLinkedAgents = useCallback(async (distId: string) => {
     const { data } = await supabase.from("agents").select("id, business_name, status, user_id, commission_earned").eq("distributor_id", distId);
     setLinkedAgents(data ?? []);
   }, []);
 
-  const handleUnlinkAgent = async (agentId: string) => {
-    if (!selectedDist) return;
+  const confirmUnlinkAgent = async () => {
+    if (!selectedDist || !unlinkTarget) return;
+    const agent = unlinkTarget;
+    setUnlinkTarget(null);
     try {
-      await reassignAgent(agentId, selectedDist.id, null);
-      toast.success("Agent unlinked");
+      const res = await reassignAgent(agent.id, selectedDist.id, null);
+      toast.success(`Unlinked ${agent.business_name || "agent"}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await reassignAgent(agent.id, null, res.prevDistId);
+              toast.success("Undo — agent re-linked");
+              refreshLinkedAgents(selectedDist.id);
+            } catch (e: any) { toast.error(e.message || "Undo failed"); }
+          },
+        },
+      });
       refreshLinkedAgents(selectedDist.id);
-    } catch (e: any) { toast.error(e.message || "Failed"); }
+    } catch (e: any) { toast.error(e.message || "Failed to unlink"); }
   };
 
   const handleTransferAgent = async (toDistId: string | null, toName: string) => {
     if (!selectedDist || !transferAgent) return;
+    const agent = transferAgent;
     try {
-      await reassignAgent(transferAgent.id, selectedDist.id, toDistId);
-      toast.success(`Agent moved to ${toName}`);
+      const res = await reassignAgent(agent.id, selectedDist.id, toDistId);
+      toast.success(`Agent moved to ${toName}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await reassignAgent(agent.id, toDistId, res.prevDistId);
+              toast.success("Undo — agent restored");
+              refreshLinkedAgents(selectedDist.id);
+            } catch (e: any) { toast.error(e.message || "Undo failed"); }
+          },
+        },
+      });
       refreshLinkedAgents(selectedDist.id);
       setTransferAgent(null);
-    } catch (e: any) { toast.error(e.message || "Failed"); }
+    } catch (e: any) { toast.error(e.message || "Failed to transfer"); }
   };
 
-  const handleRemoveTerritory = async (code: string) => {
-    if (!selectedDist) return;
+  const confirmRemoveTerritory = async () => {
+    if (!selectedDist || !removeTerritoryTarget) return;
+    const code = removeTerritoryTarget;
+    const distId = selectedDist.id;
+    setRemoveTerritoryTarget(null);
     try {
-      await removeTerritory(code, selectedDist.id);
-      toast.success(`Removed ${code}`);
+      await removeTerritory(code, distId);
+      toast.success(`Removed ${code}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await addTerritory(code, distId);
+              toast.success(`Restored ${code}`);
+              load();
+            } catch (e: any) { toast.error(e.message || "Undo failed"); }
+          },
+        },
+      });
       setSelectedDist({ ...selectedDist, territory: (selectedDist.territory ?? []).filter(c => c !== code) });
       load();
-    } catch (e: any) { toast.error(e.message || "Failed"); }
+    } catch (e: any) { toast.error(e.message || "Failed to remove"); }
   };
 
   const handleMoveTerritory = async (toDistId: string | null, toName: string) => {
     if (!selectedDist || !territoryTransfer || !toDistId) return;
+    const code = territoryTransfer;
+    const fromId = selectedDist.id;
     try {
-      await transferTerritory(territoryTransfer, selectedDist.id, toDistId);
-      toast.success(`Moved ${territoryTransfer} to ${toName}`);
-      setSelectedDist({ ...selectedDist, territory: (selectedDist.territory ?? []).filter(c => c !== territoryTransfer) });
+      await transferTerritory(code, fromId, toDistId);
+      toast.success(`Moved ${code} to ${toName}`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await transferTerritory(code, toDistId, fromId);
+              toast.success(`Undo — ${code} restored`);
+              load();
+            } catch (e: any) { toast.error(e.message || "Undo failed"); }
+          },
+        },
+      });
+      setSelectedDist({ ...selectedDist, territory: (selectedDist.territory ?? []).filter(c => c !== code) });
       setTerritoryTransfer(null);
       load();
-    } catch (e: any) { toast.error(e.message || "Failed"); }
+    } catch (e: any) { toast.error(e.message || "Failed to move"); }
   };
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -415,10 +476,10 @@ export default function AdminDistributorManagement() {
                     {selectedDist.territory.map((code) => (
                       <div key={code} className="group flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-muted text-xs font-medium text-foreground">
                         <span>{code}</span>
-                        <button type="button" title="Move to another distributor" className="h-5 w-5 rounded-full hover:bg-primary/20 flex items-center justify-center" onClick={() => setTerritoryTransfer(code)}>
+                        <button type="button" title="Move to another distributor" className="h-5 w-5 rounded-full hover:bg-primary/20 flex items-center justify-center disabled:opacity-40" disabled={!canManage} onClick={() => setTerritoryTransfer(code)}>
                           <ArrowRightLeft className="w-3 h-3" />
                         </button>
-                        <button type="button" title="Remove" className="h-5 w-5 rounded-full hover:bg-destructive/20 flex items-center justify-center text-destructive" onClick={() => handleRemoveTerritory(code)}>
+                        <button type="button" title="Remove" className="h-5 w-5 rounded-full hover:bg-destructive/20 flex items-center justify-center text-destructive disabled:opacity-40" disabled={!canManage} onClick={() => setRemoveTerritoryTarget(code)}>
                           <X className="w-3 h-3" />
                         </button>
                       </div>
@@ -444,8 +505,8 @@ export default function AdminDistributorManagement() {
                             <p className="text-sm font-medium text-foreground truncate">{a.business_name || a.id.slice(0, 8)}</p>
                           </div>
                           <Badge variant={a.status === "active" ? "default" : "destructive"} className="text-[10px]">{a.status}</Badge>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Transfer to another distributor" onClick={() => setTransferAgent(a)}><ArrowRightLeft className="w-3.5 h-3.5" /></Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" title="Unlink from this distributor" onClick={() => handleUnlinkAgent(a.id)}><Link2Off className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Transfer to another distributor" disabled={!canManage} onClick={() => setTransferAgent(a)}><ArrowRightLeft className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" title="Unlink from this distributor" disabled={!canManage} onClick={() => setUnlinkTarget(a)}><Link2Off className="w-3.5 h-3.5" /></Button>
                         </div>
                       ))}
                     </div>
@@ -548,6 +609,41 @@ export default function AdminDistributorManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Unlink agent confirmation */}
+      <AlertDialog open={!!unlinkTarget} onOpenChange={v => { if (!v) setUnlinkTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unlink agent?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove <strong>{unlinkTarget?.business_name || "this agent"}</strong> from{" "}
+              <strong>{selectedDist?.business_name}</strong>. You can undo this from the toast.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmUnlinkAgent}>Unlink</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove territory confirmation */}
+      <AlertDialog open={!!removeTerritoryTarget} onOpenChange={v => { if (!v) setRemoveTerritoryTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove territory?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove <strong>{removeTerritoryTarget}</strong> from{" "}
+              <strong>{selectedDist?.business_name}</strong>. You can undo this from the toast.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveTerritory} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
