@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
+import { isSessionInvalid, purgeStoredAuthSession } from "@/lib/authSessionRecovery";
 
 let _cachedSession: Session | null = null;
 let _sessionResolved = false;
@@ -16,6 +17,13 @@ export async function getCachedSession(): Promise<Session | null> {
     data: { session },
   } = await supabase.auth.getSession();
 
+  if (isSessionInvalid(session)) {
+    purgeStoredAuthSession();
+    _cachedSession = null;
+    _sessionResolved = true;
+    return null;
+  }
+
   _cachedSession = session;
   _sessionResolved = true;
   return session;
@@ -29,46 +37,24 @@ export async function signOut() {
   localStorage.removeItem("mfs_has_authenticated");
   localStorage.removeItem("splashDone");
 
-  await supabase.auth.signOut();
+  await Promise.race([
+    supabase.auth.signOut().catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, 1200)),
+  ]);
+  purgeStoredAuthSession();
   _cachedSession = null;
   _sessionResolved = true;
 }
 
-/**
- * Detect a corrupted/invalid Supabase session (e.g. JWT missing `sub`
- * claim after signing-key rotation). Such a session can't be used and
- * causes /auth/v1/user to 403 in a loop, wedging the UI. We treat it
- * as "signed out" and purge it from storage.
- */
-function isSessionInvalid(session: Session | null): boolean {
-  if (!session) return false;
-  const token = session.access_token;
-  if (!token || typeof token !== "string") return true;
-  const parts = token.split(".");
-  if (parts.length !== 3) return true;
-  try {
-    const payload = JSON.parse(
-      atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
-    );
-    if (!payload?.sub) return true;
-  } catch {
-    return true;
-  }
-  return false;
-}
-
 async function purgeInvalidSession() {
+  // Clear browser auth storage first. signOut can hang/throw for bad JWTs,
+  // so storage cleanup must not depend on the backend accepting the token.
+  purgeStoredAuthSession();
   try {
-    await supabase.auth.signOut();
-  } catch {
-    // ignore
-  }
-  try {
-    Object.keys(localStorage).forEach((k) => {
-      if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
-        localStorage.removeItem(k);
-      }
-    });
+    await Promise.race([
+      supabase.auth.signOut({ scope: "local" }).catch(() => null),
+      new Promise((resolve) => setTimeout(resolve, 800)),
+    ]);
   } catch {
     // ignore
   }

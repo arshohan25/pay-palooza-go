@@ -1,11 +1,12 @@
 import { captureInstallPrompt } from "./lib/installPromptStore";
 import { cleanupCacheRecoveryParams, clearPreviewCacheArtifacts, syncClientCacheVersion } from "./lib/cacheReset";
 import { captureAppRoleFromUrl } from "./lib/appRole";
+import { purgeInvalidStoredAuthSession } from "./lib/authSessionRecovery";
 
+// Purge corrupt persisted auth before React/Supabase initialize.
+purgeInvalidStoredAuthSession();
 // Capture before React renders so the event is never lost
 captureInstallPrompt();
-// Persist ?app=<role> from PWA start_url so we can lock the app to that role
-captureAppRoleFromUrl();
 
 
 import { createRoot } from "react-dom/client";
@@ -30,10 +31,17 @@ async function bootstrap() {
     window.location.hostname.includes("id-preview--") ||
     window.location.hostname.includes("lovableproject.com");
 
-  if (!isPreview) {
-    await syncClientCacheVersion();
+  try {
+    if (!isPreview) {
+      await syncClientCacheVersion();
+    }
+    cleanupCacheRecoveryParams();
+  } catch {
+    // Cache recovery must never block app rendering.
   }
-  cleanupCacheRecoveryParams();
+
+  // Persist ?app=<role> after cache recovery so version cleanup doesn't wipe it.
+  captureAppRoleFromUrl();
 
   createRoot(document.getElementById("root")!).render(
     <HelmetProvider>
