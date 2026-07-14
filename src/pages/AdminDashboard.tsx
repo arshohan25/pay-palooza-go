@@ -292,6 +292,8 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "merchant_apps", label: "Merchant Apps", icon: Store },
       { id: "distributors", label: "Distributors", icon: Building2 },
       { id: "super_distributors", label: "Super Distributors", icon: Building2 },
+      { id: "sd_overview", label: "SD Overview", icon: Building2 },
+      { id: "roles_perms", label: "Roles & Permissions", icon: Building2 },
       { id: "wallets", label: "Wallets", icon: Wallet },
       { id: "referrals", label: "Referrals", icon: Gift },
     ],
