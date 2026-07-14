@@ -112,7 +112,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
   const rows: { icon: React.ElementType; label: string; value: string; copy: boolean; accent?: string }[] = [
     { icon: Hash,     label: t("transactionId"), value: txId,                                  copy: true, accent: "text-primary"  },
     { icon: User,     label: t("nameParty"),      value: display.name,                          copy: false },
-    ...(tx.recipient_phone ? [{ icon: Phone, label: "Receiver Number", value: tx.recipient_phone, copy: true }] : []),
+    ...(tx.recipient_phone ? [{ icon: Phone, label: isCredit ? "Sender Number" : "Receiver Number", value: tx.recipient_phone, copy: true }] : []),
     { icon: Tag,      label: t("type"),            value: display.label,                         copy: false },
     ...(tx.description && !tx.description.includes("[Wallet:") && !tx.description.includes("Wallet:") && tx.description !== display.label
       ? [{ icon: FileText, label: t("description"), value: tx.description, copy: false }] : []),
