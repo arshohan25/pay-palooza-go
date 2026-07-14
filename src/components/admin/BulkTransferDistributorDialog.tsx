@@ -31,16 +31,33 @@ export default function BulkTransferDistributorDialog({ open, onOpenChange, from
   const submit = async () => {
     if (!toId) { toast.error("Select target distributor"); return; }
     if (!moveAgents && !moveTerritories) { toast.error("Pick at least one thing to move"); return; }
+    const toName = options.find((o) => o.id === toId)?.business_name || "target";
+    if (!window.confirm(
+      `Move ${moveAgents ? "all agents" : ""}${moveAgents && moveTerritories ? " and " : ""}${moveTerritories ? "all territories" : ""} from "${fromDistributorName}" to "${toName}"? You can undo from the toast.`
+    )) return;
     setSaving(true);
     try {
       const res = await bulkTransferDistributor(fromDistributorId, toId, { agents: moveAgents, territories: moveTerritories });
-      toast.success(`Moved ${res.agentCount} agent(s) and ${res.territoryCount} territory code(s)`);
+      toast.success(`Moved ${res.agentCount} agent(s) and ${res.territoryCount} territory code(s)`, {
+        duration: 10000,
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await undoBulkTransfer(res);
+              toast.success("Undo — transfer reverted");
+              onDone?.();
+            } catch (e: any) { toast.error(e.message || "Undo failed"); }
+          },
+        },
+      });
       onDone?.();
       onOpenChange(false);
     } catch (e: any) {
       toast.error(e.message || "Transfer failed");
     } finally { setSaving(false); }
   };
+
 
   const options = list.filter((d) => d.id !== fromDistributorId);
 
