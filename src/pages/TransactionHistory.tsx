@@ -46,6 +46,8 @@ interface Transaction {
   _isInvestment?: boolean;
   status: string;
   recipient_phone?: string | null;
+  description?: string | null;
+
 }
 
 
