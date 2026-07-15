@@ -15,6 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -120,10 +123,43 @@ export default function AdminMerchantManagement() {
   const [showNewSecret, setShowNewSecret] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Create Merchant dialog
+  // Create Merchant dialog (full onboarding parity)
   const [showCreateMerchant, setShowCreateMerchant] = useState(false);
-  const [createForm, setCreateForm] = useState({ phone: "", business_name: "", trade_license: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
+  const [createForm, setCreateForm] = useState({
+    phone: "",
+    owner_name: "",
+    contact_email: "",
+    contact_number: "",
+    business_address: "",
+    business_name: "",
+    category: "retail",
+    trade_license: "",
+    mdr_rate: "1.8",
+    commission_rate: "0",
+    settlement_frequency: "T+1",
+    bank_name: "",
+    bank_account_holder: "",
+    bank_branch: "",
+    bank_account_number: "",
+    bank_routing: "",
+    initial_status: "pending" as "pending" | "active",
+    kyc_status: "pending" as "pending" | "verified",
+    admin_notes: "",
+  });
+  const [createFiles, setCreateFiles] = useState<{ nid_front: File | null; nid_back: File | null; trade_license: File | null; bank_statement: File | null }>({ nid_front: null, nid_back: null, trade_license: null, bank_statement: null });
   const [createLoading, setCreateLoading] = useState(false);
+
+  const resetCreateForm = () => {
+    setCreateForm({
+      phone: "", owner_name: "", contact_email: "", contact_number: "", business_address: "",
+      business_name: "", category: "retail", trade_license: "",
+      mdr_rate: "1.8", commission_rate: "0", settlement_frequency: "T+1",
+      bank_name: "", bank_account_holder: "", bank_branch: "", bank_account_number: "", bank_routing: "",
+      initial_status: "pending", kyc_status: "pending", admin_notes: "",
+    });
+    setCreateFiles({ nid_front: null, nid_back: null, trade_license: null, bank_statement: null });
+  };
+
 
   const loadMerchants = useCallback(async () => {
     setLoading(true);
@@ -339,58 +375,131 @@ export default function AdminMerchantManagement() {
   };
 
   // ─── Create Merchant directly ───
+  const uploadKycFile = async (userId: string, slot: string, file: File): Promise<string> => {
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${userId}/${slot}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("vendor-kyc").upload(path, file, { upsert: true, contentType: file.type });
+    if (error) throw new Error(`${slot} upload failed: ${error.message}`);
+    return path;
+  };
+
   const handleCreateMerchant = async () => {
-    if (!createForm.phone.trim() || !createForm.business_name.trim()) {
-      toast.error("Phone and business name are required");
-      return;
+    const phone = createForm.phone.trim();
+    const businessName = createForm.business_name.trim();
+    if (!phone || !businessName) { toast.error("Phone and business name are required"); return; }
+    if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Phone must be a valid 11-digit BD number (01XXXXXXXXX)"); return; }
+    const mdr = Number(createForm.mdr_rate);
+    const commission = Number(createForm.commission_rate);
+    if (!Number.isFinite(mdr) || mdr < 0 || mdr > 10) { toast.error("MDR rate must be between 0 and 10 (%)"); return; }
+    if (!Number.isFinite(commission) || commission < 0 || commission > 100) { toast.error("Commission rate must be between 0 and 100 (%)"); return; }
+    if (createForm.contact_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.contact_email.trim())) { toast.error("Contact email is not valid"); return; }
+    if (createForm.kyc_status === "verified") {
+      if (!createForm.trade_license.trim()) { toast.error("Trade license number is required to mark KYC verified"); return; }
+      if (!createFiles.nid_front || !createFiles.nid_back) { toast.error("NID front & back files are required to mark KYC verified"); return; }
+      if (!createFiles.trade_license) { toast.error("Trade license document is required to mark KYC verified"); return; }
     }
+
     setCreateLoading(true);
     try {
-      // Find user by phone
-      const { data: profile } = await supabase.from("profiles").select("user_id, phone").eq("phone", createForm.phone.trim()).maybeSingle();
+      const { data: profile } = await supabase.from("profiles").select("user_id, phone, email").eq("phone", phone).maybeSingle();
       if (!profile) { toast.error("No user found with that phone number"); setCreateLoading(false); return; }
 
-      // Check if already a merchant
       const { data: existingMerchant } = await supabase.from("merchants").select("id").eq("user_id", profile.user_id).maybeSingle();
       if (existingMerchant) { toast.error("This user is already a merchant"); setCreateLoading(false); return; }
 
-      // Create merchant
-      const { error: mErr } = await supabase.from("merchants").insert({
+      if (createForm.trade_license.trim()) {
+        const { data: dupLicense } = await supabase.from("merchants").select("id").eq("trade_license", createForm.trade_license.trim()).maybeSingle();
+        if (dupLicense) { toast.error("Another merchant already uses this trade license"); setCreateLoading(false); return; }
+      }
+
+      // Upload KYC docs (best-effort — a single failure aborts the whole create)
+      const uploaded: Record<string, string | null> = { nid_front: null, nid_back: null, trade_license: null, bank_statement: null };
+      for (const slot of ["nid_front", "nid_back", "trade_license", "bank_statement"] as const) {
+        const f = createFiles[slot];
+        if (f) uploaded[slot] = await uploadKycFile(profile.user_id, slot, f);
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const insertPayload: any = {
         user_id: profile.user_id,
-        business_name: createForm.business_name.trim(),
-        trade_license: createForm.trade_license.trim() || null,
+        business_name: businessName,
         category: createForm.category as any,
-        status: "active" as any,
-        bank_name: createForm.bank_name || null,
-        bank_account_number: createForm.bank_account_number || null,
-        bank_routing: createForm.bank_routing || null,
-      });
+        status: createForm.initial_status as any,
+        trade_license: createForm.trade_license.trim() || null,
+        mdr_rate: mdr,
+        commission_rate: commission,
+        settlement_frequency: createForm.settlement_frequency,
+        owner_name: createForm.owner_name.trim() || null,
+        contact_email: createForm.contact_email.trim() || null,
+        contact_number: createForm.contact_number.trim() || null,
+        business_address: createForm.business_address.trim() || null,
+        admin_notes: createForm.admin_notes.trim() || null,
+        bank_name: createForm.bank_name.trim() || null,
+        bank_account_holder: createForm.bank_account_holder.trim() || null,
+        bank_branch: createForm.bank_branch.trim() || null,
+        bank_account_number: createForm.bank_account_number.trim() || null,
+        bank_routing: createForm.bank_routing.trim() || null,
+        nid_front_url: uploaded.nid_front,
+        nid_back_url: uploaded.nid_back,
+        trade_license_url: uploaded.trade_license,
+        bank_statement_url: uploaded.bank_statement,
+        business_kyc_status: createForm.kyc_status,
+        business_kyc_reviewed_at: createForm.kyc_status === "verified" ? new Date().toISOString() : null,
+        business_kyc_reviewed_by: createForm.kyc_status === "verified" ? session?.user?.id ?? null : null,
+      };
+
+      const { error: mErr } = await supabase.from("merchants").insert(insertPayload);
       if (mErr) { toast.error("Failed to create merchant: " + mErr.message); setCreateLoading(false); return; }
 
-      // Assign merchant role
+      // Assign merchant role (ignore unique-conflict if it already exists)
       await (supabase as any).from("user_roles").insert({ user_id: profile.user_id, role: "merchant" });
 
-      // Notify user
+      // Backfill profile email if it was missing and admin supplied one
+      if (createForm.contact_email.trim() && !profile.email) {
+        await supabase.from("profiles").update({ email: createForm.contact_email.trim() }).eq("user_id", profile.user_id);
+      }
+
+      // Notify the merchant
+      const statusCopy = createForm.initial_status === "active"
+        ? "is active and ready to accept payments."
+        : "has been created and is pending review.";
       await supabase.from("notifications").insert({
         user_id: profile.user_id,
         title: "Merchant Account Created",
-        body: `Your merchant account "${createForm.business_name}" has been created and is active.`,
+        body: `Your merchant account "${businessName}" ${statusCopy}`,
         category: "merchant",
       });
 
-      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_created_direct", entity_type: "merchant", entity_id: profile.user_id, details: { business_name: createForm.business_name, phone: createForm.phone } }).then();
+        supabase.from("audit_logs").insert({
+          actor_id: session.user.id,
+          action: "merchant_created_direct",
+          entity_type: "merchant",
+          entity_id: profile.user_id,
+          details: {
+            business_name: businessName,
+            phone,
+            initial_status: createForm.initial_status,
+            kyc_status: createForm.kyc_status,
+            mdr_rate: mdr,
+            commission_rate: commission,
+            settlement_frequency: createForm.settlement_frequency,
+            reason: createForm.admin_notes.trim() || null,
+          },
+        }).then();
       }
-      toast.success("Merchant created successfully");
+
+      toast.success(`Merchant created (${createForm.initial_status}, KYC ${createForm.kyc_status})`);
       setShowCreateMerchant(false);
-      setCreateForm({ phone: "", business_name: "", trade_license: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
+      resetCreateForm();
       loadMerchants();
     } catch (err: any) {
       toast.error("Error: " + (err.message || "Unknown"));
     }
     setCreateLoading(false);
   };
+
 
   // ─── Approve/Reject API request ───
   const handleApiRequest = async (requestId: string, action: "approved" | "rejected", notes?: string) => {
@@ -1042,57 +1151,216 @@ export default function AdminMerchantManagement() {
       </>}
 
       {/* Create Merchant Dialog */}
-      <Sheet open={showCreateMerchant} onOpenChange={setShowCreateMerchant}>
-        <SheetContent side="bottom" className="rounded-t-3xl h-[75vh] flex flex-col p-0">
-          <SheetHeader className="px-6 pt-5 pb-3">
+      <Sheet open={showCreateMerchant} onOpenChange={v => { setShowCreateMerchant(v); if (!v) resetCreateForm(); }}>
+        <SheetContent side="bottom" className="rounded-t-3xl h-[92vh] flex flex-col p-0">
+          <SheetHeader className="px-6 pt-5 pb-3 shrink-0 border-b border-border">
             <SheetTitle className="flex items-center gap-2 text-base">
               <Plus size={18} /> Create Merchant
             </SheetTitle>
-            <SheetDescription>Directly create a merchant account for an existing user.</SheetDescription>
+            <SheetDescription>Full onboarding — creates the merchant, uploads KYC docs, sets pricing, and assigns the merchant role.</SheetDescription>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-4">
-            <div>
-              <label className="text-sm font-medium text-foreground">User Phone *</label>
-              <Input value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} placeholder="01XXXXXXXXX" maxLength={15} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Business Name *</label>
-              <Input value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} placeholder="Business name" maxLength={100} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Category</label>
-              <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {dbCategories.map(c => <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Trade License (optional)</label>
-              <Input value={createForm.trade_license} onChange={e => setCreateForm(f => ({ ...f, trade_license: e.target.value }))} placeholder="License number" maxLength={50} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Bank Name (optional)</label>
-              <Input value={createForm.bank_name} onChange={e => setCreateForm(f => ({ ...f, bank_name: e.target.value }))} placeholder="e.g. Dutch Bangla Bank" maxLength={100} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+
+            {/* 1. Account holder */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Account Holder</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>User Phone *</Label>
+                  <Input value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, "") }))} placeholder="01XXXXXXXXX" maxLength={11} />
+                  <p className="text-[10px] text-muted-foreground mt-1">Must belong to an existing EasyPay user.</p>
+                </div>
+                <div>
+                  <Label>Owner Name</Label>
+                  <Input value={createForm.owner_name} onChange={e => setCreateForm(f => ({ ...f, owner_name: e.target.value }))} placeholder="Full legal name" maxLength={120} />
+                </div>
+                <div>
+                  <Label>Contact Email</Label>
+                  <Input type="email" value={createForm.contact_email} onChange={e => setCreateForm(f => ({ ...f, contact_email: e.target.value }))} placeholder="owner@shop.com" maxLength={120} />
+                </div>
+                <div>
+                  <Label>Contact Number</Label>
+                  <Input value={createForm.contact_number} onChange={e => setCreateForm(f => ({ ...f, contact_number: e.target.value }))} placeholder="Alt. phone (optional)" maxLength={20} />
+                </div>
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* 2. Business */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Business</h4>
               <div>
-                <label className="text-sm font-medium text-foreground">Account Number</label>
-                <Input value={createForm.bank_account_number} onChange={e => setCreateForm(f => ({ ...f, bank_account_number: e.target.value }))} maxLength={30} />
+                <Label>Business Name *</Label>
+                <Input value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} placeholder="Business name" maxLength={120} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Category</Label>
+                  <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {dbCategories.map(c => <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Trade License #</Label>
+                  <Input value={createForm.trade_license} onChange={e => setCreateForm(f => ({ ...f, trade_license: e.target.value }))} placeholder="License number" maxLength={50} />
+                </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Routing</label>
-                <Input value={createForm.bank_routing} onChange={e => setCreateForm(f => ({ ...f, bank_routing: e.target.value }))} maxLength={20} />
+                <Label>Business Address</Label>
+                <Textarea value={createForm.business_address} onChange={e => setCreateForm(f => ({ ...f, business_address: e.target.value }))} placeholder="Full address incl. district & upazila" rows={2} maxLength={300} />
               </div>
-            </div>
-            <Button className="w-full" onClick={handleCreateMerchant} disabled={createLoading || !createForm.phone.trim() || !createForm.business_name.trim()}>
+            </section>
+
+            <Separator />
+
+            {/* 3. Pricing & settlement */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Pricing & Settlement</h4>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>MDR Rate (%)</Label>
+                  <Input type="number" step="0.01" min="0" max="10" value={createForm.mdr_rate} onChange={e => setCreateForm(f => ({ ...f, mdr_rate: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Commission (%)</Label>
+                  <Input type="number" step="0.01" min="0" max="100" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Settlement</Label>
+                  <Select value={createForm.settlement_frequency} onValueChange={v => setCreateForm(f => ({ ...f, settlement_frequency: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SETTLEMENT_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* 4. Bank */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Settlement Bank</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Bank Name</Label>
+                  <Input value={createForm.bank_name} onChange={e => setCreateForm(f => ({ ...f, bank_name: e.target.value }))} placeholder="e.g. Dutch Bangla Bank" maxLength={100} />
+                </div>
+                <div>
+                  <Label>Branch</Label>
+                  <Input value={createForm.bank_branch} onChange={e => setCreateForm(f => ({ ...f, bank_branch: e.target.value }))} placeholder="Branch name" maxLength={100} />
+                </div>
+                <div>
+                  <Label>Account Holder</Label>
+                  <Input value={createForm.bank_account_holder} onChange={e => setCreateForm(f => ({ ...f, bank_account_holder: e.target.value }))} maxLength={120} />
+                </div>
+                <div>
+                  <Label>Account Number</Label>
+                  <Input value={createForm.bank_account_number} onChange={e => setCreateForm(f => ({ ...f, bank_account_number: e.target.value }))} maxLength={30} />
+                </div>
+                <div className="col-span-2">
+                  <Label>Routing</Label>
+                  <Input value={createForm.bank_routing} onChange={e => setCreateForm(f => ({ ...f, bank_routing: e.target.value }))} maxLength={20} />
+                </div>
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* 5. KYC documents */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">KYC Documents</h4>
+              <p className="text-[11px] text-muted-foreground">Required if you mark KYC as verified. Images/PDFs, max ~5 MB each.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  { key: "nid_front", label: "NID Front" },
+                  { key: "nid_back", label: "NID Back" },
+                  { key: "trade_license", label: "Trade License Doc" },
+                  { key: "bank_statement", label: "Bank Statement" },
+                ] as const).map(slot => (
+                  <div key={slot.key} className="space-y-1">
+                    <Label>{slot.label}</Label>
+                    <Input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={e => setCreateFiles(prev => ({ ...prev, [slot.key]: e.target.files?.[0] ?? null }))}
+                    />
+                    {createFiles[slot.key] && (
+                      <p className="text-[10px] text-emerald-600 truncate">✓ {createFiles[slot.key]!.name}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* 6. Status */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Initial Status</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-border p-3">
+                  <Label className="text-xs">Merchant Status</Label>
+                  <RadioGroup value={createForm.initial_status} onValueChange={v => setCreateForm(f => ({ ...f, initial_status: v as any }))} className="mt-2 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <RadioGroupItem value="pending" id="ms-pending" className="mt-0.5" />
+                      <Label htmlFor="ms-pending" className="text-xs font-normal leading-tight">
+                        <span className="font-semibold block">Pending review</span>
+                        <span className="text-muted-foreground">Cannot accept payments until approved.</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <RadioGroupItem value="active" id="ms-active" className="mt-0.5" />
+                      <Label htmlFor="ms-active" className="text-xs font-normal leading-tight">
+                        <span className="font-semibold block">Active</span>
+                        <span className="text-muted-foreground">Live immediately, can transact.</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                <div className="rounded-xl border border-border p-3">
+                  <Label className="text-xs">Business KYC</Label>
+                  <RadioGroup value={createForm.kyc_status} onValueChange={v => setCreateForm(f => ({ ...f, kyc_status: v as any }))} className="mt-2 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <RadioGroupItem value="pending" id="kyc-pending" className="mt-0.5" />
+                      <Label htmlFor="kyc-pending" className="text-xs font-normal leading-tight">
+                        <span className="font-semibold block">Pending</span>
+                        <span className="text-muted-foreground">Docs to be reviewed later.</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <RadioGroupItem value="verified" id="kyc-verified" className="mt-0.5" />
+                      <Label htmlFor="kyc-verified" className="text-xs font-normal leading-tight">
+                        <span className="font-semibold block">Verified now</span>
+                        <span className="text-muted-foreground">Requires NID + trade license docs.</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+              <div>
+                <Label>Admin Notes / Reason</Label>
+                <Textarea value={createForm.admin_notes} onChange={e => setCreateForm(f => ({ ...f, admin_notes: e.target.value }))} placeholder="Why is this merchant being created directly? (audit trail)" rows={2} maxLength={500} />
+              </div>
+            </section>
+
+            <Button
+              className="w-full"
+              onClick={handleCreateMerchant}
+              disabled={createLoading || !createForm.phone.trim() || !createForm.business_name.trim()}
+            >
               {createLoading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Store className="w-4 h-4 mr-2" />}
               Create Merchant
             </Button>
           </div>
         </SheetContent>
       </Sheet>
+
 
       {/* Delete Merchant Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={v => { if (!v) setDeleteTarget(null); }}>
