@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Save, Loader2, User, Store, Building2, UserCheck } from "lucide-react";
+import DistrictRoutePicker from "@/components/DistrictRoutePicker";
+import DistrictMultiSelect from "@/components/DistrictMultiSelect";
 
 interface AdminProfileEditorProps {
   userId: string;
