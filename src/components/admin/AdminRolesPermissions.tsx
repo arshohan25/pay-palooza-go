@@ -225,6 +225,7 @@ export default function AdminRolesPermissions() {
             <Badge variant="outline" className="gap-1"><Lock className="w-3 h-3" /> Read-only</Badge>
           )}
           <Button size="sm" variant="ghost" onClick={load} title="Reload"><RefreshCw className="w-4 h-4" /></Button>
+          <Button size="sm" variant="outline" onClick={() => setPresetOpen(true)} disabled={!canManage} className="gap-1"><Wand2 className="w-4 h-4" /> Apply preset</Button>
           <Button size="sm" onClick={() => setAddOpen(true)} disabled={!canManage} className="gap-1"><Plus className="w-4 h-4" /> Role</Button>
         </CardContent>
       </Card>
