@@ -380,13 +380,20 @@ export default function AdminApprovalsInbox() {
       const r = rows.find((x) => x.id === id);
       return r && r.requested_by !== user?.id;
     }) : ids;
-    const skipped = ids.length - filtered.length;
-    if (approve && skipped > 0) {
-      toast.warning(`${skipped} own request(s) will be skipped — a different admin must approve those.`);
+    const skippedIds = approve ? ids.filter((id) => !filtered.includes(id)) : [];
+    if (approve && skippedIds.length > 0) {
+      toast.warning(`${skippedIds.length} own request(s) will be skipped — a different admin must approve those.`);
     }
     if (filtered.length === 0) { toast.error("Nothing to approve — you can't self-approve your own requests."); return; }
     setBulkNote("");
-    setBulk({ approve, ids: filtered });
+    // Include skipped ids in the dialog so the user sees them explicitly.
+    const allIds = approve ? [...filtered, ...skippedIds] : filtered;
+    setBulk({ approve, ids: allIds });
+    setBulkRan(false);
+    const initial: Record<string, { status: BulkStatus; error?: string }> = {};
+    for (const id of filtered) initial[id] = { status: "pending" };
+    for (const id of skippedIds) initial[id] = { status: "skipped", error: "You cannot self-approve your own request" };
+    setBulkResults(initial);
     // Fetch current permission values for a real diff preview.
     setBulkPreviewLoading(true);
     setBulkCurrent({});
