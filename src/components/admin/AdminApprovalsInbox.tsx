@@ -59,8 +59,11 @@ export default function AdminApprovalsInbox() {
   const [diffLoading, setDiffLoading] = useState(false);
   const [timelineId, setTimelineId] = useState<string | null>(null);
   const [undoWindows, setUndoWindows] = useState<Record<string, number>>({});
-  // recent action tracker for undo: request snapshot + when it happened + window
-  const [recent, setRecent] = useState<Array<{ req: Req; approved: boolean; at: number; windowSec: number; note: string }>>([]);
+  // recent action tracker for undo — supports single actions AND bulk batches
+  type RecentEntry =
+    | { kind: "single"; req: Req; approved: boolean; at: number; windowSec: number; note: string }
+    | { kind: "bulk";   items: Array<{ req: Req; approved: boolean }>; at: number; windowSec: number; note: string; label: string };
+  const [recent, setRecent] = useState<RecentEntry[]>([]);
   const [tick, setTick] = useState(0);
   useEffect(() => { const t = setInterval(() => setTick((n) => n + 1), 1000); return () => clearInterval(t); }, []);
 
