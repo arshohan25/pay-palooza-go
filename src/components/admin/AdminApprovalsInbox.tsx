@@ -497,34 +497,38 @@ export default function AdminApprovalsInbox() {
         </CardContent>
       </Card>
 
-      {/* Undo banner — one per recent action, disappears when the window elapses */}
+      {/* Undo banners — one per recent action (single or bulk), auto-hide when window elapses */}
       {recent.length > 0 && (
         <div className="space-y-2">
-          {recent.map((item) => {
+          {recent.map((item, idx) => {
             const remaining = Math.max(0, item.windowSec * 1000 - (Date.now() - item.at));
             if (remaining <= 0) return null;
             const secs = Math.ceil(remaining / 1000);
+            const key = item.kind === "single" ? `s-${item.req.id}` : `b-${item.at}-${idx}`;
+            const title = item.kind === "single"
+              ? <>{item.approved ? "Approved" : "Rejected"} <code className="text-[11px]">{item.req.permission}</code> for <span className="capitalize">{item.req.role.replace(/_/g, " ")}</span></>
+              : <>{item.label}</>;
             return (
-              <div key={item.req.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/[0.06]">
+              <div key={key} className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/[0.06]">
                 <RotateCcw className="w-4 h-4 text-amber-600 shrink-0" />
                 <div className="text-xs flex-1 min-w-[200px]">
-                  <p className="font-medium">
-                    {item.approved ? "Approved" : "Rejected"} <code className="text-[11px]">{item.req.permission}</code> for{" "}
-                    <span className="capitalize">{item.req.role.replace(/_/g, " ")}</span>
-                  </p>
+                  <p className="font-medium">{title}</p>
                   <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> Reversible for {secs}s (role window: {item.windowSec}s){tick /* re-render */}
+                    <Clock className="w-3 h-3" /> Reversible for {secs}s (window: {item.windowSec}s){tick /* re-render */}
                   </p>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => undo(item)} className="gap-1 border-amber-500/60 text-amber-700 hover:bg-amber-500/10">
-                  <RotateCcw className="w-3 h-3" /> Undo
+                <Button size="sm" variant="outline"
+                  onClick={() => item.kind === "single" ? undoSingle(item.req) : undoBulk(item)}
+                  className="gap-1 border-amber-500/60 text-amber-700 hover:bg-amber-500/10">
+                  <RotateCcw className="w-3 h-3" /> Undo{item.kind === "bulk" ? ` batch (${item.items.length})` : ""}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setRecent((prev) => prev.filter((x) => x.req.id !== item.req.id))}>Dismiss</Button>
+                <Button size="sm" variant="ghost" onClick={() => setRecent((prev) => prev.filter((x) => x !== item))}>Dismiss</Button>
               </div>
             );
           })}
         </div>
       )}
+
 
 
 
