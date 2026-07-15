@@ -313,7 +313,26 @@ function AgentListTab() {
       if (session?.user) {
         supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_created", entity_type: "agent", entity_id: userId, details: { phone, business_name: form.business_name, promoted_existing: !pin } }).then();
       }
-      toast.success(pin ? `Agent created! Temp PIN: ${pin}` : `Existing user promoted to agent`, { duration: 10000 });
+
+      // Send temp PIN by SMS for freshly created accounts
+      if (pin) {
+        try {
+          const { error: smsErr } = await supabase.functions.invoke("send-agent-pin-sms", {
+            body: { phone, pin, name: form.name || undefined },
+          });
+          if (smsErr) {
+            console.error("SMS send failed", smsErr);
+            toast.warning(`Agent created, but SMS failed. Temp PIN: ${pin}`, { duration: 15000 });
+          } else {
+            toast.success(`Agent created! Temporary PIN sent by SMS to +88${phone}`, { duration: 8000 });
+          }
+        } catch (e) {
+          console.error("SMS invoke error", e);
+          toast.warning(`Agent created, but SMS failed. Temp PIN: ${pin}`, { duration: 15000 });
+        }
+      } else {
+        toast.success(`Existing user promoted to agent`, { duration: 6000 });
+      }
       setCreateOpen(false);
       setForm({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
       setNidFile(null); setSelfieFile(null);
