@@ -341,7 +341,10 @@ export default function AdminApprovalsInbox() {
     [rows, user?.id],
   );
 
-  const openBulk = (approve: boolean) => {
+  const [bulkCurrent, setBulkCurrent] = useState<Record<string, boolean>>({});
+  const [bulkPreviewLoading, setBulkPreviewLoading] = useState(false);
+
+  const openBulk = async (approve: boolean) => {
     const ids = Array.from(selected);
     if (ids.length === 0) { toast.error("Select at least one request"); return; }
     const filtered = approve ? ids.filter((id) => {
@@ -355,6 +358,19 @@ export default function AdminApprovalsInbox() {
     if (filtered.length === 0) { toast.error("Nothing to approve — you can't self-approve your own requests."); return; }
     setBulkNote("");
     setBulk({ approve, ids: filtered });
+    // Fetch current permission values for a real diff preview.
+    setBulkPreviewLoading(true);
+    setBulkCurrent({});
+    const selectedRows = filtered.map((id) => rows.find((r) => r.id === id)).filter(Boolean) as Req[];
+    const pairs = Array.from(new Set(selectedRows.map((r) => `${r.role}|${r.permission}`)));
+    const results = await Promise.all(pairs.map(async (key) => {
+      const [role, permission] = key.split("|");
+      const { data } = await (supabase as any).from("admin_role_permissions")
+        .select("allowed").eq("role", role).eq("permission", permission).maybeSingle();
+      return [key, data ? Boolean(data.allowed) : false] as const;
+    }));
+    setBulkCurrent(Object.fromEntries(results));
+    setBulkPreviewLoading(false);
   };
 
   const runBulk = async () => {
