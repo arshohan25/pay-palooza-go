@@ -863,6 +863,16 @@ export default function AdminMerchantManagement() {
 
                   <Separator />
 
+                  <TempPinResendPanel
+                    kind="merchant"
+                    userId={detail.merchant.user_id}
+                    phone={detail.ownerProfile?.phone}
+                    name={detail.ownerProfile?.name || detail.merchant.business_name}
+                  />
+
+                  <Separator />
+
+
                   {/* Business info */}
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <InfoCell label="Business Name" value={detail.merchant.business_name} />
