@@ -84,7 +84,7 @@ export default function DistrictRoutePicker({
       for (const r of list) out.push({ kind: "item", row: r, key: `i:${r.code}` });
     }
     return out;
-  }, [rows, query]);
+  }, [rows, query, divisionFilter]);
 
   const virtualizer = useVirtualizer({
     count: flat.length,
