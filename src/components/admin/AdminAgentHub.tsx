@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare, Building2, ArrowRightLeft, Upload, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { signUpWithPhonePassword, pinToPassword } from "@/lib/auth";
+import { signUpWithPhonePassword } from "@/lib/auth";
 import { toast } from "sonner";
 import DistributorPickerDialog from "./DistributorPickerDialog";
 import { reassignAgent } from "@/lib/distributorAdmin";
