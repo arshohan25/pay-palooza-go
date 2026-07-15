@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Smartphone, Lock, ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
 import { signIn } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-roles";
 import {
@@ -50,6 +51,19 @@ const AgentLoginPage = () => {
     setSubmitting(true);
     try {
       await signIn(phone, pin);
+      // Enforce temp-PIN expiry: if the agent's active temp PIN has passed
+      // its expiry without being changed, block the session and require
+      // admin to resend a new one.
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id;
+      if (uid) {
+        const { data: statusRows } = await (supabase as any).rpc("agent_temp_pin_status", { _agent_user_id: uid });
+        const st = Array.isArray(statusRows) ? statusRows[0] : statusRows;
+        if (st?.state === "expired") {
+          await supabase.auth.signOut();
+          throw new Error("Your temporary PIN has expired. Please ask your admin to resend a new one.");
+        }
+      }
       localStorage.setItem("mfs_has_authenticated", "1");
       haptics.success();
       toast.success("Signed in");

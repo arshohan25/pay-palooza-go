@@ -309,7 +309,12 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
           setTimeout(() => setConfirmPin(""), 600);
         } else {
           haptics.success();
-          changePinAuth(newPin).catch(() => {});
+          changePinAuth(newPin)
+            .then(() => {
+              // Retire any active admin-issued temp PIN so it can't be re-used.
+              (supabase as any).rpc("mark_agent_temp_pin_used").then(() => {});
+            })
+            .catch(() => {});
           setDir(1);
           setStep("success");
         }
