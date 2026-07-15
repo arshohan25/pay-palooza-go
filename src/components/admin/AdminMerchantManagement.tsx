@@ -1151,57 +1151,216 @@ export default function AdminMerchantManagement() {
       </>}
 
       {/* Create Merchant Dialog */}
-      <Sheet open={showCreateMerchant} onOpenChange={setShowCreateMerchant}>
-        <SheetContent side="bottom" className="rounded-t-3xl h-[75vh] flex flex-col p-0">
-          <SheetHeader className="px-6 pt-5 pb-3">
+      <Sheet open={showCreateMerchant} onOpenChange={v => { setShowCreateMerchant(v); if (!v) resetCreateForm(); }}>
+        <SheetContent side="bottom" className="rounded-t-3xl h-[92vh] flex flex-col p-0">
+          <SheetHeader className="px-6 pt-5 pb-3 shrink-0 border-b border-border">
             <SheetTitle className="flex items-center gap-2 text-base">
               <Plus size={18} /> Create Merchant
             </SheetTitle>
-            <SheetDescription>Directly create a merchant account for an existing user.</SheetDescription>
+            <SheetDescription>Full onboarding — creates the merchant, uploads KYC docs, sets pricing, and assigns the merchant role.</SheetDescription>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-4">
-            <div>
-              <label className="text-sm font-medium text-foreground">User Phone *</label>
-              <Input value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} placeholder="01XXXXXXXXX" maxLength={15} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Business Name *</label>
-              <Input value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} placeholder="Business name" maxLength={100} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Category</label>
-              <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {dbCategories.map(c => <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Trade License (optional)</label>
-              <Input value={createForm.trade_license} onChange={e => setCreateForm(f => ({ ...f, trade_license: e.target.value }))} placeholder="License number" maxLength={50} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Bank Name (optional)</label>
-              <Input value={createForm.bank_name} onChange={e => setCreateForm(f => ({ ...f, bank_name: e.target.value }))} placeholder="e.g. Dutch Bangla Bank" maxLength={100} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+
+            {/* 1. Account holder */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Account Holder</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>User Phone *</Label>
+                  <Input value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, "") }))} placeholder="01XXXXXXXXX" maxLength={11} />
+                  <p className="text-[10px] text-muted-foreground mt-1">Must belong to an existing EasyPay user.</p>
+                </div>
+                <div>
+                  <Label>Owner Name</Label>
+                  <Input value={createForm.owner_name} onChange={e => setCreateForm(f => ({ ...f, owner_name: e.target.value }))} placeholder="Full legal name" maxLength={120} />
+                </div>
+                <div>
+                  <Label>Contact Email</Label>
+                  <Input type="email" value={createForm.contact_email} onChange={e => setCreateForm(f => ({ ...f, contact_email: e.target.value }))} placeholder="owner@shop.com" maxLength={120} />
+                </div>
+                <div>
+                  <Label>Contact Number</Label>
+                  <Input value={createForm.contact_number} onChange={e => setCreateForm(f => ({ ...f, contact_number: e.target.value }))} placeholder="Alt. phone (optional)" maxLength={20} />
+                </div>
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* 2. Business */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Business</h4>
               <div>
-                <label className="text-sm font-medium text-foreground">Account Number</label>
-                <Input value={createForm.bank_account_number} onChange={e => setCreateForm(f => ({ ...f, bank_account_number: e.target.value }))} maxLength={30} />
+                <Label>Business Name *</Label>
+                <Input value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} placeholder="Business name" maxLength={120} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Category</Label>
+                  <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {dbCategories.map(c => <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Trade License #</Label>
+                  <Input value={createForm.trade_license} onChange={e => setCreateForm(f => ({ ...f, trade_license: e.target.value }))} placeholder="License number" maxLength={50} />
+                </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Routing</label>
-                <Input value={createForm.bank_routing} onChange={e => setCreateForm(f => ({ ...f, bank_routing: e.target.value }))} maxLength={20} />
+                <Label>Business Address</Label>
+                <Textarea value={createForm.business_address} onChange={e => setCreateForm(f => ({ ...f, business_address: e.target.value }))} placeholder="Full address incl. district & upazila" rows={2} maxLength={300} />
               </div>
-            </div>
-            <Button className="w-full" onClick={handleCreateMerchant} disabled={createLoading || !createForm.phone.trim() || !createForm.business_name.trim()}>
+            </section>
+
+            <Separator />
+
+            {/* 3. Pricing & settlement */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Pricing & Settlement</h4>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>MDR Rate (%)</Label>
+                  <Input type="number" step="0.01" min="0" max="10" value={createForm.mdr_rate} onChange={e => setCreateForm(f => ({ ...f, mdr_rate: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Commission (%)</Label>
+                  <Input type="number" step="0.01" min="0" max="100" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Settlement</Label>
+                  <Select value={createForm.settlement_frequency} onValueChange={v => setCreateForm(f => ({ ...f, settlement_frequency: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SETTLEMENT_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* 4. Bank */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Settlement Bank</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Bank Name</Label>
+                  <Input value={createForm.bank_name} onChange={e => setCreateForm(f => ({ ...f, bank_name: e.target.value }))} placeholder="e.g. Dutch Bangla Bank" maxLength={100} />
+                </div>
+                <div>
+                  <Label>Branch</Label>
+                  <Input value={createForm.bank_branch} onChange={e => setCreateForm(f => ({ ...f, bank_branch: e.target.value }))} placeholder="Branch name" maxLength={100} />
+                </div>
+                <div>
+                  <Label>Account Holder</Label>
+                  <Input value={createForm.bank_account_holder} onChange={e => setCreateForm(f => ({ ...f, bank_account_holder: e.target.value }))} maxLength={120} />
+                </div>
+                <div>
+                  <Label>Account Number</Label>
+                  <Input value={createForm.bank_account_number} onChange={e => setCreateForm(f => ({ ...f, bank_account_number: e.target.value }))} maxLength={30} />
+                </div>
+                <div className="col-span-2">
+                  <Label>Routing</Label>
+                  <Input value={createForm.bank_routing} onChange={e => setCreateForm(f => ({ ...f, bank_routing: e.target.value }))} maxLength={20} />
+                </div>
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* 5. KYC documents */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">KYC Documents</h4>
+              <p className="text-[11px] text-muted-foreground">Required if you mark KYC as verified. Images/PDFs, max ~5 MB each.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  { key: "nid_front", label: "NID Front" },
+                  { key: "nid_back", label: "NID Back" },
+                  { key: "trade_license", label: "Trade License Doc" },
+                  { key: "bank_statement", label: "Bank Statement" },
+                ] as const).map(slot => (
+                  <div key={slot.key} className="space-y-1">
+                    <Label>{slot.label}</Label>
+                    <Input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={e => setCreateFiles(prev => ({ ...prev, [slot.key]: e.target.files?.[0] ?? null }))}
+                    />
+                    {createFiles[slot.key] && (
+                      <p className="text-[10px] text-emerald-600 truncate">✓ {createFiles[slot.key]!.name}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* 6. Status */}
+            <section className="space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Initial Status</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-border p-3">
+                  <Label className="text-xs">Merchant Status</Label>
+                  <RadioGroup value={createForm.initial_status} onValueChange={v => setCreateForm(f => ({ ...f, initial_status: v as any }))} className="mt-2 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <RadioGroupItem value="pending" id="ms-pending" className="mt-0.5" />
+                      <Label htmlFor="ms-pending" className="text-xs font-normal leading-tight">
+                        <span className="font-semibold block">Pending review</span>
+                        <span className="text-muted-foreground">Cannot accept payments until approved.</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <RadioGroupItem value="active" id="ms-active" className="mt-0.5" />
+                      <Label htmlFor="ms-active" className="text-xs font-normal leading-tight">
+                        <span className="font-semibold block">Active</span>
+                        <span className="text-muted-foreground">Live immediately, can transact.</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                <div className="rounded-xl border border-border p-3">
+                  <Label className="text-xs">Business KYC</Label>
+                  <RadioGroup value={createForm.kyc_status} onValueChange={v => setCreateForm(f => ({ ...f, kyc_status: v as any }))} className="mt-2 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <RadioGroupItem value="pending" id="kyc-pending" className="mt-0.5" />
+                      <Label htmlFor="kyc-pending" className="text-xs font-normal leading-tight">
+                        <span className="font-semibold block">Pending</span>
+                        <span className="text-muted-foreground">Docs to be reviewed later.</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <RadioGroupItem value="verified" id="kyc-verified" className="mt-0.5" />
+                      <Label htmlFor="kyc-verified" className="text-xs font-normal leading-tight">
+                        <span className="font-semibold block">Verified now</span>
+                        <span className="text-muted-foreground">Requires NID + trade license docs.</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+              <div>
+                <Label>Admin Notes / Reason</Label>
+                <Textarea value={createForm.admin_notes} onChange={e => setCreateForm(f => ({ ...f, admin_notes: e.target.value }))} placeholder="Why is this merchant being created directly? (audit trail)" rows={2} maxLength={500} />
+              </div>
+            </section>
+
+            <Button
+              className="w-full"
+              onClick={handleCreateMerchant}
+              disabled={createLoading || !createForm.phone.trim() || !createForm.business_name.trim()}
+            >
               {createLoading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Store className="w-4 h-4 mr-2" />}
               Create Merchant
             </Button>
           </div>
         </SheetContent>
       </Sheet>
+
 
       {/* Delete Merchant Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={v => { if (!v) setDeleteTarget(null); }}>
