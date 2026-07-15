@@ -70,6 +70,37 @@ export default function AdminAgentHub() {
   );
 }
 
+function KycImagePreview({ file, existingPath, alt }: { file: File | null; existingPath?: string | null; alt: string }) {
+  const [localUrl, setLocalUrl] = useState<string | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) { setLocalUrl(null); return; }
+    const url = URL.createObjectURL(file);
+    setLocalUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (file || !existingPath) { setSignedUrl(null); return; }
+    supabase.storage.from("kyc-documents").createSignedUrl(existingPath, 300).then(({ data }) => {
+      if (!cancelled) setSignedUrl(data?.signedUrl ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [file, existingPath]);
+
+  const url = localUrl ?? signedUrl;
+  if (!url) return null;
+  return (
+    <div className="mt-2 relative rounded-md overflow-hidden border border-border bg-muted">
+      <img src={url} alt={alt} className="w-full h-24 object-cover" />
+      {file && <span className="absolute top-1 right-1 rounded bg-primary/90 text-primary-foreground text-[9px] px-1.5 py-0.5">New</span>}
+      {!file && signedUrl && <span className="absolute top-1 right-1 rounded bg-emerald-600/90 text-white text-[9px] px-1.5 py-0.5">On file</span>}
+    </div>
+  );
+}
+
 function AgentListTab() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
