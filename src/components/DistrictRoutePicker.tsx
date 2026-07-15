@@ -81,7 +81,7 @@ export default function DistrictRoutePicker({
 
   const virtualizer = useVirtualizer({
     count: flat.length,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => scrollEl,
     estimateSize: (i) => (flat[i]?.kind === "header" ? 24 : 36),
     overscan: 8,
   });
@@ -125,7 +125,7 @@ export default function DistrictRoutePicker({
             className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
           />
         </div>
-        <div ref={scrollRef} className="max-h-72 overflow-y-auto">
+        <div ref={setScrollEl} className="max-h-72 overflow-y-auto">
           {flat.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
               No district found.
