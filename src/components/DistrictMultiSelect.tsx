@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/command";
 import { Check, ChevronsUpDown, MapPin, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { districtCommandFilter } from "@/lib/districtCommandFilter";
+
 
 interface Row {
   code: string;
@@ -101,8 +103,9 @@ export default function DistrictMultiSelect({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Search district or code…" />
+          <Command filter={districtCommandFilter}>
+            <CommandInput placeholder="Search district, code, or division…" autoFocus />
+
             <CommandList className="max-h-72">
               <CommandEmpty>No district found.</CommandEmpty>
               {grouped.map(([division, list]) => (
