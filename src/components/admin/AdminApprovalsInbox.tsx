@@ -402,25 +402,76 @@ export default function AdminApprovalsInbox() {
     setBulkPreviewLoading(false);
   };
 
-  const runBulk = async () => {
+  const executeBulk = async (targetIds: string[]) => {
     if (!bulk) return;
     setBulkBusy(true);
     const fn = bulk.approve ? "approve_permission_change" : "reject_permission_change";
-    let ok = 0, fail = 0;
-    const failures: string[] = [];
-    for (const id of bulk.ids) {
-      const r = rows.find((x) => x.id === id);
+    // Mark targets running
+    setBulkResults((prev) => {
+      const next = { ...prev };
+      for (const id of targetIds) next[id] = { status: "running" };
+      return next;
+    });
+    const successItems: Array<{ req: Req; approved: boolean }> = [];
+    for (const id of targetIds) {
+      const r = rows.find((x) => x.id === id) || rowsRef.current.find((x) => x.id === id);
       const { error } = await supabase.rpc(fn as any, { _request_id: id, _note: bulkNote || null });
-      if (error) { fail++; failures.push(`${id.slice(0, 6)}: ${error.message}`); }
-      else { ok++; markRead(id); if (r) notifyRequesterOfResult(r, bulk.approve, bulkNote); }
+      if (error) {
+        setBulkResults((prev) => ({ ...prev, [id]: { status: "failed", error: error.message } }));
+      } else {
+        setBulkResults((prev) => ({ ...prev, [id]: { status: "success" } }));
+        markRead(id);
+        if (r) {
+          notifyRequesterOfResult(r, bulk.approve, bulkNote);
+          successItems.push({ req: r, approved: bulk.approve });
+        }
+      }
     }
     setBulkBusy(false);
-    setBulk(null);
-    clearSelection();
+    setBulkRan(true);
     reconcile();
-    if (fail === 0) toast.success(`${bulk.approve ? "Approved" : "Rejected"} ${ok} request${ok === 1 ? "" : "s"}`);
-    else toast.warning(`${ok} succeeded, ${fail} failed`, { description: failures.slice(0, 3).join(" · ") });
+
+    // Compute final counts across the whole batch
+    setBulkResults((finalMap) => {
+      const ok = Object.values(finalMap).filter((v) => v.status === "success").length;
+      const fail = Object.values(finalMap).filter((v) => v.status === "failed").length;
+      const skipped = Object.values(finalMap).filter((v) => v.status === "skipped").length;
+      if (fail === 0 && skipped === 0) {
+        toast.success(`${bulk.approve ? "Approved" : "Rejected"} ${ok} request${ok === 1 ? "" : "s"}`);
+      } else {
+        toast.warning(`${ok} applied · ${fail} failed${skipped ? ` · ${skipped} skipped` : ""}`, {
+          description: "See per-item status in the dialog. Failures can be retried or the batch can be undone.",
+        });
+      }
+      return finalMap;
+    });
+
+    // Register batch undo entry only if at least one success
+    if (successItems.length > 0) {
+      const windows = successItems.map((it) => undoWindows[it.req.role] ?? 900);
+      const windowSec = Math.min(...windows); // shortest role window bounds the batch
+      const label = `Bulk ${bulk.approve ? "approved" : "rejected"} ${successItems.length} request${successItems.length === 1 ? "" : "s"}`;
+      setRecent((prev) => [
+        { kind: "bulk" as const, items: successItems, at: Date.now(), windowSec, note: bulkNote, label },
+        ...prev,
+      ].slice(0, 5));
+    }
   };
+
+  const runBulk = () => bulk && executeBulk(bulk.ids.filter((id) => bulkResults[id]?.status !== "success" && bulkResults[id]?.status !== "skipped"));
+  const retryFailed = () => {
+    const failedIds = Object.entries(bulkResults).filter(([, v]) => v.status === "failed").map(([id]) => id);
+    if (failedIds.length === 0) return;
+    executeBulk(failedIds);
+  };
+  const closeBulk = () => {
+    setBulk(null);
+    setBulkResults({});
+    setBulkRan(false);
+    setBulkCurrent({});
+    clearSelection();
+  };
+
 
   // ---- Filter + sort -------------------------------------------------------
   const uniqueRequesters = useMemo(() => {
