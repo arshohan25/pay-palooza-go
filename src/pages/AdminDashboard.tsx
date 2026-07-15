@@ -2120,6 +2120,7 @@ export default function AdminDashboard() {
         {activeTab === "user_roles" && <AdminUserRoleAssignments />}
         {activeTab === "perm_audit" && <AdminPermissionAuditLog />}
         {activeTab === "perm_approvals" && <AdminPermissionApprovals />}
+        {activeTab === "perm_inbox" && <AdminApprovalsInbox />}
 
         {/* ═══ SYSTEM HEALTH ═══ */}
         {activeTab === "sys_health" && <AdminSystemHealth />}
