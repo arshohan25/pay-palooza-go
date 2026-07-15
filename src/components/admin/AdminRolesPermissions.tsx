@@ -530,6 +530,14 @@ export default function AdminRolesPermissions() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PresetVersionHistoryDialog
+        presetId={historyFor?.id ?? null}
+        presetName={historyFor?.name}
+        open={!!historyFor}
+        onOpenChange={(o) => !o && setHistoryFor(null)}
+        onRestored={load}
+      />
     </div>
   );
 }
