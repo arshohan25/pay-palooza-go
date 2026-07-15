@@ -38,7 +38,7 @@ async function signIn() {
 }
 
 async function insertConversation(
-  client: ReturnType<typeof createClient>,
+  client: any,
   row: Record<string, unknown>,
 ): Promise<string> {
   const { data, error } = await client
@@ -51,7 +51,7 @@ async function insertConversation(
 }
 
 async function addParticipant(
-  client: ReturnType<typeof createClient>,
+  client: any,
   conversationId: string,
   userId: string,
 ) {
@@ -62,7 +62,7 @@ async function addParticipant(
 }
 
 async function cleanup(
-  client: ReturnType<typeof createClient>,
+  client: any,
   conversationId: string,
 ) {
   await client
@@ -173,3 +173,124 @@ Deno.test(
     }
   },
 );
+
+// ---------------------------------------------------------------------------
+// Raw REST (PostgREST PATCH) coverage — bypasses supabase-js in case any
+// future client-side wrapper accidentally masks a policy failure.
+// ---------------------------------------------------------------------------
+
+async function rawFetch(
+  path: string,
+  init: RequestInit,
+  token: string,
+): Promise<{ status: number; body: string }> {
+  const headers: Record<string, string> = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+    ...(init.headers as Record<string, string> | undefined ?? {}),
+  };
+  const res = await fetch(`${SUPABASE_URL}${path}`, { ...init, headers });
+  return { status: res.status, body: await res.text() };
+}
+
+async function signInWithSession() {
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await client.auth.signInWithPassword({
+    email: TEST_EMAIL,
+    password: TEST_PASSWORD,
+  });
+  if (error) throw new Error(`sign-in failed: ${error.message}`);
+  return {
+    client,
+    userId: data.session!.user.id,
+    accessToken: data.session!.access_token,
+  };
+}
+
+Deno.test(
+  "REST PATCH on group conversation by non-admin participant returns []",
+  async () => {
+    const { client, userId, accessToken } = await signInWithSession();
+    const otherAdmin = crypto.randomUUID();
+    const convoId = await insertConversation(client, {
+      type: "group",
+      name: "rest-rls-original",
+      admin_id: otherAdmin,
+    });
+    try {
+      await addParticipant(client, convoId, userId);
+
+      const { status, body } = await rawFetch(
+        `/rest/v1/chat_conversations?id=eq.${convoId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ name: "rest-rls-hijacked" }),
+        },
+        accessToken,
+      );
+
+      // PostgREST returns 200 + [] when RLS filters out the row entirely.
+      assertEquals(status, 200, `expected 200, got ${status} ${body}`);
+      const rows = JSON.parse(body);
+      assertEquals(
+        Array.isArray(rows) && rows.length,
+        0,
+        "REST PATCH must affect zero rows for non-admin participant",
+      );
+
+      // Confirm the row was not mutated.
+      const { data: after } = await client
+        .from("chat_conversations" as any)
+        .select("name")
+        .eq("id", convoId)
+        .maybeSingle();
+      assertEquals(
+        (after as { name: string } | null)?.name,
+        "rest-rls-original",
+      );
+    } finally {
+      await cleanup(client, convoId);
+    }
+  },
+);
+
+Deno.test(
+  "REST PATCH on group conversation by admin_id returns the updated row",
+  async () => {
+    const { client, userId, accessToken } = await signInWithSession();
+    const convoId = await insertConversation(client, {
+      type: "group",
+      name: "rest-rls-own",
+      admin_id: userId,
+    });
+    try {
+      await addParticipant(client, convoId, userId);
+
+      const { status, body } = await rawFetch(
+        `/rest/v1/chat_conversations?id=eq.${convoId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ name: "rest-rls-own-renamed" }),
+        },
+        accessToken,
+      );
+
+      assertEquals(status, 200, `expected 200, got ${status} ${body}`);
+      const rows = JSON.parse(body);
+      assertEquals(rows.length, 1, "admin_id caller must update exactly 1 row");
+      assertEquals(rows[0].name, "rest-rls-own-renamed");
+    } finally {
+      await cleanup(client, convoId);
+    }
+  },
+);
+
+// RPC-surface guard lives in src/test/chat-conversations-update-rpc-guard.test.ts
+// (static scan of migrations + hooks). PostgREST's OpenAPI root requires
+// service_role, so RPC enumeration is done from source at CI time instead
+// of via a network round-trip here.
+
