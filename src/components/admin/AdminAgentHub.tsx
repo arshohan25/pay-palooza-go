@@ -10,14 +10,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare, Building2, ArrowRightLeft, Upload, Image as ImageIcon } from "lucide-react";
+import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare, Building2, ArrowRightLeft, Upload, Image as ImageIcon, KeyRound, RefreshCw, MessagesSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { signUpWithPhonePassword, pinToPassword } from "@/lib/auth";
+import { signUpWithPhonePassword } from "@/lib/auth";
 import { toast } from "sonner";
 import DistributorPickerDialog from "./DistributorPickerDialog";
 import { reassignAgent } from "@/lib/distributorAdmin";
 import DistrictRoutePicker from "@/components/DistrictRoutePicker";
 import DivisionDistrictUpazilaPicker from "@/components/DivisionDistrictUpazilaPicker";
+import AdminSmsDeliveryLogs from "./AdminSmsDeliveryLogs";
 
 interface Agent {
   id: string;
@@ -49,7 +50,7 @@ export default function AdminAgentHub() {
         <Users className="w-5 h-5 text-primary" /> Agent Management Hub
       </h3>
       <Tabs defaultValue="list" className="w-full">
-        <TabsList className="w-full grid grid-cols-7 h-auto">
+        <TabsList className="w-full grid grid-cols-8 h-auto">
           <TabsTrigger value="list" className="text-xs">Agents</TabsTrigger>
           <TabsTrigger value="kyc" className="text-xs">KYC</TabsTrigger>
           <TabsTrigger value="wallets" className="text-xs">Wallets</TabsTrigger>
@@ -57,6 +58,7 @@ export default function AdminAgentHub() {
           <TabsTrigger value="areas" className="text-xs">Areas</TabsTrigger>
           <TabsTrigger value="settlements" className="text-xs">Settle</TabsTrigger>
           <TabsTrigger value="ratings" className="text-xs">Ratings</TabsTrigger>
+          <TabsTrigger value="sms" className="text-xs">SMS Log</TabsTrigger>
         </TabsList>
         <TabsContent value="list"><AgentListTab /></TabsContent>
         <TabsContent value="kyc"><AgentKycTab /></TabsContent>
@@ -65,6 +67,7 @@ export default function AdminAgentHub() {
         <TabsContent value="areas"><AgentAreasTab /></TabsContent>
         <TabsContent value="settlements"><AgentSettlementsTab /></TabsContent>
         <TabsContent value="ratings"><AgentRatingsTab /></TabsContent>
+        <TabsContent value="sms"><AdminSmsDeliveryLogs /></TabsContent>
       </Tabs>
     </div>
   );
@@ -123,6 +126,108 @@ function KycImagePreview({ file, existingPath, alt, onClear, onReplace }: { file
   );
 }
 
+function ResendTempPinPanel({ agent }: { agent: Agent }) {
+  const [status, setStatus] = useState<{ state: string; expires_at: string | null; issued_at: string | null } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  const loadStatus = async () => {
+    setLoading(true);
+    const { data } = await (supabase as any).rpc("agent_temp_pin_status", { _agent_user_id: agent.user_id });
+    const row = Array.isArray(data) ? data[0] : data;
+    setStatus(row ?? { state: "none", expires_at: null, issued_at: null });
+    setLoading(false);
+  };
+
+  useEffect(() => { void loadStatus(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [agent.user_id]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
+  const resend = async () => {
+    if (!agent.profile?.phone) { toast.error("Agent has no phone on file"); return; }
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("issue-agent-temp-pin", {
+        body: { agent_user_id: agent.user_id, phone: agent.profile.phone, name: agent.profile.name, purpose: "resend" },
+      });
+      if (error) {
+        // Read structured error from context body when available (429 throttle, etc.)
+        const ctx: any = (error as any)?.context;
+        let payload: any = null;
+        if (ctx && typeof ctx.json === "function") {
+          try { payload = await ctx.json(); } catch { /* ignore */ }
+        }
+        if (payload?.throttled) {
+          const wait = payload.retry_after_seconds ?? 60;
+          setCooldown(wait);
+          toast.error(payload.error || `Please wait ${wait}s before resending.`);
+        } else {
+          toast.error(payload?.error || error.message || "Failed to resend PIN");
+        }
+        return;
+      }
+      const p = data as { sms_status?: string; pin_fallback?: string; expires_at?: string } | null;
+      if (p?.sms_status === "sent") {
+        toast.success(`New PIN sent by SMS to +88 ${agent.profile.phone}`);
+      } else if (p?.pin_fallback) {
+        toast.warning(`SMS failed — share this PIN manually: ${p.pin_fallback}`, { duration: 15000 });
+      } else {
+        toast.warning("PIN issued but SMS status unknown — check delivery logs");
+      }
+      setCooldown(60);
+      void loadStatus();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to resend PIN");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const badge = (() => {
+    if (!status || status.state === "none") return { label: "No temp PIN on file", cls: "bg-muted text-muted-foreground" };
+    if (status.state === "active") return { label: "Temp PIN active", cls: "bg-amber-500/15 text-amber-700 border-amber-500/20" };
+    if (status.state === "expired") return { label: "Temp PIN expired", cls: "bg-rose-500/15 text-rose-700 border-rose-500/20" };
+    return { label: "PIN changed by agent", cls: "bg-emerald-500/15 text-emerald-700 border-emerald-500/20" };
+  })();
+
+  return (
+    <div className="rounded-2xl border border-border bg-muted/30 p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <KeyRound className="w-4 h-4 text-primary" />
+          <p className="text-sm font-semibold">Temporary PIN</p>
+        </div>
+        <Badge variant="outline" className={`text-[10px] ${badge.cls}`}>{badge.label}</Badge>
+      </div>
+      {loading ? (
+        <p className="text-[11px] text-muted-foreground">Loading…</p>
+      ) : (
+        <div className="text-[11px] text-muted-foreground space-y-0.5">
+          {status?.issued_at && <p>Issued: {new Date(status.issued_at).toLocaleString()}</p>}
+          {status?.expires_at && <p>Expires: {new Date(status.expires_at).toLocaleString()}</p>}
+        </div>
+      )}
+      <Button
+        size="sm"
+        variant="secondary"
+        className="w-full h-8 gap-2"
+        disabled={sending || cooldown > 0}
+        onClick={resend}
+      >
+        {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+        {cooldown > 0 ? `Resend in ${cooldown}s` : sending ? "Sending…" : "Resend temp PIN by SMS"}
+      </Button>
+      <p className="text-[10px] text-muted-foreground">
+        Cooldown: 60s per agent. Max 5 issues per hour. The previous PIN is invalidated immediately.
+      </p>
+    </div>
+  );
+}
 
 
 function AgentListTab() {
@@ -256,7 +361,7 @@ function AgentListTab() {
         .from("profiles").select("user_id").eq("phone", phone).maybeSingle();
 
       let userId: string;
-      let pin: string | null = null;
+      let isNewUser = false;
 
       if (existingProfile?.user_id) {
         userId = existingProfile.user_id;
@@ -268,10 +373,13 @@ function AgentListTab() {
           await supabase.from("profiles").update({ name: form.name || undefined, email: form.email.trim() || undefined }).eq("user_id", userId);
         }
       } else {
-        pin = String(Math.floor(1000 + Math.random() * 9000));
-        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: form.name || phone });
+        // Sign up with a random placeholder password; the temp PIN is set
+        // later by the issue-agent-temp-pin edge function.
+        const placeholder = crypto.randomUUID().replace(/-/g, "") + "!Ep";
+        const { data: authData } = await signUpWithPhonePassword(phone, placeholder, { display_name: form.name || phone });
         if (!authData?.user) throw new Error("Account creation failed");
         userId = authData.user.id;
+        isNewUser = true;
         await supabase.from("profiles").update({ name: form.name || null, phone, email: form.email.trim() || null }).eq("user_id", userId);
       }
 
@@ -311,24 +419,27 @@ function AgentListTab() {
       } as any);
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_created", entity_type: "agent", entity_id: userId, details: { phone, business_name: form.business_name, promoted_existing: !pin } }).then();
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_created", entity_type: "agent", entity_id: userId, details: { phone, business_name: form.business_name, promoted_existing: !isNewUser } }).then();
       }
 
-      // Send temp PIN by SMS for freshly created accounts
-      if (pin) {
+      // Issue temp PIN + SMS for freshly created accounts
+      if (isNewUser) {
         try {
-          const { error: smsErr } = await supabase.functions.invoke("send-agent-pin-sms", {
-            body: { phone, pin, name: form.name || undefined },
+          const { data: issueData, error: issueErr } = await supabase.functions.invoke("issue-agent-temp-pin", {
+            body: { agent_user_id: userId, phone, name: form.name || undefined, purpose: "create" },
           });
-          if (smsErr) {
-            console.error("SMS send failed", smsErr);
-            toast.warning(`Agent created, but SMS failed. Temp PIN: ${pin}`, { duration: 15000 });
-          } else {
+          if (issueErr) throw issueErr;
+          const payload = issueData as { sms_status?: string; pin_fallback?: string } | null;
+          if (payload?.sms_status === "sent") {
             toast.success(`Agent created! Temporary PIN sent by SMS to +88${phone}`, { duration: 8000 });
+          } else if (payload?.pin_fallback) {
+            toast.warning(`Agent created, but SMS failed. Temp PIN: ${payload.pin_fallback}`, { duration: 15000 });
+          } else {
+            toast.warning(`Agent created, but SMS status unknown. Check delivery logs.`, { duration: 10000 });
           }
-        } catch (e) {
-          console.error("SMS invoke error", e);
-          toast.warning(`Agent created, but SMS failed. Temp PIN: ${pin}`, { duration: 15000 });
+        } catch (e: any) {
+          console.error("issue temp PIN failed", e);
+          toast.error(`Agent created, but PIN could not be issued: ${e?.message ?? "unknown error"}`);
         }
       } else {
         toast.success(`Existing user promoted to agent`, { duration: 6000 });
@@ -575,6 +686,8 @@ function AgentListTab() {
                 <div><p className="text-muted-foreground text-xs">Wallet Balance</p><p className="font-medium">৳{(detail.profile?.balance ?? 0).toLocaleString()}</p></div>
                 <div><p className="text-muted-foreground text-xs">Status</p><Badge className={STATUS_MAP[detail.status]?.color}>{STATUS_MAP[detail.status]?.label || detail.status}</Badge></div>
               </div>
+
+              <ResendTempPinPanel agent={detail} />
             </div>
           )}
         </SheetContent>
