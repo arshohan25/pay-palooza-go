@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Shield, Plus, Loader2, RefreshCw, Lock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Shield, Plus, Loader2, RefreshCw, Lock, Sparkles, ShieldAlert, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { REGISTERED_PERMISSIONS, ROLE_KEYS } from "@/lib/permissionsRegistry";
+import { REGISTERED_PERMISSIONS, ROLE_KEYS, HIGH_RISK_PERMISSIONS } from "@/lib/permissionsRegistry";
 import { usePermission } from "@/hooks/use-permission";
 
 interface Row { role: string; permission: string; allowed: boolean; }
