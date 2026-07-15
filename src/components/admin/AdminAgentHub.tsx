@@ -588,7 +588,7 @@ function AgentListTab() {
                 <div><p className="text-muted-foreground text-xs">Status</p><Badge className={STATUS_MAP[detail.status]?.color}>{STATUS_MAP[detail.status]?.label || detail.status}</Badge></div>
               </div>
 
-              <ResendTempPinPanel agent={detail} />
+              <TempPinResendPanel kind="agent" userId={detail.user_id} phone={detail.profile?.phone} name={detail.profile?.name} />
             </div>
           )}
         </SheetContent>
