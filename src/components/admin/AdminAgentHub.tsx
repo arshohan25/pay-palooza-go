@@ -678,7 +678,7 @@ function AgentAreasTab() {
         <DialogContent>
           <DialogHeader><DialogTitle>Edit Territory — {editAgent?.business_name || "Agent"}</DialogTitle></DialogHeader>
           <div className="space-y-3 pt-2">
-            <div><Label>Territory Code</Label><Input placeholder="e.g. DHK-01" value={territory} onChange={e => setTerritory(e.target.value)} /></div>
+            <div><Label>District (route code)</Label><DistrictRoutePicker value={territory} onChange={(code) => setTerritory(code)} placeholder="Select district" /></div>
             <Button className="w-full" onClick={handleSave}>Update Territory</Button>
           </div>
         </DialogContent>
