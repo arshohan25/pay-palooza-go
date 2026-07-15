@@ -171,7 +171,9 @@ Deno.serve(async (req) => {
       expires_at: expiresAt,
       issued_by: callerId,
       issued_via: purpose,
+      idempotency_key: idempotencyKey,
     });
+
     if (insErr) {
       console.error("issue insert failed", insErr);
       return json({ error: `Issue insert failed: ${insErr.message}` }, 500);
