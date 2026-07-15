@@ -439,7 +439,7 @@ function AgentListTab() {
       {/* Create Agent Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] p-0 flex flex-col gap-0">
-          <DialogHeader className="px-5 pt-5 pb-2 shrink-0"><DialogTitle>Create New Agent</DialogTitle></DialogHeader>
+          <DialogHeader className="px-5 pt-5 pb-2 pr-12 shrink-0"><DialogTitle className="truncate text-base sm:text-lg">Create New Agent</DialogTitle></DialogHeader>
           <div className="space-y-3 px-5 pt-1 pb-3 overflow-y-auto flex-1 min-h-0">
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
             <div><Label>Full Name</Label><Input placeholder="Agent's name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
