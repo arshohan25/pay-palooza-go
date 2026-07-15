@@ -852,7 +852,7 @@ export default function AdminApprovalsInbox() {
       </Dialog>
 
       {/* Bulk confirm — with per-request diff + high-risk summary */}
-      <AlertDialog open={!!bulk} onOpenChange={(o) => !o && setBulk(null)}>
+      <AlertDialog open={!!bulk} onOpenChange={(o) => { if (!o) closeBulk(); }}>
         <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>
