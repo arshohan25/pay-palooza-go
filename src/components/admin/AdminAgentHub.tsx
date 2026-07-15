@@ -242,6 +242,10 @@ function AgentListTab() {
 
   const saveEdit = async () => {
     if (!editAgent) return;
+    if (!editForm.division || !editForm.district || !editForm.upazila) {
+      toast.error("Division, District and Upazila/Thana are required");
+      return;
+    }
     setEditSaving(true);
     const { error } = await supabase.from("agents").update({
       business_name: editForm.business_name || null,
