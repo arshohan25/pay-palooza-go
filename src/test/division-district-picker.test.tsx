@@ -159,13 +159,16 @@ describe("DivisionDistrictPicker", () => {
     const division = (await screen.findByLabelText(/Division/i)) as HTMLSelectElement;
 
     // Wait for the divisions to populate
-    await waitFor(() =>
-      expect(within(division).getByRole("option", { name: "Dhaka" })).toBeTruthy(),
-    );
+    await waitFor(() => {
+      const opts = Array.from(division.querySelectorAll('option')).map(o=>o.textContent);
+      console.log('DIV OPTS', opts);
+      expect(opts).toContain('Dhaka');
+    });
 
     fireEvent.change(division, { target: { value: "Dhaka" } });
 
     const district = (await screen.findByLabelText(/District/i)) as HTMLSelectElement;
+    console.log('DIST OPTS', Array.from(district.querySelectorAll('option')).map(o=>o.textContent));
     expect(district).not.toBeDisabled();
 
     // Only Dhaka-division districts are present
