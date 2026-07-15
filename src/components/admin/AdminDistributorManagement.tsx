@@ -411,7 +411,7 @@ export default function AdminDistributorManagement() {
                     {editingId === d.id ? (
                       <>
                         <TableCell><Input value={editForm.business_name} onChange={e => setEditForm(f => ({ ...f, business_name: e.target.value }))} className="h-8 text-sm" /></TableCell>
-                        <TableCell><Input value={editForm.territory} onChange={e => setEditForm(f => ({ ...f, territory: e.target.value }))} placeholder="DHK, CTG" className="h-8 text-sm" /></TableCell>
+                        <TableCell><DistrictMultiSelect value={csvToArr(editForm.territory)} onChange={(codes) => setEditForm(f => ({ ...f, territory: arrToCsv(codes) }))} /></TableCell>
                         <TableCell><Input type="number" value={editForm.commission_rate} onChange={e => setEditForm(f => ({ ...f, commission_rate: e.target.value }))} className="h-8 text-sm w-20 mx-auto text-center" /></TableCell>
                         <TableCell><Input type="number" value={editForm.max_float} onChange={e => setEditForm(f => ({ ...f, max_float: e.target.value }))} className="h-8 text-sm w-28 mx-auto text-center" /></TableCell>
                         <TableCell className="text-center"><Badge className={`text-xs ${STATUS_COLORS[d.status] || ""}`}>{d.status}</Badge></TableCell>
