@@ -126,27 +126,65 @@ function KycImagePreview({ file, existingPath, alt, onClear, onReplace }: { file
   );
 }
 
+const RESEND_COOLDOWN_SECONDS = 60;
+const resendCooldownKey = (userId: string) => `agent_temp_pin_resend_until:${userId}`;
+
 function ResendTempPinPanel({ agent }: { agent: Agent }) {
   const [status, setStatus] = useState<{ state: string; expires_at: string | null; issued_at: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
+  const [cooldownUntil, setCooldownUntil] = useState<number>(0);
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  const cooldown = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
+
+  const bumpCooldown = (seconds: number) => {
+    const until = Date.now() + Math.max(0, seconds) * 1000;
+    setCooldownUntil(until);
+    try { localStorage.setItem(resendCooldownKey(agent.user_id), String(until)); } catch { /* ignore */ }
+  };
 
   const loadStatus = async () => {
     setLoading(true);
     const { data } = await (supabase as any).rpc("agent_temp_pin_status", { _agent_user_id: agent.user_id });
     const row = Array.isArray(data) ? data[0] : data;
-    setStatus(row ?? { state: "none", expires_at: null, issued_at: null });
+    const next = row ?? { state: "none", expires_at: null, issued_at: null };
+    setStatus(next);
     setLoading(false);
+
+    // Derive cooldown from server-side issued_at so it survives reloads.
+    let serverUntil = 0;
+    if (next.issued_at) {
+      const issued = new Date(next.issued_at).getTime();
+      if (!Number.isNaN(issued)) serverUntil = issued + RESEND_COOLDOWN_SECONDS * 1000;
+    }
+    let storedUntil = 0;
+    try {
+      const raw = localStorage.getItem(resendCooldownKey(agent.user_id));
+      if (raw) storedUntil = Number(raw) || 0;
+    } catch { /* ignore */ }
+    const until = Math.max(serverUntil, storedUntil);
+    if (until > Date.now()) setCooldownUntil(until);
+    else if (storedUntil && storedUntil <= Date.now()) {
+      try { localStorage.removeItem(resendCooldownKey(agent.user_id)); } catch { /* ignore */ }
+    }
   };
 
   useEffect(() => { void loadStatus(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [agent.user_id]);
 
+  // Tick every second while a cooldown is active so the label + disabled state stay accurate.
   useEffect(() => {
-    if (cooldown <= 0) return;
-    const t = setInterval(() => setCooldown((s) => Math.max(0, s - 1)), 1000);
+    if (cooldownUntil <= now) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [cooldown]);
+  }, [cooldownUntil, now]);
+
+  // Clean up storage once cooldown fully elapses.
+  useEffect(() => {
+    if (cooldownUntil && cooldownUntil <= now) {
+      try { localStorage.removeItem(resendCooldownKey(agent.user_id)); } catch { /* ignore */ }
+    }
+  }, [cooldownUntil, now, agent.user_id]);
 
   const resend = async () => {
     if (!agent.profile?.phone) { toast.error("Agent has no phone on file"); return; }
@@ -156,15 +194,14 @@ function ResendTempPinPanel({ agent }: { agent: Agent }) {
         body: { agent_user_id: agent.user_id, phone: agent.profile.phone, name: agent.profile.name, purpose: "resend" },
       });
       if (error) {
-        // Read structured error from context body when available (429 throttle, etc.)
         const ctx: any = (error as any)?.context;
         let payload: any = null;
         if (ctx && typeof ctx.json === "function") {
           try { payload = await ctx.json(); } catch { /* ignore */ }
         }
         if (payload?.throttled) {
-          const wait = payload.retry_after_seconds ?? 60;
-          setCooldown(wait);
+          const wait = payload.retry_after_seconds ?? RESEND_COOLDOWN_SECONDS;
+          bumpCooldown(wait);
           toast.error(payload.error || `Please wait ${wait}s before resending.`);
         } else {
           toast.error(payload?.error || error.message || "Failed to resend PIN");
@@ -179,7 +216,7 @@ function ResendTempPinPanel({ agent }: { agent: Agent }) {
       } else {
         toast.warning("PIN issued but SMS status unknown — check delivery logs");
       }
-      setCooldown(60);
+      bumpCooldown(RESEND_COOLDOWN_SECONDS);
       void loadStatus();
     } catch (e: any) {
       toast.error(e?.message || "Failed to resend PIN");
@@ -218,16 +255,22 @@ function ResendTempPinPanel({ agent }: { agent: Agent }) {
         className="w-full h-8 gap-2"
         disabled={sending || cooldown > 0}
         onClick={resend}
+        aria-live="polite"
       >
         {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-        {cooldown > 0 ? `Resend in ${cooldown}s` : sending ? "Sending…" : "Resend temp PIN by SMS"}
+        {sending
+          ? "Sending…"
+          : cooldown > 0
+            ? `Resend available in ${cooldown}s`
+            : "Resend temp PIN by SMS"}
       </Button>
       <p className="text-[10px] text-muted-foreground">
-        Cooldown: 60s per agent. Max 5 issues per hour. The previous PIN is invalidated immediately.
+        Cooldown: {RESEND_COOLDOWN_SECONDS}s per agent. Max 5 issues per hour. The previous PIN is invalidated immediately.
       </p>
     </div>
   );
 }
+
 
 
 function AgentListTab() {
