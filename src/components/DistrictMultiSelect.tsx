@@ -137,6 +137,20 @@ export default function DistrictMultiSelect({
               className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
             />
           </div>
+          <div className="flex items-center gap-2 border-b px-3 py-1.5 bg-muted/30">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Division</span>
+            <select
+              aria-label="Filter by division"
+              value={divisionFilter}
+              onChange={(e) => setDivisionFilter(e.target.value)}
+              className="h-7 flex-1 rounded-md border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="all">All divisions</option>
+              {divisions.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
           <div ref={setScrollEl} className="max-h-72 overflow-y-auto">
             {flat.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">
