@@ -497,6 +497,27 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_role_undo_windows: {
+        Row: {
+          role: string
+          undo_seconds: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          role: string
+          undo_seconds?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          role?: string
+          undo_seconds?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       admin_security_policies: {
         Row: {
           category: string
@@ -5000,7 +5021,11 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           role: string
+          snapshot_before_allowed: boolean | null
           status: Database["public"]["Enums"]["perm_change_status"]
+          undo_note: string | null
+          undone_at: string | null
+          undone_by: string | null
           updated_at: string
         }
         Insert: {
@@ -5015,7 +5040,11 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           role: string
+          snapshot_before_allowed?: boolean | null
           status?: Database["public"]["Enums"]["perm_change_status"]
+          undo_note?: string | null
+          undone_at?: string | null
+          undone_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -5030,7 +5059,11 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           role?: string
+          snapshot_before_allowed?: boolean | null
           status?: Database["public"]["Enums"]["perm_change_status"]
+          undo_note?: string | null
+          undone_at?: string | null
+          undone_by?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -6847,6 +6880,7 @@ export type Database = {
       user_notification_settings: {
         Row: {
           created_at: string
+          permission_escalation_opt_in: boolean
           quiet_hours_enabled: boolean
           quiet_hours_end: string
           quiet_hours_start: string
@@ -6855,6 +6889,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          permission_escalation_opt_in?: boolean
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
           quiet_hours_start?: string
@@ -6863,6 +6898,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          permission_escalation_opt_in?: boolean
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
           quiet_hours_start?: string
@@ -7906,6 +7942,10 @@ export type Database = {
       treasury_debit_for_addmoney: {
         Args: { p_amount: number; p_user_id: string }
         Returns: Json
+      }
+      undo_permission_change: {
+        Args: { _note?: string; _request_id: string }
+        Returns: undefined
       }
       validate_and_apply_coupon: {
         Args: { p_cart_total: number; p_code: string; p_merchant_id?: string }

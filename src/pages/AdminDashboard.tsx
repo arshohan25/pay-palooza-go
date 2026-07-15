@@ -111,6 +111,7 @@ import AdminUserRoleAssignments from "@/components/admin/AdminUserRoleAssignment
 import AdminPermissionAuditLog from "@/components/admin/AdminPermissionAuditLog";
 import AdminPermissionApprovals from "@/components/admin/AdminPermissionApprovals";
 import AdminApprovalsInbox from "@/components/admin/AdminApprovalsInbox";
+import AdminApprovalNotificationPrefs from "@/components/admin/AdminApprovalNotificationPrefs";
 import AdminSystemHealth from "@/components/admin/AdminSystemHealth";
 import AdminDataExport from "@/components/admin/AdminDataExport";
 import AdminUserSessions from "@/components/admin/AdminUserSessions";
@@ -2120,7 +2121,12 @@ export default function AdminDashboard() {
         {activeTab === "user_roles" && <AdminUserRoleAssignments />}
         {activeTab === "perm_audit" && <AdminPermissionAuditLog />}
         {activeTab === "perm_approvals" && <AdminPermissionApprovals />}
-        {activeTab === "perm_inbox" && <AdminApprovalsInbox />}
+        {activeTab === "perm_inbox" && (
+          <div className="space-y-6">
+            <AdminApprovalsInbox />
+            <AdminApprovalNotificationPrefs />
+          </div>
+        )}
 
         {/* ═══ SYSTEM HEALTH ═══ */}
         {activeTab === "sys_health" && <AdminSystemHealth />}
