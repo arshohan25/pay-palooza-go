@@ -80,11 +80,14 @@ vi.mock("@/components/ui/select", () => {
 });
 
 // ---- Mock supabase client ----
-const rows = [
-  { code: "DH", district: "Dhaka", division: "Dhaka" },
-  { code: "GZ", district: "Gazipur", division: "Dhaka" },
-  { code: "CT", district: "Chattogram", division: "Chittagong" },
-];
+// Use vi.hoisted so `rows` is initialized before the mock factory runs.
+const { rows } = vi.hoisted(() => ({
+  rows: [
+    { code: "DH", district: "Dhaka", division: "Dhaka" },
+    { code: "GZ", district: "Gazipur", division: "Dhaka" },
+    { code: "CT", district: "Chattogram", division: "Chittagong" },
+  ],
+}));
 
 vi.mock("@/integrations/supabase/client", () => {
   const builder: any = {
