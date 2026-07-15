@@ -348,7 +348,12 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
                       <Field label="Commission Rate (%)" value={distributor.commission_rate} type="number" onChange={(v) => setDistributor(d => d ? { ...d, commission_rate: parseFloat(v) || 0 } : d)} />
                       <Field label="Max Float" value={distributor.max_float} type="number" onChange={(v) => setDistributor(d => d ? { ...d, max_float: parseFloat(v) || 0 } : d)} />
                       <div className="col-span-2">
-                        <Field label="Territory (comma-separated)" value={territoryInput} onChange={setTerritoryInput} placeholder="Dhaka, Chittagong, Sylhet" />
+                        <Label className="text-xs mb-1 block">Territories</Label>
+                        <DistrictMultiSelect
+                          value={territoryInput.split(",").map(s => s.trim()).filter(Boolean)}
+                          onChange={(codes) => setTerritoryInput(codes.join(", "))}
+                          placeholder="Select districts"
+                        />
                       </div>
                     </div>
                   </div>
