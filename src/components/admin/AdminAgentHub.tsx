@@ -78,10 +78,14 @@ function AgentListTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+  const [nidFile, setNidFile] = useState<File | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
 
   // Edit
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", division: "", district: "", upazila: "", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
+  const [editNidFile, setEditNidFile] = useState<File | null>(null);
+  const [editSelfieFile, setEditSelfieFile] = useState<File | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete
