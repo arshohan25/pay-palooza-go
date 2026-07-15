@@ -38,6 +38,7 @@ export default function DistrictMultiSelect({
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [divisionFilter, setDivisionFilter] = useState<string>("all");
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
