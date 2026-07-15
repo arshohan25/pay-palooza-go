@@ -584,6 +584,8 @@ function AgentListTab() {
                 <div><p className="text-muted-foreground text-xs">Wallet Balance</p><p className="font-medium">৳{(detail.profile?.balance ?? 0).toLocaleString()}</p></div>
                 <div><p className="text-muted-foreground text-xs">Status</p><Badge className={STATUS_MAP[detail.status]?.color}>{STATUS_MAP[detail.status]?.label || detail.status}</Badge></div>
               </div>
+
+              <ResendTempPinPanel agent={detail} />
             </div>
           )}
         </SheetContent>
