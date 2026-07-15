@@ -165,6 +165,10 @@ function AgentListTab() {
   const handleCreateAgent = async () => {
     const phone = form.phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone number"); return; }
+    if (!form.division || !form.district || !form.upazila) {
+      toast.error("Division, District and Upazila/Thana are required");
+      return;
+    }
     setCreating(true);
     try {
       // Look up existing user by phone
@@ -238,6 +242,10 @@ function AgentListTab() {
 
   const saveEdit = async () => {
     if (!editAgent) return;
+    if (!editForm.division || !editForm.district || !editForm.upazila) {
+      toast.error("Division, District and Upazila/Thana are required");
+      return;
+    }
     setEditSaving(true);
     const { error } = await supabase.from("agents").update({
       business_name: editForm.business_name || null,
@@ -440,6 +448,7 @@ function AgentListTab() {
               <DivisionDistrictUpazilaPicker
                 value={{ division: form.division || null, district: form.district || null, upazila: form.upazila || null }}
                 onChange={(v) => setForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "" }))}
+                required
               />
               <div><Label>Max Float</Label><Input type="number" value={form.max_float} onChange={e => setForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
@@ -450,7 +459,7 @@ function AgentListTab() {
               <div><Label>Latitude</Label><Input type="number" step="any" placeholder="23.8103" value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
               <div><Label>Longitude</Label><Input type="number" step="any" placeholder="90.4125" value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} /></div>
             </div>
-            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone}>
+            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone || !form.division || !form.district || !form.upazila}>
               {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Agent"}
             </Button>
           </div>
@@ -467,6 +476,7 @@ function AgentListTab() {
               <DivisionDistrictUpazilaPicker
                 value={{ division: editForm.division || null, district: editForm.district || null, upazila: editForm.upazila || null }}
                 onChange={(v) => setEditForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "" }))}
+                required
               />
               <div><Label>Max Float</Label><Input type="number" value={editForm.max_float} onChange={e => setEditForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
@@ -477,7 +487,7 @@ function AgentListTab() {
               <div><Label>Latitude</Label><Input type="number" step="any" placeholder="e.g. 23.8103" value={editForm.latitude} onChange={e => setEditForm(f => ({ ...f, latitude: e.target.value }))} /></div>
               <div><Label>Longitude</Label><Input type="number" step="any" placeholder="e.g. 90.4125" value={editForm.longitude} onChange={e => setEditForm(f => ({ ...f, longitude: e.target.value }))} /></div>
             </div>
-            <Button className="w-full" onClick={saveEdit} disabled={editSaving}>
+            <Button className="w-full" onClick={saveEdit} disabled={editSaving || !editForm.division || !editForm.district || !editForm.upazila}>
               {editSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
             </Button>
           </div>
