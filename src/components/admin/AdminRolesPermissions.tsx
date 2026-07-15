@@ -252,7 +252,12 @@ export default function AdminRolesPermissions() {
                       {perms.map((p) => (
                         <tr key={p.key} className="border-t border-border">
                           <td className="p-3 sticky left-0 bg-background">
-                            <p className="font-medium text-foreground">{p.label}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-foreground">{p.label}</p>
+                              {p.highRisk && (
+                                <Badge variant="outline" className="gap-1 text-[10px] text-amber-600 border-amber-300"><ShieldAlert className="w-3 h-3" /> High-risk</Badge>
+                              )}
+                            </div>
                             <p className="text-[11px] text-muted-foreground max-w-xs">{p.description}</p>
                             <code className="text-[10px] text-muted-foreground/70">{p.key}</code>
                           </td>
