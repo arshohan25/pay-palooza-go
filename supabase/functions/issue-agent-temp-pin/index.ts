@@ -86,6 +86,9 @@ Deno.serve(async (req) => {
     const phone = (body.phone || "").replace(/\D/g, "").replace(/^88/, "");
     const purpose = body.purpose === "resend" ? "resend" : "create";
     const name = body.name;
+    const idempotencyKey = typeof body.idempotency_key === "string" && body.idempotency_key.trim()
+      ? body.idempotency_key.trim().slice(0, 80)
+      : null;
 
     if (!agentId || !/^[0-9a-f-]{36}$/i.test(agentId)) {
       return json({ error: "Invalid agent_user_id" }, 400);
@@ -96,6 +99,26 @@ Deno.serve(async (req) => {
 
     // Service client for admin ops + trusted writes
     const svc = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // ── Idempotency replay ──────────────────────────────────────────
+    // If the caller provides an idempotency key and we already processed a
+    // request with the same (agent, key), return the prior outcome instead of
+    // issuing another PIN. Protects against double-clicks and network retries.
+    if (idempotencyKey) {
+      const { data: existing } = await svc.from("agent_temp_pin_issues")
+        .select("expires_at, created_at")
+        .eq("agent_user_id", agentId)
+        .eq("idempotency_key", idempotencyKey)
+        .maybeSingle();
+      if (existing) {
+        return json({
+          ok: true,
+          replayed: true,
+          sms_status: "sent",
+          expires_at: existing.expires_at,
+        });
+      }
+    }
 
     // ── Throttle check ──────────────────────────────────────────────
     const { data: throttleRows, error: throttleErr } = await svc.rpc(
@@ -120,6 +143,7 @@ Deno.serve(async (req) => {
         429,
       );
     }
+
 
     // ── Generate & apply the new PIN ────────────────────────────────
     const pin = String(Math.floor(1000 + Math.random() * 9000));
