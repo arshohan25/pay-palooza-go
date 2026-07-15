@@ -27,6 +27,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
 import { TempPinResendPanel } from "./TempPinResendPanel";
+import AdminMerchantApprovalQueue from "./AdminMerchantApprovalQueue";
+import AdminVendorApplicationsQueue from "./AdminVendorApplicationsQueue";
+import MerchantAuditTimeline from "./MerchantAuditTimeline";
 
 type MerchantStatus = "pending" | "active" | "suspended";
 type MerchantCategory = string;
@@ -93,7 +96,7 @@ function exportMerchantsCSV(merchants: any[]) {
 
 export default function AdminMerchantManagement() {
   const { categories: dbCategories, addCategory, getLabelForName } = useMerchantCategories();
-  const [mainTab, setMainTab] = useState<"merchants" | "api-requests" | "applications" | "targeting">("merchants");
+  const [mainTab, setMainTab] = useState<"merchants" | "approval-queue" | "vendor-apps" | "api-requests" | "applications" | "targeting">("merchants");
   const [merchants, setMerchants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -593,6 +596,8 @@ export default function AdminMerchantManagement() {
       <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
         {([
           { key: "merchants", icon: Store, label: "Merchants" },
+          { key: "approval-queue", icon: CheckCircle, label: "Approval Queue" },
+          { key: "vendor-apps", icon: Shield, label: "Vendor Apps" },
           { key: "api-requests", icon: Key, label: "API Requests" },
           { key: "applications", icon: FileText, label: "Applications" },
           { key: "targeting", icon: Filter, label: "Targeting" },
@@ -603,6 +608,8 @@ export default function AdminMerchantManagement() {
         ))}
       </div>
 
+      {mainTab === "approval-queue" && <AdminMerchantApprovalQueue />}
+      {mainTab === "vendor-apps" && <AdminVendorApplicationsQueue />}
       {mainTab === "api-requests" && <AdminApiRequests />}
       {mainTab === "applications" && <AdminMerchantApplications />}
       {mainTab === "targeting" && <MerchantApplyTargeting />}
@@ -840,10 +847,17 @@ export default function AdminMerchantManagement() {
             <Tabs value={detailTab} onValueChange={setDetailTab} className="flex-1 flex flex-col overflow-hidden">
               <TabsList className="mx-6 shrink-0">
                 <TabsTrigger value="profile">Profile</TabsTrigger>
+                <TabsTrigger value="audit">Audit</TabsTrigger>
                 <TabsTrigger value="transactions">Transactions</TabsTrigger>
                 <TabsTrigger value="apikeys">API Keys</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
+              </TabsList>
+
+              <ScrollArea className="flex-1">
+                <TabsContent value="audit" className="mt-4">
+                  {detail?.merchant?.id && <MerchantAuditTimeline merchantId={detail.merchant.id} />}
+                </TabsContent>
               </TabsList>
 
               <ScrollArea className="flex-1 px-6 pb-6">
