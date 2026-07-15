@@ -568,6 +568,7 @@ function AgentListTab() {
           <div className="space-y-3 px-5 pt-1 pb-3 overflow-y-auto flex-1 min-h-0">
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
             <div><Label>Full Name *</Label><Input placeholder="Agent's name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div><Label>Email *</Label><Input type="email" placeholder="agent@example.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
             <div><Label>Business Name *</Label><Input placeholder="Shop / business name" value={form.business_name} onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-2">
               <DivisionDistrictUpazilaPicker
@@ -610,7 +611,7 @@ function AgentListTab() {
             </div>
           </div>
           <div className="px-5 py-3 border-t border-border shrink-0 bg-background">
-            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone || !form.name.trim() || !form.business_name.trim() || !form.division || !form.district || !form.upazila || !form.max_float || !form.nid_number.trim() || !nidFile || !selfieFile || !form.trade_license.trim() || !form.address.trim() || !form.latitude || !form.longitude}>
+            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone || !form.name.trim() || !form.email.trim() || !form.business_name.trim() || !form.division || !form.district || !form.upazila || !form.max_float || !form.nid_number.trim() || !nidFile || !selfieFile || !form.trade_license.trim() || !form.address.trim() || !form.latitude || !form.longitude}>
               {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Agent"}
             </Button>
           </div>
