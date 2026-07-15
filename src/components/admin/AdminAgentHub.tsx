@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -135,12 +135,16 @@ function AgentListTab() {
   const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
   const [nidFile, setNidFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const nidInputRef = useRef<HTMLInputElement>(null);
+  const selfieInputRef = useRef<HTMLInputElement>(null);
 
   // Edit
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", division: "", district: "", upazila: "", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
   const [editNidFile, setEditNidFile] = useState<File | null>(null);
   const [editSelfieFile, setEditSelfieFile] = useState<File | null>(null);
+  const editNidInputRef = useRef<HTMLInputElement>(null);
+  const editSelfieInputRef = useRef<HTMLInputElement>(null);
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete
