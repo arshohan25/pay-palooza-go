@@ -123,10 +123,43 @@ export default function AdminMerchantManagement() {
   const [showNewSecret, setShowNewSecret] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Create Merchant dialog
+  // Create Merchant dialog (full onboarding parity)
   const [showCreateMerchant, setShowCreateMerchant] = useState(false);
-  const [createForm, setCreateForm] = useState({ phone: "", business_name: "", trade_license: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
+  const [createForm, setCreateForm] = useState({
+    phone: "",
+    owner_name: "",
+    contact_email: "",
+    contact_number: "",
+    business_address: "",
+    business_name: "",
+    category: "retail",
+    trade_license: "",
+    mdr_rate: "1.8",
+    commission_rate: "0",
+    settlement_frequency: "T+1",
+    bank_name: "",
+    bank_account_holder: "",
+    bank_branch: "",
+    bank_account_number: "",
+    bank_routing: "",
+    initial_status: "pending" as "pending" | "active",
+    kyc_status: "pending" as "pending" | "verified",
+    admin_notes: "",
+  });
+  const [createFiles, setCreateFiles] = useState<{ nid_front: File | null; nid_back: File | null; trade_license: File | null; bank_statement: File | null }>({ nid_front: null, nid_back: null, trade_license: null, bank_statement: null });
   const [createLoading, setCreateLoading] = useState(false);
+
+  const resetCreateForm = () => {
+    setCreateForm({
+      phone: "", owner_name: "", contact_email: "", contact_number: "", business_address: "",
+      business_name: "", category: "retail", trade_license: "",
+      mdr_rate: "1.8", commission_rate: "0", settlement_frequency: "T+1",
+      bank_name: "", bank_account_holder: "", bank_branch: "", bank_account_number: "", bank_routing: "",
+      initial_status: "pending", kyc_status: "pending", admin_notes: "",
+    });
+    setCreateFiles({ nid_front: null, nid_back: null, trade_license: null, bank_statement: null });
+  };
+
 
   const loadMerchants = useCallback(async () => {
     setLoading(true);
