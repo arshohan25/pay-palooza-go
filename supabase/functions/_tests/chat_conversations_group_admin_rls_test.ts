@@ -38,7 +38,7 @@ async function signIn() {
 }
 
 async function insertConversation(
-  client: ReturnType<typeof createClient>,
+  client: any,
   row: Record<string, unknown>,
 ): Promise<string> {
   const { data, error } = await client
@@ -51,7 +51,7 @@ async function insertConversation(
 }
 
 async function addParticipant(
-  client: ReturnType<typeof createClient>,
+  client: any,
   conversationId: string,
   userId: string,
 ) {
@@ -62,7 +62,7 @@ async function addParticipant(
 }
 
 async function cleanup(
-  client: ReturnType<typeof createClient>,
+  client: any,
   conversationId: string,
 ) {
   await client
