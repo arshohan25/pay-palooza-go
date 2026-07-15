@@ -228,10 +228,25 @@ function AgentListTab() {
   const handleCreateAgent = async () => {
     const phone = form.phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone number"); return; }
-    if (!form.division || !form.district || !form.upazila) {
-      toast.error("Division, District and Upazila/Thana are required");
+    const missing: string[] = [];
+    if (!form.name.trim()) missing.push("Full Name");
+    if (!form.business_name.trim()) missing.push("Business Name");
+    if (!form.division) missing.push("Division");
+    if (!form.district) missing.push("District");
+    if (!form.upazila) missing.push("Upazila/Thana");
+    if (!form.max_float || parseInt(form.max_float) <= 0) missing.push("Max Float");
+    if (!form.nid_number.trim()) missing.push("NID Number");
+    if (!nidFile) missing.push("NID Card Photo");
+    if (!selfieFile) missing.push("Selfie / Photo");
+    if (!form.trade_license.trim()) missing.push("Trade License");
+    if (!form.address.trim()) missing.push("Address");
+    if (!form.latitude || isNaN(parseFloat(form.latitude))) missing.push("Latitude");
+    if (!form.longitude || isNaN(parseFloat(form.longitude))) missing.push("Longitude");
+    if (missing.length) {
+      toast.error(`Required: ${missing.join(", ")}`);
       return;
     }
+
     setCreating(true);
     try {
       // Look up existing user by phone
