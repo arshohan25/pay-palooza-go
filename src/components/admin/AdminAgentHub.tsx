@@ -487,7 +487,7 @@ function AgentListTab() {
               <div><Label>Latitude</Label><Input type="number" step="any" placeholder="e.g. 23.8103" value={editForm.latitude} onChange={e => setEditForm(f => ({ ...f, latitude: e.target.value }))} /></div>
               <div><Label>Longitude</Label><Input type="number" step="any" placeholder="e.g. 90.4125" value={editForm.longitude} onChange={e => setEditForm(f => ({ ...f, longitude: e.target.value }))} /></div>
             </div>
-            <Button className="w-full" onClick={saveEdit} disabled={editSaving}>
+            <Button className="w-full" onClick={saveEdit} disabled={editSaving || !editForm.division || !editForm.district || !editForm.upazila}>
               {editSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
             </Button>
           </div>
