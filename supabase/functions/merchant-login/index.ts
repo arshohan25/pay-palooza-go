@@ -324,9 +324,27 @@ Deno.serve(async (req) => {
     });
   }
 
+  // 4b. TEMP-PIN GATE — reject expired temp PINs, single-use enforcement
+  // (Password auth succeeded, but if the underlying credential is an EXPIRED
+  // temporary PIN we must not let it through. Merchants who have already
+  // consumed the temp PIN and set a permanent one pass this check.)
+  const { data: pinState, error: pinStateErr } = await admin.rpc(
+    "consume_merchant_temp_pin", { _merchant_user_id: user.id },
+  );
+  if (pinStateErr) {
+    console.error("consume_merchant_temp_pin failed", pinStateErr);
+  } else if (pinState === "expired") {
+    return json(403, {
+      ok: false,
+      temp_pin_expired: true,
+      message: "Your temporary PIN has expired. Contact admin to request a new one.",
+    });
+  }
+
   // 5. Success — clear failed attempts, log success, return session
   await admin.from("merchant_login_attempts").delete().eq("phone", phone).eq("success", false);
   await admin.from("merchant_login_attempts").insert({ phone, ip, success: true });
+
 
   return json(200, {
     ok: true,
