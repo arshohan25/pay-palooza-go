@@ -341,7 +341,10 @@ export default function AdminApprovalsInbox() {
     [rows, user?.id],
   );
 
-  const openBulk = (approve: boolean) => {
+  const [bulkCurrent, setBulkCurrent] = useState<Record<string, boolean>>({});
+  const [bulkPreviewLoading, setBulkPreviewLoading] = useState(false);
+
+  const openBulk = async (approve: boolean) => {
     const ids = Array.from(selected);
     if (ids.length === 0) { toast.error("Select at least one request"); return; }
     const filtered = approve ? ids.filter((id) => {
@@ -355,6 +358,19 @@ export default function AdminApprovalsInbox() {
     if (filtered.length === 0) { toast.error("Nothing to approve — you can't self-approve your own requests."); return; }
     setBulkNote("");
     setBulk({ approve, ids: filtered });
+    // Fetch current permission values for a real diff preview.
+    setBulkPreviewLoading(true);
+    setBulkCurrent({});
+    const selectedRows = filtered.map((id) => rows.find((r) => r.id === id)).filter(Boolean) as Req[];
+    const pairs = Array.from(new Set(selectedRows.map((r) => `${r.role}|${r.permission}`)));
+    const results = await Promise.all(pairs.map(async (key) => {
+      const [role, permission] = key.split("|");
+      const { data } = await (supabase as any).from("admin_role_permissions")
+        .select("allowed").eq("role", role).eq("permission", permission).maybeSingle();
+      return [key, data ? Boolean(data.allowed) : false] as const;
+    }));
+    setBulkCurrent(Object.fromEntries(results));
+    setBulkPreviewLoading(false);
   };
 
   const runBulk = async () => {
@@ -744,30 +760,90 @@ export default function AdminApprovalsInbox() {
         </DialogContent>
       </Dialog>
 
-      {/* Bulk confirm */}
+      {/* Bulk confirm — with per-request diff + high-risk summary */}
       <AlertDialog open={!!bulk} onOpenChange={(o) => !o && setBulk(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {bulk?.approve ? "Approve" : "Reject"} {bulk?.ids.length} request{bulk?.ids.length === 1 ? "" : "s"}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {bulk?.approve
-                ? "Each request will be applied individually and audit-logged with your review note. Requesters will be notified."
-                : "Each request will be rejected individually and audit-logged with your review note. Requesters will be notified."}
+              Review each change below. Every request is applied individually, audit-logged with your identity, and the requester is notified.
+              {bulk && (() => {
+                const items = bulk.ids.map((id) => rows.find((r) => r.id === id)).filter(Boolean) as Req[];
+                const risky = items.filter((r) => HIGH_RISK_PERMISSIONS.has(r.permission)).length;
+                const noops = items.filter((r) => bulkCurrent[`${r.role}|${r.permission}`] === r.allowed).length;
+                return (
+                  <span className="mt-2 flex flex-wrap gap-2">
+                    <Badge variant="outline" className="text-[10px]">{items.length} total</Badge>
+                    {risky > 0 && <Badge className="text-[10px] bg-amber-500/15 text-amber-700"><ShieldAlert className="w-3 h-3 mr-1" />{risky} high-risk</Badge>}
+                    {noops > 0 && <Badge className="text-[10px] bg-slate-500/15 text-slate-700">{noops} no-op</Badge>}
+                  </span>
+                );
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Textarea rows={3} placeholder="Review note applied to all selected requests (optional)"
-            value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} />
+
+          <ScrollArea className="max-h-[280px] pr-3 border border-border/60 rounded-lg">
+            {bulkPreviewLoading ? (
+              <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
+            ) : (
+              <div className="divide-y divide-border/50">
+                {bulk?.ids.map((id) => {
+                  const r = rows.find((x) => x.id === id);
+                  if (!r) return null;
+                  const curr = bulkCurrent[`${r.role}|${r.permission}`];
+                  const isNoop = curr === r.allowed;
+                  const isAdd = !isNoop && r.allowed === true;
+                  const risky = HIGH_RISK_PERMISSIONS.has(r.permission);
+                  const meta = permMeta[r.permission];
+                  return (
+                    <div key={id} className="p-2.5 flex items-start gap-2 text-xs">
+                      <div className="shrink-0 mt-0.5">
+                        {isNoop ? <Info className="w-3.5 h-3.5 text-amber-600" /> :
+                         isAdd  ? <PlusCircle className="w-3.5 h-3.5 text-emerald-600" /> :
+                                  <MinusCircle className="w-3.5 h-3.5 text-red-600" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate">
+                          <span className={`font-semibold ${isNoop ? "text-amber-700" : isAdd ? "text-emerald-700" : "text-red-700"}`}>
+                            {isNoop ? "NO-OP" : isAdd ? "ADD" : "REMOVE"}
+                          </span>
+                          <span className="mx-1.5 text-muted-foreground">·</span>
+                          <code className="text-[11px]">{r.permission}</code>
+                          <span className="text-muted-foreground"> → </span>
+                          <span className="capitalize">{r.role.replace(/_/g, " ")}</span>
+                          {risky && <Badge className="ml-1.5 text-[9px] bg-amber-500/15 text-amber-700 gap-0.5"><ShieldAlert className="w-2.5 h-2.5" />high-risk</Badge>}
+                        </p>
+                        <p className="text-[10.5px] text-muted-foreground mt-0.5">
+                          {curr === undefined ? "Loading current…" : (
+                            <>Current: <strong>{curr ? "Allowed" : "Denied"}</strong>
+                              <span className="mx-1">→</span>
+                              After: <strong>{r.allowed ? "Allowed" : "Denied"}</strong>
+                            </>
+                          )}
+                          {meta && <span className="ml-2 opacity-70">{meta.label}</span>}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+
+          <Textarea rows={2} placeholder="Review note applied to all selected requests (optional)"
+            value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} className="mt-2" />
           <AlertDialogFooter>
             <AlertDialogCancel disabled={bulkBusy}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); runBulk(); }} disabled={bulkBusy}
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); runBulk(); }} disabled={bulkBusy || bulkPreviewLoading}
               className={bulk?.approve ? "" : "bg-destructive text-destructive-foreground"}>
-              {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : bulk?.approve ? "Approve all" : "Reject all"}
+              {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : bulk?.approve ? `Approve all ${bulk?.ids.length}` : `Reject all ${bulk?.ids.length}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
 
       <PermissionRequestTimeline requestId={timelineId} onOpenChange={(o) => !o && setTimelineId(null)} />
     </div>
