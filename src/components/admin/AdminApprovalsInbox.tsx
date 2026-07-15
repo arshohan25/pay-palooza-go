@@ -277,18 +277,39 @@ export default function AdminApprovalsInbox() {
     setRows((prev) => prev.filter((x) => x.id !== r.id));
     markRead(r.id);
     const windowSec = undoWindows[r.role] ?? 900;
-    setRecent((prev) => [{ req: r, approved: approve, at: Date.now(), windowSec, note }, ...prev].slice(0, 5));
+    setRecent((prev) => [{ kind: "single", req: r, approved: approve, at: Date.now(), windowSec, note }, ...prev].slice(0, 5));
   };
 
-  const undo = async (item: { req: Req; approved: boolean; note: string }) => {
-    const { error } = await supabase.rpc("undo_permission_change" as any, { _request_id: item.req.id, _note: null });
+  // Undo a single approve/reject.
+  const undoSingle = async (req: Req) => {
+    const { error } = await supabase.rpc("undo_permission_change" as any, { _request_id: req.id, _note: null });
     if (error) { toast.error(error.message); return; }
     toast.success("Action undone — request returned to pending");
-    setRecent((prev) => prev.filter((x) => x.req.id !== item.req.id));
-    // Re-insert the request into pending list optimistically.
-    setRows((prev) => prev.some((x) => x.id === item.req.id) ? prev : [{ ...item.req, status: "pending" }, ...prev]);
+    setRecent((prev) => prev.filter((x) => x.kind !== "single" || x.req.id !== req.id));
+    setRows((prev) => prev.some((x) => x.id === req.id) ? prev : [{ ...req, status: "pending" }, ...prev]);
     reconcile();
   };
+
+  // Undo an entire bulk batch — reverts every request in the batch.
+  const undoBulk = async (entry: Extract<RecentEntry, { kind: "bulk" }>) => {
+    let ok = 0, fail = 0; const failures: string[] = [];
+    for (const it of entry.items) {
+      const { error } = await supabase.rpc("undo_permission_change" as any, { _request_id: it.req.id, _note: entry.note || null });
+      if (error) { fail++; failures.push(`${it.req.id.slice(0, 6)}: ${error.message}`); }
+      else { ok++; }
+    }
+    setRecent((prev) => prev.filter((x) => x !== entry));
+    if (fail === 0) toast.success(`Undid ${ok} action${ok === 1 ? "" : "s"} — requests returned to pending`);
+    else toast.warning(`Undid ${ok}; ${fail} failed`, { description: failures.slice(0, 3).join(" · ") });
+    // Re-insert reverted requests as pending
+    setRows((prev) => {
+      const byId = new Set(prev.map((r) => r.id));
+      const additions = entry.items.filter((it) => !byId.has(it.req.id)).map((it) => ({ ...it.req, status: "pending" }));
+      return [...additions, ...prev];
+    });
+    reconcile();
+  };
+
 
 
   // ---- Diff modal ----------------------------------------------------------
