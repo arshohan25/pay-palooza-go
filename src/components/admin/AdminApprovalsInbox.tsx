@@ -888,8 +888,16 @@ export default function AdminApprovalsInbox() {
                   const isAdd = !isNoop && r.allowed === true;
                   const risky = HIGH_RISK_PERMISSIONS.has(r.permission);
                   const meta = permMeta[r.permission];
+                  const status = bulkResults[id]?.status;
+                  const statusErr = bulkResults[id]?.error;
+                  const statusBadge =
+                    status === "success" ? <Badge className="text-[9px] bg-emerald-500/15 text-emerald-700 gap-0.5"><Check className="w-2.5 h-2.5" />applied</Badge> :
+                    status === "failed"  ? <Badge className="text-[9px] bg-red-500/15 text-red-700 gap-0.5"><X className="w-2.5 h-2.5" />failed</Badge> :
+                    status === "skipped" ? <Badge className="text-[9px] bg-slate-500/15 text-slate-700">skipped</Badge> :
+                    status === "running" ? <Badge className="text-[9px] bg-primary/15 text-primary gap-0.5"><Loader2 className="w-2.5 h-2.5 animate-spin" />running</Badge> :
+                    null;
                   return (
-                    <div key={id} className="p-2.5 flex items-start gap-2 text-xs">
+                    <div key={id} className={`p-2.5 flex items-start gap-2 text-xs ${status === "failed" ? "bg-red-500/[0.04]" : status === "skipped" ? "bg-slate-500/[0.04]" : ""}`}>
                       <div className="shrink-0 mt-0.5">
                         {isNoop ? <Info className="w-3.5 h-3.5 text-amber-600" /> :
                          isAdd  ? <PlusCircle className="w-3.5 h-3.5 text-emerald-600" /> :
@@ -905,6 +913,7 @@ export default function AdminApprovalsInbox() {
                           <span className="text-muted-foreground"> → </span>
                           <span className="capitalize">{r.role.replace(/_/g, " ")}</span>
                           {risky && <Badge className="ml-1.5 text-[9px] bg-amber-500/15 text-amber-700 gap-0.5"><ShieldAlert className="w-2.5 h-2.5" />high-risk</Badge>}
+                          {statusBadge && <span className="ml-1.5">{statusBadge}</span>}
                         </p>
                         <p className="text-[10.5px] text-muted-foreground mt-0.5">
                           {curr === undefined ? "Loading current…" : (
@@ -915,6 +924,12 @@ export default function AdminApprovalsInbox() {
                           )}
                           {meta && <span className="ml-2 opacity-70">{meta.label}</span>}
                         </p>
+                        {statusErr && status === "failed" && (
+                          <p className="text-[10.5px] text-red-600 mt-0.5">Error: {statusErr}</p>
+                        )}
+                        {statusErr && status === "skipped" && (
+                          <p className="text-[10.5px] text-slate-600 mt-0.5">Skipped: {statusErr}</p>
+                        )}
                       </div>
                     </div>
                   );
@@ -923,14 +938,52 @@ export default function AdminApprovalsInbox() {
             )}
           </ScrollArea>
 
-          <Textarea rows={2} placeholder="Review note applied to all selected requests (optional)"
-            value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} className="mt-2" />
+          {/* Post-run summary strip */}
+          {bulkRan && (() => {
+            const ok = Object.values(bulkResults).filter((v) => v.status === "success").length;
+            const fail = Object.values(bulkResults).filter((v) => v.status === "failed").length;
+            const skipped = Object.values(bulkResults).filter((v) => v.status === "skipped").length;
+            return (
+              <div className="mt-2 p-2.5 rounded-lg border border-border/60 bg-muted/30 flex flex-wrap items-center gap-2 text-xs">
+                <span className="text-muted-foreground">Batch result:</span>
+                <Badge className="bg-emerald-500/15 text-emerald-700 text-[10px]"><Check className="w-2.5 h-2.5 mr-1" />{ok} applied</Badge>
+                {fail > 0 && <Badge className="bg-red-500/15 text-red-700 text-[10px]"><X className="w-2.5 h-2.5 mr-1" />{fail} failed</Badge>}
+                {skipped > 0 && <Badge className="bg-slate-500/15 text-slate-700 text-[10px]">{skipped} skipped</Badge>}
+                {fail > 0 && <span className="text-muted-foreground">— retry failed items, or re-sync to check the latest state.</span>}
+              </div>
+            );
+          })()}
+
+          {!bulkRan && (
+            <Textarea rows={2} placeholder="Review note applied to all selected requests (optional)"
+              value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} className="mt-2" />
+          )}
+
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={bulkBusy}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); runBulk(); }} disabled={bulkBusy || bulkPreviewLoading}
-              className={bulk?.approve ? "" : "bg-destructive text-destructive-foreground"}>
-              {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : bulk?.approve ? `Approve all ${bulk?.ids.length}` : `Reject all ${bulk?.ids.length}`}
-            </AlertDialogAction>
+            {!bulkRan ? (
+              <>
+                <AlertDialogCancel disabled={bulkBusy} onClick={closeBulk}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={(e) => { e.preventDefault(); runBulk(); }} disabled={bulkBusy || bulkPreviewLoading}
+                  className={bulk?.approve ? "" : "bg-destructive text-destructive-foreground"}>
+                  {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                    bulk?.approve ? `Approve all ${Object.values(bulkResults).filter((v) => v.status === "pending").length}`
+                                  : `Reject all ${Object.values(bulkResults).filter((v) => v.status === "pending").length}`}
+                </AlertDialogAction>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => { reconcile(); toast.info("Resyncing with server…"); }} disabled={bulkBusy} className="gap-1">
+                  <RefreshCw className="w-3.5 h-3.5" /> Resync
+                </Button>
+                {Object.values(bulkResults).some((v) => v.status === "failed") && (
+                  <Button variant="outline" onClick={retryFailed} disabled={bulkBusy} className="gap-1">
+                    {bulkBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                    Retry failed ({Object.values(bulkResults).filter((v) => v.status === "failed").length})
+                  </Button>
+                )}
+                <Button onClick={closeBulk}>Done</Button>
+              </>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
