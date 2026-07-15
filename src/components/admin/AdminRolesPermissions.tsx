@@ -34,9 +34,13 @@ export default function AdminRolesPermissions() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("admin_role_permissions" as any).select("role, permission, allowed");
+    const [{ data }, { data: pdata }] = await Promise.all([
+      supabase.from("admin_role_permissions" as any).select("role, permission, allowed"),
+      supabase.from("admin_role_permission_presets" as any).select("id, name, description, permissions, is_builtin").order("is_builtin", { ascending: false }).order("name"),
+    ]);
     const list = ((data ?? []) as any[]) as Row[];
     setRows(list);
+    setPresets(((pdata ?? []) as any[]) as Preset[]);
     // Custom roles = any role present in DB that isn't in the built-in list.
     const extra = Array.from(new Set(list.map((r) => r.role))).filter((r) => !ROLE_KEYS.includes(r as any));
     setCustomRoles(extra);
