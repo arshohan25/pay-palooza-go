@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/command";
 import { Check, ChevronsUpDown, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { districtCommandFilter } from "@/lib/districtCommandFilter";
+
 
 export interface DistrictRoute {
   code: string;     // 2-letter route code, e.g. "DH"
