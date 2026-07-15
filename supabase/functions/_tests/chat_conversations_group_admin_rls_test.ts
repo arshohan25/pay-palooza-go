@@ -173,3 +173,162 @@ Deno.test(
     }
   },
 );
+
+// ---------------------------------------------------------------------------
+// Raw REST (PostgREST PATCH) coverage — bypasses supabase-js in case any
+// future client-side wrapper accidentally masks a policy failure.
+// ---------------------------------------------------------------------------
+
+async function rawFetch(
+  path: string,
+  init: RequestInit,
+  token: string,
+): Promise<{ status: number; body: string }> {
+  const headers: Record<string, string> = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+    ...(init.headers as Record<string, string> | undefined ?? {}),
+  };
+  const res = await fetch(`${SUPABASE_URL}${path}`, { ...init, headers });
+  return { status: res.status, body: await res.text() };
+}
+
+async function signInWithSession() {
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await client.auth.signInWithPassword({
+    email: TEST_EMAIL,
+    password: TEST_PASSWORD,
+  });
+  if (error) throw new Error(`sign-in failed: ${error.message}`);
+  return {
+    client,
+    userId: data.session!.user.id,
+    accessToken: data.session!.access_token,
+  };
+}
+
+Deno.test(
+  "REST PATCH on group conversation by non-admin participant returns []",
+  async () => {
+    const { client, userId, accessToken } = await signInWithSession();
+    const otherAdmin = crypto.randomUUID();
+    const convoId = await insertConversation(client, {
+      type: "group",
+      name: "rest-rls-original",
+      admin_id: otherAdmin,
+    });
+    try {
+      await addParticipant(client, convoId, userId);
+
+      const { status, body } = await rawFetch(
+        `/rest/v1/chat_conversations?id=eq.${convoId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ name: "rest-rls-hijacked" }),
+        },
+        accessToken,
+      );
+
+      // PostgREST returns 200 + [] when RLS filters out the row entirely.
+      assertEquals(status, 200, `expected 200, got ${status} ${body}`);
+      const rows = JSON.parse(body);
+      assertEquals(
+        Array.isArray(rows) && rows.length,
+        0,
+        "REST PATCH must affect zero rows for non-admin participant",
+      );
+
+      // Confirm the row was not mutated.
+      const { data: after } = await client
+        .from("chat_conversations" as any)
+        .select("name")
+        .eq("id", convoId)
+        .maybeSingle();
+      assertEquals(
+        (after as { name: string } | null)?.name,
+        "rest-rls-original",
+      );
+    } finally {
+      await cleanup(client, convoId);
+    }
+  },
+);
+
+Deno.test(
+  "REST PATCH on group conversation by admin_id returns the updated row",
+  async () => {
+    const { client, userId, accessToken } = await signInWithSession();
+    const convoId = await insertConversation(client, {
+      type: "group",
+      name: "rest-rls-own",
+      admin_id: userId,
+    });
+    try {
+      await addParticipant(client, convoId, userId);
+
+      const { status, body } = await rawFetch(
+        `/rest/v1/chat_conversations?id=eq.${convoId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ name: "rest-rls-own-renamed" }),
+        },
+        accessToken,
+      );
+
+      assertEquals(status, 200, `expected 200, got ${status} ${body}`);
+      const rows = JSON.parse(body);
+      assertEquals(rows.length, 1, "admin_id caller must update exactly 1 row");
+      assertEquals(rows[0].name, "rest-rls-own-renamed");
+    } finally {
+      await cleanup(client, convoId);
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// RPC guard — ensure no SECURITY DEFINER function offers a bypass path that
+// updates chat_conversations without the same admin_id gate. If any future
+// migration adds such an RPC, this test forces it to be added explicitly
+// to KNOWN_CHAT_UPDATE_RPCS with matching authz coverage.
+// ---------------------------------------------------------------------------
+
+const KNOWN_CHAT_UPDATE_RPCS: string[] = [
+  // Currently none: chat_conversations updates flow only through PostgREST
+  // (REST PATCH / supabase-js .update), which is covered above.
+];
+
+Deno.test(
+  "no unlisted RPC exposes an UPDATE path on chat_conversations",
+  async () => {
+    const { accessToken } = await signInWithSession();
+    // Introspect exposed RPCs via PostgREST's OpenAPI document. Any RPC that
+    // mutates chat_conversations would typically name the table in its
+    // implementation; here we surface every RPC name for maintainers to
+    // audit against KNOWN_CHAT_UPDATE_RPCS.
+    const { status, body } = await rawFetch("/rest/v1/", { method: "GET" }, accessToken);
+    assertEquals(status, 200, `openapi fetch failed: ${status} ${body}`);
+    const doc = JSON.parse(body) as { paths?: Record<string, unknown> };
+    const rpcNames = Object.keys(doc.paths ?? {})
+      .filter((p) => p.startsWith("/rpc/"))
+      .map((p) => p.slice("/rpc/".length));
+
+    // Heuristic: flag any RPC whose name suggests chat/conversation/group
+    // updating. New matches must be added to KNOWN_CHAT_UPDATE_RPCS *and*
+    // covered by their own admin_id-gate test.
+    const suspects = rpcNames.filter((n) =>
+      /(update|rename|edit|modify|set).*(chat|conversation|group)/i.test(n) ||
+      /(chat|conversation|group).*(update|rename|edit|modify|set)/i.test(n)
+    );
+    const unlisted = suspects.filter((n) => !KNOWN_CHAT_UPDATE_RPCS.includes(n));
+    assertEquals(
+      unlisted,
+      [],
+      `New chat-conversation update RPC(s) detected without admin_id-gate coverage: ${unlisted.join(", ")}. ` +
+        `Add them to KNOWN_CHAT_UPDATE_RPCS and add explicit tests.`,
+    );
+  },
+);
