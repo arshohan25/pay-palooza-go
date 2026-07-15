@@ -16,6 +16,8 @@ import { REGISTERED_PERMISSIONS, ROLE_KEYS, HIGH_RISK_PERMISSIONS } from "@/lib/
 import { usePermission } from "@/hooks/use-permission";
 
 interface Row { role: string; permission: string; allowed: boolean; }
+interface Preset { id: string; name: string; description: string | null; permissions: string[]; is_builtin: boolean; }
+interface PendingReq { role: string; permission: string; allowed: boolean; reason: string; }
 
 export default function AdminRolesPermissions() {
   const canManage = usePermission("manage_roles");
@@ -25,6 +27,10 @@ export default function AdminRolesPermissions() {
   const [saving, setSaving] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [newRole, setNewRole] = useState("");
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [presetOpen, setPresetOpen] = useState(false);
+  const [presetTarget, setPresetTarget] = useState<{ role: string; presetId: string }>({ role: "", presetId: "" });
+  const [pendingReq, setPendingReq] = useState<PendingReq | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
