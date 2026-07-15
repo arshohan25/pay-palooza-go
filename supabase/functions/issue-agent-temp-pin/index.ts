@@ -22,7 +22,9 @@ interface Payload {
   phone: string;
   name?: string;
   purpose?: "create" | "resend";
+  idempotency_key?: string;
 }
+
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
