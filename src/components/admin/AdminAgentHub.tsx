@@ -545,6 +545,18 @@ function AgentListTab() {
               <div><Label>Max Float</Label><Input type="number" value={editForm.max_float} onChange={e => setEditForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
             <div><Label>NID Number</Label><Input value={editForm.nid_number} onChange={e => setEditForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />NID Card Photo{(editAgent as any)?.nid_image_path ? " (replace)" : ""}</Label>
+                <Input type="file" accept="image/*" onChange={e => setEditNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
+                {editNidFile ? <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {editNidFile.name}</p> : (editAgent as any)?.nid_image_path && <p className="text-[10px] text-emerald-600 mt-1 truncate">On file</p>}
+              </div>
+              <div>
+                <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Selfie / Photo{(editAgent as any)?.selfie_path ? " (replace)" : ""}</Label>
+                <Input type="file" accept="image/*" capture="user" onChange={e => setEditSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
+                {editSelfieFile ? <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {editSelfieFile.name}</p> : (editAgent as any)?.selfie_path && <p className="text-[10px] text-emerald-600 mt-1 truncate">On file</p>}
+              </div>
+            </div>
             <div><Label>Trade License</Label><Input value={editForm.trade_license} onChange={e => setEditForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
             <div><Label>Address</Label><Input placeholder="Shop address" value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} /></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
