@@ -83,8 +83,10 @@ export default function DistrictMultiSelect({
   const virtualizer = useVirtualizer({
     count: flat.length,
     getScrollElement: () => scrollEl,
-    estimateSize: (i) => (flat[i]?.kind === "header" ? 24 : 36),
-    overscan: 8,
+    estimateSize: (i) => (flat[i]?.kind === "header" ? 26 : 36),
+    overscan: 20,
+    getItemKey: (i) => flat[i]?.key ?? i,
+    measureElement: (el) => el?.getBoundingClientRect().height ?? 36,
   });
 
   const selectedRows = rows.filter((r) => value.includes(r.code));
@@ -146,15 +148,17 @@ export default function DistrictMultiSelect({
                   return (
                     <div
                       key={item.key}
+                      data-index={v.index}
+                      ref={virtualizer.measureElement}
                       style={{
                         position: "absolute",
                         top: 0,
                         left: 0,
                         width: "100%",
                         transform: `translateY(${v.start}px)`,
-                        height: v.size,
                       }}
                     >
+
                       {item.kind === "header" ? (
                         <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                           {item.division}
