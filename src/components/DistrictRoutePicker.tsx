@@ -37,6 +37,7 @@ export default function DistrictRoutePicker({
   const [rows, setRows] = useState<DistrictRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [divisionFilter, setDivisionFilter] = useState<string>("all");
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -57,13 +58,19 @@ export default function DistrictRoutePicker({
     };
   }, []);
 
+  const divisions = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.division))).sort(),
+    [rows],
+  );
+
   const flat: FlatRow[] = useMemo(() => {
+    const base = divisionFilter === "all" ? rows : rows.filter((r) => r.division === divisionFilter);
     const filtered = query
-      ? rows.filter(
+      ? base.filter(
           (r) =>
             districtCommandFilter(`${r.district} ${r.code} ${r.division}`, query) > 0,
         )
-      : rows;
+      : base;
     const byDiv = new Map<string, DistrictRoute[]>();
     for (const r of filtered) {
       if (!byDiv.has(r.division)) byDiv.set(r.division, []);
@@ -77,7 +84,7 @@ export default function DistrictRoutePicker({
       for (const r of list) out.push({ kind: "item", row: r, key: `i:${r.code}` });
     }
     return out;
-  }, [rows, query]);
+  }, [rows, query, divisionFilter]);
 
   const virtualizer = useVirtualizer({
     count: flat.length,
@@ -126,6 +133,20 @@ export default function DistrictRoutePicker({
             placeholder="Search district, code, or division…"
             className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
           />
+        </div>
+        <div className="flex items-center gap-2 border-b px-3 py-1.5 bg-muted/30">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Division</span>
+          <select
+            aria-label="Filter by division"
+            value={divisionFilter}
+            onChange={(e) => setDivisionFilter(e.target.value)}
+            className="h-7 flex-1 rounded-md border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="all">All divisions</option>
+            {divisions.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
         </div>
         <div ref={setScrollEl} className="max-h-72 overflow-y-auto">
           {flat.length === 0 ? (
