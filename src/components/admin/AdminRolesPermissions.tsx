@@ -65,6 +65,13 @@ export default function AdminRolesPermissions() {
   const toggle = async (role: string, permission: string, allowed: boolean) => {
     if (!canManage) { toast.error("You need the 'manage_roles' permission"); return; }
     if (role === "admin") { toast.error("Admin role always has all permissions"); return; }
+
+    // High-risk toggles go through the second-admin approval workflow.
+    if (HIGH_RISK_PERMISSIONS.has(permission)) {
+      setPendingReq({ role, permission, allowed, reason: "" });
+      return;
+    }
+
     const key = `${role}:${permission}`;
     setSaving(key);
     const { data: { session } } = await supabase.auth.getSession();
@@ -74,12 +81,10 @@ export default function AdminRolesPermissions() {
     if (error) {
       toast.error(error.message);
     } else {
-      // Optimistic local update in case realtime lags
       setRows((prev) => {
         const other = prev.filter((r) => !(r.role === role && r.permission === permission));
         return [...other, { role, permission, allowed }];
       });
-      // Audit trail
       supabase.from("audit_logs").insert({
         actor_id: session?.user?.id ?? null,
         action: allowed ? "permission_granted" : "permission_revoked",
@@ -91,6 +96,86 @@ export default function AdminRolesPermissions() {
     }
     setSaving(null);
   };
+
+  const submitPendingRequest = async () => {
+    if (!pendingReq) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) { toast.error("Sign in required"); return; }
+    const { error } = await supabase.from("permission_change_requests" as any).insert({
+      role: pendingReq.role,
+      permission: pendingReq.permission,
+      allowed: pendingReq.allowed,
+      reason: pendingReq.reason || null,
+      requested_by: session.user.id,
+    } as any);
+    if (error) { toast.error(error.message); return; }
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id,
+      action: "permission_change_requested",
+      entity_type: "permission",
+      entity_id: null,
+      details: { role: pendingReq.role, permission: pendingReq.permission, allowed: pendingReq.allowed },
+    } as any).then();
+    toast.success("Change requested — a second admin must approve it.");
+    setPendingReq(null);
+  };
+
+  const applyPreset = async () => {
+    if (!canManage) { toast.error("Missing 'manage_roles' permission"); return; }
+    if (!presetTarget.role || !presetTarget.presetId) { toast.error("Choose a role and preset"); return; }
+    const preset = presets.find((p) => p.id === presetTarget.presetId);
+    if (!preset) return;
+    if (presetTarget.role === "admin") { toast.error("Admin already has everything"); return; }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const perms = (preset.permissions as string[]) || [];
+    // Split high-risk (routed to approvals) from immediate.
+    const immediate = REGISTERED_PERMISSIONS.filter((p) => !HIGH_RISK_PERMISSIONS.has(p.key));
+    const risky = REGISTERED_PERMISSIONS.filter((p) => HIGH_RISK_PERMISSIONS.has(p.key));
+
+    const upserts = immediate.map((p) => ({
+      role: presetTarget.role,
+      permission: p.key,
+      allowed: perms.includes(p.key),
+      updated_at: new Date().toISOString(),
+      updated_by: session?.user?.id ?? null,
+    }));
+    const { error } = await supabase
+      .from("admin_role_permissions" as any)
+      .upsert(upserts as any, { onConflict: "role,permission" });
+    if (error) { toast.error(error.message); return; }
+
+    // Queue high-risk toggles as requests only if they differ from current.
+    let queued = 0;
+    for (const p of risky) {
+      const current = matrix[presetTarget.role]?.[p.key] ?? false;
+      const desired = perms.includes(p.key);
+      if (current === desired) continue;
+      await supabase.from("permission_change_requests" as any).insert({
+        role: presetTarget.role,
+        permission: p.key,
+        allowed: desired,
+        reason: `From preset "${preset.name}"`,
+        requested_by: session?.user?.id,
+      } as any);
+      queued++;
+    }
+    supabase.from("audit_logs").insert({
+      actor_id: session?.user?.id ?? null,
+      action: "preset_applied",
+      entity_type: "role",
+      entity_id: null,
+      details: { role: presetTarget.role, preset: preset.name, queued_for_approval: queued },
+    } as any).then();
+    toast.success(
+      queued > 0
+        ? `Preset applied — ${queued} high-risk change(s) queued for approval.`
+        : `Preset "${preset.name}" applied to ${presetTarget.role}.`,
+    );
+    setPresetOpen(false);
+    load();
+  };
+
 
 
   const addRole = async () => {
