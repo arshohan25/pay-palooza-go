@@ -98,15 +98,14 @@ const { rows } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/integrations/supabase/client", () => {
-  const builder: any = {
-    select: () => builder,
-    eq: () => builder,
-    order: () => builder,
-    then: (resolve: any) => resolve({ data: rows, error: null }),
+  const makeBuilder = (): any => {
+    const p: any = Promise.resolve({ data: rows, error: null });
+    p.select = () => makeBuilder();
+    p.eq = () => makeBuilder();
+    p.order = () => makeBuilder();
+    return p;
   };
-  return {
-    supabase: { from: () => builder },
-  };
+  return { supabase: { from: () => makeBuilder() } };
 });
 
 import DivisionDistrictPicker, {
