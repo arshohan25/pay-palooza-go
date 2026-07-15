@@ -453,7 +453,7 @@ function AgentListTab() {
           <div className="space-y-3 pt-2">
             <div><Label>Business Name</Label><Input value={editForm.business_name} onChange={e => setEditForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-2">
-              <div><Label>Territory Code</Label><Input value={editForm.territory_code} onChange={e => setEditForm(f => ({ ...f, territory_code: e.target.value }))} /></div>
+              <div><Label>District (route code)</Label><DistrictRoutePicker value={editForm.territory_code} onChange={(code) => setEditForm(f => ({ ...f, territory_code: code }))} placeholder="Select district" /></div>
               <div><Label>Max Float</Label><Input type="number" value={editForm.max_float} onChange={e => setEditForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
             <div><Label>NID Number</Label><Input value={editForm.nid_number} onChange={e => setEditForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
