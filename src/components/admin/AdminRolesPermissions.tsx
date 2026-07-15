@@ -309,6 +309,84 @@ export default function AdminRolesPermissions() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Apply preset dialog */}
+      <Dialog open={presetOpen} onOpenChange={setPresetOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="w-4 h-4" /> Apply role template preset</DialogTitle>
+            <DialogDescription>Bulk-set a role's permissions from a saved template. High-risk toggles are queued for second-admin approval.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Target role</Label>
+              <Select value={presetTarget.role} onValueChange={(v) => setPresetTarget((s) => ({ ...s, role: v }))}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Choose role…" /></SelectTrigger>
+                <SelectContent>
+                  {roles.filter((r) => r !== "admin").map((r) => (
+                    <SelectItem key={r} value={r} className="capitalize">{r.replace(/_/g, " ")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Preset</Label>
+              <Select value={presetTarget.presetId} onValueChange={(v) => setPresetTarget((s) => ({ ...s, presetId: v }))}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Choose preset…" /></SelectTrigger>
+                <SelectContent>
+                  {presets.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      <div className="flex flex-col">
+                        <span>{p.name} {p.is_builtin && <Badge variant="outline" className="ml-1 text-[9px]">built-in</Badge>}</span>
+                        {p.description && <span className="text-[10px] text-muted-foreground">{p.description}</span>}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {presetTarget.presetId && (
+              <div className="rounded-md border border-border p-2 text-[11px] text-muted-foreground space-y-1">
+                <p className="font-medium text-foreground">Included permissions:</p>
+                <div className="flex flex-wrap gap-1">
+                  {(presets.find((p) => p.id === presetTarget.presetId)?.permissions ?? []).map((k) => (
+                    <Badge key={k} variant="secondary" className="text-[10px]">{k}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPresetOpen(false)}>Cancel</Button>
+            <Button onClick={applyPreset}>Apply preset</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* High-risk change request dialog */}
+      <Dialog open={!!pendingReq} onOpenChange={(o) => !o && setPendingReq(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600"><ShieldAlert className="w-4 h-4" /> Requires second-admin approval</DialogTitle>
+            <DialogDescription>
+              <code className="text-xs">{pendingReq?.permission}</code> for <span className="font-medium capitalize">{pendingReq?.role?.replace(/_/g, " ")}</span> is a high-risk permission. Submit this change for review by another admin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label className="text-xs">Reason (optional)</Label>
+            <Textarea
+              rows={3}
+              placeholder="Why is this change needed?"
+              value={pendingReq?.reason ?? ""}
+              onChange={(e) => setPendingReq((p) => p ? { ...p, reason: e.target.value } : p)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingReq(null)}>Cancel</Button>
+            <Button onClick={submitPendingRequest}>Submit for approval</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
