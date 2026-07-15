@@ -43,6 +43,11 @@ export default function AdminUserRoleAssignments() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ProfileRow | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkRole, setBulkRole] = useState<string>("");
+  const [bulkMode, setBulkMode] = useState<"grant" | "revoke">("grant");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
