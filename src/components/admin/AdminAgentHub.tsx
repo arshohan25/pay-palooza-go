@@ -242,6 +242,9 @@ function AgentListTab() {
     const { error } = await supabase.from("agents").update({
       business_name: editForm.business_name || null,
       territory_code: editForm.territory_code || null,
+      division: editForm.division || null,
+      district: editForm.district || null,
+      upazila: editForm.upazila || null,
       max_float: parseInt(editForm.max_float) || editAgent.max_float,
       nid_number: editForm.nid_number || null,
       trade_license: editForm.trade_license || null,
