@@ -70,7 +70,7 @@ export default function AdminAgentHub() {
   );
 }
 
-function KycImagePreview({ file, existingPath, alt }: { file: File | null; existingPath?: string | null; alt: string }) {
+function KycImagePreview({ file, existingPath, alt, onClear, onReplace }: { file: File | null; existingPath?: string | null; alt: string; onClear?: () => void; onReplace?: () => void }) {
   const [localUrl, setLocalUrl] = useState<string | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
@@ -93,13 +93,37 @@ function KycImagePreview({ file, existingPath, alt }: { file: File | null; exist
   const url = localUrl ?? signedUrl;
   if (!url) return null;
   return (
-    <div className="mt-2 relative rounded-md overflow-hidden border border-border bg-muted">
+    <div className="mt-2 relative rounded-md overflow-hidden border border-border bg-muted group">
       <img src={url} alt={alt} className="w-full h-24 object-cover" />
-      {file && <span className="absolute top-1 right-1 rounded bg-primary/90 text-primary-foreground text-[9px] px-1.5 py-0.5">New</span>}
-      {!file && signedUrl && <span className="absolute top-1 right-1 rounded bg-emerald-600/90 text-white text-[9px] px-1.5 py-0.5">On file</span>}
+      {file && <span className="absolute top-1 left-1 rounded bg-primary/90 text-primary-foreground text-[9px] px-1.5 py-0.5">New</span>}
+      {!file && signedUrl && <span className="absolute top-1 left-1 rounded bg-emerald-600/90 text-white text-[9px] px-1.5 py-0.5">On file</span>}
+      <div className="absolute top-1 right-1 flex gap-1">
+        {onReplace && (
+          <button
+            type="button"
+            onClick={onReplace}
+            className="rounded bg-background/90 hover:bg-background text-foreground text-[9px] px-1.5 py-0.5 border border-border shadow-sm"
+            aria-label="Replace"
+          >
+            Replace
+          </button>
+        )}
+        {file && onClear && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground w-5 h-5 flex items-center justify-center shadow-sm"
+            aria-label="Remove"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
+
+
 
 function AgentListTab() {
   const [agents, setAgents] = useState<Agent[]>([]);
