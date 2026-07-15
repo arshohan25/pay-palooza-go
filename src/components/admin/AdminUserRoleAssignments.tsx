@@ -132,6 +132,47 @@ export default function AdminUserRoleAssignments() {
     load();
   };
 
+  const toggleChecked = (id: string, on: boolean) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id); else next.delete(id);
+      return next;
+    });
+  };
+  const checkedArr = useMemo(() => Array.from(checkedIds), [checkedIds]);
+
+  const runBulk = async () => {
+    if (!canManage) { toast.error("Missing 'manage_roles' permission"); return; }
+    if (!bulkRole) { toast.error("Choose a role"); return; }
+    if (checkedArr.length === 0) { toast.error("Select at least one user"); return; }
+    setBulkBusy(true);
+    let ok = 0, skipped = 0, failed = 0;
+    for (const uid of checkedArr) {
+      const has = (rolesByUser[uid] ?? []).includes(bulkRole);
+      if (bulkMode === "grant" && has) { skipped++; continue; }
+      if (bulkMode === "revoke" && !has) { skipped++; continue; }
+      if (bulkMode === "grant") {
+        const { error } = await supabase.from("user_roles").insert({ user_id: uid, role: bulkRole as any });
+        if (error && !/duplicate/i.test(error.message)) { failed++; continue; }
+      } else {
+        const { error } = await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", bulkRole as any);
+        if (error) { failed++; continue; }
+      }
+      ok++;
+    }
+    await logAudit(bulkMode === "grant" ? "role_bulk_granted" : "role_bulk_revoked", {
+      role: bulkRole, user_ids: checkedArr, applied: ok, skipped, failed,
+    });
+    setBulkBusy(false);
+    setBulkOpen(false);
+    setCheckedIds(new Set());
+    toast.success(
+      `${bulkMode === "grant" ? "Granted" : "Revoked"} ${bulkRole} — ${ok} applied` +
+      (skipped ? `, ${skipped} skipped` : "") + (failed ? `, ${failed} failed` : ""),
+    );
+    load();
+  };
+
   return (
     <div className="space-y-4">
       <Card>
