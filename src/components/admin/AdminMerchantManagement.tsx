@@ -490,10 +490,42 @@ export default function AdminMerchantManagement() {
         }).then();
       }
 
-      toast.success(`Merchant created (${createForm.initial_status}, KYC ${createForm.kyc_status})`);
+      // ── Auto-issue a 4-digit temp PIN by SMS (same as agent onboarding) ──
+      try {
+        const idempotencyKey = (crypto as any)?.randomUUID?.() ?? `${profile.user_id}-${Date.now()}`;
+        const { data: pinData, error: pinErr } = await supabase.functions.invoke("issue-merchant-temp-pin", {
+          body: {
+            merchant_user_id: profile.user_id,
+            phone,
+            name: createForm.owner_name || businessName,
+            purpose: "create",
+            idempotency_key: idempotencyKey,
+          },
+        });
+        if (pinErr) {
+          const ctx: any = (pinErr as any)?.context;
+          let payload: any = null;
+          if (ctx && typeof ctx.json === "function") { try { payload = await ctx.json(); } catch { /* ignore */ } }
+          toast.warning(`Merchant created, but temp PIN SMS failed: ${payload?.error || pinErr.message}`);
+        } else {
+          const p = pinData as { sms_status?: string; pin_fallback?: string } | null;
+          if (p?.sms_status === "sent") {
+            toast.success(`Merchant created & temp PIN sent by SMS to +88 ${phone}`);
+          } else if (p?.pin_fallback) {
+            toast.warning(`Merchant created — SMS failed, share this PIN manually: ${p.pin_fallback}`, { duration: 15000 });
+          } else {
+            toast.success(`Merchant created (${createForm.initial_status}, KYC ${createForm.kyc_status})`);
+          }
+        }
+      } catch (pinCatch: any) {
+        console.error("temp pin issue failed", pinCatch);
+        toast.warning("Merchant created, but temp PIN issuance threw an error — check logs");
+      }
+
       setShowCreateMerchant(false);
       resetCreateForm();
       loadMerchants();
+
     } catch (err: any) {
       toast.error("Error: " + (err.message || "Unknown"));
     }
