@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Shield, Plus, X, Loader2, UserCog, Lock } from "lucide-react";
+import { Search, Shield, Plus, X, Loader2, UserCog, Lock, Users } from "lucide-react";
 import { toast } from "sonner";
 import { usePermission } from "@/hooks/use-permission";
 import { ROLE_KEYS } from "@/lib/permissionsRegistry";
@@ -41,6 +43,11 @@ export default function AdminUserRoleAssignments() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ProfileRow | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkRole, setBulkRole] = useState<string>("");
+  const [bulkMode, setBulkMode] = useState<"grant" | "revoke">("grant");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -125,6 +132,47 @@ export default function AdminUserRoleAssignments() {
     load();
   };
 
+  const toggleChecked = (id: string, on: boolean) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id); else next.delete(id);
+      return next;
+    });
+  };
+  const checkedArr = useMemo(() => Array.from(checkedIds), [checkedIds]);
+
+  const runBulk = async () => {
+    if (!canManage) { toast.error("Missing 'manage_roles' permission"); return; }
+    if (!bulkRole) { toast.error("Choose a role"); return; }
+    if (checkedArr.length === 0) { toast.error("Select at least one user"); return; }
+    setBulkBusy(true);
+    let ok = 0, skipped = 0, failed = 0;
+    for (const uid of checkedArr) {
+      const has = (rolesByUser[uid] ?? []).includes(bulkRole);
+      if (bulkMode === "grant" && has) { skipped++; continue; }
+      if (bulkMode === "revoke" && !has) { skipped++; continue; }
+      if (bulkMode === "grant") {
+        const { error } = await supabase.from("user_roles").insert({ user_id: uid, role: bulkRole as any });
+        if (error && !/duplicate/i.test(error.message)) { failed++; continue; }
+      } else {
+        const { error } = await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", bulkRole as any);
+        if (error) { failed++; continue; }
+      }
+      ok++;
+    }
+    await logAudit(bulkMode === "grant" ? "role_bulk_granted" : "role_bulk_revoked", {
+      role: bulkRole, user_ids: checkedArr, applied: ok, skipped, failed,
+    });
+    setBulkBusy(false);
+    setBulkOpen(false);
+    setCheckedIds(new Set());
+    toast.success(
+      `${bulkMode === "grant" ? "Granted" : "Revoked"} ${bulkRole} — ${ok} applied` +
+      (skipped ? `, ${skipped} skipped` : "") + (failed ? `, ${failed} failed` : ""),
+    );
+    load();
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -165,11 +213,25 @@ export default function AdminUserRoleAssignments() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-sm">Users with admin roles</CardTitle>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter…" className="pl-8 h-8 w-48 text-xs" />
+          <div className="flex items-center gap-2 flex-wrap">
+            {checkedIds.size > 0 && (
+              <>
+                <Badge variant="secondary" className="gap-1"><Users className="w-3 h-3" /> {checkedIds.size} selected</Badge>
+                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setBulkMode("grant"); setBulkOpen(true); }} disabled={!canManage}>
+                  <Plus className="w-3 h-3 mr-1" /> Bulk grant
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setBulkMode("revoke"); setBulkOpen(true); }} disabled={!canManage}>
+                  <X className="w-3 h-3 mr-1" /> Bulk revoke
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setCheckedIds(new Set())}>Clear</Button>
+              </>
+            )}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter…" className="pl-8 h-8 w-48 text-xs" />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -180,6 +242,16 @@ export default function AdminUserRoleAssignments() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-8">
+                      <Checkbox
+                        checked={nonCustomerProfiles.length > 0 && nonCustomerProfiles.every((p) => checkedIds.has(p.user_id))}
+                        onCheckedChange={(v) => {
+                          if (v) setCheckedIds(new Set(nonCustomerProfiles.map((p) => p.user_id)));
+                          else setCheckedIds(new Set());
+                        }}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Roles</TableHead>
                     <TableHead />
@@ -187,9 +259,16 @@ export default function AdminUserRoleAssignments() {
                 </TableHeader>
                 <TableBody>
                   {nonCustomerProfiles.length === 0 ? (
-                    <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">No admin users yet — search above to grant a role.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No admin users yet — search above to grant a role.</TableCell></TableRow>
                   ) : nonCustomerProfiles.map((p) => (
-                    <TableRow key={p.user_id}>
+                    <TableRow key={p.user_id} data-state={checkedIds.has(p.user_id) ? "selected" : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={checkedIds.has(p.user_id)}
+                          onCheckedChange={(v) => toggleChecked(p.user_id, !!v)}
+                          aria-label={`Select ${p.name || p.phone || p.user_id}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <p className="font-medium text-foreground">{p.name || "Unnamed"}</p>
                         <p className="text-[11px] text-muted-foreground">{p.phone || p.user_id.slice(0, 8)}</p>
@@ -249,6 +328,37 @@ export default function AdminUserRoleAssignments() {
               );
             })}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk grant / revoke dialog */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-4 h-4" /> Bulk {bulkMode} role
+            </DialogTitle>
+            <DialogDescription>
+              {bulkMode === "grant" ? "Add" : "Remove"} a role for {checkedIds.size} selected user{checkedIds.size === 1 ? "" : "s"}.
+              Users already {bulkMode === "grant" ? "having" : "missing"} the role are skipped.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Select value={bulkRole} onValueChange={setBulkRole}>
+              <SelectTrigger><SelectValue placeholder="Choose role…" /></SelectTrigger>
+              <SelectContent>
+                {APP_ROLE_OPTIONS.map((r) => (
+                  <SelectItem key={r} value={r} className="capitalize">{r.replace(/_/g, " ")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBulkOpen(false)}>Cancel</Button>
+            <Button onClick={runBulk} disabled={bulkBusy || !bulkRole} variant={bulkMode === "revoke" ? "destructive" : "default"}>
+              {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : (bulkMode === "grant" ? "Grant to all" : "Revoke from all")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

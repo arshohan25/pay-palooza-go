@@ -5,15 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Shield, Plus, Loader2, RefreshCw, Lock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Shield, Plus, Loader2, RefreshCw, Lock, Sparkles, ShieldAlert, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { REGISTERED_PERMISSIONS, ROLE_KEYS } from "@/lib/permissionsRegistry";
+import { REGISTERED_PERMISSIONS, ROLE_KEYS, HIGH_RISK_PERMISSIONS } from "@/lib/permissionsRegistry";
 import { usePermission } from "@/hooks/use-permission";
 
 interface Row { role: string; permission: string; allowed: boolean; }
+interface Preset { id: string; name: string; description: string | null; permissions: string[]; is_builtin: boolean; }
+interface PendingReq { role: string; permission: string; allowed: boolean; reason: string; }
 
 export default function AdminRolesPermissions() {
   const canManage = usePermission("manage_roles");
@@ -23,12 +27,20 @@ export default function AdminRolesPermissions() {
   const [saving, setSaving] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [newRole, setNewRole] = useState("");
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [presetOpen, setPresetOpen] = useState(false);
+  const [presetTarget, setPresetTarget] = useState<{ role: string; presetId: string }>({ role: "", presetId: "" });
+  const [pendingReq, setPendingReq] = useState<PendingReq | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("admin_role_permissions" as any).select("role, permission, allowed");
+    const [{ data }, { data: pdata }] = await Promise.all([
+      supabase.from("admin_role_permissions" as any).select("role, permission, allowed"),
+      supabase.from("admin_role_permission_presets" as any).select("id, name, description, permissions, is_builtin").order("is_builtin", { ascending: false }).order("name"),
+    ]);
     const list = ((data ?? []) as any[]) as Row[];
     setRows(list);
+    setPresets(((pdata ?? []) as any[]) as Preset[]);
     // Custom roles = any role present in DB that isn't in the built-in list.
     const extra = Array.from(new Set(list.map((r) => r.role))).filter((r) => !ROLE_KEYS.includes(r as any));
     setCustomRoles(extra);
@@ -63,6 +75,13 @@ export default function AdminRolesPermissions() {
   const toggle = async (role: string, permission: string, allowed: boolean) => {
     if (!canManage) { toast.error("You need the 'manage_roles' permission"); return; }
     if (role === "admin") { toast.error("Admin role always has all permissions"); return; }
+
+    // High-risk toggles go through the second-admin approval workflow.
+    if (HIGH_RISK_PERMISSIONS.has(permission)) {
+      setPendingReq({ role, permission, allowed, reason: "" });
+      return;
+    }
+
     const key = `${role}:${permission}`;
     setSaving(key);
     const { data: { session } } = await supabase.auth.getSession();
@@ -72,12 +91,10 @@ export default function AdminRolesPermissions() {
     if (error) {
       toast.error(error.message);
     } else {
-      // Optimistic local update in case realtime lags
       setRows((prev) => {
         const other = prev.filter((r) => !(r.role === role && r.permission === permission));
         return [...other, { role, permission, allowed }];
       });
-      // Audit trail
       supabase.from("audit_logs").insert({
         actor_id: session?.user?.id ?? null,
         action: allowed ? "permission_granted" : "permission_revoked",
@@ -89,6 +106,86 @@ export default function AdminRolesPermissions() {
     }
     setSaving(null);
   };
+
+  const submitPendingRequest = async () => {
+    if (!pendingReq) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) { toast.error("Sign in required"); return; }
+    const { error } = await supabase.from("permission_change_requests" as any).insert({
+      role: pendingReq.role,
+      permission: pendingReq.permission,
+      allowed: pendingReq.allowed,
+      reason: pendingReq.reason || null,
+      requested_by: session.user.id,
+    } as any);
+    if (error) { toast.error(error.message); return; }
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id,
+      action: "permission_change_requested",
+      entity_type: "permission",
+      entity_id: null,
+      details: { role: pendingReq.role, permission: pendingReq.permission, allowed: pendingReq.allowed },
+    } as any).then();
+    toast.success("Change requested — a second admin must approve it.");
+    setPendingReq(null);
+  };
+
+  const applyPreset = async () => {
+    if (!canManage) { toast.error("Missing 'manage_roles' permission"); return; }
+    if (!presetTarget.role || !presetTarget.presetId) { toast.error("Choose a role and preset"); return; }
+    const preset = presets.find((p) => p.id === presetTarget.presetId);
+    if (!preset) return;
+    if (presetTarget.role === "admin") { toast.error("Admin already has everything"); return; }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const perms = (preset.permissions as string[]) || [];
+    // Split high-risk (routed to approvals) from immediate.
+    const immediate = REGISTERED_PERMISSIONS.filter((p) => !HIGH_RISK_PERMISSIONS.has(p.key));
+    const risky = REGISTERED_PERMISSIONS.filter((p) => HIGH_RISK_PERMISSIONS.has(p.key));
+
+    const upserts = immediate.map((p) => ({
+      role: presetTarget.role,
+      permission: p.key,
+      allowed: perms.includes(p.key),
+      updated_at: new Date().toISOString(),
+      updated_by: session?.user?.id ?? null,
+    }));
+    const { error } = await supabase
+      .from("admin_role_permissions" as any)
+      .upsert(upserts as any, { onConflict: "role,permission" });
+    if (error) { toast.error(error.message); return; }
+
+    // Queue high-risk toggles as requests only if they differ from current.
+    let queued = 0;
+    for (const p of risky) {
+      const current = matrix[presetTarget.role]?.[p.key] ?? false;
+      const desired = perms.includes(p.key);
+      if (current === desired) continue;
+      await supabase.from("permission_change_requests" as any).insert({
+        role: presetTarget.role,
+        permission: p.key,
+        allowed: desired,
+        reason: `From preset "${preset.name}"`,
+        requested_by: session?.user?.id,
+      } as any);
+      queued++;
+    }
+    supabase.from("audit_logs").insert({
+      actor_id: session?.user?.id ?? null,
+      action: "preset_applied",
+      entity_type: "role",
+      entity_id: null,
+      details: { role: presetTarget.role, preset: preset.name, queued_for_approval: queued },
+    } as any).then();
+    toast.success(
+      queued > 0
+        ? `Preset applied — ${queued} high-risk change(s) queued for approval.`
+        : `Preset "${preset.name}" applied to ${presetTarget.role}.`,
+    );
+    setPresetOpen(false);
+    load();
+  };
+
 
 
   const addRole = async () => {
@@ -128,6 +225,7 @@ export default function AdminRolesPermissions() {
             <Badge variant="outline" className="gap-1"><Lock className="w-3 h-3" /> Read-only</Badge>
           )}
           <Button size="sm" variant="ghost" onClick={load} title="Reload"><RefreshCw className="w-4 h-4" /></Button>
+          <Button size="sm" variant="outline" onClick={() => setPresetOpen(true)} disabled={!canManage} className="gap-1"><Wand2 className="w-4 h-4" /> Apply preset</Button>
           <Button size="sm" onClick={() => setAddOpen(true)} disabled={!canManage} className="gap-1"><Plus className="w-4 h-4" /> Role</Button>
         </CardContent>
       </Card>
@@ -154,7 +252,12 @@ export default function AdminRolesPermissions() {
                       {perms.map((p) => (
                         <tr key={p.key} className="border-t border-border">
                           <td className="p-3 sticky left-0 bg-background">
-                            <p className="font-medium text-foreground">{p.label}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-foreground">{p.label}</p>
+                              {p.highRisk && (
+                                <Badge variant="outline" className="gap-1 text-[10px] text-amber-600 border-amber-300"><ShieldAlert className="w-3 h-3" /> High-risk</Badge>
+                              )}
+                            </div>
                             <p className="text-[11px] text-muted-foreground max-w-xs">{p.description}</p>
                             <code className="text-[10px] text-muted-foreground/70">{p.key}</code>
                           </td>
@@ -204,6 +307,84 @@ export default function AdminRolesPermissions() {
             <Button variant="ghost" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button onClick={addRole}>Add</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Apply preset dialog */}
+      <Dialog open={presetOpen} onOpenChange={setPresetOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="w-4 h-4" /> Apply role template preset</DialogTitle>
+            <DialogDescription>Bulk-set a role's permissions from a saved template. High-risk toggles are queued for second-admin approval.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Target role</Label>
+              <Select value={presetTarget.role} onValueChange={(v) => setPresetTarget((s) => ({ ...s, role: v }))}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Choose role…" /></SelectTrigger>
+                <SelectContent>
+                  {roles.filter((r) => r !== "admin").map((r) => (
+                    <SelectItem key={r} value={r} className="capitalize">{r.replace(/_/g, " ")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Preset</Label>
+              <Select value={presetTarget.presetId} onValueChange={(v) => setPresetTarget((s) => ({ ...s, presetId: v }))}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Choose preset…" /></SelectTrigger>
+                <SelectContent>
+                  {presets.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      <div className="flex flex-col">
+                        <span>{p.name} {p.is_builtin && <Badge variant="outline" className="ml-1 text-[9px]">built-in</Badge>}</span>
+                        {p.description && <span className="text-[10px] text-muted-foreground">{p.description}</span>}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {presetTarget.presetId && (
+              <div className="rounded-md border border-border p-2 text-[11px] text-muted-foreground space-y-1">
+                <p className="font-medium text-foreground">Included permissions:</p>
+                <div className="flex flex-wrap gap-1">
+                  {(presets.find((p) => p.id === presetTarget.presetId)?.permissions ?? []).map((k) => (
+                    <Badge key={k} variant="secondary" className="text-[10px]">{k}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPresetOpen(false)}>Cancel</Button>
+            <Button onClick={applyPreset}>Apply preset</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* High-risk change request dialog */}
+      <Dialog open={!!pendingReq} onOpenChange={(o) => !o && setPendingReq(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600"><ShieldAlert className="w-4 h-4" /> Requires second-admin approval</DialogTitle>
+            <DialogDescription>
+              <code className="text-xs">{pendingReq?.permission}</code> for <span className="font-medium capitalize">{pendingReq?.role?.replace(/_/g, " ")}</span> is a high-risk permission. Submit this change for review by another admin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label className="text-xs">Reason (optional)</Label>
+            <Textarea
+              rows={3}
+              placeholder="Why is this change needed?"
+              value={pendingReq?.reason ?? ""}
+              onChange={(e) => setPendingReq((p) => p ? { ...p, reason: e.target.value } : p)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingReq(null)}>Cancel</Button>
+            <Button onClick={submitPendingRequest}>Submit for approval</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

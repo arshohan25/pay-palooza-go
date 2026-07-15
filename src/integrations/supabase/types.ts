@@ -404,6 +404,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_role_permission_presets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_builtin: boolean
+          name: string
+          permissions: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_builtin?: boolean
+          name: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_builtin?: boolean
+          name?: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_role_permissions: {
         Row: {
           allowed: boolean
@@ -4918,6 +4951,51 @@ export type Database = {
         }
         Relationships: []
       }
+      permission_change_requests: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          id: string
+          permission: string
+          reason: string | null
+          requested_by: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          role: string
+          status: Database["public"]["Enums"]["perm_change_status"]
+          updated_at: string
+        }
+        Insert: {
+          allowed: boolean
+          created_at?: string
+          id?: string
+          permission: string
+          reason?: string | null
+          requested_by: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role: string
+          status?: Database["public"]["Enums"]["perm_change_status"]
+          updated_at?: string
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          permission?: string
+          reason?: string | null
+          requested_by?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role?: string
+          status?: Database["public"]["Enums"]["perm_change_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pin_change_history: {
         Row: {
           change_type: string
@@ -7205,6 +7283,10 @@ export type Database = {
         Args: { p_commission_rate?: number; p_merchant_id: string }
         Returns: Json
       }
+      approve_permission_change: {
+        Args: { _note?: string; _request_id: string }
+        Returns: undefined
+      }
       approve_vendor_payout: {
         Args: { p_note?: string; p_payout_id: string }
         Returns: Json
@@ -7655,6 +7737,10 @@ export type Database = {
         Args: { p_merchant_id: string; p_reason: string }
         Returns: Json
       }
+      reject_permission_change: {
+        Args: { _note?: string; _request_id: string }
+        Returns: undefined
+      }
       reject_vendor_payout: {
         Args: { p_payout_id: string; p_reason: string }
         Returns: Json
@@ -7820,6 +7906,7 @@ export type Database = {
         | "education"
         | "utility"
         | "other"
+      perm_change_status: "pending" | "approved" | "rejected" | "cancelled"
       treasury_ledger_type:
         | "disburse"
         | "earning"
@@ -8000,6 +8087,7 @@ export const Constants = {
         "utility",
         "other",
       ],
+      perm_change_status: ["pending", "approved", "rejected", "cancelled"],
       treasury_ledger_type: [
         "disburse",
         "earning",

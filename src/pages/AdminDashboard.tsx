@@ -109,6 +109,7 @@ import AdminSuperDistributorOverview from "@/components/admin/AdminSuperDistribu
 import AdminRolesPermissions from "@/components/admin/AdminRolesPermissions";
 import AdminUserRoleAssignments from "@/components/admin/AdminUserRoleAssignments";
 import AdminPermissionAuditLog from "@/components/admin/AdminPermissionAuditLog";
+import AdminPermissionApprovals from "@/components/admin/AdminPermissionApprovals";
 import AdminSystemHealth from "@/components/admin/AdminSystemHealth";
 import AdminDataExport from "@/components/admin/AdminDataExport";
 import AdminUserSessions from "@/components/admin/AdminUserSessions";
@@ -298,6 +299,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "roles_perms", label: "Roles & Permissions", icon: Building2 },
       { id: "user_roles", label: "User Role Assignments", icon: Building2 },
       { id: "perm_audit", label: "Permission Audit Log", icon: Building2 },
+      { id: "perm_approvals", label: "Permission Approvals", icon: ShieldCheck },
       { id: "wallets", label: "Wallets", icon: Wallet },
       { id: "referrals", label: "Referrals", icon: Gift },
     ],
@@ -2115,6 +2117,7 @@ export default function AdminDashboard() {
         {activeTab === "roles_perms" && <AdminRolesPermissions />}
         {activeTab === "user_roles" && <AdminUserRoleAssignments />}
         {activeTab === "perm_audit" && <AdminPermissionAuditLog />}
+        {activeTab === "perm_approvals" && <AdminPermissionApprovals />}
 
         {/* ═══ SYSTEM HEALTH ═══ */}
         {activeTab === "sys_health" && <AdminSystemHealth />}
