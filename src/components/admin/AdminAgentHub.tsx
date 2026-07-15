@@ -132,7 +132,7 @@ function AgentListTab() {
   const [detail, setDetail] = useState<Agent | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+  const [form, setForm] = useState({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
   const [nidFile, setNidFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const nidInputRef = useRef<HTMLInputElement>(null);
@@ -313,7 +313,7 @@ function AgentListTab() {
       }
       toast.success(pin ? `Agent created! Temp PIN: ${pin}` : `Existing user promoted to agent`, { duration: 10000 });
       setCreateOpen(false);
-      setForm({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+      setForm({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
       setNidFile(null); setSelfieFile(null);
       load();
     } catch (err: any) { toast.error(err.message || "Failed to create agent"); }
