@@ -205,6 +205,24 @@ function AgentListTab() {
       if (!hasRole) {
         await supabase.from("user_roles").insert({ user_id: userId, role: "agent" } as any);
       }
+      // Upload NID image and selfie (if provided) to kyc-documents
+      let nid_image_path: string | null = null;
+      let selfie_path: string | null = null;
+      if (nidFile) {
+        const ext = nidFile.name.split(".").pop() || "jpg";
+        const path = `agents/${userId}/nid-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, nidFile, { upsert: true, contentType: nidFile.type });
+        if (upErr) throw new Error(`NID upload failed: ${upErr.message}`);
+        nid_image_path = path;
+      }
+      if (selfieFile) {
+        const ext = selfieFile.name.split(".").pop() || "jpg";
+        const path = `agents/${userId}/selfie-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, selfieFile, { upsert: true, contentType: selfieFile.type });
+        if (upErr) throw new Error(`Selfie upload failed: ${upErr.message}`);
+        selfie_path = path;
+      }
+
       await supabase.from("agents").insert({
         user_id: userId, business_name: form.business_name || null, territory_code: form.territory_code || null,
         division: form.division || null, district: form.district || null, upazila: form.upazila || null,
@@ -213,6 +231,7 @@ function AgentListTab() {
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
         address: form.address || "",
+        nid_image_path, selfie_path,
       } as any);
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -221,6 +240,7 @@ function AgentListTab() {
       toast.success(pin ? `Agent created! Temp PIN: ${pin}` : `Existing user promoted to agent`, { duration: 10000 });
       setCreateOpen(false);
       setForm({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+      setNidFile(null); setSelfieFile(null);
       load();
     } catch (err: any) { toast.error(err.message || "Failed to create agent"); }
     finally { setCreating(false); }
