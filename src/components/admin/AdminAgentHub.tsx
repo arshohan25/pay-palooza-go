@@ -230,6 +230,8 @@ function AgentListTab() {
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone number"); return; }
     const missing: string[] = [];
     if (!form.name.trim()) missing.push("Full Name");
+    if (!form.email.trim()) missing.push("Email");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) { toast.error("Enter a valid email address"); return; }
     if (!form.business_name.trim()) missing.push("Business Name");
     if (!form.division) missing.push("Division");
     if (!form.district) missing.push("District");
@@ -262,15 +264,15 @@ function AgentListTab() {
         const { data: existingAgent } = await supabase
           .from("agents").select("id").eq("user_id", userId).maybeSingle();
         if (existingAgent) { toast.error("This user is already an agent"); setCreating(false); return; }
-        if (form.name) {
-          await supabase.from("profiles").update({ name: form.name }).eq("user_id", userId);
+        if (form.name || form.email) {
+          await supabase.from("profiles").update({ name: form.name || undefined, email: form.email.trim() || undefined }).eq("user_id", userId);
         }
       } else {
         pin = String(Math.floor(1000 + Math.random() * 9000));
         const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: form.name || phone });
         if (!authData?.user) throw new Error("Account creation failed");
         userId = authData.user.id;
-        await supabase.from("profiles").update({ name: form.name || null, phone }).eq("user_id", userId);
+        await supabase.from("profiles").update({ name: form.name || null, phone, email: form.email.trim() || null }).eq("user_id", userId);
       }
 
       // Assign agent role (skip if already present)
