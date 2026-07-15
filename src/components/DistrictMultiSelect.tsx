@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ export default function DistrictMultiSelect({
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -82,7 +82,7 @@ export default function DistrictMultiSelect({
 
   const virtualizer = useVirtualizer({
     count: flat.length,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => scrollEl,
     estimateSize: (i) => (flat[i]?.kind === "header" ? 24 : 36),
     overscan: 8,
   });
@@ -128,7 +128,7 @@ export default function DistrictMultiSelect({
               className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
             />
           </div>
-          <div ref={scrollRef} className="max-h-72 overflow-y-auto">
+          <div ref={setScrollEl} className="max-h-72 overflow-y-auto">
             {flat.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">
                 No district found.
