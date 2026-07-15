@@ -459,7 +459,7 @@ function AgentListTab() {
               <div><Label>Latitude</Label><Input type="number" step="any" placeholder="23.8103" value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
               <div><Label>Longitude</Label><Input type="number" step="any" placeholder="90.4125" value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} /></div>
             </div>
-            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone}>
+            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone || !form.division || !form.district || !form.upazila}>
               {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Agent"}
             </Button>
           </div>
