@@ -3,13 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Bell, Check, X, ShieldAlert, Loader2, RefreshCw, Lock, Info, CheckCheck, Circle, CircleDot, WifiOff } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Bell, Check, X, ShieldAlert, Loader2, RefreshCw, Lock, Info, CheckCheck, Circle, CircleDot, WifiOff, Search, Siren, ArrowRightLeft, Filter, AlarmClock } from "lucide-react";
 import { toast } from "sonner";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow, format, differenceInMilliseconds } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermission } from "@/hooks/use-permission";
 import { REGISTERED_PERMISSIONS, HIGH_RISK_PERMISSIONS } from "@/lib/permissionsRegistry";
@@ -22,18 +25,14 @@ interface Req {
 }
 
 const RESYNC_MS = 30_000;
-
+const ESCALATE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // <24h to expiry = urgent
 const readKey = (uid: string | undefined) => `perm_inbox_read:${uid ?? "anon"}`;
+const selKey = (uid: string | undefined) => `perm_inbox_sel:${uid ?? "anon"}`;
+const escalatedKey = (uid: string | undefined) => `perm_inbox_esc:${uid ?? "anon"}`;
 
-/**
- * Notification-center inbox for pending permission approval requests.
- * - Read / unread state persisted per admin in localStorage.
- * - Real-time updates via postgres_changes with periodic reconciliation
- *   against the server so local optimistic state can never drift.
- * - Bulk approve / bulk reject with per-item audit trail via the same
- *   RPCs the single-item flow uses (each call inserts its own audit log
- *   and enforces the self-approval rule server-side).
- */
+type ExpiryWindow = "all" | "24h" | "3d" | "7d";
+type SortKey = "newest" | "oldest" | "expiring" | "requester";
+
 export default function AdminApprovalsInbox() {
   const { user } = useAuth();
   const canManage = usePermission("manage_roles");
@@ -43,26 +42,48 @@ export default function AdminApprovalsInbox() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [escalatedIds, setEscalatedIds] = useState<Set<string>>(new Set());
   const [bulk, setBulk] = useState<null | { approve: boolean; ids: string[] }>(null);
   const [bulkNote, setBulkNote] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
   const [rtHealthy, setRtHealthy] = useState(true);
+  const [diffFor, setDiffFor] = useState<Req | null>(null);
+  const [diffCurrent, setDiffCurrent] = useState<boolean | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
+
+  // Filters + sort
+  const [search, setSearch] = useState("");
+  const [requesterFilter, setRequesterFilter] = useState<string>("all");
+  const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [expiryFilter, setExpiryFilter] = useState<ExpiryWindow>("all");
+  const [riskOnly, setRiskOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<SortKey>("expiring");
+
   const rowsRef = useRef<Req[]>([]);
   rowsRef.current = rows;
 
   const permMeta = useMemo(() => Object.fromEntries(REGISTERED_PERMISSIONS.map((p) => [p.key, p])), []);
+  const permGroups = useMemo(() => Array.from(new Set(REGISTERED_PERMISSIONS.map((p) => p.group))), []);
 
-  // ---- Read/unread state (per-admin localStorage) --------------------------
+  // ---- Persisted state (per-admin localStorage) ---------------------------
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(readKey(user?.id));
-      if (raw) setReadIds(new Set(JSON.parse(raw)));
+      const r = localStorage.getItem(readKey(user?.id));
+      if (r) setReadIds(new Set(JSON.parse(r)));
+      const s = localStorage.getItem(selKey(user?.id));
+      if (s) setSelected(new Set(JSON.parse(s)));
+      const e = localStorage.getItem(escalatedKey(user?.id));
+      if (e) setEscalatedIds(new Set(JSON.parse(e)));
     } catch { /* ignore */ }
   }, [user?.id]);
-  const persistRead = (set: Set<string>) => {
-    try { localStorage.setItem(readKey(user?.id), JSON.stringify(Array.from(set))); } catch { /* ignore */ }
+  const persist = (k: string, set: Set<string>) => {
+    try { localStorage.setItem(k, JSON.stringify(Array.from(set))); } catch { /* ignore */ }
   };
+  const persistRead = (s: Set<string>) => persist(readKey(user?.id), s);
+  const persistSel = (s: Set<string>) => persist(selKey(user?.id), s);
+  const persistEsc = (s: Set<string>) => persist(escalatedKey(user?.id), s);
+
   const markRead = (id: string) => setReadIds((prev) => {
     if (prev.has(id)) return prev;
     const next = new Set(prev); next.add(id); persistRead(next); return next;
@@ -78,7 +99,7 @@ export default function AdminApprovalsInbox() {
     toast.success("All requests marked read");
   };
 
-  // ---- Fetch with requester profiles --------------------------------------
+  // ---- Fetch --------------------------------------------------------------
   const fetchPending = useCallback(async (): Promise<Req[]> => {
     await supabase.rpc("expire_stale_permission_requests" as any).then(() => {}, () => {});
     const { data } = await supabase
@@ -101,12 +122,7 @@ export default function AdminApprovalsInbox() {
     return list;
   }, []);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const list = await fetchPending();
-    setRows(list);
-    // Prune read state and selection for rows that no longer exist.
-    const ids = new Set(list.map((r) => r.id));
+  const pruneStale = useCallback((ids: Set<string>) => {
     setReadIds((prev) => {
       const next = new Set<string>();
       for (const id of prev) if (ids.has(id)) next.add(id);
@@ -116,26 +132,37 @@ export default function AdminApprovalsInbox() {
     setSelected((prev) => {
       const next = new Set<string>();
       for (const id of prev) if (ids.has(id)) next.add(id);
+      if (next.size !== prev.size) persistSel(next);
       return next;
     });
+    setEscalatedIds((prev) => {
+      const next = new Set<string>();
+      for (const id of prev) if (ids.has(id)) next.add(id);
+      if (next.size !== prev.size) persistEsc(next);
+      return next;
+    });
+  }, [user?.id]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const list = await fetchPending();
+    setRows(list);
+    pruneStale(new Set(list.map((r) => r.id)));
     setLastSyncAt(new Date());
     setLoading(false);
-  }, [fetchPending]);
+  }, [fetchPending, pruneStale]);
 
   useEffect(() => { load(); }, [load]);
 
-  // ---- Reconciliation loop: guaranteed convergence with server -------------
+  // ---- Reconciliation loop ------------------------------------------------
   const reconcile = useCallback(async () => {
     const server = await fetchPending();
     const local = rowsRef.current;
     const serverIds = new Set(server.map((r) => r.id));
     const localIds = new Set(local.map((r) => r.id));
     let diverged = server.length !== local.length;
+    if (!diverged) for (const id of serverIds) if (!localIds.has(id)) { diverged = true; break; }
     if (!diverged) {
-      for (const id of serverIds) if (!localIds.has(id)) { diverged = true; break; }
-    }
-    if (!diverged) {
-      // Check UPDATEs (allowed/reason/expires_at drift).
       const byId = Object.fromEntries(local.map((r) => [r.id, r]));
       for (const s of server) {
         const l = byId[s.id];
@@ -146,10 +173,11 @@ export default function AdminApprovalsInbox() {
     }
     if (diverged) {
       setRows(server);
-      toast.info("Inbox resynced with server", { description: "Local changes reconciled." });
+      pruneStale(serverIds);
+      toast.info("Inbox resynced with server", { description: "Selection preserved for still-pending items." });
     }
     setLastSyncAt(new Date());
-  }, [fetchPending]);
+  }, [fetchPending, pruneStale]);
 
   useEffect(() => {
     const t = setInterval(reconcile, RESYNC_MS);
@@ -164,11 +192,10 @@ export default function AdminApprovalsInbox() {
     };
   }, [reconcile]);
 
-  // ---- Realtime (optimistic apply, reconcile catches any misses) ----------
+  // ---- Realtime -----------------------------------------------------------
   useEffect(() => {
     const ch = supabase.channel("perm-inbox-rt")
-      .on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "permission_change_requests" },
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "permission_change_requests" },
         (payload: any) => {
           const r = payload.new as Req;
           if (r.status !== "pending") return;
@@ -177,24 +204,35 @@ export default function AdminApprovalsInbox() {
             toast.info("New permission request awaiting review", { description: `${r.allowed ? "Grant" : "Revoke"} ${r.permission} · ${r.role}` });
           }
         })
-      .on("postgres_changes",
-        { event: "UPDATE", schema: "public", table: "permission_change_requests" },
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "permission_change_requests" },
         (payload: any) => {
           const r = payload.new as Req;
           setRows((prev) => r.status === "pending"
             ? prev.map((x) => x.id === r.id ? { ...x, ...r } : x)
             : prev.filter((x) => x.id !== r.id));
         })
-      .on("postgres_changes",
-        { event: "DELETE", schema: "public", table: "permission_change_requests" },
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "permission_change_requests" },
         (payload: any) => setRows((prev) => prev.filter((x) => x.id !== (payload.old as any).id)))
       .subscribe((status) => {
-        // On subscribe/reconnect, catch up whatever we missed while offline.
         if (status === "SUBSCRIBED") { setRtHealthy(true); reconcile(); }
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setRtHealthy(false);
       });
     return () => { supabase.removeChannel(ch); };
   }, [user?.id, reconcile]);
+
+  // ---- Result notification helper (best-effort) ---------------------------
+  const notifyRequesterOfResult = async (r: Req, approve: boolean, note: string) => {
+    try {
+      await (supabase as any).from("notifications").insert({
+        user_id: r.requested_by,
+        title: approve ? "Permission request approved" : "Permission request rejected",
+        body: `${r.allowed ? "Grant" : "Revoke"} ${r.permission} for ${r.role.replace(/_/g, " ")}${note ? ` — "${note}"` : ""}`,
+        category: "system",
+        metadata: { kind: "permission_request_result", request_id: r.id, approved: approve },
+        read: false,
+      });
+    } catch { /* non-blocking */ }
+  };
 
   // ---- Actions -------------------------------------------------------------
   const act = async (r: Req, approve: boolean) => {
@@ -205,37 +243,77 @@ export default function AdminApprovalsInbox() {
     }
     setBusyId(r.id);
     const fn = approve ? "approve_permission_change" : "reject_permission_change";
-    const { error } = await supabase.rpc(fn as any, { _request_id: r.id, _note: notes[r.id] || null });
+    const note = notes[r.id] || "";
+    const { error } = await supabase.rpc(fn as any, { _request_id: r.id, _note: note || null });
     setBusyId(null);
-    if (error) {
-      toast.error(error.message);
-      // Server rejected our optimistic action; force a resync so UI matches truth.
-      reconcile();
-      return;
-    }
+    if (error) { toast.error(error.message); reconcile(); return; }
     toast.success(approve ? "Approved" : "Rejected");
+    notifyRequesterOfResult(r, approve, note);
     setRows((prev) => prev.filter((x) => x.id !== r.id));
     markRead(r.id);
   };
 
-  // ---- Bulk ----------------------------------------------------------------
+  // ---- Diff modal ----------------------------------------------------------
+  const openDiff = async (r: Req) => {
+    setDiffFor(r);
+    setDiffCurrent(null);
+    setDiffLoading(true);
+    const { data } = await (supabase as any)
+      .from("admin_role_permissions")
+      .select("allowed")
+      .eq("role", r.role)
+      .eq("permission", r.permission)
+      .maybeSingle();
+    setDiffCurrent(data ? Boolean(data.allowed) : false);
+    setDiffLoading(false);
+  };
+
+  // ---- Escalation ---------------------------------------------------------
+  const escalate = async (r: Req) => {
+    try {
+      const { data: admins } = await (supabase as any)
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      const ids = Array.from(new Set(((admins ?? []) as any[]).map((a) => a.user_id))).filter((id) => id && id !== user?.id);
+      if (ids.length === 0) {
+        toast.info("No backup admins to alert");
+        return;
+      }
+      const rows = ids.map((uid) => ({
+        user_id: uid,
+        title: "⚠️ Permission request expiring soon",
+        body: `${r.allowed ? "Grant" : "Revoke"} ${r.permission} for ${r.role.replace(/_/g, " ")} — expires ${r.expires_at ? formatDistanceToNow(new Date(r.expires_at), { addSuffix: true }) : "soon"}`,
+        category: "system",
+        metadata: { kind: "permission_request_escalation", request_id: r.id },
+        read: false,
+      }));
+      const { error } = await (supabase as any).from("notifications").insert(rows);
+      if (error) throw error;
+      const next = new Set(escalatedIds); next.add(r.id); setEscalatedIds(next); persistEsc(next);
+      toast.success(`Alerted ${ids.length} backup admin${ids.length === 1 ? "" : "s"}`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Escalation failed");
+    }
+  };
+
+  // ---- Bulk selection ------------------------------------------------------
+  const toggleSel = (id: string) => setSelected((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    persistSel(next);
+    return next;
+  });
+  const clearSelection = () => { setSelected(new Set()); persistSel(new Set()); };
+
   const selectableForApprove = useMemo(
     () => rows.filter((r) => r.requested_by !== user?.id).map((r) => r.id),
     [rows, user?.id],
   );
 
-  const toggleSel = (id: string) => setSelected((prev) => {
-    const next = new Set(prev);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    return next;
-  });
-  const selectAllVisible = () => setSelected(new Set(rows.map((r) => r.id)));
-  const clearSelection = () => setSelected(new Set());
-
   const openBulk = (approve: boolean) => {
     const ids = Array.from(selected);
     if (ids.length === 0) { toast.error("Select at least one request"); return; }
-    // Filter out self-owned for approve (server would reject anyway; block early with a clear message).
     const filtered = approve ? ids.filter((id) => {
       const r = rows.find((x) => x.id === id);
       return r && r.requested_by !== user?.id;
@@ -255,11 +333,11 @@ export default function AdminApprovalsInbox() {
     const fn = bulk.approve ? "approve_permission_change" : "reject_permission_change";
     let ok = 0, fail = 0;
     const failures: string[] = [];
-    // Sequential so audit log ordering is stable and errors are attributable.
     for (const id of bulk.ids) {
+      const r = rows.find((x) => x.id === id);
       const { error } = await supabase.rpc(fn as any, { _request_id: id, _note: bulkNote || null });
       if (error) { fail++; failures.push(`${id.slice(0, 6)}: ${error.message}`); }
-      else { ok++; markRead(id); }
+      else { ok++; markRead(id); if (r) notifyRequesterOfResult(r, bulk.approve, bulkNote); }
     }
     setBulkBusy(false);
     setBulk(null);
@@ -269,7 +347,51 @@ export default function AdminApprovalsInbox() {
     else toast.warning(`${ok} succeeded, ${fail} failed`, { description: failures.slice(0, 3).join(" · ") });
   };
 
+  // ---- Filter + sort -------------------------------------------------------
+  const uniqueRequesters = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of rows) map.set(r.requested_by, r.requester_name || r.requester_phone || r.requested_by.slice(0, 8));
+    return Array.from(map.entries());
+  }, [rows]);
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const now = Date.now();
+    const winMs = expiryFilter === "24h" ? 24*3600e3 : expiryFilter === "3d" ? 3*24*3600e3 : expiryFilter === "7d" ? 7*24*3600e3 : Infinity;
+    let list = rows.filter((r) => {
+      if (requesterFilter !== "all" && r.requested_by !== requesterFilter) return false;
+      if (groupFilter !== "all" && permMeta[r.permission]?.group !== groupFilter) return false;
+      if (riskOnly && !HIGH_RISK_PERMISSIONS.has(r.permission)) return false;
+      if (winMs !== Infinity) {
+        if (!r.expires_at) return false;
+        if (new Date(r.expires_at).getTime() - now > winMs) return false;
+      }
+      if (q) {
+        const hay = `${r.requester_name ?? ""} ${r.requester_phone ?? ""} ${r.permission} ${r.role} ${r.reason ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    list.sort((a, b) => {
+      switch (sortBy) {
+        case "newest": return +new Date(b.created_at) - +new Date(a.created_at);
+        case "oldest": return +new Date(a.created_at) - +new Date(b.created_at);
+        case "expiring": {
+          const ax = a.expires_at ? +new Date(a.expires_at) : Infinity;
+          const bx = b.expires_at ? +new Date(b.expires_at) : Infinity;
+          return ax - bx;
+        }
+        case "requester": return (a.requester_name ?? a.requested_by).localeCompare(b.requester_name ?? b.requested_by);
+      }
+    });
+    return list;
+  }, [rows, search, requesterFilter, groupFilter, riskOnly, expiryFilter, sortBy, permMeta]);
+
+  const clearFilters = () => { setSearch(""); setRequesterFilter("all"); setGroupFilter("all"); setExpiryFilter("all"); setRiskOnly(false); };
+  const filtersActive = search || requesterFilter !== "all" || groupFilter !== "all" || expiryFilter !== "all" || riskOnly;
+
   const unreadCount = rows.filter((r) => !readIds.has(r.id)).length;
+  const urgentCount = rows.filter((r) => r.expires_at && differenceInMilliseconds(new Date(r.expires_at), new Date()) < ESCALATE_THRESHOLD_MS).length;
 
   return (
     <div className="space-y-4">
@@ -285,8 +407,9 @@ export default function AdminApprovalsInbox() {
           </div>
           <div className="flex-1 min-w-[220px]">
             <p className="text-sm font-medium text-foreground">Approvals inbox</p>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-2">
+            <p className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-2">
               {rows.length} pending · {unreadCount} unread
+              {urgentCount > 0 && <span className="flex items-center gap-1 text-red-600"><AlarmClock className="w-3 h-3" /> {urgentCount} urgent</span>}
               {lastSyncAt && <span title={lastSyncAt.toLocaleString()}>· synced {formatDistanceToNow(lastSyncAt, { addSuffix: true })}</span>}
               {!rtHealthy && <span className="flex items-center gap-1 text-amber-600"><WifiOff className="w-3 h-3" /> reconnecting</span>}
             </p>
@@ -299,31 +422,77 @@ export default function AdminApprovalsInbox() {
         </CardContent>
       </Card>
 
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-3 flex flex-wrap items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <div className="relative min-w-[180px] flex-1">
+            <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input className="pl-7 h-9" placeholder="Search requester, permission, reason" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <Select value={requesterFilter} onValueChange={setRequesterFilter}>
+            <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Requester" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All requesters</SelectItem>
+              {uniqueRequesters.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={groupFilter} onValueChange={setGroupFilter}>
+            <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Group" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All groups</SelectItem>
+              {permGroups.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={expiryFilter} onValueChange={(v) => setExpiryFilter(v as ExpiryWindow)}>
+            <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Expiry" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any expiry</SelectItem>
+              <SelectItem value="24h">Expires &lt; 24h</SelectItem>
+              <SelectItem value="3d">Expires &lt; 3d</SelectItem>
+              <SelectItem value="7d">Expires &lt; 7d</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
+            <SelectTrigger className="h-9 w-[160px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="expiring">Expiring soonest</SelectItem>
+              <SelectItem value="newest">Newest first</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="requester">By requester</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant={riskOnly ? "default" : "outline"} onClick={() => setRiskOnly((v) => !v)} className="gap-1">
+            <ShieldAlert className="w-3.5 h-3.5" /> High-risk
+          </Button>
+          {filtersActive && <Button size="sm" variant="ghost" onClick={clearFilters}>Clear</Button>}
+        </CardContent>
+      </Card>
+
       {/* Bulk toolbar */}
       {rows.length > 0 && (
         <Card>
           <CardContent className="p-3 flex flex-wrap items-center gap-2">
             <Checkbox
-              checked={selected.size > 0 && selected.size === rows.length}
-              onCheckedChange={(v) => v ? selectAllVisible() : clearSelection()}
+              checked={selected.size > 0 && visible.every((r) => selected.has(r.id))}
+              onCheckedChange={(v) => {
+                if (v) {
+                  const next = new Set(selected); for (const r of visible) next.add(r.id);
+                  setSelected(next); persistSel(next);
+                } else clearSelection();
+              }}
             />
             <span className="text-xs text-muted-foreground">
-              {selected.size > 0 ? `${selected.size} selected` : "Select all"}
+              {selected.size > 0 ? `${selected.size} selected (persisted)` : "Select all visible"}
             </span>
             <div className="flex-1" />
-            {selected.size > 0 && (
-              <Button size="sm" variant="ghost" onClick={clearSelection}>Clear</Button>
-            )}
+            {selected.size > 0 && <Button size="sm" variant="ghost" onClick={clearSelection}>Clear</Button>}
             <Button size="sm" variant="outline" disabled={!canManage || selected.size === 0} onClick={() => openBulk(false)} className="gap-1">
               <X className="w-3 h-3" /> Bulk reject
             </Button>
-            <Button
-              size="sm"
-              disabled={!canManage || selected.size === 0 || !Array.from(selected).some((id) => selectableForApprove.includes(id))}
-              onClick={() => openBulk(true)}
-              className="gap-1"
-              title="Own requests are skipped — a second admin must approve those."
-            >
+            <Button size="sm" disabled={!canManage || selected.size === 0 || !Array.from(selected).some((id) => selectableForApprove.includes(id))}
+              onClick={() => openBulk(true)} className="gap-1"
+              title="Own requests are skipped — a second admin must approve those.">
               <Check className="w-3 h-3" /> Bulk approve
             </Button>
           </CardContent>
@@ -331,37 +500,34 @@ export default function AdminApprovalsInbox() {
       )}
 
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Awaiting your review ({rows.length})</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Awaiting your review ({visible.length}{visible.length !== rows.length ? ` of ${rows.length}` : ""})</CardTitle></CardHeader>
         <CardContent className="p-0">
           {loading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
-          ) : rows.length === 0 ? (
+          ) : visible.length === 0 ? (
             <div className="py-10 text-center text-xs text-muted-foreground">
               <Check className="w-6 h-6 mx-auto mb-2 text-emerald-500" />
-              Inbox zero — no permission requests need your attention.
+              {rows.length === 0 ? "Inbox zero — no permission requests need your attention." : "No requests match your filters."}
             </div>
           ) : (
             <ScrollArea className="max-h-[640px]">
               <div className="divide-y divide-border">
-                {rows.map((r) => {
+                {visible.map((r) => {
                   const isOwn = r.requested_by === user?.id;
                   const meta = permMeta[r.permission];
                   const risky = HIGH_RISK_PERMISSIONS.has(r.permission);
                   const unread = !readIds.has(r.id);
                   const isSelected = selected.has(r.id);
+                  const msToExpiry = r.expires_at ? differenceInMilliseconds(new Date(r.expires_at), new Date()) : Infinity;
+                  const urgent = msToExpiry < ESCALATE_THRESHOLD_MS;
+                  const alreadyEscalated = escalatedIds.has(r.id);
                   return (
-                    <div key={r.id} className={`p-4 space-y-2 transition-colors ${unread ? "bg-primary/[0.03]" : ""} ${isSelected ? "bg-primary/[0.06]" : ""}`}>
+                    <div key={r.id}
+                      className={`p-4 space-y-2 transition-colors ${urgent ? "border-l-4 border-red-500 bg-red-500/[0.04]" : ""} ${unread ? "bg-primary/[0.03]" : ""} ${isSelected ? "bg-primary/[0.06]" : ""}`}>
                       <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSel(r.id)}
-                          className="mt-1"
-                        />
-                        <button
-                          onClick={() => (unread ? markRead(r.id) : markUnread(r.id))}
-                          title={unread ? "Mark read" : "Mark unread"}
-                          className="mt-1 text-primary hover:text-primary/70 shrink-0"
-                        >
+                        <Checkbox checked={isSelected} onCheckedChange={() => toggleSel(r.id)} className="mt-1" />
+                        <button onClick={() => (unread ? markRead(r.id) : markUnread(r.id))}
+                          title={unread ? "Mark read" : "Mark unread"} className="mt-1 text-primary hover:text-primary/70 shrink-0">
                           {unread ? <CircleDot className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5 text-muted-foreground" />}
                         </button>
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${risky ? "bg-amber-500/15" : "bg-primary/10"}`}>
@@ -370,6 +536,7 @@ export default function AdminApprovalsInbox() {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm">
                             {unread && <Badge className="mr-1 bg-primary text-primary-foreground text-[9px]">new</Badge>}
+                            {urgent && <Badge className="mr-1 bg-red-500 text-white text-[9px] gap-0.5"><AlarmClock className="w-2.5 h-2.5" />urgent</Badge>}
                             <Badge variant="outline" className="text-[10px] mr-1">{r.allowed ? "grant" : "revoke"}</Badge>
                             <code className="text-xs">{r.permission}</code>
                             <span className="text-muted-foreground"> for </span>
@@ -379,7 +546,7 @@ export default function AdminApprovalsInbox() {
                           {meta && (
                             <p className="text-[11px] text-muted-foreground mt-0.5 flex items-start gap-1">
                               <Info className="w-3 h-3 mt-0.5 shrink-0" />
-                              <span><strong>{meta.label}</strong> — {meta.description}</span>
+                              <span><strong>{meta.label}</strong> — {meta.description} <em className="opacity-70">({meta.group})</em></span>
                             </p>
                           )}
                           {r.reason && <p className="text-[11px] italic text-muted-foreground mt-1">"{r.reason}"</p>}
@@ -388,18 +555,24 @@ export default function AdminApprovalsInbox() {
                             {isOwn && <Badge variant="secondary" className="ml-1 text-[9px]">you</Badge>}
                             {" · "}
                             <span title={format(new Date(r.created_at), "PPpp")}>{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</span>
-                            {r.expires_at && <> · expires {formatDistanceToNow(new Date(r.expires_at), { addSuffix: true })}</>}
+                            {r.expires_at && <> · <span className={urgent ? "text-red-600 font-medium" : ""}>expires {formatDistanceToNow(new Date(r.expires_at), { addSuffix: true })}</span></>}
                           </p>
                         </div>
                       </div>
                       <div className="pl-16 space-y-2">
-                        <Textarea
-                          rows={2} placeholder="Optional review note…"
-                          value={notes[r.id] ?? ""}
-                          onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
-                          className="text-xs"
-                        />
-                        <div className="flex justify-end gap-2">
+                        <Textarea rows={2} placeholder="Optional review note…"
+                          value={notes[r.id] ?? ""} onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
+                          className="text-xs" />
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => openDiff(r)} className="gap-1">
+                            <ArrowRightLeft className="w-3 h-3" /> Preview diff
+                          </Button>
+                          {urgent && (
+                            <Button size="sm" variant="outline" onClick={() => escalate(r)} disabled={alreadyEscalated}
+                              className="gap-1 border-red-500/40 text-red-600 hover:bg-red-500/10">
+                              <Siren className="w-3 h-3" /> {alreadyEscalated ? "Escalated" : "Alert backup admins"}
+                            </Button>
+                          )}
                           <Button size="sm" variant="outline" onClick={() => act(r, false)} disabled={!canManage || busyId === r.id} className="gap-1">
                             <X className="w-3 h-3" /> Reject
                           </Button>
@@ -418,6 +591,60 @@ export default function AdminApprovalsInbox() {
         </CardContent>
       </Card>
 
+      {/* Diff modal */}
+      <Dialog open={!!diffFor} onOpenChange={(o) => !o && setDiffFor(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><ArrowRightLeft className="w-4 h-4" /> Permission change preview</DialogTitle>
+            <DialogDescription>
+              {diffFor && <>Reviewing <code className="text-xs">{diffFor.permission}</code> for <span className="capitalize">{diffFor.role.replace(/_/g, " ")}</span></>}
+            </DialogDescription>
+          </DialogHeader>
+          {diffLoading ? (
+            <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+          ) : diffFor && (
+            <div className="space-y-3">
+              {permMeta[diffFor.permission] && (
+                <div className="p-3 rounded-lg bg-muted/40 text-xs">
+                  <p className="font-medium text-foreground">{permMeta[diffFor.permission].label}</p>
+                  <p className="text-muted-foreground mt-1">{permMeta[diffFor.permission].description}</p>
+                  <p className="text-muted-foreground mt-1">Group: <strong>{permMeta[diffFor.permission].group}</strong></p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-lg border border-border">
+                  <p className="text-[10px] uppercase text-muted-foreground mb-1">Current</p>
+                  <Badge className={diffCurrent ? "bg-emerald-500/15 text-emerald-700" : "bg-slate-500/15 text-slate-700"}>
+                    {diffCurrent ? "Allowed" : "Denied"}
+                  </Badge>
+                </div>
+                <div className="p-3 rounded-lg border border-primary/40 bg-primary/5">
+                  <p className="text-[10px] uppercase text-muted-foreground mb-1">If approved</p>
+                  <Badge className={diffFor.allowed ? "bg-emerald-500/15 text-emerald-700" : "bg-red-500/15 text-red-700"}>
+                    {diffFor.allowed ? "Allowed" : "Denied"}
+                  </Badge>
+                </div>
+              </div>
+              {diffCurrent === diffFor.allowed && (
+                <p className="text-[11px] text-amber-600">⚠ This request would leave the permission unchanged.</p>
+              )}
+              {HIGH_RISK_PERMISSIONS.has(diffFor.permission) && (
+                <p className="text-[11px] text-amber-600 flex items-center gap-1"><ShieldAlert className="w-3 h-3" /> High-risk permission — audit-logged with your identity.</p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDiffFor(null)}>Close</Button>
+            {diffFor && (
+              <>
+                <Button variant="outline" onClick={() => { const r = diffFor; setDiffFor(null); act(r, false); }} disabled={!canManage}>Reject</Button>
+                <Button onClick={() => { const r = diffFor; setDiffFor(null); act(r, true); }} disabled={!canManage || diffFor.requested_by === user?.id}>Approve</Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Bulk confirm */}
       <AlertDialog open={!!bulk} onOpenChange={(o) => !o && setBulk(null)}>
         <AlertDialogContent>
@@ -427,23 +654,16 @@ export default function AdminApprovalsInbox() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {bulk?.approve
-                ? "Each request will be applied individually and audit-logged with your review note."
-                : "Each request will be rejected individually and audit-logged with your review note."}
+                ? "Each request will be applied individually and audit-logged with your review note. Requesters will be notified."
+                : "Each request will be rejected individually and audit-logged with your review note. Requesters will be notified."}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Textarea
-            rows={3}
-            placeholder="Review note applied to all selected requests (optional)"
-            value={bulkNote}
-            onChange={(e) => setBulkNote(e.target.value)}
-          />
+          <Textarea rows={3} placeholder="Review note applied to all selected requests (optional)"
+            value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} />
           <AlertDialogFooter>
             <AlertDialogCancel disabled={bulkBusy}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => { e.preventDefault(); runBulk(); }}
-              disabled={bulkBusy}
-              className={bulk?.approve ? "" : "bg-destructive text-destructive-foreground"}
-            >
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); runBulk(); }} disabled={bulkBusy}
+              className={bulk?.approve ? "" : "bg-destructive text-destructive-foreground"}>
               {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : bulk?.approve ? "Approve all" : "Reject all"}
             </AlertDialogAction>
           </AlertDialogFooter>
