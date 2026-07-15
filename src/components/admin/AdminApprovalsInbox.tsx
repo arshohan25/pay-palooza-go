@@ -47,6 +47,11 @@ export default function AdminApprovalsInbox() {
   const [bulk, setBulk] = useState<null | { approve: boolean; ids: string[] }>(null);
   const [bulkNote, setBulkNote] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  // Per-item status after runBulk (or during retry). "skipped" is set upfront
+  // for the requester's own items; the rest start "pending".
+  type BulkStatus = "pending" | "running" | "success" | "failed" | "skipped";
+  const [bulkResults, setBulkResults] = useState<Record<string, { status: BulkStatus; error?: string }>>({});
+  const [bulkRan, setBulkRan] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
   const [rtHealthy, setRtHealthy] = useState(true);
   const [diffFor, setDiffFor] = useState<Req | null>(null);
@@ -54,8 +59,11 @@ export default function AdminApprovalsInbox() {
   const [diffLoading, setDiffLoading] = useState(false);
   const [timelineId, setTimelineId] = useState<string | null>(null);
   const [undoWindows, setUndoWindows] = useState<Record<string, number>>({});
-  // recent action tracker for undo: request snapshot + when it happened + window
-  const [recent, setRecent] = useState<Array<{ req: Req; approved: boolean; at: number; windowSec: number; note: string }>>([]);
+  // recent action tracker for undo — supports single actions AND bulk batches
+  type RecentEntry =
+    | { kind: "single"; req: Req; approved: boolean; at: number; windowSec: number; note: string }
+    | { kind: "bulk";   items: Array<{ req: Req; approved: boolean }>; at: number; windowSec: number; note: string; label: string };
+  const [recent, setRecent] = useState<RecentEntry[]>([]);
   const [tick, setTick] = useState(0);
   useEffect(() => { const t = setInterval(() => setTick((n) => n + 1), 1000); return () => clearInterval(t); }, []);
 
@@ -269,18 +277,39 @@ export default function AdminApprovalsInbox() {
     setRows((prev) => prev.filter((x) => x.id !== r.id));
     markRead(r.id);
     const windowSec = undoWindows[r.role] ?? 900;
-    setRecent((prev) => [{ req: r, approved: approve, at: Date.now(), windowSec, note }, ...prev].slice(0, 5));
+    setRecent((prev) => [{ kind: "single" as const, req: r, approved: approve, at: Date.now(), windowSec, note }, ...prev].slice(0, 5));
   };
 
-  const undo = async (item: { req: Req; approved: boolean; note: string }) => {
-    const { error } = await supabase.rpc("undo_permission_change" as any, { _request_id: item.req.id, _note: null });
+  // Undo a single approve/reject.
+  const undoSingle = async (req: Req) => {
+    const { error } = await supabase.rpc("undo_permission_change" as any, { _request_id: req.id, _note: null });
     if (error) { toast.error(error.message); return; }
     toast.success("Action undone — request returned to pending");
-    setRecent((prev) => prev.filter((x) => x.req.id !== item.req.id));
-    // Re-insert the request into pending list optimistically.
-    setRows((prev) => prev.some((x) => x.id === item.req.id) ? prev : [{ ...item.req, status: "pending" }, ...prev]);
+    setRecent((prev) => prev.filter((x) => x.kind !== "single" || x.req.id !== req.id));
+    setRows((prev) => prev.some((x) => x.id === req.id) ? prev : [{ ...req, status: "pending" }, ...prev]);
     reconcile();
   };
+
+  // Undo an entire bulk batch — reverts every request in the batch.
+  const undoBulk = async (entry: Extract<RecentEntry, { kind: "bulk" }>) => {
+    let ok = 0, fail = 0; const failures: string[] = [];
+    for (const it of entry.items) {
+      const { error } = await supabase.rpc("undo_permission_change" as any, { _request_id: it.req.id, _note: entry.note || null });
+      if (error) { fail++; failures.push(`${it.req.id.slice(0, 6)}: ${error.message}`); }
+      else { ok++; }
+    }
+    setRecent((prev) => prev.filter((x) => x !== entry));
+    if (fail === 0) toast.success(`Undid ${ok} action${ok === 1 ? "" : "s"} — requests returned to pending`);
+    else toast.warning(`Undid ${ok}; ${fail} failed`, { description: failures.slice(0, 3).join(" · ") });
+    // Re-insert reverted requests as pending
+    setRows((prev) => {
+      const byId = new Set(prev.map((r) => r.id));
+      const additions = entry.items.filter((it) => !byId.has(it.req.id)).map((it) => ({ ...it.req, status: "pending" }));
+      return [...additions, ...prev];
+    });
+    reconcile();
+  };
+
 
 
   // ---- Diff modal ----------------------------------------------------------
@@ -351,13 +380,20 @@ export default function AdminApprovalsInbox() {
       const r = rows.find((x) => x.id === id);
       return r && r.requested_by !== user?.id;
     }) : ids;
-    const skipped = ids.length - filtered.length;
-    if (approve && skipped > 0) {
-      toast.warning(`${skipped} own request(s) will be skipped — a different admin must approve those.`);
+    const skippedIds = approve ? ids.filter((id) => !filtered.includes(id)) : [];
+    if (approve && skippedIds.length > 0) {
+      toast.warning(`${skippedIds.length} own request(s) will be skipped — a different admin must approve those.`);
     }
     if (filtered.length === 0) { toast.error("Nothing to approve — you can't self-approve your own requests."); return; }
     setBulkNote("");
-    setBulk({ approve, ids: filtered });
+    // Include skipped ids in the dialog so the user sees them explicitly.
+    const allIds = approve ? [...filtered, ...skippedIds] : filtered;
+    setBulk({ approve, ids: allIds });
+    setBulkRan(false);
+    const initial: Record<string, { status: BulkStatus; error?: string }> = {};
+    for (const id of filtered) initial[id] = { status: "pending" };
+    for (const id of skippedIds) initial[id] = { status: "skipped", error: "You cannot self-approve your own request" };
+    setBulkResults(initial);
     // Fetch current permission values for a real diff preview.
     setBulkPreviewLoading(true);
     setBulkCurrent({});
@@ -373,25 +409,76 @@ export default function AdminApprovalsInbox() {
     setBulkPreviewLoading(false);
   };
 
-  const runBulk = async () => {
+  const executeBulk = async (targetIds: string[]) => {
     if (!bulk) return;
     setBulkBusy(true);
     const fn = bulk.approve ? "approve_permission_change" : "reject_permission_change";
-    let ok = 0, fail = 0;
-    const failures: string[] = [];
-    for (const id of bulk.ids) {
-      const r = rows.find((x) => x.id === id);
+    // Mark targets running
+    setBulkResults((prev) => {
+      const next = { ...prev };
+      for (const id of targetIds) next[id] = { status: "running" };
+      return next;
+    });
+    const successItems: Array<{ req: Req; approved: boolean }> = [];
+    for (const id of targetIds) {
+      const r = rows.find((x) => x.id === id) || rowsRef.current.find((x) => x.id === id);
       const { error } = await supabase.rpc(fn as any, { _request_id: id, _note: bulkNote || null });
-      if (error) { fail++; failures.push(`${id.slice(0, 6)}: ${error.message}`); }
-      else { ok++; markRead(id); if (r) notifyRequesterOfResult(r, bulk.approve, bulkNote); }
+      if (error) {
+        setBulkResults((prev) => ({ ...prev, [id]: { status: "failed", error: error.message } }));
+      } else {
+        setBulkResults((prev) => ({ ...prev, [id]: { status: "success" } }));
+        markRead(id);
+        if (r) {
+          notifyRequesterOfResult(r, bulk.approve, bulkNote);
+          successItems.push({ req: r, approved: bulk.approve });
+        }
+      }
     }
     setBulkBusy(false);
-    setBulk(null);
-    clearSelection();
+    setBulkRan(true);
     reconcile();
-    if (fail === 0) toast.success(`${bulk.approve ? "Approved" : "Rejected"} ${ok} request${ok === 1 ? "" : "s"}`);
-    else toast.warning(`${ok} succeeded, ${fail} failed`, { description: failures.slice(0, 3).join(" · ") });
+
+    // Compute final counts across the whole batch
+    setBulkResults((finalMap) => {
+      const ok = Object.values(finalMap).filter((v) => v.status === "success").length;
+      const fail = Object.values(finalMap).filter((v) => v.status === "failed").length;
+      const skipped = Object.values(finalMap).filter((v) => v.status === "skipped").length;
+      if (fail === 0 && skipped === 0) {
+        toast.success(`${bulk.approve ? "Approved" : "Rejected"} ${ok} request${ok === 1 ? "" : "s"}`);
+      } else {
+        toast.warning(`${ok} applied · ${fail} failed${skipped ? ` · ${skipped} skipped` : ""}`, {
+          description: "See per-item status in the dialog. Failures can be retried or the batch can be undone.",
+        });
+      }
+      return finalMap;
+    });
+
+    // Register batch undo entry only if at least one success
+    if (successItems.length > 0) {
+      const windows = successItems.map((it) => undoWindows[it.req.role] ?? 900);
+      const windowSec = Math.min(...windows); // shortest role window bounds the batch
+      const label = `Bulk ${bulk.approve ? "approved" : "rejected"} ${successItems.length} request${successItems.length === 1 ? "" : "s"}`;
+      setRecent((prev) => [
+        { kind: "bulk" as const, items: successItems, at: Date.now(), windowSec, note: bulkNote, label },
+        ...prev,
+      ].slice(0, 5));
+    }
   };
+
+  const runBulk = () => bulk && executeBulk(bulk.ids.filter((id) => bulkResults[id]?.status !== "success" && bulkResults[id]?.status !== "skipped"));
+  const retryFailed = () => {
+    const failedIds = Object.entries(bulkResults).filter(([, v]) => v.status === "failed").map(([id]) => id);
+    if (failedIds.length === 0) return;
+    executeBulk(failedIds);
+  };
+  const closeBulk = () => {
+    setBulk(null);
+    setBulkResults({});
+    setBulkRan(false);
+    setBulkCurrent({});
+    clearSelection();
+  };
+
 
   // ---- Filter + sort -------------------------------------------------------
   const uniqueRequesters = useMemo(() => {
@@ -468,34 +555,38 @@ export default function AdminApprovalsInbox() {
         </CardContent>
       </Card>
 
-      {/* Undo banner — one per recent action, disappears when the window elapses */}
+      {/* Undo banners — one per recent action (single or bulk), auto-hide when window elapses */}
       {recent.length > 0 && (
         <div className="space-y-2">
-          {recent.map((item) => {
+          {recent.map((item, idx) => {
             const remaining = Math.max(0, item.windowSec * 1000 - (Date.now() - item.at));
             if (remaining <= 0) return null;
             const secs = Math.ceil(remaining / 1000);
+            const key = item.kind === "single" ? `s-${item.req.id}` : `b-${item.at}-${idx}`;
+            const title = item.kind === "single"
+              ? <>{item.approved ? "Approved" : "Rejected"} <code className="text-[11px]">{item.req.permission}</code> for <span className="capitalize">{item.req.role.replace(/_/g, " ")}</span></>
+              : <>{item.label}</>;
             return (
-              <div key={item.req.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/[0.06]">
+              <div key={key} className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/[0.06]">
                 <RotateCcw className="w-4 h-4 text-amber-600 shrink-0" />
                 <div className="text-xs flex-1 min-w-[200px]">
-                  <p className="font-medium">
-                    {item.approved ? "Approved" : "Rejected"} <code className="text-[11px]">{item.req.permission}</code> for{" "}
-                    <span className="capitalize">{item.req.role.replace(/_/g, " ")}</span>
-                  </p>
+                  <p className="font-medium">{title}</p>
                   <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> Reversible for {secs}s (role window: {item.windowSec}s){tick /* re-render */}
+                    <Clock className="w-3 h-3" /> Reversible for {secs}s (window: {item.windowSec}s){tick /* re-render */}
                   </p>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => undo(item)} className="gap-1 border-amber-500/60 text-amber-700 hover:bg-amber-500/10">
-                  <RotateCcw className="w-3 h-3" /> Undo
+                <Button size="sm" variant="outline"
+                  onClick={() => item.kind === "single" ? undoSingle(item.req) : undoBulk(item)}
+                  className="gap-1 border-amber-500/60 text-amber-700 hover:bg-amber-500/10">
+                  <RotateCcw className="w-3 h-3" /> Undo{item.kind === "bulk" ? ` batch (${item.items.length})` : ""}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setRecent((prev) => prev.filter((x) => x.req.id !== item.req.id))}>Dismiss</Button>
+                <Button size="sm" variant="ghost" onClick={() => setRecent((prev) => prev.filter((x) => x !== item))}>Dismiss</Button>
               </div>
             );
           })}
         </div>
       )}
+
 
 
 
@@ -761,7 +852,7 @@ export default function AdminApprovalsInbox() {
       </Dialog>
 
       {/* Bulk confirm — with per-request diff + high-risk summary */}
-      <AlertDialog open={!!bulk} onOpenChange={(o) => !o && setBulk(null)}>
+      <AlertDialog open={!!bulk} onOpenChange={(o) => { if (!o) closeBulk(); }}>
         <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -797,8 +888,16 @@ export default function AdminApprovalsInbox() {
                   const isAdd = !isNoop && r.allowed === true;
                   const risky = HIGH_RISK_PERMISSIONS.has(r.permission);
                   const meta = permMeta[r.permission];
+                  const status = bulkResults[id]?.status;
+                  const statusErr = bulkResults[id]?.error;
+                  const statusBadge =
+                    status === "success" ? <Badge className="text-[9px] bg-emerald-500/15 text-emerald-700 gap-0.5"><Check className="w-2.5 h-2.5" />applied</Badge> :
+                    status === "failed"  ? <Badge className="text-[9px] bg-red-500/15 text-red-700 gap-0.5"><X className="w-2.5 h-2.5" />failed</Badge> :
+                    status === "skipped" ? <Badge className="text-[9px] bg-slate-500/15 text-slate-700">skipped</Badge> :
+                    status === "running" ? <Badge className="text-[9px] bg-primary/15 text-primary gap-0.5"><Loader2 className="w-2.5 h-2.5 animate-spin" />running</Badge> :
+                    null;
                   return (
-                    <div key={id} className="p-2.5 flex items-start gap-2 text-xs">
+                    <div key={id} className={`p-2.5 flex items-start gap-2 text-xs ${status === "failed" ? "bg-red-500/[0.04]" : status === "skipped" ? "bg-slate-500/[0.04]" : ""}`}>
                       <div className="shrink-0 mt-0.5">
                         {isNoop ? <Info className="w-3.5 h-3.5 text-amber-600" /> :
                          isAdd  ? <PlusCircle className="w-3.5 h-3.5 text-emerald-600" /> :
@@ -814,6 +913,7 @@ export default function AdminApprovalsInbox() {
                           <span className="text-muted-foreground"> → </span>
                           <span className="capitalize">{r.role.replace(/_/g, " ")}</span>
                           {risky && <Badge className="ml-1.5 text-[9px] bg-amber-500/15 text-amber-700 gap-0.5"><ShieldAlert className="w-2.5 h-2.5" />high-risk</Badge>}
+                          {statusBadge && <span className="ml-1.5">{statusBadge}</span>}
                         </p>
                         <p className="text-[10.5px] text-muted-foreground mt-0.5">
                           {curr === undefined ? "Loading current…" : (
@@ -824,6 +924,12 @@ export default function AdminApprovalsInbox() {
                           )}
                           {meta && <span className="ml-2 opacity-70">{meta.label}</span>}
                         </p>
+                        {statusErr && status === "failed" && (
+                          <p className="text-[10.5px] text-red-600 mt-0.5">Error: {statusErr}</p>
+                        )}
+                        {statusErr && status === "skipped" && (
+                          <p className="text-[10.5px] text-slate-600 mt-0.5">Skipped: {statusErr}</p>
+                        )}
                       </div>
                     </div>
                   );
@@ -832,14 +938,52 @@ export default function AdminApprovalsInbox() {
             )}
           </ScrollArea>
 
-          <Textarea rows={2} placeholder="Review note applied to all selected requests (optional)"
-            value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} className="mt-2" />
+          {/* Post-run summary strip */}
+          {bulkRan && (() => {
+            const ok = Object.values(bulkResults).filter((v) => v.status === "success").length;
+            const fail = Object.values(bulkResults).filter((v) => v.status === "failed").length;
+            const skipped = Object.values(bulkResults).filter((v) => v.status === "skipped").length;
+            return (
+              <div className="mt-2 p-2.5 rounded-lg border border-border/60 bg-muted/30 flex flex-wrap items-center gap-2 text-xs">
+                <span className="text-muted-foreground">Batch result:</span>
+                <Badge className="bg-emerald-500/15 text-emerald-700 text-[10px]"><Check className="w-2.5 h-2.5 mr-1" />{ok} applied</Badge>
+                {fail > 0 && <Badge className="bg-red-500/15 text-red-700 text-[10px]"><X className="w-2.5 h-2.5 mr-1" />{fail} failed</Badge>}
+                {skipped > 0 && <Badge className="bg-slate-500/15 text-slate-700 text-[10px]">{skipped} skipped</Badge>}
+                {fail > 0 && <span className="text-muted-foreground">— retry failed items, or re-sync to check the latest state.</span>}
+              </div>
+            );
+          })()}
+
+          {!bulkRan && (
+            <Textarea rows={2} placeholder="Review note applied to all selected requests (optional)"
+              value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} className="mt-2" />
+          )}
+
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={bulkBusy}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); runBulk(); }} disabled={bulkBusy || bulkPreviewLoading}
-              className={bulk?.approve ? "" : "bg-destructive text-destructive-foreground"}>
-              {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : bulk?.approve ? `Approve all ${bulk?.ids.length}` : `Reject all ${bulk?.ids.length}`}
-            </AlertDialogAction>
+            {!bulkRan ? (
+              <>
+                <AlertDialogCancel disabled={bulkBusy} onClick={closeBulk}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={(e) => { e.preventDefault(); runBulk(); }} disabled={bulkBusy || bulkPreviewLoading}
+                  className={bulk?.approve ? "" : "bg-destructive text-destructive-foreground"}>
+                  {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                    bulk?.approve ? `Approve all ${Object.values(bulkResults).filter((v) => v.status === "pending").length}`
+                                  : `Reject all ${Object.values(bulkResults).filter((v) => v.status === "pending").length}`}
+                </AlertDialogAction>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => { reconcile(); toast.info("Resyncing with server…"); }} disabled={bulkBusy} className="gap-1">
+                  <RefreshCw className="w-3.5 h-3.5" /> Resync
+                </Button>
+                {Object.values(bulkResults).some((v) => v.status === "failed") && (
+                  <Button variant="outline" onClick={retryFailed} disabled={bulkBusy} className="gap-1">
+                    {bulkBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                    Retry failed ({Object.values(bulkResults).filter((v) => v.status === "failed").length})
+                  </Button>
+                )}
+                <Button onClick={closeBulk}>Done</Button>
+              </>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
