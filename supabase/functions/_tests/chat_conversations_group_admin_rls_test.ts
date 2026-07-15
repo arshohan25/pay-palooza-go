@@ -289,46 +289,8 @@ Deno.test(
   },
 );
 
-// ---------------------------------------------------------------------------
-// RPC guard — ensure no SECURITY DEFINER function offers a bypass path that
-// updates chat_conversations without the same admin_id gate. If any future
-// migration adds such an RPC, this test forces it to be added explicitly
-// to KNOWN_CHAT_UPDATE_RPCS with matching authz coverage.
-// ---------------------------------------------------------------------------
+// RPC-surface guard lives in src/test/chat-conversations-update-rpc-guard.test.ts
+// (static scan of migrations + hooks). PostgREST's OpenAPI root requires
+// service_role, so RPC enumeration is done from source at CI time instead
+// of via a network round-trip here.
 
-const KNOWN_CHAT_UPDATE_RPCS: string[] = [
-  // Currently none: chat_conversations updates flow only through PostgREST
-  // (REST PATCH / supabase-js .update), which is covered above.
-];
-
-Deno.test(
-  "no unlisted RPC exposes an UPDATE path on chat_conversations",
-  async () => {
-    const { accessToken } = await signInWithSession();
-    // Introspect exposed RPCs via PostgREST's OpenAPI document. Any RPC that
-    // mutates chat_conversations would typically name the table in its
-    // implementation; here we surface every RPC name for maintainers to
-    // audit against KNOWN_CHAT_UPDATE_RPCS.
-    const { status, body } = await rawFetch("/rest/v1/", { method: "GET" }, accessToken);
-    assertEquals(status, 200, `openapi fetch failed: ${status} ${body}`);
-    const doc = JSON.parse(body) as { paths?: Record<string, unknown> };
-    const rpcNames = Object.keys(doc.paths ?? {})
-      .filter((p) => p.startsWith("/rpc/"))
-      .map((p) => p.slice("/rpc/".length));
-
-    // Heuristic: flag any RPC whose name suggests chat/conversation/group
-    // updating. New matches must be added to KNOWN_CHAT_UPDATE_RPCS *and*
-    // covered by their own admin_id-gate test.
-    const suspects = rpcNames.filter((n) =>
-      /(update|rename|edit|modify|set).*(chat|conversation|group)/i.test(n) ||
-      /(chat|conversation|group).*(update|rename|edit|modify|set)/i.test(n)
-    );
-    const unlisted = suspects.filter((n) => !KNOWN_CHAT_UPDATE_RPCS.includes(n));
-    assertEquals(
-      unlisted,
-      [],
-      `New chat-conversation update RPC(s) detected without admin_id-gate coverage: ${unlisted.join(", ")}. ` +
-        `Add them to KNOWN_CHAT_UPDATE_RPCS and add explicit tests.`,
-    );
-  },
-);
