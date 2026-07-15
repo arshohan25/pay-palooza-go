@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare, Building2, ArrowRightLeft } from "lucide-react";
+import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare, Building2, ArrowRightLeft, Upload, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signUpWithPhonePassword, pinToPassword } from "@/lib/auth";
 import { toast } from "sonner";
@@ -78,10 +78,14 @@ function AgentListTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+  const [nidFile, setNidFile] = useState<File | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
 
   // Edit
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", division: "", district: "", upazila: "", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
+  const [editNidFile, setEditNidFile] = useState<File | null>(null);
+  const [editSelfieFile, setEditSelfieFile] = useState<File | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete
@@ -201,6 +205,24 @@ function AgentListTab() {
       if (!hasRole) {
         await supabase.from("user_roles").insert({ user_id: userId, role: "agent" } as any);
       }
+      // Upload NID image and selfie (if provided) to kyc-documents
+      let nid_image_path: string | null = null;
+      let selfie_path: string | null = null;
+      if (nidFile) {
+        const ext = nidFile.name.split(".").pop() || "jpg";
+        const path = `agents/${userId}/nid-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, nidFile, { upsert: true, contentType: nidFile.type });
+        if (upErr) throw new Error(`NID upload failed: ${upErr.message}`);
+        nid_image_path = path;
+      }
+      if (selfieFile) {
+        const ext = selfieFile.name.split(".").pop() || "jpg";
+        const path = `agents/${userId}/selfie-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, selfieFile, { upsert: true, contentType: selfieFile.type });
+        if (upErr) throw new Error(`Selfie upload failed: ${upErr.message}`);
+        selfie_path = path;
+      }
+
       await supabase.from("agents").insert({
         user_id: userId, business_name: form.business_name || null, territory_code: form.territory_code || null,
         division: form.division || null, district: form.district || null, upazila: form.upazila || null,
@@ -209,6 +231,7 @@ function AgentListTab() {
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
         address: form.address || "",
+        nid_image_path, selfie_path,
       } as any);
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -217,6 +240,7 @@ function AgentListTab() {
       toast.success(pin ? `Agent created! Temp PIN: ${pin}` : `Existing user promoted to agent`, { duration: 10000 });
       setCreateOpen(false);
       setForm({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+      setNidFile(null); setSelfieFile(null);
       load();
     } catch (err: any) { toast.error(err.message || "Failed to create agent"); }
     finally { setCreating(false); }
@@ -247,27 +271,52 @@ function AgentListTab() {
       return;
     }
     setEditSaving(true);
-    const { error } = await supabase.from("agents").update({
-      business_name: editForm.business_name || null,
-      territory_code: editForm.territory_code || null,
-      division: editForm.division || null,
-      district: editForm.district || null,
-      upazila: editForm.upazila || null,
-      max_float: parseInt(editForm.max_float) || editAgent.max_float,
-      nid_number: editForm.nid_number || null,
-      trade_license: editForm.trade_license || null,
-      latitude: editForm.latitude ? parseFloat(editForm.latitude) : null,
-      longitude: editForm.longitude ? parseFloat(editForm.longitude) : null,
-      address: editForm.address || "",
-    } as any).eq("id", editAgent.id);
-    if (error) { toast.error("Failed to update"); } else {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_edited", entity_type: "agent", entity_id: editAgent.id, details: { changes: editForm } }).then();
+    try {
+      let nid_image_path: string | undefined;
+      let selfie_path: string | undefined;
+      if (editNidFile) {
+        const ext = editNidFile.name.split(".").pop() || "jpg";
+        const path = `agents/${editAgent.user_id}/nid-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, editNidFile, { upsert: true, contentType: editNidFile.type });
+        if (upErr) throw new Error(`NID upload failed: ${upErr.message}`);
+        nid_image_path = path;
       }
-      toast.success("Agent updated");
+      if (editSelfieFile) {
+        const ext = editSelfieFile.name.split(".").pop() || "jpg";
+        const path = `agents/${editAgent.user_id}/selfie-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, editSelfieFile, { upsert: true, contentType: editSelfieFile.type });
+        if (upErr) throw new Error(`Selfie upload failed: ${upErr.message}`);
+        selfie_path = path;
+      }
+      const updatePayload: any = {
+        business_name: editForm.business_name || null,
+        territory_code: editForm.territory_code || null,
+        division: editForm.division || null,
+        district: editForm.district || null,
+        upazila: editForm.upazila || null,
+        max_float: parseInt(editForm.max_float) || editAgent.max_float,
+        nid_number: editForm.nid_number || null,
+        trade_license: editForm.trade_license || null,
+        latitude: editForm.latitude ? parseFloat(editForm.latitude) : null,
+        longitude: editForm.longitude ? parseFloat(editForm.longitude) : null,
+        address: editForm.address || "",
+      };
+      if (nid_image_path) updatePayload.nid_image_path = nid_image_path;
+      if (selfie_path) updatePayload.selfie_path = selfie_path;
+      const { error } = await supabase.from("agents").update(updatePayload).eq("id", editAgent.id);
+      if (error) { toast.error("Failed to update"); } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_edited", entity_type: "agent", entity_id: editAgent.id, details: { changes: editForm } }).then();
+        }
+        toast.success("Agent updated");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update");
     }
     setEditSaving(false);
+    setEditNidFile(null);
+    setEditSelfieFile(null);
     setEditAgent(null);
     load();
   };
@@ -453,6 +502,18 @@ function AgentListTab() {
               <div><Label>Max Float</Label><Input type="number" value={form.max_float} onChange={e => setForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
             <div><Label>NID Number</Label><Input placeholder="National ID" value={form.nid_number} onChange={e => setForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />NID Card Photo</Label>
+                <Input type="file" accept="image/*" onChange={e => setNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
+                {nidFile && <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {nidFile.name}</p>}
+              </div>
+              <div>
+                <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Selfie / Photo</Label>
+                <Input type="file" accept="image/*" capture="user" onChange={e => setSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
+                {selfieFile && <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {selfieFile.name}</p>}
+              </div>
+            </div>
             <div><Label>Trade License</Label><Input placeholder="Trade license number" value={form.trade_license} onChange={e => setForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
             <div><Label>Address</Label><Input placeholder="Shop address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -484,6 +545,18 @@ function AgentListTab() {
               <div><Label>Max Float</Label><Input type="number" value={editForm.max_float} onChange={e => setEditForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
             <div><Label>NID Number</Label><Input value={editForm.nid_number} onChange={e => setEditForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />NID Card Photo{(editAgent as any)?.nid_image_path ? " (replace)" : ""}</Label>
+                <Input type="file" accept="image/*" onChange={e => setEditNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
+                {editNidFile ? <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {editNidFile.name}</p> : (editAgent as any)?.nid_image_path && <p className="text-[10px] text-emerald-600 mt-1 truncate">On file</p>}
+              </div>
+              <div>
+                <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Selfie / Photo{(editAgent as any)?.selfie_path ? " (replace)" : ""}</Label>
+                <Input type="file" accept="image/*" capture="user" onChange={e => setEditSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
+                {editSelfieFile ? <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {editSelfieFile.name}</p> : (editAgent as any)?.selfie_path && <p className="text-[10px] text-emerald-600 mt-1 truncate">On file</p>}
+              </div>
+            </div>
             <div><Label>Trade License</Label><Input value={editForm.trade_license} onChange={e => setEditForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
             <div><Label>Address</Label><Input placeholder="Shop address" value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} /></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

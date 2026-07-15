@@ -787,7 +787,9 @@ export type Database = {
           location_updated_at: string | null
           longitude: number | null
           max_float: number
+          nid_image_path: string | null
           nid_number: string | null
+          selfie_path: string | null
           shop_name: string | null
           status: Database["public"]["Enums"]["agent_status"]
           territory_code: string | null
@@ -814,7 +816,9 @@ export type Database = {
           location_updated_at?: string | null
           longitude?: number | null
           max_float?: number
+          nid_image_path?: string | null
           nid_number?: string | null
+          selfie_path?: string | null
           shop_name?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory_code?: string | null
@@ -841,7 +845,9 @@ export type Database = {
           location_updated_at?: string | null
           longitude?: number | null
           max_float?: number
+          nid_image_path?: string | null
           nid_number?: string | null
+          selfie_path?: string | null
           shop_name?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory_code?: string | null
