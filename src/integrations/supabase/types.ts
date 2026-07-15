@@ -4254,12 +4254,14 @@ export type Database = {
       }
       merchants: {
         Row: {
+          admin_notes: string | null
           bank_account_holder: string | null
           bank_account_number: string | null
           bank_branch: string | null
           bank_name: string | null
           bank_routing: string | null
           bank_statement_url: string | null
+          business_address: string | null
           business_kyc_rejection_reason: string | null
           business_kyc_reviewed_at: string | null
           business_kyc_reviewed_by: string | null
@@ -4267,11 +4269,14 @@ export type Database = {
           business_name: string
           category: Database["public"]["Enums"]["merchant_category"]
           commission_rate: number
+          contact_email: string | null
+          contact_number: string | null
           created_at: string
           id: string
           mdr_rate: number
           nid_back_url: string | null
           nid_front_url: string | null
+          owner_name: string | null
           qr_code_data: string | null
           settlement_frequency: string
           status: Database["public"]["Enums"]["agent_status"]
@@ -4281,12 +4286,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_notes?: string | null
           bank_account_holder?: string | null
           bank_account_number?: string | null
           bank_branch?: string | null
           bank_name?: string | null
           bank_routing?: string | null
           bank_statement_url?: string | null
+          business_address?: string | null
           business_kyc_rejection_reason?: string | null
           business_kyc_reviewed_at?: string | null
           business_kyc_reviewed_by?: string | null
@@ -4294,11 +4301,14 @@ export type Database = {
           business_name: string
           category?: Database["public"]["Enums"]["merchant_category"]
           commission_rate?: number
+          contact_email?: string | null
+          contact_number?: string | null
           created_at?: string
           id?: string
           mdr_rate?: number
           nid_back_url?: string | null
           nid_front_url?: string | null
+          owner_name?: string | null
           qr_code_data?: string | null
           settlement_frequency?: string
           status?: Database["public"]["Enums"]["agent_status"]
@@ -4308,12 +4318,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_notes?: string | null
           bank_account_holder?: string | null
           bank_account_number?: string | null
           bank_branch?: string | null
           bank_name?: string | null
           bank_routing?: string | null
           bank_statement_url?: string | null
+          business_address?: string | null
           business_kyc_rejection_reason?: string | null
           business_kyc_reviewed_at?: string | null
           business_kyc_reviewed_by?: string | null
@@ -4321,11 +4333,14 @@ export type Database = {
           business_name?: string
           category?: Database["public"]["Enums"]["merchant_category"]
           commission_rate?: number
+          contact_email?: string | null
+          contact_number?: string | null
           created_at?: string
           id?: string
           mdr_rate?: number
           nid_back_url?: string | null
           nid_front_url?: string | null
+          owner_name?: string | null
           qr_code_data?: string | null
           settlement_frequency?: string
           status?: Database["public"]["Enums"]["agent_status"]
