@@ -404,6 +404,42 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_role_permission_preset_versions: {
+        Row: {
+          change_type: string
+          changed_by: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_builtin: boolean
+          name: string
+          permissions: Json
+          preset_id: string
+        }
+        Insert: {
+          change_type: string
+          changed_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_builtin?: boolean
+          name: string
+          permissions?: Json
+          preset_id: string
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_builtin?: boolean
+          name?: string
+          permissions?: Json
+          preset_id?: string
+        }
+        Relationships: []
+      }
       admin_role_permission_presets: {
         Row: {
           created_at: string
@@ -7788,6 +7824,10 @@ export type Database = {
       resolve_transfer_recipient: {
         Args: { p_flow: string; p_identifier: string }
         Returns: Json
+      }
+      restore_preset_version: {
+        Args: { _version_id: string }
+        Returns: undefined
       }
       revoke_merchant_api_access: { Args: { p_user_id: string }; Returns: Json }
       savings_deposit: {

@@ -12,10 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Plus, Loader2, RefreshCw, Lock, Sparkles, ShieldAlert, Wand2, Pencil, Trash2, ArrowRight } from "lucide-react";
+import { Shield, Plus, Loader2, RefreshCw, Lock, Sparkles, ShieldAlert, Wand2, Pencil, Trash2, ArrowRight, History } from "lucide-react";
 import { toast } from "sonner";
 import { REGISTERED_PERMISSIONS, ROLE_KEYS, HIGH_RISK_PERMISSIONS } from "@/lib/permissionsRegistry";
 import { usePermission } from "@/hooks/use-permission";
+import PresetVersionHistoryDialog from "@/components/admin/PresetVersionHistoryDialog";
 
 interface Row { role: string; permission: string; allowed: boolean; }
 interface Preset { id: string; name: string; description: string | null; permissions: string[]; is_builtin: boolean; }
@@ -37,6 +38,7 @@ export default function AdminRolesPermissions() {
   const [presetEditor, setPresetEditor] = useState<Preset | null>(null);
   const [editorDraft, setEditorDraft] = useState<{ name: string; description: string; permissions: Set<string> }>({ name: "", description: "", permissions: new Set() });
   const [deleteTarget, setDeleteTarget] = useState<Preset | null>(null);
+  const [historyFor, setHistoryFor] = useState<Preset | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -291,6 +293,9 @@ export default function AdminRolesPermissions() {
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" onClick={() => setHistoryFor(p)} title="Version history">
+                      <History className="w-3.5 h-3.5" />
+                    </Button>
                     <Button size="icon" variant="ghost" onClick={() => openEditPreset(p)} disabled={!canManage || p.is_builtin} title={p.is_builtin ? "Built-in presets cannot be edited" : "Edit"}>
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
@@ -525,6 +530,14 @@ export default function AdminRolesPermissions() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PresetVersionHistoryDialog
+        presetId={historyFor?.id ?? null}
+        presetName={historyFor?.name}
+        open={!!historyFor}
+        onOpenChange={(o) => !o && setHistoryFor(null)}
+        onRestored={load}
+      />
     </div>
   );
 }
