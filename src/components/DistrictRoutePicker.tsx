@@ -37,6 +37,7 @@ export default function DistrictRoutePicker({
   const [rows, setRows] = useState<DistrictRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [divisionFilter, setDivisionFilter] = useState<string>("all");
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
