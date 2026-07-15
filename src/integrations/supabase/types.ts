@@ -775,6 +775,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          idempotency_key: string | null
           issued_by: string | null
           issued_via: string
           pin_hash: string
@@ -786,6 +787,7 @@ export type Database = {
           created_at?: string
           expires_at: string
           id?: string
+          idempotency_key?: string | null
           issued_by?: string | null
           issued_via?: string
           pin_hash: string
@@ -797,6 +799,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          idempotency_key?: string | null
           issued_by?: string | null
           issued_via?: string
           pin_hash?: string
@@ -4252,6 +4255,45 @@ export type Database = {
           },
         ]
       }
+      merchant_temp_pin_issues: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          idempotency_key: string | null
+          issued_by: string | null
+          issued_via: string
+          merchant_user_id: string
+          pin_hash: string
+          superseded_at: string | null
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          idempotency_key?: string | null
+          issued_by?: string | null
+          issued_via?: string
+          merchant_user_id: string
+          pin_hash: string
+          superseded_at?: string | null
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          idempotency_key?: string | null
+          issued_by?: string | null
+          issued_via?: string
+          merchant_user_id?: string
+          pin_hash?: string
+          superseded_at?: string | null
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       merchants: {
         Row: {
           admin_notes: string | null
@@ -6276,6 +6318,7 @@ export type Database = {
           error_message: string | null
           id: string
           issued_by: string | null
+          merchant_user_id: string | null
           phone_masked: string
           provider_response: string | null
           provider_status_code: number | null
@@ -6288,6 +6331,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           issued_by?: string | null
+          merchant_user_id?: string | null
           phone_masked: string
           provider_response?: string | null
           provider_status_code?: number | null
@@ -6300,6 +6344,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           issued_by?: string | null
+          merchant_user_id?: string | null
           phone_masked?: string
           provider_response?: string | null
           provider_status_code?: number | null
@@ -7541,6 +7586,14 @@ export type Database = {
         Returns: Json
       }
       check_merchant_login_lockout: { Args: { p_phone: string }; Returns: Json }
+      check_merchant_pin_reissue_throttle: {
+        Args: { _merchant_user_id: string }
+        Returns: {
+          allowed: boolean
+          reason: string
+          retry_after_seconds: number
+        }[]
+      }
       check_referral_milestones: {
         Args: { p_referee_id: string }
         Returns: undefined
@@ -7842,6 +7895,15 @@ export type Database = {
         }[]
       }
       mark_agent_temp_pin_used: { Args: never; Returns: undefined }
+      mark_merchant_temp_pin_used: { Args: never; Returns: undefined }
+      merchant_temp_pin_status: {
+        Args: { _merchant_user_id: string }
+        Returns: {
+          expires_at: string
+          issued_at: string
+          state: string
+        }[]
+      }
       nearby_agents: {
         Args: { _lat: number; _lng: number; _radius_km?: number }
         Returns: {

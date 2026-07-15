@@ -313,6 +313,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
             .then(() => {
               // Retire any active admin-issued temp PIN so it can't be re-used.
               (supabase as any).rpc("mark_agent_temp_pin_used").then(() => {});
+              (supabase as any).rpc("mark_merchant_temp_pin_used").then(() => {});
             })
             .catch(() => {});
           setDir(1);
