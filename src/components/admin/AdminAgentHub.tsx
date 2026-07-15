@@ -224,6 +224,9 @@ function AgentListTab() {
     setEditForm({
       business_name: a.business_name || "",
       territory_code: a.territory_code || "",
+      division: (a as any).division || "",
+      district: (a as any).district || "",
+      upazila: (a as any).upazila || "",
       max_float: String(a.max_float),
       nid_number: a.nid_number || "",
       trade_license: a.trade_license || "",
