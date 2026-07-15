@@ -59,13 +59,19 @@ export default function DistrictMultiSelect({
     };
   }, []);
 
+  const divisions = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.division))).sort(),
+    [rows],
+  );
+
   const flat: FlatRow[] = useMemo(() => {
+    const base = divisionFilter === "all" ? rows : rows.filter((r) => r.division === divisionFilter);
     const filtered = query
-      ? rows.filter(
+      ? base.filter(
           (r) =>
             districtCommandFilter(`${r.district} ${r.code} ${r.division}`, query) > 0,
         )
-      : rows;
+      : base;
     const byDiv = new Map<string, Row[]>();
     for (const r of filtered) {
       if (!byDiv.has(r.division)) byDiv.set(r.division, []);
@@ -79,7 +85,7 @@ export default function DistrictMultiSelect({
       for (const r of list) out.push({ kind: "item", row: r, key: `i:${r.code}` });
     }
     return out;
-  }, [rows, query]);
+  }, [rows, query, divisionFilter]);
 
   const virtualizer = useVirtualizer({
     count: flat.length,
