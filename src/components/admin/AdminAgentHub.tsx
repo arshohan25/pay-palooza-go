@@ -538,11 +538,13 @@ function AgentListTab() {
                 <Label className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />NID Card Photo</Label>
                 <Input type="file" accept="image/*" onChange={e => setNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {nidFile && <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {nidFile.name}</p>}
+                <KycImagePreview file={nidFile} alt="NID preview" />
               </div>
               <div>
                 <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Selfie / Photo</Label>
                 <Input type="file" accept="image/*" capture="user" onChange={e => setSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {selfieFile && <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {selfieFile.name}</p>}
+                <KycImagePreview file={selfieFile} alt="Selfie preview" />
               </div>
             </div>
             <div><Label>Trade License</Label><Input placeholder="Trade license number" value={form.trade_license} onChange={e => setForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
