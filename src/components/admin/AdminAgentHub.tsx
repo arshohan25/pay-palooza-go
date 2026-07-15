@@ -256,7 +256,7 @@ function AgentListTab() {
         .from("profiles").select("user_id").eq("phone", phone).maybeSingle();
 
       let userId: string;
-      let pin: string | null = null;
+      let isNewUser = false;
 
       if (existingProfile?.user_id) {
         userId = existingProfile.user_id;
@@ -268,10 +268,13 @@ function AgentListTab() {
           await supabase.from("profiles").update({ name: form.name || undefined, email: form.email.trim() || undefined }).eq("user_id", userId);
         }
       } else {
-        pin = String(Math.floor(1000 + Math.random() * 9000));
-        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: form.name || phone });
+        // Sign up with a random placeholder password; the temp PIN is set
+        // later by the issue-agent-temp-pin edge function.
+        const placeholder = crypto.randomUUID().replace(/-/g, "") + "!Ep";
+        const { data: authData } = await signUpWithPhonePassword(phone, placeholder, { display_name: form.name || phone });
         if (!authData?.user) throw new Error("Account creation failed");
         userId = authData.user.id;
+        isNewUser = true;
         await supabase.from("profiles").update({ name: form.name || null, phone, email: form.email.trim() || null }).eq("user_id", userId);
       }
 
@@ -311,24 +314,27 @@ function AgentListTab() {
       } as any);
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_created", entity_type: "agent", entity_id: userId, details: { phone, business_name: form.business_name, promoted_existing: !pin } }).then();
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_created", entity_type: "agent", entity_id: userId, details: { phone, business_name: form.business_name, promoted_existing: !isNewUser } }).then();
       }
 
-      // Send temp PIN by SMS for freshly created accounts
-      if (pin) {
+      // Issue temp PIN + SMS for freshly created accounts
+      if (isNewUser) {
         try {
-          const { error: smsErr } = await supabase.functions.invoke("send-agent-pin-sms", {
-            body: { phone, pin, name: form.name || undefined },
+          const { data: issueData, error: issueErr } = await supabase.functions.invoke("issue-agent-temp-pin", {
+            body: { agent_user_id: userId, phone, name: form.name || undefined, purpose: "create" },
           });
-          if (smsErr) {
-            console.error("SMS send failed", smsErr);
-            toast.warning(`Agent created, but SMS failed. Temp PIN: ${pin}`, { duration: 15000 });
-          } else {
+          if (issueErr) throw issueErr;
+          const payload = issueData as { sms_status?: string; pin_fallback?: string } | null;
+          if (payload?.sms_status === "sent") {
             toast.success(`Agent created! Temporary PIN sent by SMS to +88${phone}`, { duration: 8000 });
+          } else if (payload?.pin_fallback) {
+            toast.warning(`Agent created, but SMS failed. Temp PIN: ${payload.pin_fallback}`, { duration: 15000 });
+          } else {
+            toast.warning(`Agent created, but SMS status unknown. Check delivery logs.`, { duration: 10000 });
           }
-        } catch (e) {
-          console.error("SMS invoke error", e);
-          toast.warning(`Agent created, but SMS failed. Temp PIN: ${pin}`, { duration: 15000 });
+        } catch (e: any) {
+          console.error("issue temp PIN failed", e);
+          toast.error(`Agent created, but PIN could not be issued: ${e?.message ?? "unknown error"}`);
         }
       } else {
         toast.success(`Existing user promoted to agent`, { duration: 6000 });
