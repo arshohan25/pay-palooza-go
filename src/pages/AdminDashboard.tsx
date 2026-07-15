@@ -111,6 +111,7 @@ import AdminUserRoleAssignments from "@/components/admin/AdminUserRoleAssignment
 import AdminPermissionAuditLog from "@/components/admin/AdminPermissionAuditLog";
 import AdminPermissionApprovals from "@/components/admin/AdminPermissionApprovals";
 import AdminApprovalsInbox from "@/components/admin/AdminApprovalsInbox";
+import AdminApprovalNotificationPrefs from "@/components/admin/AdminApprovalNotificationPrefs";
 import AdminSystemHealth from "@/components/admin/AdminSystemHealth";
 import AdminDataExport from "@/components/admin/AdminDataExport";
 import AdminUserSessions from "@/components/admin/AdminUserSessions";
