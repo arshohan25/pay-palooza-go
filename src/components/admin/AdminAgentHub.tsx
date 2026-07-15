@@ -70,6 +70,37 @@ export default function AdminAgentHub() {
   );
 }
 
+function KycImagePreview({ file, existingPath, alt }: { file: File | null; existingPath?: string | null; alt: string }) {
+  const [localUrl, setLocalUrl] = useState<string | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) { setLocalUrl(null); return; }
+    const url = URL.createObjectURL(file);
+    setLocalUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (file || !existingPath) { setSignedUrl(null); return; }
+    supabase.storage.from("kyc-documents").createSignedUrl(existingPath, 300).then(({ data }) => {
+      if (!cancelled) setSignedUrl(data?.signedUrl ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [file, existingPath]);
+
+  const url = localUrl ?? signedUrl;
+  if (!url) return null;
+  return (
+    <div className="mt-2 relative rounded-md overflow-hidden border border-border bg-muted">
+      <img src={url} alt={alt} className="w-full h-24 object-cover" />
+      {file && <span className="absolute top-1 right-1 rounded bg-primary/90 text-primary-foreground text-[9px] px-1.5 py-0.5">New</span>}
+      {!file && signedUrl && <span className="absolute top-1 right-1 rounded bg-emerald-600/90 text-white text-[9px] px-1.5 py-0.5">On file</span>}
+    </div>
+  );
+}
+
 function AgentListTab() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -507,11 +538,13 @@ function AgentListTab() {
                 <Label className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />NID Card Photo</Label>
                 <Input type="file" accept="image/*" onChange={e => setNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {nidFile && <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {nidFile.name}</p>}
+                <KycImagePreview file={nidFile} alt="NID preview" />
               </div>
               <div>
                 <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Selfie / Photo</Label>
                 <Input type="file" accept="image/*" capture="user" onChange={e => setSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {selfieFile && <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {selfieFile.name}</p>}
+                <KycImagePreview file={selfieFile} alt="Selfie preview" />
               </div>
             </div>
             <div><Label>Trade License</Label><Input placeholder="Trade license number" value={form.trade_license} onChange={e => setForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
@@ -550,11 +583,13 @@ function AgentListTab() {
                 <Label className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />NID Card Photo{(editAgent as any)?.nid_image_path ? " (replace)" : ""}</Label>
                 <Input type="file" accept="image/*" onChange={e => setEditNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {editNidFile ? <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {editNidFile.name}</p> : (editAgent as any)?.nid_image_path && <p className="text-[10px] text-emerald-600 mt-1 truncate">On file</p>}
+                <KycImagePreview file={editNidFile} existingPath={(editAgent as any)?.nid_image_path} alt="NID preview" />
               </div>
               <div>
                 <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Selfie / Photo{(editAgent as any)?.selfie_path ? " (replace)" : ""}</Label>
                 <Input type="file" accept="image/*" capture="user" onChange={e => setEditSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {editSelfieFile ? <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {editSelfieFile.name}</p> : (editAgent as any)?.selfie_path && <p className="text-[10px] text-emerald-600 mt-1 truncate">On file</p>}
+                <KycImagePreview file={editSelfieFile} existingPath={(editAgent as any)?.selfie_path} alt="Selfie preview" />
               </div>
             </div>
             <div><Label>Trade License</Label><Input value={editForm.trade_license} onChange={e => setEditForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
