@@ -565,20 +565,20 @@ function AgentListTab() {
           <DialogHeader className="px-5 pt-5 pb-2 pr-12 shrink-0"><DialogTitle className="truncate text-base sm:text-lg">Create New Agent</DialogTitle></DialogHeader>
           <div className="space-y-3 px-5 pt-1 pb-3 overflow-y-auto flex-1 min-h-0">
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
-            <div><Label>Full Name</Label><Input placeholder="Agent's name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
-            <div><Label>Business Name</Label><Input placeholder="Shop / business name" value={form.business_name} onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))} /></div>
+            <div><Label>Full Name *</Label><Input placeholder="Agent's name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div><Label>Business Name *</Label><Input placeholder="Shop / business name" value={form.business_name} onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-2">
               <DivisionDistrictUpazilaPicker
                 value={{ division: form.division || null, district: form.district || null, upazila: form.upazila || null }}
                 onChange={(v) => setForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "" }))}
                 required
               />
-              <div><Label>Max Float</Label><Input type="number" value={form.max_float} onChange={e => setForm(f => ({ ...f, max_float: e.target.value }))} /></div>
+              <div><Label>Max Float *</Label><Input type="number" value={form.max_float} onChange={e => setForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
-            <div><Label>NID Number</Label><Input placeholder="National ID" value={form.nid_number} onChange={e => setForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
+            <div><Label>NID Number *</Label><Input placeholder="National ID" value={form.nid_number} onChange={e => setForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <Label className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />NID Card Photo</Label>
+                <Label className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />NID Card Photo *</Label>
                 <Input ref={nidInputRef} type="file" accept="image/*" onChange={e => setNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {nidFile && <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {nidFile.name}</p>}
                 <KycImagePreview
@@ -589,7 +589,7 @@ function AgentListTab() {
                 />
               </div>
               <div>
-                <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Selfie / Photo</Label>
+                <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Selfie / Photo *</Label>
                 <Input ref={selfieInputRef} type="file" accept="image/*" capture="user" onChange={e => setSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {selfieFile && <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {selfieFile.name}</p>}
                 <KycImagePreview
@@ -600,15 +600,15 @@ function AgentListTab() {
                 />
               </div>
             </div>
-            <div><Label>Trade License</Label><Input placeholder="Trade license number" value={form.trade_license} onChange={e => setForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
-            <div><Label>Address</Label><Input placeholder="Shop address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
+            <div><Label>Trade License *</Label><Input placeholder="Trade license number" value={form.trade_license} onChange={e => setForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
+            <div><Label>Address *</Label><Input placeholder="Shop address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div><Label>Latitude</Label><Input type="number" step="any" placeholder="23.8103" value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
-              <div><Label>Longitude</Label><Input type="number" step="any" placeholder="90.4125" value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} /></div>
+              <div><Label>Latitude *</Label><Input type="number" step="any" placeholder="23.8103" value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
+              <div><Label>Longitude *</Label><Input type="number" step="any" placeholder="90.4125" value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} /></div>
             </div>
           </div>
           <div className="px-5 py-3 border-t border-border shrink-0 bg-background">
-            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone || !form.division || !form.district || !form.upazila}>
+            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone || !form.name.trim() || !form.business_name.trim() || !form.division || !form.district || !form.upazila || !form.max_float || !form.nid_number.trim() || !nidFile || !selfieFile || !form.trade_license.trim() || !form.address.trim() || !form.latitude || !form.longitude}>
               {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Agent"}
             </Button>
           </div>
