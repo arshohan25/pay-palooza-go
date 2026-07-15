@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +70,7 @@ export default function AdminAgentHub() {
   );
 }
 
-function KycImagePreview({ file, existingPath, alt }: { file: File | null; existingPath?: string | null; alt: string }) {
+function KycImagePreview({ file, existingPath, alt, onClear, onReplace }: { file: File | null; existingPath?: string | null; alt: string; onClear?: () => void; onReplace?: () => void }) {
   const [localUrl, setLocalUrl] = useState<string | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
@@ -93,13 +93,37 @@ function KycImagePreview({ file, existingPath, alt }: { file: File | null; exist
   const url = localUrl ?? signedUrl;
   if (!url) return null;
   return (
-    <div className="mt-2 relative rounded-md overflow-hidden border border-border bg-muted">
+    <div className="mt-2 relative rounded-md overflow-hidden border border-border bg-muted group">
       <img src={url} alt={alt} className="w-full h-24 object-cover" />
-      {file && <span className="absolute top-1 right-1 rounded bg-primary/90 text-primary-foreground text-[9px] px-1.5 py-0.5">New</span>}
-      {!file && signedUrl && <span className="absolute top-1 right-1 rounded bg-emerald-600/90 text-white text-[9px] px-1.5 py-0.5">On file</span>}
+      {file && <span className="absolute top-1 left-1 rounded bg-primary/90 text-primary-foreground text-[9px] px-1.5 py-0.5">New</span>}
+      {!file && signedUrl && <span className="absolute top-1 left-1 rounded bg-emerald-600/90 text-white text-[9px] px-1.5 py-0.5">On file</span>}
+      <div className="absolute top-1 right-1 flex gap-1">
+        {onReplace && (
+          <button
+            type="button"
+            onClick={onReplace}
+            className="rounded bg-background/90 hover:bg-background text-foreground text-[9px] px-1.5 py-0.5 border border-border shadow-sm"
+            aria-label="Replace"
+          >
+            Replace
+          </button>
+        )}
+        {file && onClear && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground w-5 h-5 flex items-center justify-center shadow-sm"
+            aria-label="Remove"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
+
+
 
 function AgentListTab() {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -111,12 +135,16 @@ function AgentListTab() {
   const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
   const [nidFile, setNidFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const nidInputRef = useRef<HTMLInputElement>(null);
+  const selfieInputRef = useRef<HTMLInputElement>(null);
 
   // Edit
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", division: "", district: "", upazila: "", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
   const [editNidFile, setEditNidFile] = useState<File | null>(null);
   const [editSelfieFile, setEditSelfieFile] = useState<File | null>(null);
+  const editNidInputRef = useRef<HTMLInputElement>(null);
+  const editSelfieInputRef = useRef<HTMLInputElement>(null);
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete
@@ -536,15 +564,25 @@ function AgentListTab() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <Label className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />NID Card Photo</Label>
-                <Input type="file" accept="image/*" onChange={e => setNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
+                <Input ref={nidInputRef} type="file" accept="image/*" onChange={e => setNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {nidFile && <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {nidFile.name}</p>}
-                <KycImagePreview file={nidFile} alt="NID preview" />
+                <KycImagePreview
+                  file={nidFile}
+                  alt="NID preview"
+                  onReplace={() => nidInputRef.current?.click()}
+                  onClear={() => { setNidFile(null); if (nidInputRef.current) nidInputRef.current.value = ""; }}
+                />
               </div>
               <div>
                 <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Selfie / Photo</Label>
-                <Input type="file" accept="image/*" capture="user" onChange={e => setSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
+                <Input ref={selfieInputRef} type="file" accept="image/*" capture="user" onChange={e => setSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {selfieFile && <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {selfieFile.name}</p>}
-                <KycImagePreview file={selfieFile} alt="Selfie preview" />
+                <KycImagePreview
+                  file={selfieFile}
+                  alt="Selfie preview"
+                  onReplace={() => selfieInputRef.current?.click()}
+                  onClear={() => { setSelfieFile(null); if (selfieInputRef.current) selfieInputRef.current.value = ""; }}
+                />
               </div>
             </div>
             <div><Label>Trade License</Label><Input placeholder="Trade license number" value={form.trade_license} onChange={e => setForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
@@ -581,15 +619,27 @@ function AgentListTab() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <Label className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />NID Card Photo{(editAgent as any)?.nid_image_path ? " (replace)" : ""}</Label>
-                <Input type="file" accept="image/*" onChange={e => setEditNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
+                <Input ref={editNidInputRef} type="file" accept="image/*" onChange={e => setEditNidFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {editNidFile ? <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {editNidFile.name}</p> : (editAgent as any)?.nid_image_path && <p className="text-[10px] text-emerald-600 mt-1 truncate">On file</p>}
-                <KycImagePreview file={editNidFile} existingPath={(editAgent as any)?.nid_image_path} alt="NID preview" />
+                <KycImagePreview
+                  file={editNidFile}
+                  existingPath={(editAgent as any)?.nid_image_path}
+                  alt="NID preview"
+                  onReplace={() => editNidInputRef.current?.click()}
+                  onClear={() => { setEditNidFile(null); if (editNidInputRef.current) editNidInputRef.current.value = ""; }}
+                />
               </div>
               <div>
                 <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Selfie / Photo{(editAgent as any)?.selfie_path ? " (replace)" : ""}</Label>
-                <Input type="file" accept="image/*" capture="user" onChange={e => setEditSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
+                <Input ref={editSelfieInputRef} type="file" accept="image/*" capture="user" onChange={e => setEditSelfieFile(e.target.files?.[0] || null)} className="mt-1 cursor-pointer file:mr-2 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-xs" />
                 {editSelfieFile ? <p className="text-[10px] text-muted-foreground mt-1 truncate">✓ {editSelfieFile.name}</p> : (editAgent as any)?.selfie_path && <p className="text-[10px] text-emerald-600 mt-1 truncate">On file</p>}
-                <KycImagePreview file={editSelfieFile} existingPath={(editAgent as any)?.selfie_path} alt="Selfie preview" />
+                <KycImagePreview
+                  file={editSelfieFile}
+                  existingPath={(editAgent as any)?.selfie_path}
+                  alt="Selfie preview"
+                  onReplace={() => editSelfieInputRef.current?.click()}
+                  onClear={() => { setEditSelfieFile(null); if (editSelfieInputRef.current) editSelfieInputRef.current.value = ""; }}
+                />
               </div>
             </div>
             <div><Label>Trade License</Label><Input value={editForm.trade_license} onChange={e => setEditForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
