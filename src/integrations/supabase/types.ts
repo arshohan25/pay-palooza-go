@@ -3529,6 +3529,53 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_audit_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          from_value: Json | null
+          id: string
+          merchant_id: string
+          merchant_user_id: string
+          metadata: Json | null
+          reason: string | null
+          to_value: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          from_value?: Json | null
+          id?: string
+          merchant_id: string
+          merchant_user_id: string
+          metadata?: Json | null
+          reason?: string | null
+          to_value?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          from_value?: Json | null
+          id?: string
+          merchant_id?: string
+          merchant_user_id?: string
+          metadata?: Json | null
+          reason?: string | null
+          to_value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_audit_events_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_categories: {
         Row: {
           created_at: string | null
@@ -4293,6 +4340,68 @@ export type Database = {
           used_at?: string | null
         }
         Relationships: []
+      }
+      merchant_vendor_applications: {
+        Row: {
+          admin_notes: string | null
+          contact_number: string | null
+          created_at: string
+          expected_monthly_orders: number | null
+          id: string
+          merchant_id: string
+          pickup_address: string | null
+          product_categories: string[] | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          store_description: string | null
+          store_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          contact_number?: string | null
+          created_at?: string
+          expected_monthly_orders?: number | null
+          id?: string
+          merchant_id: string
+          pickup_address?: string | null
+          product_categories?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_description?: string | null
+          store_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          contact_number?: string | null
+          created_at?: string
+          expected_monthly_orders?: number | null
+          id?: string
+          merchant_id?: string
+          pickup_address?: string | null
+          product_categories?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_description?: string | null
+          store_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_vendor_applications_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchants: {
         Row: {
@@ -7611,6 +7720,14 @@ export type Database = {
           p_reference?: string
         }
         Returns: Json
+      }
+      consume_agent_temp_pin: {
+        Args: { _agent_user_id: string }
+        Returns: string
+      }
+      consume_merchant_temp_pin: {
+        Args: { _merchant_user_id: string }
+        Returns: string
       }
       create_direct_chat_request: {
         Args: { p_metadata?: Json; p_other_user_id: string }
