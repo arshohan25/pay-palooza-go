@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import DistributorPickerDialog from "./DistributorPickerDialog";
 import { reassignAgent } from "@/lib/distributorAdmin";
 import DistrictRoutePicker from "@/components/DistrictRoutePicker";
+import DivisionDistrictUpazilaPicker from "@/components/DivisionDistrictUpazilaPicker";
 
 interface Agent {
   id: string;
@@ -76,11 +77,11 @@ function AgentListTab() {
   const [detail, setDetail] = useState<Agent | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+  const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
 
   // Edit
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
-  const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
+  const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", division: "", district: "", upazila: "", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete
@@ -198,6 +199,7 @@ function AgentListTab() {
       }
       await supabase.from("agents").insert({
         user_id: userId, business_name: form.business_name || null, territory_code: form.territory_code || null,
+        division: form.division || null, district: form.district || null, upazila: form.upazila || null,
         nid_number: form.nid_number || null, trade_license: form.trade_license || null,
         max_float: parseInt(form.max_float) || 500000, status: "active",
         latitude: form.latitude ? parseFloat(form.latitude) : null,
@@ -210,7 +212,7 @@ function AgentListTab() {
       }
       toast.success(pin ? `Agent created! Temp PIN: ${pin}` : `Existing user promoted to agent`, { duration: 10000 });
       setCreateOpen(false);
-      setForm({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+      setForm({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
       load();
     } catch (err: any) { toast.error(err.message || "Failed to create agent"); }
     finally { setCreating(false); }
@@ -222,6 +224,9 @@ function AgentListTab() {
     setEditForm({
       business_name: a.business_name || "",
       territory_code: a.territory_code || "",
+      division: (a as any).division || "",
+      district: (a as any).district || "",
+      upazila: (a as any).upazila || "",
       max_float: String(a.max_float),
       nid_number: a.nid_number || "",
       trade_license: a.trade_license || "",
@@ -237,6 +242,9 @@ function AgentListTab() {
     const { error } = await supabase.from("agents").update({
       business_name: editForm.business_name || null,
       territory_code: editForm.territory_code || null,
+      division: editForm.division || null,
+      district: editForm.district || null,
+      upazila: editForm.upazila || null,
       max_float: parseInt(editForm.max_float) || editAgent.max_float,
       nid_number: editForm.nid_number || null,
       trade_license: editForm.trade_license || null,
@@ -428,8 +436,11 @@ function AgentListTab() {
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
             <div><Label>Full Name</Label><Input placeholder="Agent's name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label>Business Name</Label><Input placeholder="Shop / business name" value={form.business_name} onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>District (route code)</Label><DistrictRoutePicker value={form.territory_code} onChange={(code) => setForm(f => ({ ...f, territory_code: code }))} placeholder="Select district" /></div>
+            <div className="grid grid-cols-1 gap-2">
+              <DivisionDistrictUpazilaPicker
+                value={{ division: form.division || null, district: form.district || null, upazila: form.upazila || null }}
+                onChange={(v) => setForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "" }))}
+              />
               <div><Label>Max Float</Label><Input type="number" value={form.max_float} onChange={e => setForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
             <div><Label>NID Number</Label><Input placeholder="National ID" value={form.nid_number} onChange={e => setForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
@@ -452,8 +463,11 @@ function AgentListTab() {
           <DialogHeader><DialogTitle>Edit Agent — {editAgent?.business_name || editAgent?.profile?.name || "Agent"}</DialogTitle></DialogHeader>
           <div className="space-y-3 pt-2">
             <div><Label>Business Name</Label><Input value={editForm.business_name} onChange={e => setEditForm(f => ({ ...f, business_name: e.target.value }))} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>District (route code)</Label><DistrictRoutePicker value={editForm.territory_code} onChange={(code) => setEditForm(f => ({ ...f, territory_code: code }))} placeholder="Select district" /></div>
+            <div className="grid grid-cols-1 gap-2">
+              <DivisionDistrictUpazilaPicker
+                value={{ division: editForm.division || null, district: editForm.district || null, upazila: editForm.upazila || null }}
+                onChange={(v) => setEditForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "" }))}
+              />
               <div><Label>Max Float</Label><Input type="number" value={editForm.max_float} onChange={e => setEditForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
             <div><Label>NID Number</Label><Input value={editForm.nid_number} onChange={e => setEditForm(f => ({ ...f, nid_number: e.target.value }))} /></div>

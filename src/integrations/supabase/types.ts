@@ -779,6 +779,8 @@ export type Database = {
           created_at: string
           customers_onboarded: number
           distributor_id: string | null
+          district: string | null
+          division: string | null
           id: string
           is_available: boolean
           latitude: number | null
@@ -791,6 +793,7 @@ export type Database = {
           territory_code: string | null
           total_ratings: number | null
           trade_license: string | null
+          upazila: string | null
           updated_at: string
           user_id: string
         }
@@ -803,6 +806,8 @@ export type Database = {
           created_at?: string
           customers_onboarded?: number
           distributor_id?: string | null
+          district?: string | null
+          division?: string | null
           id?: string
           is_available?: boolean
           latitude?: number | null
@@ -815,6 +820,7 @@ export type Database = {
           territory_code?: string | null
           total_ratings?: number | null
           trade_license?: string | null
+          upazila?: string | null
           updated_at?: string
           user_id: string
         }
@@ -827,6 +833,8 @@ export type Database = {
           created_at?: string
           customers_onboarded?: number
           distributor_id?: string | null
+          district?: string | null
+          division?: string | null
           id?: string
           is_available?: boolean
           latitude?: number | null
@@ -839,6 +847,7 @@ export type Database = {
           territory_code?: string | null
           total_ratings?: number | null
           trade_license?: string | null
+          upazila?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -6721,6 +6730,33 @@ export type Database = {
           token_expires_at?: string | null
           token_hash?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      upazilas: {
+        Row: {
+          created_at: string
+          district: string
+          division: string
+          id: string
+          is_active: boolean
+          upazila: string
+        }
+        Insert: {
+          created_at?: string
+          district: string
+          division: string
+          id?: string
+          is_active?: boolean
+          upazila: string
+        }
+        Update: {
+          created_at?: string
+          district?: string
+          division?: string
+          id?: string
+          is_active?: boolean
+          upazila?: string
         }
         Relationships: []
       }
