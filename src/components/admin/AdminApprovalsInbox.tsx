@@ -47,6 +47,11 @@ export default function AdminApprovalsInbox() {
   const [bulk, setBulk] = useState<null | { approve: boolean; ids: string[] }>(null);
   const [bulkNote, setBulkNote] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  // Per-item status after runBulk (or during retry). "skipped" is set upfront
+  // for the requester's own items; the rest start "pending".
+  type BulkStatus = "pending" | "running" | "success" | "failed" | "skipped";
+  const [bulkResults, setBulkResults] = useState<Record<string, { status: BulkStatus; error?: string }>>({});
+  const [bulkRan, setBulkRan] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
   const [rtHealthy, setRtHealthy] = useState(true);
   const [diffFor, setDiffFor] = useState<Req | null>(null);
