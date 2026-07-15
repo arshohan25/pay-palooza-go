@@ -271,27 +271,52 @@ function AgentListTab() {
       return;
     }
     setEditSaving(true);
-    const { error } = await supabase.from("agents").update({
-      business_name: editForm.business_name || null,
-      territory_code: editForm.territory_code || null,
-      division: editForm.division || null,
-      district: editForm.district || null,
-      upazila: editForm.upazila || null,
-      max_float: parseInt(editForm.max_float) || editAgent.max_float,
-      nid_number: editForm.nid_number || null,
-      trade_license: editForm.trade_license || null,
-      latitude: editForm.latitude ? parseFloat(editForm.latitude) : null,
-      longitude: editForm.longitude ? parseFloat(editForm.longitude) : null,
-      address: editForm.address || "",
-    } as any).eq("id", editAgent.id);
-    if (error) { toast.error("Failed to update"); } else {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_edited", entity_type: "agent", entity_id: editAgent.id, details: { changes: editForm } }).then();
+    try {
+      let nid_image_path: string | undefined;
+      let selfie_path: string | undefined;
+      if (editNidFile) {
+        const ext = editNidFile.name.split(".").pop() || "jpg";
+        const path = `agents/${editAgent.user_id}/nid-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, editNidFile, { upsert: true, contentType: editNidFile.type });
+        if (upErr) throw new Error(`NID upload failed: ${upErr.message}`);
+        nid_image_path = path;
       }
-      toast.success("Agent updated");
+      if (editSelfieFile) {
+        const ext = editSelfieFile.name.split(".").pop() || "jpg";
+        const path = `agents/${editAgent.user_id}/selfie-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, editSelfieFile, { upsert: true, contentType: editSelfieFile.type });
+        if (upErr) throw new Error(`Selfie upload failed: ${upErr.message}`);
+        selfie_path = path;
+      }
+      const updatePayload: any = {
+        business_name: editForm.business_name || null,
+        territory_code: editForm.territory_code || null,
+        division: editForm.division || null,
+        district: editForm.district || null,
+        upazila: editForm.upazila || null,
+        max_float: parseInt(editForm.max_float) || editAgent.max_float,
+        nid_number: editForm.nid_number || null,
+        trade_license: editForm.trade_license || null,
+        latitude: editForm.latitude ? parseFloat(editForm.latitude) : null,
+        longitude: editForm.longitude ? parseFloat(editForm.longitude) : null,
+        address: editForm.address || "",
+      };
+      if (nid_image_path) updatePayload.nid_image_path = nid_image_path;
+      if (selfie_path) updatePayload.selfie_path = selfie_path;
+      const { error } = await supabase.from("agents").update(updatePayload).eq("id", editAgent.id);
+      if (error) { toast.error("Failed to update"); } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_edited", entity_type: "agent", entity_id: editAgent.id, details: { changes: editForm } }).then();
+        }
+        toast.success("Agent updated");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update");
     }
     setEditSaving(false);
+    setEditNidFile(null);
+    setEditSelfieFile(null);
     setEditAgent(null);
     load();
   };
