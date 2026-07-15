@@ -854,13 +854,11 @@ export default function AdminMerchantManagement() {
                 <TabsTrigger value="settings">Settings</TabsTrigger>
               </TabsList>
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 px-6 pb-6">
                 <TabsContent value="audit" className="mt-4">
                   {detail?.merchant?.id && <MerchantAuditTimeline merchantId={detail.merchant.id} />}
                 </TabsContent>
-              </TabsList>
 
-              <ScrollArea className="flex-1 px-6 pb-6">
                 {/* ── Profile Tab ── */}
                 <TabsContent value="profile" className="space-y-4 mt-4">
                   {/* Owner info */}
