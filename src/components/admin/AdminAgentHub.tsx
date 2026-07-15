@@ -126,6 +126,108 @@ function KycImagePreview({ file, existingPath, alt, onClear, onReplace }: { file
   );
 }
 
+function ResendTempPinPanel({ agent }: { agent: Agent }) {
+  const [status, setStatus] = useState<{ state: string; expires_at: string | null; issued_at: string | null } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  const loadStatus = async () => {
+    setLoading(true);
+    const { data } = await (supabase as any).rpc("agent_temp_pin_status", { _agent_user_id: agent.user_id });
+    const row = Array.isArray(data) ? data[0] : data;
+    setStatus(row ?? { state: "none", expires_at: null, issued_at: null });
+    setLoading(false);
+  };
+
+  useEffect(() => { void loadStatus(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [agent.user_id]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
+  const resend = async () => {
+    if (!agent.profile?.phone) { toast.error("Agent has no phone on file"); return; }
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("issue-agent-temp-pin", {
+        body: { agent_user_id: agent.user_id, phone: agent.profile.phone, name: agent.profile.name, purpose: "resend" },
+      });
+      if (error) {
+        // Read structured error from context body when available (429 throttle, etc.)
+        const ctx: any = (error as any)?.context;
+        let payload: any = null;
+        if (ctx && typeof ctx.json === "function") {
+          try { payload = await ctx.json(); } catch { /* ignore */ }
+        }
+        if (payload?.throttled) {
+          const wait = payload.retry_after_seconds ?? 60;
+          setCooldown(wait);
+          toast.error(payload.error || `Please wait ${wait}s before resending.`);
+        } else {
+          toast.error(payload?.error || error.message || "Failed to resend PIN");
+        }
+        return;
+      }
+      const p = data as { sms_status?: string; pin_fallback?: string; expires_at?: string } | null;
+      if (p?.sms_status === "sent") {
+        toast.success(`New PIN sent by SMS to +88 ${agent.profile.phone}`);
+      } else if (p?.pin_fallback) {
+        toast.warning(`SMS failed — share this PIN manually: ${p.pin_fallback}`, { duration: 15000 });
+      } else {
+        toast.warning("PIN issued but SMS status unknown — check delivery logs");
+      }
+      setCooldown(60);
+      void loadStatus();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to resend PIN");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const badge = (() => {
+    if (!status || status.state === "none") return { label: "No temp PIN on file", cls: "bg-muted text-muted-foreground" };
+    if (status.state === "active") return { label: "Temp PIN active", cls: "bg-amber-500/15 text-amber-700 border-amber-500/20" };
+    if (status.state === "expired") return { label: "Temp PIN expired", cls: "bg-rose-500/15 text-rose-700 border-rose-500/20" };
+    return { label: "PIN changed by agent", cls: "bg-emerald-500/15 text-emerald-700 border-emerald-500/20" };
+  })();
+
+  return (
+    <div className="rounded-2xl border border-border bg-muted/30 p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <KeyRound className="w-4 h-4 text-primary" />
+          <p className="text-sm font-semibold">Temporary PIN</p>
+        </div>
+        <Badge variant="outline" className={`text-[10px] ${badge.cls}`}>{badge.label}</Badge>
+      </div>
+      {loading ? (
+        <p className="text-[11px] text-muted-foreground">Loading…</p>
+      ) : (
+        <div className="text-[11px] text-muted-foreground space-y-0.5">
+          {status?.issued_at && <p>Issued: {new Date(status.issued_at).toLocaleString()}</p>}
+          {status?.expires_at && <p>Expires: {new Date(status.expires_at).toLocaleString()}</p>}
+        </div>
+      )}
+      <Button
+        size="sm"
+        variant="secondary"
+        className="w-full h-8 gap-2"
+        disabled={sending || cooldown > 0}
+        onClick={resend}
+      >
+        {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+        {cooldown > 0 ? `Resend in ${cooldown}s` : sending ? "Sending…" : "Resend temp PIN by SMS"}
+      </Button>
+      <p className="text-[10px] text-muted-foreground">
+        Cooldown: 60s per agent. Max 5 issues per hour. The previous PIN is invalidated immediately.
+      </p>
+    </div>
+  );
+}
 
 
 function AgentListTab() {
