@@ -375,58 +375,131 @@ export default function AdminMerchantManagement() {
   };
 
   // ─── Create Merchant directly ───
+  const uploadKycFile = async (userId: string, slot: string, file: File): Promise<string> => {
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${userId}/${slot}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("vendor-kyc").upload(path, file, { upsert: true, contentType: file.type });
+    if (error) throw new Error(`${slot} upload failed: ${error.message}`);
+    return path;
+  };
+
   const handleCreateMerchant = async () => {
-    if (!createForm.phone.trim() || !createForm.business_name.trim()) {
-      toast.error("Phone and business name are required");
-      return;
+    const phone = createForm.phone.trim();
+    const businessName = createForm.business_name.trim();
+    if (!phone || !businessName) { toast.error("Phone and business name are required"); return; }
+    if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Phone must be a valid 11-digit BD number (01XXXXXXXXX)"); return; }
+    const mdr = Number(createForm.mdr_rate);
+    const commission = Number(createForm.commission_rate);
+    if (!Number.isFinite(mdr) || mdr < 0 || mdr > 10) { toast.error("MDR rate must be between 0 and 10 (%)"); return; }
+    if (!Number.isFinite(commission) || commission < 0 || commission > 100) { toast.error("Commission rate must be between 0 and 100 (%)"); return; }
+    if (createForm.contact_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.contact_email.trim())) { toast.error("Contact email is not valid"); return; }
+    if (createForm.kyc_status === "verified") {
+      if (!createForm.trade_license.trim()) { toast.error("Trade license number is required to mark KYC verified"); return; }
+      if (!createFiles.nid_front || !createFiles.nid_back) { toast.error("NID front & back files are required to mark KYC verified"); return; }
+      if (!createFiles.trade_license) { toast.error("Trade license document is required to mark KYC verified"); return; }
     }
+
     setCreateLoading(true);
     try {
-      // Find user by phone
-      const { data: profile } = await supabase.from("profiles").select("user_id, phone").eq("phone", createForm.phone.trim()).maybeSingle();
+      const { data: profile } = await supabase.from("profiles").select("user_id, phone, email").eq("phone", phone).maybeSingle();
       if (!profile) { toast.error("No user found with that phone number"); setCreateLoading(false); return; }
 
-      // Check if already a merchant
       const { data: existingMerchant } = await supabase.from("merchants").select("id").eq("user_id", profile.user_id).maybeSingle();
       if (existingMerchant) { toast.error("This user is already a merchant"); setCreateLoading(false); return; }
 
-      // Create merchant
-      const { error: mErr } = await supabase.from("merchants").insert({
+      if (createForm.trade_license.trim()) {
+        const { data: dupLicense } = await supabase.from("merchants").select("id").eq("trade_license", createForm.trade_license.trim()).maybeSingle();
+        if (dupLicense) { toast.error("Another merchant already uses this trade license"); setCreateLoading(false); return; }
+      }
+
+      // Upload KYC docs (best-effort — a single failure aborts the whole create)
+      const uploaded: Record<string, string | null> = { nid_front: null, nid_back: null, trade_license: null, bank_statement: null };
+      for (const slot of ["nid_front", "nid_back", "trade_license", "bank_statement"] as const) {
+        const f = createFiles[slot];
+        if (f) uploaded[slot] = await uploadKycFile(profile.user_id, slot, f);
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const insertPayload: any = {
         user_id: profile.user_id,
-        business_name: createForm.business_name.trim(),
-        trade_license: createForm.trade_license.trim() || null,
+        business_name: businessName,
         category: createForm.category as any,
-        status: "active" as any,
-        bank_name: createForm.bank_name || null,
-        bank_account_number: createForm.bank_account_number || null,
-        bank_routing: createForm.bank_routing || null,
-      });
+        status: createForm.initial_status as any,
+        trade_license: createForm.trade_license.trim() || null,
+        mdr_rate: mdr,
+        commission_rate: commission,
+        settlement_frequency: createForm.settlement_frequency,
+        owner_name: createForm.owner_name.trim() || null,
+        contact_email: createForm.contact_email.trim() || null,
+        contact_number: createForm.contact_number.trim() || null,
+        business_address: createForm.business_address.trim() || null,
+        admin_notes: createForm.admin_notes.trim() || null,
+        bank_name: createForm.bank_name.trim() || null,
+        bank_account_holder: createForm.bank_account_holder.trim() || null,
+        bank_branch: createForm.bank_branch.trim() || null,
+        bank_account_number: createForm.bank_account_number.trim() || null,
+        bank_routing: createForm.bank_routing.trim() || null,
+        nid_front_url: uploaded.nid_front,
+        nid_back_url: uploaded.nid_back,
+        trade_license_url: uploaded.trade_license,
+        bank_statement_url: uploaded.bank_statement,
+        business_kyc_status: createForm.kyc_status,
+        business_kyc_reviewed_at: createForm.kyc_status === "verified" ? new Date().toISOString() : null,
+        business_kyc_reviewed_by: createForm.kyc_status === "verified" ? session?.user?.id ?? null : null,
+      };
+
+      const { error: mErr } = await supabase.from("merchants").insert(insertPayload);
       if (mErr) { toast.error("Failed to create merchant: " + mErr.message); setCreateLoading(false); return; }
 
-      // Assign merchant role
+      // Assign merchant role (ignore unique-conflict if it already exists)
       await (supabase as any).from("user_roles").insert({ user_id: profile.user_id, role: "merchant" });
 
-      // Notify user
+      // Backfill profile email if it was missing and admin supplied one
+      if (createForm.contact_email.trim() && !profile.email) {
+        await supabase.from("profiles").update({ email: createForm.contact_email.trim() }).eq("user_id", profile.user_id);
+      }
+
+      // Notify the merchant
+      const statusCopy = createForm.initial_status === "active"
+        ? "is active and ready to accept payments."
+        : "has been created and is pending review.";
       await supabase.from("notifications").insert({
         user_id: profile.user_id,
         title: "Merchant Account Created",
-        body: `Your merchant account "${createForm.business_name}" has been created and is active.`,
+        body: `Your merchant account "${businessName}" ${statusCopy}`,
         category: "merchant",
       });
 
-      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_created_direct", entity_type: "merchant", entity_id: profile.user_id, details: { business_name: createForm.business_name, phone: createForm.phone } }).then();
+        supabase.from("audit_logs").insert({
+          actor_id: session.user.id,
+          action: "merchant_created_direct",
+          entity_type: "merchant",
+          entity_id: profile.user_id,
+          details: {
+            business_name: businessName,
+            phone,
+            initial_status: createForm.initial_status,
+            kyc_status: createForm.kyc_status,
+            mdr_rate: mdr,
+            commission_rate: commission,
+            settlement_frequency: createForm.settlement_frequency,
+            reason: createForm.admin_notes.trim() || null,
+          },
+        }).then();
       }
-      toast.success("Merchant created successfully");
+
+      toast.success(`Merchant created (${createForm.initial_status}, KYC ${createForm.kyc_status})`);
       setShowCreateMerchant(false);
-      setCreateForm({ phone: "", business_name: "", trade_license: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
+      resetCreateForm();
       loadMerchants();
     } catch (err: any) {
       toast.error("Error: " + (err.message || "Unknown"));
     }
     setCreateLoading(false);
   };
+
 
   // ─── Approve/Reject API request ───
   const handleApiRequest = async (requestId: string, action: "approved" | "rejected", notes?: string) => {
