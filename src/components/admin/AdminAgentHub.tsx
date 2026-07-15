@@ -429,7 +429,7 @@ function AgentListTab() {
             <div><Label>Full Name</Label><Input placeholder="Agent's name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label>Business Name</Label><Input placeholder="Shop / business name" value={form.business_name} onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-2">
-              <div><Label>Territory Code</Label><Input placeholder="e.g. DHK-01" value={form.territory_code} onChange={e => setForm(f => ({ ...f, territory_code: e.target.value }))} /></div>
+              <div><Label>District (route code)</Label><DistrictRoutePicker value={form.territory_code} onChange={(code) => setForm(f => ({ ...f, territory_code: code }))} placeholder="Select district" /></div>
               <div><Label>Max Float</Label><Input type="number" value={form.max_float} onChange={e => setForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
             <div><Label>NID Number</Label><Input placeholder="National ID" value={form.nid_number} onChange={e => setForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
