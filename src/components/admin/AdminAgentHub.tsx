@@ -132,7 +132,7 @@ function AgentListTab() {
   const [detail, setDetail] = useState<Agent | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+  const [form, setForm] = useState({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
   const [nidFile, setNidFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const nidInputRef = useRef<HTMLInputElement>(null);
@@ -230,6 +230,8 @@ function AgentListTab() {
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone number"); return; }
     const missing: string[] = [];
     if (!form.name.trim()) missing.push("Full Name");
+    if (!form.email.trim()) missing.push("Email");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) { toast.error("Enter a valid email address"); return; }
     if (!form.business_name.trim()) missing.push("Business Name");
     if (!form.division) missing.push("Division");
     if (!form.district) missing.push("District");
@@ -262,15 +264,15 @@ function AgentListTab() {
         const { data: existingAgent } = await supabase
           .from("agents").select("id").eq("user_id", userId).maybeSingle();
         if (existingAgent) { toast.error("This user is already an agent"); setCreating(false); return; }
-        if (form.name) {
-          await supabase.from("profiles").update({ name: form.name }).eq("user_id", userId);
+        if (form.name || form.email) {
+          await supabase.from("profiles").update({ name: form.name || undefined, email: form.email.trim() || undefined }).eq("user_id", userId);
         }
       } else {
         pin = String(Math.floor(1000 + Math.random() * 9000));
         const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: form.name || phone });
         if (!authData?.user) throw new Error("Account creation failed");
         userId = authData.user.id;
-        await supabase.from("profiles").update({ name: form.name || null, phone }).eq("user_id", userId);
+        await supabase.from("profiles").update({ name: form.name || null, phone, email: form.email.trim() || null }).eq("user_id", userId);
       }
 
       // Assign agent role (skip if already present)
@@ -313,7 +315,7 @@ function AgentListTab() {
       }
       toast.success(pin ? `Agent created! Temp PIN: ${pin}` : `Existing user promoted to agent`, { duration: 10000 });
       setCreateOpen(false);
-      setForm({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+      setForm({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
       setNidFile(null); setSelfieFile(null);
       load();
     } catch (err: any) { toast.error(err.message || "Failed to create agent"); }
@@ -566,6 +568,7 @@ function AgentListTab() {
           <div className="space-y-3 px-5 pt-1 pb-3 overflow-y-auto flex-1 min-h-0">
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
             <div><Label>Full Name *</Label><Input placeholder="Agent's name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div><Label>Email *</Label><Input type="email" placeholder="agent@example.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
             <div><Label>Business Name *</Label><Input placeholder="Shop / business name" value={form.business_name} onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-2">
               <DivisionDistrictUpazilaPicker
@@ -608,7 +611,7 @@ function AgentListTab() {
             </div>
           </div>
           <div className="px-5 py-3 border-t border-border shrink-0 bg-background">
-            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone || !form.name.trim() || !form.business_name.trim() || !form.division || !form.district || !form.upazila || !form.max_float || !form.nid_number.trim() || !nidFile || !selfieFile || !form.trade_license.trim() || !form.address.trim() || !form.latitude || !form.longitude}>
+            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone || !form.name.trim() || !form.email.trim() || !form.business_name.trim() || !form.division || !form.district || !form.upazila || !form.max_float || !form.nid_number.trim() || !nidFile || !selfieFile || !form.trade_license.trim() || !form.address.trim() || !form.latitude || !form.longitude}>
               {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Agent"}
             </Button>
           </div>
