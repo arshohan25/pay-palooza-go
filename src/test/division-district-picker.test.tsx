@@ -19,6 +19,13 @@ import React, { useState } from "react";
 
 // ---- Mock the shadcn Select with a native <select> ----
 vi.mock("@/components/ui/select", () => {
+  const extractText = (node: any): string => {
+    if (node == null || node === false) return "";
+    if (typeof node === "string" || typeof node === "number") return String(node);
+    if (Array.isArray(node)) return node.map(extractText).join("");
+    if (node.props?.children) return extractText(node.props.children);
+    return "";
+  };
   const collectItems = (
     node: any,
     out: { value: string; label: string }[] = [],
@@ -28,10 +35,7 @@ vi.mock("@/components/ui/select", () => {
       if (child.type?.__isSelectItem) {
         out.push({
           value: String(child.props.value),
-          label:
-            typeof child.props.children === "string"
-              ? child.props.children
-              : String(child.props.value),
+          label: extractText(child.props.children) || String(child.props.value),
         });
       } else if (child.props?.children) {
         collectItems(child.props.children, out);
