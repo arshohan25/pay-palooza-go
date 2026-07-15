@@ -38,6 +38,7 @@ export default function AdminRolesPermissions() {
   const [presetEditor, setPresetEditor] = useState<Preset | null>(null);
   const [editorDraft, setEditorDraft] = useState<{ name: string; description: string; permissions: Set<string> }>({ name: "", description: "", permissions: new Set() });
   const [deleteTarget, setDeleteTarget] = useState<Preset | null>(null);
+  const [historyFor, setHistoryFor] = useState<Preset | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -292,6 +293,9 @@ export default function AdminRolesPermissions() {
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" onClick={() => setHistoryFor(p)} title="Version history">
+                      <History className="w-3.5 h-3.5" />
+                    </Button>
                     <Button size="icon" variant="ghost" onClick={() => openEditPreset(p)} disabled={!canManage || p.is_builtin} title={p.is_builtin ? "Built-in presets cannot be edited" : "Edit"}>
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
