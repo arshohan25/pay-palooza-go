@@ -199,6 +199,7 @@ function AgentListTab() {
       }
       await supabase.from("agents").insert({
         user_id: userId, business_name: form.business_name || null, territory_code: form.territory_code || null,
+        division: form.division || null, district: form.district || null, upazila: form.upazila || null,
         nid_number: form.nid_number || null, trade_license: form.trade_license || null,
         max_float: parseInt(form.max_float) || 500000, status: "active",
         latitude: form.latitude ? parseFloat(form.latitude) : null,
@@ -211,7 +212,7 @@ function AgentListTab() {
       }
       toast.success(pin ? `Agent created! Temp PIN: ${pin}` : `Existing user promoted to agent`, { duration: 10000 });
       setCreateOpen(false);
-      setForm({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+      setForm({ phone: "", name: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
       load();
     } catch (err: any) { toast.error(err.message || "Failed to create agent"); }
     finally { setCreating(false); }
