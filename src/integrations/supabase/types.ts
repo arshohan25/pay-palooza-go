@@ -4955,6 +4955,7 @@ export type Database = {
         Row: {
           allowed: boolean
           created_at: string
+          expires_at: string
           id: string
           permission: string
           reason: string | null
@@ -4969,6 +4970,7 @@ export type Database = {
         Insert: {
           allowed: boolean
           created_at?: string
+          expires_at?: string
           id?: string
           permission: string
           reason?: string | null
@@ -4983,6 +4985,7 @@ export type Database = {
         Update: {
           allowed?: boolean
           created_at?: string
+          expires_at?: string
           id?: string
           permission?: string
           reason?: string | null
@@ -7385,6 +7388,7 @@ export type Database = {
       }
       expire_payment_links: { Args: never; Returns: undefined }
       expire_stale_payment_sessions: { Args: never; Returns: number }
+      expire_stale_permission_requests: { Args: never; Returns: number }
       expire_stale_promotions: { Args: never; Returns: undefined }
       find_chat_user_by_phone: { Args: { p_phone: string }; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
@@ -7906,7 +7910,12 @@ export type Database = {
         | "education"
         | "utility"
         | "other"
-      perm_change_status: "pending" | "approved" | "rejected" | "cancelled"
+      perm_change_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "cancelled"
+        | "expired"
       treasury_ledger_type:
         | "disburse"
         | "earning"
@@ -8087,7 +8096,13 @@ export const Constants = {
         "utility",
         "other",
       ],
-      perm_change_status: ["pending", "approved", "rejected", "cancelled"],
+      perm_change_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "cancelled",
+        "expired",
+      ],
       treasury_ledger_type: [
         "disburse",
         "earning",
