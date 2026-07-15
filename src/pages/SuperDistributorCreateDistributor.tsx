@@ -151,8 +151,8 @@ const SuperDistributorCreateDistributor = () => {
               <Input placeholder="Distribution hub name" value={businessName} onChange={e => setBusinessName(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">Territories (comma-separated)</Label>
-              <Input placeholder="Dhaka North, Dhaka South" value={territory} onChange={e => setTerritory(e.target.value)} />
+              <Label className="text-xs">Territories</Label>
+              <DistrictMultiSelect value={territories} onChange={setTerritories} placeholder="Select districts" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
