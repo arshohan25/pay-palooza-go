@@ -10,12 +10,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Bell, Check, X, ShieldAlert, Loader2, RefreshCw, Lock, Info, CheckCheck, Circle, CircleDot, WifiOff, Search, Siren, ArrowRightLeft, Filter, AlarmClock } from "lucide-react";
+import { Bell, Check, X, ShieldAlert, Loader2, RefreshCw, Lock, Info, CheckCheck, Circle, CircleDot, WifiOff, Search, Siren, ArrowRightLeft, Filter, AlarmClock, RotateCcw, Clock, PlusCircle, MinusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow, format, differenceInMilliseconds } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermission } from "@/hooks/use-permission";
-import { REGISTERED_PERMISSIONS, HIGH_RISK_PERMISSIONS } from "@/lib/permissionsRegistry";
+import { REGISTERED_PERMISSIONS, HIGH_RISK_PERMISSIONS, getHighRiskReasons } from "@/lib/permissionsRegistry";
+import PermissionRequestTimeline from "./PermissionRequestTimeline";
 
 interface Req {
   id: string; role: string; permission: string; allowed: boolean;
@@ -51,6 +52,12 @@ export default function AdminApprovalsInbox() {
   const [diffFor, setDiffFor] = useState<Req | null>(null);
   const [diffCurrent, setDiffCurrent] = useState<boolean | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
+  const [timelineId, setTimelineId] = useState<string | null>(null);
+  const [undoWindows, setUndoWindows] = useState<Record<string, number>>({});
+  // recent action tracker for undo: request snapshot + when it happened + window
+  const [recent, setRecent] = useState<Array<{ req: Req; approved: boolean; at: number; windowSec: number; note: string }>>([]);
+  const [tick, setTick] = useState(0);
+  useEffect(() => { const t = setInterval(() => setTick((n) => n + 1), 1000); return () => clearInterval(t); }, []);
 
   // Filters + sort
   const [search, setSearch] = useState("");
@@ -65,6 +72,16 @@ export default function AdminApprovalsInbox() {
 
   const permMeta = useMemo(() => Object.fromEntries(REGISTERED_PERMISSIONS.map((p) => [p.key, p])), []);
   const permGroups = useMemo(() => Array.from(new Set(REGISTERED_PERMISSIONS.map((p) => p.group))), []);
+
+  // Load per-role undo windows once.
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any).from("admin_role_undo_windows").select("role, undo_seconds");
+      const m: Record<string, number> = {};
+      for (const r of (data ?? []) as any[]) m[r.role] = r.undo_seconds;
+      setUndoWindows(m);
+    })();
+  }, []);
 
   // ---- Persisted state (per-admin localStorage) ---------------------------
   useEffect(() => {
@@ -251,7 +268,20 @@ export default function AdminApprovalsInbox() {
     notifyRequesterOfResult(r, approve, note);
     setRows((prev) => prev.filter((x) => x.id !== r.id));
     markRead(r.id);
+    const windowSec = undoWindows[r.role] ?? 900;
+    setRecent((prev) => [{ req: r, approved: approve, at: Date.now(), windowSec, note }, ...prev].slice(0, 5));
   };
+
+  const undo = async (item: { req: Req; approved: boolean; note: string }) => {
+    const { error } = await supabase.rpc("undo_permission_change" as any, { _request_id: item.req.id, _note: null });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Action undone — request returned to pending");
+    setRecent((prev) => prev.filter((x) => x.req.id !== item.req.id));
+    // Re-insert the request into pending list optimistically.
+    setRows((prev) => prev.some((x) => x.id === item.req.id) ? prev : [{ ...item.req, status: "pending" }, ...prev]);
+    reconcile();
+  };
+
 
   // ---- Diff modal ----------------------------------------------------------
   const openDiff = async (r: Req) => {
@@ -422,6 +452,37 @@ export default function AdminApprovalsInbox() {
         </CardContent>
       </Card>
 
+      {/* Undo banner — one per recent action, disappears when the window elapses */}
+      {recent.length > 0 && (
+        <div className="space-y-2">
+          {recent.map((item) => {
+            const remaining = Math.max(0, item.windowSec * 1000 - (Date.now() - item.at));
+            if (remaining <= 0) return null;
+            const secs = Math.ceil(remaining / 1000);
+            return (
+              <div key={item.req.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/[0.06]">
+                <RotateCcw className="w-4 h-4 text-amber-600 shrink-0" />
+                <div className="text-xs flex-1 min-w-[200px]">
+                  <p className="font-medium">
+                    {item.approved ? "Approved" : "Rejected"} <code className="text-[11px]">{item.req.permission}</code> for{" "}
+                    <span className="capitalize">{item.req.role.replace(/_/g, " ")}</span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> Reversible for {secs}s (role window: {item.windowSec}s){tick /* re-render */}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => undo(item)} className="gap-1 border-amber-500/60 text-amber-700 hover:bg-amber-500/10">
+                  <RotateCcw className="w-3 h-3" /> Undo
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setRecent((prev) => prev.filter((x) => x.req.id !== item.req.id))}>Dismiss</Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+
+
       {/* Filters */}
       <Card>
         <CardContent className="p-3 flex flex-wrap items-center gap-2">
@@ -564,6 +625,9 @@ export default function AdminApprovalsInbox() {
                           value={notes[r.id] ?? ""} onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
                           className="text-xs" />
                         <div className="flex flex-wrap justify-end gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => setTimelineId(r.id)} className="gap-1">
+                            <Clock className="w-3 h-3" /> Timeline
+                          </Button>
                           <Button size="sm" variant="ghost" onClick={() => openDiff(r)} className="gap-1">
                             <ArrowRightLeft className="w-3 h-3" /> Preview diff
                           </Button>
@@ -602,37 +666,72 @@ export default function AdminApprovalsInbox() {
           </DialogHeader>
           {diffLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
-          ) : diffFor && (
-            <div className="space-y-3">
-              {permMeta[diffFor.permission] && (
-                <div className="p-3 rounded-lg bg-muted/40 text-xs">
-                  <p className="font-medium text-foreground">{permMeta[diffFor.permission].label}</p>
-                  <p className="text-muted-foreground mt-1">{permMeta[diffFor.permission].description}</p>
-                  <p className="text-muted-foreground mt-1">Group: <strong>{permMeta[diffFor.permission].group}</strong></p>
+          ) : diffFor && (() => {
+            const isNoop = diffCurrent === diffFor.allowed;
+            const isAdd = !isNoop && diffFor.allowed === true;
+            const isRemove = !isNoop && diffFor.allowed === false;
+            const risky = HIGH_RISK_PERMISSIONS.has(diffFor.permission);
+            const reasons = risky ? getHighRiskReasons(diffFor.permission) : [];
+            return (
+              <div className="space-y-3">
+                {permMeta[diffFor.permission] && (
+                  <div className="p-3 rounded-lg bg-muted/40 text-xs">
+                    <p className="font-medium text-foreground">{permMeta[diffFor.permission].label}</p>
+                    <p className="text-muted-foreground mt-1">{permMeta[diffFor.permission].description}</p>
+                    <p className="text-muted-foreground mt-1">Group: <strong>{permMeta[diffFor.permission].group}</strong></p>
+                  </div>
+                )}
+
+                {/* Clear change-type banner */}
+                <div className={`p-3 rounded-lg border flex items-start gap-2 text-xs ${
+                  isNoop ? "border-amber-500/40 bg-amber-500/5 text-amber-700" :
+                  isAdd ? "border-emerald-500/40 bg-emerald-500/5 text-emerald-700" :
+                  "border-red-500/40 bg-red-500/5 text-red-700"
+                }`}>
+                  {isNoop ? <Info className="w-4 h-4 mt-0.5 shrink-0" /> :
+                   isAdd ? <PlusCircle className="w-4 h-4 mt-0.5 shrink-0" /> :
+                   <MinusCircle className="w-4 h-4 mt-0.5 shrink-0" />}
+                  <div>
+                    <p className="font-semibold">
+                      {isNoop ? "No change — request is a no-op" :
+                       isAdd ? "ADD permission" : "REMOVE permission"}
+                    </p>
+                    <p className="opacity-90 mt-0.5">
+                      {isNoop ? "The permission is already in the requested state." :
+                       isAdd ? `Approving grants "${permMeta[diffFor.permission]?.label ?? diffFor.permission}" to the ${diffFor.role} role.` :
+                       `Approving revokes "${permMeta[diffFor.permission]?.label ?? diffFor.permission}" from the ${diffFor.role} role.`}
+                    </p>
+                  </div>
                 </div>
-              )}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-3 rounded-lg border border-border">
-                  <p className="text-[10px] uppercase text-muted-foreground mb-1">Current</p>
-                  <Badge className={diffCurrent ? "bg-emerald-500/15 text-emerald-700" : "bg-slate-500/15 text-slate-700"}>
-                    {diffCurrent ? "Allowed" : "Denied"}
-                  </Badge>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-3 rounded-lg border border-border">
+                    <p className="text-[10px] uppercase text-muted-foreground mb-1">Current</p>
+                    <Badge className={diffCurrent ? "bg-emerald-500/15 text-emerald-700" : "bg-slate-500/15 text-slate-700"}>
+                      {diffCurrent ? "Allowed" : "Denied"}
+                    </Badge>
+                  </div>
+                  <div className="p-3 rounded-lg border border-primary/40 bg-primary/5">
+                    <p className="text-[10px] uppercase text-muted-foreground mb-1">If approved</p>
+                    <Badge className={diffFor.allowed ? "bg-emerald-500/15 text-emerald-700" : "bg-red-500/15 text-red-700"}>
+                      {diffFor.allowed ? "Allowed" : "Denied"}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="p-3 rounded-lg border border-primary/40 bg-primary/5">
-                  <p className="text-[10px] uppercase text-muted-foreground mb-1">If approved</p>
-                  <Badge className={diffFor.allowed ? "bg-emerald-500/15 text-emerald-700" : "bg-red-500/15 text-red-700"}>
-                    {diffFor.allowed ? "Allowed" : "Denied"}
-                  </Badge>
-                </div>
+
+                {risky && (
+                  <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/5">
+                    <p className="text-xs font-semibold text-amber-700 flex items-center gap-1">
+                      <ShieldAlert className="w-3.5 h-3.5" /> High-risk permission — why it's flagged
+                    </p>
+                    <ul className="mt-2 space-y-1 text-[11px] text-amber-800">
+                      {reasons.map((r, i) => <li key={i} className="flex items-start gap-1"><span className="opacity-60">•</span><span>{r}</span></li>)}
+                    </ul>
+                  </div>
+                )}
               </div>
-              {diffCurrent === diffFor.allowed && (
-                <p className="text-[11px] text-amber-600">⚠ This request would leave the permission unchanged.</p>
-              )}
-              {HIGH_RISK_PERMISSIONS.has(diffFor.permission) && (
-                <p className="text-[11px] text-amber-600 flex items-center gap-1"><ShieldAlert className="w-3 h-3" /> High-risk permission — audit-logged with your identity.</p>
-              )}
-            </div>
-          )}
+            );
+          })()}
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDiffFor(null)}>Close</Button>
             {diffFor && (
@@ -669,6 +768,8 @@ export default function AdminApprovalsInbox() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PermissionRequestTimeline requestId={timelineId} onOpenChange={(o) => !o && setTimelineId(null)} />
     </div>
   );
 }
