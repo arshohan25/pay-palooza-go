@@ -19,43 +19,49 @@ import React, { useState } from "react";
 
 // ---- Mock the shadcn Select with a native <select> ----
 vi.mock("@/components/ui/select", () => {
-  const Ctx = React.createContext<{
-    value: string;
-    onValueChange: (v: string) => void;
-    disabled?: boolean;
-    register: (v: string, label: string) => void;
-    triggerProps: React.MutableRefObject<Record<string, any>>;
-  } | null>(null);
-
-  const Select = ({ value, onValueChange, disabled, children }: any) => {
-    const [items, setItems] = React.useState<{ value: string; label: string }[]>([]);
-    const triggerProps = React.useRef<Record<string, any>>({});
-    const register = React.useCallback((v: string, label: string) => {
-      setItems((prev) =>
-        prev.some((p) => p.value === v) ? prev : [...prev, { value: v, label }],
-      );
-    }, []);
-    // Reset items when children identity changes (division switch re-renders)
-    React.useEffect(() => {
-      setItems([]);
-    }, [children]);
-    return (
-      <Ctx.Provider value={{ value: value ?? "", onValueChange, disabled, register, triggerProps }}>
-        {/* Render children so SelectTrigger can publish props and SelectItems can register */}
-        <div style={{ display: "none" }}>{children}</div>
-        <NativeSelect items={items} />
-      </Ctx.Provider>
-    );
+  const collectItems = (
+    node: any,
+    out: { value: string; label: string }[] = [],
+  ): { value: string; label: string }[] => {
+    React.Children.forEach(node, (child: any) => {
+      if (!child || typeof child !== "object") return;
+      if (child.type?.__isSelectItem) {
+        out.push({
+          value: String(child.props.value),
+          label:
+            typeof child.props.children === "string"
+              ? child.props.children
+              : String(child.props.value),
+        });
+      } else if (child.props?.children) {
+        collectItems(child.props.children, out);
+      }
+    });
+    return out;
   };
 
-  const NativeSelect = ({ items }: { items: { value: string; label: string }[] }) => {
-    const ctx = React.useContext(Ctx)!;
-    const { value, onValueChange, disabled, triggerProps } = ctx;
+  const findTriggerProps = (node: any): Record<string, any> => {
+    let found: Record<string, any> = {};
+    React.Children.forEach(node, (child: any) => {
+      if (!child || typeof child !== "object") return;
+      if (child.type?.__isSelectTrigger) {
+        const { children: _c, ...rest } = child.props;
+        found = rest;
+      } else if (child.props?.children && !found.id) {
+        Object.assign(found, findTriggerProps(child.props.children));
+      }
+    });
+    return found;
+  };
+
+  const Select = ({ value, onValueChange, disabled, children }: any) => {
+    const items = collectItems(children);
+    const triggerProps = findTriggerProps(children);
     return (
       <select
-        {...triggerProps.current}
+        {...triggerProps}
         disabled={disabled}
-        value={value}
+        value={value ?? ""}
         onChange={(e) => onValueChange(e.target.value)}
       >
         <option value="" disabled hidden>
@@ -70,20 +76,12 @@ vi.mock("@/components/ui/select", () => {
     );
   };
 
-  const SelectTrigger = ({ children: _c, ...rest }: any) => {
-    const ctx = React.useContext(Ctx)!;
-    ctx.triggerProps.current = rest;
-    return null;
-  };
+  const SelectTrigger: any = () => null;
+  SelectTrigger.__isSelectTrigger = true;
   const SelectValue = () => null;
   const SelectContent = ({ children }: any) => <>{children}</>;
-  const SelectItem = ({ value, children }: any) => {
-    const ctx = React.useContext(Ctx)!;
-    React.useEffect(() => {
-      ctx.register(value, typeof children === "string" ? children : String(value));
-    }, [value]);
-    return null;
-  };
+  const SelectItem: any = () => null;
+  SelectItem.__isSelectItem = true;
   return { Select, SelectTrigger, SelectValue, SelectContent, SelectItem };
 });
 
