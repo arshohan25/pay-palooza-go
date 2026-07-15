@@ -779,6 +779,7 @@ export type Database = {
           created_at: string
           customers_onboarded: number
           distributor_id: string | null
+          district: string | null
           division: string | null
           id: string
           is_available: boolean
@@ -805,6 +806,7 @@ export type Database = {
           created_at?: string
           customers_onboarded?: number
           distributor_id?: string | null
+          district?: string | null
           division?: string | null
           id?: string
           is_available?: boolean
@@ -831,6 +833,7 @@ export type Database = {
           created_at?: string
           customers_onboarded?: number
           distributor_id?: string | null
+          district?: string | null
           division?: string | null
           id?: string
           is_available?: boolean
