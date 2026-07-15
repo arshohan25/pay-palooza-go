@@ -448,6 +448,7 @@ function AgentListTab() {
               <DivisionDistrictUpazilaPicker
                 value={{ division: form.division || null, district: form.district || null, upazila: form.upazila || null }}
                 onChange={(v) => setForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "" }))}
+                required
               />
               <div><Label>Max Float</Label><Input type="number" value={form.max_float} onChange={e => setForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
