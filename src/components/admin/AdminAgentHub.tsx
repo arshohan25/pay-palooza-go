@@ -438,9 +438,9 @@ function AgentListTab() {
 
       {/* Create Agent Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Create New Agent</DialogTitle></DialogHeader>
-          <div className="space-y-3 pt-2 max-h-[60vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] p-0 flex flex-col gap-0">
+          <DialogHeader className="px-5 pt-5 pb-2 shrink-0"><DialogTitle>Create New Agent</DialogTitle></DialogHeader>
+          <div className="space-y-3 px-5 pt-1 pb-3 overflow-y-auto flex-1 min-h-0">
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
             <div><Label>Full Name</Label><Input placeholder="Agent's name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label>Business Name</Label><Input placeholder="Shop / business name" value={form.business_name} onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))} /></div>
@@ -455,10 +455,12 @@ function AgentListTab() {
             <div><Label>NID Number</Label><Input placeholder="National ID" value={form.nid_number} onChange={e => setForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
             <div><Label>Trade License</Label><Input placeholder="Trade license number" value={form.trade_license} onChange={e => setForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
             <div><Label>Address</Label><Input placeholder="Shop address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div><Label>Latitude</Label><Input type="number" step="any" placeholder="23.8103" value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
               <div><Label>Longitude</Label><Input type="number" step="any" placeholder="90.4125" value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} /></div>
             </div>
+          </div>
+          <div className="px-5 py-3 border-t border-border shrink-0 bg-background">
             <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone || !form.division || !form.district || !form.upazila}>
               {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Agent"}
             </Button>
@@ -468,9 +470,10 @@ function AgentListTab() {
 
       {/* Edit Agent Dialog */}
       <Dialog open={!!editAgent} onOpenChange={o => { if (!o) setEditAgent(null); }}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Edit Agent — {editAgent?.business_name || editAgent?.profile?.name || "Agent"}</DialogTitle></DialogHeader>
-          <div className="space-y-3 pt-2">
+
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] p-0 flex flex-col gap-0">
+          <DialogHeader className="px-5 pt-5 pb-2 shrink-0"><DialogTitle className="pr-6 truncate">Edit Agent — {editAgent?.business_name || editAgent?.profile?.name || "Agent"}</DialogTitle></DialogHeader>
+          <div className="space-y-3 px-5 pt-1 pb-3 overflow-y-auto flex-1 min-h-0">
             <div><Label>Business Name</Label><Input value={editForm.business_name} onChange={e => setEditForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-2">
               <DivisionDistrictUpazilaPicker
@@ -483,10 +486,12 @@ function AgentListTab() {
             <div><Label>NID Number</Label><Input value={editForm.nid_number} onChange={e => setEditForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
             <div><Label>Trade License</Label><Input value={editForm.trade_license} onChange={e => setEditForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
             <div><Label>Address</Label><Input placeholder="Shop address" value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} /></div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div><Label>Latitude</Label><Input type="number" step="any" placeholder="e.g. 23.8103" value={editForm.latitude} onChange={e => setEditForm(f => ({ ...f, latitude: e.target.value }))} /></div>
               <div><Label>Longitude</Label><Input type="number" step="any" placeholder="e.g. 90.4125" value={editForm.longitude} onChange={e => setEditForm(f => ({ ...f, longitude: e.target.value }))} /></div>
             </div>
+          </div>
+          <div className="px-5 py-3 border-t border-border shrink-0 bg-background">
             <Button className="w-full" onClick={saveEdit} disabled={editSaving || !editForm.division || !editForm.district || !editForm.upazila}>
               {editSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
             </Button>
