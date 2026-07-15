@@ -101,10 +101,11 @@ export default function DistrictRoutePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search district or code…" />
+        <Command filter={districtCommandFilter}>
+          <CommandInput placeholder="Search district, code, or division…" autoFocus />
           <CommandList className="max-h-72">
             <CommandEmpty>No district found.</CommandEmpty>
+
             {grouped.map(([division, list]) => (
               <CommandGroup key={division} heading={division}>
                 {list.map((r) => (
