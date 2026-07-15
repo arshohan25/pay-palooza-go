@@ -41,6 +41,7 @@ const DistributorCreateAgent = lazy(() => import("./pages/DistributorCreateAgent
 const SuperDistributorDashboard = lazy(() => import("./pages/SuperDistributorDashboard"));
 const SuperDistributorCreateDistributor = lazy(() => import("./pages/SuperDistributorCreateDistributor"));
 const MerchantDashboard = lazy(() => retryLazyImport(() => import("./pages/MerchantDashboard")));
+const MerchantApplyVendor = lazy(() => retryLazyImport(() => import("./pages/MerchantApplyVendor")));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const DynamicQrPage = lazy(() => import("./pages/DynamicQrPage"));
 const PayPage = lazy(() => import("./pages/PayPage"));
@@ -189,6 +190,9 @@ const App = () => (
                     </Route>
 
                     <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant-login" unauthorizedRedirect="/merchant-login"><MerchantDashboard /></RoleGuard>} />
+                    <Route path="/merchant/apply-vendor" element={<RoleGuard roles={["merchant", "admin"]} unauthenticatedRedirect="/merchant-login" unauthorizedRedirect="/merchant-login"><MerchantApplyVendor /></RoleGuard>} />
+
+
 
                     <Route path="/login/:role" element={<RoleLoginPage />} />
 
