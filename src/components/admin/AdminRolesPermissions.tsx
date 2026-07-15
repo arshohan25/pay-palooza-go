@@ -12,10 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Plus, Loader2, RefreshCw, Lock, Sparkles, ShieldAlert, Wand2, Pencil, Trash2, ArrowRight } from "lucide-react";
+import { Shield, Plus, Loader2, RefreshCw, Lock, Sparkles, ShieldAlert, Wand2, Pencil, Trash2, ArrowRight, History } from "lucide-react";
 import { toast } from "sonner";
 import { REGISTERED_PERMISSIONS, ROLE_KEYS, HIGH_RISK_PERMISSIONS } from "@/lib/permissionsRegistry";
 import { usePermission } from "@/hooks/use-permission";
+import PresetVersionHistoryDialog from "@/components/admin/PresetVersionHistoryDialog";
 
 interface Row { role: string; permission: string; allowed: boolean; }
 interface Preset { id: string; name: string; description: string | null; permissions: string[]; is_builtin: boolean; }
