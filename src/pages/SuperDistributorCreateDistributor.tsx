@@ -22,7 +22,7 @@ const SuperDistributorCreateDistributor = () => {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [territory, setTerritory] = useState("");
+  const [territories, setTerritories] = useState<string[]>([]);
   const [maxFloat, setMaxFloat] = useState("10000000");
   const [commissionRate, setCommissionRate] = useState("0.20");
   const [processing, setProcessing] = useState(false);
