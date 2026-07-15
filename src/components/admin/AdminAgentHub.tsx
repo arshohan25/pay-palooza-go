@@ -472,7 +472,7 @@ function AgentListTab() {
       <Dialog open={!!editAgent} onOpenChange={o => { if (!o) setEditAgent(null); }}>
 
         <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] p-0 flex flex-col gap-0">
-          <DialogHeader className="px-5 pt-5 pb-2 shrink-0"><DialogTitle className="pr-6 truncate">Edit Agent — {editAgent?.business_name || editAgent?.profile?.name || "Agent"}</DialogTitle></DialogHeader>
+          <DialogHeader className="px-5 pt-5 pb-2 pr-12 shrink-0"><DialogTitle className="truncate text-base sm:text-lg">Edit Agent — {editAgent?.business_name || editAgent?.profile?.name || "Agent"}</DialogTitle></DialogHeader>
           <div className="space-y-3 px-5 pt-1 pb-3 overflow-y-auto flex-1 min-h-0">
             <div><Label>Business Name</Label><Input value={editForm.business_name} onChange={e => setEditForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-2">
