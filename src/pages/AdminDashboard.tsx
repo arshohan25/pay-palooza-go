@@ -299,6 +299,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "roles_perms", label: "Roles & Permissions", icon: Building2 },
       { id: "user_roles", label: "User Role Assignments", icon: Building2 },
       { id: "perm_audit", label: "Permission Audit Log", icon: Building2 },
+      { id: "perm_approvals", label: "Permission Approvals", icon: ShieldCheck },
       { id: "wallets", label: "Wallets", icon: Wallet },
       { id: "referrals", label: "Referrals", icon: Gift },
     ],
