@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Save, Loader2, User, Store, Building2, UserCheck } from "lucide-react";
+import DistrictRoutePicker from "@/components/DistrictRoutePicker";
+import DistrictMultiSelect from "@/components/DistrictMultiSelect";
 
 interface AdminProfileEditorProps {
   userId: string;
@@ -290,7 +292,10 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
                     <div className="grid grid-cols-2 gap-3">
                       <Field label="Business Name" value={agent.business_name} onChange={(v) => setAgent(a => a ? { ...a, business_name: v } : a)} />
                       <Field label="NID Number" value={agent.nid_number} onChange={(v) => setAgent(a => a ? { ...a, nid_number: v } : a)} />
-                      <Field label="Territory Code" value={agent.territory_code} onChange={(v) => setAgent(a => a ? { ...a, territory_code: v } : a)} />
+                      <div>
+                        <Label className="text-xs mb-1 block">District (route code)</Label>
+                        <DistrictRoutePicker value={agent.territory_code} onChange={(code) => setAgent(a => a ? { ...a, territory_code: code } : a)} />
+                      </div>
                       <Field label="Trade License" value={agent.trade_license} onChange={(v) => setAgent(a => a ? { ...a, trade_license: v } : a)} />
                       <Field label="Max Float" value={agent.max_float} type="number" onChange={(v) => setAgent(a => a ? { ...a, max_float: parseFloat(v) || 0 } : a)} />
                     </div>
@@ -343,7 +348,12 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
                       <Field label="Commission Rate (%)" value={distributor.commission_rate} type="number" onChange={(v) => setDistributor(d => d ? { ...d, commission_rate: parseFloat(v) || 0 } : d)} />
                       <Field label="Max Float" value={distributor.max_float} type="number" onChange={(v) => setDistributor(d => d ? { ...d, max_float: parseFloat(v) || 0 } : d)} />
                       <div className="col-span-2">
-                        <Field label="Territory (comma-separated)" value={territoryInput} onChange={setTerritoryInput} placeholder="Dhaka, Chittagong, Sylhet" />
+                        <Label className="text-xs mb-1 block">Territories</Label>
+                        <DistrictMultiSelect
+                          value={territoryInput.split(",").map(s => s.trim()).filter(Boolean)}
+                          onChange={(codes) => setTerritoryInput(codes.join(", "))}
+                          placeholder="Select districts"
+                        />
                       </div>
                     </div>
                   </div>

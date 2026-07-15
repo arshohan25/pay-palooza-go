@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import DistrictMultiSelect from "@/components/DistrictMultiSelect";
 
 
 const SuperDistributorCreateDistributor = () => {
@@ -21,7 +22,7 @@ const SuperDistributorCreateDistributor = () => {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [territory, setTerritory] = useState("");
+  const [territories, setTerritories] = useState<string[]>([]);
   const [maxFloat, setMaxFloat] = useState("10000000");
   const [commissionRate, setCommissionRate] = useState("0.20");
   const [processing, setProcessing] = useState(false);
@@ -55,7 +56,7 @@ const SuperDistributorCreateDistributor = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated");
 
-      const parsedTerritories = territory.split(",").map(t => t.trim()).filter(Boolean);
+      const parsedTerritories = territories;
 
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-agent-or-distributor`, {
         method: "POST",
@@ -99,7 +100,7 @@ const SuperDistributorCreateDistributor = () => {
           <p className="text-xs text-muted-foreground mt-2">A random PIN was generated. They should use "Forgot PIN" to set their own.</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => { setSuccess(false); setPhone(""); setName(""); setBusinessName(""); setTerritory(""); setMaxFloat("10000000"); setCommissionRate("0.20"); }}>
+          <Button variant="outline" onClick={() => { setSuccess(false); setPhone(""); setName(""); setBusinessName(""); setTerritories([]); setMaxFloat("10000000"); setCommissionRate("0.20"); }}>
             <UserPlus size={14} className="mr-1.5" /> Create Another
           </Button>
           <Button onClick={() => navigate("/super-distributor")} className="text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(270 60% 45%), hsl(285 55% 35%))" }}>
@@ -150,8 +151,8 @@ const SuperDistributorCreateDistributor = () => {
               <Input placeholder="Distribution hub name" value={businessName} onChange={e => setBusinessName(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">Territories (comma-separated)</Label>
-              <Input placeholder="Dhaka North, Dhaka South" value={territory} onChange={e => setTerritory(e.target.value)} />
+              <Label className="text-xs">Territories</Label>
+              <DistrictMultiSelect value={territories} onChange={setTerritories} placeholder="Select districts" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

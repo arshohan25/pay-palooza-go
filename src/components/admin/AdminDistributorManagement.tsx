@@ -18,6 +18,10 @@ import DistributorPickerDialog from "./DistributorPickerDialog";
 import AssignAgentsDialog from "./AssignAgentsDialog";
 import BulkTransferDistributorDialog from "./BulkTransferDistributorDialog";
 import { reassignAgent, removeTerritory, transferTerritory, addTerritory, canManageDistributors } from "@/lib/distributorAdmin";
+import DistrictMultiSelect from "@/components/DistrictMultiSelect";
+
+const csvToArr = (s: string) => s.split(",").map(t => t.trim()).filter(Boolean);
+const arrToCsv = (a: string[]) => a.join(", ");
 
 interface Distributor {
   id: string;
@@ -407,7 +411,7 @@ export default function AdminDistributorManagement() {
                     {editingId === d.id ? (
                       <>
                         <TableCell><Input value={editForm.business_name} onChange={e => setEditForm(f => ({ ...f, business_name: e.target.value }))} className="h-8 text-sm" /></TableCell>
-                        <TableCell><Input value={editForm.territory} onChange={e => setEditForm(f => ({ ...f, territory: e.target.value }))} placeholder="DHK, CTG" className="h-8 text-sm" /></TableCell>
+                        <TableCell><DistrictMultiSelect value={csvToArr(editForm.territory)} onChange={(codes) => setEditForm(f => ({ ...f, territory: arrToCsv(codes) }))} /></TableCell>
                         <TableCell><Input type="number" value={editForm.commission_rate} onChange={e => setEditForm(f => ({ ...f, commission_rate: e.target.value }))} className="h-8 text-sm w-20 mx-auto text-center" /></TableCell>
                         <TableCell><Input type="number" value={editForm.max_float} onChange={e => setEditForm(f => ({ ...f, max_float: e.target.value }))} className="h-8 text-sm w-28 mx-auto text-center" /></TableCell>
                         <TableCell className="text-center"><Badge className={`text-xs ${STATUS_COLORS[d.status] || ""}`}>{d.status}</Badge></TableCell>
@@ -579,7 +583,7 @@ export default function AdminDistributorManagement() {
             </div>
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
             <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} /></div>
-            <div><Label>Territory (comma separated)</Label><Input placeholder="DHK, CTG, SYL" value={createForm.territory} onChange={e => setCreateForm(f => ({ ...f, territory: e.target.value }))} /></div>
+            <div><Label>Territories</Label><DistrictMultiSelect value={csvToArr(createForm.territory)} onChange={(codes) => setCreateForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
             <div className="grid grid-cols-2 gap-2">
               <div><Label>Commission Rate (%)</Label><Input type="number" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
               <div><Label>Max Float (৳)</Label><Input type="number" value={createForm.max_float} onChange={e => setCreateForm(f => ({ ...f, max_float: e.target.value }))} /></div>
