@@ -58,13 +58,19 @@ export default function DistrictRoutePicker({
     };
   }, []);
 
+  const divisions = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.division))).sort(),
+    [rows],
+  );
+
   const flat: FlatRow[] = useMemo(() => {
+    const base = divisionFilter === "all" ? rows : rows.filter((r) => r.division === divisionFilter);
     const filtered = query
-      ? rows.filter(
+      ? base.filter(
           (r) =>
             districtCommandFilter(`${r.district} ${r.code} ${r.division}`, query) > 0,
         )
-      : rows;
+      : base;
     const byDiv = new Map<string, DistrictRoute[]>();
     for (const r of filtered) {
       if (!byDiv.has(r.division)) byDiv.set(r.division, []);
