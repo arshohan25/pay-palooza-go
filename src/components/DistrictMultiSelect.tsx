@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/command";
 import { Check, ChevronsUpDown, MapPin, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { districtCommandFilter } from "@/lib/districtCommandFilter";
+
 
 interface Row {
   code: string;
