@@ -165,6 +165,10 @@ function AgentListTab() {
   const handleCreateAgent = async () => {
     const phone = form.phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone number"); return; }
+    if (!form.division || !form.district || !form.upazila) {
+      toast.error("Division, District and Upazila/Thana are required");
+      return;
+    }
     setCreating(true);
     try {
       // Look up existing user by phone
