@@ -109,6 +109,7 @@ import AdminSuperDistributorOverview from "@/components/admin/AdminSuperDistribu
 import AdminRolesPermissions from "@/components/admin/AdminRolesPermissions";
 import AdminUserRoleAssignments from "@/components/admin/AdminUserRoleAssignments";
 import AdminPermissionAuditLog from "@/components/admin/AdminPermissionAuditLog";
+import AdminPermissionApprovals from "@/components/admin/AdminPermissionApprovals";
 import AdminSystemHealth from "@/components/admin/AdminSystemHealth";
 import AdminDataExport from "@/components/admin/AdminDataExport";
 import AdminUserSessions from "@/components/admin/AdminUserSessions";
