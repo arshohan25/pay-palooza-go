@@ -277,7 +277,7 @@ export default function AdminApprovalsInbox() {
     setRows((prev) => prev.filter((x) => x.id !== r.id));
     markRead(r.id);
     const windowSec = undoWindows[r.role] ?? 900;
-    setRecent((prev) => [{ kind: "single", req: r, approved: approve, at: Date.now(), windowSec, note }, ...prev].slice(0, 5));
+    setRecent((prev) => [{ kind: "single" as const, req: r, approved: approve, at: Date.now(), windowSec, note }, ...prev].slice(0, 5));
   };
 
   // Undo a single approve/reject.
