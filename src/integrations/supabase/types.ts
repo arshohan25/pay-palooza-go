@@ -769,6 +769,42 @@ export type Database = {
           },
         ]
       }
+      agent_temp_pin_issues: {
+        Row: {
+          agent_user_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          issued_by: string | null
+          issued_via: string
+          pin_hash: string
+          superseded_at: string | null
+          used_at: string | null
+        }
+        Insert: {
+          agent_user_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          issued_by?: string | null
+          issued_via?: string
+          pin_hash: string
+          superseded_at?: string | null
+          used_at?: string | null
+        }
+        Update: {
+          agent_user_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          issued_by?: string | null
+          issued_via?: string
+          pin_hash?: string
+          superseded_at?: string | null
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       agents: {
         Row: {
           activated_at: string | null
@@ -6218,6 +6254,45 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_delivery_logs: {
+        Row: {
+          agent_user_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          issued_by: string | null
+          phone_masked: string
+          provider_response: string | null
+          provider_status_code: number | null
+          purpose: string
+          status: string
+        }
+        Insert: {
+          agent_user_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          issued_by?: string | null
+          phone_masked: string
+          provider_response?: string | null
+          provider_status_code?: number | null
+          purpose: string
+          status: string
+        }
+        Update: {
+          agent_user_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          issued_by?: string | null
+          phone_masked?: string
+          provider_response?: string | null
+          provider_status_code?: number | null
+          purpose?: string
+          status?: string
+        }
+        Relationships: []
+      }
       spending_budgets: {
         Row: {
           category: string
@@ -7387,6 +7462,14 @@ export type Database = {
           txn_volume: number
         }[]
       }
+      agent_temp_pin_status: {
+        Args: { _agent_user_id: string }
+        Returns: {
+          expires_at: string
+          issued_at: string
+          state: string
+        }[]
+      }
       apply_loan: {
         Args: {
           p_amount: number
@@ -7429,6 +7512,14 @@ export type Database = {
       cancel_order_escrow: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: Json
+      }
+      check_agent_pin_reissue_throttle: {
+        Args: { _agent_user_id: string }
+        Returns: {
+          allowed: boolean
+          reason: string
+          retry_after_seconds: number
+        }[]
       }
       check_merchant_apply_access: {
         Args: { p_user_id: string }
@@ -7735,6 +7826,7 @@ export type Database = {
           full_name: string
         }[]
       }
+      mark_agent_temp_pin_used: { Args: never; Returns: undefined }
       nearby_agents: {
         Args: { _lat: number; _lng: number; _radius_km?: number }
         Returns: {
