@@ -56,7 +56,7 @@ const SuperDistributorCreateDistributor = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated");
 
-      const parsedTerritories = territory.split(",").map(t => t.trim()).filter(Boolean);
+      const parsedTerritories = territories;
 
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-agent-or-distributor`, {
         method: "POST",
