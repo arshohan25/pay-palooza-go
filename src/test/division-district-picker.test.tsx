@@ -23,38 +23,37 @@ vi.mock("@/components/ui/select", () => {
     value: string;
     onValueChange: (v: string) => void;
     disabled?: boolean;
-  }>({ value: "", onValueChange: () => {} });
+    register: (v: string, label: string) => void;
+    triggerProps: React.MutableRefObject<Record<string, any>>;
+  } | null>(null);
 
-  const Select = ({ value, onValueChange, disabled, children }: any) => (
-    <Ctx.Provider value={{ value: value ?? "", onValueChange, disabled }}>
-      {children}
-    </Ctx.Provider>
-  );
-  const SelectTrigger = ({ id, children, ...rest }: any) => {
-    const { value, onValueChange, disabled } = React.useContext(Ctx);
-    // Collect items rendered as children of SelectContent
-    const items: { value: string; label: string }[] = [];
-    const walk = (node: any) => {
-      React.Children.forEach(node, (child: any) => {
-        if (!child) return;
-        if (child.type?.__isSelectItem) {
-          items.push({
-            value: child.props.value,
-            label:
-              typeof child.props.children === "string"
-                ? child.props.children
-                : String(child.props.value),
-          });
-        } else if (child.props?.children) {
-          walk(child.props.children);
-        }
-      });
-    };
-    walk(children);
+  const Select = ({ value, onValueChange, disabled, children }: any) => {
+    const [items, setItems] = React.useState<{ value: string; label: string }[]>([]);
+    const triggerProps = React.useRef<Record<string, any>>({});
+    const register = React.useCallback((v: string, label: string) => {
+      setItems((prev) =>
+        prev.some((p) => p.value === v) ? prev : [...prev, { value: v, label }],
+      );
+    }, []);
+    // Reset items when children identity changes (division switch re-renders)
+    React.useEffect(() => {
+      setItems([]);
+    }, [children]);
+    return (
+      <Ctx.Provider value={{ value: value ?? "", onValueChange, disabled, register, triggerProps }}>
+        {/* Render children so SelectTrigger can publish props and SelectItems can register */}
+        <div style={{ display: "none" }}>{children}</div>
+        <NativeSelect items={items} />
+      </Ctx.Provider>
+    );
+  };
+
+  const NativeSelect = ({ items }: { items: { value: string; label: string }[] }) => {
+    const ctx = React.useContext(Ctx)!;
+    const { value, onValueChange, disabled, triggerProps } = ctx;
     return (
       <select
-        id={id}
-        {...rest}
+        {...triggerProps.current}
         disabled={disabled}
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
@@ -70,12 +69,21 @@ vi.mock("@/components/ui/select", () => {
       </select>
     );
   };
+
+  const SelectTrigger = ({ children: _c, ...rest }: any) => {
+    const ctx = React.useContext(Ctx)!;
+    ctx.triggerProps.current = rest;
+    return null;
+  };
   const SelectValue = () => null;
   const SelectContent = ({ children }: any) => <>{children}</>;
-  const SelectItem: any = ({ value, children }: any) => (
-    <option value={value}>{children}</option>
-  );
-  SelectItem.__isSelectItem = true;
+  const SelectItem = ({ value, children }: any) => {
+    const ctx = React.useContext(Ctx)!;
+    React.useEffect(() => {
+      ctx.register(value, typeof children === "string" ? children : String(value));
+    }, [value]);
+    return null;
+  };
   return { Select, SelectTrigger, SelectValue, SelectContent, SelectItem };
 });
 
