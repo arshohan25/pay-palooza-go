@@ -330,6 +330,37 @@ export default function AdminUserRoleAssignments() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk grant / revoke dialog */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-4 h-4" /> Bulk {bulkMode} role
+            </DialogTitle>
+            <DialogDescription>
+              {bulkMode === "grant" ? "Add" : "Remove"} a role for {checkedIds.size} selected user{checkedIds.size === 1 ? "" : "s"}.
+              Users already {bulkMode === "grant" ? "having" : "missing"} the role are skipped.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Select value={bulkRole} onValueChange={setBulkRole}>
+              <SelectTrigger><SelectValue placeholder="Choose role…" /></SelectTrigger>
+              <SelectContent>
+                {APP_ROLE_OPTIONS.map((r) => (
+                  <SelectItem key={r} value={r} className="capitalize">{r.replace(/_/g, " ")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBulkOpen(false)}>Cancel</Button>
+            <Button onClick={runBulk} disabled={bulkBusy || !bulkRole} variant={bulkMode === "revoke" ? "destructive" : "default"}>
+              {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : (bulkMode === "grant" ? "Grant to all" : "Revoke from all")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
