@@ -213,11 +213,25 @@ export default function AdminUserRoleAssignments() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-sm">Users with admin roles</CardTitle>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter…" className="pl-8 h-8 w-48 text-xs" />
+          <div className="flex items-center gap-2 flex-wrap">
+            {checkedIds.size > 0 && (
+              <>
+                <Badge variant="secondary" className="gap-1"><Users className="w-3 h-3" /> {checkedIds.size} selected</Badge>
+                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setBulkMode("grant"); setBulkOpen(true); }} disabled={!canManage}>
+                  <Plus className="w-3 h-3 mr-1" /> Bulk grant
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setBulkMode("revoke"); setBulkOpen(true); }} disabled={!canManage}>
+                  <X className="w-3 h-3 mr-1" /> Bulk revoke
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setCheckedIds(new Set())}>Clear</Button>
+              </>
+            )}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter…" className="pl-8 h-8 w-48 text-xs" />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -228,6 +242,16 @@ export default function AdminUserRoleAssignments() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-8">
+                      <Checkbox
+                        checked={nonCustomerProfiles.length > 0 && nonCustomerProfiles.every((p) => checkedIds.has(p.user_id))}
+                        onCheckedChange={(v) => {
+                          if (v) setCheckedIds(new Set(nonCustomerProfiles.map((p) => p.user_id)));
+                          else setCheckedIds(new Set());
+                        }}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Roles</TableHead>
                     <TableHead />
@@ -235,9 +259,16 @@ export default function AdminUserRoleAssignments() {
                 </TableHeader>
                 <TableBody>
                   {nonCustomerProfiles.length === 0 ? (
-                    <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">No admin users yet — search above to grant a role.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No admin users yet — search above to grant a role.</TableCell></TableRow>
                   ) : nonCustomerProfiles.map((p) => (
-                    <TableRow key={p.user_id}>
+                    <TableRow key={p.user_id} data-state={checkedIds.has(p.user_id) ? "selected" : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={checkedIds.has(p.user_id)}
+                          onCheckedChange={(v) => toggleChecked(p.user_id, !!v)}
+                          aria-label={`Select ${p.name || p.phone || p.user_id}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <p className="font-medium text-foreground">{p.name || "Unnamed"}</p>
                         <p className="text-[11px] text-muted-foreground">{p.phone || p.user_id.slice(0, 8)}</p>
