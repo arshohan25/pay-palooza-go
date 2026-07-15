@@ -1,41 +1,31 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Check, ChevronsUpDown, MapPin } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Check, ChevronsUpDown, MapPin, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { districtCommandFilter } from "@/lib/districtCommandFilter";
-
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 export interface DistrictRoute {
-  code: string;     // 2-letter route code, e.g. "DH"
-  district: string; // e.g. "Dhaka"
-  division: string; // e.g. "Dhaka"
+  code: string;
+  district: string;
+  division: string;
 }
 
 interface Props {
-  value: string;                        // selected 2-letter code, "" for none
+  value: string;
   onChange: (code: string, row?: DistrictRoute) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
 }
 
-/**
- * Bangladesh district → 2-letter wallet route code picker.
- *
- * Backed by `wallet_route_codes` (the same table the DB validator uses), so
- * agent/merchant wallet IDs generated from the selected code will always pass
- * `validate_wallet_id_format`.
- */
+type FlatRow =
+  | { kind: "header"; division: string; key: string }
+  | { kind: "item"; row: DistrictRoute; key: string };
+
 export default function DistrictRoutePicker({
   value,
   onChange,
@@ -46,6 +36,8 @@ export default function DistrictRoutePicker({
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<DistrictRoute[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -65,14 +57,34 @@ export default function DistrictRoutePicker({
     };
   }, []);
 
-  const grouped = useMemo(() => {
+  const flat: FlatRow[] = useMemo(() => {
+    const filtered = query
+      ? rows.filter(
+          (r) =>
+            districtCommandFilter(`${r.district} ${r.code} ${r.division}`, query) > 0,
+        )
+      : rows;
     const byDiv = new Map<string, DistrictRoute[]>();
-    for (const r of rows) {
+    for (const r of filtered) {
       if (!byDiv.has(r.division)) byDiv.set(r.division, []);
       byDiv.get(r.division)!.push(r);
     }
-    return Array.from(byDiv.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [rows]);
+    const out: FlatRow[] = [];
+    for (const [division, list] of Array.from(byDiv.entries()).sort(([a], [b]) =>
+      a.localeCompare(b),
+    )) {
+      out.push({ kind: "header", division, key: `h:${division}` });
+      for (const r of list) out.push({ kind: "item", row: r, key: `i:${r.code}` });
+    }
+    return out;
+  }, [rows, query]);
+
+  const virtualizer = useVirtualizer({
+    count: flat.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (i) => (flat[i]?.kind === "header" ? 24 : 36),
+    overscan: 8,
+  });
 
   const selected = rows.find((r) => r.code === value);
 
@@ -103,36 +115,70 @@ export default function DistrictRoutePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command filter={districtCommandFilter}>
-          <CommandInput placeholder="Search district, code, or division…" autoFocus />
-          <CommandList className="max-h-72">
-            <CommandEmpty>No district found.</CommandEmpty>
-
-            {grouped.map(([division, list]) => (
-              <CommandGroup key={division} heading={division}>
-                {list.map((r) => (
-                  <CommandItem
-                    key={r.code}
-                    value={`${r.district} ${r.code} ${r.division}`}
-                    onSelect={() => {
-                      onChange(r.code, r);
-                      setOpen(false);
+        <div className="flex items-center gap-2 border-b px-3 py-2">
+          <Search size={14} className="opacity-60" />
+          <Input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search district, code, or division…"
+            className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
+          />
+        </div>
+        <div ref={scrollRef} className="max-h-72 overflow-y-auto">
+          {flat.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              No district found.
+            </div>
+          ) : (
+            <div
+              style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}
+            >
+              {virtualizer.getVirtualItems().map((v) => {
+                const item = flat[v.index];
+                return (
+                  <div
+                    key={item.key}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${v.start}px)`,
+                      height: v.size,
                     }}
                   >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === r.code ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    <span className="flex-1">{r.district}</span>
-                    <span className="text-[10px] font-mono opacity-60">{r.code}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            ))}
-          </CommandList>
-        </Command>
+                    {item.kind === "header" ? (
+                      <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {item.division}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onChange(item.row.code, item.row);
+                          setOpen(false);
+                        }}
+                        className="flex w-full items-center px-2 py-2 text-sm hover:bg-accent rounded-sm"
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            value === item.row.code ? "opacity-100" : "opacity-0",
+                          )}
+                        />
+                        <span className="flex-1 text-left">{item.row.district}</span>
+                        <span className="text-[10px] font-mono opacity-60">
+                          {item.row.code}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   );
