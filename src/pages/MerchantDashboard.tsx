@@ -68,6 +68,7 @@ import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 import RequestAccessSheet from "@/components/merchant/RequestAccessSheet";
+import VendorApplyBanner from "@/components/merchant/VendorApplyBanner";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts" | "notifications";
@@ -587,7 +588,7 @@ const MerchantDashboard = () => {
       {/* ── Overview Content ── */}
       {activeTab === "overview" && (
         <div className="px-4 py-4 pb-24">
-          
+          {user && !isStaff && <VendorApplyBanner userId={user.id} />}
           <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} allTxns={txns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} isStaff={isStaff} can={can} staffId={staffId} />
         </div>
       )}
