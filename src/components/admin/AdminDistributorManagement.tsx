@@ -18,6 +18,10 @@ import DistributorPickerDialog from "./DistributorPickerDialog";
 import AssignAgentsDialog from "./AssignAgentsDialog";
 import BulkTransferDistributorDialog from "./BulkTransferDistributorDialog";
 import { reassignAgent, removeTerritory, transferTerritory, addTerritory, canManageDistributors } from "@/lib/distributorAdmin";
+import DistrictMultiSelect from "@/components/DistrictMultiSelect";
+
+const csvToArr = (s: string) => s.split(",").map(t => t.trim()).filter(Boolean);
+const arrToCsv = (a: string[]) => a.join(", ");
 
 interface Distributor {
   id: string;
