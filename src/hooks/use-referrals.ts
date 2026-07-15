@@ -93,18 +93,24 @@ export function useReferrals() {
   useEffect(() => {
     fetchData();
 
-    // Real-time subscription for referrals
-    const channel = supabase
-      .channel("referral-updates")
-      .on("postgres_changes", { event: "*", schema: "public", table: "referrals" }, () => {
-        fetchData();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "referral_rewards" }, () => {
-        fetchData();
-      })
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      // Per-user topic so realtime auth policy scopes broadcasts to this user only
+      channel = supabase
+        .channel(`referral-updates-${user.id}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "referrals", filter: `referrer_id=eq.${user.id}` }, () => {
+          fetchData();
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "referral_rewards", filter: `referrer_id=eq.${user.id}` }, () => {
+          fetchData();
+        })
+        .subscribe();
+    })();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { cancelled = true; if (channel) supabase.removeChannel(channel); };
   }, [fetchData]);
 
   const totalEarned = referrals.reduce((s, r) => s + (r.total_rewarded || 0), 0);
