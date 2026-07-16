@@ -177,46 +177,46 @@ export default function DivisionDistrictUpazilaPicker({
   return (
     <div className={className ?? "grid grid-cols-1 gap-3"}>
       <div>
-        {showLabels && <Label className="text-xs mb-1 block">Division{required && " *"}</Label>}
+        {showLabels && <Label className="text-xs mb-1 block">{l.division}{required && " *"}</Label>}
         <select
           className={selectClass}
           disabled={baseDisabled}
           value={value.division ?? ""}
           onChange={(e) => onChange({ division: e.target.value || null, district: null, upazila: null, union_parishad: null, area_type: null })}
-          aria-label="Division"
+          aria-label={l.division}
           aria-required={required}
         >
-          <option value="">{loading ? "Loading…" : "Select division"}</option>
+          <option value="">{loading ? l.loading : l.selDivision}</option>
           {divisions.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
 
       <div>
-        {showLabels && <Label className="text-xs mb-1 block">District{required && " *"}</Label>}
+        {showLabels && <Label className="text-xs mb-1 block">{l.district}{required && " *"}</Label>}
         <select
           className={selectClass}
           disabled={baseDisabled || !value.division}
           value={value.district ?? ""}
           onChange={(e) => onChange({ ...value, district: e.target.value || null, upazila: null, union_parishad: null, area_type: null })}
-          aria-label="District"
+          aria-label={l.district}
           aria-required={required}
         >
-          <option value="">{value.division ? "Select district" : "Choose division first"}</option>
+          <option value="">{value.division ? l.selDistrict : l.chooseDivision}</option>
           {districts.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
 
       <div>
-        {showLabels && <Label className="text-xs mb-1 block">Upazila / Thana{required && " *"}</Label>}
+        {showLabels && <Label className="text-xs mb-1 block">{l.upazila}{required && " *"}</Label>}
         <select
           className={selectClass}
           disabled={baseDisabled || !value.district}
           value={value.upazila ?? ""}
           onChange={(e) => onChange({ ...value, upazila: e.target.value || null, union_parishad: null, area_type: null })}
-          aria-label="Upazila or Thana"
+          aria-label={l.upazila}
           aria-required={required}
         >
-          <option value="">{value.district ? "Select upazila / thana" : "Choose district first"}</option>
+          <option value="">{value.district ? l.selUpazila : l.chooseDistrict}</option>
           {upazilas.map((u) => <option key={u} value={u}>{u}</option>)}
         </select>
       </div>
