@@ -411,7 +411,19 @@ function PhotoTile({
       <div className="p-2">
         <p className="text-xs font-medium text-foreground">{label}</p>
         <p className="text-[10px] text-muted-foreground mb-1.5">{hint}</p>
-        {state.error && <p className="text-[10px] text-red-600 mb-1">{state.error}</p>}
+        {state.error && (() => {
+          const m = state.error.toLowerCase();
+          const cat = m.includes("file type") || m.includes("mime") || m.includes("jpg") || m.includes("png") || m.includes("webp") ? "Wrong format"
+                    : m.includes("mb") || m.includes("exceeds") || m.includes("size") ? "File too large"
+                    : m.includes("resolution") || m.includes("×") || m.includes("dimensions") ? "Resolution too low"
+                    : "Validation failed";
+          return (
+            <div className="mb-1 rounded-md border border-red-500/40 bg-red-500/5 p-1.5">
+              <p className="text-[10px] font-semibold text-red-700 dark:text-red-300">✕ {cat}</p>
+              <p className="text-[10px] text-red-700/90 dark:text-red-300/90 leading-snug">{state.error}</p>
+            </div>
+          );
+        })()}
         {ok && state.meta?.width && (
           <p className="text-[10px] text-emerald-600 mb-1">✓ {state.meta.width}×{state.meta.height}</p>
         )}
