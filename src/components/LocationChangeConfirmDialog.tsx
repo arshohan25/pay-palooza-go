@@ -11,12 +11,23 @@ export interface LocationSnapshot {
   territory_code: string | null;
 }
 
+export interface LocationDiffRow {
+  key: string;
+  label: string;
+  before: string | null;
+  after: string | null;
+}
+
 interface Props {
   open: boolean;
   before: LocationSnapshot;
   after: LocationSnapshot;
   /** Label for the derived code row — defaults to "Route / Territory code". */
   codeLabel?: string;
+  /** Optional custom title (defaults to the localized "Confirm location change"). */
+  title?: string;
+  /** When provided, these rows are rendered instead of the default 6-field snapshot. */
+  overrideRows?: LocationDiffRow[];
   saving?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
