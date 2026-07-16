@@ -23,12 +23,28 @@ const SuperDistributorCreateDistributor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const LOC_KEY = "sd:create-distributor:location:v1";
+  const TERR_KEY = "sd:create-distributor:territories";
+
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [territories, setTerritories] = useState<string[]>([]);
-  const [location, setLocation] = useState<DivisionDistrictUpazilaValue>({
-    division: null, district: null, upazila: null, union_parishad: null, area_type: null,
+  const [territories, setTerritories] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.sessionStorage.getItem("dms:v1:" + TERR_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed?.value) ? parsed.value.filter((c: unknown) => typeof c === "string") : [];
+    } catch { return []; }
+  });
+  const [location, setLocation] = useState<DivisionDistrictUpazilaValue>(() => {
+    const empty = { division: null, district: null, upazila: null, union_parishad: null, area_type: null };
+    if (typeof window === "undefined") return empty;
+    try {
+      const raw = window.sessionStorage.getItem(LOC_KEY);
+      return raw ? { ...empty, ...JSON.parse(raw) } : empty;
+    } catch { return empty; }
   });
   const [locError, setLocError] = useState<LocationMismatch | null>(null);
   const [maxFloat, setMaxFloat] = useState("10000000");
@@ -37,6 +53,20 @@ const SuperDistributorCreateDistributor = () => {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => { if (locError) setLocError(null); }, [location.division, location.district, location.upazila, location.union_parishad, location.area_type]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist Division → District → Upazila location across navigation.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.sessionStorage.setItem(LOC_KEY, JSON.stringify(location)); } catch { /* ignore */ }
+  }, [location]);
+
+  const clearPersisted = () => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.removeItem(LOC_KEY);
+      window.sessionStorage.removeItem("dms:v1:" + TERR_KEY);
+    } catch { /* ignore */ }
+  };
 
 
   if (authLoading) {
