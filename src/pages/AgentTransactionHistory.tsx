@@ -18,10 +18,11 @@ const AgentTransactionHistory = () => {
   const { transactions } = useTransactions();
   const [flagOpen, setFlagOpen] = useState(false);
 
-  // Compute commission summary from agent-relevant transactions
+  // Compute commission summary from agent-relevant SUCCESSFUL transactions only
   const summary = useMemo(() => {
     const agentTxns = transactions.filter((t) =>
-      ["cashin", "cashout", "banktransfer", "paybill"].includes(getAgentDisplayType(t))
+      ["cashin", "cashout", "banktransfer", "paybill"].includes(getAgentDisplayType(t)) &&
+      (t.status || "").toLowerCase() === "completed"
     );
     const totalCommission = agentTxns.reduce((sum, t) => sum + (t.commission || 0), 0);
     const cashInCount = agentTxns.filter((t) => getAgentDisplayType(t) === "cashin").length;
