@@ -58,6 +58,21 @@ export default function AdminDistributorManagement() {
   const emptyLoc: DivisionDistrictUpazilaValue = { division: null, district: null, upazila: null, union_parishad: null, area_type: null };
   const [createLoc, setCreateLoc] = useState<DivisionDistrictUpazilaValue>(emptyLoc);
   const [createLocError, setCreateLocError] = useState<LocationMismatch | null>(null);
+  const [createParentId, setCreateParentId] = useState<string | "">("");
+  const [sdOptions, setSdOptions] = useState<{ id: string; business_name: string }[]>([]);
+
+  // Load Super Distributor options for parent linking
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: sdRoles } = await supabase.from("user_roles").select("user_id").eq("role", "super_distributor" as any);
+      const ids = new Set((sdRoles ?? []).map((r: any) => r.user_id));
+      if (ids.size === 0) { if (!cancelled) setSdOptions([]); return; }
+      const { data: dists } = await supabase.from("distributors").select("id, user_id, business_name").in("user_id", Array.from(ids));
+      if (!cancelled) setSdOptions(((dists ?? []) as any[]).map((d) => ({ id: d.id, business_name: d.business_name })));
+    })();
+    return () => { cancelled = true; };
+  }, [createOpen]);
 
   // Edit inline
   const [editingId, setEditingId] = useState<string | null>(null);
