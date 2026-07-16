@@ -152,7 +152,12 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     });
 
     if (error) {
-      toast.error(t("mafToastFailed") + error.message);
+      const msg = /apply_once|already have a merchant application/i.test(error.message)
+        ? "You already have a pending or approved merchant application — please wait for review."
+        : /Invalid location hierarchy/i.test(error.message)
+        ? "Location doesn't match a known Division → District → Upazila. Please pick from the dropdowns."
+        : t("mafToastFailed") + error.message;
+      toast.error(msg);
     } else {
       toast.success(t("mafToastSuccess"));
       const { data } = await (supabase as any)

@@ -1,59 +1,67 @@
 ## Goal
-Give admins full control over the agent ↔ distributor relationship and distributor territory ownership from the Distributors section (`/admin#distributors`) and Agent Hub — currently there is no way to link/unlink an agent to a distributor, reassign an agent between distributors, or move territories from one distributor to another.
+Unify the 4-level BD location picker everywhere, seed City Corporations + Powrashavas, deep-link the merchant apply flow, and enforce apply-once + parent-child validation server-side.
 
-## What's missing today
-- `AdminDistributorManagement.tsx` only lists linked agents (read-only). No assign / unassign / move buttons.
-- `AdminAgentHub.tsx` never surfaces `distributor_id`; admins can't see or change which distributor owns an agent.
-- Territories live in `distributors.territory text[]`, edited only as a free-text field per distributor — no way to hand a territory from Dist A to Dist B in one action (and no guard against the same territory being claimed twice).
+## 1. Database (single migration + seed insert)
 
-## Features to add
+**Schema**
+- `unions` table: add `type` values already exist (`union|powrashava|city_corporation`); add unique `(division, district, upazila, name, type)`; ensure `is_active` default true.
+- New function `public.validate_location_hierarchy(_division, _district, _upazila, _union, _type) returns boolean` (SECURITY DEFINER, checks upazilas + unions rows match).
+- Trigger `merchant_applications_validate_location_trg` BEFORE INSERT/UPDATE: raise if hierarchy invalid.
+- Same trigger reused on `agents`, `distributors`, `merchants`, `merchant_vendor_applications` (any table that stores the 4 fields).
+- New RPC `public.check_merchant_apply_access(p_user_id uuid)` already exists — extend to return `{ can_apply, reason, status }` where status is latest application `pending|approved|rejected|null`. Block `pending` + `approved`; allow `rejected`.
 
-### 1. In the Distributor drawer (Linked Agents section)
-- **Unlink** button on each agent row → sets `agents.distributor_id = null` (agent becomes unassigned).
-- **Transfer** button → picker dialog listing other active distributors; moves the agent to the chosen one.
-- **Assign agents…** button at top → dialog with a searchable list of currently unassigned agents (or agents from other distributors), multi-select, "Assign to this distributor".
+**Seed**
+- Insert all 12 BD City Corporations as `type='city_corporation'` rows keyed to their parent district/upazila (Dhaka North, Dhaka South, Chattogram, Khulna, Rajshahi, Sylhet, Barishal, Rangpur, Cumilla, Gazipur, Narayanganj, Mymensingh).
+- Insert curated ~330 Powrashavas mapped division→district→upazila (bundled JSON, batched INSERT ... ON CONFLICT DO NOTHING).
+- Insert commonly-used unions per district (best-effort curated list — remainder still falls back to free-text).
 
-### 2. In the Distributor drawer (Territories section)
-- Show territories as chips with an **×** to remove and a **Move to…** menu that transfers the code to another distributor atomically (removed from current, added to target, deduped).
-- Prevent duplicate ownership: if the target already has the code, no-op with a toast.
+## 2. Unified picker
 
-### 3. Bulk transfer between distributors
-- New "Transfer all" action in the distributor row menu → "Transfer all agents / all territories / everything from Distributor A → Distributor B" (with confirmation). Useful when retiring a distributor.
+- Extend `DivisionDistrictUpazilaPicker`:
+  - Auto-set `area_type='city_corporation'` if any CC exists for the upazila and pre-select the CC.
+  - When `type` is chosen, filter dropdown to that type only; if list empty, show free-text input with hint.
+  - New prop `compact?: boolean` for admin table forms.
+- Delete legacy `DivisionDistrictPicker` (unused after refactor) — keep only if a test needs it; otherwise re-export a thin shim.
 
-### 4. In Admin Agent Hub (`AdminAgentHub.tsx`)
-- New "Distributor" column showing the current distributor's business name (or "Unassigned").
-- Row action **Change distributor…** opens the same picker (reuses the component from #1).
-- Filter: "Distributor = …/Unassigned".
+**Refactor call-sites to the unified picker + persist all 4 fields:**
+- `src/components/MerchantApplicationFlow.tsx` (done — verify)
+- `src/pages/MerchantApplyVendor.tsx`
+- `src/components/MerchantBusinessKycFlow.tsx`
+- `src/components/MerchantStoreSettingsTab.tsx`
+- `src/pages/DistributorCreateAgent.tsx`
+- `src/pages/SuperDistributorCreateDistributor.tsx`
+- `src/components/admin/AdminAgentHub.tsx`
+- `src/components/admin/AdminProfileEditor.tsx`
+- Keep legacy `DistrictRoutePicker` only where a single route-code is needed (wallet route code) — but layer the 4-level picker on top so district selection is driven by the same hierarchy.
 
-### 5. Safety & audit
-- Every link/unlink/transfer writes an `audit_logs` row (`action`: `agent_assigned`, `agent_unassigned`, `agent_transferred`, `territory_transferred`, `distributor_bulk_transferred`) with before/after ids.
-- All mutations wrapped in a small helper `reassignAgent(agentId, fromDistId, toDistId)` / `transferTerritory(code, fromDistId, toDistId)` in `src/lib/distributorAdmin.ts`.
-- Guarded by `useAdmin()` — the existing RLS on `agents`/`distributors` already permits admin updates, so no schema/RLS changes are required.
+## 3. Deep-linking
 
-## Files touched
+- Add route `/merchant/apply` in `src/App.tsx` → new page `MerchantApplyPage.tsx` that renders `MerchantApplicationFlow` full-screen with `open={true}`, closes to `/merchant-login`.
+- `/merchant-login?apply=1` also auto-opens the modal (reads `useSearchParams`).
+- Handle unauthenticated deep-link: redirect to `/merchant-login?apply=1&next=/merchant/apply` and re-open after login.
+- On close/submit: `navigate("/merchant-login", { replace: true })` so back button doesn't reopen.
+- Guard route with `useMerchantApplyAccess` — if `can_apply=false`, render status page (pending/approved/rejected banner + link back to login) instead of the form.
 
-**New**
-- `src/lib/distributorAdmin.ts` — helpers + audit
-- `src/components/admin/DistributorPickerDialog.tsx` — reusable picker (search + select distributor)
-- `src/components/admin/AssignAgentsDialog.tsx` — multi-select assign
-- `src/components/admin/BulkTransferDistributorDialog.tsx`
+## 4. Apply-once enforcement
 
-**Edited**
-- `src/components/admin/AdminDistributorManagement.tsx` — new buttons in drawer, row action menu, territory chips with move
-- `src/components/admin/AdminAgentHub.tsx` — Distributor column, filter, Change-distributor action
-- `src/lib/i18n.tsx` — new strings (EN + BN): assign, unassign, transfer, move territory, bulk transfer, confirmations
+- Client: `useMerchantApplyAccess` already exists; wire into new `/merchant/apply` route + `MerchantLoginPage` "Apply as a merchant" button (hide/disable + tooltip when blocked).
+- Server: update `check_merchant_apply_access` SQL to return `can_apply=false` when latest application is `pending` or `approved`. Add RLS/`BEFORE INSERT` trigger on `merchant_applications` that raises if same `user_id` already has a `pending`/`approved` row.
 
-## Technical details
-- No DB migration needed — `agents.distributor_id` and `distributors.territory` already exist and admin role has update rights via existing RLS.
-- Territory move uses a single Postgres transaction via two `update` calls wrapped in `Promise.all` inside a try/catch; on error we revert client-side state (optimistic UI already used elsewhere in the file).
-- All lists refresh via the existing realtime `postgres_changes` subscription on `agents` and `distributors` — no manual refetch after mutation.
+## 5. Error fixes surfaced along the way
 
-## Order of build
-1. `distributorAdmin.ts` helpers + audit
-2. `DistributorPickerDialog` (shared)
-3. Distributor drawer: unlink / transfer / assign / territory chips
-4. Agent Hub: distributor column + change action + filter
-5. Bulk-transfer dialog
-6. i18n strings
+- Fix union dropdown "empty option" bug (currently renders two `<option value="">` — the "Type manually below" and the placeholder collide).
+- Fix `area_type` reset when division changes (already correct — verify).
+- Type-safety: regenerate `types.ts` after migration; update `MerchantApplicationFlow` submit payload types.
 
-Confirm and I'll ship it in that order.
+## Files touched (summary)
+- SQL: 1 migration + 1 large seed insert (via insert tool for data rows).
+- Modified: 8 forms + `App.tsx` + `MerchantLoginPage.tsx` + `DivisionDistrictUpazilaPicker.tsx` + `use-merchant-apply-access.ts`.
+- New: `src/pages/MerchantApplyPage.tsx`, `src/components/merchant/MerchantApplyStatusPage.tsx`.
+- Removed: `DivisionDistrictPicker.tsx` (or shim).
+
+## Tests
+- Update `division-district-picker.test.tsx` + `district-picker-roundtrip.test.ts` for new picker shape.
+- Add unit test: `validate_location_hierarchy` rejects mismatched parent/child.
+
+## Out of scope
+- Bulk migrating historical merchant/agent rows with missing new fields — will backfill to NULL and let admins re-edit; trigger only fires on new INSERT/UPDATE of these columns.

@@ -42,6 +42,8 @@ const SuperDistributorDashboard = lazy(() => import("./pages/SuperDistributorDas
 const SuperDistributorCreateDistributor = lazy(() => import("./pages/SuperDistributorCreateDistributor"));
 const MerchantDashboard = lazy(() => retryLazyImport(() => import("./pages/MerchantDashboard")));
 const MerchantApplyVendor = lazy(() => retryLazyImport(() => import("./pages/MerchantApplyVendor")));
+const MerchantApplyPage = lazy(() => retryLazyImport(() => import("./pages/MerchantApplyPage")));
+
 const AdminMerchantCategoriesPage = lazy(() => retryLazyImport(() => import("./pages/AdminMerchantCategoriesPage")));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const DynamicQrPage = lazy(() => import("./pages/DynamicQrPage"));
@@ -192,7 +194,9 @@ const App = () => (
 
                     <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant-login" unauthorizedRedirect="/merchant-login"><MerchantDashboard /></RoleGuard>} />
                     <Route path="/merchant/apply-vendor" element={<RoleGuard roles={["merchant", "admin"]} unauthenticatedRedirect="/merchant-login" unauthorizedRedirect="/merchant-login"><MerchantApplyVendor /></RoleGuard>} />
+                    <Route path="/merchant/apply" element={<MerchantApplyPage />} />
                     <Route path="/admin/merchant-categories" element={<RoleGuard roles={["admin"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminMerchantCategoriesPage /></RoleGuard>} />
+
 
 
 
