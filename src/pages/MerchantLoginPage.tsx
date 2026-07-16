@@ -696,15 +696,20 @@ export default function MerchantLoginPage() {
 
             {!boundPhone && (
               <>
-                <Button
+                <button
                   type="button"
-                  variant="outline"
                   onClick={() => setApplyOpen(true)}
-                  className="h-10 w-full rounded-2xl border-white/20 bg-white/[0.06] text-sm font-medium text-amber-100 hover:bg-white/[0.12] hover:text-amber-50"
+                  className="group relative h-12 w-full overflow-hidden rounded-2xl border border-amber-300/25 bg-gradient-to-b from-amber-400/10 via-amber-500/5 to-transparent shadow-[0_8px_24px_-12px_rgba(251,191,36,0.35),inset_0_1px_0_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-all duration-300 hover:border-amber-300/50 hover:shadow-[0_12px_32px_-10px_rgba(251,191,36,0.5),inset_0_1px_0_0_rgba(255,255,255,0.15)] active:scale-[0.98]"
                 >
-                  New here? Apply as a merchant
-                  <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                </Button>
+                  <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                  <span className="pointer-events-none absolute -inset-x-full -top-px h-px bg-gradient-to-r from-transparent via-amber-200/80 to-transparent transition-all duration-700 group-hover:inset-x-0" />
+                  <span className="relative flex items-center justify-center gap-2.5 text-sm">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/70">New</span>
+                    <span className="h-3 w-px bg-amber-200/25" />
+                    <span className="font-semibold tracking-tight text-amber-50">Apply as a merchant</span>
+                    <ArrowRight className="h-4 w-4 text-amber-200 transition-transform duration-300 group-hover:translate-x-1" />
+                  </span>
+                </button>
                 <button
                   type="button"
                   onClick={() => navigate("/merchant-manager-login")}
