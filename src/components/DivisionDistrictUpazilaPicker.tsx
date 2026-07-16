@@ -88,13 +88,27 @@ async function loadUnions(): Promise<UnionRow[]> {
   if (unionCache) return unionCache;
   if (unionPromise) return unionPromise;
   unionPromise = (async () => {
-    const { data, error } = await (supabase as any)
-      .from("unions")
-      .select("division, district, upazila, name, type")
-      .eq("is_active", true)
-      .order("name");
-    if (error) { unionCache = []; return unionCache; }
-    unionCache = (data as UnionRow[]) || [];
+    // PostgREST caps responses at 1000 rows by default. The unions table has
+    // 6k+ rows, so page through with range() until we've fetched everything —
+    // otherwise ~85% of upazilas would silently show no unions.
+    const PAGE = 1000;
+    const all: UnionRow[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await (supabase as any)
+        .from("unions")
+        .select("division, district, upazila, name, type")
+        .eq("is_active", true)
+        .order("division")
+        .order("district")
+        .order("upazila")
+        .order("name")
+        .range(from, from + PAGE - 1);
+      if (error) { unionCache = all; return unionCache; }
+      const rows = (data as UnionRow[]) || [];
+      all.push(...rows);
+      if (rows.length < PAGE) break;
+    }
+    unionCache = all;
     return unionCache;
   })();
   return unionPromise;
