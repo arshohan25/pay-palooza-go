@@ -523,12 +523,27 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
 
         <DialogFooter className="px-6 py-4 border-t border-border">
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={loading || saving}>
+          <Button onClick={requestSave} disabled={loading || saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
             Save Changes
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <LocationChangeConfirmDialog
+        open={confirmOpen}
+        before={confirmBefore}
+        after={confirmAfter}
+        overrideRows={confirmMode === "distributor" ? distributorRows : undefined}
+        title={confirmMode === "distributor" ? "Confirm distributor territory change" : undefined}
+        saving={saving}
+        onCancel={() => { if (!saving) { setConfirmOpen(false); setConfirmMode(null); } }}
+        onConfirm={async () => {
+          await commitSave(confirmMode === "agent" ? pendingDerivedRoute : null);
+          setConfirmOpen(false);
+          setConfirmMode(null);
+        }}
+      />
     </Dialog>
   );
 }
