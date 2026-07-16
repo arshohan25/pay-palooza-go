@@ -228,6 +228,12 @@ export default function AdminDistributorManagement() {
     const phone = createForm.phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone"); return; }
     if (!createForm.business_name.trim()) { toast.error("Business name required"); return; }
+    if (!createLoc.division || !createLoc.district || !createLoc.upazila) {
+      const mismatch = await detectLocationMismatch(createLoc);
+      setCreateLocError(mismatch);
+      toast.error(mismatch?.message || "Pick Division › District › Upazila");
+      return;
+    }
     const role = ((createForm as any).role === "super_distributor" ? "super_distributor" : "distributor") as "distributor" | "super_distributor";
     setCreating(true);
     try {
