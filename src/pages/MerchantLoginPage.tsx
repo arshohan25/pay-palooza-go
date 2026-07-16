@@ -696,21 +696,15 @@ export default function MerchantLoginPage() {
 
             {!boundPhone && (
               <>
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setApplyOpen(true)}
-                  className="group relative flex h-12 w-full items-center justify-between overflow-hidden rounded-full border border-white/25 bg-white/10 px-6 text-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-300 hover:bg-white/20 hover:shadow-[0_8px_32px_rgba(255,255,255,0.1)] active:scale-[0.98]"
+                  className="h-10 w-full rounded-2xl border-white/20 bg-white/[0.06] text-sm font-medium text-amber-100 hover:bg-white/[0.12] hover:text-amber-50"
                 >
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 ease-in-out group-hover:translate-x-full"
-                  />
-                  <span className="relative flex items-center gap-1.5 text-[15px] font-medium tracking-wide">
-                    <span className="font-normal opacity-90">New here?</span>
-                    <span>Apply as a merchant</span>
-                  </span>
-                  <ArrowRight className="relative h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={2.5} />
-                </button>
+                  New here? Apply as a merchant
+                  <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
                 <button
                   type="button"
                   onClick={() => navigate("/merchant-manager-login")}
