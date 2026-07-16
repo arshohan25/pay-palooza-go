@@ -81,6 +81,7 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
   const [originalDistributor, setOriginalDistributor] = useState<DistributorData | null>(null);
 
   const [territoryInput, setTerritoryInput] = useState("");
+  const [agentLocError, setAgentLocError] = useState<LocationMismatch | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
