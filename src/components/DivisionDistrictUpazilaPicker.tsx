@@ -206,7 +206,7 @@ export default function DivisionDistrictUpazilaPicker({
           aria-required={required}
         >
           <option value="">{value.division ? l.selDistrict : l.chooseDivision}</option>
-          {districts.map((d) => <option key={d} value={d}>{d}</option>)}
+          {districts.map((d) => <option key={d} value={d}>{lang === "bn" ? bnDistrict(d) : d}</option>)}
         </select>
       </div>
 
