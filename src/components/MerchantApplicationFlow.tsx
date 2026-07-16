@@ -18,6 +18,7 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { useMerchantCategories } from "@/hooks/use-merchant-categories";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
+import { bnCategoryLabel } from "@/lib/merchantCategoryBn";
 
 interface Props {
   open: boolean;
@@ -71,10 +72,17 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     reason: z.string().trim().max(500).optional(),
   }), [t]);
 
+  // Translate labels when the app is in Bangla so the dropdown reads in Bangla.
+  const displayLabel = (name: string, label: string) =>
+    lang === "bn" ? bnCategoryLabel(name, label) : label;
+
   const filteredCats = useMemo(() => {
     if (!catSearch) return categories;
     const q = catSearch.toLowerCase();
-    return categories.filter(c => c.label.toLowerCase().includes(q) || c.name.includes(q));
+    return categories.filter(c => {
+      const bn = bnCategoryLabel(c.name, c.label);
+      return c.label.toLowerCase().includes(q) || c.name.includes(q) || bn.toLowerCase().includes(q);
+    });
   }, [categories, catSearch]);
 
   useEffect(() => {
@@ -190,7 +198,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
 
   const selectedLabel = form.category === "__other__"
     ? (customCategory || t("mafOtherCustom"))
-    : getLabelForName(form.category);
+    : displayLabel(form.category, getLabelForName(form.category));
 
   const dateLocale = lang === "bn" ? "bn-BD" : "en-US";
 
@@ -240,12 +248,17 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <PopoverContent
+                        className="w-[--radix-popover-trigger-width] p-0"
+                        align="start"
+                        onWheel={(e) => e.stopPropagation()}
+                        onTouchMove={(e) => e.stopPropagation()}
+                      >
                         <Command shouldFilter={false}>
                           <CommandInput placeholder={t("mafSearchCategories")} value={catSearch} onValueChange={setCatSearch} />
-                          <CommandList>
+                          <CommandList className="max-h-[min(60vh,360px)] overflow-y-auto overscroll-contain">
                             <CommandEmpty>{t("mafNoCategory")}</CommandEmpty>
-                            <CommandGroup className="max-h-[200px] overflow-y-auto">
+                            <CommandGroup>
                               {filteredCats.map(c => (
                                 <CommandItem
                                   key={c.name}
@@ -253,7 +266,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                                   onSelect={() => { set("category", c.name); setCustomCategory(""); setCatOpen(false); setCatSearch(""); }}
                                 >
                                   <Check className={cn("mr-2 h-4 w-4", form.category === c.name ? "opacity-100" : "opacity-0")} />
-                                  {c.label}
+                                  {displayLabel(c.name, c.label)}
                                 </CommandItem>
                               ))}
                               <CommandItem
