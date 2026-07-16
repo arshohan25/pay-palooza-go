@@ -290,7 +290,7 @@ export default function AdminDistributorManagement() {
       }
       toast.success(pin ? `${role === "super_distributor" ? "Super distributor" : "Distributor"} created! Temp PIN: ${pin}` : `Existing user promoted to ${role.replace("_", " ")}`, { duration: 10000 });
       setCreateOpen(false);
-      setCreateForm({ phone: "", name: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
+      setCreateForm({ phone: "", name: "", business_name: "", nid_number: "", trade_license: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
       setCreateLoc(emptyLoc);
       setCreateLocError(null);
       load();
