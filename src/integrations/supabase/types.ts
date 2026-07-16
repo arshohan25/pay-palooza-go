@@ -4426,6 +4426,8 @@ export type Database = {
           product_categories: string[] | null
           reviewed_at: string | null
           reviewed_by: string | null
+          shop_front_photo_url: string | null
+          shop_inside_photo_url: string | null
           status: string
           store_description: string | null
           store_name: string
@@ -4443,6 +4445,8 @@ export type Database = {
           product_categories?: string[] | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          shop_front_photo_url?: string | null
+          shop_inside_photo_url?: string | null
           status?: string
           store_description?: string | null
           store_name: string
@@ -4460,6 +4464,8 @@ export type Database = {
           product_categories?: string[] | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          shop_front_photo_url?: string | null
+          shop_inside_photo_url?: string | null
           status?: string
           store_description?: string | null
           store_name?: string

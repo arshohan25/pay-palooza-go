@@ -124,6 +124,7 @@ export default function AdminVendorApplicationsQueue() {
                   <p className="text-[11px] text-muted-foreground/70 mt-0.5">
                     📍 {a.pickup_address} · Submitted {new Date(a.created_at).toLocaleString()}
                   </p>
+                  <ShopPhotoRow front={a.shop_front_photo_url} inside={a.shop_inside_photo_url} />
                   {a.admin_notes && (
                     <p className="text-[11px] mt-1 italic text-muted-foreground">Admin note: {a.admin_notes}</p>
                   )}
@@ -164,6 +165,42 @@ export default function AdminVendorApplicationsQueue() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+function ShopPhotoRow({ front, inside }: { front?: string | null; inside?: string | null }) {
+  const [urls, setUrls] = useState<{ front?: string; inside?: string }>({});
+  useEffect(() => {
+    let c = false;
+    (async () => {
+      const out: { front?: string; inside?: string } = {};
+      if (front) {
+        const { data } = await supabase.storage.from("vendor-kyc").createSignedUrl(front, 600);
+        if (data?.signedUrl) out.front = data.signedUrl;
+      }
+      if (inside) {
+        const { data } = await supabase.storage.from("vendor-kyc").createSignedUrl(inside, 600);
+        if (data?.signedUrl) out.inside = data.signedUrl;
+      }
+      if (!c) setUrls(out);
+    })();
+    return () => { c = true; };
+  }, [front, inside]);
+
+  const Tile = ({ src, label, missing }: { src?: string; label: string; missing: boolean }) => (
+    <a href={src} target={src ? "_blank" : undefined} rel="noreferrer"
+       className={`block w-16 h-16 rounded-md border overflow-hidden ${missing ? "border-red-500/40 bg-red-500/5" : "border-border bg-muted/40"}`}
+       title={label}>
+      {src ? <img src={src} alt={label} className="w-full h-full object-cover" />
+           : <div className="w-full h-full flex items-center justify-center text-[9px] text-red-600 text-center px-1">Missing {label}</div>}
+    </a>
+  );
+
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <Tile src={urls.front}  label="Shop front"  missing={!front} />
+      <Tile src={urls.inside} label="Shop inside" missing={!inside} />
     </div>
   );
 }
