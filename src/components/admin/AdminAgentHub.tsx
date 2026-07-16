@@ -399,9 +399,18 @@ function AgentListTab() {
         if (upErr) throw new Error(`Selfie upload failed: ${upErr.message}`);
         selfie_path = path;
       }
+      // Auto-derive wallet territory route code when district changes.
+      const previousDistrict = (editAgent as any).district || "";
+      const previousTerritory = editAgent.territory_code || "";
+      let nextTerritory = editForm.territory_code || "";
+      if (editForm.district && editForm.district !== previousDistrict) {
+        const derived = await districtToRouteCode(editForm.district);
+        if (derived) nextTerritory = derived;
+      }
+
       const updatePayload: any = {
         business_name: editForm.business_name || null,
-        territory_code: editForm.territory_code || null,
+        territory_code: nextTerritory || null,
         division: editForm.division || null,
         district: editForm.district || null,
         upazila: editForm.upazila || null,
@@ -421,6 +430,35 @@ function AgentListTab() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_edited", entity_type: "agent", entity_id: editAgent.id, details: { changes: editForm } }).then();
+
+          // Dedicated location-change audit: only when a hierarchy field or
+          // wallet territory code actually changed.
+          const locBefore = {
+            division: (editAgent as any).division || null,
+            district: previousDistrict || null,
+            upazila: (editAgent as any).upazila || null,
+            union_parishad: (editAgent as any).union_parishad || null,
+            area_type: (editAgent as any).area_type || null,
+            territory_code: previousTerritory || null,
+          };
+          const locAfter = {
+            division: editForm.division || null,
+            district: editForm.district || null,
+            upazila: editForm.upazila || null,
+            union_parishad: editForm.union_parishad || null,
+            area_type: editForm.area_type || null,
+            territory_code: nextTerritory || null,
+          };
+          const locChanged = (Object.keys(locBefore) as (keyof typeof locBefore)[]).some(k => locBefore[k] !== locAfter[k]);
+          if (locChanged) {
+            supabase.from("audit_logs").insert({
+              actor_id: session.user.id,
+              action: "agent_location_changed",
+              entity_type: "agent",
+              entity_id: editAgent.id,
+              details: { before: locBefore, after: locAfter } as any,
+            }).then();
+          }
         }
         toast.success("Agent updated");
       }
