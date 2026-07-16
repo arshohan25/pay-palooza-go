@@ -77,7 +77,7 @@ function AdminEditorHarness() {
 
 describe("Admin editor — change Division cascades and updates territory_code", () => {
   it("clears District/Upazila/Union when Division changes and re-derives wallet route code", async () => {
-    render(<AdminEditorHarness />);
+    render(<I18nProvider><AdminEditorHarness /></I18nProvider>);
 
     const division = (await screen.findByLabelText(/Division|বিভাগ/i)) as HTMLSelectElement;
     await waitFor(() =>
