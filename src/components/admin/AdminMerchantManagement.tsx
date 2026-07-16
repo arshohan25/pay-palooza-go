@@ -225,10 +225,10 @@ export default function AdminMerchantManagement() {
   const activeCount = merchants.filter(m => m.status === "active").length;
 
   // ─── Detail Sheet ───
-  const openDetail = async (m: any) => {
+  const openDetail = async (m: any, tab: string = "profile") => {
     setDetailMerchant(m);
     setDetailLoading(true);
-    setDetailTab("profile");
+    setDetailTab(tab);
     try {
       const d = await fetchMerchantDetail(m.id, m.user_id);
       setDetail(d);
