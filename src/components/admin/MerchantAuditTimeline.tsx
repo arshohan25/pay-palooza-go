@@ -52,6 +52,16 @@ function eventLabel(e: any): string {
     case "vendor_apply": return `Applied for vendor access (${e.to_value?.store_name ?? ""})`;
     case "vendor_decision": return `Vendor application ${e.to_value?.status}${e.reason ? ` — ${e.reason}` : ""}`;
     case "pin_issued": return `Temporary PIN issued via ${e.to_value?.via ?? "SMS"}`;
+    case "kyc_validation": {
+      const doc = docLabel(e.to_value?.doc_key);
+      const from = e.from_value?.status ?? "unknown";
+      const to = e.to_value?.status ?? "?";
+      return `${doc}: ${from} → ${to}${e.reason ? ` — ${e.reason}` : ""}`;
+    }
+    case "kyc_resubmit_request": {
+      const doc = e.to_value?.label || docLabel(e.to_value?.doc_key);
+      return `Resubmit requested for ${doc}${e.reason ? ` — ${e.reason}` : ""}`;
+    }
     default: return e.event_type;
   }
 }
