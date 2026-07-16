@@ -269,14 +269,14 @@ export default function DivisionDistrictUpazilaPicker({
                     area_type: match ? match.type : value.area_type ?? null,
                   });
                 }}
-                aria-label="Union Parishad or Powrashava"
+                aria-label={l.union}
                 aria-required={required}
               >
-                <option value="">Select union / powrashava</option>
+                <option value="">{l.selUnion}</option>
                 {optionUnions.map((u) => (
                   <option key={`${u.type}-${u.name}`} value={u.name}>
                     {u.name}
-                    {!value.area_type && ` (${u.type === "powrashava" ? "Powrashava" : u.type === "city_corporation" ? "City Corp." : "Union"})`}
+                    {!value.area_type && ` (${u.type === "powrashava" ? l.tPowrashava : u.type === "city_corporation" ? l.tCity : l.tUnion})`}
                   </option>
                 ))}
               </select>
