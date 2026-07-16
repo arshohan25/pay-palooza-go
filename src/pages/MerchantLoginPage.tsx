@@ -61,8 +61,22 @@ export default function MerchantLoginPage() {
   const [wrongPin, setWrongPin] = useState(false);
   const [boundPhone, setBoundPhone] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
-  const [applyOpen, setApplyOpen] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(() => searchParams.get("apply") === "1");
   const tickerRef = useRef<number | null>(null);
+
+  // Keep the apply modal in sync with the ?apply=1 query param (deep-link support)
+  useEffect(() => {
+    if (searchParams.get("apply") === "1") setApplyOpen(true);
+  }, [searchParams]);
+
+  const handleApplyOpenChange = (next: boolean) => {
+    setApplyOpen(next);
+    if (!next && searchParams.get("apply") === "1") {
+      // Strip the query param so the back button doesn't reopen the flow
+      navigate("/merchant-login", { replace: true });
+    }
+  };
+
 
   // Device-bound OTP flow
   type Step = "signin" | "otp";
@@ -714,7 +728,7 @@ export default function MerchantLoginPage() {
         accent="amber"
       />
 
-      <MerchantApplicationFlow open={applyOpen} onOpenChange={setApplyOpen} />
+      <MerchantApplicationFlow open={applyOpen} onOpenChange={handleApplyOpenChange} />
     </div>
   );
 }
