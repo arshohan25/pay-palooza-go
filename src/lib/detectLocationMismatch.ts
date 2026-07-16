@@ -20,8 +20,8 @@ export async function detectLocationMismatch(loc: {
   division: string | null;
   district: string | null;
   upazila: string | null;
-  union_parishad: string | null;
-  area_type: string | null;
+  union_parishad?: string | null;
+  area_type?: string | null;
 }): Promise<LocationMismatch | null> {
   const probe = async (
     d: string | null,
