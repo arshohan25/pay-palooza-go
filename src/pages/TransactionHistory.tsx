@@ -621,7 +621,28 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
 
       {/* ── Transaction Detail Sheet ─────────────────────────────────────── */}
       <AnimatePresence>
-        {selectedTx && (() => {
+        {selectedTx && agentView && (
+          <AgentTxnDetailModal
+            key="agent-detail-modal"
+            tx={{
+              id: selectedTx.id,
+              short_id: selectedTx.short_id,
+              type: selectedTx.type || selectedTx.category,
+              amount: Math.abs(selectedTx.amount),
+              fee: selectedTx.fee,
+              commission: selectedTx.commission,
+              status: selectedTx.status,
+              recipient_name: selectedTx.recipient_name ?? null,
+              recipient_phone: selectedTx.recipient_phone ?? null,
+              description: selectedTx.description ?? null,
+              balance_after: selectedTx.balance_after ?? null,
+              created_at: selectedTx.date,
+            }}
+            onClose={() => setSelectedTx(null)}
+            onShare={() => setShowShare(true)}
+          />
+        )}
+        {selectedTx && !agentView && (() => {
           const cfg       = TX_ICON_MAP[selectedTx.category];
           const isCredit  = selectedTx.amount > 0;
           const IconComp  = isCredit ? cfg.ReceiveIcon : cfg.Icon;
