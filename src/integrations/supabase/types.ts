@@ -8302,6 +8302,7 @@ export type Database = {
         Returns: Json
       }
       purge_old_merchant_login_attempts: { Args: never; Returns: undefined }
+      reconcile_txn_treasury: { Args: { p_txn_id: string }; Returns: Json }
       record_coupon_redemption: {
         Args: {
           p_code: string

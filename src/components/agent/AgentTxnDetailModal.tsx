@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { X, Share2 } from "lucide-react";
+import { X, Share2, Bug, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getAgentTxnLabel, isAgentTxnCredit } from "@/lib/agentTransactions";
+import { supabase } from "@/integrations/supabase/client";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(Number(n) || 0));
@@ -30,8 +31,21 @@ interface Props {
   onShare: (tx: AgentTxnDetailTx) => void;
 }
 
+const inferRpc = (tx: AgentTxnDetailTx): string => {
+  const d = (tx.description || "").toLowerCase();
+  if (tx.type === "cashin" && !d.includes("cash out")) return "agent_cashin";
+  if (tx.type === "send" && d.includes("b2b")) return "agent_b2b_transfer";
+  if (tx.type === "receive" && d.includes("b2b")) return "agent_b2b_transfer";
+  if (tx.type === "cashout" || (tx.type === "cashin" && d.includes("cash out"))) return "transfer_money (cash-out)";
+  return "transfer_money";
+};
+
 const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClose, onShare }, ref) => {
   const isCredit = isAgentTxnCredit(tx);
+  const [showDebug, setShowDebug] = useState(false);
+  const [reconLoading, setReconLoading] = useState(false);
+  const [recon, setRecon] = useState<any>(null);
+  const [reconErr, setReconErr] = useState<string | null>(null);
   const status = (tx.status || "completed").toLowerCase();
   const statusCls =
     status === "completed" || status === "success"
@@ -42,6 +56,20 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
 
   const displayType = getAgentTxnLabel(tx);
   const isCashFlow = tx.type === "cashin" || tx.type === "cashout";
+  const rpcName = inferRpc(tx);
+
+  const runRecon = async () => {
+    setReconLoading(true); setReconErr(null); setRecon(null);
+    try {
+      const { data, error } = await (supabase as any).rpc("reconcile_txn_treasury", { p_txn_id: tx.id });
+      if (error) throw error;
+      setRecon(data);
+    } catch (e: any) {
+      setReconErr(e?.message || "Reconcile failed");
+    } finally {
+      setReconLoading(false);
+    }
+  };
 
   const rows: { label: string; value: string }[] = [
     { label: "Type", value: displayType },
@@ -96,6 +124,48 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
               <p className="text-[10px] font-mono font-bold text-primary break-all mt-0.5">{tx.short_id || tx.id}</p>
             </div>
           </Card>
+
+          <div className="rounded-2xl border border-border/60 bg-muted/20 overflow-hidden">
+            <button
+              onClick={() => setShowDebug(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-bold text-muted-foreground hover:bg-muted/40"
+            >
+              <span className="flex items-center gap-1.5"><Bug size={12} /> Advanced Debug</span>
+              <span>{showDebug ? "Hide" : "Show"}</span>
+            </button>
+            {showDebug && (
+              <div className="px-4 py-3 border-t border-border/50 space-y-2 text-[11px]">
+                <div className="grid grid-cols-2 gap-2">
+                  <div><p className="text-[9px] uppercase text-muted-foreground">RPC</p><p className="font-mono font-semibold">{rpcName}</p></div>
+                  <div><p className="text-[9px] uppercase text-muted-foreground">Txn Type</p><p className="font-mono font-semibold">{tx.type}</p></div>
+                  <div><p className="text-[9px] uppercase text-muted-foreground">commission (raw)</p><p className="font-mono font-semibold">{tx.commission ?? "null"}</p></div>
+                  <div><p className="text-[9px] uppercase text-muted-foreground">fee (raw)</p><p className="font-mono font-semibold">{tx.fee ?? "null"}</p></div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Commission source: <span className="font-mono">transactions.commission</span>
+                  {" · "}displayed when <span className="font-mono">cashin/cashout</span> or <span className="font-mono">commission &gt; 0</span>.
+                </p>
+                <div className="pt-1">
+                  <Button size="sm" variant="outline" onClick={runRecon} disabled={reconLoading} className="h-8 text-[11px] gap-1.5">
+                    {reconLoading ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                    Reconcile treasury
+                  </Button>
+                </div>
+                {reconErr && (
+                  <p className="text-destructive flex items-center gap-1"><AlertCircle size={11} /> {reconErr}</p>
+                )}
+                {recon && (
+                  <div className={`rounded-lg p-2 border ${recon.matches ? "border-emerald-400/40 bg-emerald-500/5" : "border-amber-400/40 bg-amber-500/5"}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">{recon.matches ? "✓ Matches" : "✗ Mismatch"}</span>
+                      <span className="font-mono">expected ৳{fmt(Number(recon.expected_amount))} · ledger ৳{fmt(Number(recon.ledger_amount))}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1 break-all">ref: {recon.txn_reference || "—"} · entries: {Array.isArray(recon.entries) ? recon.entries.length : 0}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => onShare(tx)} className="rounded-xl h-11 text-xs font-bold gap-2">
               <Share2 size={14} /> Share Receipt
