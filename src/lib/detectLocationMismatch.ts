@@ -60,24 +60,16 @@ export async function detectLocationMismatch(loc: {
   const un = loc.union_parishad ?? null;
   const ty = loc.area_type ?? null;
   if (un && ty) {
-    if (
-      !(await probe(
-        loc.division,
-        loc.district,
-        loc.upazila,
-        loc.union_parishad,
-        loc.area_type,
-      ))
-    ) {
+    if (!(await probe(loc.division, loc.district, loc.upazila, un, ty))) {
       const typeLabel =
-        loc.area_type === "powrashava"
+        ty === "powrashava"
           ? "Powrashava"
-          : loc.area_type === "city_corporation"
+          : ty === "city_corporation"
             ? "City Corporation"
             : "Union";
       return {
         field: "union_parishad",
-        message: `"${loc.union_parishad}" (${typeLabel}) doesn't belong to ${loc.upazila}. Pick a valid ${typeLabel} from the dropdown.`,
+        message: `"${un}" (${typeLabel}) doesn't belong to ${loc.upazila}. Pick a valid ${typeLabel} from the dropdown.`,
       };
     }
   }
