@@ -19,6 +19,7 @@ import { reassignAgent } from "@/lib/distributorAdmin";
 import DistrictRoutePicker from "@/components/DistrictRoutePicker";
 import DivisionDistrictUpazilaPicker from "@/components/DivisionDistrictUpazilaPicker";
 import { districtToRouteCode } from "@/lib/districtRouteCode";
+import LocationChangeConfirmDialog, { type LocationSnapshot } from "@/components/LocationChangeConfirmDialog";
 import AdminSmsDeliveryLogs from "./AdminSmsDeliveryLogs";
 
 interface Agent {
@@ -153,6 +154,7 @@ function AgentListTab() {
   const editNidInputRef = useRef<HTMLInputElement>(null);
   const editSelfieInputRef = useRef<HTMLInputElement>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState<{ before: LocationSnapshot; after: LocationSnapshot } | null>(null);
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
@@ -381,6 +383,41 @@ function AgentListTab() {
       toast.error("Division, District and Upazila/Thana are required");
       return;
     }
+    // Derive next territory code up-front so the confirmation preview shows
+    // the exact value that will be persisted.
+    const previousDistrict = (editAgent as any).district || "";
+    const previousTerritory = editAgent.territory_code || "";
+    let nextTerritory = editForm.territory_code || previousTerritory;
+    if (editForm.district && editForm.district !== previousDistrict) {
+      const derived = await districtToRouteCode(editForm.district);
+      if (derived) nextTerritory = derived;
+    }
+    const before: LocationSnapshot = {
+      division: (editAgent as any).division || null,
+      district: previousDistrict || null,
+      upazila: (editAgent as any).upazila || null,
+      union_parishad: (editAgent as any).union_parishad || null,
+      area_type: (editAgent as any).area_type || null,
+      territory_code: previousTerritory || null,
+    };
+    const after: LocationSnapshot = {
+      division: editForm.division || null,
+      district: editForm.district || null,
+      upazila: editForm.upazila || null,
+      union_parishad: editForm.union_parishad || null,
+      area_type: editForm.area_type || null,
+      territory_code: nextTerritory || null,
+    };
+    const locChanged = (Object.keys(before) as (keyof LocationSnapshot)[]).some(k => before[k] !== after[k]);
+    if (locChanged) {
+      setConfirmState({ before, after });
+      return;
+    }
+    await commitEdit(before, after);
+  };
+
+  const commitEdit = async (before: LocationSnapshot, after: LocationSnapshot) => {
+    if (!editAgent) return;
     setEditSaving(true);
     try {
       let nid_image_path: string | undefined;
@@ -399,23 +436,15 @@ function AgentListTab() {
         if (upErr) throw new Error(`Selfie upload failed: ${upErr.message}`);
         selfie_path = path;
       }
-      // Auto-derive wallet territory route code when district changes.
-      const previousDistrict = (editAgent as any).district || "";
-      const previousTerritory = editAgent.territory_code || "";
-      let nextTerritory = editForm.territory_code || "";
-      if (editForm.district && editForm.district !== previousDistrict) {
-        const derived = await districtToRouteCode(editForm.district);
-        if (derived) nextTerritory = derived;
-      }
 
       const updatePayload: any = {
         business_name: editForm.business_name || null,
-        territory_code: nextTerritory || null,
-        division: editForm.division || null,
-        district: editForm.district || null,
-        upazila: editForm.upazila || null,
-        union_parishad: editForm.union_parishad || null,
-        area_type: editForm.area_type || null,
+        territory_code: after.territory_code || null,
+        division: after.division,
+        district: after.district,
+        upazila: after.upazila,
+        union_parishad: after.union_parishad,
+        area_type: after.area_type,
         max_float: parseInt(editForm.max_float) || editAgent.max_float,
         nid_number: editForm.nid_number || null,
         trade_license: editForm.trade_license || null,
@@ -431,32 +460,14 @@ function AgentListTab() {
         if (session?.user) {
           supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_edited", entity_type: "agent", entity_id: editAgent.id, details: { changes: editForm } }).then();
 
-          // Dedicated location-change audit: only when a hierarchy field or
-          // wallet territory code actually changed.
-          const locBefore = {
-            division: (editAgent as any).division || null,
-            district: previousDistrict || null,
-            upazila: (editAgent as any).upazila || null,
-            union_parishad: (editAgent as any).union_parishad || null,
-            area_type: (editAgent as any).area_type || null,
-            territory_code: previousTerritory || null,
-          };
-          const locAfter = {
-            division: editForm.division || null,
-            district: editForm.district || null,
-            upazila: editForm.upazila || null,
-            union_parishad: editForm.union_parishad || null,
-            area_type: editForm.area_type || null,
-            territory_code: nextTerritory || null,
-          };
-          const locChanged = (Object.keys(locBefore) as (keyof typeof locBefore)[]).some(k => locBefore[k] !== locAfter[k]);
+          const locChanged = (Object.keys(before) as (keyof LocationSnapshot)[]).some(k => before[k] !== after[k]);
           if (locChanged) {
             supabase.from("audit_logs").insert({
               actor_id: session.user.id,
               action: "agent_location_changed",
               entity_type: "agent",
               entity_id: editAgent.id,
-              details: { before: locBefore, after: locAfter } as any,
+              details: { before, after } as any,
             }).then();
           }
         }
@@ -468,6 +479,7 @@ function AgentListTab() {
     setEditSaving(false);
     setEditNidFile(null);
     setEditSelfieFile(null);
+    setConfirmState(null);
     setEditAgent(null);
     load();
   };
@@ -751,6 +763,18 @@ function AgentListTab() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Location change confirmation */}
+      {confirmState && (
+        <LocationChangeConfirmDialog
+          open={!!confirmState}
+          before={confirmState.before}
+          after={confirmState.after}
+          saving={editSaving}
+          onCancel={() => setConfirmState(null)}
+          onConfirm={() => commitEdit(confirmState.before, confirmState.after)}
+        />
+      )}
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={v => { if (!v) setDeleteTarget(null); }}>
