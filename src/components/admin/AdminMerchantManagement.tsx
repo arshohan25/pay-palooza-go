@@ -170,8 +170,17 @@ export default function AdminMerchantManagement() {
 
   const loadMerchants = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("merchants").select("*").order("created_at", { ascending: false }).limit(200);
+    const [{ data }, { data: states }] = await Promise.all([
+      supabase.from("merchants").select("*").order("created_at", { ascending: false }).limit(200),
+      (supabase as any).from("merchant_kyc_doc_validation_state").select("merchant_id,status"),
+    ]);
     setMerchants(data ?? []);
+    const agg: Record<string, { valid: number; missing: number; invalid: number }> = {};
+    for (const s of (states ?? []) as any[]) {
+      const a = (agg[s.merchant_id] ||= { valid: 0, missing: 0, invalid: 0 });
+      if (s.status === "valid" || s.status === "missing" || s.status === "invalid") a[s.status]++;
+    }
+    setKycState(agg);
     setLoading(false);
   }, []);
 
@@ -181,13 +190,30 @@ export default function AdminMerchantManagement() {
   useEffect(() => {
     const ch = supabase.channel("admin-merchant-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "merchants" }, () => loadMerchants())
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_kyc_doc_validation_state" }, () => loadMerchants())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [loadMerchants]);
 
+  const kycRowStatus = (m: any): "valid" | "missing" | "invalid" | "unchecked" => {
+    const s = kycState[m.id];
+    if (s) {
+      if (s.invalid > 0) return "invalid";
+      if (s.missing > 0) return "missing";
+      if (s.valid > 0) return "valid";
+    }
+    // Fallback from merchant row
+    const missingReq = !m.nid_front_url || !m.nid_back_url || !m.trade_license_url || !m.trade_license;
+    if (m.business_kyc_status === "rejected") return "invalid";
+    if (missingReq) return "missing";
+    if (m.business_kyc_status === "verified") return "valid";
+    return "unchecked";
+  };
+
   const filtered = merchants.filter(m => {
     if (statusFilter !== "all" && m.status !== statusFilter) return false;
     if (categoryFilter !== "all" && m.category !== categoryFilter) return false;
+    if (kycFilter !== "all" && kycRowStatus(m) !== kycFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return m.business_name?.toLowerCase().includes(q) || m.category?.includes(q) || m.id?.includes(q);
