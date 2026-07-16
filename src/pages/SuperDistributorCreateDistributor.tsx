@@ -218,7 +218,7 @@ const SuperDistributorCreateDistributor = () => {
             </div>
             <div>
               <Label className="text-xs">Operating Territories</Label>
-              <DistrictMultiSelect value={territories} onChange={setTerritories} placeholder="Select districts" />
+              <DistrictMultiSelect value={territories} onChange={setTerritories} placeholder="Select districts" persistKey={TERR_KEY} />
               <p className="text-[10px] text-muted-foreground mt-1">Multi-district territory arrays are still 2-letter route codes for wallet ID routing.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
