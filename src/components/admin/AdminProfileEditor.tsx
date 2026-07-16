@@ -87,7 +87,7 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
       setLoading(true);
       const [profileRes, agentRes, merchantRes, distributorRes] = await Promise.all([
         supabase.from("profiles").select("name, phone, email, avatar_url").eq("user_id", userId).maybeSingle(),
-        supabase.from("agents").select("id, business_name, nid_number, territory_code, trade_license, max_float").eq("user_id", userId).maybeSingle(),
+        supabase.from("agents").select("id, business_name, nid_number, territory_code, trade_license, max_float, division, district, upazila, union_parishad, area_type").eq("user_id", userId).maybeSingle(),
         supabase.from("merchants").select("id, business_name, category, mdr_rate, settlement_frequency, bank_name, bank_account_holder, bank_account_number, bank_branch, bank_routing, trade_license").eq("user_id", userId).maybeSingle(),
         supabase.from("distributors").select("id, business_name, commission_rate, max_float, territory").eq("user_id", userId).maybeSingle(),
       ]);
