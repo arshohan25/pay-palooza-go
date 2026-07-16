@@ -82,6 +82,8 @@ const SuperDistributorDashboard = () => {
   const navigate = useNavigate();
   useUserSessionTimeout("super_distributor");
   const { toast } = useToast();
+  const { isDisabled } = useGlobalToggles();
+
 
   const [balance, setBalance] = useState(0);
   const [distributors, setDistributors] = useState<DistRow[]>([]);
