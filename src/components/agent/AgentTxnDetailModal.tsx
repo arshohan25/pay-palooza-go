@@ -43,10 +43,13 @@ const inferRpc = (tx: AgentTxnDetailTx): string => {
 
 const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClose, onShare }, ref) => {
   const isCredit = isAgentTxnCredit(tx);
+  const { isAdmin } = useAdmin();
   const [showDebug, setShowDebug] = useState(false);
   const [reconLoading, setReconLoading] = useState(false);
   const [recon, setRecon] = useState<any>(null);
   const [reconErr, setReconErr] = useState<string | null>(null);
+  const [history, setHistory] = useState<any[] | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const status = (tx.status || "completed").toLowerCase();
   const statusCls =
     status === "completed" || status === "success"
@@ -59,12 +62,31 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
   const isCashFlow = tx.type === "cashin" || tx.type === "cashout";
   const rpcName = inferRpc(tx);
 
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("list_txn_reconciliation_checks", { p_txn_id: tx.id, p_limit: 20 });
+      if (error) throw error;
+      setHistory((data as any[]) ?? []);
+    } catch {
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showDebug && isAdmin && history === null) void loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDebug, isAdmin]);
+
   const runRecon = async () => {
     setReconLoading(true); setReconErr(null); setRecon(null);
     try {
       const { data, error } = await (supabase as any).rpc("reconcile_txn_treasury", { p_txn_id: tx.id });
       if (error) throw error;
       setRecon(data);
+      void loadHistory();
     } catch (e: any) {
       setReconErr(e?.message || "Reconcile failed");
     } finally {
