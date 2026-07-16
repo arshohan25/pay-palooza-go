@@ -92,9 +92,16 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
   const handleSubmit = async () => {
     let finalCategory = form.category === "__other__" ? customCategory.trim() : form.category;
     if (form.category === "__other__") {
-      if (!finalCategory) { toast.error(t("mafToastInvalid")); return; }
+      if (!finalCategory) { toast.error("Type a category name in the Other field"); return; }
+      if (finalCategory.length < 2) { toast.error("Category must be at least 2 characters"); return; }
+      if (!/^[\p{L}\p{N}][\p{L}\p{N} &/\-()]*$/u.test(finalCategory)) {
+        toast.error("Category can only contain letters, numbers, spaces and & / - ( )"); return;
+      }
+      // Guard against picking Other but typing a name that matches a listed category
+      const dup = categories.find(c => c.label.trim().toLowerCase() === finalCategory.toLowerCase());
+      if (dup) { toast.error(`"${dup.label}" already exists — pick it from the list.`); return; }
       try {
-        const created = await addCategory(finalCategory, finalCategory);
+        const created = await addCategory(finalCategory, finalCategory, { strict: true });
         finalCategory = created.name;
       } catch (e: any) {
         toast.error(e?.message || "Failed to add category");
