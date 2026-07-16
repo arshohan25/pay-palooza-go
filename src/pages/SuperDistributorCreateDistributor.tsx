@@ -23,12 +23,28 @@ const SuperDistributorCreateDistributor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const LOC_KEY = "sd:create-distributor:location:v1";
+  const TERR_KEY = "sd:create-distributor:territories";
+
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [territories, setTerritories] = useState<string[]>([]);
-  const [location, setLocation] = useState<DivisionDistrictUpazilaValue>({
-    division: null, district: null, upazila: null, union_parishad: null, area_type: null,
+  const [territories, setTerritories] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.sessionStorage.getItem("dms:v1:" + TERR_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed?.value) ? parsed.value.filter((c: unknown) => typeof c === "string") : [];
+    } catch { return []; }
+  });
+  const [location, setLocation] = useState<DivisionDistrictUpazilaValue>(() => {
+    const empty = { division: null, district: null, upazila: null, union_parishad: null, area_type: null };
+    if (typeof window === "undefined") return empty;
+    try {
+      const raw = window.sessionStorage.getItem(LOC_KEY);
+      return raw ? { ...empty, ...JSON.parse(raw) } : empty;
+    } catch { return empty; }
   });
   const [locError, setLocError] = useState<LocationMismatch | null>(null);
   const [maxFloat, setMaxFloat] = useState("10000000");
@@ -37,6 +53,20 @@ const SuperDistributorCreateDistributor = () => {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => { if (locError) setLocError(null); }, [location.division, location.district, location.upazila, location.union_parishad, location.area_type]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist Division → District → Upazila location across navigation.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.sessionStorage.setItem(LOC_KEY, JSON.stringify(location)); } catch { /* ignore */ }
+  }, [location]);
+
+  const clearPersisted = () => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.removeItem(LOC_KEY);
+      window.sessionStorage.removeItem("dms:v1:" + TERR_KEY);
+    } catch { /* ignore */ }
+  };
 
 
   if (authLoading) {
@@ -106,6 +136,7 @@ const SuperDistributorCreateDistributor = () => {
         throw new Error(result.error || "Failed to create distributor");
       }
 
+      clearPersisted();
       setSuccess(true);
       toast({ title: "Distributor Created", description: `${businessName} account created successfully` });
     } catch (err: any) {
@@ -130,7 +161,7 @@ const SuperDistributorCreateDistributor = () => {
           <p className="text-xs text-muted-foreground mt-2">A random PIN was generated. They should use "Forgot PIN" to set their own.</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => { setSuccess(false); setPhone(""); setName(""); setBusinessName(""); setTerritories([]); setLocation({ division: null, district: null, upazila: null, union_parishad: null, area_type: null }); setLocError(null); setMaxFloat("10000000"); setCommissionRate("0.20"); }}>
+          <Button variant="outline" onClick={() => { clearPersisted(); setSuccess(false); setPhone(""); setName(""); setBusinessName(""); setTerritories([]); setLocation({ division: null, district: null, upazila: null, union_parishad: null, area_type: null }); setLocError(null); setMaxFloat("10000000"); setCommissionRate("0.20"); }}>
             <UserPlus size={14} className="mr-1.5" /> Create Another
           </Button>
           <Button onClick={() => navigate("/super-distributor")} className="text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(270 60% 45%), hsl(285 55% 35%))" }}>
@@ -188,7 +219,7 @@ const SuperDistributorCreateDistributor = () => {
             </div>
             <div>
               <Label className="text-xs">Operating Territories</Label>
-              <DistrictMultiSelect value={territories} onChange={setTerritories} placeholder="Select districts" />
+              <DistrictMultiSelect value={territories} onChange={setTerritories} placeholder="Select districts" persistKey={TERR_KEY} />
               <p className="text-[10px] text-muted-foreground mt-1">Multi-district territory arrays are still 2-letter route codes for wallet ID routing.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
