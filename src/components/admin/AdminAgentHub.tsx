@@ -19,6 +19,7 @@ import { reassignAgent } from "@/lib/distributorAdmin";
 import DistrictRoutePicker from "@/components/DistrictRoutePicker";
 import DivisionDistrictUpazilaPicker from "@/components/DivisionDistrictUpazilaPicker";
 import { districtToRouteCode } from "@/lib/districtRouteCode";
+import LocationChangeConfirmDialog, { type LocationSnapshot } from "@/components/LocationChangeConfirmDialog";
 import AdminSmsDeliveryLogs from "./AdminSmsDeliveryLogs";
 
 interface Agent {
