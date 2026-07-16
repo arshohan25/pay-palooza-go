@@ -26,10 +26,13 @@ interface Props {
     tCity: string;
     search?: string;
     empty?: string;
+    loading?: string;
   };
   className?: string;
   /** Optional formatter for displaying option names (e.g. Bangla translation). */
   displayName?: (name: string) => string;
+  /** True while parent is still fetching options. */
+  loading?: boolean;
 }
 
 type FlatRow =
