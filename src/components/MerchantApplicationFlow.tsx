@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Store, Clock, CheckCircle, XCircle, Loader2, ChevronsUpDown, Check } from "lucide-react";
-import DistrictRoutePicker from "@/components/DistrictRoutePicker";
+import { districtToRouteCode } from "@/lib/districtRouteCode";
 import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
 import LocationMismatchAlert from "@/components/LocationMismatchAlert";
 import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
@@ -131,6 +131,8 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       toast.error("Select Union Parishad / Powrashava"); setSubmitting(false); return;
     }
 
+    const derivedRoute = (await districtToRouteCode(location.district)) || null;
+
     const { error } = await (supabase as any).from("merchant_applications").insert({
       user_id: session.user.id,
       business_name: parsed.data.business_name,
@@ -140,7 +142,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       contact_number: parsed.data.contact_number || null,
       contact_email: parsed.data.contact_email || null,
       business_address: parsed.data.business_address || null,
-      route_code: parsed.data.route_code || null,
+      route_code: derivedRoute,
       division: location.division,
       district_name: location.district,
       upazila: location.upazila,
@@ -305,17 +307,6 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                   <div>
                     <Label>{t("mafBusinessAddress")}</Label>
                     <Input value={form.business_address} onChange={e => set("business_address", e.target.value)} placeholder={t("mafBusinessAddressPh")} maxLength={300} />
-                  </div>
-                  <div>
-                    <Label>District (route code)</Label>
-                    <DistrictRoutePicker
-                      value={form.route_code}
-                      onChange={(code) => set("route_code", code)}
-                      placeholder="Select district"
-                    />
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Used to build your merchant wallet ID: EZP-MRC{"{RR}"}-XXXX
-                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>Location *</Label>
