@@ -261,8 +261,12 @@ export default function DivisionDistrictUpazilaPicker({
               <option value="city_corporation">{l.tCity}</option>
             </select>
             {hasPreloaded ? (
-              <div className="col-span-2">
+              <div className="col-span-2" data-testid="union-select-wrapper">
                 <UnionSearchSelect
+                  // Remount whenever the parent selection changes so any
+                  // stale search query / scroll position from a previous
+                  // upazila is wiped before the new options render.
+                  key={`${value.division ?? ""}|${value.district ?? ""}|${value.upazila ?? ""}|${value.area_type ?? ""}`}
                   options={optionUnions.map((u) => ({ name: u.name, type: u.type }))}
                   value={value.union_parishad ?? null}
                   areaType={value.area_type ?? null}
