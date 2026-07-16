@@ -261,7 +261,25 @@ export default function AdminDistributorManagement() {
       toast.error(mismatch?.message || "Pick Division › District › Upazila");
       return;
     }
-    const role = ((createForm as any).role === "super_distributor" ? "super_distributor" : "distributor") as "distributor" | "super_distributor";
+  // Unified create for both Distributor and Super Distributor.
+  const handleCreate = async (role: "distributor" | "super_distributor") => {
+    const form = role === "super_distributor" ? sdForm : distForm;
+    const parentId = role === "super_distributor" ? sdParentId : distParentId;
+    const loc = role === "super_distributor" ? sdLoc : emptyLoc;
+
+    const phone = form.phone.replace(/\D/g, "").replace(/^88/, "");
+    if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone"); return; }
+    if (!form.business_name.trim()) { toast.error("Business name required"); return; }
+
+    if (role === "super_distributor") {
+      if (!loc.division || !loc.district || !loc.upazila) {
+        const mismatch = await detectLocationMismatch(loc);
+        setSdLocError(mismatch);
+        toast.error(mismatch?.message || "Pick Division › District › Upazila");
+        return;
+      }
+    }
+
     setCreating(true);
     try {
       const { data: existingProfile } = await supabase
@@ -275,13 +293,13 @@ export default function AdminDistributorManagement() {
         const { data: existingDist } = await supabase
           .from("distributors").select("id").eq("user_id", userId).maybeSingle();
         if (existingDist) { toast.error("This user is already a distributor"); setCreating(false); return; }
-        await supabase.from("profiles").update({ name: createForm.name.trim() || createForm.business_name }).eq("user_id", userId);
+        await supabase.from("profiles").update({ name: form.name.trim() || form.business_name }).eq("user_id", userId);
       } else {
         pin = String(Math.floor(1000 + Math.random() * 9000));
-        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: createForm.name.trim() || createForm.business_name });
+        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: form.name.trim() || form.business_name });
         if (!authData?.user) throw new Error("Account creation failed");
         userId = authData.user.id;
-        await supabase.from("profiles").update({ name: createForm.name.trim() || createForm.business_name, phone }).eq("user_id", userId);
+        await supabase.from("profiles").update({ name: form.name.trim() || form.business_name, phone }).eq("user_id", userId);
       }
 
       const { data: hasRole } = await supabase
@@ -289,44 +307,67 @@ export default function AdminDistributorManagement() {
       if (!hasRole) {
         await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
       }
-      const { error: distErr } = await supabase.from("distributors").insert({
+
+      // Validate parent linkage against SD options loaded from user_roles.
+      const parentValid = parentId ? sdOptions.some((s) => s.id === parentId) : true;
+      if (parentId && !parentValid) {
+        toast.error("Selected parent is not a valid Super Distributor");
+        setCreating(false);
+        return;
+      }
+
+      const isSD = role === "super_distributor";
+      const insertPayload: Record<string, any> = {
         user_id: userId,
-        business_name: createForm.business_name.trim(),
-        territory: createForm.territory ? createForm.territory.split(",").map(t => t.trim()).filter(Boolean) : null,
-        commission_rate: parseFloat(createForm.commission_rate) || 2,
-        max_float: parseInt(createForm.max_float) || 1000000,
-        status: "active" as any,
-        division: isSD ? createLoc.division : null,
-        district: isSD ? createLoc.district : null,
-        upazila: isSD ? createLoc.upazila : null,
-        union_parishad: isSD ? (createLoc.union_parishad ?? null) : null,
-        area_type: isSD ? (createLoc.area_type ?? null) : null,
-        nid_number: isSD ? (createForm.nid_number.trim() || null) : null,
-        trade_license: isSD ? (createForm.trade_license.trim() || null) : null,
-        parent_id: role === "distributor" && createParentId ? createParentId : null,
-      } as any);
+        business_name: form.business_name.trim(),
+        territory: form.territory ? form.territory.split(",").map(t => t.trim()).filter(Boolean) : null,
+        commission_rate: parseFloat(form.commission_rate) || 2,
+        max_float: parseInt(form.max_float) || 1000000,
+        status: "active",
+        // Both D and SD may link to a parent SD (SD chaining allowed).
+        parent_id: parentId || null,
+      };
+      if (isSD) {
+        insertPayload.division = loc.division;
+        insertPayload.district = loc.district;
+        insertPayload.upazila = loc.upazila;
+        insertPayload.union_parishad = loc.union_parishad ?? null;
+        insertPayload.area_type = loc.area_type ?? null;
+        insertPayload.nid_number = (sdForm.nid_number.trim() || null);
+        insertPayload.trade_license = (sdForm.trade_license.trim() || null);
+      }
+
+      const { error: distErr } = await supabase.from("distributors").insert(insertPayload as any);
       if (distErr) {
-        if (/Invalid location hierarchy/i.test(distErr.message)) {
-          const mismatch = await detectLocationMismatch(createLoc);
-          setCreateLocError(mismatch);
+        if (isSD && /Invalid location hierarchy/i.test(distErr.message)) {
+          const mismatch = await detectLocationMismatch(loc);
+          setSdLocError(mismatch);
         }
         throw distErr;
       }
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `${role}_created`, entity_type: role, entity_id: userId, details: { business_name: createForm.business_name, promoted_existing: !pin } }).then();
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `${role}_created`, entity_type: role, entity_id: userId, details: { business_name: form.business_name, promoted_existing: !pin } }).then();
       }
-      toast.success(pin ? `${role === "super_distributor" ? "Super distributor" : "Distributor"} created! Temp PIN: ${pin}` : `Existing user promoted to ${role.replace("_", " ")}`, { duration: 10000 });
-      setCreateOpen(false);
-      setCreateForm({ phone: "", name: "", business_name: "", nid_number: "", trade_license: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
-      setCreateParentId("");
-      setCreateLoc(emptyLoc);
-      setCreateLocError(null);
+      toast.success(pin ? `${isSD ? "Super distributor" : "Distributor"} created! Temp PIN: ${pin}` : `Existing user promoted to ${role.replace("_", " ")}`, { duration: 10000 });
+
+      if (isSD) {
+        setCreateSdOpen(false);
+        setSdForm(emptySdForm);
+        setSdParentId("");
+        setSdLoc(emptyLoc);
+        setSdLocError(null);
+      } else {
+        setCreateDistOpen(false);
+        setDistForm(emptyDistForm);
+        setDistParentId("");
+      }
       load();
     } catch (err: any) {
-      toast.error(err.message || "Failed to create distributor");
+      toast.error(err.message || "Failed to create");
     } finally { setCreating(false); }
   };
+
 
   // Start editing
   const startEdit = (d: Distributor) => {
