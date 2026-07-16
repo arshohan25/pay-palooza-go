@@ -35,6 +35,11 @@ Deno.serve(async (req) => {
       max_float,
       commission_rate,
       territories,
+      division,
+      district,
+      upazila,
+      union_parishad,
+      area_type,
     } = body;
 
     if (!type || !["agent", "distributor"].includes(type)) {
