@@ -30,6 +30,7 @@ import { TempPinResendPanel } from "./TempPinResendPanel";
 import AdminMerchantApprovalQueue from "./AdminMerchantApprovalQueue";
 import AdminVendorApplicationsQueue from "./AdminVendorApplicationsQueue";
 import MerchantAuditTimeline from "./MerchantAuditTimeline";
+import MerchantKycDocStatus from "./MerchantKycDocStatus";
 
 type MerchantStatus = "pending" | "active" | "suspended";
 type MerchantCategory = string;
