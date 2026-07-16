@@ -330,8 +330,11 @@ export default function AdminDistributorManagement() {
           const mismatch = await detectLocationMismatch(loc);
           setSdLocError(mismatch);
         }
+        const friendly = mapDistributorDbError(distErr.message);
+        if (friendly) throw new Error(friendly);
         throw distErr;
       }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `${role}_created`, entity_type: role, entity_id: userId, details: { business_name: form.business_name, promoted_existing: !pin } }).then();
