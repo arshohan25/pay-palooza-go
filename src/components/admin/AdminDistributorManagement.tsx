@@ -291,6 +291,7 @@ export default function AdminDistributorManagement() {
         area_type: createLoc.area_type ?? null,
         nid_number: createForm.nid_number.trim() || null,
         trade_license: createForm.trade_license.trim() || null,
+        parent_id: role === "distributor" && createParentId ? createParentId : null,
       } as any);
       if (distErr) {
         if (/Invalid location hierarchy/i.test(distErr.message)) {
