@@ -51,18 +51,29 @@ export default function AdminDistributorManagement() {
   const [linkedAgents, setLinkedAgents] = useState<any[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
 
-  // Create
-  const [createOpen, setCreateOpen] = useState(false);
+  // Create — separate dialogs for Distributor vs Super Distributor
+  const [createDistOpen, setCreateDistOpen] = useState(false);
+  const [createSdOpen, setCreateSdOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [createForm, setCreateForm] = useState<{ phone: string; name: string; business_name: string; nid_number: string; trade_license: string; territory: string; commission_rate: string; max_float: string; role: "distributor" | "super_distributor" }>({ phone: "", name: "", business_name: "", nid_number: "", trade_license: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" });
+
+  // Distributor form (no NID / Trade License / Primary Location)
+  const emptyDistForm = { phone: "", name: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000" };
+  const [distForm, setDistForm] = useState(emptyDistForm);
+  const [distParentId, setDistParentId] = useState<string>("");
+
+  // Super Distributor form (full fields)
+  const emptySdForm = { phone: "", name: "", business_name: "", nid_number: "", trade_license: "", territory: "", commission_rate: "2", max_float: "1000000" };
+  const [sdForm, setSdForm] = useState(emptySdForm);
+  const [sdParentId, setSdParentId] = useState<string>("");
   const emptyLoc: DivisionDistrictUpazilaValue = { division: null, district: null, upazila: null, union_parishad: null, area_type: null };
-  const [createLoc, setCreateLoc] = useState<DivisionDistrictUpazilaValue>(emptyLoc);
-  const [createLocError, setCreateLocError] = useState<LocationMismatch | null>(null);
-  const [createParentId, setCreateParentId] = useState<string | "">("");
+  const [sdLoc, setSdLoc] = useState<DivisionDistrictUpazilaValue>(emptyLoc);
+  const [sdLocError, setSdLocError] = useState<LocationMismatch | null>(null);
+
   const [sdOptions, setSdOptions] = useState<{ id: string; business_name: string }[]>([]);
 
-  // Load Super Distributor options for parent linking
+  // Load Super Distributor options for parent linking (shared by both dialogs)
   useEffect(() => {
+    if (!createDistOpen && !createSdOpen) return;
     let cancelled = false;
     (async () => {
       const { data: sdRoles } = await supabase.from("user_roles").select("user_id").eq("role", "super_distributor" as any);
@@ -72,7 +83,7 @@ export default function AdminDistributorManagement() {
       if (!cancelled) setSdOptions(((dists ?? []) as any[]).map((d) => ({ id: d.id, business_name: d.business_name })));
     })();
     return () => { cancelled = true; };
-  }, [createOpen]);
+  }, [createDistOpen, createSdOpen]);
 
   // Edit inline
   const [editingId, setEditingId] = useState<string | null>(null);
