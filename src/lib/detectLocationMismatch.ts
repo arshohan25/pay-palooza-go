@@ -56,8 +56,10 @@ export async function detectLocationMismatch(loc: {
     };
   }
 
-  // Union / Powrashava / City Corp check (only when supplied)
-  if (loc.union_parishad && loc.area_type) {
+  // Union / Powrashava / City Corp check (only when both fields supplied)
+  const un = loc.union_parishad ?? null;
+  const ty = loc.area_type ?? null;
+  if (un && ty) {
     if (
       !(await probe(
         loc.division,
