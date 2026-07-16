@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { X, Share2 } from "lucide-react";
+import { X, Share2, Bug, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getAgentTxnLabel, isAgentTxnCredit } from "@/lib/agentTransactions";
+import { supabase } from "@/integrations/supabase/client";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(Number(n) || 0));
