@@ -178,11 +178,16 @@ export default function DivisionDistrictUpazilaPicker({
         </select>
       </div>
 
-      {includeUnion && (
+      {includeUnion && (() => {
+        const filteredUnions = value.area_type
+          ? unionsForUpazila.filter((u) => u.type === value.area_type)
+          : unionsForUpazila;
+        const hasPreloaded = filteredUnions.length > 0;
+        return (
         <div>
           {showLabels && (
             <Label className="text-xs mb-1 block">
-              Union Parishad / Powrashava{required && " *"}
+              Union Parishad / Powrashava / City Corp.{required && " *"}
             </Label>
           )}
           <div className="grid grid-cols-3 gap-2">
@@ -190,7 +195,7 @@ export default function DivisionDistrictUpazilaPicker({
               className={selectClass + " col-span-1"}
               disabled={baseDisabled || !value.upazila}
               value={value.area_type ?? ""}
-              onChange={(e) => onChange({ ...value, area_type: (e.target.value || null) as AreaType | null })}
+              onChange={(e) => onChange({ ...value, area_type: (e.target.value || null) as AreaType | null, union_parishad: null })}
               aria-label="Area type"
               aria-required={required}
             >
@@ -199,14 +204,14 @@ export default function DivisionDistrictUpazilaPicker({
               <option value="powrashava">Powrashava</option>
               <option value="city_corporation">City Corp.</option>
             </select>
-            {unionsForUpazila.length > 0 ? (
+            {hasPreloaded ? (
               <select
                 className={selectClass + " col-span-2"}
                 disabled={baseDisabled || !value.upazila}
                 value={value.union_parishad ?? ""}
                 onChange={(e) => {
                   const name = e.target.value || null;
-                  const match = unionsForUpazila.find((u) => u.name === name);
+                  const match = filteredUnions.find((u) => u.name === name);
                   onChange({
                     ...value,
                     union_parishad: name,
@@ -217,33 +222,39 @@ export default function DivisionDistrictUpazilaPicker({
                 aria-required={required}
               >
                 <option value="">Select union / powrashava</option>
-                {unionsForUpazila.map((u) => (
-                  <option key={u.name} value={u.name}>
-                    {u.name} ({u.type === "powrashava" ? "Powrashava" : u.type === "city_corporation" ? "City Corp." : "Union"})
+                {filteredUnions.map((u) => (
+                  <option key={`${u.type}-${u.name}`} value={u.name}>
+                    {u.name}
+                    {!value.area_type && ` (${u.type === "powrashava" ? "Powrashava" : u.type === "city_corporation" ? "City Corp." : "Union"})`}
                   </option>
                 ))}
-                <option value="">— Type manually below —</option>
               </select>
             ) : (
               <Input
                 className="col-span-2 h-9"
-                disabled={baseDisabled || !value.upazila}
+                disabled={baseDisabled || !value.upazila || !value.area_type}
                 value={value.union_parishad ?? ""}
                 onChange={(e) => onChange({ ...value, union_parishad: e.target.value || null })}
-                placeholder={value.upazila ? "Type union / powrashava name" : "Choose upazila first"}
+                placeholder={
+                  !value.upazila ? "Choose upazila first"
+                  : !value.area_type ? "Pick a type first"
+                  : `Type ${value.area_type === "powrashava" ? "powrashava" : value.area_type === "city_corporation" ? "city corporation" : "union"} name`
+                }
                 maxLength={80}
                 aria-label="Union Parishad or Powrashava name"
                 aria-required={required}
               />
             )}
           </div>
-          {value.upazila && unionsForUpazila.length === 0 && (
+          {value.upazila && value.area_type && !hasPreloaded && (
             <p className="text-[10px] text-muted-foreground mt-1">
-              No unions pre-loaded for this upazila — type the name manually.
+              No entries pre-loaded for this type — type the name manually.
             </p>
           )}
         </div>
-      )}
+        );
+      })()}
+
 
       {loading && (
         <div className="text-xs text-muted-foreground flex items-center gap-1.5">
