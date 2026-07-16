@@ -908,6 +908,10 @@ export default function AdminMerchantManagement() {
                       <InfoCell label="Routing" value={detail.merchant.bank_routing || "—"} />
                     </div>
                   </div>
+
+                  <Separator />
+
+                  <MerchantKycDocStatus merchantId={detail.merchant.id} initial={detail.merchant} />
                 </TabsContent>
 
                 {/* ── Transactions Tab ── */}
