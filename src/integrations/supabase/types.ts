@@ -3674,6 +3674,79 @@ export type Database = {
           },
         ]
       }
+      merchant_kyc_doc_validation_state: {
+        Row: {
+          checked_at: string
+          doc_key: string
+          merchant_id: string
+          reason: string | null
+          status: string
+        }
+        Insert: {
+          checked_at?: string
+          doc_key: string
+          merchant_id: string
+          reason?: string | null
+          status: string
+        }
+        Update: {
+          checked_at?: string
+          doc_key?: string
+          merchant_id?: string
+          reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_kyc_doc_validation_state_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_kyc_resubmit_requests: {
+        Row: {
+          created_at: string
+          doc_key: string
+          id: string
+          merchant_id: string
+          reason: string
+          requested_by: string | null
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          doc_key: string
+          id?: string
+          merchant_id: string
+          reason: string
+          requested_by?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          doc_key?: string
+          id?: string
+          merchant_id?: string
+          reason?: string
+          requested_by?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_kyc_resubmit_requests_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_login_attempts: {
         Row: {
           created_at: string
@@ -8091,6 +8164,15 @@ export type Database = {
         }
         Returns: Json
       }
+      record_merchant_kyc_validation: {
+        Args: {
+          p_doc: string
+          p_merchant: string
+          p_reason: string
+          p_status: string
+        }
+        Returns: undefined
+      }
       record_transaction:
         | {
             Args: {
@@ -8157,6 +8239,10 @@ export type Database = {
         Returns: Json
       }
       repay_missed_dps: { Args: { p_missed_id: string }; Returns: Json }
+      request_merchant_kyc_resubmit: {
+        Args: { p_doc: string; p_merchant: string; p_reason: string }
+        Returns: string
+      }
       request_vendor_payout: { Args: { p_amount: number }; Returns: Json }
       require_kyc_verified: { Args: { p_user_id: string }; Returns: undefined }
       resolve_easypay_uid_alert: {
