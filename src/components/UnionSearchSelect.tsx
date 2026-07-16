@@ -27,6 +27,8 @@ interface Props {
     empty?: string;
   };
   className?: string;
+  /** Optional formatter for displaying option names (e.g. Bangla translation). */
+  displayName?: (name: string) => string;
 }
 
 type FlatRow =
