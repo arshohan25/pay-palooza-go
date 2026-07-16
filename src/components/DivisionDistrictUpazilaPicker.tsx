@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import UnionSearchSelect from "./UnionSearchSelect";
 
 const L = {
   en: {
@@ -17,6 +18,7 @@ const L = {
     type: "Type", tUnion: "Union", tPowrashava: "Powrashava", tCity: "City Corp.",
     typeUnion: "Type union name", typePowrashava: "Type powrashava name", typeCity: "Type city corporation name",
     noPreload: "No entries pre-loaded for this type — type the name manually.",
+    search: "Search union / powrashava / city corp…", empty: "No match",
     failed: "Failed to load areas",
   },
   bn: {
@@ -30,6 +32,7 @@ const L = {
     type: "ধরন", tUnion: "ইউনিয়ন", tPowrashava: "পৌরসভা", tCity: "সিটি কর্প.",
     typeUnion: "ইউনিয়নের নাম লিখুন", typePowrashava: "পৌরসভার নাম লিখুন", typeCity: "সিটি কর্পোরেশনের নাম লিখুন",
     noPreload: "এই ধরনের জন্য কোনো তালিকা নেই — নাম টাইপ করুন।",
+    search: "ইউনিয়ন / পৌরসভা / সিটি কর্প. খুঁজুন…", empty: "কোনো ফলাফল নেই",
     failed: "এলাকা লোড করা যায়নি",
   },
 } as const;
@@ -256,30 +259,23 @@ export default function DivisionDistrictUpazilaPicker({
               <option value="city_corporation">{l.tCity}</option>
             </select>
             {hasPreloaded ? (
-              <select
-                className={selectClass + " col-span-2"}
-                disabled={baseDisabled || !value.upazila}
-                value={value.union_parishad ?? ""}
-                onChange={(e) => {
-                  const name = e.target.value || null;
-                  const match = optionUnions.find((u) => u.name === name);
-                  onChange({
-                    ...value,
-                    union_parishad: name,
-                    area_type: match ? match.type : value.area_type ?? null,
-                  });
-                }}
-                aria-label={l.union}
-                aria-required={required}
-              >
-                <option value="">{l.selUnion}</option>
-                {optionUnions.map((u) => (
-                  <option key={`${u.type}-${u.name}`} value={u.name}>
-                    {u.name}
-                    {!value.area_type && ` (${u.type === "powrashava" ? l.tPowrashava : u.type === "city_corporation" ? l.tCity : l.tUnion})`}
-                  </option>
-                ))}
-              </select>
+              <div className="col-span-2">
+                <UnionSearchSelect
+                  options={optionUnions.map((u) => ({ name: u.name, type: u.type }))}
+                  value={value.union_parishad ?? null}
+                  areaType={value.area_type ?? null}
+                  disabled={baseDisabled || !value.upazila}
+                  placeholder={l.selUnion}
+                  labels={{ tUnion: l.tUnion, tPowrashava: l.tPowrashava, tCity: l.tCity, search: l.search, empty: l.empty }}
+                  onSelect={(name, type) =>
+                    onChange({
+                      ...value,
+                      union_parishad: name,
+                      area_type: value.area_type ?? type,
+                    })
+                  }
+                />
+              </div>
             ) : (
               <Input
                 className="col-span-2 h-9"
