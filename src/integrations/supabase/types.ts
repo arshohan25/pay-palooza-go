@@ -7626,6 +7626,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      add_merchant_category_if_missing: {
+        Args: { _label: string }
+        Returns: string
+      }
       admin_approve_fund_request: {
         Args: { p_admin_note?: string; p_request_id: string }
         Returns: Json
