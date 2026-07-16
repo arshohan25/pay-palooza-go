@@ -146,7 +146,7 @@ function AgentListTab() {
 
   // Edit
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
-  const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", division: "", district: "", upazila: "", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
+  const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", division: "", district: "", upazila: "", union_parishad: "", area_type: "" as "" | "union" | "powrashava" | "city_corporation", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
   const [editNidFile, setEditNidFile] = useState<File | null>(null);
   const [editSelfieFile, setEditSelfieFile] = useState<File | null>(null);
   const editNidInputRef = useRef<HTMLInputElement>(null);
