@@ -4,6 +4,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Check, ChevronsUpDown, MapPin, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { districtCommandFilter } from "@/lib/districtCommandFilter";
@@ -21,11 +29,10 @@ interface Props {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  /** When true, render the Division select + District multi-select as two
+   * stacked fields (dynamic cascade) instead of a single combobox. */
+  showDivisionField?: boolean;
 }
-
-type FlatRow =
-  | { kind: "header"; division: string; key: string }
-  | { kind: "item"; row: Row; key: string };
 
 export default function DistrictMultiSelect({
   value,
@@ -33,12 +40,13 @@ export default function DistrictMultiSelect({
   placeholder = "Select districts",
   disabled,
   className,
+  showDivisionField = true,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [divisionFilter, setDivisionFilter] = useState<string>("all");
+  const [division, setDivision] = useState<string>("");
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -64,35 +72,33 @@ export default function DistrictMultiSelect({
     [rows],
   );
 
-  const flat: FlatRow[] = useMemo(() => {
-    const base = divisionFilter === "all" ? rows : rows.filter((r) => r.division === divisionFilter);
-    const filtered = query
-      ? base.filter(
-          (r) =>
-            districtCommandFilter(`${r.district} ${r.code} ${r.division}`, query) > 0,
-        )
-      : base;
-    const byDiv = new Map<string, Row[]>();
-    for (const r of filtered) {
-      if (!byDiv.has(r.division)) byDiv.set(r.division, []);
-      byDiv.get(r.division)!.push(r);
-    }
-    const out: FlatRow[] = [];
-    for (const [division, list] of Array.from(byDiv.entries()).sort(([a], [b]) =>
-      a.localeCompare(b),
-    )) {
-      out.push({ kind: "header", division, key: `h:${division}` });
-      for (const r of list) out.push({ kind: "item", row: r, key: `i:${r.code}` });
-    }
-    return out;
-  }, [rows, query, divisionFilter]);
+  // Auto-derive division from existing selections when the parent supplies
+  // codes but no division has been chosen yet (edit flow).
+  useEffect(() => {
+    if (!showDivisionField || division || value.length === 0 || rows.length === 0) return;
+    const first = rows.find((r) => value.includes(r.code));
+    if (first) setDivision(first.division);
+  }, [showDivisionField, division, value, rows]);
+
+  const districtsForDivision = useMemo(() => {
+    if (!showDivisionField) return rows;
+    if (!division) return [];
+    return rows.filter((r) => r.division === division);
+  }, [rows, division, showDivisionField]);
+
+  const filteredDistricts = useMemo(() => {
+    if (!query) return districtsForDivision;
+    return districtsForDivision.filter(
+      (r) => districtCommandFilter(`${r.district} ${r.code} ${r.division}`, query) > 0,
+    );
+  }, [districtsForDivision, query]);
 
   const virtualizer = useVirtualizer({
-    count: flat.length,
+    count: filteredDistricts.length,
     getScrollElement: () => scrollEl,
-    estimateSize: (i) => (flat[i]?.kind === "header" ? 26 : 36),
+    estimateSize: () => 36,
     overscan: 20,
-    getItemKey: (i) => flat[i]?.key ?? i,
+    getItemKey: (i) => filteredDistricts[i]?.code ?? i,
     measureElement: (el) => el?.getBoundingClientRect().height ?? 36,
   });
 
@@ -103,16 +109,62 @@ export default function DistrictMultiSelect({
     else onChange([...value, code]);
   };
 
+  const districtDisabled = disabled || loading || (showDivisionField && !division);
+
+  const handleDivisionChange = (next: string) => {
+    setDivision(next);
+    // Drop selections that don't belong to the newly-selected division.
+    if (value.length > 0) {
+      const keep = rows
+        .filter((r) => r.division === next && value.includes(r.code))
+        .map((r) => r.code);
+      if (keep.length !== value.length) onChange(keep);
+    }
+  };
+
   return (
     <div className={cn("space-y-2", className)}>
-      <Popover open={open} onOpenChange={setOpen}>
+      {showDivisionField && (
+        <div className="space-y-1.5">
+          <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Division
+          </Label>
+          <Select
+            value={division}
+            onValueChange={handleDivisionChange}
+            disabled={disabled || loading}
+          >
+            <SelectTrigger
+              aria-label="Division"
+              className="rounded-xl h-11"
+            >
+              <SelectValue placeholder={loading ? "Loading divisions…" : "Select division"} />
+            </SelectTrigger>
+            <SelectContent>
+              {divisions.map((d) => (
+                <SelectItem key={d} value={d}>
+                  {d}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {showDivisionField && (
+        <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Districts
+        </Label>
+      )}
+      <Popover open={open} onOpenChange={(o) => !districtDisabled && setOpen(o)}>
         <PopoverTrigger asChild>
           <Button
             type="button"
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            disabled={disabled}
+            aria-label="Districts"
+            disabled={districtDisabled}
             className="w-full justify-between rounded-xl h-11 font-normal"
           >
             <span className="flex items-center gap-2 truncate">
@@ -121,6 +173,8 @@ export default function DistrictMultiSelect({
                 ? `${value.length} district${value.length > 1 ? "s" : ""} selected`
                 : loading
                 ? "Loading districts…"
+                : showDivisionField && !division
+                ? "Select a division first"
                 : placeholder}
             </span>
             <ChevronsUpDown size={14} className="ml-2 shrink-0 opacity-50" />
@@ -133,26 +187,12 @@ export default function DistrictMultiSelect({
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search district, code, or division…"
+              placeholder="Search district or code…"
               className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
             />
           </div>
-          <div className="flex items-center gap-2 border-b px-3 py-1.5 bg-muted/30">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Division</span>
-            <select
-              aria-label="Filter by division"
-              value={divisionFilter}
-              onChange={(e) => setDivisionFilter(e.target.value)}
-              className="h-7 flex-1 rounded-md border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="all">All divisions</option>
-              {divisions.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
           <div ref={setScrollEl} className="max-h-72 overflow-y-auto">
-            {flat.length === 0 ? (
+            {filteredDistricts.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">
                 No district found.
               </div>
@@ -165,10 +205,10 @@ export default function DistrictMultiSelect({
                 }}
               >
                 {virtualizer.getVirtualItems().map((v) => {
-                  const item = flat[v.index];
+                  const row = filteredDistricts[v.index];
                   return (
                     <div
-                      key={item.key}
+                      key={row.code}
                       data-index={v.index}
                       ref={virtualizer.measureElement}
                       style={{
@@ -179,29 +219,22 @@ export default function DistrictMultiSelect({
                         transform: `translateY(${v.start}px)`,
                       }}
                     >
-
-                      {item.kind === "header" ? (
-                        <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          {item.division}
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => toggle(item.row.code)}
-                          className="flex w-full items-center px-2 py-2 text-sm hover:bg-accent rounded-sm"
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              value.includes(item.row.code) ? "opacity-100" : "opacity-0",
-                            )}
-                          />
-                          <span className="flex-1 text-left">{item.row.district}</span>
-                          <span className="text-[10px] font-mono opacity-60">
-                            {item.row.code}
-                          </span>
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => toggle(row.code)}
+                        className="flex w-full items-center px-2 py-2 text-sm hover:bg-accent rounded-sm"
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            value.includes(row.code) ? "opacity-100" : "opacity-0",
+                          )}
+                        />
+                        <span className="flex-1 text-left">{row.district}</span>
+                        <span className="text-[10px] font-mono opacity-60">
+                          {row.code}
+                        </span>
+                      </button>
                     </div>
                   );
                 })}
