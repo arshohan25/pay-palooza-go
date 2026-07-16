@@ -451,7 +451,8 @@ export default function AdminDistributorManagement() {
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-sm">Distributors</CardTitle>
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1"><UserPlus className="w-4 h-4" /> Create</Button>
+            <Button size="sm" variant="outline" onClick={() => setCreateDistOpen(true)} className="gap-1"><UserPlus className="w-4 h-4" /> Distributor</Button>
+            <Button size="sm" onClick={() => setCreateSdOpen(true)} className="gap-1"><UserPlus className="w-4 h-4" /> Super Distributor</Button>
             <Button variant="ghost" size="icon" onClick={load}><RefreshCw className="w-4 h-4" /></Button>
           </div>
         </CardHeader>
