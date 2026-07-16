@@ -253,7 +253,7 @@ export default function AdminDistributorManagement() {
 
   const handleCreate = async (role: "distributor" | "super_distributor") => {
     const form = role === "super_distributor" ? sdForm : distForm;
-    const parentId = role === "super_distributor" ? sdParentId : distParentId;
+    const parentId = role === "super_distributor" ? "" : distParentId;
     const loc = role === "super_distributor" ? sdLoc : emptyLoc;
 
     const phone = form.phone.replace(/\D/g, "").replace(/^88/, "");
