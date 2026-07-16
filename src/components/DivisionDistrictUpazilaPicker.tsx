@@ -60,7 +60,7 @@ interface Props {
 }
 
 interface UpazilaRow { division: string; district: string; upazila: string }
-interface UnionRow { division: string; district: string; upazila: string; name: string; type: AreaType }
+interface UnionRow { division: string; district: string; upazila: string; name: string; name_bn: string | null; type: AreaType }
 
 // Simple in-memory caches so repeat opens don't refetch.
 let upazilaCache: UpazilaRow[] | null = null;
@@ -96,7 +96,7 @@ async function loadUnions(): Promise<UnionRow[]> {
     for (let from = 0; ; from += PAGE) {
       const { data, error } = await (supabase as any)
         .from("unions")
-        .select("division, district, upazila, name, type")
+        .select("division, district, upazila, name, name_bn, type")
         .eq("is_active", true)
         .order("division")
         .order("district")
@@ -251,7 +251,7 @@ export default function DivisionDistrictUpazilaPicker({
           ? filteredUnions.some((u) => u.name === value.union_parishad)
           : true;
         const optionUnions = !currentInList && value.union_parishad
-          ? [{ division: value.division!, district: value.district!, upazila: value.upazila!, name: value.union_parishad, type: (value.area_type ?? "union") as AreaType }, ...filteredUnions]
+          ? [{ division: value.division!, district: value.district!, upazila: value.upazila!, name: value.union_parishad, name_bn: null, type: (value.area_type ?? "union") as AreaType }, ...filteredUnions]
           : filteredUnions;
         const hasPreloaded = optionUnions.length > 0;
         return (
@@ -282,14 +282,14 @@ export default function DivisionDistrictUpazilaPicker({
                   // stale search query / scroll position from a previous
                   // upazila is wiped before the new options render.
                   key={`${value.division ?? ""}|${value.district ?? ""}|${value.upazila ?? ""}|${value.area_type ?? ""}`}
-                  options={optionUnions.map((u) => ({ name: u.name, type: u.type }))}
+                  options={optionUnions.map((u) => ({ name: u.name, type: u.type, nameBn: u.name_bn ?? null }))}
                   value={value.union_parishad ?? null}
                   areaType={value.area_type ?? null}
                   disabled={baseDisabled || !value.upazila}
                   placeholder={l.selUnion}
                   labels={{ tUnion: l.tUnion, tPowrashava: l.tPowrashava, tCity: l.tCity, search: l.search, empty: l.empty, loading: l.loadingAreas }}
                   loading={loading}
-                  displayName={lang === "bn" ? bnUnion : undefined}
+                  displayName={lang === "bn" ? (n, o) => bnUnion(n, o?.nameBn) : undefined}
                   onSelect={(name, type) =>
                     onChange({
                       ...value,

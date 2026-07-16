@@ -7118,6 +7118,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          name_bn: string | null
           type: string
           upazila: string
         }
@@ -7128,6 +7129,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          name_bn?: string | null
           type?: string
           upazila: string
         }
@@ -7138,6 +7140,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          name_bn?: string | null
           type?: string
           upazila?: string
         }

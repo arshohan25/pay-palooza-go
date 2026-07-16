@@ -1,67 +1,38 @@
-## Goal
-Unify the 4-level BD location picker everywhere, seed City Corporations + Powrashavas, deep-link the merchant apply flow, and enforce apply-once + parent-child validation server-side.
+## Current state
 
-## 1. Database (single migration + seed insert)
+- `bnUnion()` only translates structural patterns: `<X> Powrashava`, `<X> Sadar`, `<X> City Corporation`. That covers ~600 powrashavas and 13 city corporations.
+- Plain union names (4,060 unique rows in `unions` where `type='union'`, e.g. "Gazipur", "Barahatia", "Char Kadira") fall through to English in Bangla mode.
+- No e2e test currently asserts Bangla union labels.
 
-**Schema**
-- `unions` table: add `type` values already exist (`union|powrashava|city_corporation`); add unique `(division, district, upazila, name, type)`; ensure `is_active` default true.
-- New function `public.validate_location_hierarchy(_division, _district, _upazila, _union, _type) returns boolean` (SECURITY DEFINER, checks upazilas + unions rows match).
-- Trigger `merchant_applications_validate_location_trg` BEFORE INSERT/UPDATE: raise if hierarchy invalid.
-- Same trigger reused on `agents`, `distributors`, `merchants`, `merchant_vendor_applications` (any table that stores the 4 fields).
-- New RPC `public.check_merchant_apply_access(p_user_id uuid)` already exists — extend to return `{ can_apply, reason, status }` where status is latest application `pending|approved|rejected|null`. Block `pending` + `approved`; allow `rejected`.
+Exhaustively hand-translating 4,060 romanised Bengali union names in TypeScript is impractical and bloats the bundle. The right home for these strings is the database.
 
-**Seed**
-- Insert all 12 BD City Corporations as `type='city_corporation'` rows keyed to their parent district/upazila (Dhaka North, Dhaka South, Chattogram, Khulna, Rajshahi, Sylhet, Barishal, Rangpur, Cumilla, Gazipur, Narayanganj, Mymensingh).
-- Insert curated ~330 Powrashavas mapped division→district→upazila (bundled JSON, batched INSERT ... ON CONFLICT DO NOTHING).
-- Insert commonly-used unions per district (best-effort curated list — remainder still falls back to free-text).
+## Plan
 
-## 2. Unified picker
+### 1. Add a Bangla name column on `unions` (migration)
+- `ALTER TABLE public.unions ADD COLUMN name_bn text;`
+- No RLS change needed (existing read policy already exposes the row).
 
-- Extend `DivisionDistrictUpazilaPicker`:
-  - Auto-set `area_type='city_corporation'` if any CC exists for the upazila and pre-select the CC.
-  - When `type` is chosen, filter dropdown to that type only; if list empty, show free-text input with hint.
-  - New prop `compact?: boolean` for admin table forms.
-- Delete legacy `DivisionDistrictPicker` (unused after refactor) — keep only if a test needs it; otherwise re-export a thin shim.
+### 2. Extend fetch + translation
+- `DivisionDistrictUpazilaPicker.tsx` → `loadUnions()` selects `name_bn` too.
+- Enrich `UnionRow` and pass `name_bn` through to `UnionSearchSelect`.
+- `bnLocation.ts` → `bnUnion(name, nameBn?)` prefers `nameBn` when present, else falls back to today's pattern rules, else English.
+- `UnionSearchSelect` search matcher also matches on `name_bn` so Bangla queries find rows.
 
-**Refactor call-sites to the unified picker + persist all 4 fields:**
-- `src/components/MerchantApplicationFlow.tsx` (done — verify)
-- `src/pages/MerchantApplyVendor.tsx`
-- `src/components/MerchantBusinessKycFlow.tsx`
-- `src/components/MerchantStoreSettingsTab.tsx`
-- `src/pages/DistributorCreateAgent.tsx`
-- `src/pages/SuperDistributorCreateDistributor.tsx`
-- `src/components/admin/AdminAgentHub.tsx`
-- `src/components/admin/AdminProfileEditor.tsx`
-- Keep legacy `DistrictRoutePicker` only where a single route-code is needed (wallet route code) — but layer the 4-level picker on top so district selection is driven by the same hierarchy.
+### 3. Seed Bangla names (best-effort, incremental)
+- Add `scripts/seed-union-bn.mjs` that upserts `name_bn` for the structural cases we can derive deterministically (Powrashava / Sadar / City Corp using the existing upazila/district Bangla maps). This immediately fills ~640 rows and leaves plain unions null (which then fall back to English — same behaviour as today, no regression).
+- Long-tail plain union names remain a follow-up: they can be back-filled later via a data source or manual review without any further code change.
 
-## 3. Deep-linking
+### 4. e2e test — `e2e/i18n-bn-union-list.spec.ts`
+- Switch app language to Bangla, open Division→District→Upazila picker with a district known to have a Powrashava (e.g. Narail / Kalia), open the Union popover.
+- Assert:
+  - `data-testid="union-empty"` and `union-loading` labels render in Bangla when applicable.
+  - At least one visible row contains Bangla script (`/[\u0980-\u09FF]/`) — proves translation pipeline works end-to-end.
+  - Group headers ("সিটি কর্পোরেশন", "পৌরসভা", "ইউনিয়ন") render in Bangla.
+- Also add a small unit assertion in `src/lib/bnLocation.ts` covering `bnUnion` with and without `name_bn`.
 
-- Add route `/merchant/apply` in `src/App.tsx` → new page `MerchantApplyPage.tsx` that renders `MerchantApplicationFlow` full-screen with `open={true}`, closes to `/merchant-login`.
-- `/merchant-login?apply=1` also auto-opens the modal (reads `useSearchParams`).
-- Handle unauthenticated deep-link: redirect to `/merchant-login?apply=1&next=/merchant/apply` and re-open after login.
-- On close/submit: `navigate("/merchant-login", { replace: true })` so back button doesn't reopen.
-- Guard route with `useMerchantApplyAccess` — if `can_apply=false`, render status page (pending/approved/rejected banner + link back to login) instead of the form.
+### Technical notes
+- Migration keeps `name_bn` nullable so existing rows and seed scripts stay valid.
+- `UnionSearchSelect.displayName` prop signature stays the same; the picker just passes a closure that looks up `name_bn` for the given English name.
+- No change to selection value — we continue to persist the English `name` in `union_parishad` so downstream validation (`detectLocationMismatch`, edge functions) is unaffected.
 
-## 4. Apply-once enforcement
-
-- Client: `useMerchantApplyAccess` already exists; wire into new `/merchant/apply` route + `MerchantLoginPage` "Apply as a merchant" button (hide/disable + tooltip when blocked).
-- Server: update `check_merchant_apply_access` SQL to return `can_apply=false` when latest application is `pending` or `approved`. Add RLS/`BEFORE INSERT` trigger on `merchant_applications` that raises if same `user_id` already has a `pending`/`approved` row.
-
-## 5. Error fixes surfaced along the way
-
-- Fix union dropdown "empty option" bug (currently renders two `<option value="">` — the "Type manually below" and the placeholder collide).
-- Fix `area_type` reset when division changes (already correct — verify).
-- Type-safety: regenerate `types.ts` after migration; update `MerchantApplicationFlow` submit payload types.
-
-## Files touched (summary)
-- SQL: 1 migration + 1 large seed insert (via insert tool for data rows).
-- Modified: 8 forms + `App.tsx` + `MerchantLoginPage.tsx` + `DivisionDistrictUpazilaPicker.tsx` + `use-merchant-apply-access.ts`.
-- New: `src/pages/MerchantApplyPage.tsx`, `src/components/merchant/MerchantApplyStatusPage.tsx`.
-- Removed: `DivisionDistrictPicker.tsx` (or shim).
-
-## Tests
-- Update `division-district-picker.test.tsx` + `district-picker-roundtrip.test.ts` for new picker shape.
-- Add unit test: `validate_location_hierarchy` rejects mismatched parent/child.
-
-## Out of scope
-- Bulk migrating historical merchant/agent rows with missing new fields — will backfill to NULL and let admins re-edit; trigger only fires on new INSERT/UPDATE of these columns.
+Shall I proceed with this plan? If you already have a Bangla-name data source (CSV/JSON) for the 4,060 plain unions, share it and I'll wire the seeder to consume it in the same pass.

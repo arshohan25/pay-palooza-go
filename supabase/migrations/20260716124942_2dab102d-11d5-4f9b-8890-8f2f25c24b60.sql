@@ -1,0 +1,1 @@
+ALTER TABLE public.unions ADD COLUMN IF NOT EXISTS name_bn text;

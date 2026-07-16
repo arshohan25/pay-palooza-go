@@ -8,9 +8,11 @@ import { cn } from "@/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { AreaType } from "./DivisionDistrictUpazilaPicker";
 
-interface UnionOption {
+export interface UnionOption {
   name: string;
   type: AreaType;
+  /** Optional Bangla name coming from the DB (unions.name_bn). */
+  nameBn?: string | null;
 }
 
 interface Props {
@@ -29,8 +31,11 @@ interface Props {
     loading?: string;
   };
   className?: string;
-  /** Optional formatter for displaying option names (e.g. Bangla translation). */
-  displayName?: (name: string) => string;
+  /**
+   * Optional formatter for displaying option names. Receives the English name
+   * plus the full option so callers can prefer a DB-provided Bangla label.
+   */
+  displayName?: (name: string, option?: UnionOption) => string;
   /** True while parent is still fetching options. */
   loading?: boolean;
 }
@@ -60,7 +65,7 @@ export default function UnionSearchSelect({
   const groupLabel = (t: AreaType) =>
     t === "city_corporation" ? labels.tCity : t === "powrashava" ? labels.tPowrashava : labels.tUnion;
 
-  const nameFor = (n: string) => (displayName ? displayName(n) : n);
+  const nameFor = (n: string, o?: UnionOption) => (displayName ? displayName(n, o) : n);
 
   const flat: FlatRow[] = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -68,7 +73,8 @@ export default function UnionSearchSelect({
       ? options.filter(
           (o) =>
             o.name.toLowerCase().includes(q) ||
-            nameFor(o.name).toLowerCase().includes(q) ||
+            (o.nameBn ?? "").toLowerCase().includes(q) ||
+            nameFor(o.name, o).toLowerCase().includes(q) ||
             groupLabel(o.type).toLowerCase().includes(q),
         )
       : options;
@@ -97,8 +103,9 @@ export default function UnionSearchSelect({
     getItemKey: (i) => flat[i]?.key ?? i,
   });
 
+  const selectedOption = value ? options.find((o) => o.name === value && (areaType ? o.type === areaType : true)) : undefined;
   const display = value
-    ? `${nameFor(value)}${areaType ? ` · ${groupLabel(areaType)}` : ""}`
+    ? `${nameFor(value, selectedOption)}${areaType ? ` · ${groupLabel(areaType)}` : ""}`
     : placeholder;
 
   return (
@@ -220,7 +227,7 @@ export default function UnionSearchSelect({
                               : "opacity-0",
                           )}
                         />
-                        <span className="flex-1 text-left truncate">{nameFor(item.option.name)}</span>
+                        <span className="flex-1 text-left truncate">{nameFor(item.option.name, item.option)}</span>
                         <span className="text-[10px] opacity-60 ml-2">{groupLabel(item.option.type)}</span>
                       </button>
                     )}
