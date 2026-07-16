@@ -31,8 +31,21 @@ interface Props {
   onShare: (tx: AgentTxnDetailTx) => void;
 }
 
+const inferRpc = (tx: AgentTxnDetailTx): string => {
+  const d = (tx.description || "").toLowerCase();
+  if (tx.type === "cashin" && !d.includes("cash out")) return "agent_cashin";
+  if (tx.type === "send" && d.includes("b2b")) return "agent_b2b_transfer";
+  if (tx.type === "receive" && d.includes("b2b")) return "agent_b2b_transfer";
+  if (tx.type === "cashout" || (tx.type === "cashin" && d.includes("cash out"))) return "transfer_money (cash-out)";
+  return "transfer_money";
+};
+
 const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClose, onShare }, ref) => {
   const isCredit = isAgentTxnCredit(tx);
+  const [showDebug, setShowDebug] = useState(false);
+  const [reconLoading, setReconLoading] = useState(false);
+  const [recon, setRecon] = useState<any>(null);
+  const [reconErr, setReconErr] = useState<string | null>(null);
   const status = (tx.status || "completed").toLowerCase();
   const statusCls =
     status === "completed" || status === "success"
@@ -43,6 +56,20 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
 
   const displayType = getAgentTxnLabel(tx);
   const isCashFlow = tx.type === "cashin" || tx.type === "cashout";
+  const rpcName = inferRpc(tx);
+
+  const runRecon = async () => {
+    setReconLoading(true); setReconErr(null); setRecon(null);
+    try {
+      const { data, error } = await (supabase as any).rpc("reconcile_txn_treasury", { p_txn_id: tx.id });
+      if (error) throw error;
+      setRecon(data);
+    } catch (e: any) {
+      setReconErr(e?.message || "Reconcile failed");
+    } finally {
+      setReconLoading(false);
+    }
+  };
 
   const rows: { label: string; value: string }[] = [
     { label: "Type", value: displayType },
