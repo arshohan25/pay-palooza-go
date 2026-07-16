@@ -225,9 +225,11 @@ export default function DivisionDistrictUpazilaPicker({
       </div>
 
       {includeUnion && (() => {
-        const filteredUnions = value.area_type
-          ? unionsForUpazila.filter((u) => u.type === value.area_type)
-          : unionsForUpazila;
+        // Show every union/powrashava/city-corp for the selected upazila so
+        // the user can scroll the full list. If a type is chosen we prefer
+        // that subset but never hide the rest — otherwise picking "ইউনিয়ন"
+        // could silently drop powrashavas / city corps for the same upazila.
+        const filteredUnions = unionsForUpazila;
         // If the current union_parishad isn't in the loaded list, still surface a
         // dropdown so the prefill isn't lost — inject a synthetic option.
         const currentInList = value.union_parishad
