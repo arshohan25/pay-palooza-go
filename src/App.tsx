@@ -192,6 +192,9 @@ const App = () => (
 
                     <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant-login" unauthorizedRedirect="/merchant-login"><MerchantDashboard /></RoleGuard>} />
                     <Route path="/merchant/apply-vendor" element={<RoleGuard roles={["merchant", "admin"]} unauthenticatedRedirect="/merchant-login" unauthorizedRedirect="/merchant-login"><MerchantApplyVendor /></RoleGuard>} />
+                    <Route path="/admin/merchant-categories" element={<RoleGuard roles={["admin"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminMerchantCategoriesPage /></RoleGuard>} />
+
+
 
 
 
