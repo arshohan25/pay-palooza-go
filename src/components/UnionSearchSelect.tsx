@@ -93,7 +93,7 @@ export default function UnionSearchSelect({
   });
 
   const display = value
-    ? `${value}${areaType ? ` · ${groupLabel(areaType)}` : ""}`
+    ? `${nameFor(value)}${areaType ? ` · ${groupLabel(areaType)}` : ""}`
     : placeholder;
 
   return (
