@@ -346,7 +346,7 @@ function AgentListTab() {
         toast.success(`Existing user promoted to agent`, { duration: 6000 });
       }
       setCreateOpen(false);
-      setForm({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+      setForm({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", union_parishad: "", area_type: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
       setNidFile(null); setSelfieFile(null);
       load();
     } catch (err: any) { toast.error(err.message || "Failed to create agent"); }
