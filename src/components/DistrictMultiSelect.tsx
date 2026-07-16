@@ -124,24 +124,22 @@ export default function DistrictMultiSelect({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div
-        className={cn(
-          showDivisionField
-            ? "flex flex-col sm:flex-row sm:items-end gap-2"
-            : "",
-        )}
-      >
-        {showDivisionField && (
-          <div className="space-y-1.5 sm:w-40 sm:shrink-0">
-            <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      {showDivisionField ? (
+        <div className="flex flex-col sm:flex-row items-stretch gap-1 rounded-xl border border-white/10 bg-black/40 p-1 shadow-inner ring-1 ring-white/5 backdrop-blur-md transition-colors focus-within:border-primary/40 focus-within:ring-primary/20">
+          {/* Division segment */}
+          <div className="relative flex-1 min-w-0 rounded-lg transition-colors hover:bg-white/5">
+            <span className="pointer-events-none absolute left-3 top-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">
               Division
-            </Label>
+            </span>
             <Select
               value={division}
               onValueChange={handleDivisionChange}
               disabled={disabled || loading}
             >
-              <SelectTrigger aria-label="Division" className="rounded-xl h-11">
+              <SelectTrigger
+                aria-label="Division"
+                className="h-auto w-full rounded-lg border-0 bg-transparent px-3 pt-[18px] pb-1.5 text-sm font-medium shadow-none ring-0 hover:bg-transparent focus:ring-0 focus-visible:ring-0 [&>svg]:opacity-40"
+              >
                 <SelectValue placeholder={loading ? "Loading…" : "Select division"} />
               </SelectTrigger>
               <SelectContent>
@@ -153,38 +151,70 @@ export default function DistrictMultiSelect({
               </SelectContent>
             </Select>
           </div>
-        )}
 
-        <div className="space-y-1.5 flex-1 min-w-0">
-          {showDivisionField && (
-            <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="hidden sm:block w-px self-center h-8 bg-white/10" />
+
+          {/* Districts segment */}
+          <div className="relative flex-[1.5] min-w-0 rounded-lg transition-colors hover:bg-white/5">
+            <span className="pointer-events-none absolute left-3 top-1 z-10 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">
               Districts
-            </Label>
-          )}
-          <Popover open={open} onOpenChange={(o) => !districtDisabled && setOpen(o)}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            aria-label="Districts"
-            disabled={districtDisabled}
-            className="w-full justify-between rounded-xl h-11 font-normal"
-          >
-            <span className="flex items-center gap-2 truncate">
-              <MapPin size={14} className="opacity-60" />
-              {value.length > 0
-                ? `${value.length} district${value.length > 1 ? "s" : ""} selected`
-                : loading
-                ? "Loading districts…"
-                : showDivisionField && !division
-                ? "Select a division first"
-                : placeholder}
             </span>
-            <ChevronsUpDown size={14} className="ml-2 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+            <Popover open={open} onOpenChange={(o) => !districtDisabled && setOpen(o)}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  role="combobox"
+                  aria-expanded={open}
+                  aria-label="Districts"
+                  disabled={districtDisabled}
+                  className="group flex w-full items-center gap-2 rounded-lg px-3 pt-[18px] pb-1.5 text-left text-sm outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <MapPin size={14} className={cn("shrink-0", value.length > 0 ? "text-primary" : "opacity-50")} />
+                  <span className="flex-1 truncate font-medium">
+                    {value.length > 0
+                      ? `${value.length} district${value.length > 1 ? "s" : ""} selected`
+                      : loading
+                      ? "Loading districts…"
+                      : !division
+                      ? "Select a division first"
+                      : placeholder}
+                  </span>
+                  <ChevronsUpDown size={12} className="shrink-0 opacity-40 transition-opacity group-hover:opacity-70" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                {/* rest of popover content inserted below */}
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Fallback (non-segmented) trigger + shared popover content lives below */}
+      {!showDivisionField && (
+        <Popover open={open} onOpenChange={(o) => !districtDisabled && setOpen(o)}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              aria-label="Districts"
+              disabled={districtDisabled}
+              className="w-full justify-between rounded-xl h-11 font-normal"
+            >
+              <span className="flex items-center gap-2 truncate">
+                <MapPin size={14} className="opacity-60" />
+                {value.length > 0
+                  ? `${value.length} district${value.length > 1 ? "s" : ""} selected`
+                  : loading
+                  ? "Loading districts…"
+                  : placeholder}
+              </span>
+              <ChevronsUpDown size={14} className="ml-2 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
           <div className="flex items-center gap-2 border-b px-3 py-2">
             <Search size={14} className="opacity-60" />
