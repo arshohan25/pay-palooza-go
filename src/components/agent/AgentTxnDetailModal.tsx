@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { X, Share2, Bug, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, Share2, Bug, Loader2, CheckCircle2, AlertCircle, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getAgentTxnLabel, isAgentTxnCredit } from "@/lib/agentTransactions";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdmin } from "@/hooks/use-admin";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(Number(n) || 0));
@@ -42,10 +43,13 @@ const inferRpc = (tx: AgentTxnDetailTx): string => {
 
 const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClose, onShare }, ref) => {
   const isCredit = isAgentTxnCredit(tx);
+  const { isAdmin } = useAdmin();
   const [showDebug, setShowDebug] = useState(false);
   const [reconLoading, setReconLoading] = useState(false);
   const [recon, setRecon] = useState<any>(null);
   const [reconErr, setReconErr] = useState<string | null>(null);
+  const [history, setHistory] = useState<any[] | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const status = (tx.status || "completed").toLowerCase();
   const statusCls =
     status === "completed" || status === "success"
@@ -58,12 +62,31 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
   const isCashFlow = tx.type === "cashin" || tx.type === "cashout";
   const rpcName = inferRpc(tx);
 
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("list_txn_reconciliation_checks", { p_txn_id: tx.id, p_limit: 20 });
+      if (error) throw error;
+      setHistory((data as any[]) ?? []);
+    } catch {
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showDebug && isAdmin && history === null) void loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDebug, isAdmin]);
+
   const runRecon = async () => {
     setReconLoading(true); setReconErr(null); setRecon(null);
     try {
       const { data, error } = await (supabase as any).rpc("reconcile_txn_treasury", { p_txn_id: tx.id });
       if (error) throw error;
       setRecon(data);
+      void loadHistory();
     } catch (e: any) {
       setReconErr(e?.message || "Reconcile failed");
     } finally {
@@ -125,16 +148,17 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
             </div>
           </Card>
 
-          <div className="rounded-2xl border border-border/60 bg-muted/20 overflow-hidden">
+          {isAdmin && (
+          <div data-testid="advanced-debug" className="rounded-2xl border border-border/60 bg-muted/20 overflow-hidden">
             <button
               onClick={() => setShowDebug(v => !v)}
               className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-bold text-muted-foreground hover:bg-muted/40"
             >
-              <span className="flex items-center gap-1.5"><Bug size={12} /> Advanced Debug</span>
+              <span className="flex items-center gap-1.5"><Bug size={12} /> Advanced Debug <Badge className="bg-primary/15 text-primary border-0 text-[9px] ml-1">admin</Badge></span>
               <span>{showDebug ? "Hide" : "Show"}</span>
             </button>
             {showDebug && (
-              <div className="px-4 py-3 border-t border-border/50 space-y-2 text-[11px]">
+              <div className="px-4 py-3 border-t border-border/50 space-y-3 text-[11px]">
                 <div className="grid grid-cols-2 gap-2">
                   <div><p className="text-[9px] uppercase text-muted-foreground">RPC</p><p className="font-mono font-semibold">{rpcName}</p></div>
                   <div><p className="text-[9px] uppercase text-muted-foreground">Txn Type</p><p className="font-mono font-semibold">{tx.type}</p></div>
@@ -155,7 +179,7 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
                   <p className="text-destructive flex items-center gap-1"><AlertCircle size={11} /> {reconErr}</p>
                 )}
                 {recon && (
-                  <div className={`rounded-lg p-2 border ${recon.matches ? "border-emerald-400/40 bg-emerald-500/5" : "border-amber-400/40 bg-amber-500/5"}`}>
+                  <div data-testid="recon-result" className={`rounded-lg p-2 border ${recon.matches ? "border-emerald-400/40 bg-emerald-500/5" : "border-amber-400/40 bg-amber-500/5"}`}>
                     <div className="flex items-center justify-between">
                       <span className="font-semibold">{recon.matches ? "✓ Matches" : "✗ Mismatch"}</span>
                       <span className="font-mono">expected ৳{fmt(Number(recon.expected_amount))} · ledger ৳{fmt(Number(recon.ledger_amount))}</span>
@@ -163,9 +187,42 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
                     <p className="text-[10px] text-muted-foreground mt-1 break-all">ref: {recon.txn_reference || "—"} · entries: {Array.isArray(recon.entries) ? recon.entries.length : 0}</p>
                   </div>
                 )}
+
+                <div className="pt-2 border-t border-border/50">
+                  <p className="text-[9px] uppercase text-muted-foreground font-semibold flex items-center gap-1 mb-1.5">
+                    <History size={11} /> Reconciliation history
+                  </p>
+                  {historyLoading ? (
+                    <p className="text-muted-foreground flex items-center gap-1"><Loader2 size={11} className="animate-spin" /> Loading…</p>
+                  ) : !history || history.length === 0 ? (
+                    <p className="text-muted-foreground">No prior checks.</p>
+                  ) : (
+                    <ul data-testid="recon-history" className="space-y-1 max-h-40 overflow-y-auto">
+                      {history.map((h) => (
+                        <li
+                          key={h.id}
+                          className={`flex items-center justify-between rounded px-2 py-1 border ${
+                            h.matches
+                              ? "border-emerald-400/30 bg-emerald-500/5"
+                              : "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold"
+                          }`}
+                        >
+                          <span className="flex items-center gap-1 font-mono">
+                            {h.matches ? <CheckCircle2 size={11} className="text-emerald-600" /> : <AlertCircle size={11} />}
+                            {new Date(h.created_at).toLocaleString("en-BD")}
+                          </span>
+                          <span className="font-mono text-[10px]">
+                            ৳{fmt(Number(h.expected_amount))} / ৳{fmt(Number(h.ledger_amount))}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             )}
           </div>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => onShare(tx)} className="rounded-xl h-11 text-xs font-bold gap-2">
               <Share2 size={14} /> Share Receipt

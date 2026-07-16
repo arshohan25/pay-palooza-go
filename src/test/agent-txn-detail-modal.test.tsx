@@ -1,6 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import AgentTxnDetailModal, { AgentTxnDetailTx } from "@/components/agent/AgentTxnDetailModal";
+
+vi.mock("@/hooks/use-admin", () => ({
+  useAdmin: () => ({ isAdmin: false, loading: false }),
+}));
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: { rpc: vi.fn().mockResolvedValue({ data: [], error: null }) },
+}));
 
 const baseTx: AgentTxnDetailTx = {
   id: "1",
