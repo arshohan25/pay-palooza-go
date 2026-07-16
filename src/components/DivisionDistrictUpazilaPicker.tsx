@@ -282,14 +282,14 @@ export default function DivisionDistrictUpazilaPicker({
                   // stale search query / scroll position from a previous
                   // upazila is wiped before the new options render.
                   key={`${value.division ?? ""}|${value.district ?? ""}|${value.upazila ?? ""}|${value.area_type ?? ""}`}
-                  options={optionUnions.map((u) => ({ name: u.name, type: u.type }))}
+                  options={optionUnions.map((u) => ({ name: u.name, type: u.type, nameBn: u.name_bn ?? null }))}
                   value={value.union_parishad ?? null}
                   areaType={value.area_type ?? null}
                   disabled={baseDisabled || !value.upazila}
                   placeholder={l.selUnion}
                   labels={{ tUnion: l.tUnion, tPowrashava: l.tPowrashava, tCity: l.tCity, search: l.search, empty: l.empty, loading: l.loadingAreas }}
                   loading={loading}
-                  displayName={lang === "bn" ? bnUnion : undefined}
+                  displayName={lang === "bn" ? (n, o) => bnUnion(n, o?.nameBn) : undefined}
                   onSelect={(name, type) =>
                     onChange({
                       ...value,
