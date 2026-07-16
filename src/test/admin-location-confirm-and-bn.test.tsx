@@ -37,7 +37,7 @@ vi.mock("@/integrations/supabase/client", () => {
   return { supabase: { from: (t: string) => build(t) } };
 });
 
-import DivisionDistrictUpazilaPicker from "@/components/DivisionDistrictUpazilaPicker";
+import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
 
 beforeEach(() => {
   __primeDistrictRouteCache([
