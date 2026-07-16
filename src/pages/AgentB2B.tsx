@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import QrScannerModal from "@/components/QrScannerModal";
 import { parseQrData } from "@/lib/qrParser";
-import { useFeeConfig } from "@/hooks/use-fee-config";
+
 import { verifyPin } from "@/lib/verifyPin";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
@@ -83,10 +83,9 @@ const AgentB2B = () => {
       resolve();
     }
   }, [phone, transferType]);
-  const { calcFee } = useFeeConfig();
   const fee = transferType === "agent"
-    ? (Number(amount) > 0 ? 5 : 0)
-    : calcFee("send", Number(amount));
+    ? (Number(amount) > 0 ? 2 : 0)
+    : 0;
 
   const handleConfirm = async () => {
     if (processing) return;
