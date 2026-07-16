@@ -103,6 +103,8 @@ export default function AdminMerchantManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [kycFilter, setKycFilter] = useState<"all" | "valid" | "missing" | "invalid">("all");
+  const [kycState, setKycState] = useState<Record<string, { valid: number; missing: number; invalid: number }>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
 
