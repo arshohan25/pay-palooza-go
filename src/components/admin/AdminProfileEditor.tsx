@@ -265,6 +265,37 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
           entity_id: userId,
           details: changes as any,
         });
+
+        // Dedicated audit event for agent location / wallet territory changes.
+        if (agent && originalAgent) {
+          const agentLocKeys = [
+            "agent_division", "agent_district", "agent_upazila",
+            "agent_union_parishad", "agent_area_type", "agent_territory_code",
+          ] as const;
+          const locChanges = Object.fromEntries(
+            agentLocKeys.filter(k => k in changes).map(k => [k.replace(/^agent_/, ""), changes[k]]),
+          );
+          if (Object.keys(locChanges).length > 0) {
+            await supabase.from("audit_logs").insert({
+              actor_id: session.user.id,
+              action: "agent_location_changed",
+              entity_type: "agent",
+              entity_id: agent.id,
+              details: { user_id: userId, changes: locChanges } as any,
+            });
+          }
+        }
+
+        // Dedicated audit event for distributor territory changes.
+        if (distributor && originalDistributor && "distributor_territory" in changes) {
+          await supabase.from("audit_logs").insert({
+            actor_id: session.user.id,
+            action: "distributor_location_changed",
+            entity_type: "distributor",
+            entity_id: distributor.id,
+            details: { user_id: userId, changes: { territory: changes.distributor_territory } } as any,
+          });
+        }
       }
 
       toast.success("Profile updated successfully");
