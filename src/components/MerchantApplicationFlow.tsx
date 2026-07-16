@@ -23,7 +23,7 @@ interface Props {
 
 export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
   const { t, lang } = useI18n();
-  const { categories, loading: catsLoading, getLabelForName } = useMerchantCategories();
+  const { categories, loading: catsLoading, getLabelForName, addCategory } = useMerchantCategories();
   const [existing, setExisting] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
