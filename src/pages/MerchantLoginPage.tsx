@@ -416,6 +416,11 @@ export default function MerchantLoginPage() {
       } catch {}
 
       pendingSessionRef.current = null;
+      activityTracker.auth("login", {
+        portal: "merchant",
+        mode: loginMode,
+        phone_suffix: pending.cleanedPhone.slice(-3),
+      });
       toast.success("Welcome back, merchant!");
       navigate(redirectTarget, { replace: true });
     } catch (err: any) {
