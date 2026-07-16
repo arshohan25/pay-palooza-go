@@ -55,10 +55,17 @@ export default function UnionSearchSelect({
   const groupLabel = (t: AreaType) =>
     t === "city_corporation" ? labels.tCity : t === "powrashava" ? labels.tPowrashava : labels.tUnion;
 
+  const nameFor = (n: string) => (displayName ? displayName(n) : n);
+
   const flat: FlatRow[] = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = q
-      ? options.filter((o) => o.name.toLowerCase().includes(q) || groupLabel(o.type).toLowerCase().includes(q))
+      ? options.filter(
+          (o) =>
+            o.name.toLowerCase().includes(q) ||
+            nameFor(o.name).toLowerCase().includes(q) ||
+            groupLabel(o.type).toLowerCase().includes(q),
+        )
       : options;
     const byGroup = new Map<AreaType, UnionOption[]>();
     for (const o of filtered) {
