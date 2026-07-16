@@ -84,12 +84,9 @@ const AgentCashIn = () => {
         setProcessing(false);
         return;
       }
-      const { error } = await supabase.rpc("transfer_money", {
-        p_recipient_phone: phone,
+      const { error } = await supabase.rpc("agent_cashin" as any, {
+        p_customer_phone: phone,
         p_amount: Number(amount),
-        p_fee: 0,
-        p_type: "cashin" as any,
-        p_recipient_type: "cashin" as any,
         p_commission: commission,
         p_description: "Agent Cash In",
         p_reference: (() => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; })(),
