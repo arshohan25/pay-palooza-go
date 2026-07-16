@@ -249,19 +249,6 @@ export default function AdminDistributorManagement() {
     setAgentsLoading(false);
   };
 
-  // Create distributor (also supports super_distributor via createForm.role)
-  const handleCreate = async () => {
-    const phone = createForm.phone.replace(/\D/g, "").replace(/^88/, "");
-    if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone"); return; }
-    if (!createForm.business_name.trim()) { toast.error("Business name required"); return; }
-    const isSD = (createForm as any).role === "super_distributor";
-    if (isSD && (!createLoc.division || !createLoc.district || !createLoc.upazila)) {
-      const mismatch = await detectLocationMismatch(createLoc);
-      setCreateLocError(mismatch);
-      toast.error(mismatch?.message || "Pick Division › District › Upazila");
-      return;
-    }
-  // Unified create for both Distributor and Super Distributor.
   const handleCreate = async (role: "distributor" | "super_distributor") => {
     const form = role === "super_distributor" ? sdForm : distForm;
     const parentId = role === "super_distributor" ? sdParentId : distParentId;
