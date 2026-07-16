@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
+import AgentTxnDetailModal from "@/components/agent/AgentTxnDetailModal";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
 import { getAgentDisplayType, isAgentTxnCredit } from "@/lib/agentTransactions";
 import { getContactNameByPhone } from "@/lib/contactStore";
@@ -48,7 +49,9 @@ interface Transaction {
   status: string;
   recipient_phone?: string | null;
   description?: string | null;
-
+  recipient_name?: string | null;
+  balance_after?: number | null;
+  type?: string;
 }
 
 
@@ -191,7 +194,9 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           status: tx.status,
           recipient_phone: tx.recipient_phone,
           description: tx.description,
-
+          recipient_name: tx.recipient_name,
+          balance_after: (tx as any).balance_after ?? null,
+          type: tx.type,
         };
       }), [dbTxns, filterTypes, t, agentView, CATEGORIES]);
 
@@ -616,7 +621,28 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
 
       {/* ── Transaction Detail Sheet ─────────────────────────────────────── */}
       <AnimatePresence>
-        {selectedTx && (() => {
+        {selectedTx && agentView && (
+          <AgentTxnDetailModal
+            key="agent-detail-modal"
+            tx={{
+              id: selectedTx.id,
+              short_id: selectedTx.short_id,
+              type: selectedTx.type || selectedTx.category,
+              amount: Math.abs(selectedTx.amount),
+              fee: selectedTx.fee,
+              commission: selectedTx.commission,
+              status: selectedTx.status,
+              recipient_name: selectedTx.recipient_name ?? null,
+              recipient_phone: selectedTx.recipient_phone ?? null,
+              description: selectedTx.description ?? null,
+              balance_after: selectedTx.balance_after ?? null,
+              created_at: selectedTx.date,
+            }}
+            onClose={() => setSelectedTx(null)}
+            onShare={() => setShowShare(true)}
+          />
+        )}
+        {selectedTx && !agentView && (() => {
           const cfg       = TX_ICON_MAP[selectedTx.category];
           const isCredit  = selectedTx.amount > 0;
           const IconComp  = isCredit ? cfg.ReceiveIcon : cfg.Icon;
