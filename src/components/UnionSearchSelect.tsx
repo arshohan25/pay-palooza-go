@@ -103,8 +103,9 @@ export default function UnionSearchSelect({
     getItemKey: (i) => flat[i]?.key ?? i,
   });
 
+  const selectedOption = value ? options.find((o) => o.name === value && (areaType ? o.type === areaType : true)) : undefined;
   const display = value
-    ? `${nameFor(value)}${areaType ? ` · ${groupLabel(areaType)}` : ""}`
+    ? `${nameFor(value, selectedOption)}${areaType ? ` · ${groupLabel(areaType)}` : ""}`
     : placeholder;
 
   return (
