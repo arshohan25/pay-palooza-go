@@ -35,6 +35,11 @@ interface AgentData {
   territory_code: string;
   trade_license: string;
   max_float: number;
+  division: string | null;
+  district: string | null;
+  upazila: string | null;
+  union_parishad: string | null;
+  area_type: "union" | "powrashava" | "city_corporation" | null;
 }
 
 interface MerchantData {
