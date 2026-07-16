@@ -274,6 +274,7 @@ export default function DivisionDistrictUpazilaPicker({
                   disabled={baseDisabled || !value.upazila}
                   placeholder={l.selUnion}
                   labels={{ tUnion: l.tUnion, tPowrashava: l.tPowrashava, tCity: l.tCity, search: l.search, empty: l.empty }}
+                  displayName={lang === "bn" ? bnUnion : undefined}
                   onSelect={(name, type) =>
                     onChange({
                       ...value,
