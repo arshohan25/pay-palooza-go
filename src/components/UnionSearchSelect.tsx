@@ -65,7 +65,7 @@ export default function UnionSearchSelect({
   const groupLabel = (t: AreaType) =>
     t === "city_corporation" ? labels.tCity : t === "powrashava" ? labels.tPowrashava : labels.tUnion;
 
-  const nameFor = (n: string) => (displayName ? displayName(n) : n);
+  const nameFor = (n: string, o?: UnionOption) => (displayName ? displayName(n, o) : n);
 
   const flat: FlatRow[] = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -73,7 +73,8 @@ export default function UnionSearchSelect({
       ? options.filter(
           (o) =>
             o.name.toLowerCase().includes(q) ||
-            nameFor(o.name).toLowerCase().includes(q) ||
+            (o.nameBn ?? "").toLowerCase().includes(q) ||
+            nameFor(o.name, o).toLowerCase().includes(q) ||
             groupLabel(o.type).toLowerCase().includes(q),
         )
       : options;
