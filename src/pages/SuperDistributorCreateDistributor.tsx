@@ -62,6 +62,12 @@ const SuperDistributorCreateDistributor = () => {
       toast({ title: "Missing fields", description: "Phone and business name are required", variant: "destructive" });
       return;
     }
+    if (!location.division || !location.district || !location.upazila) {
+      const mismatch = await detectLocationMismatch(location);
+      setLocError(mismatch);
+      toast({ title: "Location required", description: mismatch?.message || "Pick Division → District → Upazila.", variant: "destructive" });
+      return;
+    }
     setProcessing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -83,10 +89,22 @@ const SuperDistributorCreateDistributor = () => {
           max_float: Number(maxFloat) || 10000000,
           commission_rate: (Number(commissionRate) || 0.20) / 100,
           territories: parsedTerritories.length > 0 ? parsedTerritories : null,
+          division: location.division,
+          district: location.district,
+          upazila: location.upazila,
+          union_parishad: location.union_parishad,
+          area_type: location.area_type,
         }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to create distributor");
+      if (!res.ok) {
+        if (/Invalid location hierarchy/i.test(result.error || "")) {
+          const mismatch = await detectLocationMismatch(location);
+          setLocError(mismatch);
+          throw new Error(mismatch?.message || "Invalid location hierarchy");
+        }
+        throw new Error(result.error || "Failed to create distributor");
+      }
 
       setSuccess(true);
       toast({ title: "Distributor Created", description: `${businessName} account created successfully` });
@@ -96,6 +114,7 @@ const SuperDistributorCreateDistributor = () => {
       setProcessing(false);
     }
   };
+
 
   if (success) {
     return (
