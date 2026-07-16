@@ -23,7 +23,7 @@ interface Props {
 
 export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
   const { t, lang } = useI18n();
-  const { categories, loading: catsLoading, getLabelForName } = useMerchantCategories();
+  const { categories, loading: catsLoading, getLabelForName, addCategory } = useMerchantCategories();
   const [existing, setExisting] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -90,7 +90,17 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
   }, [open]);
 
   const handleSubmit = async () => {
-    const finalCategory = form.category === "__other__" ? customCategory.trim() : form.category;
+    let finalCategory = form.category === "__other__" ? customCategory.trim() : form.category;
+    if (form.category === "__other__") {
+      if (!finalCategory) { toast.error(t("mafToastInvalid")); return; }
+      try {
+        const created = await addCategory(finalCategory, finalCategory);
+        finalCategory = created.name;
+      } catch (e: any) {
+        toast.error(e?.message || "Failed to add category");
+        return;
+      }
+    }
     const parsed = applicationSchema.safeParse({ ...form, category: finalCategory });
     if (!parsed.success) {
       toast.error(parsed.error.errors[0]?.message || t("mafToastInvalid"));
