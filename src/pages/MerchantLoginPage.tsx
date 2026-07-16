@@ -12,6 +12,7 @@ import {
   clearDeviceToken,
 } from "@/hooks/use-device-otp-verification";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
+import { activityTracker } from "@/lib/activityTracker";
 import DeviceOtpStep from "@/components/DeviceOtpStep";
 import MerchantForgotPinSheet, { maskBdPhone } from "@/components/merchant/MerchantForgotPinSheet";
 import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
@@ -273,6 +274,12 @@ export default function MerchantLoginPage() {
     }
 
     setLoading(true);
+    activityTracker.track({
+      event_type: "auth",
+      event_name: "merchant_login_attempt",
+      target: "merchant_login_submit",
+      metadata: { mode: loginMode, phone_suffix: cleanedPhone.slice(-3) },
+    });
     try {
       const stored = getStoredDeviceToken(cleanedPhone, "merchant");
       const result = await callMerchantLogin(cleanedPhone, pin, {
@@ -282,6 +289,11 @@ export default function MerchantLoginPage() {
       if (result.kind === "locked") {
         applyLockout(result.retry);
         setPin("");
+        activityTracker.track({
+          event_type: "auth",
+          event_name: "merchant_login_locked",
+          metadata: { mode: loginMode, retry_after_seconds: result.retry },
+        });
         toast.error(result.message || "Too many failed attempts. Please wait.");
         return;
       }
@@ -291,11 +303,21 @@ export default function MerchantLoginPage() {
         const msg = result.attempts_remaining != null && result.message === "Wrong phone or PIN"
           ? `Incorrect PIN — ${result.attempts_remaining} attempt${result.attempts_remaining === 1 ? "" : "s"} left`
           : result.message || "Incorrect PIN";
+        activityTracker.auth("pin_failed", {
+          portal: "merchant",
+          mode: loginMode,
+          attempts_remaining: result.attempts_remaining,
+        });
         toast.error(msg);
         setPin("");
         return;
       }
       if (result.kind === "error") {
+        activityTracker.track({
+          event_type: "auth",
+          event_name: "merchant_login_error",
+          metadata: { mode: loginMode, message: result.message },
+        });
         toast.error(result.message);
         return;
       }
@@ -394,6 +416,11 @@ export default function MerchantLoginPage() {
       } catch {}
 
       pendingSessionRef.current = null;
+      activityTracker.auth("login", {
+        portal: "merchant",
+        mode: loginMode,
+        phone_suffix: pending.cleanedPhone.slice(-3),
+      });
       toast.success("Welcome back, merchant!");
       navigate(redirectTarget, { replace: true });
     } catch (err: any) {
@@ -698,7 +725,14 @@ export default function MerchantLoginPage() {
               <>
                 <button
                   type="button"
-                  onClick={() => setApplyOpen(true)}
+                  onClick={() => {
+                    activityTracker.track({
+                      event_type: "tap",
+                      event_name: "merchant_apply_open",
+                      target: "apply_as_merchant",
+                    });
+                    setApplyOpen(true);
+                  }}
                   className="group relative h-12 w-full overflow-hidden rounded-2xl border border-amber-300/25 bg-gradient-to-b from-amber-400/10 via-amber-500/5 to-transparent shadow-[0_8px_24px_-12px_rgba(251,191,36,0.35),inset_0_1px_0_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-all duration-300 hover:border-amber-300/50 hover:shadow-[0_12px_32px_-10px_rgba(251,191,36,0.5),inset_0_1px_0_0_rgba(255,255,255,0.15)] active:scale-[0.98]"
                 >
                   <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
