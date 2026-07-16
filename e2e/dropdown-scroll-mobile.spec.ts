@@ -15,6 +15,18 @@ test.use({
   viewport: { width: 390, height: 780 },
 });
 
+// Bangla mode so both category + union labels render in Bangla script.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => {
+    try {
+      window.localStorage.setItem("lang", "bn");
+      window.localStorage.setItem("i18n-lang", "bn");
+    } catch {}
+  });
+});
+
+const BN_RE = /[\u0980-\u09FF]/;
+
 async function touchDrag(
   page: import("@playwright/test").Page,
   x: number,
@@ -77,8 +89,38 @@ test.describe("Mobile dropdown touch scrolling", () => {
     expect(info, "expected scrollable ancestor around options").not.toBeNull();
     if (!info) return;
 
+    // Snapshot which Bangla labels are visible in the viewport BEFORE dragging.
+    const visibleBn = async () =>
+      page.evaluate((bnSrc) => {
+        const re = new RegExp(bnSrc);
+        const opt = document.querySelector('[role="option"]') as HTMLElement | null;
+        if (!opt) return [] as string[];
+        let scroller: HTMLElement | null = opt;
+        while (scroller) {
+          const s = getComputedStyle(scroller);
+          if (
+            (s.overflowY === "auto" || s.overflowY === "scroll") &&
+            scroller.scrollHeight > scroller.clientHeight + 2
+          )
+            break;
+          scroller = scroller.parentElement;
+        }
+        if (!scroller) return [];
+        const box = scroller.getBoundingClientRect();
+        return Array.from(document.querySelectorAll<HTMLElement>('[role="option"]'))
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.top >= box.top - 1 && r.bottom <= box.bottom + 1;
+          })
+          .map((el) => (el.textContent || "").trim())
+          .filter((t) => re.test(t));
+      }, BN_RE.source);
+
+    const before = await visibleBn();
+    expect(before.length, "expected Bangla category labels before drag").toBeGreaterThan(0);
+
     await touchDrag(page, info.x, info.y + 60, -240);
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(250);
 
     // Sheet/popover still open → options still visible.
     await expect(options.first()).toBeVisible();
@@ -102,6 +144,15 @@ test.describe("Mobile dropdown touch scrolling", () => {
     expect(after, "touch drag should have scrolled the category list").toBeGreaterThan(
       info.scrollTop,
     );
+
+    // A previously-offscreen Bangla category must now be visible.
+    const afterVisible = await visibleBn();
+    expect(afterVisible.length, "expected Bangla labels after drag").toBeGreaterThan(0);
+    const revealed = afterVisible.filter((l) => !before.includes(l));
+    expect(
+      revealed.length,
+      `expected new Bangla category options after drag. before=${before.join("|")} after=${afterVisible.join("|")}`,
+    ).toBeGreaterThan(0);
   });
 
   test("union list scrolls on touch drag without popover closing", async ({ page }) => {
@@ -148,8 +199,32 @@ test.describe("Mobile dropdown touch scrolling", () => {
     test.skip(!info, "no scrollable union list — dataset too small for this upazila");
     if (!info) return;
 
+    // Bangla-bearing rows visible inside the popover scroller.
+    const visibleBnRows = async () =>
+      page.evaluate((bnSrc) => {
+        const re = new RegExp(bnSrc);
+        const scroller = Array.from(
+          document.querySelectorAll<HTMLElement>('[data-radix-popper-content-wrapper] div'),
+        ).find((n) => n.scrollHeight > n.clientHeight + 2);
+        if (!scroller) return [] as string[];
+        const box = scroller.getBoundingClientRect();
+        return Array.from(scroller.querySelectorAll<HTMLElement>("button"))
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.top >= box.top - 1 && r.bottom <= box.bottom + 1;
+          })
+          .map((el) => (el.textContent || "").trim())
+          .filter((t) => re.test(t));
+      }, BN_RE.source);
+
+    const before = await visibleBnRows();
+    expect(
+      before.length,
+      "expected Bangla union group labels visible before drag",
+    ).toBeGreaterThan(0);
+
     await touchDrag(page, info.x, info.y + 40, -220);
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(250);
 
     // Popover still open.
     await expect(unionTrigger).toHaveAttribute("aria-expanded", "true");
@@ -163,5 +238,12 @@ test.describe("Mobile dropdown touch scrolling", () => {
     expect(afterTop, "touch drag should have scrolled the union list").toBeGreaterThan(
       info.scrollTop,
     );
+
+    const after = await visibleBnRows();
+    const revealed = after.filter((l) => !before.includes(l));
+    expect(
+      revealed.length,
+      `expected new Bangla union rows after drag. before=${before.slice(0, 4).join("|")} after=${after.slice(0, 4).join("|")}`,
+    ).toBeGreaterThan(0);
   });
 });
