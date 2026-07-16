@@ -8017,6 +8017,13 @@ export type Database = {
         }[]
       }
       get_cron_health_snapshot: { Args: never; Returns: Json }
+      get_customer_daily_cashin_usage: {
+        Args: { p_phone: string }
+        Returns: {
+          customer_user_id: string
+          used: number
+        }[]
+      }
       get_data_quality_samples: {
         Args: { p_check: string; p_limit?: number; p_offset?: number }
         Returns: Json

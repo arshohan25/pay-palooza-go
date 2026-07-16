@@ -13,7 +13,7 @@ import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import QrScannerModal from "@/components/QrScannerModal";
 import { parseQrData } from "@/lib/qrParser";
 import { verifyPin } from "@/lib/verifyPin";
-import { checkDailyLimit } from "@/lib/dailyLimits";
+
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 const COMMISSION_RATE = 0.0049;
@@ -59,11 +59,15 @@ const AgentCashIn = () => {
         return;
       }
       const amtVal = Number(amount);
-      const limitCheck = await checkDailyLimit("cashin", amtVal);
-      if (!limitCheck.allowed) {
+      const DAILY_CASHIN_LIMIT = 50000;
+      const { data: usageData, error: usageErr } = await supabase.rpc("get_customer_daily_cashin_usage", { p_phone: phone });
+      if (usageErr) throw usageErr;
+      const used = Number((usageData as any)?.[0]?.used ?? 0);
+      const remaining = Math.max(0, DAILY_CASHIN_LIMIT - used);
+      if (amtVal > remaining) {
         toast({
-          title: "Daily Cash In limit exceeded",
-          description: `Used ৳${limitCheck.used.toLocaleString("en-BD")} of ৳${limitCheck.limit.toLocaleString("en-BD")} today. Remaining: ৳${Math.max(0, limitCheck.remaining).toLocaleString("en-BD")}.`,
+          title: "Customer daily Cash In limit exceeded",
+          description: `Customer used ৳${used.toLocaleString("en-BD")} of ৳${DAILY_CASHIN_LIMIT.toLocaleString("en-BD")} today. Remaining: ৳${remaining.toLocaleString("en-BD")}.`,
           variant: "destructive",
         });
         setProcessing(false);
