@@ -27,20 +27,33 @@ const SEARCH_CASES: Array<[string, string, string]> = [
   ["other", "অন্যান্য", "অন্যান্য"],
 ];
 
-// Full list of keys the mapping must cover. Kept in sync with merchantCategoryBn.ts.
+// Full list of DB category `name`s in public.merchant_categories the mapping
+// must cover. Keep in sync with the seed migration.
 const REQUIRED_KEYS = [
-  "retail","food","ecommerce","services","healthcare","education","travel","electronics",
-  "fashion","grocery","pharmacy","restaurant","transportation","real_estate","agriculture",
-  "manufacturing","telecom","entertainment","beauty","sports","logistics","consulting","ngo",
-  "government","fintech","insurance","legal","accounting","marketing","media","photography",
-  "printing","construction","interior_design","architecture","engineering","automotive",
-  "car_rental","ride_sharing","courier","freight","warehouse","textile","leather","jewelry",
-  "cosmetics","furniture","hardware","stationery","bookshop","saloon","salon","spa","gym",
-  "hotel","cafe","bakery","butcher","fish","vegetables","fruits","dairy","bank",
-  "mobile_recharge","utility","charity","religious","toys","pet","garden","art","music",
-  "gaming","software","hosting","training","coaching","event","wedding","florist","gift",
-  "laundry","cleaning","security","repair","plumbing","electrical","paint","rice_mill",
-  "tea_stall","poultry","fisheries","nursery","online_store","freelance","other",
+  "accounting","agriculture","airline","amusement_park","architecture","art_gallery",
+  "automotive","ayurveda","baby_products","bakery","beauty","beverage","bookshop",
+  "cable_tv","car_rental","catering","charity","cinema","cleaning_services",
+  "cloud_hosting","cloud_kitchen","club","coaching","college","construction",
+  "consulting","cooperative","cosmetics","courier","customs_clearing","cybersecurity",
+  "dairy","data_analytics","dental","diagnostic","driving_school","ecommerce",
+  "education","electrical_services","electricity","electronics","engineering",
+  "entertainment","event_management","eye_care","farm_equipment","fashion","fintech",
+  "fishing","food","freight","furniture","gaming","gardening","gas_station",
+  "gift_shop","government","grocery","gym","handicraft","hardware","healthcare",
+  "home_repair","hospital","hostel","hotel","import_export","insurance",
+  "interior_design","isp","it_services","jewelry","language_school","laundry",
+  "leather","legal","logistics","manufacturing","marketing","meat_fish","media",
+  "medical_equipment","mental_health","microfinance","mining","mobile_app",
+  "mobile_operator","moving_services","museum","music","ngo","online_learning",
+  "organic_food","other","painting","pest_control","pet_care","pharmacy",
+  "photography","physiotherapy","plumbing","poultry","printing","real_estate",
+  "real_estate_agent","recycling","religious","remittance","restaurant","retail",
+  "ride_sharing","salon","school","security_services","seeds_fertilizer","services",
+  "shipping","solar_energy","spa","sports","stationery","stock_broker","street_food",
+  "supermarket","swimming","tea_coffee","telecom","textile","tour_operator","toys",
+  "training_institute","transportation","travel","travel_agency","warehouse",
+  "waste_management","water_supply","web_development","wedding_services","wholesale",
+  "yoga",
 ];
 
 const BN_RE = /[\u0980-\u09FF]/;
