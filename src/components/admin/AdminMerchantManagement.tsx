@@ -1493,3 +1493,21 @@ function InfoCell({ label, value, className }: { label: string; value: string; c
     </div>
   );
 }
+
+function KycRowBadge({ status, onClick }: { status: "valid" | "missing" | "invalid" | "unchecked"; onClick: () => void }) {
+  const map = {
+    valid:     { cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", label: "✓ Valid" },
+    missing:   { cls: "bg-red-500/15 text-red-600 border-red-500/30",             label: "✕ Missing" },
+    invalid:   { cls: "bg-amber-500/15 text-amber-700 border-amber-500/30",       label: "⚠ Invalid" },
+    unchecked: { cls: "border-border text-muted-foreground",                       label: "—" },
+  }[status];
+  return (
+    <button
+      onClick={onClick}
+      className={`text-[10px] px-2 py-0.5 rounded-full border ${map.cls} hover:opacity-80 transition-opacity`}
+      title="Open profile → KYC panel"
+    >
+      {map.label}
+    </button>
+  );
+}
