@@ -40,13 +40,28 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
         ? "bg-amber-500/10 text-amber-600"
         : "bg-destructive/10 text-destructive";
 
+  const displayType = getAgentTxnLabel(tx);
+  const isCashFlow = tx.type === "cashin" || tx.type === "cashout";
+  const isB2BReceive =
+    tx.type === "receive" &&
+    typeof tx.description === "string" &&
+    tx.description.toLowerCase().includes("b2b");
+  const feeLabelValue =
+    Number(tx.fee) > 0
+      ? isB2BReceive
+        ? `৳${fmt(tx.fee!)} (from receiver)`
+        : `৳${fmt(tx.fee!)}`
+      : "Free";
+
   const rows: { label: string; value: string }[] = [
-    { label: "Type", value: getAgentTxnLabel(tx) },
+    { label: "Type", value: displayType },
     ...(tx.recipient_name ? [{ label: "Name", value: tx.recipient_name }] : []),
     ...(tx.recipient_phone ? [{ label: "Phone", value: tx.recipient_phone }] : []),
     { label: "Amount", value: `৳${fmt(tx.amount)}` },
-    ...(Number(tx.fee) > 0 ? [{ label: "Fee", value: `৳${fmt(tx.fee!)}` }] : []),
-    ...(Number(tx.commission) > 0 ? [{ label: "Commission", value: `+৳${fmt(tx.commission!)}` }] : []),
+    { label: "Fee", value: feeLabelValue },
+    ...(isCashFlow || Number(tx.commission) > 0
+      ? [{ label: "Commission", value: Number(tx.commission) > 0 ? `+৳${fmt(tx.commission!)}` : "৳0.00" }]
+      : []),
     ...(tx.balance_after != null ? [{ label: "Balance After", value: `৳${fmt(tx.balance_after)}` }] : []),
     ...(tx.description ? [{ label: "Description", value: tx.description }] : []),
     { label: "Date", value: new Date(tx.created_at).toLocaleString("en-BD") },

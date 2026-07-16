@@ -98,16 +98,13 @@ const AgentB2B = () => {
         setProcessing(false);
         return;
       }
-      const { error } = await supabase.rpc("transfer_money", {
+      const { error } = await supabase.rpc("agent_b2b_transfer" as any, {
         p_recipient_phone: phone,
         p_amount: Number(amount),
         p_fee: fee,
-        p_type: "send" as any,
-        p_recipient_type: "receive" as any,
-        p_commission: 0,
+        p_recipient_kind: transferType,
         p_description: `B2B ${transferType === "agent" ? "Agent" : "Distributor"} Transfer${note ? `: ${note}` : ""}`,
         p_reference: (() => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; })(),
-        p_recipient_name: transferType === "agent" ? "Agent" : "Distributor",
       });
       if (error) throw error;
       setStep("done");
@@ -166,9 +163,9 @@ const AgentB2B = () => {
               </div>
               <div className="space-y-2 bg-muted/50 rounded-xl p-4 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">{fee > 0 ? `৳${fmt(fee)}` : "Free"}</span></div>
-                {fee > 0 && <p className="text-[11px] text-muted-foreground text-right">৳{fmt(Number(amount))} + ৳{fmt(fee)} fee (from balance)</p>}
-                <div className="flex justify-between font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">Total</span><span className="text-foreground">৳{fmt(Number(amount) + fee)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">{fee > 0 ? `৳${fmt(fee)} (from receiver)` : "Free"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Receiver gets</span><span className="font-bold text-foreground">৳{fmt(Number(amount) - fee)}</span></div>
+                <div className="flex justify-between font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">You pay</span><span className="text-foreground">৳{fmt(Number(amount))}</span></div>
               </div>
               <Button onClick={() => { setStep("form"); setPhone(""); setAmount(""); setNote(""); setPin(""); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11">New Transfer</Button>
               <Button onClick={() => navigate("/agent")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2"><Home size={16} /> Back to Dashboard</Button>
@@ -182,9 +179,9 @@ const AgentB2B = () => {
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">To</span><span className="font-bold text-foreground capitalize">{transferType}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Phone</span><span className="font-bold text-foreground">{phone}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">{fee > 0 ? `৳${fmt(fee)}` : "Free"}</span></div>
-                {fee > 0 && <p className="text-[11px] text-muted-foreground text-right">৳{fmt(Number(amount))} + ৳{fmt(fee)} fee (from balance)</p>}
-                <div className="flex justify-between text-sm font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">Total</span><span className="text-foreground">৳{fmt(Number(amount) + fee)}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">{fee > 0 ? `৳${fmt(fee)} (from receiver)` : "Free"}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Receiver gets</span><span className="font-bold text-foreground">৳{fmt(Number(amount) - fee)}</span></div>
+                <div className="flex justify-between text-sm font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">You pay</span><span className="text-foreground">৳{fmt(Number(amount))}</span></div>
                 {note && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Note</span><span className="font-medium text-foreground">{note}</span></div>}
               </div>
               <div>
