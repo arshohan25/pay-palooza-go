@@ -182,6 +182,17 @@ export default function MerchantApplyVendor() {
       reason: form.resubmit_note || null,
       to_value: { store_name: form.store_name, shop_front_photo_url: photos.shop_front.url, shop_inside_photo_url: photos.shop_inside.url },
     });
+
+    // In-app notification: confirm the (re)submit is now pending review
+    await supabase.from("notifications").insert({
+      user_id: user.id,
+      title: resubmitMode ? "Vendor photos resubmitted — pending review" : "Vendor application submitted — pending review",
+      body: resubmitMode
+        ? "Your updated shop photos are back in the admin queue. We'll let you know as soon as they're reviewed."
+        : `Your vendor application for "${form.store_name}" is now waiting for admin approval.`,
+      category: "merchant_ops",
+    });
+
     setSubmitting(false);
     toast.success(resubmitMode ? "Resubmitted for admin review" : "Vendor application submitted");
     nav("/merchant");
