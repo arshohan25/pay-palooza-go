@@ -117,6 +117,9 @@ export default function UnionSearchSelect({
       <PopoverContent
         className="w-[--radix-popover-trigger-width] p-0"
         align="start"
+        side="bottom"
+        sideOffset={4}
+        avoidCollisions={false}
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
       >
@@ -132,9 +135,13 @@ export default function UnionSearchSelect({
         </div>
         <div
           ref={setScrollEl}
-          className="max-h-[min(60vh,384px)] overflow-y-auto overscroll-contain"
-          style={{ WebkitOverflowScrolling: "touch" }}
+          className="overflow-y-auto overscroll-contain"
+          style={{
+            WebkitOverflowScrolling: "touch",
+            height: "min(60vh, 384px)",
+          }}
         >
+
           {flat.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
               {labels.empty ?? "No results"}
