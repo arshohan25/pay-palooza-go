@@ -630,16 +630,20 @@ export default function AdminDistributorManagement() {
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
             <div><Label>Owner Full Name</Label><Input placeholder="Owner's full name" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>Owner NID Number</Label><Input placeholder="10 / 13 / 17 digits" value={createForm.nid_number} onChange={e => setCreateForm(f => ({ ...f, nid_number: e.target.value.replace(/\D/g, "").slice(0, 17) }))} /></div>
-              <div><Label>Trade License</Label><Input placeholder="License number" value={createForm.trade_license} onChange={e => setCreateForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Primary Location *</Label>
-              <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
-              <DivisionDistrictUpazilaPicker value={createLoc} onChange={(v) => { setCreateLoc(v); if (createLocError) setCreateLocError(null); }} required showLabels={false} />
-              <LocationMismatchAlert mismatch={createLocError} />
-            </div>
+            {createForm.role === "super_distributor" && (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><Label>Owner NID Number</Label><Input placeholder="10 / 13 / 17 digits" value={createForm.nid_number} onChange={e => setCreateForm(f => ({ ...f, nid_number: e.target.value.replace(/\D/g, "").slice(0, 17) }))} /></div>
+                  <div><Label>Trade License</Label><Input placeholder="License number" value={createForm.trade_license} onChange={e => setCreateForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Primary Location *</Label>
+                  <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
+                  <DivisionDistrictUpazilaPicker value={createLoc} onChange={(v) => { setCreateLoc(v); if (createLocError) setCreateLocError(null); }} required showLabels={false} />
+                  <LocationMismatchAlert mismatch={createLocError} />
+                </div>
+              </>
+            )}
             <div><Label>Operating Territories</Label><DistrictMultiSelect value={csvToArr(createForm.territory)} onChange={(codes) => setCreateForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
             {createForm.role === "distributor" && (
               <div>
