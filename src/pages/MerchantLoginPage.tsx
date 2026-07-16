@@ -14,6 +14,7 @@ import {
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import DeviceOtpStep from "@/components/DeviceOtpStep";
 import MerchantForgotPinSheet, { maskBdPhone } from "@/components/merchant/MerchantForgotPinSheet";
+import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
 import {
   Store,
   ShieldCheck,
