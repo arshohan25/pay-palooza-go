@@ -7,9 +7,13 @@ export function mapDistributorDbError(msg: string | undefined | null): string | 
   if (!msg) return null;
   const m = msg.toLowerCase();
 
+  if (m.includes("super distributors cannot have a parent_id")) {
+    return "Super Distributors are always top-level and cannot be linked to a parent.";
+  }
   if (m.includes("parent_id must reference a super distributor")) {
     return "The selected parent is not a Super Distributor. Pick a Super Distributor from the list.";
   }
+
   if (m.includes("does not reference an existing distributor")) {
     return "The selected parent Super Distributor no longer exists. Refresh and try again.";
   }

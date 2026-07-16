@@ -190,16 +190,19 @@ Deno.serve(async (req) => {
         ? territories
         : null;
 
+      // Super Distributors are always top-level — never set parent_id here,
+      // even if the caller happens to be another distributor.
       const { error: distErr } = await adminClient.from("distributors").insert({
         user_id: newUserId,
         business_name: business_name,
         max_float: Number(max_float) || 10000000,
         commission_rate: Number(commission_rate) || 0.002,
         territory: parsedTerritories,
-        parent_id: parentDist?.id || null,
+        parent_id: null,
         status: "active",
         ...locationPayload,
       });
+
       if (distErr) {
         await adminClient.auth.admin.deleteUser(newUserId).catch(() => {});
         const raw = distErr.message || "";
@@ -209,6 +212,9 @@ Deno.serve(async (req) => {
         if (/invalid location hierarchy/i.test(raw)) {
           friendly = "Selected Division › District › Upazila do not match.";
           status = 422;
+        } else if (lower.includes("super distributors cannot have a parent_id")) {
+          friendly = "Super Distributors are always top-level and cannot have a parent.";
+          status = 422;
         } else if (lower.includes("parent_id must reference a super distributor")) {
           friendly = "The selected parent is not a Super Distributor.";
           status = 422;
@@ -216,6 +222,7 @@ Deno.serve(async (req) => {
           friendly = "The selected parent Super Distributor no longer exists.";
           status = 422;
         } else if (lower.includes("cannot be its own parent")) {
+
           friendly = "A distributor cannot be linked to itself as a parent.";
           status = 422;
         }
