@@ -96,7 +96,7 @@ async function loadUnions(): Promise<UnionRow[]> {
     for (let from = 0; ; from += PAGE) {
       const { data, error } = await (supabase as any)
         .from("unions")
-        .select("division, district, upazila, name, type")
+        .select("division, district, upazila, name, name_bn, type")
         .eq("is_active", true)
         .order("division")
         .order("district")
