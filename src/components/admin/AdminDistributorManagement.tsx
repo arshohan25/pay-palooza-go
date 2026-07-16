@@ -54,7 +54,7 @@ export default function AdminDistributorManagement() {
   // Create
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [createForm, setCreateForm] = useState<{ phone: string; name: string; business_name: string; territory: string; commission_rate: string; max_float: string; role: "distributor" | "super_distributor" }>({ phone: "", name: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" });
+  const [createForm, setCreateForm] = useState<{ phone: string; name: string; business_name: string; nid_number: string; trade_license: string; territory: string; commission_rate: string; max_float: string; role: "distributor" | "super_distributor" }>({ phone: "", name: "", business_name: "", nid_number: "", trade_license: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" });
   const emptyLoc: DivisionDistrictUpazilaValue = { division: null, district: null, upazila: null, union_parishad: null, area_type: null };
   const [createLoc, setCreateLoc] = useState<DivisionDistrictUpazilaValue>(emptyLoc);
   const [createLocError, setCreateLocError] = useState<LocationMismatch | null>(null);
@@ -274,6 +274,8 @@ export default function AdminDistributorManagement() {
         upazila: createLoc.upazila,
         union_parishad: createLoc.union_parishad ?? null,
         area_type: createLoc.area_type ?? null,
+        nid_number: createForm.nid_number.trim() || null,
+        trade_license: createForm.trade_license.trim() || null,
       } as any);
       if (distErr) {
         if (/Invalid location hierarchy/i.test(distErr.message)) {
@@ -288,7 +290,7 @@ export default function AdminDistributorManagement() {
       }
       toast.success(pin ? `${role === "super_distributor" ? "Super distributor" : "Distributor"} created! Temp PIN: ${pin}` : `Existing user promoted to ${role.replace("_", " ")}`, { duration: 10000 });
       setCreateOpen(false);
-      setCreateForm({ phone: "", name: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
+      setCreateForm({ phone: "", name: "", business_name: "", nid_number: "", trade_license: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
       setCreateLoc(emptyLoc);
       setCreateLocError(null);
       load();
@@ -610,6 +612,10 @@ export default function AdminDistributorManagement() {
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
             <div><Label>Owner Full Name</Label><Input placeholder="Owner's full name" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Owner NID Number</Label><Input placeholder="10 / 13 / 17 digits" value={createForm.nid_number} onChange={e => setCreateForm(f => ({ ...f, nid_number: e.target.value.replace(/\D/g, "").slice(0, 17) }))} /></div>
+              <div><Label>Trade License</Label><Input placeholder="License number" value={createForm.trade_license} onChange={e => setCreateForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
+            </div>
             <div className="space-y-1.5">
               <Label>Primary Location *</Label>
               <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>

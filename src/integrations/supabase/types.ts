@@ -2061,9 +2061,11 @@ export type Database = {
           division: string | null
           id: string
           max_float: number
+          nid_number: string | null
           parent_id: string | null
           status: Database["public"]["Enums"]["agent_status"]
           territory: string[] | null
+          trade_license: string | null
           union_parishad: string | null
           upazila: string | null
           updated_at: string
@@ -2078,9 +2080,11 @@ export type Database = {
           division?: string | null
           id?: string
           max_float?: number
+          nid_number?: string | null
           parent_id?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory?: string[] | null
+          trade_license?: string | null
           union_parishad?: string | null
           upazila?: string | null
           updated_at?: string
@@ -2095,9 +2099,11 @@ export type Database = {
           division?: string | null
           id?: string
           max_float?: number
+          nid_number?: string | null
           parent_id?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory?: string[] | null
+          trade_license?: string | null
           union_parishad?: string | null
           upazila?: string | null
           updated_at?: string
