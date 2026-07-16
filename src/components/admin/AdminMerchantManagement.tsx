@@ -103,6 +103,8 @@ export default function AdminMerchantManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [kycFilter, setKycFilter] = useState<"all" | "valid" | "missing" | "invalid">("all");
+  const [kycState, setKycState] = useState<Record<string, { valid: number; missing: number; invalid: number }>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
 
@@ -168,8 +170,17 @@ export default function AdminMerchantManagement() {
 
   const loadMerchants = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("merchants").select("*").order("created_at", { ascending: false }).limit(200);
+    const [{ data }, { data: states }] = await Promise.all([
+      supabase.from("merchants").select("*").order("created_at", { ascending: false }).limit(200),
+      (supabase as any).from("merchant_kyc_doc_validation_state").select("merchant_id,status"),
+    ]);
     setMerchants(data ?? []);
+    const agg: Record<string, { valid: number; missing: number; invalid: number }> = {};
+    for (const s of (states ?? []) as any[]) {
+      const a = (agg[s.merchant_id] ||= { valid: 0, missing: 0, invalid: 0 });
+      if (s.status === "valid" || s.status === "missing" || s.status === "invalid") a[s.status]++;
+    }
+    setKycState(agg);
     setLoading(false);
   }, []);
 
@@ -179,13 +190,30 @@ export default function AdminMerchantManagement() {
   useEffect(() => {
     const ch = supabase.channel("admin-merchant-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "merchants" }, () => loadMerchants())
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_kyc_doc_validation_state" }, () => loadMerchants())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [loadMerchants]);
 
+  const kycRowStatus = (m: any): "valid" | "missing" | "invalid" | "unchecked" => {
+    const s = kycState[m.id];
+    if (s) {
+      if (s.invalid > 0) return "invalid";
+      if (s.missing > 0) return "missing";
+      if (s.valid > 0) return "valid";
+    }
+    // Fallback from merchant row
+    const missingReq = !m.nid_front_url || !m.nid_back_url || !m.trade_license_url || !m.trade_license;
+    if (m.business_kyc_status === "rejected") return "invalid";
+    if (missingReq) return "missing";
+    if (m.business_kyc_status === "verified") return "valid";
+    return "unchecked";
+  };
+
   const filtered = merchants.filter(m => {
     if (statusFilter !== "all" && m.status !== statusFilter) return false;
     if (categoryFilter !== "all" && m.category !== categoryFilter) return false;
+    if (kycFilter !== "all" && kycRowStatus(m) !== kycFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return m.business_name?.toLowerCase().includes(q) || m.category?.includes(q) || m.id?.includes(q);
@@ -197,10 +225,10 @@ export default function AdminMerchantManagement() {
   const activeCount = merchants.filter(m => m.status === "active").length;
 
   // ─── Detail Sheet ───
-  const openDetail = async (m: any) => {
+  const openDetail = async (m: any, tab: string = "profile") => {
     setDetailMerchant(m);
     setDetailLoading(true);
-    setDetailTab("profile");
+    setDetailTab(tab);
     try {
       const d = await fetchMerchantDetail(m.id, m.user_id);
       setDetail(d);
@@ -676,6 +704,15 @@ export default function AdminMerchantManagement() {
                 {dbCategories.map(c => <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={kycFilter} onValueChange={v => setKycFilter(v as any)}>
+              <SelectTrigger className="w-[140px]"><SelectValue placeholder="KYC" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All KYC</SelectItem>
+                <SelectItem value="valid">✓ Valid</SelectItem>
+                <SelectItem value="missing">✕ Missing</SelectItem>
+                <SelectItem value="invalid">⚠ Invalid</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" size="sm" onClick={() => exportMerchantsCSV(filtered)} className="gap-1">
               <Download className="w-3.5 h-3.5" /> Export
             </Button>
@@ -721,6 +758,7 @@ export default function AdminMerchantManagement() {
                   <th className="text-left px-4 py-3 font-medium">Business Name</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Category</th>
                   <th className="text-left px-4 py-3 font-medium">Status</th>
+                  <th className="text-left px-4 py-3 font-medium">KYC</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">MDR</th>
                   <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Settlement</th>
                   <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Created</th>
@@ -745,6 +783,9 @@ export default function AdminMerchantManagement() {
                     <td className="px-4 py-3 font-medium text-foreground">{m.business_name}</td>
                     <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{getLabelForName(m.category)}</td>
                     <td className="px-4 py-3"><StatusBadge status={m.status} /></td>
+                    <td className="px-4 py-3">
+                      <KycRowBadge status={kycRowStatus(m)} onClick={() => openDetail(m, "profile")} />
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{(Number(m.mdr_rate) * 100).toFixed(2)}%</td>
                     <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{m.settlement_frequency}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
@@ -1450,5 +1491,23 @@ function InfoCell({ label, value, className }: { label: string; value: string; c
       <p className="text-muted-foreground text-xs">{label}</p>
       <p className={`font-medium text-foreground text-sm ${className ?? ""}`}>{value}</p>
     </div>
+  );
+}
+
+function KycRowBadge({ status, onClick }: { status: "valid" | "missing" | "invalid" | "unchecked"; onClick: () => void }) {
+  const map = {
+    valid:     { cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", label: "✓ Valid" },
+    missing:   { cls: "bg-red-500/15 text-red-600 border-red-500/30",             label: "✕ Missing" },
+    invalid:   { cls: "bg-amber-500/15 text-amber-700 border-amber-500/30",       label: "⚠ Invalid" },
+    unchecked: { cls: "border-border text-muted-foreground",                       label: "—" },
+  }[status];
+  return (
+    <button
+      onClick={onClick}
+      className={`text-[10px] px-2 py-0.5 rounded-full border ${map.cls} hover:opacity-80 transition-opacity`}
+      title="Open profile → KYC panel"
+    >
+      {map.label}
+    </button>
   );
 }

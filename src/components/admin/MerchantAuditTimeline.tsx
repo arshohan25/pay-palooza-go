@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import {
   Clock, CheckCircle2, XCircle, FileText, DollarSign, ShieldCheck,
-  Upload, Store, Key, Loader2,
+  Upload, Store, Key, Loader2, AlertTriangle, Send,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, any> = {
@@ -13,6 +13,8 @@ const ICON_MAP: Record<string, any> = {
   status_change: CheckCircle2,
   kyc_change: ShieldCheck,
   kyc_upload: Upload,
+  kyc_validation: ShieldCheck,
+  kyc_resubmit_request: Send,
   pricing_change: DollarSign,
   admin_note: FileText,
   pin_issued: Key,
@@ -21,6 +23,17 @@ const ICON_MAP: Record<string, any> = {
   vendor_apply: Store,
   vendor_decision: CheckCircle2,
 };
+
+function docLabel(k?: string) {
+  switch (k) {
+    case "nid_front": return "NID (Front)";
+    case "nid_back": return "NID (Back)";
+    case "trade_license": return "Trade License Document";
+    case "trade_license_number": return "Trade License Number";
+    case "bank_statement": return "Bank Statement";
+    default: return k || "";
+  }
+}
 
 function eventLabel(e: any): string {
   switch (e.event_type) {
@@ -39,6 +52,16 @@ function eventLabel(e: any): string {
     case "vendor_apply": return `Applied for vendor access (${e.to_value?.store_name ?? ""})`;
     case "vendor_decision": return `Vendor application ${e.to_value?.status}${e.reason ? ` — ${e.reason}` : ""}`;
     case "pin_issued": return `Temporary PIN issued via ${e.to_value?.via ?? "SMS"}`;
+    case "kyc_validation": {
+      const doc = docLabel(e.to_value?.doc_key);
+      const from = e.from_value?.status ?? "unknown";
+      const to = e.to_value?.status ?? "?";
+      return `${doc}: ${from} → ${to}${e.reason ? ` — ${e.reason}` : ""}`;
+    }
+    case "kyc_resubmit_request": {
+      const doc = e.to_value?.label || docLabel(e.to_value?.doc_key);
+      return `Resubmit requested for ${doc}${e.reason ? ` — ${e.reason}` : ""}`;
+    }
     default: return e.event_type;
   }
 }
