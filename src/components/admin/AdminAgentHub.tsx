@@ -662,8 +662,8 @@ function AgentListTab() {
             <div><Label>Business Name</Label><Input value={editForm.business_name} onChange={e => setEditForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-2">
               <DivisionDistrictUpazilaPicker
-                value={{ division: editForm.division || null, district: editForm.district || null, upazila: editForm.upazila || null }}
-                onChange={(v) => setEditForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "" }))}
+                value={{ division: editForm.division || null, district: editForm.district || null, upazila: editForm.upazila || null, union_parishad: editForm.union_parishad || null, area_type: (editForm.area_type || null) as any }}
+                onChange={(v) => setEditForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "", union_parishad: v.union_parishad || "", area_type: (v.area_type || "") as any }))}
                 required
               />
               <div><Label>Max Float</Label><Input type="number" value={editForm.max_float} onChange={e => setEditForm(f => ({ ...f, max_float: e.target.value }))} /></div>
