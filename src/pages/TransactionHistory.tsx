@@ -48,7 +48,9 @@ interface Transaction {
   status: string;
   recipient_phone?: string | null;
   description?: string | null;
-
+  recipient_name?: string | null;
+  balance_after?: number | null;
+  type?: string;
 }
 
 
