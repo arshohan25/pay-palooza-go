@@ -22,6 +22,8 @@ import DistrictMultiSelect from "@/components/DistrictMultiSelect";
 import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
 import LocationMismatchAlert from "@/components/LocationMismatchAlert";
 import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
+import { mapDistributorDbError } from "@/lib/distributorErrors";
+
 
 const csvToArr = (s: string) => s.split(",").map(t => t.trim()).filter(Boolean);
 const arrToCsv = (a: string[]) => a.join(", ");
