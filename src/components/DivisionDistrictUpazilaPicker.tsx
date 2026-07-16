@@ -259,30 +259,23 @@ export default function DivisionDistrictUpazilaPicker({
               <option value="city_corporation">{l.tCity}</option>
             </select>
             {hasPreloaded ? (
-              <select
-                className={selectClass + " col-span-2"}
-                disabled={baseDisabled || !value.upazila}
-                value={value.union_parishad ?? ""}
-                onChange={(e) => {
-                  const name = e.target.value || null;
-                  const match = optionUnions.find((u) => u.name === name);
-                  onChange({
-                    ...value,
-                    union_parishad: name,
-                    area_type: match ? match.type : value.area_type ?? null,
-                  });
-                }}
-                aria-label={l.union}
-                aria-required={required}
-              >
-                <option value="">{l.selUnion}</option>
-                {optionUnions.map((u) => (
-                  <option key={`${u.type}-${u.name}`} value={u.name}>
-                    {u.name}
-                    {!value.area_type && ` (${u.type === "powrashava" ? l.tPowrashava : u.type === "city_corporation" ? l.tCity : l.tUnion})`}
-                  </option>
-                ))}
-              </select>
+              <div className="col-span-2">
+                <UnionSearchSelect
+                  options={optionUnions.map((u) => ({ name: u.name, type: u.type }))}
+                  value={value.union_parishad ?? null}
+                  areaType={value.area_type ?? null}
+                  disabled={baseDisabled || !value.upazila}
+                  placeholder={l.selUnion}
+                  labels={{ tUnion: l.tUnion, tPowrashava: l.tPowrashava, tCity: l.tCity, search: l.search, empty: l.empty }}
+                  onSelect={(name, type) =>
+                    onChange({
+                      ...value,
+                      union_parishad: name,
+                      area_type: value.area_type ?? type,
+                    })
+                  }
+                />
+              </div>
             ) : (
               <Input
                 className="col-span-2 h-9"
