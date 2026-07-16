@@ -14,6 +14,7 @@ import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from
 import LocationMismatchAlert from "@/components/LocationMismatchAlert";
 import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
 import { districtToRouteCode } from "@/lib/districtRouteCode";
+import LocationChangeConfirmDialog, { type LocationSnapshot, type LocationDiffRow } from "@/components/LocationChangeConfirmDialog";
 
 interface AdminProfileEditorProps {
   userId: string;
