@@ -783,6 +783,9 @@ export default function AdminMerchantManagement() {
                     <td className="px-4 py-3 font-medium text-foreground">{m.business_name}</td>
                     <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{getLabelForName(m.category)}</td>
                     <td className="px-4 py-3"><StatusBadge status={m.status} /></td>
+                    <td className="px-4 py-3">
+                      <KycRowBadge status={kycRowStatus(m)} onClick={() => openDetail(m, "profile")} />
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{(Number(m.mdr_rate) * 100).toFixed(2)}%</td>
                     <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{m.settlement_frequency}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
