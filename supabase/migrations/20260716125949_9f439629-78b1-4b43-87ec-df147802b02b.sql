@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public._union_bn_staging;
