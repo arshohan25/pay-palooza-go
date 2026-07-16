@@ -55,18 +55,18 @@ const L = {
 } as const;
 
 export default function LocationChangeConfirmDialog({
-  open, before, after, codeLabel, saving, onCancel, onConfirm,
+  open, before, after, codeLabel, title, overrideRows, saving, onCancel, onConfirm,
 }: Props) {
   const { lang } = useI18n();
   const l = L[lang === "bn" ? "bn" : "en"];
 
-  const rows: Array<{ key: keyof LocationSnapshot; label: string }> = [
-    { key: "division", label: l.division },
-    { key: "district", label: l.district },
-    { key: "upazila", label: l.upazila },
-    { key: "union_parishad", label: l.union },
-    { key: "area_type", label: l.type },
-    { key: "territory_code", label: codeLabel || l.code },
+  const rows: LocationDiffRow[] = overrideRows ?? [
+    { key: "division", label: l.division, before: before.division, after: after.division },
+    { key: "district", label: l.district, before: before.district, after: after.district },
+    { key: "upazila", label: l.upazila, before: before.upazila, after: after.upazila },
+    { key: "union_parishad", label: l.union, before: before.union_parishad, after: after.union_parishad },
+    { key: "area_type", label: l.type, before: before.area_type, after: after.area_type },
+    { key: "territory_code", label: codeLabel || l.code, before: before.territory_code, after: after.territory_code },
   ];
 
   return (
@@ -74,14 +74,14 @@ export default function LocationChangeConfirmDialog({
       <AlertDialogContent className="max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" /> {l.title}
+            <MapPin className="w-4 h-4 text-primary" /> {title || l.title}
           </AlertDialogTitle>
           <AlertDialogDescription>{l.desc}</AlertDialogDescription>
         </AlertDialogHeader>
 
         <div
           role="table"
-          aria-label={l.title}
+          aria-label={title || l.title}
           className="rounded-md border border-border overflow-hidden text-sm"
         >
           <div className="grid grid-cols-[1fr_1fr_auto_1fr] items-center px-3 py-2 bg-muted/60 text-xs font-medium text-muted-foreground">
@@ -90,10 +90,10 @@ export default function LocationChangeConfirmDialog({
             <div />
             <div>{l.after}</div>
           </div>
-          {rows.map(({ key, label }) => {
-            const b = before[key] ?? "";
-            const a = after[key] ?? "";
-            const changed = b !== a;
+          {rows.map(({ key, label, before: b, after: a }) => {
+            const bv = b ?? "";
+            const av = a ?? "";
+            const changed = bv !== av;
             return (
               <div
                 key={key}
@@ -105,9 +105,9 @@ export default function LocationChangeConfirmDialog({
                 }
               >
                 <div className="text-xs text-muted-foreground">{label}</div>
-                <div className={"truncate " + (changed ? "line-through opacity-70" : "")}>{b || l.empty}</div>
+                <div className={"truncate " + (changed ? "line-through opacity-70" : "")}>{bv || l.empty}</div>
                 <ArrowRight className={"w-3 h-3 mx-1 " + (changed ? "text-amber-600" : "text-muted-foreground/40")} />
-                <div className={"truncate font-medium " + (changed ? "text-amber-700 dark:text-amber-300" : "")}>{a || l.empty}</div>
+                <div className={"truncate font-medium " + (changed ? "text-amber-700 dark:text-amber-300" : "")}>{av || l.empty}</div>
               </div>
             );
           })}
