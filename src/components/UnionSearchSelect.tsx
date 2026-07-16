@@ -158,9 +158,29 @@ export default function UnionSearchSelect({
         >
 
 
-          {flat.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              {labels.empty ?? "No results"}
+          {loading ? (
+            <div
+              data-testid="union-loading"
+              role="status"
+              aria-live="polite"
+              className="flex flex-col items-center justify-center gap-2 py-10 text-sm text-muted-foreground"
+            >
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>{labels.loading ?? "Loading…"}</span>
+            </div>
+          ) : flat.length === 0 ? (
+            <div
+              data-testid="union-empty"
+              role="status"
+              className="flex flex-col items-center justify-center gap-1 py-10 px-4 text-center"
+            >
+              <MapPin className="h-5 w-5 opacity-40" />
+              <p className="text-sm font-medium text-foreground">
+                {labels.empty ?? "No results"}
+              </p>
+              {query.trim() && (
+                <p className="text-xs text-muted-foreground">"{query}"</p>
+              )}
             </div>
           ) : (
             <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
