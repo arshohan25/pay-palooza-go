@@ -3,6 +3,36 @@ import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+
+const L = {
+  en: {
+    division: "Division", district: "District", upazila: "Upazila / Thana",
+    union: "Union Parishad / Powrashava / City Corp.",
+    selDivision: "Select division", selDistrict: "Select district",
+    selUpazila: "Select upazila / thana", selUnion: "Select union / powrashava",
+    chooseDivision: "Choose division first", chooseDistrict: "Choose district first",
+    chooseUpazila: "Choose upazila first", pickType: "Pick a type first",
+    loading: "Loading…", loadingAreas: "Loading areas…",
+    type: "Type", tUnion: "Union", tPowrashava: "Powrashava", tCity: "City Corp.",
+    typeUnion: "Type union name", typePowrashava: "Type powrashava name", typeCity: "Type city corporation name",
+    noPreload: "No entries pre-loaded for this type — type the name manually.",
+    failed: "Failed to load areas",
+  },
+  bn: {
+    division: "বিভাগ", district: "জেলা", upazila: "উপজেলা / থানা",
+    union: "ইউনিয়ন পরিষদ / পৌরসভা / সিটি কর্পোরেশন",
+    selDivision: "বিভাগ নির্বাচন করুন", selDistrict: "জেলা নির্বাচন করুন",
+    selUpazila: "উপজেলা / থানা নির্বাচন করুন", selUnion: "ইউনিয়ন / পৌরসভা নির্বাচন করুন",
+    chooseDivision: "আগে বিভাগ নির্বাচন করুন", chooseDistrict: "আগে জেলা নির্বাচন করুন",
+    chooseUpazila: "আগে উপজেলা নির্বাচন করুন", pickType: "আগে ধরন নির্বাচন করুন",
+    loading: "লোড হচ্ছে…", loadingAreas: "এলাকা লোড হচ্ছে…",
+    type: "ধরন", tUnion: "ইউনিয়ন", tPowrashava: "পৌরসভা", tCity: "সিটি কর্প.",
+    typeUnion: "ইউনিয়নের নাম লিখুন", typePowrashava: "পৌরসভার নাম লিখুন", typeCity: "সিটি কর্পোরেশনের নাম লিখুন",
+    noPreload: "এই ধরনের জন্য কোনো তালিকা নেই — নাম টাইপ করুন।",
+    failed: "এলাকা লোড করা যায়নি",
+  },
+} as const;
 
 export type AreaType = "union" | "powrashava" | "city_corporation";
 
@@ -78,6 +108,8 @@ export default function DivisionDistrictUpazilaPicker({
   className,
   includeUnion = true,
 }: Props) {
+  const { lang } = useI18n();
+  const l = L[lang === "bn" ? "bn" : "en"];
   const [rows, setRows] = useState<UpazilaRow[]>([]);
   const [unions, setUnions] = useState<UnionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +124,7 @@ export default function DivisionDistrictUpazilaPicker({
         setUnions(un as UnionRow[]);
         setLoading(false);
       })
-      .catch((e) => alive && (setError(e.message || "Failed to load areas"), setLoading(false)));
+      .catch((e) => alive && (setError(e.message || l.failed), setLoading(false)));
     return () => { alive = false; };
   }, [includeUnion]);
 
@@ -145,46 +177,46 @@ export default function DivisionDistrictUpazilaPicker({
   return (
     <div className={className ?? "grid grid-cols-1 gap-3"}>
       <div>
-        {showLabels && <Label className="text-xs mb-1 block">Division{required && " *"}</Label>}
+        {showLabels && <Label className="text-xs mb-1 block">{l.division}{required && " *"}</Label>}
         <select
           className={selectClass}
           disabled={baseDisabled}
           value={value.division ?? ""}
           onChange={(e) => onChange({ division: e.target.value || null, district: null, upazila: null, union_parishad: null, area_type: null })}
-          aria-label="Division"
+          aria-label={l.division}
           aria-required={required}
         >
-          <option value="">{loading ? "Loading…" : "Select division"}</option>
+          <option value="">{loading ? l.loading : l.selDivision}</option>
           {divisions.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
 
       <div>
-        {showLabels && <Label className="text-xs mb-1 block">District{required && " *"}</Label>}
+        {showLabels && <Label className="text-xs mb-1 block">{l.district}{required && " *"}</Label>}
         <select
           className={selectClass}
           disabled={baseDisabled || !value.division}
           value={value.district ?? ""}
           onChange={(e) => onChange({ ...value, district: e.target.value || null, upazila: null, union_parishad: null, area_type: null })}
-          aria-label="District"
+          aria-label={l.district}
           aria-required={required}
         >
-          <option value="">{value.division ? "Select district" : "Choose division first"}</option>
+          <option value="">{value.division ? l.selDistrict : l.chooseDivision}</option>
           {districts.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
 
       <div>
-        {showLabels && <Label className="text-xs mb-1 block">Upazila / Thana{required && " *"}</Label>}
+        {showLabels && <Label className="text-xs mb-1 block">{l.upazila}{required && " *"}</Label>}
         <select
           className={selectClass}
           disabled={baseDisabled || !value.district}
           value={value.upazila ?? ""}
           onChange={(e) => onChange({ ...value, upazila: e.target.value || null, union_parishad: null, area_type: null })}
-          aria-label="Upazila or Thana"
+          aria-label={l.upazila}
           aria-required={required}
         >
-          <option value="">{value.district ? "Select upazila / thana" : "Choose district first"}</option>
+          <option value="">{value.district ? l.selUpazila : l.chooseDistrict}</option>
           {upazilas.map((u) => <option key={u} value={u}>{u}</option>)}
         </select>
       </div>
@@ -206,7 +238,7 @@ export default function DivisionDistrictUpazilaPicker({
         <div>
           {showLabels && (
             <Label className="text-xs mb-1 block">
-              Union Parishad / Powrashava / City Corp.{required && " *"}
+              {l.union}{required && " *"}
             </Label>
           )}
           <div className="grid grid-cols-3 gap-2">
@@ -215,13 +247,13 @@ export default function DivisionDistrictUpazilaPicker({
               disabled={baseDisabled || !value.upazila}
               value={value.area_type ?? ""}
               onChange={(e) => onChange({ ...value, area_type: (e.target.value || null) as AreaType | null, union_parishad: null })}
-              aria-label="Area type"
+              aria-label={l.type}
               aria-required={required}
             >
-              <option value="">Type</option>
-              <option value="union">Union</option>
-              <option value="powrashava">Powrashava</option>
-              <option value="city_corporation">City Corp.</option>
+              <option value="">{l.type}</option>
+              <option value="union">{l.tUnion}</option>
+              <option value="powrashava">{l.tPowrashava}</option>
+              <option value="city_corporation">{l.tCity}</option>
             </select>
             {hasPreloaded ? (
               <select
@@ -237,14 +269,14 @@ export default function DivisionDistrictUpazilaPicker({
                     area_type: match ? match.type : value.area_type ?? null,
                   });
                 }}
-                aria-label="Union Parishad or Powrashava"
+                aria-label={l.union}
                 aria-required={required}
               >
-                <option value="">Select union / powrashava</option>
+                <option value="">{l.selUnion}</option>
                 {optionUnions.map((u) => (
                   <option key={`${u.type}-${u.name}`} value={u.name}>
                     {u.name}
-                    {!value.area_type && ` (${u.type === "powrashava" ? "Powrashava" : u.type === "city_corporation" ? "City Corp." : "Union"})`}
+                    {!value.area_type && ` (${u.type === "powrashava" ? l.tPowrashava : u.type === "city_corporation" ? l.tCity : l.tUnion})`}
                   </option>
                 ))}
               </select>
@@ -255,19 +287,21 @@ export default function DivisionDistrictUpazilaPicker({
                 value={value.union_parishad ?? ""}
                 onChange={(e) => onChange({ ...value, union_parishad: e.target.value || null })}
                 placeholder={
-                  !value.upazila ? "Choose upazila first"
-                  : !value.area_type ? "Pick a type first"
-                  : `Type ${value.area_type === "powrashava" ? "powrashava" : value.area_type === "city_corporation" ? "city corporation" : "union"} name`
+                  !value.upazila ? l.chooseUpazila
+                  : !value.area_type ? l.pickType
+                  : value.area_type === "powrashava" ? l.typePowrashava
+                  : value.area_type === "city_corporation" ? l.typeCity
+                  : l.typeUnion
                 }
                 maxLength={80}
-                aria-label="Union Parishad or Powrashava name"
+                aria-label={l.union}
                 aria-required={required}
               />
             )}
           </div>
           {value.upazila && value.area_type && !hasPreloaded && (
             <p className="text-[10px] text-muted-foreground mt-1">
-              No entries pre-loaded for this type — type the name manually.
+              {l.noPreload}
             </p>
           )}
         </div>
@@ -277,7 +311,7 @@ export default function DivisionDistrictUpazilaPicker({
 
       {loading && (
         <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <Loader2 className="h-3 w-3 animate-spin" /> Loading areas…
+          <Loader2 className="h-3 w-3 animate-spin" /> {l.loadingAreas}
         </div>
       )}
       {error && <div className="text-xs text-destructive" role="alert">{error}</div>}
