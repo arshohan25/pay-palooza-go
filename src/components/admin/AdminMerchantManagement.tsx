@@ -30,6 +30,7 @@ import { TempPinResendPanel } from "./TempPinResendPanel";
 import AdminMerchantApprovalQueue from "./AdminMerchantApprovalQueue";
 import AdminVendorApplicationsQueue from "./AdminVendorApplicationsQueue";
 import MerchantAuditTimeline from "./MerchantAuditTimeline";
+import MerchantKycDocStatus from "./MerchantKycDocStatus";
 
 type MerchantStatus = "pending" | "active" | "suspended";
 type MerchantCategory = string;
@@ -907,6 +908,10 @@ export default function AdminMerchantManagement() {
                       <InfoCell label="Routing" value={detail.merchant.bank_routing || "—"} />
                     </div>
                   </div>
+
+                  <Separator />
+
+                  <MerchantKycDocStatus merchantId={detail.merchant.id} initial={detail.merchant} />
                 </TabsContent>
 
                 {/* ── Transactions Tab ── */}
