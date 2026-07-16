@@ -49,7 +49,7 @@ beforeEach(() => {
 // Mini editor mirroring AdminAgentHub's edit form: it auto-derives territory
 // code from the picked district exactly the way saveEdit does.
 function AdminEditorHarness() {
-  const [v, setV] = useState<{ division: string | null; district: string | null; upazila: string | null; union_parishad: string | null; area_type: any }>({
+  const [v, setV] = useState<DivisionDistrictUpazilaValue>({
     division: "Dhaka", district: "Dhaka", upazila: "Savar", union_parishad: null, area_type: null,
   });
   const [territory, setTerritory] = useState<string>("DH");
