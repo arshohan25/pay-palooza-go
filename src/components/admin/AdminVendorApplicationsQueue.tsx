@@ -10,7 +10,8 @@ import {
   AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Store, RefreshCw, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, Store, RefreshCw, Clock, Maximize2 } from "lucide-react";
+import AdminVendorPhotoModal from "./AdminVendorPhotoModal";
 
 export default function AdminVendorApplicationsQueue() {
   const [apps, setApps] = useState<any[]>([]);
