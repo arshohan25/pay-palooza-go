@@ -190,16 +190,19 @@ Deno.serve(async (req) => {
         ? territories
         : null;
 
+      // Super Distributors are always top-level — never set parent_id here,
+      // even if the caller happens to be another distributor.
       const { error: distErr } = await adminClient.from("distributors").insert({
         user_id: newUserId,
         business_name: business_name,
         max_float: Number(max_float) || 10000000,
         commission_rate: Number(commission_rate) || 0.002,
         territory: parsedTerritories,
-        parent_id: parentDist?.id || null,
+        parent_id: null,
         status: "active",
         ...locationPayload,
       });
+
       if (distErr) {
         await adminClient.auth.admin.deleteUser(newUserId).catch(() => {});
         const raw = distErr.message || "";
