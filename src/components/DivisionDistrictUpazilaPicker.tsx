@@ -3,6 +3,36 @@ import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+
+const L = {
+  en: {
+    division: "Division", district: "District", upazila: "Upazila / Thana",
+    union: "Union Parishad / Powrashava / City Corp.",
+    selDivision: "Select division", selDistrict: "Select district",
+    selUpazila: "Select upazila / thana", selUnion: "Select union / powrashava",
+    chooseDivision: "Choose division first", chooseDistrict: "Choose district first",
+    chooseUpazila: "Choose upazila first", pickType: "Pick a type first",
+    loading: "Loading…", loadingAreas: "Loading areas…",
+    type: "Type", tUnion: "Union", tPowrashava: "Powrashava", tCity: "City Corp.",
+    typeUnion: "Type union name", typePowrashava: "Type powrashava name", typeCity: "Type city corporation name",
+    noPreload: "No entries pre-loaded for this type — type the name manually.",
+    failed: "Failed to load areas",
+  },
+  bn: {
+    division: "বিভাগ", district: "জেলা", upazila: "উপজেলা / থানা",
+    union: "ইউনিয়ন পরিষদ / পৌরসভা / সিটি কর্পোরেশন",
+    selDivision: "বিভাগ নির্বাচন করুন", selDistrict: "জেলা নির্বাচন করুন",
+    selUpazila: "উপজেলা / থানা নির্বাচন করুন", selUnion: "ইউনিয়ন / পৌরসভা নির্বাচন করুন",
+    chooseDivision: "আগে বিভাগ নির্বাচন করুন", chooseDistrict: "আগে জেলা নির্বাচন করুন",
+    chooseUpazila: "আগে উপজেলা নির্বাচন করুন", pickType: "আগে ধরন নির্বাচন করুন",
+    loading: "লোড হচ্ছে…", loadingAreas: "এলাকা লোড হচ্ছে…",
+    type: "ধরন", tUnion: "ইউনিয়ন", tPowrashava: "পৌরসভা", tCity: "সিটি কর্প.",
+    typeUnion: "ইউনিয়নের নাম লিখুন", typePowrashava: "পৌরসভার নাম লিখুন", typeCity: "সিটি কর্পোরেশনের নাম লিখুন",
+    noPreload: "এই ধরনের জন্য কোনো তালিকা নেই — নাম টাইপ করুন।",
+    failed: "এলাকা লোড করা যায়নি",
+  },
+} as const;
 
 export type AreaType = "union" | "powrashava" | "city_corporation";
 
