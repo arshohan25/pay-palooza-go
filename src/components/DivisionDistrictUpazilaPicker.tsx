@@ -287,19 +287,21 @@ export default function DivisionDistrictUpazilaPicker({
                 value={value.union_parishad ?? ""}
                 onChange={(e) => onChange({ ...value, union_parishad: e.target.value || null })}
                 placeholder={
-                  !value.upazila ? "Choose upazila first"
-                  : !value.area_type ? "Pick a type first"
-                  : `Type ${value.area_type === "powrashava" ? "powrashava" : value.area_type === "city_corporation" ? "city corporation" : "union"} name`
+                  !value.upazila ? l.chooseUpazila
+                  : !value.area_type ? l.pickType
+                  : value.area_type === "powrashava" ? l.typePowrashava
+                  : value.area_type === "city_corporation" ? l.typeCity
+                  : l.typeUnion
                 }
                 maxLength={80}
-                aria-label="Union Parishad or Powrashava name"
+                aria-label={l.union}
                 aria-required={required}
               />
             )}
           </div>
           {value.upazila && value.area_type && !hasPreloaded && (
             <p className="text-[10px] text-muted-foreground mt-1">
-              No entries pre-loaded for this type — type the name manually.
+              {l.noPreload}
             </p>
           )}
         </div>
