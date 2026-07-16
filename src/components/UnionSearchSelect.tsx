@@ -51,6 +51,7 @@ export default function UnionSearchSelect({
   labels,
   className,
   displayName,
+  loading = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
