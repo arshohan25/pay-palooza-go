@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { bnDivision, bnDistrict } from "@/lib/bnLocation";
 import UnionSearchSelect from "./UnionSearchSelect";
 
 const L = {
@@ -190,7 +191,7 @@ export default function DivisionDistrictUpazilaPicker({
           aria-required={required}
         >
           <option value="">{loading ? l.loading : l.selDivision}</option>
-          {divisions.map((d) => <option key={d} value={d}>{d}</option>)}
+          {divisions.map((d) => <option key={d} value={d}>{lang === "bn" ? bnDivision(d) : d}</option>)}
         </select>
       </div>
 
@@ -205,7 +206,7 @@ export default function DivisionDistrictUpazilaPicker({
           aria-required={required}
         >
           <option value="">{value.division ? l.selDistrict : l.chooseDivision}</option>
-          {districts.map((d) => <option key={d} value={d}>{d}</option>)}
+          {districts.map((d) => <option key={d} value={d}>{lang === "bn" ? bnDistrict(d) : d}</option>)}
         </select>
       </div>
 
