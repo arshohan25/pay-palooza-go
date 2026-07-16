@@ -240,12 +240,14 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   const hasActiveFilters = search || activeTab !== "all" || dateScopeChanged;
 
   // DB-backed running-month totals for summary chips (ignores search/category filters)
+  // Only count successful/completed transactions — failed and pending must not inflate debits/credits.
   const { monthIn, monthOut, monthFees, monthCommission } = useMemo(() => {
+    const successful = allTransactions.filter((t) => (t.status || "").toLowerCase() === "completed");
     return {
-      monthIn: allTransactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
-      monthOut: allTransactions.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
-      monthFees: allTransactions.reduce((s, t) => s + (t.fee || 0), 0),
-      monthCommission: allTransactions.reduce((s, t) => s + (t.commission || 0), 0),
+      monthIn: successful.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
+      monthOut: successful.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
+      monthFees: successful.reduce((s, t) => s + (t.fee || 0), 0),
+      monthCommission: successful.reduce((s, t) => s + (t.commission || 0), 0),
     };
   }, [allTransactions]);
 
