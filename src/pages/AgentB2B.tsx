@@ -98,16 +98,13 @@ const AgentB2B = () => {
         setProcessing(false);
         return;
       }
-      const { error } = await supabase.rpc("transfer_money", {
+      const { error } = await supabase.rpc("agent_b2b_transfer" as any, {
         p_recipient_phone: phone,
         p_amount: Number(amount),
         p_fee: fee,
-        p_type: "send" as any,
-        p_recipient_type: "receive" as any,
-        p_commission: 0,
+        p_recipient_kind: transferType,
         p_description: `B2B ${transferType === "agent" ? "Agent" : "Distributor"} Transfer${note ? `: ${note}` : ""}`,
         p_reference: (() => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; })(),
-        p_recipient_name: transferType === "agent" ? "Agent" : "Distributor",
       });
       if (error) throw error;
       setStep("done");
