@@ -282,12 +282,12 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                         </Command>
                       </PopoverContent>
                     </Popover>
-                    {form.category === "__other__" && (() => {
+                    {(form.category === "__other__" || form.category === "other") && (() => {
                       const value = customCategory;
                       const trimmed = value.trim();
                       const tooShort = trimmed.length > 0 && trimmed.length < 2;
                       const invalidChar = trimmed.length > 0 && !/^[\p{L}\p{N}][\p{L}\p{N} &/\-()]*$/u.test(trimmed);
-                      const dup = trimmed && categories.find(c => c.label.trim().toLowerCase() === trimmed.toLowerCase());
+                      const dup = trimmed && categories.find(c => c.name !== "other" && c.label.trim().toLowerCase() === trimmed.toLowerCase());
                       const err = !trimmed ? "Category name is required"
                                 : tooShort ? "At least 2 characters"
                                 : invalidChar ? "Only letters, numbers, spaces and & / - ( )"
