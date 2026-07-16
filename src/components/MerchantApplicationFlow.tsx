@@ -158,24 +158,9 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       if (/apply_once|already have a merchant application/i.test(error.message)) {
         toast.error("You already have a pending or approved merchant application — please wait for review.");
       } else if (/Invalid location hierarchy/i.test(error.message)) {
-        // Probe RPC to pinpoint the exact field that doesn't match
-        const probe = async (d: string | null, dist: string | null, up: string | null, un: string | null, ty: string | null) => {
-          const { data } = await (supabase as any).rpc("validate_location_hierarchy", {
-            _division: d, _district: dist, _upazila: up, _union_parishad: un, _area_type: ty,
-          });
-          return data === true;
-        };
-        let field: "division" | "district" | "upazila" | "union_parishad" = "union_parishad";
-        let hint = "";
-        if (!(await probe(location.division, location.district, location.upazila, null, null))) {
-          field = "upazila";
-          hint = `"${location.upazila}" is not a valid Upazila/Thana under ${location.district}, ${location.division}. Re-pick from the Upazila dropdown.`;
-        } else {
-          field = "union_parishad";
-          hint = `"${location.union_parishad}" (${location.area_type}) doesn't belong to ${location.upazila}. Pick a valid ${location.area_type === "powrashava" ? "Powrashava" : location.area_type === "city_corporation" ? "City Corporation" : "Union"} from the dropdown.`;
-        }
-        setLocError({ field, message: hint });
-        toast.error(`Location mismatch: ${hint}`);
+        const mismatch = await detectLocationMismatch(location);
+        setLocError(mismatch);
+        toast.error(`Location mismatch: ${mismatch?.message ?? "Please pick from the dropdowns."}`);
       } else {
         toast.error(t("mafToastFailed") + error.message);
       }
