@@ -51,18 +51,29 @@ export default function AdminDistributorManagement() {
   const [linkedAgents, setLinkedAgents] = useState<any[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
 
-  // Create
-  const [createOpen, setCreateOpen] = useState(false);
+  // Create — separate dialogs for Distributor vs Super Distributor
+  const [createDistOpen, setCreateDistOpen] = useState(false);
+  const [createSdOpen, setCreateSdOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [createForm, setCreateForm] = useState<{ phone: string; name: string; business_name: string; nid_number: string; trade_license: string; territory: string; commission_rate: string; max_float: string; role: "distributor" | "super_distributor" }>({ phone: "", name: "", business_name: "", nid_number: "", trade_license: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" });
+
+  // Distributor form (no NID / Trade License / Primary Location)
+  const emptyDistForm = { phone: "", name: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000" };
+  const [distForm, setDistForm] = useState(emptyDistForm);
+  const [distParentId, setDistParentId] = useState<string>("");
+
+  // Super Distributor form (full fields)
+  const emptySdForm = { phone: "", name: "", business_name: "", nid_number: "", trade_license: "", territory: "", commission_rate: "2", max_float: "1000000" };
+  const [sdForm, setSdForm] = useState(emptySdForm);
+  const [sdParentId, setSdParentId] = useState<string>("");
   const emptyLoc: DivisionDistrictUpazilaValue = { division: null, district: null, upazila: null, union_parishad: null, area_type: null };
-  const [createLoc, setCreateLoc] = useState<DivisionDistrictUpazilaValue>(emptyLoc);
-  const [createLocError, setCreateLocError] = useState<LocationMismatch | null>(null);
-  const [createParentId, setCreateParentId] = useState<string | "">("");
+  const [sdLoc, setSdLoc] = useState<DivisionDistrictUpazilaValue>(emptyLoc);
+  const [sdLocError, setSdLocError] = useState<LocationMismatch | null>(null);
+
   const [sdOptions, setSdOptions] = useState<{ id: string; business_name: string }[]>([]);
 
-  // Load Super Distributor options for parent linking
+  // Load Super Distributor options for parent linking (shared by both dialogs)
   useEffect(() => {
+    if (!createDistOpen && !createSdOpen) return;
     let cancelled = false;
     (async () => {
       const { data: sdRoles } = await supabase.from("user_roles").select("user_id").eq("role", "super_distributor" as any);
@@ -72,7 +83,7 @@ export default function AdminDistributorManagement() {
       if (!cancelled) setSdOptions(((dists ?? []) as any[]).map((d) => ({ id: d.id, business_name: d.business_name })));
     })();
     return () => { cancelled = true; };
-  }, [createOpen]);
+  }, [createDistOpen, createSdOpen]);
 
   // Edit inline
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -238,19 +249,24 @@ export default function AdminDistributorManagement() {
     setAgentsLoading(false);
   };
 
-  // Create distributor (also supports super_distributor via createForm.role)
-  const handleCreate = async () => {
-    const phone = createForm.phone.replace(/\D/g, "").replace(/^88/, "");
+  const handleCreate = async (role: "distributor" | "super_distributor") => {
+    const form = role === "super_distributor" ? sdForm : distForm;
+    const parentId = role === "super_distributor" ? sdParentId : distParentId;
+    const loc = role === "super_distributor" ? sdLoc : emptyLoc;
+
+    const phone = form.phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone"); return; }
-    if (!createForm.business_name.trim()) { toast.error("Business name required"); return; }
-    const isSD = (createForm as any).role === "super_distributor";
-    if (isSD && (!createLoc.division || !createLoc.district || !createLoc.upazila)) {
-      const mismatch = await detectLocationMismatch(createLoc);
-      setCreateLocError(mismatch);
-      toast.error(mismatch?.message || "Pick Division › District › Upazila");
-      return;
+    if (!form.business_name.trim()) { toast.error("Business name required"); return; }
+
+    if (role === "super_distributor") {
+      if (!loc.division || !loc.district || !loc.upazila) {
+        const mismatch = await detectLocationMismatch(loc);
+        setSdLocError(mismatch);
+        toast.error(mismatch?.message || "Pick Division › District › Upazila");
+        return;
+      }
     }
-    const role = ((createForm as any).role === "super_distributor" ? "super_distributor" : "distributor") as "distributor" | "super_distributor";
+
     setCreating(true);
     try {
       const { data: existingProfile } = await supabase
@@ -264,13 +280,13 @@ export default function AdminDistributorManagement() {
         const { data: existingDist } = await supabase
           .from("distributors").select("id").eq("user_id", userId).maybeSingle();
         if (existingDist) { toast.error("This user is already a distributor"); setCreating(false); return; }
-        await supabase.from("profiles").update({ name: createForm.name.trim() || createForm.business_name }).eq("user_id", userId);
+        await supabase.from("profiles").update({ name: form.name.trim() || form.business_name }).eq("user_id", userId);
       } else {
         pin = String(Math.floor(1000 + Math.random() * 9000));
-        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: createForm.name.trim() || createForm.business_name });
+        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: form.name.trim() || form.business_name });
         if (!authData?.user) throw new Error("Account creation failed");
         userId = authData.user.id;
-        await supabase.from("profiles").update({ name: createForm.name.trim() || createForm.business_name, phone }).eq("user_id", userId);
+        await supabase.from("profiles").update({ name: form.name.trim() || form.business_name, phone }).eq("user_id", userId);
       }
 
       const { data: hasRole } = await supabase
@@ -278,44 +294,67 @@ export default function AdminDistributorManagement() {
       if (!hasRole) {
         await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
       }
-      const { error: distErr } = await supabase.from("distributors").insert({
+
+      // Validate parent linkage against SD options loaded from user_roles.
+      const parentValid = parentId ? sdOptions.some((s) => s.id === parentId) : true;
+      if (parentId && !parentValid) {
+        toast.error("Selected parent is not a valid Super Distributor");
+        setCreating(false);
+        return;
+      }
+
+      const isSD = role === "super_distributor";
+      const insertPayload: Record<string, any> = {
         user_id: userId,
-        business_name: createForm.business_name.trim(),
-        territory: createForm.territory ? createForm.territory.split(",").map(t => t.trim()).filter(Boolean) : null,
-        commission_rate: parseFloat(createForm.commission_rate) || 2,
-        max_float: parseInt(createForm.max_float) || 1000000,
-        status: "active" as any,
-        division: isSD ? createLoc.division : null,
-        district: isSD ? createLoc.district : null,
-        upazila: isSD ? createLoc.upazila : null,
-        union_parishad: isSD ? (createLoc.union_parishad ?? null) : null,
-        area_type: isSD ? (createLoc.area_type ?? null) : null,
-        nid_number: isSD ? (createForm.nid_number.trim() || null) : null,
-        trade_license: isSD ? (createForm.trade_license.trim() || null) : null,
-        parent_id: role === "distributor" && createParentId ? createParentId : null,
-      } as any);
+        business_name: form.business_name.trim(),
+        territory: form.territory ? form.territory.split(",").map(t => t.trim()).filter(Boolean) : null,
+        commission_rate: parseFloat(form.commission_rate) || 2,
+        max_float: parseInt(form.max_float) || 1000000,
+        status: "active",
+        // Both D and SD may link to a parent SD (SD chaining allowed).
+        parent_id: parentId || null,
+      };
+      if (isSD) {
+        insertPayload.division = loc.division;
+        insertPayload.district = loc.district;
+        insertPayload.upazila = loc.upazila;
+        insertPayload.union_parishad = loc.union_parishad ?? null;
+        insertPayload.area_type = loc.area_type ?? null;
+        insertPayload.nid_number = (sdForm.nid_number.trim() || null);
+        insertPayload.trade_license = (sdForm.trade_license.trim() || null);
+      }
+
+      const { error: distErr } = await supabase.from("distributors").insert(insertPayload as any);
       if (distErr) {
-        if (/Invalid location hierarchy/i.test(distErr.message)) {
-          const mismatch = await detectLocationMismatch(createLoc);
-          setCreateLocError(mismatch);
+        if (isSD && /Invalid location hierarchy/i.test(distErr.message)) {
+          const mismatch = await detectLocationMismatch(loc);
+          setSdLocError(mismatch);
         }
         throw distErr;
       }
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `${role}_created`, entity_type: role, entity_id: userId, details: { business_name: createForm.business_name, promoted_existing: !pin } }).then();
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `${role}_created`, entity_type: role, entity_id: userId, details: { business_name: form.business_name, promoted_existing: !pin } }).then();
       }
-      toast.success(pin ? `${role === "super_distributor" ? "Super distributor" : "Distributor"} created! Temp PIN: ${pin}` : `Existing user promoted to ${role.replace("_", " ")}`, { duration: 10000 });
-      setCreateOpen(false);
-      setCreateForm({ phone: "", name: "", business_name: "", nid_number: "", trade_license: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
-      setCreateParentId("");
-      setCreateLoc(emptyLoc);
-      setCreateLocError(null);
+      toast.success(pin ? `${isSD ? "Super distributor" : "Distributor"} created! Temp PIN: ${pin}` : `Existing user promoted to ${role.replace("_", " ")}`, { duration: 10000 });
+
+      if (isSD) {
+        setCreateSdOpen(false);
+        setSdForm(emptySdForm);
+        setSdParentId("");
+        setSdLoc(emptyLoc);
+        setSdLocError(null);
+      } else {
+        setCreateDistOpen(false);
+        setDistForm(emptyDistForm);
+        setDistParentId("");
+      }
       load();
     } catch (err: any) {
-      toast.error(err.message || "Failed to create distributor");
+      toast.error(err.message || "Failed to create");
     } finally { setCreating(false); }
   };
+
 
   // Start editing
   const startEdit = (d: Distributor) => {
@@ -412,7 +451,8 @@ export default function AdminDistributorManagement() {
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-sm">Distributors</CardTitle>
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1"><UserPlus className="w-4 h-4" /> Create</Button>
+            <Button size="sm" variant="outline" onClick={() => setCreateDistOpen(true)} className="gap-1"><UserPlus className="w-4 h-4" /> Distributor</Button>
+            <Button size="sm" onClick={() => setCreateSdOpen(true)} className="gap-1"><UserPlus className="w-4 h-4" /> Super Distributor</Button>
             <Button variant="ghost" size="icon" onClick={load}><RefreshCw className="w-4 h-4" /></Button>
           </div>
         </CardHeader>
@@ -615,62 +655,84 @@ export default function AdminDistributorManagement() {
         />
       )}
 
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      {/* Create Distributor Dialog — minimal fields, no NID/Trade License/Location */}
+      <Dialog open={createDistOpen} onOpenChange={setCreateDistOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Create {createForm.role === "super_distributor" ? "Super Distributor" : "Distributor"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Create Distributor</DialogTitle></DialogHeader>
           <div className="space-y-3 pt-2 max-h-[60vh] overflow-y-auto">
+            <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={distForm.phone} onChange={e => setDistForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
+            <div><Label>Owner Full Name</Label><Input placeholder="Owner's full name" value={distForm.name} onChange={e => setDistForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={distForm.business_name} onChange={e => setDistForm(f => ({ ...f, business_name: e.target.value }))} /></div>
+            <div><Label>Operating Territories</Label><DistrictMultiSelect value={csvToArr(distForm.territory)} onChange={(codes) => setDistForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
             <div>
-              <Label>Role</Label>
-              <div className="flex gap-2 mt-1">
-                <Button type="button" size="sm" variant={createForm.role === "distributor" ? "default" : "outline"} className="flex-1" onClick={() => setCreateForm(f => ({ ...f, role: "distributor" }))}>Distributor</Button>
-                <Button type="button" size="sm" variant={createForm.role === "super_distributor" ? "default" : "outline"} className="flex-1" onClick={() => setCreateForm(f => ({ ...f, role: "super_distributor" }))}>Super Distributor</Button>
-              </div>
+              <Label>Link to Super Distributor</Label>
+              <select
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={distParentId}
+                onChange={(e) => setDistParentId(e.target.value)}
+              >
+                <option value="">— None (unlinked) —</option>
+                {sdOptions.map((sd) => (
+                  <option key={sd.id} value={sd.id}>{sd.business_name}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1">Optional — attach this distributor under a Super Distributor.</p>
             </div>
-            <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
-            <div><Label>Owner Full Name</Label><Input placeholder="Owner's full name" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} /></div>
-            <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} /></div>
-            {createForm.role === "super_distributor" && (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><Label>Owner NID Number</Label><Input placeholder="10 / 13 / 17 digits" value={createForm.nid_number} onChange={e => setCreateForm(f => ({ ...f, nid_number: e.target.value.replace(/\D/g, "").slice(0, 17) }))} /></div>
-                  <div><Label>Trade License</Label><Input placeholder="License number" value={createForm.trade_license} onChange={e => setCreateForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Primary Location *</Label>
-                  <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
-                  <DivisionDistrictUpazilaPicker value={createLoc} onChange={(v) => { setCreateLoc(v); if (createLocError) setCreateLocError(null); }} required showLabels={false} />
-                  <LocationMismatchAlert mismatch={createLocError} />
-                </div>
-              </>
-            )}
-            <div><Label>Operating Territories</Label><DistrictMultiSelect value={csvToArr(createForm.territory)} onChange={(codes) => setCreateForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
-            {createForm.role === "distributor" && (
-              <div>
-                <Label>Link to Super Distributor</Label>
-                <select
-                  className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                  value={createParentId}
-                  onChange={(e) => setCreateParentId(e.target.value)}
-                >
-                  <option value="">— None (unlinked) —</option>
-                  {sdOptions.map((sd) => (
-                    <option key={sd.id} value={sd.id}>{sd.business_name}</option>
-                  ))}
-                </select>
-                <p className="text-[10px] text-muted-foreground mt-1">Optional — attach this distributor under a Super Distributor.</p>
-              </div>
-            )}
             <div className="grid grid-cols-2 gap-2">
-              <div><Label>Commission Rate (%)</Label><Input type="number" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
-              <div><Label>Max Float (৳)</Label><Input type="number" value={createForm.max_float} onChange={e => setCreateForm(f => ({ ...f, max_float: e.target.value }))} /></div>
+              <div><Label>Commission Rate (%)</Label><Input type="number" value={distForm.commission_rate} onChange={e => setDistForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
+              <div><Label>Max Float (৳)</Label><Input type="number" value={distForm.max_float} onChange={e => setDistForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
-            <Button className="w-full" onClick={handleCreate} disabled={creating || !createForm.phone || !createForm.business_name.trim()}>
-              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : `Create ${createForm.role === "super_distributor" ? "Super Distributor" : "Distributor"}`}
+            <Button className="w-full" onClick={() => handleCreate("distributor")} disabled={creating || !distForm.phone || !distForm.business_name.trim()}>
+              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Distributor"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Create Super Distributor Dialog — full fields including NID, Trade License, Primary Location */}
+      <Dialog open={createSdOpen} onOpenChange={setCreateSdOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Create Super Distributor</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2 max-h-[60vh] overflow-y-auto">
+            <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={sdForm.phone} onChange={e => setSdForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
+            <div><Label>Owner Full Name</Label><Input placeholder="Owner's full name" value={sdForm.name} onChange={e => setSdForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={sdForm.business_name} onChange={e => setSdForm(f => ({ ...f, business_name: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Owner NID Number</Label><Input placeholder="10 / 13 / 17 digits" value={sdForm.nid_number} onChange={e => setSdForm(f => ({ ...f, nid_number: e.target.value.replace(/\D/g, "").slice(0, 17) }))} /></div>
+              <div><Label>Trade License</Label><Input placeholder="License number" value={sdForm.trade_license} onChange={e => setSdForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Primary Location *</Label>
+              <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
+              <DivisionDistrictUpazilaPicker value={sdLoc} onChange={(v) => { setSdLoc(v); if (sdLocError) setSdLocError(null); }} required showLabels={false} />
+              <LocationMismatchAlert mismatch={sdLocError} />
+            </div>
+            <div><Label>Operating Territories</Label><DistrictMultiSelect value={csvToArr(sdForm.territory)} onChange={(codes) => setSdForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
+            <div>
+              <Label>Link to Parent Super Distributor</Label>
+              <select
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={sdParentId}
+                onChange={(e) => setSdParentId(e.target.value)}
+              >
+                <option value="">— None (top-level) —</option>
+                {sdOptions.map((sd) => (
+                  <option key={sd.id} value={sd.id}>{sd.business_name}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1">Optional — nest this SD under another Super Distributor.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Commission Rate (%)</Label><Input type="number" value={sdForm.commission_rate} onChange={e => setSdForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
+              <div><Label>Max Float (৳)</Label><Input type="number" value={sdForm.max_float} onChange={e => setSdForm(f => ({ ...f, max_float: e.target.value }))} /></div>
+            </div>
+            <Button className="w-full" onClick={() => handleCreate("super_distributor")} disabled={creating || !sdForm.phone || !sdForm.business_name.trim()}>
+              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Super Distributor"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={v => { if (!v) setDeleteTarget(null); }}>
