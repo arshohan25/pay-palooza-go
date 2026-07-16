@@ -764,6 +764,18 @@ function AgentListTab() {
         </DialogContent>
       </Dialog>
 
+      {/* Location change confirmation */}
+      {confirmState && (
+        <LocationChangeConfirmDialog
+          open={!!confirmState}
+          before={confirmState.before}
+          after={confirmState.after}
+          saving={editSaving}
+          onCancel={() => setConfirmState(null)}
+          onConfirm={() => commitEdit(confirmState.before, confirmState.after)}
+        />
+      )}
+
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={v => { if (!v) setDeleteTarget(null); }}>
         <AlertDialogContent>
