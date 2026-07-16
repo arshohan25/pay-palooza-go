@@ -362,6 +362,8 @@ function AgentListTab() {
       division: (a as any).division || "",
       district: (a as any).district || "",
       upazila: (a as any).upazila || "",
+      union_parishad: (a as any).union_parishad || "",
+      area_type: ((a as any).area_type || "") as "" | "union" | "powrashava" | "city_corporation",
       max_float: String(a.max_float),
       nid_number: a.nid_number || "",
       trade_license: a.trade_license || "",
