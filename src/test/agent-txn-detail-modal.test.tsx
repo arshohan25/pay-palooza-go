@@ -35,21 +35,8 @@ describe("AgentTxnDetailModal commission display", () => {
     expect(screen.getByText("৳0.00")).toBeInTheDocument();
   });
 
-  it("labels B2B receive fee as coming from the receiver", () => {
-    render(
-      <AgentTxnDetailModal
-        tx={{
-          ...baseTx,
-          id: "3",
-          type: "receive",
-          fee: 2,
-          commission: 0,
-          description: "B2B Agent Transfer",
-        }}
-        onClose={() => {}}
-        onShare={() => {}}
-      />
-    );
-    expect(screen.getByText(/from receiver/i)).toBeInTheDocument();
+  it("does not render a Fee row", () => {
+    render(<AgentTxnDetailModal tx={baseTx} onClose={() => {}} onShare={() => {}} />);
+    expect(screen.queryByText("Fee")).not.toBeInTheDocument();
   });
 });
