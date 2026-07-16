@@ -704,6 +704,15 @@ export default function AdminMerchantManagement() {
                 {dbCategories.map(c => <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={kycFilter} onValueChange={v => setKycFilter(v as any)}>
+              <SelectTrigger className="w-[140px]"><SelectValue placeholder="KYC" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All KYC</SelectItem>
+                <SelectItem value="valid">✓ Valid</SelectItem>
+                <SelectItem value="missing">✕ Missing</SelectItem>
+                <SelectItem value="invalid">⚠ Invalid</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" size="sm" onClick={() => exportMerchantsCSV(filtered)} className="gap-1">
               <Download className="w-3.5 h-3.5" /> Export
             </Button>
