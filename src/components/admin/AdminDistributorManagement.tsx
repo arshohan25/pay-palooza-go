@@ -54,7 +54,10 @@ export default function AdminDistributorManagement() {
   // Create
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [createForm, setCreateForm] = useState<{ phone: string; business_name: string; territory: string; commission_rate: string; max_float: string; role: "distributor" | "super_distributor" }>({ phone: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" });
+  const [createForm, setCreateForm] = useState<{ phone: string; name: string; business_name: string; territory: string; commission_rate: string; max_float: string; role: "distributor" | "super_distributor" }>({ phone: "", name: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" });
+  const emptyLoc: DivisionDistrictUpazilaValue = { division: null, district: null, upazila: null, union_parishad: null, area_type: null };
+  const [createLoc, setCreateLoc] = useState<DivisionDistrictUpazilaValue>(emptyLoc);
+  const [createLocError, setCreateLocError] = useState<LocationMismatch | null>(null);
 
   // Edit inline
   const [editingId, setEditingId] = useState<string | null>(null);
