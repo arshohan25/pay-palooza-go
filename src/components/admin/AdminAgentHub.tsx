@@ -404,6 +404,8 @@ function AgentListTab() {
         division: editForm.division || null,
         district: editForm.district || null,
         upazila: editForm.upazila || null,
+        union_parishad: editForm.union_parishad || null,
+        area_type: editForm.area_type || null,
         max_float: parseInt(editForm.max_float) || editAgent.max_float,
         nid_number: editForm.nid_number || null,
         trade_license: editForm.trade_license || null,
