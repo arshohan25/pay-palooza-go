@@ -154,6 +154,7 @@ function AgentListTab() {
   const editNidInputRef = useRef<HTMLInputElement>(null);
   const editSelfieInputRef = useRef<HTMLInputElement>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState<{ before: LocationSnapshot; after: LocationSnapshot } | null>(null);
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
