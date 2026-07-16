@@ -96,18 +96,19 @@ export default function DivisionDistrictUpazilaPicker({
     return () => { alive = false; };
   }, [includeUnion]);
 
-  const divisions = useMemo(
+  // Base lists from dataset
+  const baseDivisions = useMemo(
     () => Array.from(new Set(rows.map((r) => r.division))).sort(),
     [rows],
   );
-  const districts = useMemo(
+  const baseDistricts = useMemo(
     () =>
       value.division
         ? Array.from(new Set(rows.filter((r) => r.division === value.division).map((r) => r.district))).sort()
         : [],
     [rows, value.division],
   );
-  const upazilas = useMemo(
+  const baseUpazilas = useMemo(
     () =>
       value.division && value.district
         ? Array.from(new Set(
@@ -116,6 +117,16 @@ export default function DivisionDistrictUpazilaPicker({
         : [],
     [rows, value.division, value.district],
   );
+
+  // Merge in prefilled values that aren't in the loaded dataset so the
+  // dropdown never silently drops an existing selection (legacy data, seed gap,
+  // or dataset still loading).
+  const withFallback = (list: string[], current: string | null) =>
+    current && !list.includes(current) ? [current, ...list] : list;
+  const divisions = useMemo(() => withFallback(baseDivisions, value.division), [baseDivisions, value.division]);
+  const districts = useMemo(() => withFallback(baseDistricts, value.district), [baseDistricts, value.district]);
+  const upazilas = useMemo(() => withFallback(baseUpazilas, value.upazila), [baseUpazilas, value.upazila]);
+
   const unionsForUpazila = useMemo(
     () =>
       value.division && value.district && value.upazila
@@ -182,7 +193,15 @@ export default function DivisionDistrictUpazilaPicker({
         const filteredUnions = value.area_type
           ? unionsForUpazila.filter((u) => u.type === value.area_type)
           : unionsForUpazila;
-        const hasPreloaded = filteredUnions.length > 0;
+        // If the current union_parishad isn't in the loaded list, still surface a
+        // dropdown so the prefill isn't lost — inject a synthetic option.
+        const currentInList = value.union_parishad
+          ? filteredUnions.some((u) => u.name === value.union_parishad)
+          : true;
+        const optionUnions = !currentInList && value.union_parishad
+          ? [{ division: value.division!, district: value.district!, upazila: value.upazila!, name: value.union_parishad, type: (value.area_type ?? "union") as AreaType }, ...filteredUnions]
+          : filteredUnions;
+        const hasPreloaded = optionUnions.length > 0;
         return (
         <div>
           {showLabels && (
@@ -211,7 +230,7 @@ export default function DivisionDistrictUpazilaPicker({
                 value={value.union_parishad ?? ""}
                 onChange={(e) => {
                   const name = e.target.value || null;
-                  const match = filteredUnions.find((u) => u.name === name);
+                  const match = optionUnions.find((u) => u.name === name);
                   onChange({
                     ...value,
                     union_parishad: name,
@@ -222,7 +241,7 @@ export default function DivisionDistrictUpazilaPicker({
                 aria-required={required}
               >
                 <option value="">Select union / powrashava</option>
-                {filteredUnions.map((u) => (
+                {optionUnions.map((u) => (
                   <option key={`${u.type}-${u.name}`} value={u.name}>
                     {u.name}
                     {!value.area_type && ` (${u.type === "powrashava" ? "Powrashava" : u.type === "city_corporation" ? "City Corp." : "Union"})`}
