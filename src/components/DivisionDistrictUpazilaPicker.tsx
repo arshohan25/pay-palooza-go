@@ -17,6 +17,7 @@ const L = {
     type: "Type", tUnion: "Union", tPowrashava: "Powrashava", tCity: "City Corp.",
     typeUnion: "Type union name", typePowrashava: "Type powrashava name", typeCity: "Type city corporation name",
     noPreload: "No entries pre-loaded for this type — type the name manually.",
+    search: "Search union / powrashava / city corp…", empty: "No match",
     failed: "Failed to load areas",
   },
   bn: {
@@ -30,6 +31,7 @@ const L = {
     type: "ধরন", tUnion: "ইউনিয়ন", tPowrashava: "পৌরসভা", tCity: "সিটি কর্প.",
     typeUnion: "ইউনিয়নের নাম লিখুন", typePowrashava: "পৌরসভার নাম লিখুন", typeCity: "সিটি কর্পোরেশনের নাম লিখুন",
     noPreload: "এই ধরনের জন্য কোনো তালিকা নেই — নাম টাইপ করুন।",
+    search: "ইউনিয়ন / পৌরসভা / সিটি কর্প. খুঁজুন…", empty: "কোনো ফলাফল নেই",
     failed: "এলাকা লোড করা যায়নি",
   },
 } as const;
