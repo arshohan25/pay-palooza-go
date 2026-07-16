@@ -138,7 +138,7 @@ function AgentListTab() {
   const [detail, setDetail] = useState<Agent | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+  const [form, setForm] = useState({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", union_parishad: "", area_type: "" as "" | "union" | "powrashava" | "city_corporation", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
   const [nidFile, setNidFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const nidInputRef = useRef<HTMLInputElement>(null);
