@@ -202,11 +202,29 @@ Deno.serve(async (req) => {
       });
       if (distErr) {
         await adminClient.auth.admin.deleteUser(newUserId).catch(() => {});
-        return new Response(JSON.stringify({ error: distErr.message }), {
-          status: /Invalid location hierarchy/i.test(distErr.message) ? 422 : 400,
+        const raw = distErr.message || "";
+        const lower = raw.toLowerCase();
+        let friendly = raw;
+        let status = 400;
+        if (/invalid location hierarchy/i.test(raw)) {
+          friendly = "Selected Division › District › Upazila do not match.";
+          status = 422;
+        } else if (lower.includes("parent_id must reference a super distributor")) {
+          friendly = "The selected parent is not a Super Distributor.";
+          status = 422;
+        } else if (lower.includes("does not reference an existing distributor")) {
+          friendly = "The selected parent Super Distributor no longer exists.";
+          status = 422;
+        } else if (lower.includes("cannot be its own parent")) {
+          friendly = "A distributor cannot be linked to itself as a parent.";
+          status = 422;
+        }
+        return new Response(JSON.stringify({ error: friendly }), {
+          status,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
     }
 
 

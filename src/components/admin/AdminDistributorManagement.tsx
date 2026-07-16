@@ -22,6 +22,8 @@ import DistrictMultiSelect from "@/components/DistrictMultiSelect";
 import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
 import LocationMismatchAlert from "@/components/LocationMismatchAlert";
 import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
+import { mapDistributorDbError } from "@/lib/distributorErrors";
+
 
 const csvToArr = (s: string) => s.split(",").map(t => t.trim()).filter(Boolean);
 const arrToCsv = (a: string[]) => a.join(", ");
@@ -330,8 +332,11 @@ export default function AdminDistributorManagement() {
           const mismatch = await detectLocationMismatch(loc);
           setSdLocError(mismatch);
         }
+        const friendly = mapDistributorDbError(distErr.message);
+        if (friendly) throw new Error(friendly);
         throw distErr;
       }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `${role}_created`, entity_type: role, entity_id: userId, details: { business_name: form.business_name, promoted_existing: !pin } }).then();
