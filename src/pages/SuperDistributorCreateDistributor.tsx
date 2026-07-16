@@ -180,9 +180,16 @@ const SuperDistributorCreateDistributor = () => {
               <Label className="text-xs">Business Name *</Label>
               <Input placeholder="Distribution hub name" value={businessName} onChange={e => setBusinessName(e.target.value)} />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Primary Location *</Label>
+              <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
+              <DivisionDistrictUpazilaPicker value={location} onChange={setLocation} required showLabels={false} />
+              <LocationMismatchAlert mismatch={locError} />
+            </div>
             <div>
-              <Label className="text-xs">Territories</Label>
+              <Label className="text-xs">Operating Territories</Label>
               <DistrictMultiSelect value={territories} onChange={setTerritories} placeholder="Select districts" />
+              <p className="text-[10px] text-muted-foreground mt-1">Multi-district territory arrays are still 2-letter route codes for wallet ID routing.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
