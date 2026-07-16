@@ -138,7 +138,7 @@ function AgentListTab() {
   const [detail, setDetail] = useState<Agent | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+  const [form, setForm] = useState({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", union_parishad: "", area_type: "" as "" | "union" | "powrashava" | "city_corporation", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
   const [nidFile, setNidFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const nidInputRef = useRef<HTMLInputElement>(null);
@@ -146,7 +146,7 @@ function AgentListTab() {
 
   // Edit
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
-  const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", division: "", district: "", upazila: "", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
+  const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", division: "", district: "", upazila: "", union_parishad: "", area_type: "" as "" | "union" | "powrashava" | "city_corporation", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
   const [editNidFile, setEditNidFile] = useState<File | null>(null);
   const [editSelfieFile, setEditSelfieFile] = useState<File | null>(null);
   const editNidInputRef = useRef<HTMLInputElement>(null);
@@ -311,6 +311,7 @@ function AgentListTab() {
       await supabase.from("agents").insert({
         user_id: userId, business_name: form.business_name || null, territory_code: form.territory_code || null,
         division: form.division || null, district: form.district || null, upazila: form.upazila || null,
+        union_parishad: form.union_parishad || null, area_type: form.area_type || null,
         nid_number: form.nid_number || null, trade_license: form.trade_license || null,
         max_float: parseInt(form.max_float) || 500000, status: "active",
         latitude: form.latitude ? parseFloat(form.latitude) : null,
@@ -346,7 +347,7 @@ function AgentListTab() {
         toast.success(`Existing user promoted to agent`, { duration: 6000 });
       }
       setCreateOpen(false);
-      setForm({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
+      setForm({ phone: "", name: "", email: "", business_name: "", territory_code: "", division: "", district: "", upazila: "", union_parishad: "", area_type: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
       setNidFile(null); setSelfieFile(null);
       load();
     } catch (err: any) { toast.error(err.message || "Failed to create agent"); }
@@ -362,6 +363,8 @@ function AgentListTab() {
       division: (a as any).division || "",
       district: (a as any).district || "",
       upazila: (a as any).upazila || "",
+      union_parishad: (a as any).union_parishad || "",
+      area_type: ((a as any).area_type || "") as "" | "union" | "powrashava" | "city_corporation",
       max_float: String(a.max_float),
       nid_number: a.nid_number || "",
       trade_license: a.trade_license || "",
@@ -401,6 +404,8 @@ function AgentListTab() {
         division: editForm.division || null,
         district: editForm.district || null,
         upazila: editForm.upazila || null,
+        union_parishad: editForm.union_parishad || null,
+        area_type: editForm.area_type || null,
         max_float: parseInt(editForm.max_float) || editAgent.max_float,
         nid_number: editForm.nid_number || null,
         trade_license: editForm.trade_license || null,
@@ -605,8 +610,8 @@ function AgentListTab() {
             <div><Label>Business Name *</Label><Input placeholder="Shop / business name" value={form.business_name} onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-2">
               <DivisionDistrictUpazilaPicker
-                value={{ division: form.division || null, district: form.district || null, upazila: form.upazila || null }}
-                onChange={(v) => setForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "" }))}
+                value={{ division: form.division || null, district: form.district || null, upazila: form.upazila || null, union_parishad: form.union_parishad || null, area_type: (form.area_type || null) as any }}
+                onChange={(v) => setForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "", union_parishad: v.union_parishad || "", area_type: (v.area_type || "") as any }))}
                 required
               />
               <div><Label>Max Float *</Label><Input type="number" value={form.max_float} onChange={e => setForm(f => ({ ...f, max_float: e.target.value }))} /></div>
@@ -660,8 +665,8 @@ function AgentListTab() {
             <div><Label>Business Name</Label><Input value={editForm.business_name} onChange={e => setEditForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-2">
               <DivisionDistrictUpazilaPicker
-                value={{ division: editForm.division || null, district: editForm.district || null, upazila: editForm.upazila || null }}
-                onChange={(v) => setEditForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "" }))}
+                value={{ division: editForm.division || null, district: editForm.district || null, upazila: editForm.upazila || null, union_parishad: editForm.union_parishad || null, area_type: (editForm.area_type || null) as any }}
+                onChange={(v) => setEditForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "", union_parishad: v.union_parishad || "", area_type: (v.area_type || "") as any }))}
                 required
               />
               <div><Label>Max Float</Label><Input type="number" value={editForm.max_float} onChange={e => setEditForm(f => ({ ...f, max_float: e.target.value }))} /></div>

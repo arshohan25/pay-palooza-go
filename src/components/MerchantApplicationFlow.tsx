@@ -50,6 +50,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
   const [location, setLocation] = useState<DivisionDistrictUpazilaValue>({
     division: null, district: null, upazila: null, union_parishad: null, area_type: null,
   });
+  const [locError, setLocError] = useState<{ field: "division" | "district" | "upazila" | "union_parishad"; message: string } | null>(null);
 
   const applicationSchema = useMemo(() => z.object({
     business_name: z.string().trim().min(2, t("mafErrBusinessName")).max(100),
@@ -152,12 +153,30 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     });
 
     if (error) {
-      const msg = /apply_once|already have a merchant application/i.test(error.message)
-        ? "You already have a pending or approved merchant application — please wait for review."
-        : /Invalid location hierarchy/i.test(error.message)
-        ? "Location doesn't match a known Division → District → Upazila. Please pick from the dropdowns."
-        : t("mafToastFailed") + error.message;
-      toast.error(msg);
+      if (/apply_once|already have a merchant application/i.test(error.message)) {
+        toast.error("You already have a pending or approved merchant application — please wait for review.");
+      } else if (/Invalid location hierarchy/i.test(error.message)) {
+        // Probe RPC to pinpoint the exact field that doesn't match
+        const probe = async (d: string | null, dist: string | null, up: string | null, un: string | null, ty: string | null) => {
+          const { data } = await (supabase as any).rpc("validate_location_hierarchy", {
+            _division: d, _district: dist, _upazila: up, _union_parishad: un, _area_type: ty,
+          });
+          return data === true;
+        };
+        let field: "division" | "district" | "upazila" | "union_parishad" = "union_parishad";
+        let hint = "";
+        if (!(await probe(location.division, location.district, location.upazila, null, null))) {
+          field = "upazila";
+          hint = `"${location.upazila}" is not a valid Upazila/Thana under ${location.district}, ${location.division}. Re-pick from the Upazila dropdown.`;
+        } else {
+          field = "union_parishad";
+          hint = `"${location.union_parishad}" (${location.area_type}) doesn't belong to ${location.upazila}. Pick a valid ${location.area_type === "powrashava" ? "Powrashava" : location.area_type === "city_corporation" ? "City Corporation" : "Union"} from the dropdown.`;
+        }
+        setLocError({ field, message: hint });
+        toast.error(`Location mismatch: ${hint}`);
+      } else {
+        toast.error(t("mafToastFailed") + error.message);
+      }
     } else {
       toast.success(t("mafToastSuccess"));
       const { data } = await (supabase as any)
@@ -318,12 +337,21 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                     </p>
                     <DivisionDistrictUpazilaPicker
                       value={location}
-                      onChange={setLocation}
+                      onChange={(v) => { setLocation(v); if (locError) setLocError(null); }}
                       required
                       showLabels
                     />
+                    {locError && (
+                      <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
+                        <p className="text-xs font-semibold text-destructive">
+                          {locError.field === "upazila" ? "Upazila / Thana" : "Union / Powrashava / City Corp."} needs correction
+                        </p>
+                        <p className="text-[11px] text-destructive/90 mt-0.5">{locError.message}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
+
 
                 {/* Contact Information */}
                 <div className="space-y-3">
