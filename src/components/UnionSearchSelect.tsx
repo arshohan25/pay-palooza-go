@@ -27,6 +27,8 @@ interface Props {
     empty?: string;
   };
   className?: string;
+  /** Optional formatter for displaying option names (e.g. Bangla translation). */
+  displayName?: (name: string) => string;
 }
 
 type FlatRow =
@@ -44,6 +46,7 @@ export default function UnionSearchSelect({
   placeholder,
   labels,
   className,
+  displayName,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -52,10 +55,17 @@ export default function UnionSearchSelect({
   const groupLabel = (t: AreaType) =>
     t === "city_corporation" ? labels.tCity : t === "powrashava" ? labels.tPowrashava : labels.tUnion;
 
+  const nameFor = (n: string) => (displayName ? displayName(n) : n);
+
   const flat: FlatRow[] = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = q
-      ? options.filter((o) => o.name.toLowerCase().includes(q) || groupLabel(o.type).toLowerCase().includes(q))
+      ? options.filter(
+          (o) =>
+            o.name.toLowerCase().includes(q) ||
+            nameFor(o.name).toLowerCase().includes(q) ||
+            groupLabel(o.type).toLowerCase().includes(q),
+        )
       : options;
     const byGroup = new Map<AreaType, UnionOption[]>();
     for (const o of filtered) {
@@ -83,7 +93,7 @@ export default function UnionSearchSelect({
   });
 
   const display = value
-    ? `${value}${areaType ? ` · ${groupLabel(areaType)}` : ""}`
+    ? `${nameFor(value)}${areaType ? ` · ${groupLabel(areaType)}` : ""}`
     : placeholder;
 
   return (
@@ -167,7 +177,7 @@ export default function UnionSearchSelect({
                               : "opacity-0",
                           )}
                         />
-                        <span className="flex-1 text-left truncate">{item.option.name}</span>
+                        <span className="flex-1 text-left truncate">{nameFor(item.option.name)}</span>
                         <span className="text-[10px] opacity-60 ml-2">{groupLabel(item.option.type)}</span>
                       </button>
                     )}
