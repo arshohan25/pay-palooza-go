@@ -174,8 +174,13 @@ export function bnUpazila(name: string | null | undefined): string {
  *   2. "<Upazila> Sadar"           → "<bn upazila> সদর"
  *   3. Exact upazila-name match    → the mapped Bangla upazila spelling
  */
-export function bnUnion(name: string | null | undefined): string {
+export function bnUnion(
+  name: string | null | undefined,
+  nameBn?: string | null,
+): string {
   if (!name) return "";
+  // Prefer a Bangla name coming from the DB if the row has one seeded.
+  if (nameBn && nameBn.trim()) return nameBn.trim();
   // Direct hit if a union happens to share an upazila's name.
   if (UPAZILAS[name]) return UPAZILAS[name];
 
