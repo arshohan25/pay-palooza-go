@@ -124,6 +124,7 @@ export default function AdminVendorApplicationsQueue() {
                   <p className="text-[11px] text-muted-foreground/70 mt-0.5">
                     📍 {a.pickup_address} · Submitted {new Date(a.created_at).toLocaleString()}
                   </p>
+                  <ShopPhotoRow front={a.shop_front_photo_url} inside={a.shop_inside_photo_url} />
                   {a.admin_notes && (
                     <p className="text-[11px] mt-1 italic text-muted-foreground">Admin note: {a.admin_notes}</p>
                   )}
