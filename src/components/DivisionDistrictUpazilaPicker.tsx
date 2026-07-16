@@ -193,7 +193,15 @@ export default function DivisionDistrictUpazilaPicker({
         const filteredUnions = value.area_type
           ? unionsForUpazila.filter((u) => u.type === value.area_type)
           : unionsForUpazila;
-        const hasPreloaded = filteredUnions.length > 0;
+        // If the current union_parishad isn't in the loaded list, still surface a
+        // dropdown so the prefill isn't lost — inject a synthetic option.
+        const currentInList = value.union_parishad
+          ? filteredUnions.some((u) => u.name === value.union_parishad)
+          : true;
+        const optionUnions = !currentInList && value.union_parishad
+          ? [{ division: value.division!, district: value.district!, upazila: value.upazila!, name: value.union_parishad, type: (value.area_type ?? "union") as AreaType }, ...filteredUnions]
+          : filteredUnions;
+        const hasPreloaded = optionUnions.length > 0;
         return (
         <div>
           {showLabels && (
