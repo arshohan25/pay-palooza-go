@@ -247,13 +247,13 @@ export default function DivisionDistrictUpazilaPicker({
               disabled={baseDisabled || !value.upazila}
               value={value.area_type ?? ""}
               onChange={(e) => onChange({ ...value, area_type: (e.target.value || null) as AreaType | null, union_parishad: null })}
-              aria-label="Area type"
+              aria-label={l.type}
               aria-required={required}
             >
-              <option value="">Type</option>
-              <option value="union">Union</option>
-              <option value="powrashava">Powrashava</option>
-              <option value="city_corporation">City Corp.</option>
+              <option value="">{l.type}</option>
+              <option value="union">{l.tUnion}</option>
+              <option value="powrashava">{l.tPowrashava}</option>
+              <option value="city_corporation">{l.tCity}</option>
             </select>
             {hasPreloaded ? (
               <select
