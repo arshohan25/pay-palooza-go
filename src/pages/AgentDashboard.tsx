@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
+import AgentTxnDetailModal from "@/components/agent/AgentTxnDetailModal";
 
 import AgentMenuDrawer from "@/components/AgentMenuDrawer";
 import { useNavigate } from "react-router-dom";
