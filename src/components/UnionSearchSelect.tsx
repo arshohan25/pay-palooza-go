@@ -8,9 +8,11 @@ import { cn } from "@/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { AreaType } from "./DivisionDistrictUpazilaPicker";
 
-interface UnionOption {
+export interface UnionOption {
   name: string;
   type: AreaType;
+  /** Optional Bangla name coming from the DB (unions.name_bn). */
+  nameBn?: string | null;
 }
 
 interface Props {
@@ -29,8 +31,11 @@ interface Props {
     loading?: string;
   };
   className?: string;
-  /** Optional formatter for displaying option names (e.g. Bangla translation). */
-  displayName?: (name: string) => string;
+  /**
+   * Optional formatter for displaying option names. Receives the English name
+   * plus the full option so callers can prefer a DB-provided Bangla label.
+   */
+  displayName?: (name: string, option?: UnionOption) => string;
   /** True while parent is still fetching options. */
   loading?: boolean;
 }
