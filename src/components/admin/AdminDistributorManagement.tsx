@@ -713,20 +713,8 @@ export default function AdminDistributorManagement() {
               <LocationMismatchAlert mismatch={sdLocError} />
             </div>
             <div><Label>Operating Territories</Label><DistrictMultiSelect value={csvToArr(sdForm.territory)} onChange={(codes) => setSdForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
-            <div>
-              <Label>Link to Parent Super Distributor</Label>
-              <select
-                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={sdParentId}
-                onChange={(e) => setSdParentId(e.target.value)}
-              >
-                <option value="">— None (top-level) —</option>
-                {sdOptions.map((sd) => (
-                  <option key={sd.id} value={sd.id}>{sd.business_name}</option>
-                ))}
-              </select>
-              <p className="text-[10px] text-muted-foreground mt-1">Optional — nest this SD under another Super Distributor.</p>
-            </div>
+
+
             <div className="grid grid-cols-2 gap-2">
               <div><Label>Commission Rate (%)</Label><Input type="number" value={sdForm.commission_rate} onChange={e => setSdForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
               <div><Label>Max Float (৳)</Label><Input type="number" value={sdForm.max_float} onChange={e => setSdForm(f => ({ ...f, max_float: e.target.value }))} /></div>
