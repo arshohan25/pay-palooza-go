@@ -80,18 +80,62 @@ export default function MerchantApplyVendor() {
 
   const validateOnServer = async (applicationId: string, slot: "front" | "inside", path: string, captureDate: string | null, reason?: string) => {
     const { data: { session } } = await supabase.auth.getSession();
-    const res = await supabase.functions.invoke("validate-vendor-photo", {
-      body: { application_id: applicationId, slot, storage_path: path, capture_date: captureDate, reason },
-      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+    // Call the function directly with fetch so we can surface the JSON error body
+    // (supabase.functions.invoke swallows the response body on non-2xx status).
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-vendor-photo`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token ?? ""}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ application_id: applicationId, slot, storage_path: path, capture_date: captureDate, reason }),
     });
-    if ((res as any).error) throw new Error((res as any).error.message || "Validation failed");
-    return (res as any).data;
+    let json: any = {};
+    try { json = await resp.json(); } catch { /* noop */ }
+    if (!resp.ok) throw new Error(json?.error || `Validation failed (${resp.status})`);
+    return json;
   };
+
+  const categorizeError = (msg: string): "mime" | "size" | "resolution" | "other" => {
+    const m = msg.toLowerCase();
+    if (m.includes("file type") || m.includes("mime") || m.includes("jpg") || m.includes("png") || m.includes("webp")) return "mime";
+    if (m.includes("mb") || m.includes("exceeds") || m.includes("size")) return "size";
+    if (m.includes("resolution") || m.includes("×") || m.includes("dimensions")) return "resolution";
+    return "other";
+  };
+
+  const preflight = async (file: File): Promise<{ width: number; height: number } | null> => new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve({ width: img.naturalWidth, height: img.naturalHeight }); };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
 
   const pickPhoto = async (key: PhotoKey, slot: "front" | "inside", file: File) => {
     if (!user) return;
-    if (!ALLOWED.includes(file.type)) { toast.error("Only JPG, PNG or WEBP images allowed"); return; }
-    if (file.size > MAX_MB * 1024 * 1024) { toast.error(`Photo must be under ${MAX_MB}MB`); return; }
+    // ---- Pre-upload client-side checks with exact reasons ----
+    if (!ALLOWED.includes(file.type)) {
+      const msg = `Unsupported file type "${file.type || "unknown"}". Use JPG, PNG or WEBP.`;
+      toast.error(msg);
+      setPhotos(p => ({ ...p, [key]: { ...p[key], error: msg } }));
+      return;
+    }
+    if (file.size > MAX_MB * 1024 * 1024) {
+      const msg = `File is ${(file.size / 1048576).toFixed(2)} MB — exceeds the ${MAX_MB} MB limit.`;
+      toast.error(msg);
+      setPhotos(p => ({ ...p, [key]: { ...p[key], error: msg } }));
+      return;
+    }
+    const dims = await preflight(file);
+    if (dims && (dims.width < 640 || dims.height < 480)) {
+      const msg = `Photo resolution ${dims.width}×${dims.height} is below the required 640×480.`;
+      toast.error(msg);
+      setPhotos(p => ({ ...p, [key]: { ...p[key], error: msg } }));
+      return;
+    }
     setPhotos(p => ({ ...p, [key]: { ...p[key], file, uploading: true, error: null } }));
     const ext = file.name.split(".").pop() || "jpg";
     const path = `${user.id}/vendor-apply/${key}-${Date.now()}.${ext}`;
@@ -110,14 +154,14 @@ export default function MerchantApplyVendor() {
       try {
         const out = await validateOnServer(existing.id, slot, path, captureDate, form.resubmit_note || undefined);
         setPhotos(p => ({ ...p, [key]: { file, url: path, meta: out?.meta ?? null, uploading: false, validating: false, error: null } }));
-        toast.success(`${key === "shop_front" ? "Shop front" : "Shop inside"} photo validated`);
+        toast.success(`${key === "shop_front" ? "Shop front" : "Shop inside"} photo validated (${out?.meta?.width}×${out?.meta?.height})`);
       } catch (e: any) {
         setPhotos(p => ({ ...p, [key]: { ...p[key], uploading: false, validating: false, error: e.message } }));
-        toast.error(e.message);
+        toast.error(e.message, { duration: 6000 });
       }
     } else {
       // Draft — stash locally, edge function runs at submit-time (below).
-      setPhotos(p => ({ ...p, [key]: { file, url: path, meta: { uploaded_at: new Date().toISOString(), capture_date: captureDate, validated: false }, uploading: false, validating: false, error: null } }));
+      setPhotos(p => ({ ...p, [key]: { file, url: path, meta: { uploaded_at: new Date().toISOString(), capture_date: captureDate, validated: false, width: dims?.width, height: dims?.height }, uploading: false, validating: false, error: null } }));
     }
   };
 
