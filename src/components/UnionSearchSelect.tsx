@@ -104,7 +104,12 @@ export default function UnionSearchSelect({
           <ChevronsUpDown size={13} className="ml-2 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0"
+        align="start"
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center gap-2 border-b px-3 py-2">
           <Search size={14} className="opacity-60" />
           <Input
@@ -115,7 +120,11 @@ export default function UnionSearchSelect({
             className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
           />
         </div>
-        <div ref={setScrollEl} className="max-h-72 overflow-y-auto">
+        <div
+          ref={setScrollEl}
+          className="max-h-[min(60vh,384px)] overflow-y-auto overscroll-contain"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
           {flat.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
               {labels.empty ?? "No results"}
