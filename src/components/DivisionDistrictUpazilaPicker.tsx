@@ -230,7 +230,7 @@ export default function DivisionDistrictUpazilaPicker({
                 value={value.union_parishad ?? ""}
                 onChange={(e) => {
                   const name = e.target.value || null;
-                  const match = filteredUnions.find((u) => u.name === name);
+                  const match = optionUnions.find((u) => u.name === name);
                   onChange({
                     ...value,
                     union_parishad: name,
@@ -241,7 +241,7 @@ export default function DivisionDistrictUpazilaPicker({
                 aria-required={required}
               >
                 <option value="">Select union / powrashava</option>
-                {filteredUnions.map((u) => (
+                {optionUnions.map((u) => (
                   <option key={`${u.type}-${u.name}`} value={u.name}>
                     {u.name}
                     {!value.area_type && ` (${u.type === "powrashava" ? "Powrashava" : u.type === "city_corporation" ? "City Corp." : "Union"})`}
