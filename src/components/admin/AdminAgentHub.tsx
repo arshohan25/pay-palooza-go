@@ -607,8 +607,8 @@ function AgentListTab() {
             <div><Label>Business Name *</Label><Input placeholder="Shop / business name" value={form.business_name} onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))} /></div>
             <div className="grid grid-cols-1 gap-2">
               <DivisionDistrictUpazilaPicker
-                value={{ division: form.division || null, district: form.district || null, upazila: form.upazila || null }}
-                onChange={(v) => setForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "" }))}
+                value={{ division: form.division || null, district: form.district || null, upazila: form.upazila || null, union_parishad: form.union_parishad || null, area_type: (form.area_type || null) as any }}
+                onChange={(v) => setForm(f => ({ ...f, division: v.division || "", district: v.district || "", upazila: v.upazila || "", union_parishad: v.union_parishad || "", area_type: (v.area_type || "") as any }))}
                 required
               />
               <div><Label>Max Float *</Label><Input type="number" value={form.max_float} onChange={e => setForm(f => ({ ...f, max_float: e.target.value }))} /></div>
