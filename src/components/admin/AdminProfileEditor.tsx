@@ -14,6 +14,7 @@ import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from
 import LocationMismatchAlert from "@/components/LocationMismatchAlert";
 import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
 import { districtToRouteCode } from "@/lib/districtRouteCode";
+import LocationChangeConfirmDialog, { type LocationSnapshot, type LocationDiffRow } from "@/components/LocationChangeConfirmDialog";
 
 interface AdminProfileEditorProps {
   userId: string;
@@ -82,6 +83,14 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
 
   const [territoryInput, setTerritoryInput] = useState("");
   const [agentLocError, setAgentLocError] = useState<LocationMismatch | null>(null);
+
+  // Two-phase save: preview location/territory changes before committing.
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMode, setConfirmMode] = useState<"agent" | "distributor" | null>(null);
+  const [confirmBefore, setConfirmBefore] = useState<LocationSnapshot>({ division: null, district: null, upazila: null, union_parishad: null, area_type: null, territory_code: null });
+  const [confirmAfter, setConfirmAfter] = useState<LocationSnapshot>({ division: null, district: null, upazila: null, union_parishad: null, area_type: null, territory_code: null });
+  const [distributorRows, setDistributorRows] = useState<LocationDiffRow[] | undefined>(undefined);
+  const [pendingDerivedRoute, setPendingDerivedRoute] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -156,7 +165,71 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
     fetchData();
   }, [userId]);
 
-  const handleSave = async () => {
+  /**
+   * Preflight: validates the agent location hierarchy and, if either the
+   * agent location or the distributor territory changed, opens the
+   * before/after confirmation dialog. Otherwise commits immediately.
+   */
+  const requestSave = async () => {
+    setAgentLocError(null);
+    // Agent location preflight + preview
+    if (agent && originalAgent) {
+      const locChanged =
+        agent.division !== originalAgent.division ||
+        agent.district !== originalAgent.district ||
+        agent.upazila !== originalAgent.upazila ||
+        agent.union_parishad !== originalAgent.union_parishad ||
+        agent.area_type !== originalAgent.area_type;
+      if (locChanged) {
+        const mismatch = await detectLocationMismatch({
+          division: agent.division, district: agent.district, upazila: agent.upazila,
+          union_parishad: agent.union_parishad, area_type: agent.area_type,
+        });
+        if (mismatch) { setAgentLocError(mismatch); toast.error(mismatch.message); return; }
+        const derived = agent.district !== originalAgent.district && agent.district
+          ? ((await districtToRouteCode(agent.district)) ?? agent.territory_code)
+          : agent.territory_code;
+        setPendingDerivedRoute(derived);
+        setConfirmBefore({
+          division: originalAgent.division, district: originalAgent.district, upazila: originalAgent.upazila,
+          union_parishad: originalAgent.union_parishad, area_type: originalAgent.area_type,
+          territory_code: originalAgent.territory_code,
+        });
+        setConfirmAfter({
+          division: agent.division, district: agent.district, upazila: agent.upazila,
+          union_parishad: agent.union_parishad, area_type: agent.area_type,
+          territory_code: derived,
+        });
+        setDistributorRows(undefined);
+        setConfirmMode("agent");
+        setConfirmOpen(true);
+        return;
+      }
+    }
+    // Distributor territory preview
+    if (distributor && originalDistributor) {
+      const newTerritory = territoryInput.split(",").map(t => t.trim()).filter(Boolean);
+      if (JSON.stringify(newTerritory) !== JSON.stringify(originalDistributor.territory)) {
+        const beforeList = originalDistributor.territory.join(", ") || null;
+        const afterList = newTerritory.join(", ") || null;
+        const added = newTerritory.filter(t => !originalDistributor.territory.includes(t)).join(", ") || "—";
+        const removed = originalDistributor.territory.filter(t => !newTerritory.includes(t)).join(", ") || "—";
+        setDistributorRows([
+          { key: "territory", label: "Territory districts", before: beforeList, after: afterList },
+          { key: "added", label: "Added", before: "—", after: added },
+          { key: "removed", label: "Removed", before: removed, after: "—" },
+          { key: "count", label: "Total districts", before: String(originalDistributor.territory.length), after: String(newTerritory.length) },
+        ]);
+        setConfirmMode("distributor");
+        setConfirmOpen(true);
+        return;
+      }
+    }
+    // No location/territory changes — commit directly.
+    await commitSave(null);
+  };
+
+  const commitSave = async (derivedRouteOverride: string | null) => {
     setSaving(true);
     try {
       const changes: Record<string, { before: any; after: any }> = {};
@@ -174,20 +247,7 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
 
       // Update agent
       if (agent && originalAgent) {
-        // Pre-flight location validation for a clear inline error.
-        const locMismatch = await detectLocationMismatch({
-          division: agent.division, district: agent.district, upazila: agent.upazila,
-          union_parishad: agent.union_parishad, area_type: agent.area_type,
-        });
-        if (locMismatch) {
-          setAgentLocError(locMismatch);
-          throw new Error(locMismatch.message);
-        }
-        // Auto-derive route code when district changes.
-        let derivedRoute = agent.territory_code;
-        if (agent.district !== originalAgent.district && agent.district) {
-          derivedRoute = (await districtToRouteCode(agent.district)) ?? agent.territory_code;
-        }
+        const derivedRoute = derivedRouteOverride ?? agent.territory_code;
         const agentUpdate: Record<string, any> = {};
         if (agent.business_name !== originalAgent.business_name) { agentUpdate.business_name = agent.business_name; changes.agent_business_name = { before: originalAgent.business_name, after: agent.business_name }; }
         if (agent.nid_number !== originalAgent.nid_number) { agentUpdate.nid_number = agent.nid_number; changes.agent_nid_number = { before: originalAgent.nid_number, after: agent.nid_number }; }
@@ -463,12 +523,27 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
 
         <DialogFooter className="px-6 py-4 border-t border-border">
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={loading || saving}>
+          <Button onClick={requestSave} disabled={loading || saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
             Save Changes
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <LocationChangeConfirmDialog
+        open={confirmOpen}
+        before={confirmBefore}
+        after={confirmAfter}
+        overrideRows={confirmMode === "distributor" ? distributorRows : undefined}
+        title={confirmMode === "distributor" ? "Confirm distributor territory change" : undefined}
+        saving={saving}
+        onCancel={() => { if (!saving) { setConfirmOpen(false); setConfirmMode(null); } }}
+        onConfirm={async () => {
+          await commitSave(confirmMode === "agent" ? pendingDerivedRoute : null);
+          setConfirmOpen(false);
+          setConfirmMode(null);
+        }}
+      />
     </Dialog>
   );
 }
