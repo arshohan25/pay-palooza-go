@@ -9,6 +9,7 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Store, Clock, CheckCircle, XCircle, Loader2, ChevronsUpDown, Check } from "lucide-react";
 import DistrictRoutePicker from "@/components/DistrictRoutePicker";
+import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -45,6 +46,9 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     bank_account_holder: "",
     bank_routing: "",
     reason: "",
+  });
+  const [location, setLocation] = useState<DivisionDistrictUpazilaValue>({
+    division: null, district: null, upazila: null, union_parishad: null, area_type: null,
   });
 
   const applicationSchema = useMemo(() => z.object({
@@ -117,6 +121,13 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) { toast.error(t("mafToastSignIn")); setSubmitting(false); return; }
 
+    if (!location.division || !location.district || !location.upazila) {
+      toast.error("Select Division, District and Upazila / Thana"); setSubmitting(false); return;
+    }
+    if (!location.union_parishad || !location.area_type) {
+      toast.error("Select Union Parishad / Powrashava"); setSubmitting(false); return;
+    }
+
     const { error } = await (supabase as any).from("merchant_applications").insert({
       user_id: session.user.id,
       business_name: parsed.data.business_name,
@@ -127,6 +138,11 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       contact_email: parsed.data.contact_email || null,
       business_address: parsed.data.business_address || null,
       route_code: parsed.data.route_code || null,
+      division: location.division,
+      district_name: location.district,
+      upazila: location.upazila,
+      union_parishad: location.union_parishad,
+      area_type: location.area_type,
       bank_name: parsed.data.bank_name || null,
       bank_branch: parsed.data.bank_branch || null,
       bank_account_holder: parsed.data.bank_account_holder || null,
@@ -290,6 +306,18 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                       Used to build your merchant wallet ID: EZP-MRC{"{RR}"}-XXXX
                     </p>
                   </div>
+                  <div className="space-y-2">
+                    <Label>Location *</Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      Division › District › Upazila / Thana › Union Parishad / Powrashava
+                    </p>
+                    <DivisionDistrictUpazilaPicker
+                      value={location}
+                      onChange={setLocation}
+                      required
+                      showLabels
+                    />
+                  </div>
                 </div>
 
                 {/* Contact Information */}
@@ -345,7 +373,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                 <Button
                   className="w-full"
                   onClick={handleSubmit}
-                  disabled={submitting || !form.business_name.trim() || !form.owner_name.trim() || !form.contact_number.trim() || (form.category === "__other__" && !customCategory.trim())}
+                  disabled={submitting || !form.business_name.trim() || !form.owner_name.trim() || !form.contact_number.trim() || (form.category === "__other__" && !customCategory.trim()) || !location.division || !location.district || !location.upazila || !location.union_parishad || !location.area_type}
                 >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Store className="w-4 h-4 mr-2" />}
                   {t("mafSubmit")}
