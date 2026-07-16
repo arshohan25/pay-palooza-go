@@ -109,6 +109,11 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
           territory_code: agentRes.data.territory_code || "",
           trade_license: agentRes.data.trade_license || "",
           max_float: agentRes.data.max_float ?? 0,
+          division: (agentRes.data as any).division ?? null,
+          district: (agentRes.data as any).district ?? null,
+          upazila: (agentRes.data as any).upazila ?? null,
+          union_parishad: (agentRes.data as any).union_parishad ?? null,
+          area_type: (agentRes.data as any).area_type ?? null,
         };
         setAgent(a);
         setOriginalAgent({ ...a });
