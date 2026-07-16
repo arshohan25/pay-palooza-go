@@ -246,8 +246,12 @@ export default function DistrictMultiSelect({
               </div>
             )}
           </div>
-        </PopoverContent>
-      </Popover>
+          </PopoverContent>
+        </Popover>
+        </div>
+      </div>
+
+
 
       {selectedRows.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
