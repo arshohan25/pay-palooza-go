@@ -32,6 +32,25 @@ interface Props {
   /** When true, render the Division select + District multi-select as two
    * stacked fields (dynamic cascade) instead of a single combobox. */
   showDivisionField?: boolean;
+  /** When set, persist selected division + districts to sessionStorage under
+   * this key so navigation away and back restores the picker state. */
+  persistKey?: string;
+}
+
+const persistNs = "dms:v1:";
+
+function readPersisted(key: string): { division: string; value: string[] } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(persistNs + key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      division: typeof parsed.division === "string" ? parsed.division : "",
+      value: Array.isArray(parsed.value) ? parsed.value.filter((c: unknown) => typeof c === "string") : [],
+    };
+  } catch { return null; }
 }
 
 export default function DistrictMultiSelect({
@@ -41,13 +60,37 @@ export default function DistrictMultiSelect({
   disabled,
   className,
   showDivisionField = true,
+  persistKey,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [division, setDivision] = useState<string>("");
+  const [division, setDivision] = useState<string>(
+    () => (persistKey ? readPersisted(persistKey)?.division ?? "" : ""),
+  );
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+
+  // Restore persisted districts once on mount if the parent starts empty.
+  useEffect(() => {
+    if (!persistKey) return;
+    const restored = readPersisted(persistKey);
+    if (restored && restored.value.length > 0 && value.length === 0) {
+      onChange(restored.value);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persistKey]);
+
+  // Persist selections + division whenever they change.
+  useEffect(() => {
+    if (!persistKey || typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(
+        persistNs + persistKey,
+        JSON.stringify({ division, value }),
+      );
+    } catch { /* quota / disabled — ignore */ }
+  }, [persistKey, division, value]);
 
   useEffect(() => {
     let alive = true;
