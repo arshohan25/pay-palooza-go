@@ -758,6 +758,7 @@ export default function AdminMerchantManagement() {
                   <th className="text-left px-4 py-3 font-medium">Business Name</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Category</th>
                   <th className="text-left px-4 py-3 font-medium">Status</th>
+                  <th className="text-left px-4 py-3 font-medium">KYC</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">MDR</th>
                   <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Settlement</th>
                   <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Created</th>
