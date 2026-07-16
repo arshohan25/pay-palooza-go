@@ -89,8 +89,38 @@ test.describe("Mobile dropdown touch scrolling", () => {
     expect(info, "expected scrollable ancestor around options").not.toBeNull();
     if (!info) return;
 
+    // Snapshot which Bangla labels are visible in the viewport BEFORE dragging.
+    const visibleBn = async () =>
+      page.evaluate((bnSrc) => {
+        const re = new RegExp(bnSrc);
+        const opt = document.querySelector('[role="option"]') as HTMLElement | null;
+        if (!opt) return [] as string[];
+        let scroller: HTMLElement | null = opt;
+        while (scroller) {
+          const s = getComputedStyle(scroller);
+          if (
+            (s.overflowY === "auto" || s.overflowY === "scroll") &&
+            scroller.scrollHeight > scroller.clientHeight + 2
+          )
+            break;
+          scroller = scroller.parentElement;
+        }
+        if (!scroller) return [];
+        const box = scroller.getBoundingClientRect();
+        return Array.from(document.querySelectorAll<HTMLElement>('[role="option"]'))
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.top >= box.top - 1 && r.bottom <= box.bottom + 1;
+          })
+          .map((el) => (el.textContent || "").trim())
+          .filter((t) => re.test(t));
+      }, BN_RE.source);
+
+    const before = await visibleBn();
+    expect(before.length, "expected Bangla category labels before drag").toBeGreaterThan(0);
+
     await touchDrag(page, info.x, info.y + 60, -240);
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(250);
 
     // Sheet/popover still open → options still visible.
     await expect(options.first()).toBeVisible();
@@ -114,6 +144,15 @@ test.describe("Mobile dropdown touch scrolling", () => {
     expect(after, "touch drag should have scrolled the category list").toBeGreaterThan(
       info.scrollTop,
     );
+
+    // A previously-offscreen Bangla category must now be visible.
+    const afterVisible = await visibleBn();
+    expect(afterVisible.length, "expected Bangla labels after drag").toBeGreaterThan(0);
+    const revealed = afterVisible.filter((l) => !before.includes(l));
+    expect(
+      revealed.length,
+      `expected new Bangla category options after drag. before=${before.join("|")} after=${afterVisible.join("|")}`,
+    ).toBeGreaterThan(0);
   });
 
   test("union list scrolls on touch drag without popover closing", async ({ page }) => {
