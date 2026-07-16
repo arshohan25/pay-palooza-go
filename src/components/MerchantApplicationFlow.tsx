@@ -105,15 +105,16 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
   }, [open]);
 
   const handleSubmit = async () => {
-    let finalCategory = form.category === "__other__" ? customCategory.trim() : form.category;
-    if (form.category === "__other__") {
+    const isOther = form.category === "__other__" || form.category === "other";
+    let finalCategory = isOther ? customCategory.trim() : form.category;
+    if (isOther) {
       if (!finalCategory) { toast.error("Type a category name in the Other field"); return; }
       if (finalCategory.length < 2) { toast.error("Category must be at least 2 characters"); return; }
       if (!/^[\p{L}\p{N}][\p{L}\p{N} &/\-()]*$/u.test(finalCategory)) {
         toast.error("Category can only contain letters, numbers, spaces and & / - ( )"); return;
       }
       // Guard against picking Other but typing a name that matches a listed category
-      const dup = categories.find(c => c.label.trim().toLowerCase() === finalCategory.toLowerCase());
+      const dup = categories.find(c => c.name !== "other" && c.label.trim().toLowerCase() === finalCategory.toLowerCase());
       if (dup) { toast.error(`"${dup.label}" already exists — pick it from the list.`); return; }
       try {
         const created = await addCategory(finalCategory, finalCategory, { strict: true });
@@ -281,12 +282,12 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                         </Command>
                       </PopoverContent>
                     </Popover>
-                    {form.category === "__other__" && (() => {
+                    {(form.category === "__other__" || form.category === "other") && (() => {
                       const value = customCategory;
                       const trimmed = value.trim();
                       const tooShort = trimmed.length > 0 && trimmed.length < 2;
                       const invalidChar = trimmed.length > 0 && !/^[\p{L}\p{N}][\p{L}\p{N} &/\-()]*$/u.test(trimmed);
-                      const dup = trimmed && categories.find(c => c.label.trim().toLowerCase() === trimmed.toLowerCase());
+                      const dup = trimmed && categories.find(c => c.name !== "other" && c.label.trim().toLowerCase() === trimmed.toLowerCase());
                       const err = !trimmed ? "Category name is required"
                                 : tooShort ? "At least 2 characters"
                                 : invalidChar ? "Only letters, numbers, spaces and & / - ( )"
