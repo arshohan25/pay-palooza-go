@@ -248,13 +248,13 @@ export default function AdminDistributorManagement() {
         const { data: existingDist } = await supabase
           .from("distributors").select("id").eq("user_id", userId).maybeSingle();
         if (existingDist) { toast.error("This user is already a distributor"); setCreating(false); return; }
-        await supabase.from("profiles").update({ name: createForm.business_name }).eq("user_id", userId);
+        await supabase.from("profiles").update({ name: createForm.name.trim() || createForm.business_name }).eq("user_id", userId);
       } else {
         pin = String(Math.floor(1000 + Math.random() * 9000));
-        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: createForm.business_name });
+        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: createForm.name.trim() || createForm.business_name });
         if (!authData?.user) throw new Error("Account creation failed");
         userId = authData.user.id;
-        await supabase.from("profiles").update({ name: createForm.business_name, phone }).eq("user_id", userId);
+        await supabase.from("profiles").update({ name: createForm.name.trim() || createForm.business_name, phone }).eq("user_id", userId);
       }
 
       const { data: hasRole } = await supabase
@@ -262,21 +262,35 @@ export default function AdminDistributorManagement() {
       if (!hasRole) {
         await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
       }
-      await supabase.from("distributors").insert({
+      const { error: distErr } = await supabase.from("distributors").insert({
         user_id: userId,
         business_name: createForm.business_name.trim(),
         territory: createForm.territory ? createForm.territory.split(",").map(t => t.trim()).filter(Boolean) : null,
         commission_rate: parseFloat(createForm.commission_rate) || 2,
         max_float: parseInt(createForm.max_float) || 1000000,
         status: "active" as any,
-      });
+        division: createLoc.division,
+        district: createLoc.district,
+        upazila: createLoc.upazila,
+        union_parishad: createLoc.union_parishad ?? null,
+        area_type: createLoc.area_type ?? null,
+      } as any);
+      if (distErr) {
+        if (/Invalid location hierarchy/i.test(distErr.message)) {
+          const mismatch = await detectLocationMismatch(createLoc);
+          setCreateLocError(mismatch);
+        }
+        throw distErr;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `${role}_created`, entity_type: role, entity_id: userId, details: { business_name: createForm.business_name, promoted_existing: !pin } }).then();
       }
       toast.success(pin ? `${role === "super_distributor" ? "Super distributor" : "Distributor"} created! Temp PIN: ${pin}` : `Existing user promoted to ${role.replace("_", " ")}`, { duration: 10000 });
       setCreateOpen(false);
-      setCreateForm({ phone: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
+      setCreateForm({ phone: "", name: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
+      setCreateLoc(emptyLoc);
+      setCreateLocError(null);
       load();
     } catch (err: any) {
       toast.error(err.message || "Failed to create distributor");
