@@ -68,30 +68,76 @@ export function useAuth() {
     let mounted = true;
 
     // Safety valve: never leave the app stuck in "auth loading" forever.
+    // If auth can't resolve in 4s, treat as signed-out and purge any bad token
+    // so the app shell renders instead of hanging on the splash/skeleton.
     const failsafe = setTimeout(() => {
       if (!mounted) return;
+      if (_sessionResolved) return;
+      void purgeInvalidSession();
+      _cachedSession = null;
       _sessionResolved = true;
+      setSession(null);
       setLoading(false);
     }, 4000);
 
-    supabase.auth
-      .getSession()
-      .then(async ({ data: { session: restoredSession } }) => {
+    const validateAndSet = async (candidate: Session | null) => {
+      if (!mounted) return;
+      if (!candidate) {
+        _cachedSession = null;
+        _sessionResolved = true;
+        setSession(null);
+        setLoading(false);
+        return;
+      }
+      if (isSessionInvalid(candidate)) {
+        await purgeInvalidSession();
+        _cachedSession = null;
+        _sessionResolved = true;
         if (!mounted) return;
-        if (isSessionInvalid(restoredSession)) {
+        setSession(null);
+        setLoading(false);
+        return;
+      }
+
+      // Local JWT looked fine — verify the token is still accepted by the
+      // auth server. After a signing-key rotation the stored token has a
+      // valid `sub` locally but /user returns 403 bad_jwt, which otherwise
+      // leaves the client in a half-authenticated state.
+      try {
+        const result = await Promise.race([
+          supabase.auth.getUser(candidate.access_token),
+          new Promise<{ data: { user: null }; error: { status?: number; message: string } }>((resolve) =>
+            setTimeout(() => resolve({ data: { user: null }, error: { message: "getUser timeout" } }), 2500),
+          ),
+        ]);
+        const err = (result as any)?.error;
+        const rejected =
+          !!err && (err.status === 401 || err.status === 403 || /jwt|sub claim|invalid/i.test(err.message || ""));
+        if (rejected) {
           await purgeInvalidSession();
           _cachedSession = null;
           _sessionResolved = true;
+          if (!mounted) return;
           setSession(null);
           setLoading(false);
           return;
         }
-        _cachedSession = restoredSession;
-        _sessionResolved = true;
-        setSession(restoredSession);
-        setLoading(false);
-      })
-      .catch(() => {
+      } catch {
+        // Network hiccup — keep the session; realtime queries will re-auth.
+      }
+
+      _cachedSession = candidate;
+      _sessionResolved = true;
+      if (!mounted) return;
+      setSession(candidate);
+      setLoading(false);
+    };
+
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: restoredSession } }) => validateAndSet(restoredSession))
+      .catch(async () => {
+        await purgeInvalidSession();
         if (!mounted) return;
         _cachedSession = null;
         _sessionResolved = true;
