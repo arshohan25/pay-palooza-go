@@ -238,7 +238,7 @@ export default function DivisionDistrictUpazilaPicker({
         <div>
           {showLabels && (
             <Label className="text-xs mb-1 block">
-              Union Parishad / Powrashava / City Corp.{required && " *"}
+              {l.union}{required && " *"}
             </Label>
           )}
           <div className="grid grid-cols-3 gap-2">
