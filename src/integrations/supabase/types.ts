@@ -14,27 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _union_bn_staging: {
-        Row: {
-          district: string
-          name: string
-          name_bn: string
-          upazila: string
-        }
-        Insert: {
-          district: string
-          name: string
-          name_bn: string
-          upazila: string
-        }
-        Update: {
-          district?: string
-          name?: string
-          name_bn?: string
-          upazila?: string
-        }
-        Relationships: []
-      }
       addmoney_reconciliation_log: {
         Row: {
           created_at: string
