@@ -119,9 +119,17 @@ export default function UnionSearchSelect({
         align="start"
         side="bottom"
         sideOffset={4}
-        avoidCollisions={false}
+        collisionPadding={8}
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
+        style={{
+          // Ensure the popover has enough room to actually scroll a long list
+          // even when Radix's collision detection would otherwise shrink it
+          // to just a handful of visible rows inside a Sheet.
+          maxHeight:
+            "var(--radix-popover-content-available-height, min(70vh, 420px))",
+          minHeight: "260px",
+        }}
       >
         <div className="flex items-center gap-2 border-b px-3 py-2">
           <Search size={14} className="opacity-60" />
@@ -135,12 +143,15 @@ export default function UnionSearchSelect({
         </div>
         <div
           ref={setScrollEl}
-          className="overflow-y-auto overscroll-contain"
+          className="flex-1 overflow-y-auto overscroll-contain"
           style={{
             WebkitOverflowScrolling: "touch",
-            height: "min(60vh, 384px)",
+            maxHeight:
+              "calc(var(--radix-popover-content-available-height, min(70vh, 420px)) - 44px)",
+            minHeight: "216px",
           }}
         >
+
 
           {flat.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
