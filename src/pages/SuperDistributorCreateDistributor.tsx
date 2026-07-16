@@ -136,6 +136,7 @@ const SuperDistributorCreateDistributor = () => {
         throw new Error(result.error || "Failed to create distributor");
       }
 
+      clearPersisted();
       setSuccess(true);
       toast({ title: "Distributor Created", description: `${businessName} account created successfully` });
     } catch (err: any) {
