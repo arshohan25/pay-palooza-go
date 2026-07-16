@@ -546,7 +546,7 @@ const AgentDashboard = () => {
 
       {/* ── Transaction Detail Modal ── */}
       <AnimatePresence>
-        {selectedTxn && <TxnDetailModal tx={selectedTxn} onClose={() => setSelectedTxn(null)} onShare={shareTxnReceipt} />}
+        {selectedTxn && <AgentTxnDetailModal tx={selectedTxn} onClose={() => setSelectedTxn(null)} onShare={shareTxnReceipt} />}
       </AnimatePresence>
 
       {/* ── Notification Panel ── */}
