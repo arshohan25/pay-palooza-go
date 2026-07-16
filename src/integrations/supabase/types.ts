@@ -7791,6 +7791,17 @@ export type Database = {
         Returns: Json
       }
       admin_user_metrics: { Args: never; Returns: Json }
+      agent_b2b_transfer: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_fee?: number
+          p_recipient_kind?: string
+          p_recipient_phone: string
+          p_reference?: string
+        }
+        Returns: Json
+      }
       agent_cashin: {
         Args: {
           p_amount: number
