@@ -311,7 +311,7 @@ export default function DivisionDistrictUpazilaPicker({
 
       {loading && (
         <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <Loader2 className="h-3 w-3 animate-spin" /> Loading areas…
+          <Loader2 className="h-3 w-3 animate-spin" /> {l.loadingAreas}
         </div>
       )}
       {error && <div className="text-xs text-destructive" role="alert">{error}</div>}
