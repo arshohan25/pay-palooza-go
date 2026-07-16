@@ -251,7 +251,7 @@ export default function DivisionDistrictUpazilaPicker({
           ? filteredUnions.some((u) => u.name === value.union_parishad)
           : true;
         const optionUnions = !currentInList && value.union_parishad
-          ? [{ division: value.division!, district: value.district!, upazila: value.upazila!, name: value.union_parishad, type: (value.area_type ?? "union") as AreaType }, ...filteredUnions]
+          ? [{ division: value.division!, district: value.district!, upazila: value.upazila!, name: value.union_parishad, name_bn: null, type: (value.area_type ?? "union") as AreaType }, ...filteredUnions]
           : filteredUnions;
         const hasPreloaded = optionUnions.length > 0;
         return (
