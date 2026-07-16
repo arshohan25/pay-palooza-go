@@ -373,7 +373,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                 <Button
                   className="w-full"
                   onClick={handleSubmit}
-                  disabled={submitting || !form.business_name.trim() || !form.owner_name.trim() || !form.contact_number.trim() || (form.category === "__other__" && !customCategory.trim())}
+                  disabled={submitting || !form.business_name.trim() || !form.owner_name.trim() || !form.contact_number.trim() || (form.category === "__other__" && !customCategory.trim()) || !location.division || !location.district || !location.upazila || !location.union_parishad || !location.area_type}
                 >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Store className="w-4 h-4 mr-2" />}
                   {t("mafSubmit")}
