@@ -640,6 +640,22 @@ export default function AdminDistributorManagement() {
               <LocationMismatchAlert mismatch={createLocError} />
             </div>
             <div><Label>Operating Territories</Label><DistrictMultiSelect value={csvToArr(createForm.territory)} onChange={(codes) => setCreateForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
+            {createForm.role === "distributor" && (
+              <div>
+                <Label>Link to Super Distributor</Label>
+                <select
+                  className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  value={createParentId}
+                  onChange={(e) => setCreateParentId(e.target.value)}
+                >
+                  <option value="">— None (unlinked) —</option>
+                  {sdOptions.map((sd) => (
+                    <option key={sd.id} value={sd.id}>{sd.business_name}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-muted-foreground mt-1">Optional — attach this distributor under a Super Distributor.</p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <div><Label>Commission Rate (%)</Label><Input type="number" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
               <div><Label>Max Float (৳)</Label><Input type="number" value={createForm.max_float} onChange={e => setCreateForm(f => ({ ...f, max_float: e.target.value }))} /></div>
