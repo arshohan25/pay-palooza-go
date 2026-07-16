@@ -124,6 +124,48 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
               <p className="text-[10px] font-mono font-bold text-primary break-all mt-0.5">{tx.short_id || tx.id}</p>
             </div>
           </Card>
+
+          <div className="rounded-2xl border border-border/60 bg-muted/20 overflow-hidden">
+            <button
+              onClick={() => setShowDebug(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-bold text-muted-foreground hover:bg-muted/40"
+            >
+              <span className="flex items-center gap-1.5"><Bug size={12} /> Advanced Debug</span>
+              <span>{showDebug ? "Hide" : "Show"}</span>
+            </button>
+            {showDebug && (
+              <div className="px-4 py-3 border-t border-border/50 space-y-2 text-[11px]">
+                <div className="grid grid-cols-2 gap-2">
+                  <div><p className="text-[9px] uppercase text-muted-foreground">RPC</p><p className="font-mono font-semibold">{rpcName}</p></div>
+                  <div><p className="text-[9px] uppercase text-muted-foreground">Txn Type</p><p className="font-mono font-semibold">{tx.type}</p></div>
+                  <div><p className="text-[9px] uppercase text-muted-foreground">commission (raw)</p><p className="font-mono font-semibold">{tx.commission ?? "null"}</p></div>
+                  <div><p className="text-[9px] uppercase text-muted-foreground">fee (raw)</p><p className="font-mono font-semibold">{tx.fee ?? "null"}</p></div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Commission source: <span className="font-mono">transactions.commission</span>
+                  {" · "}displayed when <span className="font-mono">cashin/cashout</span> or <span className="font-mono">commission &gt; 0</span>.
+                </p>
+                <div className="pt-1">
+                  <Button size="sm" variant="outline" onClick={runRecon} disabled={reconLoading} className="h-8 text-[11px] gap-1.5">
+                    {reconLoading ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                    Reconcile treasury
+                  </Button>
+                </div>
+                {reconErr && (
+                  <p className="text-destructive flex items-center gap-1"><AlertCircle size={11} /> {reconErr}</p>
+                )}
+                {recon && (
+                  <div className={`rounded-lg p-2 border ${recon.matches ? "border-emerald-400/40 bg-emerald-500/5" : "border-amber-400/40 bg-amber-500/5"}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">{recon.matches ? "✓ Matches" : "✗ Mismatch"}</span>
+                      <span className="font-mono">expected ৳{fmt(Number(recon.expected_amount))} · ledger ৳{fmt(Number(recon.ledger_amount))}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1 break-all">ref: {recon.txn_reference || "—"} · entries: {Array.isArray(recon.entries) ? recon.entries.length : 0}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => onShare(tx)} className="rounded-xl h-11 text-xs font-bold gap-2">
               <Share2 size={14} /> Share Receipt
