@@ -58,6 +58,17 @@ const AgentCashIn = () => {
         setProcessing(false);
         return;
       }
+      const amtVal = Number(amount);
+      const limitCheck = await checkDailyLimit("cashin", amtVal);
+      if (!limitCheck.allowed) {
+        toast({
+          title: "Daily Cash In limit exceeded",
+          description: `Used ৳${limitCheck.used.toLocaleString("en-BD")} of ৳${limitCheck.limit.toLocaleString("en-BD")} today. Remaining: ৳${Math.max(0, limitCheck.remaining).toLocaleString("en-BD")}.`,
+          variant: "destructive",
+        });
+        setProcessing(false);
+        return;
+      }
       const { error } = await supabase.rpc("transfer_money", {
         p_recipient_phone: phone,
         p_amount: Number(amount),
