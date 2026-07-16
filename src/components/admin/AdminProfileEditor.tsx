@@ -84,6 +84,14 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
   const [territoryInput, setTerritoryInput] = useState("");
   const [agentLocError, setAgentLocError] = useState<LocationMismatch | null>(null);
 
+  // Two-phase save: preview location/territory changes before committing.
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMode, setConfirmMode] = useState<"agent" | "distributor" | null>(null);
+  const [confirmBefore, setConfirmBefore] = useState<LocationSnapshot>({ division: null, district: null, upazila: null, union_parishad: null, area_type: null, territory_code: null });
+  const [confirmAfter, setConfirmAfter] = useState<LocationSnapshot>({ division: null, district: null, upazila: null, union_parishad: null, area_type: null, territory_code: null });
+  const [distributorRows, setDistributorRows] = useState<LocationDiffRow[] | undefined>(undefined);
+  const [pendingDerivedRoute, setPendingDerivedRoute] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
