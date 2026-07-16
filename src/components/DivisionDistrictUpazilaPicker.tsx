@@ -108,6 +108,8 @@ export default function DivisionDistrictUpazilaPicker({
   className,
   includeUnion = true,
 }: Props) {
+  const { lang } = useI18n();
+  const l = L[lang === "bn" ? "bn" : "en"];
   const [rows, setRows] = useState<UpazilaRow[]>([]);
   const [unions, setUnions] = useState<UnionRow[]>([]);
   const [loading, setLoading] = useState(true);
