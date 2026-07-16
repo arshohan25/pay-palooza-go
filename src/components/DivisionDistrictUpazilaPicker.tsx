@@ -96,18 +96,19 @@ export default function DivisionDistrictUpazilaPicker({
     return () => { alive = false; };
   }, [includeUnion]);
 
-  const divisions = useMemo(
+  // Base lists from dataset
+  const baseDivisions = useMemo(
     () => Array.from(new Set(rows.map((r) => r.division))).sort(),
     [rows],
   );
-  const districts = useMemo(
+  const baseDistricts = useMemo(
     () =>
       value.division
         ? Array.from(new Set(rows.filter((r) => r.division === value.division).map((r) => r.district))).sort()
         : [],
     [rows, value.division],
   );
-  const upazilas = useMemo(
+  const baseUpazilas = useMemo(
     () =>
       value.division && value.district
         ? Array.from(new Set(
@@ -116,6 +117,16 @@ export default function DivisionDistrictUpazilaPicker({
         : [],
     [rows, value.division, value.district],
   );
+
+  // Merge in prefilled values that aren't in the loaded dataset so the
+  // dropdown never silently drops an existing selection (legacy data, seed gap,
+  // or dataset still loading).
+  const withFallback = (list: string[], current: string | null) =>
+    current && !list.includes(current) ? [current, ...list] : list;
+  const divisions = useMemo(() => withFallback(baseDivisions, value.division), [baseDivisions, value.division]);
+  const districts = useMemo(() => withFallback(baseDistricts, value.district), [baseDistricts, value.district]);
+  const upazilas = useMemo(() => withFallback(baseUpazilas, value.upazila), [baseUpazilas, value.upazila]);
+
   const unionsForUpazila = useMemo(
     () =>
       value.division && value.district && value.upazila
