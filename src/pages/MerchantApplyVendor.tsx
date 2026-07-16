@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,13 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Store, CheckCircle2, Clock, XCircle, Camera, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Store, CheckCircle2, Clock, XCircle, Camera, Upload, Loader2, RefreshCw, Info } from "lucide-react";
 import { toast } from "sonner";
 
 type PhotoKey = "shop_front" | "shop_inside";
-const PHOTOS: { key: PhotoKey; urlField: "shop_front_photo_url" | "shop_inside_photo_url"; label: string; hint: string }[] = [
-  { key: "shop_front",  urlField: "shop_front_photo_url",  label: "Shop front photo",  hint: "Exterior with signboard clearly visible" },
-  { key: "shop_inside", urlField: "shop_inside_photo_url", label: "Shop inside photo", hint: "Interior showing products / counter" },
+const PHOTOS: { key: PhotoKey; slot: "front" | "inside"; urlField: "shop_front_photo_url" | "shop_inside_photo_url"; metaField: "shop_front_photo_meta" | "shop_inside_photo_meta"; label: string; hint: string }[] = [
+  { key: "shop_front",  slot: "front",  urlField: "shop_front_photo_url",  metaField: "shop_front_photo_meta",  label: "Shop front photo",  hint: "Exterior with signboard. Min 640×480, JPG/PNG/WEBP, ≤8MB." },
+  { key: "shop_inside", slot: "inside", urlField: "shop_inside_photo_url", metaField: "shop_inside_photo_meta", label: "Shop inside photo", hint: "Interior showing products / counter." },
 ];
 
 const MAX_MB = 8;
@@ -22,11 +22,13 @@ const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 
 export default function MerchantApplyVendor() {
   const nav = useNavigate();
+  const [sp] = useSearchParams();
   const { user } = useAuth();
   const [merchant, setMerchant] = useState<any>(null);
   const [existing, setExisting] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [resubmitMode, setResubmitMode] = useState(false);
   const [form, setForm] = useState({
     store_name: "",
     store_description: "",
@@ -34,10 +36,11 @@ export default function MerchantApplyVendor() {
     expected_monthly_orders: "",
     pickup_address: "",
     contact_number: "",
+    resubmit_note: "",
   });
-  const [photos, setPhotos] = useState<Record<PhotoKey, { file: File | null; url: string | null; uploading: boolean }>>({
-    shop_front:  { file: null, url: null, uploading: false },
-    shop_inside: { file: null, url: null, uploading: false },
+  const [photos, setPhotos] = useState<Record<PhotoKey, { file: File | null; url: string | null; meta: any; uploading: boolean; validating: boolean; error: string | null }>>({
+    shop_front:  { file: null, url: null, meta: null, uploading: false, validating: false, error: null },
+    shop_inside: { file: null, url: null, meta: null, uploading: false, validating: false, error: null },
   });
 
   useEffect(() => {
@@ -59,33 +62,63 @@ export default function MerchantApplyVendor() {
           expected_monthly_orders: app?.expected_monthly_orders?.toString() ?? "",
           pickup_address: app?.pickup_address ?? m.business_address ?? "",
           contact_number: app?.contact_number ?? m.contact_number ?? "",
+          resubmit_note: app?.status === "rejected" ? `Resubmitting after: ${app?.admin_notes ?? ""}`.slice(0, 500) : "",
         }));
       }
       if (app) {
         setPhotos({
-          shop_front:  { file: null, url: app.shop_front_photo_url  ?? null, uploading: false },
-          shop_inside: { file: null, url: app.shop_inside_photo_url ?? null, uploading: false },
+          shop_front:  { file: null, url: app.shop_front_photo_url  ?? null, meta: app.shop_front_photo_meta,  uploading: false, validating: false, error: null },
+          shop_inside: { file: null, url: app.shop_inside_photo_url ?? null, meta: app.shop_inside_photo_meta, uploading: false, validating: false, error: null },
         });
       }
+      // Deep-link into resubmit mode
+      if (sp.get("resubmit") === "1" && app?.status === "rejected") setResubmitMode(true);
       setLoading(false);
     })();
      
   }, [user]);
 
-  const pickPhoto = async (key: PhotoKey, file: File) => {
+  const validateOnServer = async (applicationId: string, slot: "front" | "inside", path: string, captureDate: string | null, reason?: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await supabase.functions.invoke("validate-vendor-photo", {
+      body: { application_id: applicationId, slot, storage_path: path, capture_date: captureDate, reason },
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+    });
+    if ((res as any).error) throw new Error((res as any).error.message || "Validation failed");
+    return (res as any).data;
+  };
+
+  const pickPhoto = async (key: PhotoKey, slot: "front" | "inside", file: File) => {
     if (!user) return;
     if (!ALLOWED.includes(file.type)) { toast.error("Only JPG, PNG or WEBP images allowed"); return; }
     if (file.size > MAX_MB * 1024 * 1024) { toast.error(`Photo must be under ${MAX_MB}MB`); return; }
-    setPhotos(p => ({ ...p, [key]: { ...p[key], file, uploading: true } }));
+    setPhotos(p => ({ ...p, [key]: { ...p[key], file, uploading: true, error: null } }));
     const ext = file.name.split(".").pop() || "jpg";
     const path = `${user.id}/vendor-apply/${key}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("vendor-kyc").upload(path, file, { upsert: true, contentType: file.type });
-    if (error) {
-      toast.error("Upload failed: " + error.message);
-      setPhotos(p => ({ ...p, [key]: { ...p[key], uploading: false } }));
+    const captureDate = file.lastModified ? new Date(file.lastModified).toISOString() : null;
+
+    const { error: upErr } = await supabase.storage.from("vendor-kyc").upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) {
+      toast.error("Upload failed: " + upErr.message);
+      setPhotos(p => ({ ...p, [key]: { ...p[key], uploading: false, error: upErr.message } }));
       return;
     }
-    setPhotos(p => ({ ...p, [key]: { file, url: path, uploading: false } }));
+
+    // If we already have an application row, validate immediately server-side.
+    if (existing?.id) {
+      setPhotos(p => ({ ...p, [key]: { ...p[key], uploading: false, validating: true } }));
+      try {
+        const out = await validateOnServer(existing.id, slot, path, captureDate, form.resubmit_note || undefined);
+        setPhotos(p => ({ ...p, [key]: { file, url: path, meta: out?.meta ?? null, uploading: false, validating: false, error: null } }));
+        toast.success(`${key === "shop_front" ? "Shop front" : "Shop inside"} photo validated`);
+      } catch (e: any) {
+        setPhotos(p => ({ ...p, [key]: { ...p[key], uploading: false, validating: false, error: e.message } }));
+        toast.error(e.message);
+      }
+    } else {
+      // Draft — stash locally, edge function runs at submit-time (below).
+      setPhotos(p => ({ ...p, [key]: { file, url: path, meta: { uploaded_at: new Date().toISOString(), capture_date: captureDate, validated: false }, uploading: false, validating: false, error: null } }));
+    }
   };
 
   const submit = async () => {
@@ -94,6 +127,7 @@ export default function MerchantApplyVendor() {
     if (!form.pickup_address.trim()) { toast.error("Pickup address is required"); return; }
     if (!photos.shop_front.url)  { toast.error("Shop front photo is required"); return; }
     if (!photos.shop_inside.url) { toast.error("Shop inside photo is required"); return; }
+    if (photos.shop_front.error || photos.shop_inside.error) { toast.error("Fix photo validation errors first"); return; }
     setSubmitting(true);
     const payload: any = {
       merchant_id: merchant.id,
@@ -106,25 +140,50 @@ export default function MerchantApplyVendor() {
       contact_number: form.contact_number.trim() || null,
       shop_front_photo_url: photos.shop_front.url,
       shop_inside_photo_url: photos.shop_inside.url,
+      shop_front_photo_meta: photos.shop_front.meta,
+      shop_inside_photo_meta: photos.shop_inside.meta,
       status: "pending",
-      admin_notes: null,
-      reviewed_by: null,
-      reviewed_at: null,
+      admin_notes: null, reviewed_by: null, reviewed_at: null,
     };
-    const op = existing && existing.status !== "approved"
-      ? (supabase as any).from("merchant_vendor_applications").update(payload).eq("id", existing.id)
-      : (supabase as any).from("merchant_vendor_applications").insert(payload);
-    const { error } = await op;
-    setSubmitting(false);
-    if (error) { toast.error("Failed to submit: " + error.message); return; }
+
+    let appId = existing?.id as string | undefined;
+    if (existing && existing.status !== "approved") {
+      const { error } = await (supabase as any).from("merchant_vendor_applications").update(payload).eq("id", existing.id);
+      if (error) { setSubmitting(false); toast.error("Failed to submit: " + error.message); return; }
+    } else {
+      const { data, error } = await (supabase as any).from("merchant_vendor_applications").insert(payload).select("id").single();
+      if (error) { setSubmitting(false); toast.error("Failed to submit: " + error.message); return; }
+      appId = data?.id;
+    }
+
+    // Server-side validate any photos not yet validated (draft path or resubmit).
+    try {
+      if (appId) {
+        for (const p of PHOTOS) {
+          const st = photos[p.key];
+          if (st.url && !st.meta?.validated) {
+            await validateOnServer(appId, p.slot, st.url, st.meta?.capture_date ?? null, form.resubmit_note || undefined);
+          }
+        }
+      }
+    } catch (e: any) {
+      setSubmitting(false);
+      toast.error("Server photo validation failed: " + e.message + " — application NOT queued.");
+      // Force back to draft
+      if (appId) await (supabase as any).from("merchant_vendor_applications").update({ status: "draft" }).eq("id", appId);
+      return;
+    }
+
     await supabase.from("merchant_audit_events").insert({
       merchant_id: merchant.id,
       merchant_user_id: user.id,
       actor_id: user.id,
-      event_type: "vendor_apply",
+      event_type: resubmitMode ? "vendor_resubmit" : "vendor_apply",
+      reason: form.resubmit_note || null,
       to_value: { store_name: form.store_name, shop_front_photo_url: photos.shop_front.url, shop_inside_photo_url: photos.shop_inside.url },
     });
-    toast.success("Vendor application submitted");
+    setSubmitting(false);
+    toast.success(resubmitMode ? "Resubmitted for admin review" : "Vendor application submitted");
     nav("/merchant");
   };
 
@@ -149,6 +208,7 @@ export default function MerchantApplyVendor() {
   );
 
   const readOnly = existing?.status === "approved";
+  const isRejected = existing?.status === "rejected";
 
   return (
     <div className="min-h-screen bg-background">
@@ -169,10 +229,23 @@ export default function MerchantApplyVendor() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            {existing?.status === "rejected" && existing.admin_notes && (
-              <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/30 text-sm">
-                <p className="font-semibold text-red-700 dark:text-red-300 mb-1">Admin feedback</p>
+            {isRejected && existing.admin_notes && (
+              <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/30 text-sm space-y-2">
+                <p className="font-semibold text-red-700 dark:text-red-300">Admin feedback</p>
                 <p className="text-muted-foreground">{existing.admin_notes}</p>
+                {!resubmitMode && (
+                  <Button size="sm" onClick={() => setResubmitMode(true)}>
+                    <RefreshCw className="w-3.5 h-3.5 mr-1" /> One-click resubmit
+                  </Button>
+                )}
+              </div>
+            )}
+            {resubmitMode && (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/30 text-xs space-y-2">
+                <Label className="text-xs">Optional note back to the admin</Label>
+                <Textarea rows={2} maxLength={500} value={form.resubmit_note} onChange={e => setForm({ ...form, resubmit_note: e.target.value })}
+                  placeholder="e.g. Uploaded higher-quality photos of the shopfront." />
+                <p className="text-[10px] text-muted-foreground">Just re-upload the corrected shop front and inside photos below and press Resubmit.</p>
               </div>
             )}
             <div className="grid gap-3">
@@ -203,10 +276,11 @@ export default function MerchantApplyVendor() {
                 <Textarea value={form.pickup_address} onChange={e => setForm({ ...form, pickup_address: e.target.value })} rows={2} disabled={readOnly} />
               </div>
 
-              {/* Shop photos */}
               <div className="pt-2">
                 <Label className="flex items-center gap-1"><Camera className="w-3.5 h-3.5" /> Shop photos <span className="text-red-500">*</span></Label>
-                <p className="text-[11px] text-muted-foreground mb-2">Both photos are required so admins can verify your physical shop.</p>
+                <p className="text-[11px] text-muted-foreground mb-2 flex items-center gap-1">
+                  <Info className="w-3 h-3" /> Server checks type, size (≤{MAX_MB}MB) and minimum 640×480 resolution before your application enters the queue.
+                </p>
                 <div className="grid grid-cols-2 gap-3">
                   {PHOTOS.map(p => {
                     const st = photos[p.key];
@@ -217,7 +291,7 @@ export default function MerchantApplyVendor() {
                         hint={p.hint}
                         state={st}
                         readOnly={readOnly}
-                        onPick={file => pickPhoto(p.key, file)}
+                        onPick={file => pickPhoto(p.key, p.slot, file)}
                       />
                     );
                   })}
@@ -225,8 +299,9 @@ export default function MerchantApplyVendor() {
               </div>
             </div>
             {!readOnly && (
-              <Button className="w-full" onClick={submit} disabled={submitting || photos.shop_front.uploading || photos.shop_inside.uploading}>
-                {submitting ? "Submitting…" : existing ? "Resubmit application" : "Submit application"}
+              <Button className="w-full" onClick={submit}
+                disabled={submitting || photos.shop_front.uploading || photos.shop_inside.uploading || photos.shop_front.validating || photos.shop_inside.validating}>
+                {submitting ? "Submitting…" : existing ? (isRejected ? "Resubmit application" : "Update application") : "Submit application"}
               </Button>
             )}
           </CardContent>
@@ -240,7 +315,7 @@ function PhotoTile({
   label, hint, state, readOnly, onPick,
 }: {
   label: string; hint: string;
-  state: { file: File | null; url: string | null; uploading: boolean };
+  state: { file: File | null; url: string | null; meta: any; uploading: boolean; validating: boolean; error: string | null };
   readOnly: boolean;
   onPick: (file: File) => void;
 }) {
@@ -260,24 +335,31 @@ function PhotoTile({
     return () => { cancelled = true; };
   }, [state.file, state.url]);
 
+  const ok = !!state.url && !state.error && state.meta?.validated;
+  const borderClass = state.error ? "border-red-500/50" : ok ? "border-emerald-500/40" : "border-dashed";
+
   return (
-    <div className={`rounded-lg border ${state.url ? "border-emerald-500/40" : "border-dashed"} overflow-hidden`}>
+    <div className={`rounded-lg border ${borderClass} overflow-hidden`}>
       <div className="aspect-[4/3] bg-muted/40 flex items-center justify-center relative">
         {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={preview} alt={label} className="w-full h-full object-cover" />
         ) : (
           <Camera className="w-8 h-8 text-muted-foreground/40" />
         )}
-        {state.uploading && (
-          <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+        {(state.uploading || state.validating) && (
+          <div className="absolute inset-0 bg-background/70 flex flex-col items-center justify-center gap-1">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            <p className="text-[10px] text-muted-foreground">{state.uploading ? "Uploading…" : "Validating…"}</p>
           </div>
         )}
       </div>
       <div className="p-2">
         <p className="text-xs font-medium text-foreground">{label}</p>
         <p className="text-[10px] text-muted-foreground mb-1.5">{hint}</p>
+        {state.error && <p className="text-[10px] text-red-600 mb-1">{state.error}</p>}
+        {ok && state.meta?.width && (
+          <p className="text-[10px] text-emerald-600 mb-1">✓ {state.meta.width}×{state.meta.height}</p>
+        )}
         {!readOnly && (
           <label className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-primary text-primary-foreground cursor-pointer">
             <Upload className="w-3 h-3" />
