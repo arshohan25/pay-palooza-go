@@ -177,7 +177,7 @@ export default function UnionSearchSelect({
                               : "opacity-0",
                           )}
                         />
-                        <span className="flex-1 text-left truncate">{item.option.name}</span>
+                        <span className="flex-1 text-left truncate">{nameFor(item.option.name)}</span>
                         <span className="text-[10px] opacity-60 ml-2">{groupLabel(item.option.type)}</span>
                       </button>
                     )}
