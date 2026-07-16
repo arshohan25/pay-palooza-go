@@ -52,7 +52,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
   const [location, setLocation] = useState<DivisionDistrictUpazilaValue>({
     division: null, district: null, upazila: null, union_parishad: null, area_type: null,
   });
-  const [locError, setLocError] = useState<{ field: "division" | "district" | "upazila" | "union_parishad"; message: string } | null>(null);
+  const [locError, setLocError] = useState<LocationMismatch | null>(null);
 
   const applicationSchema = useMemo(() => z.object({
     business_name: z.string().trim().min(2, t("mafErrBusinessName")).max(100),
