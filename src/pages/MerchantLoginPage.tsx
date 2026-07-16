@@ -274,6 +274,12 @@ export default function MerchantLoginPage() {
     }
 
     setLoading(true);
+    activityTracker.track({
+      event_type: "auth",
+      event_name: "merchant_login_attempt",
+      target: "merchant_login_submit",
+      metadata: { mode: loginMode, phone_suffix: cleanedPhone.slice(-3) },
+    });
     try {
       const stored = getStoredDeviceToken(cleanedPhone, "merchant");
       const result = await callMerchantLogin(cleanedPhone, pin, {
@@ -283,6 +289,11 @@ export default function MerchantLoginPage() {
       if (result.kind === "locked") {
         applyLockout(result.retry);
         setPin("");
+        activityTracker.track({
+          event_type: "auth",
+          event_name: "merchant_login_locked",
+          metadata: { mode: loginMode, retry_after_seconds: result.retry },
+        });
         toast.error(result.message || "Too many failed attempts. Please wait.");
         return;
       }
@@ -292,11 +303,21 @@ export default function MerchantLoginPage() {
         const msg = result.attempts_remaining != null && result.message === "Wrong phone or PIN"
           ? `Incorrect PIN — ${result.attempts_remaining} attempt${result.attempts_remaining === 1 ? "" : "s"} left`
           : result.message || "Incorrect PIN";
+        activityTracker.auth("pin_failed", {
+          portal: "merchant",
+          mode: loginMode,
+          attempts_remaining: result.attempts_remaining,
+        });
         toast.error(msg);
         setPin("");
         return;
       }
       if (result.kind === "error") {
+        activityTracker.track({
+          event_type: "auth",
+          event_name: "merchant_login_error",
+          metadata: { mode: loginMode, message: result.message },
+        });
         toast.error(result.message);
         return;
       }
