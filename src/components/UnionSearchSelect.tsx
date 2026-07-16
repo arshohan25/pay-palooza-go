@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,10 +26,13 @@ interface Props {
     tCity: string;
     search?: string;
     empty?: string;
+    loading?: string;
   };
   className?: string;
   /** Optional formatter for displaying option names (e.g. Bangla translation). */
   displayName?: (name: string) => string;
+  /** True while parent is still fetching options. */
+  loading?: boolean;
 }
 
 type FlatRow =
@@ -47,6 +51,7 @@ export default function UnionSearchSelect({
   labels,
   className,
   displayName,
+  loading = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -153,9 +158,29 @@ export default function UnionSearchSelect({
         >
 
 
-          {flat.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              {labels.empty ?? "No results"}
+          {loading ? (
+            <div
+              data-testid="union-loading"
+              role="status"
+              aria-live="polite"
+              className="flex flex-col items-center justify-center gap-2 py-10 text-sm text-muted-foreground"
+            >
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>{labels.loading ?? "Loading…"}</span>
+            </div>
+          ) : flat.length === 0 ? (
+            <div
+              data-testid="union-empty"
+              role="status"
+              className="flex flex-col items-center justify-center gap-1 py-10 px-4 text-center"
+            >
+              <MapPin className="h-5 w-5 opacity-40" />
+              <p className="text-sm font-medium text-foreground">
+                {labels.empty ?? "No results"}
+              </p>
+              {query.trim() && (
+                <p className="text-xs text-muted-foreground">"{query}"</p>
+              )}
             </div>
           ) : (
             <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
