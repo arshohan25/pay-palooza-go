@@ -174,16 +174,44 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
 
       // Update agent
       if (agent && originalAgent) {
+        // Pre-flight location validation for a clear inline error.
+        const locMismatch = await detectLocationMismatch({
+          division: agent.division, district: agent.district, upazila: agent.upazila,
+          union_parishad: agent.union_parishad, area_type: agent.area_type,
+        });
+        if (locMismatch) {
+          setAgentLocError(locMismatch);
+          throw new Error(locMismatch.message);
+        }
+        // Auto-derive route code when district changes.
+        let derivedRoute = agent.territory_code;
+        if (agent.district !== originalAgent.district && agent.district) {
+          derivedRoute = (await districtToRouteCode(agent.district)) ?? agent.territory_code;
+        }
         const agentUpdate: Record<string, any> = {};
         if (agent.business_name !== originalAgent.business_name) { agentUpdate.business_name = agent.business_name; changes.agent_business_name = { before: originalAgent.business_name, after: agent.business_name }; }
         if (agent.nid_number !== originalAgent.nid_number) { agentUpdate.nid_number = agent.nid_number; changes.agent_nid_number = { before: originalAgent.nid_number, after: agent.nid_number }; }
-        if (agent.territory_code !== originalAgent.territory_code) { agentUpdate.territory_code = agent.territory_code; changes.agent_territory_code = { before: originalAgent.territory_code, after: agent.territory_code }; }
+        if (derivedRoute !== originalAgent.territory_code) { agentUpdate.territory_code = derivedRoute; changes.agent_territory_code = { before: originalAgent.territory_code, after: derivedRoute }; }
         if (agent.trade_license !== originalAgent.trade_license) { agentUpdate.trade_license = agent.trade_license; changes.agent_trade_license = { before: originalAgent.trade_license, after: agent.trade_license }; }
         if (agent.max_float !== originalAgent.max_float) { agentUpdate.max_float = agent.max_float; changes.agent_max_float = { before: originalAgent.max_float, after: agent.max_float }; }
+        if (agent.division !== originalAgent.division) { agentUpdate.division = agent.division; changes.agent_division = { before: originalAgent.division, after: agent.division }; }
+        if (agent.district !== originalAgent.district) { agentUpdate.district = agent.district; changes.agent_district = { before: originalAgent.district, after: agent.district }; }
+        if (agent.upazila !== originalAgent.upazila) { agentUpdate.upazila = agent.upazila; changes.agent_upazila = { before: originalAgent.upazila, after: agent.upazila }; }
+        if (agent.union_parishad !== originalAgent.union_parishad) { agentUpdate.union_parishad = agent.union_parishad; changes.agent_union_parishad = { before: originalAgent.union_parishad, after: agent.union_parishad }; }
+        if (agent.area_type !== originalAgent.area_type) { agentUpdate.area_type = agent.area_type; changes.agent_area_type = { before: originalAgent.area_type, after: agent.area_type }; }
 
         if (Object.keys(agentUpdate).length > 0) {
           const { error } = await supabase.from("agents").update(agentUpdate).eq("id", agent.id);
-          if (error) throw error;
+          if (error) {
+            if (/Invalid location hierarchy/i.test(error.message)) {
+              const mismatch = await detectLocationMismatch({
+                division: agent.division, district: agent.district, upazila: agent.upazila,
+                union_parishad: agent.union_parishad, area_type: agent.area_type,
+              });
+              setAgentLocError(mismatch);
+            }
+            throw error;
+          }
         }
       }
 
