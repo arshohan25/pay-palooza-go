@@ -121,6 +121,13 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) { toast.error(t("mafToastSignIn")); setSubmitting(false); return; }
 
+    if (!location.division || !location.district || !location.upazila) {
+      toast.error("Select Division, District and Upazila / Thana"); setSubmitting(false); return;
+    }
+    if (!location.union_parishad || !location.area_type) {
+      toast.error("Select Union Parishad / Powrashava"); setSubmitting(false); return;
+    }
+
     const { error } = await (supabase as any).from("merchant_applications").insert({
       user_id: session.user.id,
       business_name: parsed.data.business_name,
@@ -131,6 +138,11 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       contact_email: parsed.data.contact_email || null,
       business_address: parsed.data.business_address || null,
       route_code: parsed.data.route_code || null,
+      division: location.division,
+      district_name: location.district,
+      upazila: location.upazila,
+      union_parishad: location.union_parishad,
+      area_type: location.area_type,
       bank_name: parsed.data.bank_name || null,
       bank_branch: parsed.data.bank_branch || null,
       bank_account_holder: parsed.data.bank_account_holder || null,
@@ -293,6 +305,18 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                     <p className="text-[10px] text-muted-foreground mt-1">
                       Used to build your merchant wallet ID: EZP-MRC{"{RR}"}-XXXX
                     </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Location *</Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      Division › District › Upazila / Thana › Union Parishad / Powrashava
+                    </p>
+                    <DivisionDistrictUpazilaPicker
+                      value={location}
+                      onChange={setLocation}
+                      required
+                      showLabels
+                    />
                   </div>
                 </div>
 
