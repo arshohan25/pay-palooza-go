@@ -274,6 +274,8 @@ export default function AdminDistributorManagement() {
         upazila: createLoc.upazila,
         union_parishad: createLoc.union_parishad ?? null,
         area_type: createLoc.area_type ?? null,
+        nid_number: createForm.nid_number.trim() || null,
+        trade_license: createForm.trade_license.trim() || null,
       } as any);
       if (distErr) {
         if (/Invalid location hierarchy/i.test(distErr.message)) {
