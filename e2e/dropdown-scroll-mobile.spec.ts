@@ -199,8 +199,32 @@ test.describe("Mobile dropdown touch scrolling", () => {
     test.skip(!info, "no scrollable union list — dataset too small for this upazila");
     if (!info) return;
 
+    // Bangla-bearing rows visible inside the popover scroller.
+    const visibleBnRows = async () =>
+      page.evaluate((bnSrc) => {
+        const re = new RegExp(bnSrc);
+        const scroller = Array.from(
+          document.querySelectorAll<HTMLElement>('[data-radix-popper-content-wrapper] div'),
+        ).find((n) => n.scrollHeight > n.clientHeight + 2);
+        if (!scroller) return [] as string[];
+        const box = scroller.getBoundingClientRect();
+        return Array.from(scroller.querySelectorAll<HTMLElement>("button"))
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.top >= box.top - 1 && r.bottom <= box.bottom + 1;
+          })
+          .map((el) => (el.textContent || "").trim())
+          .filter((t) => re.test(t));
+      }, BN_RE.source);
+
+    const before = await visibleBnRows();
+    expect(
+      before.length,
+      "expected Bangla union group labels visible before drag",
+    ).toBeGreaterThan(0);
+
     await touchDrag(page, info.x, info.y + 40, -220);
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(250);
 
     // Popover still open.
     await expect(unionTrigger).toHaveAttribute("aria-expanded", "true");
@@ -214,5 +238,12 @@ test.describe("Mobile dropdown touch scrolling", () => {
     expect(afterTop, "touch drag should have scrolled the union list").toBeGreaterThan(
       info.scrollTop,
     );
+
+    const after = await visibleBnRows();
+    const revealed = after.filter((l) => !before.includes(l));
+    expect(
+      revealed.length,
+      `expected new Bangla union rows after drag. before=${before.slice(0, 4).join("|")} after=${after.slice(0, 4).join("|")}`,
+    ).toBeGreaterThan(0);
   });
 });
