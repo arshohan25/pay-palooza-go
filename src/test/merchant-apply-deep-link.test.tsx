@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
+// jsdom polyfills used by shadcn/input-otp
+(globalThis as any).ResizeObserver = (globalThis as any).ResizeObserver || class {
+  observe() {} unobserve() {} disconnect() {}
+};
+
 // --- Mocks ---
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
