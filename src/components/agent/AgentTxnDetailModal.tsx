@@ -42,23 +42,12 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClo
 
   const displayType = getAgentTxnLabel(tx);
   const isCashFlow = tx.type === "cashin" || tx.type === "cashout";
-  const isB2BReceive =
-    tx.type === "receive" &&
-    typeof tx.description === "string" &&
-    tx.description.toLowerCase().includes("b2b");
-  const feeLabelValue =
-    Number(tx.fee) > 0
-      ? isB2BReceive
-        ? `৳${fmt(tx.fee!)} (from receiver)`
-        : `৳${fmt(tx.fee!)}`
-      : "Free";
 
   const rows: { label: string; value: string }[] = [
     { label: "Type", value: displayType },
     ...(tx.recipient_name ? [{ label: "Name", value: tx.recipient_name }] : []),
     ...(tx.recipient_phone ? [{ label: "Phone", value: tx.recipient_phone }] : []),
     { label: "Amount", value: `৳${fmt(tx.amount)}` },
-    { label: "Fee", value: feeLabelValue },
     ...(isCashFlow || Number(tx.commission) > 0
       ? [{ label: "Commission", value: Number(tx.commission) > 0 ? `+৳${fmt(tx.commission!)}` : "৳0.00" }]
       : []),
