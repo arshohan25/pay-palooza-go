@@ -61,6 +61,7 @@ export default function MerchantLoginPage() {
   const [wrongPin, setWrongPin] = useState(false);
   const [boundPhone, setBoundPhone] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(false);
   const tickerRef = useRef<number | null>(null);
 
   // Device-bound OTP flow
@@ -684,12 +685,7 @@ export default function MerchantLoginPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    navigate("/");
-                    setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent("open-feature", { detail: "merchant-apply" }));
-                    }, 50);
-                  }}
+                  onClick={() => setApplyOpen(true)}
                   className="h-10 w-full rounded-2xl border-white/20 bg-white/[0.06] text-sm font-medium text-amber-100 hover:bg-white/[0.12] hover:text-amber-50"
                 >
                   New here? Apply as a merchant
@@ -717,6 +713,8 @@ export default function MerchantLoginPage() {
         source="merchant-login"
         accent="amber"
       />
+
+      <MerchantApplicationFlow open={applyOpen} onOpenChange={setApplyOpen} />
     </div>
   );
 }
