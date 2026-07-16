@@ -44,7 +44,13 @@ test.describe("Merchant apply — category dropdown data source", () => {
     // route which mounts <MerchantApplicationFlow open />. This exercises
     // the exact hook path (useMerchantCategories -> supabase.from(...)).
     const errors: string[] = [];
-    page.on("pageerror", (e) => errors.push(String(e)));
+    page.on("pageerror", (e) => {
+      const msg = String(e);
+      // Ignore unrelated dev-server SW MIME errors — the /sw.js route is
+      // proxied to index.html under Vite and isn't part of this check.
+      if (/ServiceWorker|sw\.js/i.test(msg)) return;
+      errors.push(msg);
+    });
 
     await page.goto("/merchant-login?apply=1", { waitUntil: "domcontentloaded" });
 
