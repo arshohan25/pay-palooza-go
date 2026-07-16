@@ -9,8 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Save, Loader2, User, Store, Building2, UserCheck } from "lucide-react";
-import DistrictRoutePicker from "@/components/DistrictRoutePicker";
 import DistrictMultiSelect from "@/components/DistrictMultiSelect";
+import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
+import LocationMismatchAlert from "@/components/LocationMismatchAlert";
+import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
+import { districtToRouteCode } from "@/lib/districtRouteCode";
 
 interface AdminProfileEditorProps {
   userId: string;
@@ -32,6 +35,11 @@ interface AgentData {
   territory_code: string;
   trade_license: string;
   max_float: number;
+  division: string | null;
+  district: string | null;
+  upazila: string | null;
+  union_parishad: string | null;
+  area_type: "union" | "powrashava" | "city_corporation" | null;
 }
 
 interface MerchantData {
@@ -73,13 +81,14 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
   const [originalDistributor, setOriginalDistributor] = useState<DistributorData | null>(null);
 
   const [territoryInput, setTerritoryInput] = useState("");
+  const [agentLocError, setAgentLocError] = useState<LocationMismatch | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       const [profileRes, agentRes, merchantRes, distributorRes] = await Promise.all([
         supabase.from("profiles").select("name, phone, email, avatar_url").eq("user_id", userId).maybeSingle(),
-        supabase.from("agents").select("id, business_name, nid_number, territory_code, trade_license, max_float").eq("user_id", userId).maybeSingle(),
+        supabase.from("agents").select("id, business_name, nid_number, territory_code, trade_license, max_float, division, district, upazila, union_parishad, area_type").eq("user_id", userId).maybeSingle(),
         supabase.from("merchants").select("id, business_name, category, mdr_rate, settlement_frequency, bank_name, bank_account_holder, bank_account_number, bank_branch, bank_routing, trade_license").eq("user_id", userId).maybeSingle(),
         supabase.from("distributors").select("id, business_name, commission_rate, max_float, territory").eq("user_id", userId).maybeSingle(),
       ]);
@@ -101,6 +110,11 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
           territory_code: agentRes.data.territory_code || "",
           trade_license: agentRes.data.trade_license || "",
           max_float: agentRes.data.max_float ?? 0,
+          division: (agentRes.data as any).division ?? null,
+          district: (agentRes.data as any).district ?? null,
+          upazila: (agentRes.data as any).upazila ?? null,
+          union_parishad: (agentRes.data as any).union_parishad ?? null,
+          area_type: (agentRes.data as any).area_type ?? null,
         };
         setAgent(a);
         setOriginalAgent({ ...a });
@@ -160,16 +174,44 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
 
       // Update agent
       if (agent && originalAgent) {
+        // Pre-flight location validation for a clear inline error.
+        const locMismatch = await detectLocationMismatch({
+          division: agent.division, district: agent.district, upazila: agent.upazila,
+          union_parishad: agent.union_parishad, area_type: agent.area_type,
+        });
+        if (locMismatch) {
+          setAgentLocError(locMismatch);
+          throw new Error(locMismatch.message);
+        }
+        // Auto-derive route code when district changes.
+        let derivedRoute = agent.territory_code;
+        if (agent.district !== originalAgent.district && agent.district) {
+          derivedRoute = (await districtToRouteCode(agent.district)) ?? agent.territory_code;
+        }
         const agentUpdate: Record<string, any> = {};
         if (agent.business_name !== originalAgent.business_name) { agentUpdate.business_name = agent.business_name; changes.agent_business_name = { before: originalAgent.business_name, after: agent.business_name }; }
         if (agent.nid_number !== originalAgent.nid_number) { agentUpdate.nid_number = agent.nid_number; changes.agent_nid_number = { before: originalAgent.nid_number, after: agent.nid_number }; }
-        if (agent.territory_code !== originalAgent.territory_code) { agentUpdate.territory_code = agent.territory_code; changes.agent_territory_code = { before: originalAgent.territory_code, after: agent.territory_code }; }
+        if (derivedRoute !== originalAgent.territory_code) { agentUpdate.territory_code = derivedRoute; changes.agent_territory_code = { before: originalAgent.territory_code, after: derivedRoute }; }
         if (agent.trade_license !== originalAgent.trade_license) { agentUpdate.trade_license = agent.trade_license; changes.agent_trade_license = { before: originalAgent.trade_license, after: agent.trade_license }; }
         if (agent.max_float !== originalAgent.max_float) { agentUpdate.max_float = agent.max_float; changes.agent_max_float = { before: originalAgent.max_float, after: agent.max_float }; }
+        if (agent.division !== originalAgent.division) { agentUpdate.division = agent.division; changes.agent_division = { before: originalAgent.division, after: agent.division }; }
+        if (agent.district !== originalAgent.district) { agentUpdate.district = agent.district; changes.agent_district = { before: originalAgent.district, after: agent.district }; }
+        if (agent.upazila !== originalAgent.upazila) { agentUpdate.upazila = agent.upazila; changes.agent_upazila = { before: originalAgent.upazila, after: agent.upazila }; }
+        if (agent.union_parishad !== originalAgent.union_parishad) { agentUpdate.union_parishad = agent.union_parishad; changes.agent_union_parishad = { before: originalAgent.union_parishad, after: agent.union_parishad }; }
+        if (agent.area_type !== originalAgent.area_type) { agentUpdate.area_type = agent.area_type; changes.agent_area_type = { before: originalAgent.area_type, after: agent.area_type }; }
 
         if (Object.keys(agentUpdate).length > 0) {
           const { error } = await supabase.from("agents").update(agentUpdate).eq("id", agent.id);
-          if (error) throw error;
+          if (error) {
+            if (/Invalid location hierarchy/i.test(error.message)) {
+              const mismatch = await detectLocationMismatch({
+                division: agent.division, district: agent.district, upazila: agent.upazila,
+                union_parishad: agent.union_parishad, area_type: agent.area_type,
+              });
+              setAgentLocError(mismatch);
+            }
+            throw error;
+          }
         }
       }
 
@@ -292,12 +334,37 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
                     <div className="grid grid-cols-2 gap-3">
                       <Field label="Business Name" value={agent.business_name} onChange={(v) => setAgent(a => a ? { ...a, business_name: v } : a)} />
                       <Field label="NID Number" value={agent.nid_number} onChange={(v) => setAgent(a => a ? { ...a, nid_number: v } : a)} />
-                      <div>
-                        <Label className="text-xs mb-1 block">District (route code)</Label>
-                        <DistrictRoutePicker value={agent.territory_code} onChange={(code) => setAgent(a => a ? { ...a, territory_code: code } : a)} />
-                      </div>
                       <Field label="Trade License" value={agent.trade_license} onChange={(v) => setAgent(a => a ? { ...a, trade_license: v } : a)} />
                       <Field label="Max Float" value={agent.max_float} type="number" onChange={(v) => setAgent(a => a ? { ...a, max_float: parseFloat(v) || 0 } : a)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Location (Division › District › Upazila › Union / Powrashava)</Label>
+                      <DivisionDistrictUpazilaPicker
+                        value={{
+                          division: agent.division,
+                          district: agent.district,
+                          upazila: agent.upazila,
+                          union_parishad: agent.union_parishad,
+                          area_type: agent.area_type,
+                        }}
+                        onChange={(v) => {
+                          setAgentLocError(null);
+                          setAgent(a => a ? {
+                            ...a,
+                            division: v.division,
+                            district: v.district,
+                            upazila: v.upazila,
+                            union_parishad: v.union_parishad ?? null,
+                            area_type: (v.area_type ?? null) as AgentData["area_type"],
+                          } : a);
+                        }}
+                        required
+                        showLabels={false}
+                      />
+                      <LocationMismatchAlert mismatch={agentLocError} />
+                      <p className="text-[10px] text-muted-foreground">
+                        Territory route code (RR): <span className="font-mono">{agent.territory_code || "auto"}</span> — auto-derived from the district on save.
+                      </p>
                     </div>
                   </div>
                 </>

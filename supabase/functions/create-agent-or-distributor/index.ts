@@ -35,6 +35,11 @@ Deno.serve(async (req) => {
       max_float,
       commission_rate,
       territories,
+      division,
+      district,
+      upazila,
+      union_parishad,
+      area_type,
     } = body;
 
     if (!type || !["agent", "distributor"].includes(type)) {
@@ -139,26 +144,42 @@ Deno.serve(async (req) => {
       role: type,
     });
 
+    // Common location payload — triggers on agents/distributors validate the
+    // hierarchy server-side, so we just pass whatever the caller supplied.
+    const locationPayload: Record<string, any> = {};
+    if (division) locationPayload.division = division;
+    if (district) locationPayload.district = district;
+    if (upazila) locationPayload.upazila = upazila;
+    if (union_parishad) locationPayload.union_parishad = union_parishad;
+    if (area_type) locationPayload.area_type = area_type;
+
     if (type === "agent") {
-      // Get caller's distributor record
       const { data: distData } = await adminClient
         .from("distributors")
         .select("id")
         .eq("user_id", caller.id)
         .maybeSingle();
 
-      await adminClient.from("agents").insert({
+      const { error: agentErr } = await adminClient.from("agents").insert({
         user_id: newUserId,
         distributor_id: distData?.id || null,
         business_name: business_name || name || cleaned,
         nid_number: nid_number || null,
-        territory_code: territory_code || null,
+        territory_code: territory_code || route_code || null,
         trade_license: trade_license || null,
         max_float: Number(max_float) || 500000,
         status: "active",
+        ...locationPayload,
       });
+      if (agentErr) {
+        // Best-effort rollback of the auth user so the caller can retry cleanly.
+        await adminClient.auth.admin.deleteUser(newUserId).catch(() => {});
+        return new Response(JSON.stringify({ error: agentErr.message }), {
+          status: /Invalid location hierarchy/i.test(agentErr.message) ? 422 : 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     } else {
-      // Get caller's distributor record as parent
       const { data: parentDist } = await adminClient
         .from("distributors")
         .select("id")
@@ -169,7 +190,7 @@ Deno.serve(async (req) => {
         ? territories
         : null;
 
-      await adminClient.from("distributors").insert({
+      const { error: distErr } = await adminClient.from("distributors").insert({
         user_id: newUserId,
         business_name: business_name,
         max_float: Number(max_float) || 10000000,
@@ -177,8 +198,17 @@ Deno.serve(async (req) => {
         territory: parsedTerritories,
         parent_id: parentDist?.id || null,
         status: "active",
+        ...locationPayload,
       });
+      if (distErr) {
+        await adminClient.auth.admin.deleteUser(newUserId).catch(() => {});
+        return new Response(JSON.stringify({ error: distErr.message }), {
+          status: /Invalid location hierarchy/i.test(distErr.message) ? 422 : 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
+
 
     // Update profile
     await adminClient.from("profiles")

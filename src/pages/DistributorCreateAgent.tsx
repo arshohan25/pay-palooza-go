@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { ArrowLeft, UserPlus, Home, Building2, MapPin, Shield } from "lucide-react";
+import { ArrowLeft, UserPlus, Home, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
-import DistrictRoutePicker from "@/components/DistrictRoutePicker";
+import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
+import LocationMismatchAlert from "@/components/LocationMismatchAlert";
+import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
+import { districtToRouteCode } from "@/lib/districtRouteCode";
 
 const DistributorCreateAgent = () => {
   const navigate = useNavigate();
@@ -21,20 +24,35 @@ const DistributorCreateAgent = () => {
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [nid, setNid] = useState("");
-  const [territory, setTerritory] = useState("");
+  const [location, setLocation] = useState<DivisionDistrictUpazilaValue>({
+    division: null, district: null, upazila: null, union_parishad: null, area_type: null,
+  });
+  const [locError, setLocError] = useState<LocationMismatch | null>(null);
   const [tradeLicense, setTradeLicense] = useState("");
   const [maxFloat, setMaxFloat] = useState("500000");
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
   const phoneValidation = usePhoneValidation(phone);
 
+  // Clear inline error whenever the user re-picks any location field.
+  useEffect(() => { if (locError) setLocError(null); }, [location.division, location.district, location.upazila, location.union_parishad, location.area_type]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleCreate = async () => {
     if (phoneValidation.triggerShake()) return;
     if (processing || !user) return;
+    if (!location.division || !location.district || !location.upazila) {
+      const mismatch = await detectLocationMismatch({ ...location, area_type: (location.area_type as any) ?? null });
+      setLocError(mismatch);
+      toast({ title: "Location required", description: mismatch?.message || "Pick Division → District → Upazila.", variant: "destructive" });
+      return;
+    }
     setProcessing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated");
+
+      // Auto-derive 2-letter route code from district so wallet-ID prefix stays correct.
+      const derivedRoute = await districtToRouteCode(location.district);
 
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-agent-or-distributor`, {
         method: "POST",
@@ -48,14 +66,26 @@ const DistributorCreateAgent = () => {
           name: name || null,
           business_name: businessName || name || phone,
           nid_number: nid || null,
-          territory_code: territory || null,
-          route_code: territory || null,
+          territory_code: derivedRoute,
+          route_code: derivedRoute,
+          division: location.division,
+          district: location.district,
+          upazila: location.upazila,
+          union_parishad: location.union_parishad,
+          area_type: location.area_type,
           trade_license: tradeLicense || null,
           max_float: Number(maxFloat) || 500000,
         }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to create agent");
+      if (!res.ok) {
+        if (/Invalid location hierarchy/i.test(result.error || "")) {
+          const mismatch = await detectLocationMismatch({ ...location, area_type: (location.area_type as any) ?? null });
+          setLocError(mismatch);
+          throw new Error(mismatch?.message || "Invalid location hierarchy");
+        }
+        throw new Error(result.error || "Failed to create agent");
+      }
 
       setDone(true);
       toast({ title: "Agent Created", description: `${businessName || name || phone} has been registered as an agent` });
@@ -72,7 +102,8 @@ const DistributorCreateAgent = () => {
     setName("");
     setBusinessName("");
     setNid("");
-    setTerritory("");
+    setLocation({ division: null, district: null, upazila: null, union_parishad: null, area_type: null });
+    setLocError(null);
     setTradeLicense("");
     setMaxFloat("500000");
   };
@@ -148,19 +179,17 @@ const DistributorCreateAgent = () => {
                 <Input placeholder="Shop or business name" value={businessName} onChange={e => setBusinessName(e.target.value)} className="rounded-xl h-11 mt-1" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs font-semibold">NID Number</Label>
-                  <Input type="text" inputMode="numeric" placeholder="NID" value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold">District (route code)</Label>
-                  <DistrictRoutePicker
-                    value={territory}
-                    onChange={(code) => setTerritory(code)}
-                    placeholder="Select district"
-                  />
-                </div>
+              <div>
+                <Label className="text-xs font-semibold">NID Number</Label>
+                <Input type="text" inputMode="numeric" placeholder="NID" value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Location *</Label>
+                <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
+                <DivisionDistrictUpazilaPicker value={location} onChange={setLocation} required showLabels={false} />
+                <LocationMismatchAlert mismatch={locError} />
+                <p className="text-[10px] text-muted-foreground">Route code (RR) is auto-derived from the district for the agent's wallet ID.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -174,7 +203,7 @@ const DistributorCreateAgent = () => {
                 </div>
               </div>
 
-              <Button onClick={handleCreate} disabled={!phoneValidation.isValid || !name || processing} className="w-full rounded-xl h-11 text-sm font-bold text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
+              <Button onClick={handleCreate} disabled={!phoneValidation.isValid || !name || processing || !location.division || !location.district || !location.upazila} className="w-full rounded-xl h-11 text-sm font-bold text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
                 {processing ? "Creating Agent…" : "Create Agent Account"}
               </Button>
             </Card>

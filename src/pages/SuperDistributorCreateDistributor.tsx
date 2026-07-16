@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
@@ -12,6 +12,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DistrictMultiSelect from "@/components/DistrictMultiSelect";
+import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
+import LocationMismatchAlert from "@/components/LocationMismatchAlert";
+import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
+
 
 
 const SuperDistributorCreateDistributor = () => {
@@ -23,10 +27,17 @@ const SuperDistributorCreateDistributor = () => {
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [territories, setTerritories] = useState<string[]>([]);
+  const [location, setLocation] = useState<DivisionDistrictUpazilaValue>({
+    division: null, district: null, upazila: null, union_parishad: null, area_type: null,
+  });
+  const [locError, setLocError] = useState<LocationMismatch | null>(null);
   const [maxFloat, setMaxFloat] = useState("10000000");
   const [commissionRate, setCommissionRate] = useState("0.20");
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => { if (locError) setLocError(null); }, [location.division, location.district, location.upazila, location.union_parishad, location.area_type]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   if (authLoading) {
     return (
@@ -51,6 +62,12 @@ const SuperDistributorCreateDistributor = () => {
       toast({ title: "Missing fields", description: "Phone and business name are required", variant: "destructive" });
       return;
     }
+    if (!location.division || !location.district || !location.upazila) {
+      const mismatch = await detectLocationMismatch(location);
+      setLocError(mismatch);
+      toast({ title: "Location required", description: mismatch?.message || "Pick Division → District → Upazila.", variant: "destructive" });
+      return;
+    }
     setProcessing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -72,10 +89,22 @@ const SuperDistributorCreateDistributor = () => {
           max_float: Number(maxFloat) || 10000000,
           commission_rate: (Number(commissionRate) || 0.20) / 100,
           territories: parsedTerritories.length > 0 ? parsedTerritories : null,
+          division: location.division,
+          district: location.district,
+          upazila: location.upazila,
+          union_parishad: location.union_parishad,
+          area_type: location.area_type,
         }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to create distributor");
+      if (!res.ok) {
+        if (/Invalid location hierarchy/i.test(result.error || "")) {
+          const mismatch = await detectLocationMismatch(location);
+          setLocError(mismatch);
+          throw new Error(mismatch?.message || "Invalid location hierarchy");
+        }
+        throw new Error(result.error || "Failed to create distributor");
+      }
 
       setSuccess(true);
       toast({ title: "Distributor Created", description: `${businessName} account created successfully` });
@@ -85,6 +114,7 @@ const SuperDistributorCreateDistributor = () => {
       setProcessing(false);
     }
   };
+
 
   if (success) {
     return (
@@ -100,7 +130,7 @@ const SuperDistributorCreateDistributor = () => {
           <p className="text-xs text-muted-foreground mt-2">A random PIN was generated. They should use "Forgot PIN" to set their own.</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => { setSuccess(false); setPhone(""); setName(""); setBusinessName(""); setTerritories([]); setMaxFloat("10000000"); setCommissionRate("0.20"); }}>
+          <Button variant="outline" onClick={() => { setSuccess(false); setPhone(""); setName(""); setBusinessName(""); setTerritories([]); setLocation({ division: null, district: null, upazila: null, union_parishad: null, area_type: null }); setLocError(null); setMaxFloat("10000000"); setCommissionRate("0.20"); }}>
             <UserPlus size={14} className="mr-1.5" /> Create Another
           </Button>
           <Button onClick={() => navigate("/super-distributor")} className="text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(270 60% 45%), hsl(285 55% 35%))" }}>
@@ -150,9 +180,16 @@ const SuperDistributorCreateDistributor = () => {
               <Label className="text-xs">Business Name *</Label>
               <Input placeholder="Distribution hub name" value={businessName} onChange={e => setBusinessName(e.target.value)} />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Primary Location *</Label>
+              <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
+              <DivisionDistrictUpazilaPicker value={location} onChange={setLocation} required showLabels={false} />
+              <LocationMismatchAlert mismatch={locError} />
+            </div>
             <div>
-              <Label className="text-xs">Territories</Label>
+              <Label className="text-xs">Operating Territories</Label>
               <DistrictMultiSelect value={territories} onChange={setTerritories} placeholder="Select districts" />
+              <p className="text-[10px] text-muted-foreground mt-1">Multi-district territory arrays are still 2-letter route codes for wallet ID routing.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

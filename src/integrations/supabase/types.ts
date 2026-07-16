@@ -2057,12 +2057,15 @@ export type Database = {
           business_name: string
           commission_rate: number
           created_at: string
+          district: string | null
+          division: string | null
           id: string
           max_float: number
           parent_id: string | null
           status: Database["public"]["Enums"]["agent_status"]
           territory: string[] | null
           union_parishad: string | null
+          upazila: string | null
           updated_at: string
           user_id: string
         }
@@ -2071,12 +2074,15 @@ export type Database = {
           business_name: string
           commission_rate?: number
           created_at?: string
+          district?: string | null
+          division?: string | null
           id?: string
           max_float?: number
           parent_id?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory?: string[] | null
           union_parishad?: string | null
+          upazila?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2085,12 +2091,15 @@ export type Database = {
           business_name?: string
           commission_rate?: number
           created_at?: string
+          district?: string | null
+          division?: string | null
           id?: string
           max_float?: number
           parent_id?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory?: string[] | null
           union_parishad?: string | null
+          upazila?: string | null
           updated_at?: string
           user_id?: string
         }
