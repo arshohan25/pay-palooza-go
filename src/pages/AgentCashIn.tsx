@@ -13,6 +13,7 @@ import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import QrScannerModal from "@/components/QrScannerModal";
 import { parseQrData } from "@/lib/qrParser";
 import { verifyPin } from "@/lib/verifyPin";
+import { checkDailyLimit } from "@/lib/dailyLimits";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 const COMMISSION_RATE = 0.0049;
@@ -54,6 +55,17 @@ const AgentCashIn = () => {
       if (!ok) {
         toast({ title: "Incorrect PIN", description: "Please try again.", variant: "destructive" });
         setPin("");
+        setProcessing(false);
+        return;
+      }
+      const amtVal = Number(amount);
+      const limitCheck = await checkDailyLimit("cashin", amtVal);
+      if (!limitCheck.allowed) {
+        toast({
+          title: "Daily Cash In limit exceeded",
+          description: `Used ৳${limitCheck.used.toLocaleString("en-BD")} of ৳${limitCheck.limit.toLocaleString("en-BD")} today. Remaining: ৳${Math.max(0, limitCheck.remaining).toLocaleString("en-BD")}.`,
+          variant: "destructive",
+        });
         setProcessing(false);
         return;
       }
