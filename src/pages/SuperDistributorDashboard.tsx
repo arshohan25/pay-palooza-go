@@ -274,7 +274,8 @@ const SuperDistributorDashboard = () => {
   const todayTxns = recentTxns.filter(t => new Date(t.created_at).toDateString() === new Date().toDateString());
   const todayVolume = todayTxns.reduce((s, t) => s + t.amount, 0);
 
-  const { isDisabled } = useGlobalToggles();
+
+
 
   const quickActions = [
     { icon: UserPlus, label: "Create Dist.", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/super-distributor/create-distributor", toggleKey: "super_distributor_create" },
