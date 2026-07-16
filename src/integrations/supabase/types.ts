@@ -7077,6 +7077,45 @@ export type Database = {
         }
         Relationships: []
       }
+      treasury_reconciliation_checks: {
+        Row: {
+          checked_by: string | null
+          created_at: string
+          entries: Json
+          expected_amount: number
+          id: string
+          ledger_amount: number
+          matches: boolean
+          txn_id: string
+          txn_reference: string | null
+          txn_user_id: string
+        }
+        Insert: {
+          checked_by?: string | null
+          created_at?: string
+          entries?: Json
+          expected_amount?: number
+          id?: string
+          ledger_amount?: number
+          matches: boolean
+          txn_id: string
+          txn_reference?: string | null
+          txn_user_id: string
+        }
+        Update: {
+          checked_by?: string | null
+          created_at?: string
+          entries?: Json
+          expected_amount?: number
+          id?: string
+          ledger_amount?: number
+          matches?: boolean
+          txn_id?: string
+          txn_reference?: string | null
+          txn_user_id?: string
+        }
+        Relationships: []
+      }
       trusted_devices: {
         Row: {
           created_at: string
@@ -8187,6 +8226,27 @@ export type Database = {
       is_push_enabled: {
         Args: { p_category: string; p_user_id: string }
         Returns: boolean
+      }
+      list_txn_reconciliation_checks: {
+        Args: { p_limit?: number; p_txn_id: string }
+        Returns: {
+          checked_by: string | null
+          created_at: string
+          entries: Json
+          expected_amount: number
+          id: string
+          ledger_amount: number
+          matches: boolean
+          txn_id: string
+          txn_reference: string | null
+          txn_user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "treasury_reconciliation_checks"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       log_cron_invocation: {
         Args: {
