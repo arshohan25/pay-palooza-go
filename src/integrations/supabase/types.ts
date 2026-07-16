@@ -8475,6 +8475,16 @@ export type Database = {
         Args: { p_cart_total: number; p_code: string; p_merchant_id?: string }
         Returns: Json
       }
+      validate_location_hierarchy: {
+        Args: {
+          _area_type: string
+          _district: string
+          _division: string
+          _union_parishad: string
+          _upazila: string
+        }
+        Returns: boolean
+      }
       validate_wallet_id_format: {
         Args: { _expected_role?: string; _wallet_id: string }
         Returns: Json
