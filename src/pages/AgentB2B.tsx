@@ -179,9 +179,9 @@ const AgentB2B = () => {
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">To</span><span className="font-bold text-foreground capitalize">{transferType}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Phone</span><span className="font-bold text-foreground">{phone}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">{fee > 0 ? `৳${fmt(fee)}` : "Free"}</span></div>
-                {fee > 0 && <p className="text-[11px] text-muted-foreground text-right">৳{fmt(Number(amount))} + ৳{fmt(fee)} fee (from balance)</p>}
-                <div className="flex justify-between text-sm font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">Total</span><span className="text-foreground">৳{fmt(Number(amount) + fee)}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">{fee > 0 ? `৳${fmt(fee)} (from receiver)` : "Free"}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Receiver gets</span><span className="font-bold text-foreground">৳{fmt(Number(amount) - fee)}</span></div>
+                <div className="flex justify-between text-sm font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">You pay</span><span className="text-foreground">৳{fmt(Number(amount))}</span></div>
                 {note && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Note</span><span className="font-medium text-foreground">{note}</span></div>}
               </div>
               <div>
