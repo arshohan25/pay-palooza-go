@@ -311,6 +311,7 @@ function AgentListTab() {
       await supabase.from("agents").insert({
         user_id: userId, business_name: form.business_name || null, territory_code: form.territory_code || null,
         division: form.division || null, district: form.district || null, upazila: form.upazila || null,
+        union_parishad: form.union_parishad || null, area_type: form.area_type || null,
         nid_number: form.nid_number || null, trade_license: form.trade_license || null,
         max_float: parseInt(form.max_float) || 500000, status: "active",
         latitude: form.latitude ? parseFloat(form.latitude) : null,
