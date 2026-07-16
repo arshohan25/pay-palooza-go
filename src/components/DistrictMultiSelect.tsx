@@ -122,6 +122,71 @@ export default function DistrictMultiSelect({
     }
   };
 
+  const popoverBody = (
+    <>
+      <div className="flex items-center gap-2 border-b px-3 py-2">
+        <Search size={14} className="opacity-60" />
+        <Input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search district or code…"
+          className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
+        />
+      </div>
+      <div ref={setScrollEl} className="max-h-72 overflow-y-auto">
+        {filteredDistricts.length === 0 ? (
+          <div className="py-6 text-center text-sm text-muted-foreground">
+            No district found.
+          </div>
+        ) : (
+          <div
+            style={{
+              height: virtualizer.getTotalSize(),
+              position: "relative",
+              width: "100%",
+            }}
+          >
+            {virtualizer.getVirtualItems().map((v) => {
+              const row = filteredDistricts[v.index];
+              return (
+                <div
+                  key={row.code}
+                  data-index={v.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${v.start}px)`,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggle(row.code)}
+                    className="flex w-full items-center px-2 py-2 text-sm hover:bg-accent rounded-sm"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value.includes(row.code) ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <span className="flex-1 text-left">{row.district}</span>
+                    <span className="text-[10px] font-mono opacity-60">
+                      {row.code}
+                    </span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className={cn("space-y-2", className)}>
       {showDivisionField ? (
