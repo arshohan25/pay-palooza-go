@@ -8021,6 +8021,7 @@ export type Database = {
         Args: { p_phone: string }
         Returns: {
           customer_user_id: string
+          is_user_wallet: boolean
           used: number
         }[]
       }

@@ -62,7 +62,18 @@ const AgentCashIn = () => {
       const DAILY_CASHIN_LIMIT = 50000;
       const { data: usageData, error: usageErr } = await supabase.rpc("get_customer_daily_cashin_usage", { p_phone: phone });
       if (usageErr) throw usageErr;
-      const used = Number((usageData as any)?.[0]?.used ?? 0);
+      const row = (usageData as any)?.[0] ?? {};
+      if (!row.customer_user_id) {
+        toast({ title: "Number not found", description: "No wallet exists for this number.", variant: "destructive" });
+        setProcessing(false);
+        return;
+      }
+      if (!row.is_user_wallet) {
+        toast({ title: "Not a user wallet", description: "Cash In is allowed only to customer (user) wallets, not agent/distributor/merchant numbers.", variant: "destructive" });
+        setProcessing(false);
+        return;
+      }
+      const used = Number(row.used ?? 0);
       const remaining = Math.max(0, DAILY_CASHIN_LIMIT - used);
       if (amtVal > remaining) {
         toast({
