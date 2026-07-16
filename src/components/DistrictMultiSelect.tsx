@@ -124,39 +124,44 @@ export default function DistrictMultiSelect({
 
   return (
     <div className={cn("space-y-2", className)}>
-      {showDivisionField && (
-        <div className="space-y-1.5">
-          <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Division
-          </Label>
-          <Select
-            value={division}
-            onValueChange={handleDivisionChange}
-            disabled={disabled || loading}
-          >
-            <SelectTrigger
-              aria-label="Division"
-              className="rounded-xl h-11"
+      <div
+        className={cn(
+          showDivisionField
+            ? "flex flex-col sm:flex-row sm:items-end gap-2"
+            : "",
+        )}
+      >
+        {showDivisionField && (
+          <div className="space-y-1.5 sm:w-40 sm:shrink-0">
+            <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Division
+            </Label>
+            <Select
+              value={division}
+              onValueChange={handleDivisionChange}
+              disabled={disabled || loading}
             >
-              <SelectValue placeholder={loading ? "Loading divisions…" : "Select division"} />
-            </SelectTrigger>
-            <SelectContent>
-              {divisions.map((d) => (
-                <SelectItem key={d} value={d}>
-                  {d}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+              <SelectTrigger aria-label="Division" className="rounded-xl h-11">
+                <SelectValue placeholder={loading ? "Loading…" : "Select division"} />
+              </SelectTrigger>
+              <SelectContent>
+                {divisions.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {d}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
-      {showDivisionField && (
-        <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Districts
-        </Label>
-      )}
-      <Popover open={open} onOpenChange={(o) => !districtDisabled && setOpen(o)}>
+        <div className="space-y-1.5 flex-1 min-w-0">
+          {showDivisionField && (
+            <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Districts
+            </Label>
+          )}
+          <Popover open={open} onOpenChange={(o) => !districtDisabled && setOpen(o)}>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -241,8 +246,12 @@ export default function DistrictMultiSelect({
               </div>
             )}
           </div>
-        </PopoverContent>
-      </Popover>
+          </PopoverContent>
+        </Popover>
+        </div>
+      </div>
+
+
 
       {selectedRows.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
