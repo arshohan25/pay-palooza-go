@@ -655,62 +655,84 @@ export default function AdminDistributorManagement() {
         />
       )}
 
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      {/* Create Distributor Dialog — minimal fields, no NID/Trade License/Location */}
+      <Dialog open={createDistOpen} onOpenChange={setCreateDistOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Create {createForm.role === "super_distributor" ? "Super Distributor" : "Distributor"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Create Distributor</DialogTitle></DialogHeader>
           <div className="space-y-3 pt-2 max-h-[60vh] overflow-y-auto">
+            <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={distForm.phone} onChange={e => setDistForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
+            <div><Label>Owner Full Name</Label><Input placeholder="Owner's full name" value={distForm.name} onChange={e => setDistForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={distForm.business_name} onChange={e => setDistForm(f => ({ ...f, business_name: e.target.value }))} /></div>
+            <div><Label>Operating Territories</Label><DistrictMultiSelect value={csvToArr(distForm.territory)} onChange={(codes) => setDistForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
             <div>
-              <Label>Role</Label>
-              <div className="flex gap-2 mt-1">
-                <Button type="button" size="sm" variant={createForm.role === "distributor" ? "default" : "outline"} className="flex-1" onClick={() => setCreateForm(f => ({ ...f, role: "distributor" }))}>Distributor</Button>
-                <Button type="button" size="sm" variant={createForm.role === "super_distributor" ? "default" : "outline"} className="flex-1" onClick={() => setCreateForm(f => ({ ...f, role: "super_distributor" }))}>Super Distributor</Button>
-              </div>
+              <Label>Link to Super Distributor</Label>
+              <select
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={distParentId}
+                onChange={(e) => setDistParentId(e.target.value)}
+              >
+                <option value="">— None (unlinked) —</option>
+                {sdOptions.map((sd) => (
+                  <option key={sd.id} value={sd.id}>{sd.business_name}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1">Optional — attach this distributor under a Super Distributor.</p>
             </div>
-            <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
-            <div><Label>Owner Full Name</Label><Input placeholder="Owner's full name" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} /></div>
-            <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} /></div>
-            {createForm.role === "super_distributor" && (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><Label>Owner NID Number</Label><Input placeholder="10 / 13 / 17 digits" value={createForm.nid_number} onChange={e => setCreateForm(f => ({ ...f, nid_number: e.target.value.replace(/\D/g, "").slice(0, 17) }))} /></div>
-                  <div><Label>Trade License</Label><Input placeholder="License number" value={createForm.trade_license} onChange={e => setCreateForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Primary Location *</Label>
-                  <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
-                  <DivisionDistrictUpazilaPicker value={createLoc} onChange={(v) => { setCreateLoc(v); if (createLocError) setCreateLocError(null); }} required showLabels={false} />
-                  <LocationMismatchAlert mismatch={createLocError} />
-                </div>
-              </>
-            )}
-            <div><Label>Operating Territories</Label><DistrictMultiSelect value={csvToArr(createForm.territory)} onChange={(codes) => setCreateForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
-            {createForm.role === "distributor" && (
-              <div>
-                <Label>Link to Super Distributor</Label>
-                <select
-                  className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                  value={createParentId}
-                  onChange={(e) => setCreateParentId(e.target.value)}
-                >
-                  <option value="">— None (unlinked) —</option>
-                  {sdOptions.map((sd) => (
-                    <option key={sd.id} value={sd.id}>{sd.business_name}</option>
-                  ))}
-                </select>
-                <p className="text-[10px] text-muted-foreground mt-1">Optional — attach this distributor under a Super Distributor.</p>
-              </div>
-            )}
             <div className="grid grid-cols-2 gap-2">
-              <div><Label>Commission Rate (%)</Label><Input type="number" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
-              <div><Label>Max Float (৳)</Label><Input type="number" value={createForm.max_float} onChange={e => setCreateForm(f => ({ ...f, max_float: e.target.value }))} /></div>
+              <div><Label>Commission Rate (%)</Label><Input type="number" value={distForm.commission_rate} onChange={e => setDistForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
+              <div><Label>Max Float (৳)</Label><Input type="number" value={distForm.max_float} onChange={e => setDistForm(f => ({ ...f, max_float: e.target.value }))} /></div>
             </div>
-            <Button className="w-full" onClick={handleCreate} disabled={creating || !createForm.phone || !createForm.business_name.trim()}>
-              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : `Create ${createForm.role === "super_distributor" ? "Super Distributor" : "Distributor"}`}
+            <Button className="w-full" onClick={() => handleCreate("distributor")} disabled={creating || !distForm.phone || !distForm.business_name.trim()}>
+              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Distributor"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Create Super Distributor Dialog — full fields including NID, Trade License, Primary Location */}
+      <Dialog open={createSdOpen} onOpenChange={setCreateSdOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Create Super Distributor</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2 max-h-[60vh] overflow-y-auto">
+            <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={sdForm.phone} onChange={e => setSdForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
+            <div><Label>Owner Full Name</Label><Input placeholder="Owner's full name" value={sdForm.name} onChange={e => setSdForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={sdForm.business_name} onChange={e => setSdForm(f => ({ ...f, business_name: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Owner NID Number</Label><Input placeholder="10 / 13 / 17 digits" value={sdForm.nid_number} onChange={e => setSdForm(f => ({ ...f, nid_number: e.target.value.replace(/\D/g, "").slice(0, 17) }))} /></div>
+              <div><Label>Trade License</Label><Input placeholder="License number" value={sdForm.trade_license} onChange={e => setSdForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Primary Location *</Label>
+              <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
+              <DivisionDistrictUpazilaPicker value={sdLoc} onChange={(v) => { setSdLoc(v); if (sdLocError) setSdLocError(null); }} required showLabels={false} />
+              <LocationMismatchAlert mismatch={sdLocError} />
+            </div>
+            <div><Label>Operating Territories</Label><DistrictMultiSelect value={csvToArr(sdForm.territory)} onChange={(codes) => setSdForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
+            <div>
+              <Label>Link to Parent Super Distributor</Label>
+              <select
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={sdParentId}
+                onChange={(e) => setSdParentId(e.target.value)}
+              >
+                <option value="">— None (top-level) —</option>
+                {sdOptions.map((sd) => (
+                  <option key={sd.id} value={sd.id}>{sd.business_name}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1">Optional — nest this SD under another Super Distributor.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Commission Rate (%)</Label><Input type="number" value={sdForm.commission_rate} onChange={e => setSdForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
+              <div><Label>Max Float (৳)</Label><Input type="number" value={sdForm.max_float} onChange={e => setSdForm(f => ({ ...f, max_float: e.target.value }))} /></div>
+            </div>
+            <Button className="w-full" onClick={() => handleCreate("super_distributor")} disabled={creating || !sdForm.phone || !sdForm.business_name.trim()}>
+              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Super Distributor"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={v => { if (!v) setDeleteTarget(null); }}>
