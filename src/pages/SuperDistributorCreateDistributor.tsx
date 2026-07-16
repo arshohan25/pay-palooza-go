@@ -130,7 +130,7 @@ const SuperDistributorCreateDistributor = () => {
           <p className="text-xs text-muted-foreground mt-2">A random PIN was generated. They should use "Forgot PIN" to set their own.</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => { setSuccess(false); setPhone(""); setName(""); setBusinessName(""); setTerritories([]); setMaxFloat("10000000"); setCommissionRate("0.20"); }}>
+          <Button variant="outline" onClick={() => { setSuccess(false); setPhone(""); setName(""); setBusinessName(""); setTerritories([]); setLocation({ division: null, district: null, upazila: null, union_parishad: null, area_type: null }); setLocError(null); setMaxFloat("10000000"); setCommissionRate("0.20"); }}>
             <UserPlus size={14} className="mr-1.5" /> Create Another
           </Button>
           <Button onClick={() => navigate("/super-distributor")} className="text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(270 60% 45%), hsl(285 55% 35%))" }}>
