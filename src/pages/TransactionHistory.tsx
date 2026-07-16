@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
+import AgentTxnDetailModal from "@/components/agent/AgentTxnDetailModal";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
 import { getAgentDisplayType, isAgentTxnCredit } from "@/lib/agentTransactions";
 import { getContactNameByPhone } from "@/lib/contactStore";
