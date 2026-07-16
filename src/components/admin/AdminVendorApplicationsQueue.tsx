@@ -10,7 +10,8 @@ import {
   AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Store, RefreshCw, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, Store, RefreshCw, Clock, Maximize2 } from "lucide-react";
+import AdminVendorPhotoModal from "./AdminVendorPhotoModal";
 
 export default function AdminVendorApplicationsQueue() {
   const [apps, setApps] = useState<any[]>([]);
@@ -124,7 +125,12 @@ export default function AdminVendorApplicationsQueue() {
                   <p className="text-[11px] text-muted-foreground/70 mt-0.5">
                     📍 {a.pickup_address} · Submitted {new Date(a.created_at).toLocaleString()}
                   </p>
-                  <ShopPhotoRow front={a.shop_front_photo_url} inside={a.shop_inside_photo_url} />
+                  <ShopPhotoRow
+                    front={a.shop_front_photo_url}
+                    inside={a.shop_inside_photo_url}
+                    frontMeta={a.shop_front_photo_meta}
+                    insideMeta={a.shop_inside_photo_meta}
+                  />
                   {a.admin_notes && (
                     <p className="text-[11px] mt-1 italic text-muted-foreground">Admin note: {a.admin_notes}</p>
                   )}
@@ -169,8 +175,13 @@ export default function AdminVendorApplicationsQueue() {
   );
 }
 
-function ShopPhotoRow({ front, inside }: { front?: string | null; inside?: string | null }) {
+function ShopPhotoRow({ front, inside, frontMeta, insideMeta }: {
+  front?: string | null; inside?: string | null;
+  frontMeta?: any; insideMeta?: any;
+}) {
   const [urls, setUrls] = useState<{ front?: string; inside?: string }>({});
+  const [modal, setModal] = useState<null | "front" | "inside">(null);
+
   useEffect(() => {
     let c = false;
     (async () => {
@@ -188,19 +199,47 @@ function ShopPhotoRow({ front, inside }: { front?: string | null; inside?: strin
     return () => { c = true; };
   }, [front, inside]);
 
-  const Tile = ({ src, label, missing }: { src?: string; label: string; missing: boolean }) => (
-    <a href={src} target={src ? "_blank" : undefined} rel="noreferrer"
-       className={`block w-16 h-16 rounded-md border overflow-hidden ${missing ? "border-red-500/40 bg-red-500/5" : "border-border bg-muted/40"}`}
-       title={label}>
+  const Tile = ({ src, label, missing, meta, onClick }: { src?: string; label: string; missing: boolean; meta?: any; onClick?: () => void }) => (
+    <button type="button" onClick={onClick} disabled={missing}
+      className={`relative group w-16 h-16 rounded-md border overflow-hidden ${missing ? "border-red-500/40 bg-red-500/5 cursor-not-allowed" : "border-border bg-muted/40 hover:ring-2 ring-primary/40 cursor-zoom-in"}`}
+      title={label}>
       {src ? <img src={src} alt={label} className="w-full h-full object-cover" />
            : <div className="w-full h-full flex items-center justify-center text-[9px] text-red-600 text-center px-1">Missing {label}</div>}
-    </a>
+      {src && (
+        <span className="absolute bottom-0 right-0 bg-background/80 rounded-tl px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Maximize2 className="w-3 h-3" />
+        </span>
+      )}
+      {meta?.validated && !missing && <span className="absolute top-0 left-0 text-[8px] bg-emerald-500 text-white px-1 rounded-br">✓</span>}
+    </button>
   );
 
   return (
-    <div className="flex items-center gap-2 mt-2">
-      <Tile src={urls.front}  label="Shop front"  missing={!front} />
-      <Tile src={urls.inside} label="Shop inside" missing={!inside} />
-    </div>
+    <>
+      <div className="flex items-center gap-2 mt-2">
+        <Tile src={urls.front}  label="Shop front"  missing={!front}  meta={frontMeta}  onClick={() => setModal("front")} />
+        <Tile src={urls.inside} label="Shop inside" missing={!inside} meta={insideMeta} onClick={() => setModal("inside")} />
+        {(frontMeta?.uploaded_at || insideMeta?.uploaded_at) && (
+          <span className="text-[10px] text-muted-foreground">
+            Uploaded {new Date(frontMeta?.uploaded_at ?? insideMeta?.uploaded_at).toLocaleString()}
+          </span>
+        )}
+      </div>
+      <AdminVendorPhotoModal
+        open={modal === "front"}
+        onOpenChange={o => !o && setModal(null)}
+        path={front}
+        meta={frontMeta}
+        label="Shop front photo"
+      />
+      <AdminVendorPhotoModal
+        open={modal === "inside"}
+        onOpenChange={o => !o && setModal(null)}
+        path={inside}
+        meta={insideMeta}
+        label="Shop inside photo"
+      />
+    </>
   );
 }
+

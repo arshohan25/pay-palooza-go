@@ -31,10 +31,20 @@ export function useMerchantCategories() {
     load();
   }, []);
 
-  const addCategory = async (_name: string, label: string) => {
+  /**
+   * Add a category. In strict mode, throws a clear error if a matching
+   * (case-insensitive, trimmed) category already exists — for the "Other" flow.
+   */
+  const addCategory = async (_name: string, label: string, opts: { strict?: boolean } = {}) => {
     const { data: name, error } = await (supabase as any)
-      .rpc("add_merchant_category_if_missing", { _label: label });
-    if (error) throw error;
+      .rpc("add_merchant_category_if_missing", { _label: label, _strict: !!opts.strict });
+    if (error) {
+      // Postgres unique_violation returns 23505
+      if ((error as any).code === "23505" || /already exists/i.test(error.message)) {
+        throw new Error(`A category matching "${label.trim()}" already exists. Pick it from the list.`);
+      }
+      throw error;
+    }
     const { data: rows } = await (supabase as any)
       .from("merchant_categories")
       .select("*")
@@ -46,10 +56,20 @@ export function useMerchantCategories() {
     return result.find((c: MerchantCategory) => c.name === name) ?? { name, label } as MerchantCategory;
   };
 
+  const refresh = async () => {
+    const { data } = await (supabase as any)
+      .from("merchant_categories")
+      .select("*")
+      .order("sort_order", { ascending: true });
+    cachedCategories = (data ?? []).filter((c: MerchantCategory) => c.is_active);
+    setCategories(cachedCategories);
+    return data ?? [];
+  };
+
   const getLabelForName = (name: string) => {
     const found = categories.find(c => c.name === name);
     return found?.label || name.replace(/_/g, " ");
   };
 
-  return { categories, loading, addCategory, getLabelForName };
+  return { categories, loading, addCategory, getLabelForName, refresh };
 }

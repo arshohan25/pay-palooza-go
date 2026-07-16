@@ -3579,26 +3579,32 @@ export type Database = {
       merchant_categories: {
         Row: {
           created_at: string | null
+          created_by: string | null
           id: string
           is_active: boolean | null
           label: string
           name: string
+          original_input: string | null
           sort_order: number | null
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           id?: string
           is_active?: boolean | null
           label: string
           name: string
+          original_input?: string | null
           sort_order?: number | null
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           id?: string
           is_active?: boolean | null
           label?: string
           name?: string
+          original_input?: string | null
           sort_order?: number | null
         }
         Relationships: []
@@ -4426,7 +4432,9 @@ export type Database = {
           product_categories: string[] | null
           reviewed_at: string | null
           reviewed_by: string | null
+          shop_front_photo_meta: Json | null
           shop_front_photo_url: string | null
+          shop_inside_photo_meta: Json | null
           shop_inside_photo_url: string | null
           status: string
           store_description: string | null
@@ -4445,7 +4453,9 @@ export type Database = {
           product_categories?: string[] | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          shop_front_photo_meta?: Json | null
           shop_front_photo_url?: string | null
+          shop_inside_photo_meta?: Json | null
           shop_inside_photo_url?: string | null
           status?: string
           store_description?: string | null
@@ -4464,7 +4474,9 @@ export type Database = {
           product_categories?: string[] | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          shop_front_photo_meta?: Json | null
           shop_front_photo_url?: string | null
+          shop_inside_photo_meta?: Json | null
           shop_inside_photo_url?: string | null
           status?: string
           store_description?: string | null
@@ -7626,10 +7638,9 @@ export type Database = {
         }
         Returns: undefined
       }
-      add_merchant_category_if_missing: {
-        Args: { _label: string }
-        Returns: string
-      }
+      add_merchant_category_if_missing:
+        | { Args: { _label: string }; Returns: string }
+        | { Args: { _label: string; _strict?: boolean }; Returns: string }
       admin_approve_fund_request: {
         Args: { p_admin_note?: string; p_request_id: string }
         Returns: Json
@@ -7681,6 +7692,10 @@ export type Database = {
         Args: { p_admin_note?: string; p_request_id: string }
         Returns: Json
       }
+      admin_rename_merchant_category: {
+        Args: { _new_label: string; _old_name: string }
+        Returns: string
+      }
       admin_reset_all_milestones: {
         Args: { p_referral_id: string }
         Returns: Json
@@ -7688,6 +7703,10 @@ export type Database = {
       admin_reverse_chargeback: {
         Args: { p_chargeback_txn_id: string; p_reason: string }
         Returns: Json
+      }
+      admin_set_merchant_category_active: {
+        Args: { _active: boolean; _name: string }
+        Returns: undefined
       }
       admin_toggle_referral_milestone: {
         Args: { p_action: string; p_milestone: number; p_referral_id: string }
@@ -8096,6 +8115,17 @@ export type Database = {
       }
       mark_agent_temp_pin_used: { Args: never; Returns: undefined }
       mark_merchant_temp_pin_used: { Args: never; Returns: undefined }
+      merchant_resubmit_vendor_photos: {
+        Args: {
+          _application_id: string
+          _front_meta: Json
+          _front_path: string
+          _inside_meta: Json
+          _inside_path: string
+          _reason?: string
+        }
+        Returns: undefined
+      }
       merchant_temp_pin_status: {
         Args: { _merchant_user_id: string }
         Returns: {
@@ -8208,6 +8238,16 @@ export type Database = {
             }
             Returns: Json
           }
+      record_vendor_shop_photo_upload: {
+        Args: {
+          _application_id: string
+          _new_meta: Json
+          _new_path: string
+          _reason?: string
+          _slot: string
+        }
+        Returns: undefined
+      }
       redeem_gift_card: { Args: { p_code: string }; Returns: Json }
       refund_payment_link_payment:
         | {
