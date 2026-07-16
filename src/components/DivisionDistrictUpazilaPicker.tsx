@@ -124,7 +124,7 @@ export default function DivisionDistrictUpazilaPicker({
         setUnions(un as UnionRow[]);
         setLoading(false);
       })
-      .catch((e) => alive && (setError(e.message || "Failed to load areas"), setLoading(false)));
+      .catch((e) => alive && (setError(e.message || l.failed), setLoading(false)));
     return () => { alive = false; };
   }, [includeUnion]);
 
