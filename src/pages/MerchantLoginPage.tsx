@@ -12,6 +12,7 @@ import {
   clearDeviceToken,
 } from "@/hooks/use-device-otp-verification";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
+import { activityTracker } from "@/lib/activityTracker";
 import DeviceOtpStep from "@/components/DeviceOtpStep";
 import MerchantForgotPinSheet, { maskBdPhone } from "@/components/merchant/MerchantForgotPinSheet";
 import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
