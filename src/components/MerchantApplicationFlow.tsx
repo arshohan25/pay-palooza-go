@@ -328,14 +328,8 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                       required
                       showLabels
                     />
-                    {locError && (
-                      <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
-                        <p className="text-xs font-semibold text-destructive">
-                          {locError.field === "upazila" ? "Upazila / Thana" : "Union / Powrashava / City Corp."} needs correction
-                        </p>
-                        <p className="text-[11px] text-destructive/90 mt-0.5">{locError.message}</p>
-                      </div>
-                    )}
+                    <LocationMismatchAlert mismatch={locError} />
+
                   </div>
                 </div>
 
