@@ -131,6 +131,8 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       toast.error("Select Union Parishad / Powrashava"); setSubmitting(false); return;
     }
 
+    const derivedRoute = (await districtToRouteCode(location.district)) || null;
+
     const { error } = await (supabase as any).from("merchant_applications").insert({
       user_id: session.user.id,
       business_name: parsed.data.business_name,
@@ -140,7 +142,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       contact_number: parsed.data.contact_number || null,
       contact_email: parsed.data.contact_email || null,
       business_address: parsed.data.business_address || null,
-      route_code: parsed.data.route_code || null,
+      route_code: derivedRoute,
       division: location.division,
       district_name: location.district,
       upazila: location.upazila,
