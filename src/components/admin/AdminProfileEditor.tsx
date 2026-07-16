@@ -306,12 +306,37 @@ export default function AdminProfileEditor({ userId, onClose, onSaved }: AdminPr
                     <div className="grid grid-cols-2 gap-3">
                       <Field label="Business Name" value={agent.business_name} onChange={(v) => setAgent(a => a ? { ...a, business_name: v } : a)} />
                       <Field label="NID Number" value={agent.nid_number} onChange={(v) => setAgent(a => a ? { ...a, nid_number: v } : a)} />
-                      <div>
-                        <Label className="text-xs mb-1 block">District (route code)</Label>
-                        <DistrictRoutePicker value={agent.territory_code} onChange={(code) => setAgent(a => a ? { ...a, territory_code: code } : a)} />
-                      </div>
                       <Field label="Trade License" value={agent.trade_license} onChange={(v) => setAgent(a => a ? { ...a, trade_license: v } : a)} />
                       <Field label="Max Float" value={agent.max_float} type="number" onChange={(v) => setAgent(a => a ? { ...a, max_float: parseFloat(v) || 0 } : a)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Location (Division › District › Upazila › Union / Powrashava)</Label>
+                      <DivisionDistrictUpazilaPicker
+                        value={{
+                          division: agent.division,
+                          district: agent.district,
+                          upazila: agent.upazila,
+                          union_parishad: agent.union_parishad,
+                          area_type: agent.area_type,
+                        }}
+                        onChange={(v) => {
+                          setAgentLocError(null);
+                          setAgent(a => a ? {
+                            ...a,
+                            division: v.division,
+                            district: v.district,
+                            upazila: v.upazila,
+                            union_parishad: v.union_parishad ?? null,
+                            area_type: (v.area_type ?? null) as AgentData["area_type"],
+                          } : a);
+                        }}
+                        required
+                        showLabels={false}
+                      />
+                      <LocationMismatchAlert mismatch={agentLocError} />
+                      <p className="text-[10px] text-muted-foreground">
+                        Territory route code (RR): <span className="font-mono">{agent.territory_code || "auto"}</span> — auto-derived from the district on save.
+                      </p>
                     </div>
                   </div>
                 </>
