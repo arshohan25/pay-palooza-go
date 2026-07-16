@@ -31,16 +31,19 @@ export function useMerchantCategories() {
     load();
   }, []);
 
-  const addCategory = async (name: string, label: string) => {
-    const { data, error } = await (supabase as any)
-      .from("merchant_categories")
-      .insert({ name: name.toLowerCase().replace(/\s+/g, "_"), label, sort_order: 500 })
-      .select()
-      .single();
+  const addCategory = async (_name: string, label: string) => {
+    const { data: name, error } = await (supabase as any)
+      .rpc("add_merchant_category_if_missing", { _label: label });
     if (error) throw error;
-    cachedCategories = null; // bust cache
-    setCategories(prev => [...prev, data]);
-    return data;
+    const { data: rows } = await (supabase as any)
+      .from("merchant_categories")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+    const result = rows ?? [];
+    cachedCategories = result;
+    setCategories(result);
+    return result.find((c: MerchantCategory) => c.name === name) ?? { name, label } as MerchantCategory;
   };
 
   const getLabelForName = (name: string) => {
