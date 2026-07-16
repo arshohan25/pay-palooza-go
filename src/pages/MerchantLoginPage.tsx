@@ -725,7 +725,14 @@ export default function MerchantLoginPage() {
               <>
                 <button
                   type="button"
-                  onClick={() => setApplyOpen(true)}
+                  onClick={() => {
+                    activityTracker.track({
+                      event_type: "tap",
+                      event_name: "merchant_apply_open",
+                      target: "apply_as_merchant",
+                    });
+                    setApplyOpen(true);
+                  }}
                   className="group relative h-12 w-full overflow-hidden rounded-2xl border border-amber-300/25 bg-gradient-to-b from-amber-400/10 via-amber-500/5 to-transparent shadow-[0_8px_24px_-12px_rgba(251,191,36,0.35),inset_0_1px_0_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-all duration-300 hover:border-amber-300/50 hover:shadow-[0_12px_32px_-10px_rgba(251,191,36,0.5),inset_0_1px_0_0_rgba(255,255,255,0.15)] active:scale-[0.98]"
                 >
                   <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
