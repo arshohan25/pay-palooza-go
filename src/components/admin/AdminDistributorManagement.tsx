@@ -19,6 +19,9 @@ import AssignAgentsDialog from "./AssignAgentsDialog";
 import BulkTransferDistributorDialog from "./BulkTransferDistributorDialog";
 import { reassignAgent, removeTerritory, transferTerritory, addTerritory, canManageDistributors } from "@/lib/distributorAdmin";
 import DistrictMultiSelect from "@/components/DistrictMultiSelect";
+import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
+import LocationMismatchAlert from "@/components/LocationMismatchAlert";
+import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
 
 const csvToArr = (s: string) => s.split(",").map(t => t.trim()).filter(Boolean);
 const arrToCsv = (a: string[]) => a.join(", ");
@@ -51,7 +54,10 @@ export default function AdminDistributorManagement() {
   // Create
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [createForm, setCreateForm] = useState<{ phone: string; business_name: string; territory: string; commission_rate: string; max_float: string; role: "distributor" | "super_distributor" }>({ phone: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" });
+  const [createForm, setCreateForm] = useState<{ phone: string; name: string; business_name: string; territory: string; commission_rate: string; max_float: string; role: "distributor" | "super_distributor" }>({ phone: "", name: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" });
+  const emptyLoc: DivisionDistrictUpazilaValue = { division: null, district: null, upazila: null, union_parishad: null, area_type: null };
+  const [createLoc, setCreateLoc] = useState<DivisionDistrictUpazilaValue>(emptyLoc);
+  const [createLocError, setCreateLocError] = useState<LocationMismatch | null>(null);
 
   // Edit inline
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -222,6 +228,12 @@ export default function AdminDistributorManagement() {
     const phone = createForm.phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone"); return; }
     if (!createForm.business_name.trim()) { toast.error("Business name required"); return; }
+    if (!createLoc.division || !createLoc.district || !createLoc.upazila) {
+      const mismatch = await detectLocationMismatch(createLoc);
+      setCreateLocError(mismatch);
+      toast.error(mismatch?.message || "Pick Division › District › Upazila");
+      return;
+    }
     const role = ((createForm as any).role === "super_distributor" ? "super_distributor" : "distributor") as "distributor" | "super_distributor";
     setCreating(true);
     try {
@@ -236,13 +248,13 @@ export default function AdminDistributorManagement() {
         const { data: existingDist } = await supabase
           .from("distributors").select("id").eq("user_id", userId).maybeSingle();
         if (existingDist) { toast.error("This user is already a distributor"); setCreating(false); return; }
-        await supabase.from("profiles").update({ name: createForm.business_name }).eq("user_id", userId);
+        await supabase.from("profiles").update({ name: createForm.name.trim() || createForm.business_name }).eq("user_id", userId);
       } else {
         pin = String(Math.floor(1000 + Math.random() * 9000));
-        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: createForm.business_name });
+        const { data: authData } = await signUpWithPhonePassword(phone, pinToPassword(pin), { display_name: createForm.name.trim() || createForm.business_name });
         if (!authData?.user) throw new Error("Account creation failed");
         userId = authData.user.id;
-        await supabase.from("profiles").update({ name: createForm.business_name, phone }).eq("user_id", userId);
+        await supabase.from("profiles").update({ name: createForm.name.trim() || createForm.business_name, phone }).eq("user_id", userId);
       }
 
       const { data: hasRole } = await supabase
@@ -250,21 +262,35 @@ export default function AdminDistributorManagement() {
       if (!hasRole) {
         await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
       }
-      await supabase.from("distributors").insert({
+      const { error: distErr } = await supabase.from("distributors").insert({
         user_id: userId,
         business_name: createForm.business_name.trim(),
         territory: createForm.territory ? createForm.territory.split(",").map(t => t.trim()).filter(Boolean) : null,
         commission_rate: parseFloat(createForm.commission_rate) || 2,
         max_float: parseInt(createForm.max_float) || 1000000,
         status: "active" as any,
-      });
+        division: createLoc.division,
+        district: createLoc.district,
+        upazila: createLoc.upazila,
+        union_parishad: createLoc.union_parishad ?? null,
+        area_type: createLoc.area_type ?? null,
+      } as any);
+      if (distErr) {
+        if (/Invalid location hierarchy/i.test(distErr.message)) {
+          const mismatch = await detectLocationMismatch(createLoc);
+          setCreateLocError(mismatch);
+        }
+        throw distErr;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `${role}_created`, entity_type: role, entity_id: userId, details: { business_name: createForm.business_name, promoted_existing: !pin } }).then();
       }
       toast.success(pin ? `${role === "super_distributor" ? "Super distributor" : "Distributor"} created! Temp PIN: ${pin}` : `Existing user promoted to ${role.replace("_", " ")}`, { duration: 10000 });
       setCreateOpen(false);
-      setCreateForm({ phone: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
+      setCreateForm({ phone: "", name: "", business_name: "", territory: "", commission_rate: "2", max_float: "1000000", role: "distributor" } as any);
+      setCreateLoc(emptyLoc);
+      setCreateLocError(null);
       load();
     } catch (err: any) {
       toast.error(err.message || "Failed to create distributor");
@@ -582,8 +608,15 @@ export default function AdminDistributorManagement() {
               </div>
             </div>
             <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
+            <div><Label>Owner Full Name</Label><Input placeholder="Owner's full name" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label>Business Name *</Label><Input placeholder="Distribution company name" value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} /></div>
-            <div><Label>Territories</Label><DistrictMultiSelect value={csvToArr(createForm.territory)} onChange={(codes) => setCreateForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
+            <div className="space-y-1.5">
+              <Label>Primary Location *</Label>
+              <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
+              <DivisionDistrictUpazilaPicker value={createLoc} onChange={(v) => { setCreateLoc(v); if (createLocError) setCreateLocError(null); }} required showLabels={false} />
+              <LocationMismatchAlert mismatch={createLocError} />
+            </div>
+            <div><Label>Operating Territories</Label><DistrictMultiSelect value={csvToArr(createForm.territory)} onChange={(codes) => setCreateForm(f => ({ ...f, territory: arrToCsv(codes) }))} placeholder="Select districts" /></div>
             <div className="grid grid-cols-2 gap-2">
               <div><Label>Commission Rate (%)</Label><Input type="number" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
               <div><Label>Max Float (৳)</Label><Input type="number" value={createForm.max_float} onChange={e => setCreateForm(f => ({ ...f, max_float: e.target.value }))} /></div>
