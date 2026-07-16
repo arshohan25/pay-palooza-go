@@ -15,6 +15,18 @@ test.use({
   viewport: { width: 390, height: 780 },
 });
 
+// Bangla mode so both category + union labels render in Bangla script.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => {
+    try {
+      window.localStorage.setItem("lang", "bn");
+      window.localStorage.setItem("i18n-lang", "bn");
+    } catch {}
+  });
+});
+
+const BN_RE = /[\u0980-\u09FF]/;
+
 async function touchDrag(
   page: import("@playwright/test").Page,
   x: number,
