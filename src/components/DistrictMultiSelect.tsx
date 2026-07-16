@@ -183,7 +183,7 @@ export default function DistrictMultiSelect({
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                {/* rest of popover content inserted below */}
+                {popoverBody}
               </PopoverContent>
             </Popover>
           </div>
