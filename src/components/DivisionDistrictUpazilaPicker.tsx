@@ -60,7 +60,7 @@ interface Props {
 }
 
 interface UpazilaRow { division: string; district: string; upazila: string }
-interface UnionRow { division: string; district: string; upazila: string; name: string; type: AreaType }
+interface UnionRow { division: string; district: string; upazila: string; name: string; name_bn: string | null; type: AreaType }
 
 // Simple in-memory caches so repeat opens don't refetch.
 let upazilaCache: UpazilaRow[] | null = null;
