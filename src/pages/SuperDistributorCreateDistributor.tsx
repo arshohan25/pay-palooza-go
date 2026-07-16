@@ -27,10 +27,17 @@ const SuperDistributorCreateDistributor = () => {
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [territories, setTerritories] = useState<string[]>([]);
+  const [location, setLocation] = useState<DivisionDistrictUpazilaValue>({
+    division: null, district: null, upazila: null, union_parishad: null, area_type: null,
+  });
+  const [locError, setLocError] = useState<LocationMismatch | null>(null);
   const [maxFloat, setMaxFloat] = useState("10000000");
   const [commissionRate, setCommissionRate] = useState("0.20");
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => { if (locError) setLocError(null); }, [location.division, location.district, location.upazila, location.union_parishad, location.area_type]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   if (authLoading) {
     return (
