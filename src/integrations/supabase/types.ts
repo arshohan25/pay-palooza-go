@@ -812,6 +812,7 @@ export type Database = {
         Row: {
           activated_at: string | null
           address: string | null
+          area_type: string | null
           avg_rating: number | null
           business_name: string | null
           commission_earned: number
@@ -834,6 +835,7 @@ export type Database = {
           territory_code: string | null
           total_ratings: number | null
           trade_license: string | null
+          union_parishad: string | null
           upazila: string | null
           updated_at: string
           user_id: string
@@ -841,6 +843,7 @@ export type Database = {
         Insert: {
           activated_at?: string | null
           address?: string | null
+          area_type?: string | null
           avg_rating?: number | null
           business_name?: string | null
           commission_earned?: number
@@ -863,6 +866,7 @@ export type Database = {
           territory_code?: string | null
           total_ratings?: number | null
           trade_license?: string | null
+          union_parishad?: string | null
           upazila?: string | null
           updated_at?: string
           user_id: string
@@ -870,6 +874,7 @@ export type Database = {
         Update: {
           activated_at?: string | null
           address?: string | null
+          area_type?: string | null
           avg_rating?: number | null
           business_name?: string | null
           commission_earned?: number
@@ -892,6 +897,7 @@ export type Database = {
           territory_code?: string | null
           total_ratings?: number | null
           trade_license?: string | null
+          union_parishad?: string | null
           upazila?: string | null
           updated_at?: string
           user_id?: string
@@ -2047,6 +2053,7 @@ export type Database = {
       }
       distributors: {
         Row: {
+          area_type: string | null
           business_name: string
           commission_rate: number
           created_at: string
@@ -2055,10 +2062,12 @@ export type Database = {
           parent_id: string | null
           status: Database["public"]["Enums"]["agent_status"]
           territory: string[] | null
+          union_parishad: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          area_type?: string | null
           business_name: string
           commission_rate?: number
           created_at?: string
@@ -2067,10 +2076,12 @@ export type Database = {
           parent_id?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory?: string[] | null
+          union_parishad?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          area_type?: string | null
           business_name?: string
           commission_rate?: number
           created_at?: string
@@ -2079,6 +2090,7 @@ export type Database = {
           parent_id?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory?: string[] | null
+          union_parishad?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -3416,6 +3428,7 @@ export type Database = {
       merchant_applications: {
         Row: {
           admin_notes: string | null
+          area_type: string | null
           bank_account_holder: string | null
           bank_account_number: string | null
           bank_branch: string | null
@@ -3427,6 +3440,8 @@ export type Database = {
           contact_email: string | null
           contact_number: string | null
           created_at: string | null
+          district_name: string | null
+          division: string | null
           id: string
           owner_name: string | null
           reason: string | null
@@ -3435,11 +3450,14 @@ export type Database = {
           route_code: string | null
           status: string
           trade_license: string | null
+          union_parishad: string | null
+          upazila: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           admin_notes?: string | null
+          area_type?: string | null
           bank_account_holder?: string | null
           bank_account_number?: string | null
           bank_branch?: string | null
@@ -3451,6 +3469,8 @@ export type Database = {
           contact_email?: string | null
           contact_number?: string | null
           created_at?: string | null
+          district_name?: string | null
+          division?: string | null
           id?: string
           owner_name?: string | null
           reason?: string | null
@@ -3459,11 +3479,14 @@ export type Database = {
           route_code?: string | null
           status?: string
           trade_license?: string | null
+          union_parishad?: string | null
+          upazila?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           admin_notes?: string | null
+          area_type?: string | null
           bank_account_holder?: string | null
           bank_account_number?: string | null
           bank_branch?: string | null
@@ -3475,6 +3498,8 @@ export type Database = {
           contact_email?: string | null
           contact_number?: string | null
           created_at?: string | null
+          district_name?: string | null
+          division?: string | null
           id?: string
           owner_name?: string | null
           reason?: string | null
@@ -3483,6 +3508,8 @@ export type Database = {
           route_code?: string | null
           status?: string
           trade_license?: string | null
+          union_parishad?: string | null
+          upazila?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -7071,6 +7098,39 @@ export type Database = {
           token_expires_at?: string | null
           token_hash?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      unions: {
+        Row: {
+          created_at: string
+          district: string
+          division: string
+          id: string
+          is_active: boolean
+          name: string
+          type: string
+          upazila: string
+        }
+        Insert: {
+          created_at?: string
+          district: string
+          division: string
+          id?: string
+          is_active?: boolean
+          name: string
+          type?: string
+          upazila: string
+        }
+        Update: {
+          created_at?: string
+          district?: string
+          division?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          type?: string
+          upazila?: string
         }
         Relationships: []
       }
