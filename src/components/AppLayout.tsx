@@ -1,6 +1,7 @@
 import { forwardRef, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import PushOptInPrompt from "@/components/PushOptInPrompt";
+import AuthErrorOverlay from "@/components/AuthErrorOverlay";
 import { activityTracker } from "@/lib/activityTracker";
 
 const AppLayout = forwardRef<HTMLDivElement>((_, ref) => {
