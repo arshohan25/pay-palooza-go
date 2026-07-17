@@ -156,6 +156,33 @@ const RoleInstallPage = () => {
   const [hasPrompt, setHasPrompt] = useState(!!getInstallPrompt());
   const [installed, setInstalled] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const checklistKey = role ? `mfs_install_checklist_${role}` : null;
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+
+  // Load saved checklist progress
+  useEffect(() => {
+    if (!checklistKey) return;
+    try {
+      const raw = localStorage.getItem(checklistKey);
+      if (raw) setChecked(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  }, [checklistKey]);
+
+  const toggleItem = (key: string) => {
+    setChecked((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      if (checklistKey) {
+        try {
+          localStorage.setItem(checklistKey, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+      }
+      return next;
+    });
+  };
 
   const config = role ? ROLE_CONFIG[role] : null;
 
