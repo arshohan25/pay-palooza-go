@@ -39,7 +39,25 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@EasyPay" />
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/LSsA7Tbe5GOQalDLwipIpE2r3cb2/social-images/social-1773562722041-photo_2026-03-02_15-11-13.webp">
-  <link rel="manifest" href="/manifest.json">
+  <script>
+    (function () {
+      var path = window.location.pathname;
+      var manifest = "/manifest.json";
+      if (path.indexOf("/install/super-distributor") === 0 || path.indexOf("/super-distributor") === 0 || path.indexOf("/login/super-distributor") === 0) {
+        manifest = "/manifest-super-distributor.json";
+      } else if (path.indexOf("/install/distributor") === 0 || path.indexOf("/distributor") === 0 || path.indexOf("/login/distributor") === 0) {
+        manifest = "/manifest-distributor.json";
+      } else if (path.indexOf("/install/agent") === 0 || path.indexOf("/agent") === 0 || path.indexOf("/login/agent") === 0) {
+        manifest = "/manifest-agent.json";
+      } else if (path.indexOf("/install/merchant") === 0 || path.indexOf("/merchant") === 0 || path.indexOf("/merchant-login") === 0) {
+        manifest = "/manifest-merchant.json";
+      } else if (path.indexOf("/install/admin") === 0 || path.indexOf("/admin") === 0 || path.indexOf("/login/admin") === 0) {
+        manifest = "/manifest-admin.json";
+      }
+      window.__EASYPAY_MANIFEST_HREF__ = manifest;
+      document.write('<link id="app-manifest" rel="manifest" href="' + manifest + '">');
+    })();
+  </script>
   
   
   
