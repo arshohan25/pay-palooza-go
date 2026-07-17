@@ -333,7 +333,7 @@ export default function TeamLoginPage() {
               Two-Factor Authentication
             </DialogTitle>
             <DialogDescription>
-              Enter the 6-digit code sent to <strong>{maskEmail(teamEmail)}</strong>
+              Enter the 6-digit code sent to <strong>{teamEmail}</strong>
             </DialogDescription>
           </DialogHeader>
 
