@@ -59,15 +59,17 @@ function getTxDisplay(tx: DbTransaction) {
   const cashback = isCashbackTx(tx);
   const isCredit = tx.type === "addmoney" || tx.type === "receive" || tx.type === "cashin";
   const cfg = cashback ? CASHBACK_CONFIG : (TX_CONFIG[tx.type] ?? TX_CONFIG.send);
+  const contactName = tx.recipient_phone ? getContactNameByPhone(tx.recipient_phone) : null;
+  const partyName = cashback
+    ? (tx.description?.replace("Drive Cashback: ", "") || "Cashback")
+    : (contactName || tx.recipient_name || tx.recipient_phone || cfg.label);
   return {
     icon: cashback ? CASHBACK_CONFIG.Icon : (isCredit ? RECEIVE_CONFIG.Icon : cfg.Icon),
     bg: cashback ? CASHBACK_CONFIG.bg : (isCredit ? RECEIVE_CONFIG.bg : cfg.bg),
     ring: cashback ? CASHBACK_CONFIG.ring : (isCredit ? RECEIVE_CONFIG.ring : cfg.ring),
     label: cashback ? "Drive Cashback" : cfg.label,
     gradient: cfg.gradient,
-    name: cashback
-      ? (tx.description?.replace("Drive Cashback: ", "") || "Cashback")
-      : cfg.label,
+    name: partyName,
     amount: isCredit ? tx.amount : -tx.amount,
     isCashback: cashback,
   };
