@@ -160,6 +160,7 @@ const App = () => (
                     <Route path="/addmoney/status" element={<AddMoneyStatusPage />} />
                     <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                     <Route path="/forgot-pin" element={<ForgotPinPage />} />
+                    <Route path="/register/agent" element={<AgentRegister />} />
 
 
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]} unauthenticatedRedirect="/login/admin" unauthorizedRedirect="/login/admin"><AdminDashboard /></RoleGuard>} />
