@@ -52,6 +52,7 @@ export default function TeamLoginPage() {
   const [otpCode, setOtpCode] = useState("");
   const [verifying2fa, setVerifying2fa] = useState(false);
   const [teamEmail, setTeamEmail] = useState("");
+  const [preAuthToken, setPreAuthToken] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const proceedToRedirect = async () => {
@@ -60,48 +61,40 @@ export default function TeamLoginPage() {
     navigate(dest, { replace: true });
   };
 
-  const start2faOrRedirect = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { await proceedToRedirect(); return; }
-
-    // Fetch team member email for 2FA
-    const { data: tm } = await supabase
-      .from("team_members")
-      .select("email")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    const email = (tm as any)?.email;
-    if (!email) {
-      // No email configured — skip 2FA
-      toast.success("Welcome back!");
-      await proceedToRedirect();
-      return;
-    }
-
-    // Send OTP
-    setTeamEmail(email);
-    try {
-      await supabase.functions.invoke("send-email-otp", {
-        body: { email, purpose: "team_2fa" },
-      });
-      setShow2fa(true);
-      toast.info(`Verification code sent to ${maskEmail(email)}`);
-    } catch {
-      toast.error("Failed to send verification code");
-    }
-  };
-
   const verify2fa = async () => {
-    if (otpCode.length !== 6) return;
+    if (otpCode.length !== 6 || !preAuthToken) return;
     setVerifying2fa(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-email-otp", {
-        body: { email: teamEmail, action: "verify", code: otpCode, purpose: "team_2fa" },
+      const { data, error } = await supabase.functions.invoke("team-login-verify", {
+        body: { preAuthToken, code: otpCode },
       });
       if (error) throw error;
       const result = typeof data === "string" ? JSON.parse(data) : data;
       if (result?.error) throw new Error(result.error);
+      if (!result?.tokenHash || !result?.email) throw new Error("Invalid response");
+
+      // Exchange the server-issued magiclink token for a real Supabase session.
+      const { error: verifyErr } = await supabase.auth.verifyOtp({
+        type: "magiclink",
+        token_hash: result.tokenHash,
+      });
+      if (verifyErr) throw verifyErr;
+
+      // Check forced password change *after* the real session is issued.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: tm } = await supabase
+          .from("team_members")
+          .select("has_changed_password")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (tm && !(tm as any).has_changed_password) {
+          setShow2fa(false);
+          setShowPasswordChange(true);
+          setVerifying2fa(false);
+          return;
+        }
+      }
 
       toast.success("Welcome back!");
       setShow2fa(false);
@@ -115,10 +108,16 @@ export default function TeamLoginPage() {
 
   const resendOtp = async () => {
     if (resendCooldown > 0) return;
+    // Restart the flow to mint a fresh pre-auth token + OTP.
     try {
-      await supabase.functions.invoke("send-email-otp", {
-        body: { email: teamEmail, purpose: "team_2fa" },
+      const { data, error } = await supabase.functions.invoke("team-login-start", {
+        body: { username: username.trim(), password },
       });
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (result?.error) throw new Error(result.error);
+      setPreAuthToken(result.preAuthToken);
+      setTeamEmail(result.emailMasked);
       toast.info("New code sent");
       setResendCooldown(30);
       const interval = setInterval(() => {
@@ -127,8 +126,8 @@ export default function TeamLoginPage() {
           return prev - 1;
         });
       }, 1000);
-    } catch {
-      toast.error("Failed to resend code");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to resend code");
     }
   };
 
@@ -140,35 +139,20 @@ export default function TeamLoginPage() {
     }
     setLoading(true);
     try {
-      await teamSignIn(username.trim(), password);
+      // Server-side: validates password, revokes the pre-2FA session, and
+      // sends the OTP. No real Supabase session is issued here.
+      const { data, error } = await supabase.functions.invoke("team-login-start", {
+        body: { username: username.trim(), password },
+      });
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (result?.error) throw new Error(result.error);
+      if (!result?.preAuthToken) throw new Error("Login failed");
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: tm } = await supabase
-          .from("team_members")
-          .select("has_logged_in, has_changed_password")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (tm) {
-          if (!tm.has_logged_in) {
-            await supabase.from("team_members")
-              .update({
-                has_logged_in: true,
-                first_login_at: new Date().toISOString(),
-              } as any)
-              .eq("user_id", user.id);
-          }
-
-          if (!tm.has_changed_password) {
-            setShowPasswordChange(true);
-            setLoading(false);
-            return;
-          }
-        }
-      }
-
-      await start2faOrRedirect();
+      setPreAuthToken(result.preAuthToken);
+      setTeamEmail(result.emailMasked || "");
+      setShow2fa(true);
+      toast.info(`Verification code sent to ${result.emailMasked || "your email"}`);
     } catch (err: any) {
       toast.error(err.message || "Invalid credentials");
     }
@@ -201,7 +185,7 @@ export default function TeamLoginPage() {
 
       toast.success("Password changed successfully!");
       setShowPasswordChange(false);
-      await start2faOrRedirect();
+      await proceedToRedirect();
     } catch (err: any) {
       toast.error(err.message || "Failed to change password");
     }
