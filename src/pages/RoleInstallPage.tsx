@@ -275,25 +275,61 @@ const RoleInstallPage = () => {
         </div>
 
         <div className="mb-8">
-          <h2 className="text-sm font-bold text-foreground mb-3">Before you install</h2>
+          {(() => {
+            const allItems = config.prerequisites.flatMap((g) => g.items);
+            const doneCount = allItems.filter((i) => checked[i]).length;
+            const pct = allItems.length ? Math.round((doneCount / allItems.length) * 100) : 0;
+            return (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-bold text-foreground">Before you install</h2>
+                  <span className="text-[11px] font-semibold text-muted-foreground">{doneCount}/{allItems.length} ready</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden mb-3">
+                  <div
+                    className={`h-full bg-gradient-to-r ${config.color} transition-all`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </>
+            );
+          })()}
           <div className="space-y-3">
             {config.prerequisites.map((group) => {
               const GIcon = group.icon;
               return (
                 <div key={group.title} className="p-4 rounded-2xl bg-muted/40 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-3">
                     <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center text-white`}>
                       <GIcon size={14} />
                     </div>
                     <p className="text-sm font-semibold text-foreground">{group.title}</p>
                   </div>
-                  <ul className="space-y-1.5 pl-1">
-                    {group.items.map((item) => (
-                      <li key={item} className="flex items-start gap-2 text-xs text-muted-foreground">
-                        <Check size={12} className="text-primary shrink-0 mt-0.5" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
+                  <ul className="space-y-1">
+                    {group.items.map((item) => {
+                      const isDone = !!checked[item];
+                      return (
+                        <li key={item}>
+                          <button
+                            type="button"
+                            onClick={() => toggleItem(item)}
+                            className="w-full flex items-start gap-2 text-left p-2 -mx-2 rounded-lg hover:bg-background/60 transition-colors"
+                            aria-pressed={isDone}
+                          >
+                            <span
+                              className={`mt-0.5 w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                isDone ? "bg-primary border-primary" : "border-muted-foreground/40 bg-background"
+                              }`}
+                            >
+                              {isDone && <Check size={10} className="text-primary-foreground" strokeWidth={3} />}
+                            </span>
+                            <span className={`text-xs transition-colors ${isDone ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                              {item}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               );
