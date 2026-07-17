@@ -1,7 +1,8 @@
 {
   "name": "EasyPay Super Distributor",
   "short_name": "EP SuperDist",
-  "description": "EasyPay Super Distributor – Manage distributors, float, and commission networks.",
+  "id": "/super-distributor-app",
+  "description": "EasyPay Super Distributor \u2013 Manage distributors, float, and commission networks.",
   "start_url": "/super-distributor?app=super-distributor",
   "scope": "/",
   "display": "standalone",
@@ -9,8 +10,21 @@
   "theme_color": "#1faa7c",
   "orientation": "portrait",
   "icons": [
-    { "src": "/icons/role-super-distributor.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/role-super-distributor.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/role-super-distributor.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/role-super-distributor.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
-  "categories": ["finance", "business"]
+  "categories": [
+    "finance",
+    "business"
+  ]
 }
