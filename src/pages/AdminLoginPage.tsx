@@ -163,6 +163,9 @@ const AdminLoginPage = () => {
             </button>
             <span className="text-white/40">Admins only</span>
           </div>
+          <p className="text-[11px] text-white/50 text-center pt-1">
+            Admin & team accounts are provisioned internally. Contact your workspace owner.
+          </p>
         </motion.form>
       </div>
     </div>
