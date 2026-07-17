@@ -23,7 +23,7 @@ const ROLES: RoleEntry[] = [
     icon: "/icons/role-customer.png",
     color: "from-emerald-500 to-teal-500",
     Icon: User,
-    installPath: "/install/customer",
+    installPath: "/",
   },
   {
     key: "agent",
