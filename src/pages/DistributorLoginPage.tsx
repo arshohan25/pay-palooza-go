@@ -163,6 +163,9 @@ const DistributorLoginPage = () => {
             </button>
             <span className="text-white/40">Distributors only</span>
           </div>
+          <p className="text-[11px] text-white/50 text-center pt-1">
+            Distributor accounts are provisioned by your Super Distributor or Admin.
+          </p>
         </motion.form>
       </div>
     </div>
