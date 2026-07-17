@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2 } from "lucide-react";
+import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2, FileText, ClipboardCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, onPromptAvailable, isAppInstalled, clearPrompt } from "@/lib/installPromptStore";
