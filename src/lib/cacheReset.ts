@@ -39,6 +39,7 @@ const PRESERVED_KEYS = [
   "mfs_ui_lang",
   "mfs_onboarding_completed",
   "mfs_has_authenticated",
+  "mfs_app_role",
 ];
 
 export async function clearClientCache(version = CACHE_VERSION) {
