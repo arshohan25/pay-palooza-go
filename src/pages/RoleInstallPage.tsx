@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2 } from "lucide-react";
+import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2, FileText, ClipboardCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, onPromptAvailable, isAppInstalled, clearPrompt } from "@/lib/installPromptStore";
 import { useI18n } from "@/lib/i18n";
 import { getLoginPathForRole, type AppRoleKey } from "@/lib/appRole";
+
+interface PrerequisiteGroup {
+  title: string;
+  icon: typeof Shield;
+  items: string[];
+}
 
 const ROLE_CONFIG: Record<string, {
   name: string;
@@ -17,6 +23,9 @@ const ROLE_CONFIG: Record<string, {
   color: string;
   LucideIcon: typeof Shield;
   features: string[];
+  prerequisites: PrerequisiteGroup[];
+  approvalNote: string;
+  approvalEta: string;
 }> = {
   admin: {
     name: "EasyPay Admin",
@@ -27,6 +36,20 @@ const ROLE_CONFIG: Record<string, {
     color: "from-emerald-600 to-teal-500",
     LucideIcon: Shield,
     features: ["User & KYC Management", "Fraud Alert Monitor", "Fee & Commission Config", "Platform Treasury"],
+    prerequisites: [
+      {
+        title: "Required details",
+        icon: FileText,
+        items: ["Corporate email invite from EasyPay HQ", "Employee ID and department", "Government photo ID for identity verification"],
+      },
+      {
+        title: "Approval steps",
+        icon: ClipboardCheck,
+        items: ["Provisioned by Platform Owner only", "Mandatory 2FA enrolment on first login", "Device-bound OTP verification per portal"],
+      },
+    ],
+    approvalNote: "Admin accounts are created internally — self-registration is not available.",
+    approvalEta: "Instant after HQ provisioning",
   },
   "super-distributor": {
     name: "EasyPay Super Distributor",
@@ -37,6 +60,20 @@ const ROLE_CONFIG: Record<string, {
     color: "from-violet-600 to-purple-500",
     LucideIcon: BarChart3,
     features: ["Create Distributors", "Float Management", "Commission Tracking", "Territory Control"],
+    prerequisites: [
+      {
+        title: "Required details",
+        icon: FileText,
+        items: ["Owner full name and active mobile number", "NID number (front & back scan)", "Trade licence copy", "Primary territory: Division › District › Upazila"],
+      },
+      {
+        title: "Approval steps",
+        icon: ClipboardCheck,
+        items: ["Application reviewed by Platform Admin", "Territory conflict check with existing SDs", "Initial float deposit before first distributor is created"],
+      },
+    ],
+    approvalNote: "Super Distributors are onboarded by Admin — no self sign-up. Provide all documents before requesting an account.",
+    approvalEta: "1–3 business days",
   },
   distributor: {
     name: "EasyPay Distributor",
@@ -47,6 +84,20 @@ const ROLE_CONFIG: Record<string, {
     color: "from-blue-600 to-cyan-500",
     LucideIcon: Users,
     features: ["Create Agents", "Float Distribution", "Commission Reports", "Agent Monitoring"],
+    prerequisites: [
+      {
+        title: "Required details",
+        icon: FileText,
+        items: ["Full name and active mobile number", "Parent Super Distributor reference", "NID number for KYC"],
+      },
+      {
+        title: "Approval steps",
+        icon: ClipboardCheck,
+        items: ["Created and linked by your Super Distributor", "Float credited from SD wallet after activation"],
+      },
+    ],
+    approvalNote: "Distributors are created by a Super Distributor. Contact your regional SD to be linked.",
+    approvalEta: "Same day, after SD linking",
   },
   agent: {
     name: "EasyPay Agent",
@@ -57,6 +108,20 @@ const ROLE_CONFIG: Record<string, {
     color: "from-orange-500 to-amber-500",
     LucideIcon: Smartphone,
     features: ["Cash In / Cash Out", "Bill Payment", "Customer Registration", "Transaction History"],
+    prerequisites: [
+      {
+        title: "Required details",
+        icon: FileText,
+        items: ["Full name and shop/outlet name", "Active mobile number for OTP", "NID number and photo", "Shop address (Division › District › Upazila)"],
+      },
+      {
+        title: "Approval steps",
+        icon: ClipboardCheck,
+        items: ["Register from the Agent login screen or via your Distributor", "KYC review and shop verification", "Opening float top-up before going live"],
+      },
+    ],
+    approvalNote: "You can self-register as an Agent, or ask your Distributor to create your account.",
+    approvalEta: "Usually within 24 hours",
   },
   merchant: {
     name: "EasyPay Merchant",
@@ -67,6 +132,20 @@ const ROLE_CONFIG: Record<string, {
     color: "from-rose-500 to-pink-500",
     LucideIcon: ShoppingBag,
     features: ["Accept QR Payments", "Product Management", "Revenue Analytics", "Settlement Tracking"],
+    prerequisites: [
+      {
+        title: "Required details",
+        icon: FileText,
+        items: ["Business name and category", "Owner NID and mobile number", "Trade licence or business proof", "Bank account for settlements"],
+      },
+      {
+        title: "Approval steps",
+        icon: ClipboardCheck,
+        items: ["Submit merchant application in-app", "Compliance & KYC review", "QR kit issued after approval"],
+      },
+    ],
+    approvalNote: "Merchant accounts require a valid business and settlement bank account.",
+    approvalEta: "1–2 business days",
   },
 };
 
@@ -165,6 +244,42 @@ const RoleInstallPage = () => {
                 <span className="text-xs text-foreground font-medium">{f}</span>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-sm font-bold text-foreground mb-3">Before you install</h2>
+          <div className="space-y-3">
+            {config.prerequisites.map((group) => {
+              const GIcon = group.icon;
+              return (
+                <div key={group.title} className="p-4 rounded-2xl bg-muted/40 border border-border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center text-white`}>
+                      <GIcon size={14} />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{group.title}</p>
+                  </div>
+                  <ul className="space-y-1.5 pl-1">
+                    {group.items.map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <Check size={12} className="text-primary shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+            <div className="p-3 rounded-2xl border border-dashed border-border bg-background/50">
+              <div className="flex items-start gap-2">
+                <Clock size={14} className="text-primary shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground">Approval time: {config.approvalEta}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{config.approvalNote}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
