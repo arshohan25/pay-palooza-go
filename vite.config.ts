@@ -14,25 +14,6 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return;
-          if (id.includes('lucide-react')) return 'vendor-icons';
-          if (id.includes('framer-motion')) return 'vendor-motion';
-          if (id.includes('@tanstack/react-query')) return 'vendor-query';
-          if (id.includes('@supabase')) return 'vendor-supabase';
-          if (id.includes('recharts') || id.includes('/d3-')) return 'vendor-charts';
-          if (id.includes('@dnd-kit')) return 'vendor-dnd';
-          if (id.includes('date-fns')) return 'vendor-dates';
-          if (id.includes('@radix-ui')) return 'vendor-ui';
-          if (id.match(/node_modules\/(react|react-dom|react-router-dom|scheduler)\//)) return 'vendor-react';
-          return 'vendor';
-        },
-      },
-    },
-  },
   plugins: [
     mcpPlugin(),
 
