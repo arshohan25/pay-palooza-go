@@ -247,6 +247,42 @@ const RoleInstallPage = () => {
           </div>
         </div>
 
+        <div className="mb-8">
+          <h2 className="text-sm font-bold text-foreground mb-3">Before you install</h2>
+          <div className="space-y-3">
+            {config.prerequisites.map((group) => {
+              const GIcon = group.icon;
+              return (
+                <div key={group.title} className="p-4 rounded-2xl bg-muted/40 border border-border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center text-white`}>
+                      <GIcon size={14} />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{group.title}</p>
+                  </div>
+                  <ul className="space-y-1.5 pl-1">
+                    {group.items.map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <Check size={12} className="text-primary shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+            <div className="p-3 rounded-2xl border border-dashed border-border bg-background/50">
+              <div className="flex items-start gap-2">
+                <Clock size={14} className="text-primary shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground">Approval time: {config.approvalEta}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{config.approvalNote}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <ShareLinksSection roleKey={role as AppRoleKey} shortName={config.shortName} />
 
         <AnimatePresence mode="wait">
