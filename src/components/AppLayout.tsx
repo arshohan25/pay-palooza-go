@@ -19,6 +19,7 @@ const AppLayout = forwardRef<HTMLDivElement>((_, ref) => {
     <div ref={ref} className="contents">
       <Outlet />
       <PushOptInPrompt />
+      <AuthErrorOverlay />
     </div>
   );
 });
