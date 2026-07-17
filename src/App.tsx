@@ -89,6 +89,7 @@ const PaymentPopupPage = lazy(() => import("./pages/PaymentPopupPage"));
 const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
 const AddMoneyStatusPage = lazy(() => import("./pages/AddMoneyStatusPage"));
 const ForgotPinPage = lazy(() => import("./pages/ForgotPinPage"));
+const AdminAuthDiagnosticsPage = lazy(() => import("./pages/AdminAuthDiagnosticsPage"));
 
 
 
@@ -164,6 +165,7 @@ const App = () => (
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]} unauthenticatedRedirect="/login/admin" unauthorizedRedirect="/login/admin"><AdminDashboard /></RoleGuard>} />
                     <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]} unauthenticatedRedirect="/login/admin" unauthorizedRedirect="/login/admin"><AdminUserProfilePage /></RoleGuard>} />
                     <Route path="/admin/mcp-activity" element={<RoleGuard roles={["admin", "developer", "audit"]} unauthenticatedRedirect="/login/admin" unauthorizedRedirect="/login/admin"><AdminMcpActivityLog /></RoleGuard>} />
+                    <Route path="/admin/auth-diagnostics" element={<RoleGuard roles={["admin", "developer"]} unauthenticatedRedirect="/login/admin" unauthorizedRedirect="/login/admin"><AdminAuthDiagnosticsPage /></RoleGuard>} />
 
 
                     <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} unauthenticatedRedirect="/login/agent" unauthorizedRedirect="/login/agent" />}>
