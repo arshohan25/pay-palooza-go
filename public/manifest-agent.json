@@ -1,7 +1,8 @@
 {
   "name": "EasyPay Agent",
   "short_name": "EP Agent",
-  "description": "EasyPay Agent – Cash-in, cash-out, bill pay, and customer onboarding.",
+  "id": "/agent-app",
+  "description": "EasyPay Agent \u2013 Cash-in, cash-out, bill pay, and customer onboarding.",
   "start_url": "/agent?app=agent",
   "scope": "/",
   "display": "standalone",
@@ -9,8 +10,21 @@
   "theme_color": "#1faa7c",
   "orientation": "portrait",
   "icons": [
-    { "src": "/icons/role-agent.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/role-agent.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/role-agent.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/role-agent.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
-  "categories": ["finance", "business"]
+  "categories": [
+    "finance",
+    "business"
+  ]
 }
