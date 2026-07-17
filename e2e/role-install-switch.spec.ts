@@ -142,3 +142,77 @@ test.describe("/install/<role> — manifest files have distinct start_urls", () 
     }
   });
 });
+
+/**
+ * Service-worker + app-shell rebind invariants.
+ *
+ * The app registers a single Workbox SW at `/sw.js` with scope `/` shared by
+ * every role. Switching /install/<role> must therefore:
+ *   1. NEVER produce a per-role SW file (would create a stale, role-scoped
+ *      precache that survives relaunch of a different role).
+ *   2. Keep at most one active registration whose scriptURL is `/sw.js`, so
+ *      switching does not accumulate registrations retaining old assets.
+ *   3. On preview/iframe hosts, register no SW at all (guard in main.tsx),
+ *      so the switching UI never installs a shell that would be reused.
+ */
+test.describe("/install/<role> — service worker & app shell rebind on switch", () => {
+  test("no role-scoped sw.js files exist — one shared /sw.js only", async ({ request }) => {
+    const forbidden = [
+      "/sw-admin.js",
+      "/sw-agent.js",
+      "/sw-distributor.js",
+      "/sw-super-distributor.js",
+      "/sw-merchant.js",
+    ];
+    for (const path of forbidden) {
+      const res = await request.get(path);
+      expect(res.status(), `${path} must not be served`).toBe(404);
+    }
+  });
+
+  test("switching install pages does not accumulate service worker registrations", async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "SW API only reliable in chromium on localhost");
+
+    await clearAppState(page);
+    await page.goto("/install/agent", { waitUntil: "domcontentloaded" });
+    await page.goto("/install/merchant", { waitUntil: "domcontentloaded" });
+    await page.goto("/install/admin", { waitUntil: "domcontentloaded" });
+
+    const regs = await page.evaluate(async () => {
+      if (!("serviceWorker" in navigator)) return [];
+      const list = await navigator.serviceWorker.getRegistrations();
+      return list.map((r) => ({
+        scope: r.scope,
+        scriptURL: r.active?.scriptURL ?? r.installing?.scriptURL ?? r.waiting?.scriptURL ?? null,
+      }));
+    });
+
+    // Preview/localhost guard in main.tsx skips registration entirely; in
+    // production a single shared /sw.js registration is the only valid state.
+    expect(regs.length).toBeLessThanOrEqual(1);
+    for (const r of regs) {
+      expect(r.scriptURL ?? "").toMatch(/\/sw\.js(\?|$)/);
+    }
+  });
+
+  test("no automatic role-scoped cache buckets are created when switching install pages", async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "CacheStorage API test scoped to chromium");
+
+    await clearAppState(page);
+    await page.goto("/install/agent", { waitUntil: "domcontentloaded" });
+    await page.goto("/install/merchant", { waitUntil: "domcontentloaded" });
+    await page.goto("/install/admin", { waitUntil: "domcontentloaded" });
+
+    const keys = await page.evaluate(async () => {
+      if (!("caches" in window)) return [];
+      return caches.keys();
+    });
+
+    // No app code should be creating role-tagged cache buckets — the shared
+    // Workbox precache owns all roles. Anything else risks a stale shell.
+    const roleTagged = keys.filter((k) =>
+      /(^|[-_])(admin|agent|distributor|super-distributor|merchant)([-_]|$)/.test(k),
+    );
+    expect(roleTagged, `unexpected role-scoped cache buckets: ${roleTagged.join(", ")}`).toEqual([]);
+  });
+});
