@@ -163,6 +163,9 @@ const SuperDistributorLoginPage = () => {
             </button>
             <span className="text-white/40">Super distributors only</span>
           </div>
+          <p className="text-[11px] text-white/50 text-center pt-1">
+            Super Distributor accounts are provisioned by Admin.
+          </p>
         </motion.form>
       </div>
     </div>
