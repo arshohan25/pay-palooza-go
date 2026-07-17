@@ -56,17 +56,7 @@ async function bootstrap() {
     window.location.hostname.includes("id-preview--") ||
     window.location.hostname.includes("lovableproject.com");
 
-  if ("serviceWorker" in navigator && !isInIframe && !isPreviewHost) {
-    const registerServiceWorker = () => navigator.serviceWorker.register("/sw.js", { scope: "/" });
-
-    if (document.readyState === "complete") {
-      void registerServiceWorker();
-    } else {
-      window.addEventListener("load", () => {
-        void registerServiceWorker();
-      }, { once: true });
-    }
-  } else if (isInIframe || isPreviewHost) {
+  if (isInIframe || isPreviewHost) {
     void clearPreviewCacheArtifacts();
   }
 }
