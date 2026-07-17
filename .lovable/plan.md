@@ -1,38 +1,42 @@
-## Current state
+# External login + role access + per-role installer audit
 
-- `bnUnion()` only translates structural patterns: `<X> Powrashava`, `<X> Sadar`, `<X> City Corporation`. That covers ~600 powrashavas and 13 city corporations.
-- Plain union names (4,060 unique rows in `unions` where `type='union'`, e.g. "Gazipur", "Barahatia", "Char Kadira") fall through to English in Bangla mode.
-- No e2e test currently asserts Bangla union labels.
+## Scope
 
-Exhaustively hand-translating 4,060 romanised Bengali union names in TypeScript is impractical and bloats the bundle. The right home for these strings is the database.
+Verify that any external user can (a) reach the right login/signup page, (b) get their role assigned correctly, (c) land on the correct role home, and (d) install a role-specific PWA that opens straight into their role.
 
-## Plan
+## Current state (findings from the codebase)
 
-### 1. Add a Bangla name column on `unions` (migration)
-- `ALTER TABLE public.unions ADD COLUMN name_bn text;`
-- No RLS change needed (existing read policy already exposes the row).
+- **Manifests per role** exist: `manifest-agent.json`, `manifest-merchant.json`, `manifest-distributor.json`, `manifest-super-distributor.json`, `manifest-admin.json`, plus the customer `manifest.json`. Each carries `start_url=/<role>?app=<role>` so an installed PWA is bound to its role via `captureAppRoleFromUrl()` / `AppRoleEnforcer`.
+- **Per-role login pages** exist: `AgentLoginPage`, `DistributorLoginPage`, `SuperDistributorLoginPage`, `AdminLoginPage`, `MerchantLoginPage`. `RoleLoginPage` routes `/login/:role` to the right one; customers use `AuthPage`.
+- **Route guards** (`RoleGuard`, `RoleGuardLayout`) already redirect unauthenticated users to `/login/<role>` and role‑mismatched users back too.
+- **Install page** (`/install`, `/install/:role`) swaps the manifest tag per role and exposes install / share links.
 
-### 2. Extend fetch + translation
-- `DivisionDistrictUpazilaPicker.tsx` → `loadUnions()` selects `name_bn` too.
-- Enrich `UnionRow` and pass `name_bn` through to `UnionSearchSelect`.
-- `bnLocation.ts` → `bnUnion(name, nameBn?)` prefers `nameBn` when present, else falls back to today's pattern rules, else English.
-- `UnionSearchSelect` search matcher also matches on `name_bn` so Bangla queries find rows.
+## Known gaps to fix
 
-### 3. Seed Bangla names (best-effort, incremental)
-- Add `scripts/seed-union-bn.mjs` that upserts `name_bn` for the structural cases we can derive deterministically (Powrashava / Sadar / City Corp using the existing upazila/district Bangla maps). This immediately fills ~640 rows and leaves plain unions null (which then fall back to English — same behaviour as today, no regression).
-- Long-tail plain union names remain a follow-up: they can be back-filled later via a data source or manual review without any further code change.
+1. **External agent registration is unreachable.** `AgentRegister` sits at `/agent/register`, i.e. inside the agent `RoleGuard`. An unauthenticated prospective agent gets bounced to `/login/agent` and can never open the self-serve KYC signup. Fix: expose a public route `/register/agent` (and add "Register as agent" link on `AgentLoginPage`). Same audit for distributor/super-distributor: they are upstream-created, so add a clear "Contact distributor/admin" note on their login pages instead of a signup link.
+2. **Merchant apply CTA discoverability.** Confirm `MerchantLoginPage` links to `/merchant-apply` for new merchants; add if missing.
+3. **Customer signup path from install page.** From `/install` (customer PWA), first-run should land on `/` (AuthPage). Verify no accidental role redirect steals unauthenticated visitors.
+4. **`captureAppRoleFromUrl()` must run on cold boot** for installed PWAs so `?app=<role>` binds before the RoleGuard evaluates. Confirm it is called from `main.tsx` (or top-level) and not only inside a guarded page.
+5. **Post-login redirect matches bound app role.** After successful login on `/login/<role>`, ensure we send to `APP_ROLE_HOME[role]`, not the customer home. Currently `RoleLoginPage` does this only on the wrapper effect — verify each dedicated login page (agent/distributor/…) also honors it.
+6. **Role assignment for new signups.** For self-serve merchant apply and agent register: on approval, `user_roles` must gain the correct role row. Spot-check the approval RPCs / edge functions and their handlers.
+7. **Sanity check RoleGuard loading state** so it never traps external users on a spinner if `useUserRoles` returns `[]` for a brand-new session; should still redirect to `/login/<role>`.
 
-### 4. e2e test — `e2e/i18n-bn-union-list.spec.ts`
-- Switch app language to Bangla, open Division→District→Upazila picker with a district known to have a Powrashava (e.g. Narail / Kalia), open the Union popover.
-- Assert:
-  - `data-testid="union-empty"` and `union-loading` labels render in Bangla when applicable.
-  - At least one visible row contains Bangla script (`/[\u0980-\u09FF]/`) — proves translation pipeline works end-to-end.
-  - Group headers ("সিটি কর্পোরেশন", "পৌরসভা", "ইউনিয়ন") render in Bangla.
-- Also add a small unit assertion in `src/lib/bnLocation.ts` covering `bnUnion` with and without `name_bn`.
+## Changes I will make
 
-### Technical notes
-- Migration keeps `name_bn` nullable so existing rows and seed scripts stay valid.
-- `UnionSearchSelect.displayName` prop signature stays the same; the picker just passes a closure that looks up `name_bn` for the given English name.
-- No change to selection value — we continue to persist the English `name` in `union_parishad` so downstream validation (`detectLocationMismatch`, edge functions) is unaffected.
+- Add public route `/register/agent` → `AgentRegister` (outside `/agent` guard).
+- Add `Register as new agent` link on `AgentLoginPage` → `/register/agent`.
+- Add `Apply as merchant` link on `MerchantLoginPage` → `/merchant-apply` (only if missing).
+- Add small "Accounts are created by your distributor / admin" note on distributor, super-distributor, and admin login pages.
+- Ensure `captureAppRoleFromUrl()` runs in `main.tsx` before React mounts.
+- On each dedicated login page's success handler, redirect to `APP_ROLE_HOME[role]` (or `/agent`, `/merchant`, etc.) — confirm/fix.
+- Quick check + fix of the install page routing so `/install` without a role always renders the picker and `/install/<role>` renders the role card. No behavior change if already correct.
 
-Shall I proceed with this plan? If you already have a Bangla-name data source (CSV/JSON) for the 4,060 plain unions, share it and I'll wire the seeder to consume it in the same pass.
+## Out of scope
+
+- No manifest icon regeneration, no new roles, no backend schema changes.
+- No changes to KYC content, only to route accessibility.
+
+## Verification
+
+- `bunx vitest run` on any existing role/login/redirect tests (`app-role-redirects.test.ts`, `role-login-pages.spec.ts`, `role-install-share.spec.ts`).
+- Manual: hit `/install/agent`, `/login/agent`, `/register/agent`, `/login/merchant`, `/login/distributor` while signed out and confirm the correct page renders without redirect loops.

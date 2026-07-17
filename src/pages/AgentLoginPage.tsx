@@ -209,6 +209,17 @@ const AgentLoginPage = () => {
             </button>
             <span className="text-white/40">Agents only</span>
           </div>
+
+          <div className="pt-2 text-center text-xs text-white/60">
+            New agent?{" "}
+            <button
+              type="button"
+              onClick={() => navigate("/register/agent")}
+              className="text-orange-300 font-semibold hover:underline"
+            >
+              Register &amp; complete KYC
+            </button>
+          </div>
         </motion.form>
       </div>
     </div>
