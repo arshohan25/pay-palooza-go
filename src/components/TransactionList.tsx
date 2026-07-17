@@ -101,10 +101,18 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
   const txDate = new Date(tx.created_at);
   const txId = tx.short_id || tx.id.slice(0, 12).toUpperCase();
   const baseAmount = Math.abs(display.amount);
+  // Cash-in / Cash-out commission is paid to the agent, not the customer —
+  // hide it from the customer-facing detail view. Any other credit tx that
+  // carries a commission (referrals, cashback, etc.) truly reflects in the
+  // user's wallet, so we include it in the totals.
+  const isAgentFlow = tx.type === "cashin" || tx.type === "cashout";
+  const userCommission = !isAgentFlow && Number(tx.commission) > 0 ? Number(tx.commission) : 0;
   const summaryBaseLabel = isCredit ? "Gross Amount" : "Principal";
   const summaryFeeLabel = isCredit ? "Fee Deducted" : "Fee (from balance)";
   const summaryTotalLabel = isCredit ? "Net Credited" : "Total Deducted";
-  const summaryTotalAmount = isCredit ? Math.max(0, baseAmount - tx.fee) : baseAmount + tx.fee;
+  const summaryTotalAmount = isCredit
+    ? Math.max(0, baseAmount - tx.fee) + userCommission
+    : baseAmount + tx.fee;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(tx.short_id || tx.id).catch(() => {});
@@ -121,7 +129,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
       ? [{ icon: FileText, label: t("description"), value: tx.description, copy: false }] : []),
     ...(tx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${fmtDec(tx.fee)}`, copy: false, accent: "text-amber-600 dark:text-amber-400" }] : []),
     { icon: Clock,    label: t("dateTime"),        value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
-    ...(tx.commission > 0 ? [{ icon: Tag, label: t("commission"), value: `৳${fmtDec(tx.commission)}`, copy: false, accent: "text-emerald-600 dark:text-emerald-400" }] : []),
+    ...(userCommission > 0 ? [{ icon: Tag, label: t("commission"), value: `+৳${fmtDec(userCommission)}`, copy: false, accent: "text-emerald-600 dark:text-emerald-400" }] : []),
   ];
 
   return (
