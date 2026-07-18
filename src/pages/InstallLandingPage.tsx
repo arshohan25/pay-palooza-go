@@ -109,6 +109,24 @@ const InstallLandingPage = () => {
             Each installer opens a role-specific PWA that binds to your account
             type and launches straight into the correct dashboard.
           </p>
+          <div className="mt-5 flex items-center justify-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => navigate("/install/all")}
+              className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-md hover:opacity-95 active:scale-[0.98] transition"
+            >
+              <Download size={15} />
+              Install all roles (guided)
+              <ArrowRight size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/install/status")}
+              className="inline-flex items-center gap-2 h-11 px-4 rounded-xl border border-border bg-background text-sm font-semibold text-foreground hover:bg-accent transition"
+            >
+              Install status
+            </button>
+          </div>
         </motion.div>
       </header>
 
