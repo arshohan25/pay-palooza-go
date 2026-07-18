@@ -101,11 +101,14 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,
       gcTime: 5 * 60_000,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMount: true,
       retry: 1,
     },
   },
 });
+
 
 const LazyFallback = forwardRef<HTMLDivElement>((_, ref) => (
   <div ref={ref} className="fixed inset-0 z-50 flex items-center justify-center bg-background">
