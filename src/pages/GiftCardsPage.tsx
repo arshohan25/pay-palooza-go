@@ -397,6 +397,13 @@ const GiftCardsPage = () => {
           )}
         </AnimatePresence>
       </div>
+      <PinConfirmSheet
+        open={pinOpen}
+        onClose={() => setPinOpen(false)}
+        title="Confirm gift card purchase"
+        description={`৳${denomination.toLocaleString()} · ${brand === "all" ? BRANDS[0].name : BRANDS.find(b => b.id === brand)?.name}`}
+        onConfirmed={handlePurchase}
+      />
     </div>
   );
 };
