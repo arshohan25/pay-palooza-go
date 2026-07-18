@@ -722,19 +722,50 @@ const PerRoleInstallStatePanel = ({
   isStandalone,
   currentRoleInstalled,
 }: PerRoleInstallStatePanelProps) => {
-  const installedRoles = readInstalledRoles();
+  const [installedRoles, setInstalledRolesState] = useState<string[]>(() => readInstalledRoles());
+  const [history, setHistory] = useState<InstallHistoryMap>(() => readInstallHistory());
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ [currentRole]: true });
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
+
+  useEffect(() => {
+    const refresh = () => {
+      setInstalledRolesState(readInstalledRoles());
+      setHistory(readInstallHistory());
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key === INSTALL_HISTORY_KEY || e.key === INSTALLED_ROLES_KEY) refresh();
+    };
+    window.addEventListener("mfs:install-history", refresh as EventListener);
+    window.addEventListener("storage", onStorage);
+    const interval = window.setInterval(refresh, 2000);
+    return () => {
+      window.removeEventListener("mfs:install-history", refresh as EventListener);
+      window.removeEventListener("storage", onStorage);
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const clearRole = (roleKey: string) => {
     try {
       const next = installedRoles.filter((r) => r !== roleKey);
       localStorage.setItem(INSTALLED_ROLES_KEY, JSON.stringify(next));
+      appendInstallHistory(roleKey, "reset");
       toast.success(`Cleared install state for ${ROLE_CONFIG[roleKey]?.shortName ?? roleKey}`);
       window.setTimeout(() => window.location.reload(), 400);
     } catch {
       toast.error("Could not clear install state");
     }
+  };
+
+  const clearHistoryFor = (roleKey: string) => {
+    clearInstallHistory(roleKey);
+    setHistory((prev) => {
+      const next = { ...prev };
+      delete next[roleKey];
+      return next;
+    });
+    toast.success(`Cleared history for ${ROLE_CONFIG[roleKey]?.shortName ?? roleKey}`);
   };
 
   return (
@@ -744,6 +775,9 @@ const PerRoleInstallStatePanel = ({
         {Object.entries(ROLE_CONFIG).map(([key, cfg]) => {
           const isCurrent = key === currentRole;
           const isInstalled = installedRoles.includes(key);
+          const entries = history[key] ?? [];
+          const lastEntry = entries[0];
+          const isOpen = !!expanded[key];
           let reason = "";
           let buttonState: "shown" | "hidden" = "hidden";
 
@@ -806,9 +840,58 @@ const PerRoleInstallStatePanel = ({
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1">{reason}</p>
+                  {lastEntry ? (
+                    <p className="text-[11px] text-foreground mt-1">
+                      <span
+                        className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded mr-1 align-middle ${ACTION_TONE[lastEntry.action]}`}
+                      >
+                        {ACTION_LABEL[lastEntry.action]}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {formatRelativeTime(lastEntry.at)} · {new Date(lastEntry.at).toLocaleString()}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground/70 mt-1 italic">No install attempts recorded yet.</p>
+                  )}
                   <p className="text-[10px] text-muted-foreground/70 font-mono truncate mt-1">
                     {origin}/install/{key}
                   </p>
+                  {entries.length > 0 && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }))}
+                        className="text-[10px] font-semibold text-primary hover:underline"
+                        aria-expanded={isOpen}
+                      >
+                        {isOpen ? "Hide" : "Show"} history ({entries.length})
+                      </button>
+                      {isOpen && (
+                        <ol className="mt-2 space-y-1 border-l border-border pl-3">
+                          {entries.map((entry, idx) => (
+                            <li key={`${entry.at}-${idx}`} className="text-[11px] flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span
+                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${ACTION_TONE[entry.action]}`}
+                                >
+                                  {ACTION_LABEL[entry.action]}
+                                </span>
+                                <span className="text-muted-foreground">{formatRelativeTime(entry.at)}</span>
+                                <span className="text-muted-foreground/70">·</span>
+                                <span className="text-muted-foreground/70 tabular-nums">
+                                  {new Date(entry.at).toLocaleString()}
+                                </span>
+                              </div>
+                              {entry.note && (
+                                <p className="text-[10px] text-muted-foreground/80 pl-1">{entry.note}</p>
+                              )}
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1 shrink-0">
                   {!isCurrent && (
@@ -828,6 +911,15 @@ const PerRoleInstallStatePanel = ({
                       Reset
                     </button>
                   )}
+                  {entries.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => clearHistoryFor(key)}
+                      className="text-[10px] px-2 py-1 rounded-md bg-background border border-border hover:bg-accent text-muted-foreground"
+                    >
+                      Clear log
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -835,10 +927,11 @@ const PerRoleInstallStatePanel = ({
         })}
       </div>
       <p className="text-[10px] text-muted-foreground/70 mt-2">
-        Install state is tracked locally per browser. Each role installs as its own PWA with a unique manifest id.
+        Install state and attempt history are tracked locally per browser (last {HISTORY_LIMIT_PER_ROLE} events per role).
       </p>
     </div>
   );
 };
+
 
 
