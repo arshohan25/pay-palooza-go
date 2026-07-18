@@ -20,10 +20,10 @@ const ROLES: RoleEntry[] = [
     name: "EasyPay",
     short: "Customer",
     description: "Send money, pay bills, shop, and manage your wallet.",
-    icon: "/icons/role-customer.png",
+    icon: "/icons/icon-512.png",
     color: "from-emerald-500 to-teal-500",
     Icon: User,
-    installPath: "/",
+    installPath: "/customer/install",
   },
   {
     key: "agent",

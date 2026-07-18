@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, onPromptAvailable, clearPrompt } from "@/lib/installPromptStore";
 import { useI18n } from "@/lib/i18n";
-import { getLoginPathForRole, type AppRoleKey } from "@/lib/appRole";
+import { getLoginPathForRole, type AppRoleKey, type InstallableRoleKey } from "@/lib/appRole";
 
 interface PrerequisiteGroup {
   title: string;
@@ -100,6 +100,11 @@ const isStandaloneDisplayMode = () => {
   );
 };
 
+const openInstallLinkInBrowser = (url: string) => {
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+  if (!opened) window.location.href = url;
+};
+
 const ACTION_LABEL: Record<InstallHistoryAction, string> = {
   prompted: "Install prompt shown",
   accepted: "Install accepted",
@@ -134,7 +139,7 @@ const formatRelativeTime = (ts: number) => {
   return `${d}d ago`;
 };
 
-const ROLE_CONFIG: Record<string, {
+const ROLE_CONFIG: Record<InstallableRoleKey, {
   name: string;
   shortName: string;
   description: string;
@@ -147,6 +152,30 @@ const ROLE_CONFIG: Record<string, {
   approvalNote: string;
   approvalEta: string;
 }> = {
+  customer: {
+    name: "EasyPay Customer",
+    shortName: "EP Customer",
+    description: "Send money, pay bills, cash out, shop, and manage your wallet.",
+    manifest: "/manifest.json",
+    icon: "/icons/icon-512.png",
+    color: "from-emerald-500 to-teal-500",
+    LucideIcon: Smartphone,
+    features: ["Send Money", "Cash Out", "Mobile Recharge", "Shop Payments"],
+    prerequisites: [
+      {
+        title: "Required details",
+        icon: FileText,
+        items: ["Active mobile number", "Wallet PIN", "KYC details for full limits"],
+      },
+      {
+        title: "Setup steps",
+        icon: ClipboardCheck,
+        items: ["Install the customer app", "Sign in or create your wallet", "Complete KYC when prompted"],
+      },
+    ],
+    approvalNote: "Customer app can be installed anytime. Some wallet features require KYC approval.",
+    approvalEta: "Instant install",
+  },
   admin: {
     name: "EasyPay Admin",
     shortName: "EP Admin",
@@ -306,7 +335,8 @@ const RoleInstallPage = () => {
     });
   };
 
-  const config = role ? ROLE_CONFIG[role] : null;
+  const roleKey = role && role in ROLE_CONFIG ? (role as InstallableRoleKey) : null;
+  const config = roleKey ? ROLE_CONFIG[roleKey] : null;
 
   // Swap manifest link for this role. If a different role manifest was
   // already evaluated on this page load, force a full reload so Chrome
@@ -314,8 +344,8 @@ const RoleInstallPage = () => {
   // first-visited role can be installed per tab.
   useEffect(() => {
     if (!config) return;
-    if (role && window.location.pathname.startsWith(`/install/${role}`)) {
-      window.location.replace(`/${role}/install${window.location.search}`);
+    if (roleKey && window.location.pathname.startsWith(`/install/${roleKey}`)) {
+      window.location.replace(`/${roleKey}/install${window.location.search}`);
       return;
     }
     const existing = document.querySelector('link[rel="manifest"]');
@@ -331,7 +361,7 @@ const RoleInstallPage = () => {
   useEffect(() => {
     setHasPrompt(!!getInstallPrompt());
     setIsStandalone(isStandaloneDisplayMode());
-    setInstalledRole(role && readInstalledRoles().includes(role) ? role : null);
+    setInstalledRole(roleKey && readInstalledRoles().includes(roleKey) ? roleKey : null);
 
     const unsub = onPromptAvailable(() => {
       setHasPrompt(true);
@@ -340,10 +370,10 @@ const RoleInstallPage = () => {
       setAttemptState("idle");
     });
     const onInstalled = () => {
-      if (!role) return;
-      rememberInstalledRole(role);
-      appendInstallHistory(role, "installed-event");
-      setInstalledRole(role);
+      if (!roleKey) return;
+      rememberInstalledRole(roleKey);
+      appendInstallHistory(roleKey, "installed-event");
+      setInstalledRole(roleKey);
       setAttemptState("idle");
     };
     // Chrome may re-fire beforeinstallprompt when the tab becomes visible
@@ -361,15 +391,15 @@ const RoleInstallPage = () => {
       document.removeEventListener("visibilitychange", recheck);
       window.clearInterval(interval);
     };
-  }, [role]);
+  }, [roleKey]);
 
   const handleInstall = async () => {
     const prompt = getInstallPrompt();
     if (!prompt) {
-      if (role) appendInstallHistory(role, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : "no beforeinstallprompt available");
+      if (roleKey) appendInstallHistory(roleKey, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : "no beforeinstallprompt available");
       if (isStandalone) {
-        window.open(window.location.href, "_blank", "noopener,noreferrer");
-        toast.info("Opened the browser install page. Use the browser menu if the prompt is not shown.");
+        openInstallLinkInBrowser(window.location.href);
+        toast.info("Opening this installer in your browser. Install prompts cannot run inside another installed role app.");
       } else if (attemptCount > 0) {
         toast.info("Retrying — reloading to re-request the install prompt…");
         window.setTimeout(() => window.location.reload(), 400);
@@ -379,27 +409,27 @@ const RoleInstallPage = () => {
       return;
     }
     setAttemptCount((n) => n + 1);
-    if (role) appendInstallHistory(role, "prompted");
+    if (roleKey) appendInstallHistory(roleKey, "prompted");
     try {
       await prompt.prompt();
       const { outcome } = await prompt.userChoice;
       if (outcome === "accepted") {
-        if (role) {
-          rememberInstalledRole(role);
-          appendInstallHistory(role, "accepted");
-          setInstalledRole(role);
+        if (roleKey) {
+          rememberInstalledRole(roleKey);
+          appendInstallHistory(roleKey, "accepted");
+          setInstalledRole(roleKey);
         }
         clearPrompt();
         setHasPrompt(false);
         setAttemptState("idle");
       } else {
-        if (role) appendInstallHistory(role, "dismissed");
+        if (roleKey) appendInstallHistory(roleKey, "dismissed");
         clearPrompt();
         setHasPrompt(false);
         setAttemptState("dismissed");
       }
     } catch (err) {
-      if (role) appendInstallHistory(role, "failed", err instanceof Error ? err.message : undefined);
+      if (roleKey) appendInstallHistory(roleKey, "failed", err instanceof Error ? err.message : undefined);
       clearPrompt();
       setHasPrompt(false);
       setAttemptState("failed");
@@ -407,7 +437,7 @@ const RoleInstallPage = () => {
   };
 
   const handleRetry = () => {
-    if (role) appendInstallHistory(role, "retry");
+    if (roleKey) appendInstallHistory(roleKey, "retry");
     if (getInstallPrompt()) {
       setHasPrompt(true);
       setAttemptState("idle");
@@ -444,7 +474,7 @@ const RoleInstallPage = () => {
   }
 
   const Icon = config.LucideIcon;
-  const currentRoleInstalled = installedRole === role;
+  const currentRoleInstalled = installedRole === roleKey;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -550,10 +580,10 @@ const RoleInstallPage = () => {
           </div>
         </div>
 
-        <ShareLinksSection roleKey={role as AppRoleKey} shortName={config.shortName} />
+        <ShareLinksSection roleKey={roleKey!} shortName={config.shortName} />
 
         <InstallabilityTestSection
-          roleKey={role!}
+          roleKey={roleKey!}
           manifestHref={config.manifest}
           hasPrompt={hasPrompt}
           isStandalone={isStandalone}
@@ -562,7 +592,7 @@ const RoleInstallPage = () => {
 
 
         <PerRoleInstallStatePanel
-          currentRole={role!}
+          currentRole={roleKey!}
           hasPrompt={hasPrompt}
           isStandalone={isStandalone}
           currentRoleInstalled={currentRoleInstalled}
@@ -912,7 +942,7 @@ const InstallabilityTestSection = ({
 
 
 interface ShareLinksSectionProps {
-  roleKey: AppRoleKey;
+  roleKey: string;
   shortName: string;
 }
 
@@ -920,7 +950,10 @@ const ShareLinksSection = ({ roleKey, shortName }: ShareLinksSectionProps) => {
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
   const installUrl = `${origin}/${roleKey}/install`;
-  const loginUrl = `${origin}${getLoginPathForRole(roleKey)}?app=${roleKey}`;
+  const loginUrl =
+    roleKey === "customer"
+      ? `${origin}/customer/?app=customer`
+      : `${origin}${getLoginPathForRole(roleKey as AppRoleKey)}?app=${roleKey}`;
 
   const copy = async (url: string, label: string) => {
     try {
@@ -945,7 +978,7 @@ const ShareLinksSection = ({ roleKey, shortName }: ShareLinksSectionProps) => {
 
   const rows: { key: string; label: string; url: string }[] = [
     { key: "install", label: `${shortName} install page`, url: installUrl },
-    { key: "login", label: `${shortName} login`, url: loginUrl },
+    { key: "login", label: roleKey === "customer" ? `${shortName} app` : `${shortName} login`, url: loginUrl },
   ];
 
   return (
@@ -1021,7 +1054,7 @@ const PerRoleInstallStatePanel = ({
     };
   }, []);
 
-  const clearRole = (roleKey: string) => {
+  const clearRole = (roleKey: InstallableRoleKey) => {
     try {
       const next = installedRoles.filter((r) => r !== roleKey);
       localStorage.setItem(INSTALLED_ROLES_KEY, JSON.stringify(next));
@@ -1033,7 +1066,7 @@ const PerRoleInstallStatePanel = ({
     }
   };
 
-  const clearHistoryFor = (roleKey: string) => {
+  const clearHistoryFor = (roleKey: InstallableRoleKey) => {
     clearInstallHistory(roleKey);
     setHistory((prev) => {
       const next = { ...prev };
@@ -1047,7 +1080,7 @@ const PerRoleInstallStatePanel = ({
     <div className="mb-6" data-testid="install-state-panel">
       <h2 className="text-sm font-bold text-foreground mb-3">Per-role install state</h2>
       <div className="space-y-2">
-        {Object.entries(ROLE_CONFIG).map(([key, cfg]) => {
+        {(Object.entries(ROLE_CONFIG) as Array<[InstallableRoleKey, (typeof ROLE_CONFIG)[InstallableRoleKey]]>).map(([key, cfg]) => {
           const isCurrent = key === currentRole;
           const isInstalled = installedRoles.includes(key);
           const entries = history[key] ?? [];

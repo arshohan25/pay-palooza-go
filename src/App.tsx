@@ -164,6 +164,9 @@ const App = () => (
                     <Route path="/forgot-pin" element={<ForgotPinPage />} />
                     <Route path="/register/agent" element={<AgentRegister />} />
 
+                    <Route path="/customer" element={<AppLayout />}>
+                      <Route index element={<Index />} />
+                    </Route>
 
                     <Route path="/:role/install" element={<RoleInstallPage />} />
                     <Route path="/:role/login" element={<RoleLoginPage />} />

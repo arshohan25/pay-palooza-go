@@ -15,7 +15,7 @@ interface RoleCheck {
 }
 
 const CHECKS: RoleCheck[] = [
-  { role: "customer", label: "Customer", installPath: "/", manifestPath: "/manifest.json", expectedManifestName: /EasyPay/i },
+  { role: "customer", label: "Customer", installPath: "/customer/install", manifestPath: "/manifest.json", expectedManifestName: /EasyPay/i, expectedScope: "/customer/" },
   { role: "agent", label: "Agent", installPath: "/agent/install", manifestPath: "/manifest-agent.json", expectedManifestName: /Agent/i, expectedScope: "/agent/" },
   { role: "merchant", label: "Merchant", installPath: "/merchant/install", manifestPath: "/manifest-merchant.json", expectedManifestName: /Merchant/i, expectedScope: "/merchant/" },
   { role: "distributor", label: "Distributor", installPath: "/distributor/install", manifestPath: "/manifest-distributor.json", expectedManifestName: /Distributor/i, expectedScope: "/distributor/" },
