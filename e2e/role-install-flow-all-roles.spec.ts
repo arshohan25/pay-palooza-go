@@ -24,7 +24,7 @@ type Role = {
 };
 
 const ROLES: Role[] = [
-  { key: "customer", manifest: "/manifest.json", appPath: "/" },
+  { key: "customer", manifest: "/manifest.json", appPath: "/customer" },
   { key: "agent", manifest: "/manifest-agent.json", appPath: "/agent" },
   { key: "merchant", manifest: "/manifest-merchant.json", appPath: "/merchant" },
   { key: "distributor", manifest: "/manifest-distributor.json", appPath: "/distributor" },

@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, getInstallPromptForManifest, onPromptAvailable, clearPrompt } from "@/lib/installPromptStore";
 import { useI18n } from "@/lib/i18n";
-import { getLoginPathForRole, type AppRoleKey, type InstallableRoleKey } from "@/lib/appRole";
+import { getLaunchPathForRole, getLoginPathForRole, type AppRoleKey, type InstallableRoleKey } from "@/lib/appRole";
+import { ensureInstallServiceWorker, getInstallServiceWorkerBlockReason } from "@/lib/pwaServiceWorker";
 
 interface PrerequisiteGroup {
   title: string;
@@ -105,20 +106,8 @@ const openInstallLinkInBrowser = (url: string) => {
   if (!opened) window.location.href = url;
 };
 
-// Landing route for each role's installed PWA. Used by the "Open app" action
-// so an already-installed role can be launched directly instead of trying to
-// re-install (which would silently reload the current app shell).
-const ROLE_APP_PATH: Record<InstallableRoleKey, string> = {
-  customer: "/",
-  agent: "/agent",
-  merchant: "/merchant",
-  distributor: "/distributor",
-  "super-distributor": "/super-distributor",
-  admin: "/admin",
-};
-
 const launchInstalledRoleApp = (roleKey: InstallableRoleKey) => {
-  const path = ROLE_APP_PATH[roleKey] ?? "/";
+  const path = getLaunchPathForRole(roleKey);
   // Same-origin nav so the browser routes into the installed PWA's scope when
   // it exists, or opens the web version otherwise. Never reloads the current
   // app shell in place.
@@ -327,6 +316,7 @@ const RoleInstallPage = () => {
   const [isStandalone, setIsStandalone] = useState(false);
   const [attemptState, setAttemptState] = useState<"idle" | "dismissed" | "failed">("idle");
   const [attemptCount, setAttemptCount] = useState(0);
+  const [installPrepMessage, setInstallPrepMessage] = useState<string | null>(() => getInstallServiceWorkerBlockReason());
   const checklistKey = role ? `mfs_install_checklist_${role}` : null;
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
@@ -387,12 +377,17 @@ const RoleInstallPage = () => {
     setIsStandalone(isStandaloneDisplayMode());
     setInstalledRole(roleKey && readInstalledRoles().includes(roleKey) ? roleKey : null);
 
+    void ensureInstallServiceWorker().then((result) => {
+      setInstallPrepMessage(result.status === "ready" ? null : result.message);
+    });
+
     const unsub = onPromptAvailable(() => {
       const hasRolePrompt = rolePromptAvailable();
       setHasPrompt(hasRolePrompt);
       // A fresh prompt arrived — clear any prior attempt error state so the
       // primary install button reappears without a manual refresh.
       if (hasRolePrompt) setAttemptState("idle");
+      if (hasRolePrompt && roleKey) sessionStorage.removeItem(`mfs_install_reload_${roleKey}`);
     });
     const onInstalled = () => {
       if (!roleKey) return;
@@ -420,19 +415,33 @@ const RoleInstallPage = () => {
   const handleInstall = async () => {
     const prompt = config ? getInstallPromptForManifest(config.manifest) : null;
     if (!prompt) {
+      setAttemptCount((n) => n + 1);
       if (getInstallPrompt()) {
         clearPrompt();
         setHasPrompt(false);
       }
-      if (roleKey) appendInstallHistory(roleKey, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : "no role-matched beforeinstallprompt available");
+      const prep = await ensureInstallServiceWorker();
+      setInstallPrepMessage(prep.status === "ready" ? null : prep.message);
+      const reloadKey = roleKey ? `mfs_install_reload_${roleKey}` : "mfs_install_reload_unknown";
+      const alreadyReloaded = sessionStorage.getItem(reloadKey) === "1";
+      if (prep.status === "ready" && !isStandalone && !alreadyReloaded) {
+        if (roleKey) appendInstallHistory(roleKey, "retry", "service worker prepared; reloading to request install prompt");
+        sessionStorage.setItem(reloadKey, "1");
+        toast.info("Preparing the install prompt — reopening this installer now…");
+        window.setTimeout(() => window.location.reload(), 350);
+        return;
+      }
+      if (roleKey) appendInstallHistory(roleKey, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : prep.message || "no role-matched beforeinstallprompt available");
       if (isStandalone) {
         openInstallLinkInBrowser(window.location.href);
         toast.info("Opening this installer in your browser. Install prompts cannot run inside another installed role app.");
+      } else if (prep.status === "blocked" || prep.status === "unsupported") {
+        toast.info(prep.message);
       } else if (attemptCount > 0) {
         toast.info("Retrying — reloading to re-request the install prompt…");
         window.setTimeout(() => window.location.reload(), 400);
       } else {
-        toast.info("Use your browser menu to install this role app, or tap Retry to try again.");
+        toast.info("The browser did not offer the install prompt yet. Tap Retry after the page reloads.");
       }
       return;
     }
@@ -481,8 +490,15 @@ const RoleInstallPage = () => {
       clearPrompt();
       setHasPrompt(false);
     }
-    toast.info("Reloading to re-request the install prompt…");
-    window.setTimeout(() => window.location.reload(), 300);
+    void ensureInstallServiceWorker().then((prep) => {
+      setInstallPrepMessage(prep.status === "ready" ? null : prep.message);
+      if (prep.status === "ready") {
+        toast.info("Reloading to re-request the install prompt…");
+        window.setTimeout(() => window.location.reload(), 300);
+      } else {
+        toast.info(prep.message);
+      }
+    });
   };
 
 
@@ -714,7 +730,7 @@ const RoleInstallPage = () => {
                 className={`w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r ${config.color} text-white shadow-lg`}
               >
                 <Download size={18} className="mr-2" />
-                {t("ripInstall")} {config.shortName}
+                {isStandalone ? "Open in browser" : `Prepare ${config.shortName} install`}
               </Button>
               <div className="p-4 rounded-2xl bg-muted/50 border border-border">
                 <Icon size={24} className="text-primary mx-auto mb-2" />
@@ -722,6 +738,9 @@ const RoleInstallPage = () => {
                   {isStandalone ? "Open this link in your browser to add another role app" : t("ripInstallManually")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
+                  {installPrepMessage || "The installer will reload once if Chrome needs to re-check this role's app identity."}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
                   <strong>{t("ripIphone")}</strong> {t("ripIphoneHint")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -873,11 +892,13 @@ const InstallabilityTestSection = ({
     }
 
     // 8. Service worker
-    const swReg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    const swResult = await ensureInstallServiceWorker();
     checks.push(
-      swReg
-        ? { label: "Service worker registered", status: "pass", detail: `scope=${swReg.scope}` }
-        : { label: "Service worker registered", status: "warn", detail: "No SW — required for installability on most browsers" },
+      swResult.status === "ready"
+        ? { label: "Service worker ready", status: "pass", detail: swResult.message }
+        : swResult.status === "failed"
+          ? { label: "Service worker ready", status: "fail", detail: swResult.message }
+          : { label: "Service worker ready", status: "warn", detail: swResult.message },
     );
 
     // 9. beforeinstallprompt / already installed
@@ -1160,7 +1181,7 @@ const PerRoleInstallStatePanel = ({
               reason = "Running in standalone mode (another role app). Fallback button opens browser install page.";
               buttonState = "shown";
             } else {
-              reason = "No install prompt yet — showing manual install fallback with browser hints.";
+              reason = "No install prompt yet — button prepares the install worker and rechecks this role.";
               buttonState = "shown";
             }
           } else if (isInstalled) {
