@@ -164,13 +164,20 @@ export default function AdminChargebackDialog({ target, open, onOpenChange, onSu
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setStep("form")} disabled={processing}>Back</Button>
-              <Button variant="destructive" onClick={handleConfirm} disabled={processing}>
+              <Button variant="destructive" onClick={() => setPinOpen(true)} disabled={processing}>
                 {processing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Confirm & Deduct
               </Button>
             </DialogFooter>
           </div>
         )}
+        <PinConfirmSheet
+          open={pinOpen}
+          onClose={() => setPinOpen(false)}
+          title="Authorize chargeback"
+          description={`Enter your PIN to deduct ৳${Math.min(parsedAmount, target.balance).toLocaleString()} from ${target.name || target.phone}.`}
+          onConfirmed={async () => { await handleConfirm(); }}
+        />
       </DialogContent>
     </Dialog>
   );
