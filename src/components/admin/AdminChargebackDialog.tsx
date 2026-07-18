@@ -31,6 +31,7 @@ export default function AdminChargebackDialog({ target, open, onOpenChange, onSu
   const [reason, setReason] = useState("");
   const [processing, setProcessing] = useState(false);
   const [step, setStep] = useState<"form" | "confirm">("form");
+  const [pinOpen, setPinOpen] = useState(false);
 
   const reset = () => {
     setAmount("");
