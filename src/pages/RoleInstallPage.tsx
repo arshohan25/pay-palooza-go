@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, getInstallPromptForManifest, onPromptAvailable, clearPrompt } from "@/lib/installPromptStore";
 import { useI18n } from "@/lib/i18n";
-import { getLaunchPathForRole, getLoginPathForRole, type AppRoleKey, type InstallableRoleKey } from "@/lib/appRole";
+import { getLaunchPathForRole, type InstallableRoleKey } from "@/lib/appRole";
 import { ensureInstallServiceWorker, getInstallServiceWorkerBlockReason } from "@/lib/pwaServiceWorker";
 import { getExpectedManifestScopeForRole, getManifestHrefForRole, getRoleInstallUrl, getRoleLoginUrl } from "@/lib/rolePwaOrigins";
 
@@ -1035,8 +1035,6 @@ interface ShareLinksSectionProps {
 }
 
 const ShareLinksSection = ({ roleKey, shortName }: ShareLinksSectionProps) => {
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
   const installUrl = getRoleInstallUrl(roleKey as InstallableRoleKey);
   const loginUrl = getRoleLoginUrl(roleKey as InstallableRoleKey);
 
