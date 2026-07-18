@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2, FileText, ClipboardCheck, Clock } from "lucide-react";
+import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2, FileText, ClipboardCheck, Clock, RefreshCw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, onPromptAvailable, clearPrompt } from "@/lib/installPromptStore";
@@ -186,6 +186,8 @@ const RoleInstallPage = () => {
   const [hasPrompt, setHasPrompt] = useState(!!getInstallPrompt());
   const [installedRole, setInstalledRole] = useState<string | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [attemptState, setAttemptState] = useState<"idle" | "dismissed" | "failed">("idle");
+  const [attemptCount, setAttemptCount] = useState(0);
   const checklistKey = role ? `mfs_install_checklist_${role}` : null;
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
@@ -237,40 +239,89 @@ const RoleInstallPage = () => {
     setIsStandalone(isStandaloneDisplayMode());
     setInstalledRole(role && readInstalledRoles().includes(role) ? role : null);
 
-    const unsub = onPromptAvailable(() => setHasPrompt(true));
+    const unsub = onPromptAvailable(() => {
+      setHasPrompt(true);
+      // A fresh prompt arrived — clear any prior attempt error state so the
+      // primary install button reappears without a manual refresh.
+      setAttemptState("idle");
+    });
     const onInstalled = () => {
       if (!role) return;
       rememberInstalledRole(role);
       setInstalledRole(role);
+      setAttemptState("idle");
     };
+    // Chrome may re-fire beforeinstallprompt when the tab becomes visible
+    // again after a dismissal. Re-check on focus/visibility so the retry
+    // button flips back to the primary install button automatically.
+    const recheck = () => setHasPrompt(!!getInstallPrompt());
     window.addEventListener("appinstalled", onInstalled);
+    window.addEventListener("focus", recheck);
+    document.addEventListener("visibilitychange", recheck);
+    const interval = window.setInterval(recheck, 2000);
     return () => {
       unsub();
       window.removeEventListener("appinstalled", onInstalled);
+      window.removeEventListener("focus", recheck);
+      document.removeEventListener("visibilitychange", recheck);
+      window.clearInterval(interval);
     };
   }, [role]);
 
   const handleInstall = async () => {
     const prompt = getInstallPrompt();
     if (!prompt) {
+      // No stored prompt — either never fired, was consumed, or we're in
+      // standalone. Try a hard reload to give the browser a chance to
+      // re-fire beforeinstallprompt for this role's manifest.
       if (isStandalone) {
         window.open(window.location.href, "_blank", "noopener,noreferrer");
         toast.info("Opened the browser install page. Use the browser menu if the prompt is not shown.");
+      } else if (attemptCount > 0) {
+        toast.info("Retrying — reloading to re-request the install prompt…");
+        window.setTimeout(() => window.location.reload(), 400);
       } else {
-        toast.info("Use your browser menu to install this role app, or refresh this install page.");
+        toast.info("Use your browser menu to install this role app, or tap Retry to try again.");
       }
       return;
     }
-    await prompt.prompt();
-    const { outcome } = await prompt.userChoice;
-    if (outcome === "accepted") {
-      if (role) {
-        rememberInstalledRole(role);
-        setInstalledRole(role);
+    setAttemptCount((n) => n + 1);
+    try {
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      if (outcome === "accepted") {
+        if (role) {
+          rememberInstalledRole(role);
+          setInstalledRole(role);
+        }
+        clearPrompt();
+        setHasPrompt(false);
+        setAttemptState("idle");
+      } else {
+        // Dismissed — the event is consumed and cannot be re-prompted until
+        // the browser re-fires it. Surface a retry affordance immediately.
+        clearPrompt();
+        setHasPrompt(false);
+        setAttemptState("dismissed");
       }
+    } catch {
       clearPrompt();
       setHasPrompt(false);
+      setAttemptState("failed");
     }
+  };
+
+  const handleRetry = () => {
+    // If the browser already re-fired beforeinstallprompt, use it directly;
+    // otherwise reload the page so a fresh prompt can be captured.
+    if (getInstallPrompt()) {
+      setHasPrompt(true);
+      setAttemptState("idle");
+      void handleInstall();
+      return;
+    }
+    toast.info("Reloading to re-request the install prompt…");
+    window.setTimeout(() => window.location.reload(), 300);
   };
 
   if (!config) {
@@ -423,6 +474,35 @@ const RoleInstallPage = () => {
               <p className="font-bold text-foreground">{t("ripAppInstalled")}</p>
               <p className="text-sm text-muted-foreground mt-1">{t("ripCheckHome")}</p>
             </motion.div>
+          ) : attemptState !== "idle" && !hasPrompt ? (
+            <motion.div key="retry" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+              <div className="p-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 flex items-start gap-2">
+                <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">
+                    {attemptState === "dismissed" ? "Install cancelled" : "Install did not complete"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    You can retry right away — no need to refresh manually.
+                    {attemptCount > 1 ? " If the prompt still won't appear, we'll reload the page for you." : ""}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleRetry}
+                className={`w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r ${config.color} text-white shadow-lg`}
+              >
+                <RefreshCw size={18} className="mr-2" />
+                Retry install {config.shortName}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setAttemptState("idle")}
+                className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                Dismiss and use manual install steps
+              </button>
+            </motion.div>
           ) : hasPrompt ? (
             <motion.div key="installable" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <Button
@@ -457,6 +537,7 @@ const RoleInstallPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
       </div>
     </div>
   );
