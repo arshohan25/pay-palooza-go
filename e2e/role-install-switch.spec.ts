@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 /**
- * Switching between /install/<role> entries must fully rebind the PWA shell:
+ * Switching between /<role>/install entries must fully rebind the PWA shell:
  *   1. The <link rel="manifest"> href swaps to the newly requested role.
  *   2. The stored app role (`mfs_app_role`) is overwritten — never stale.
  *   3. A cold relaunch of the newer manifest's `start_url` binds the new role,
@@ -18,28 +18,32 @@ interface RoleSpec {
   manifest: string;
   home: string;
   loginPath: string;
+  scope: string;
 }
 
 const ROLES: Record<RoleKey, RoleSpec> = {
-  admin: { role: "admin", manifest: "/manifest-admin.json", home: "/admin", loginPath: "/login/admin" },
-  agent: { role: "agent", manifest: "/manifest-agent.json", home: "/agent", loginPath: "/login/agent" },
+  admin: { role: "admin", manifest: "/manifest-admin.json", home: "/admin", loginPath: "/admin/login", scope: "/admin/" },
+  agent: { role: "agent", manifest: "/manifest-agent.json", home: "/agent", loginPath: "/agent/login", scope: "/agent/" },
   distributor: {
     role: "distributor",
     manifest: "/manifest-distributor.json",
     home: "/distributor",
-    loginPath: "/login/distributor",
+    loginPath: "/distributor/login",
+    scope: "/distributor/",
   },
   "super-distributor": {
     role: "super-distributor",
     manifest: "/manifest-super-distributor.json",
     home: "/super-distributor",
-    loginPath: "/login/super-distributor",
+    loginPath: "/super-distributor/login",
+    scope: "/super-distributor/",
   },
   merchant: {
     role: "merchant",
     manifest: "/manifest-merchant.json",
     home: "/merchant",
-    loginPath: "/merchant-login",
+    loginPath: "/merchant/login",
+    scope: "/merchant/",
   },
 };
 
@@ -74,7 +78,7 @@ const SWITCH_PAIRS: Array<[RoleKey, RoleKey]> = [
   ["agent", "distributor"],
 ];
 
-test.describe("/install/<role> — switching rebinds manifest + app role", () => {
+test.describe("/<role>/install — switching rebinds manifest + app role", () => {
   for (const [from, to] of SWITCH_PAIRS) {
     test(`switching from ${from} → ${to} updates manifest link and mfs_app_role`, async ({ page }) => {
       const src = ROLES[from];
@@ -84,14 +88,14 @@ test.describe("/install/<role> — switching rebinds manifest + app role", () =>
 
       // 1. Visit first install page, confirm manifest + bind role manually
       //    (production capture happens via ?app= on start_url; simulate here).
-      await page.goto(`/install/${from}`, { waitUntil: "domcontentloaded" });
+      await page.goto(`/${from}/install`, { waitUntil: "domcontentloaded" });
       await expect
         .poll(async () => readManifestHref(page), { timeout: 5_000 })
         .toBe(src.manifest);
       await page.evaluate((r) => localStorage.setItem("mfs_app_role", r), from);
 
       // 2. Navigate to the second install page in the SAME tab.
-      await page.goto(`/install/${to}`, { waitUntil: "domcontentloaded" });
+      await page.goto(`/${to}/install`, { waitUntil: "domcontentloaded" });
       await expect
         .poll(async () => readManifestHref(page), { timeout: 5_000 })
         .toBe(dst.manifest);
@@ -136,6 +140,7 @@ test.describe("/install/<role> — manifest files have distinct start_urls", () 
       const m = await res.json();
       expect(m.start_url, `${spec.manifest} missing start_url`).toBeTruthy();
       expect(m.start_url).toContain(`app=${spec.role}`);
+      expect(m.scope).toBe(spec.scope);
       expect(seen.has(m.start_url), `duplicate start_url ${m.start_url}`).toBe(false);
       seen.add(m.start_url);
       expect(m.display).toBe("standalone");
@@ -146,8 +151,8 @@ test.describe("/install/<role> — manifest files have distinct start_urls", () 
 /**
  * Service-worker + app-shell rebind invariants.
  *
- * The app registers a single Workbox SW at `/sw.js` with scope `/` shared by
- * every role. Switching /install/<role> must therefore:
+ * The app ships a kill-switch `/sw.js` only; role PWAs are separated by manifest
+ * scope/id, not by cached app shells. Switching /<role>/install must therefore:
  *   1. NEVER produce a per-role SW file (would create a stale, role-scoped
  *      precache that survives relaunch of a different role).
  *   2. Keep at most one active registration whose scriptURL is `/sw.js`, so
@@ -155,7 +160,7 @@ test.describe("/install/<role> — manifest files have distinct start_urls", () 
  *   3. On preview/iframe hosts, register no SW at all (guard in main.tsx),
  *      so the switching UI never installs a shell that would be reused.
  */
-test.describe("/install/<role> — service worker & app shell rebind on switch", () => {
+test.describe("/<role>/install — service worker & app shell rebind on switch", () => {
   test("no role-scoped sw.js files exist — one shared /sw.js only", async ({ request }) => {
     const forbidden = [
       "/sw-admin.js",
@@ -174,9 +179,9 @@ test.describe("/install/<role> — service worker & app shell rebind on switch",
     test.skip(browserName !== "chromium", "SW API only reliable in chromium on localhost");
 
     await clearAppState(page);
-    await page.goto("/install/agent", { waitUntil: "domcontentloaded" });
-    await page.goto("/install/merchant", { waitUntil: "domcontentloaded" });
-    await page.goto("/install/admin", { waitUntil: "domcontentloaded" });
+    await page.goto("/agent/install", { waitUntil: "domcontentloaded" });
+    await page.goto("/merchant/install", { waitUntil: "domcontentloaded" });
+    await page.goto("/admin/install", { waitUntil: "domcontentloaded" });
 
     const regs = await page.evaluate(async () => {
       if (!("serviceWorker" in navigator)) return [];
@@ -199,9 +204,9 @@ test.describe("/install/<role> — service worker & app shell rebind on switch",
     test.skip(browserName !== "chromium", "CacheStorage API test scoped to chromium");
 
     await clearAppState(page);
-    await page.goto("/install/agent", { waitUntil: "domcontentloaded" });
-    await page.goto("/install/merchant", { waitUntil: "domcontentloaded" });
-    await page.goto("/install/admin", { waitUntil: "domcontentloaded" });
+    await page.goto("/agent/install", { waitUntil: "domcontentloaded" });
+    await page.goto("/merchant/install", { waitUntil: "domcontentloaded" });
+    await page.goto("/admin/install", { waitUntil: "domcontentloaded" });
 
     const keys = await page.evaluate(async () => {
       if (!("caches" in window)) return [];
