@@ -33,7 +33,7 @@ const ROLES: RoleEntry[] = [
     icon: "/icons/role-agent.png",
     color: "from-orange-500 to-amber-500",
     Icon: Smartphone,
-    installPath: "/install/agent",
+    installPath: "/agent/install",
   },
   {
     key: "merchant",
@@ -43,7 +43,7 @@ const ROLES: RoleEntry[] = [
     icon: "/icons/role-merchant.png",
     color: "from-rose-500 to-pink-500",
     Icon: ShoppingBag,
-    installPath: "/install/merchant",
+    installPath: "/merchant/install",
   },
   {
     key: "distributor",
@@ -53,7 +53,7 @@ const ROLES: RoleEntry[] = [
     icon: "/icons/role-distributor.png",
     color: "from-blue-600 to-cyan-500",
     Icon: Users,
-    installPath: "/install/distributor",
+    installPath: "/distributor/install",
   },
   {
     key: "super-distributor",
@@ -63,7 +63,7 @@ const ROLES: RoleEntry[] = [
     icon: "/icons/role-super-distributor.png",
     color: "from-violet-600 to-purple-500",
     Icon: BarChart3,
-    installPath: "/install/super-distributor",
+    installPath: "/super-distributor/install",
   },
   {
     key: "admin",
@@ -73,7 +73,7 @@ const ROLES: RoleEntry[] = [
     icon: "/icons/role-admin.png",
     color: "from-emerald-600 to-teal-500",
     Icon: Shield,
-    installPath: "/install/admin",
+    installPath: "/admin/install",
   },
 ];
 

@@ -314,6 +314,10 @@ const RoleInstallPage = () => {
   // first-visited role can be installed per tab.
   useEffect(() => {
     if (!config) return;
+    if (role && window.location.pathname.startsWith(`/install/${role}`)) {
+      window.location.replace(`/${role}/install${window.location.search}`);
+      return;
+    }
     const existing = document.querySelector('link[rel="manifest"]');
     const currentHref = existing?.getAttribute("href");
     const desired = config.manifest;
@@ -424,7 +428,7 @@ const RoleInstallPage = () => {
             <motion.button
               key={key}
               whileTap={{ scale: 0.97 }}
-              onClick={() => navigate(`/install/${key}`)}
+              onClick={() => navigate(`/${key}/install`)}
               className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:bg-accent/50 transition-colors text-left"
             >
               <img src={cfg.icon} alt={cfg.shortName} className="w-12 h-12 rounded-xl" />
@@ -644,7 +648,7 @@ interface ShareLinksSectionProps {
 const ShareLinksSection = ({ roleKey, shortName }: ShareLinksSectionProps) => {
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
-  const installUrl = `${origin}/install/${roleKey}`;
+  const installUrl = `${origin}/${roleKey}/install`;
   const loginUrl = `${origin}${getLoginPathForRole(roleKey)}?app=${roleKey}`;
 
   const copy = async (url: string, label: string) => {
@@ -855,7 +859,7 @@ const PerRoleInstallStatePanel = ({
                     <p className="text-[11px] text-muted-foreground/70 mt-1 italic">No install attempts recorded yet.</p>
                   )}
                   <p className="text-[10px] text-muted-foreground/70 font-mono truncate mt-1">
-                    {origin}/install/{key}
+                    {origin}/{key}/install
                   </p>
                   {entries.length > 0 && (
                     <div className="mt-2">
@@ -896,7 +900,7 @@ const PerRoleInstallStatePanel = ({
                 <div className="flex flex-col gap-1 shrink-0">
                   {!isCurrent && (
                     <a
-                      href={`/install/${key}`}
+                      href={`/${key}/install`}
                       className="text-[10px] px-2 py-1 rounded-md bg-background border border-border hover:bg-accent text-foreground text-center"
                     >
                       Open

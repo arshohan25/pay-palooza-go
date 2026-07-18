@@ -1,10 +1,10 @@
 {
   "name": "EasyPay Distributor",
   "short_name": "EP Distributor",
-  "id": "/distributor-app",
+  "id": "/distributor/install",
   "description": "EasyPay Distributor \u2013 Create agents, manage float, and track commissions.",
-  "start_url": "/distributor?app=distributor",
-  "scope": "/",
+  "start_url": "/distributor/?app=distributor",
+  "scope": "/distributor/",
   "display": "standalone",
   "background_color": "#f3f4f8",
   "theme_color": "#1faa7c",

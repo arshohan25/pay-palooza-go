@@ -17,6 +17,7 @@ const AgentLoginPage = lazy(() => import("@/pages/AgentLoginPage"));
 const DistributorLoginPage = lazy(() => import("@/pages/DistributorLoginPage"));
 const SuperDistributorLoginPage = lazy(() => import("@/pages/SuperDistributorLoginPage"));
 const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
+const MerchantLoginPage = lazy(() => import("@/pages/MerchantLoginPage"));
 
 const ROLE_META: Record<
   AppRoleKey,
@@ -88,7 +89,9 @@ const RoleLoginPage = () => {
           ? SuperDistributorLoginPage
           : roleKey === "admin"
             ? AdminLoginPage
-            : null;
+            : roleKey === "merchant"
+              ? MerchantLoginPage
+              : null;
 
   if (DedicatedLogin) {
     return (

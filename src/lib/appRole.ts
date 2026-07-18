@@ -87,9 +87,9 @@ export function isRoleAllowedForApp(
   return userRoles.some((r) => allowed.includes(r));
 }
 
-/** Login path per role (merchant uses the dedicated merchant login). */
+/** In-scope login path per installed role app. Legacy `/login/:role` routes remain supported. */
 export function getLoginPathForRole(appRole: AppRoleKey): string {
-  return appRole === "merchant" ? "/merchant-login" : `/login/${appRole}`;
+  return `/${appRole}/login`;
 }
 
 export interface EnforcerInput {
@@ -123,6 +123,7 @@ export function computeAppRoleRedirect(input: EnforcerInput): string | null {
   const allowedPrefixes = [
     home,
     loginPath,
+    `/login/${appRole}`,
     "/install",
     "/forgot-pin",
     "/.lovable",
