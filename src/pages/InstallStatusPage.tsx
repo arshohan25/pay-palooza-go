@@ -70,6 +70,7 @@ const InstallStatusPage = () => {
         let manifestOk = false;
         let manifestName: string | undefined;
         let manifestStartUrl: string | undefined;
+        let manifestScope: string | undefined;
         if (c.manifestPath) {
           const mRes = await fetch(`${origin}${c.manifestPath}`, { cache: "no-store" });
           if (mRes.ok) {
