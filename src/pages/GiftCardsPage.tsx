@@ -294,7 +294,7 @@ const GiftCardsPage = () => {
 
               {/* Purchase */}
               <motion.div whileTap={{ scale: 0.98 }}>
-                <Button onClick={handlePurchase} disabled={purchasing} className="w-full rounded-2xl h-13 font-bold text-base shadow-lg shadow-primary/20">
+                <Button onClick={requestPurchase} disabled={purchasing} className="w-full rounded-2xl h-13 font-bold text-base shadow-lg shadow-primary/20">
                   {purchasing ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                     <><Gift className="w-4 h-4 mr-2" />{t("giftCardsPurchase")} ৳{denomination.toLocaleString()} {brand === "all" ? t("giftCardsUniversalChip") : t(selectedBrand.i18n)} {t("giftCardsCard")}</>
                   )}
