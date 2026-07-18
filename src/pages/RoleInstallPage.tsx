@@ -537,3 +537,136 @@ const ShareLinksSection = ({ roleKey, shortName }: ShareLinksSectionProps) => {
   );
 };
 
+interface PerRoleInstallStatePanelProps {
+  currentRole: string;
+  hasPrompt: boolean;
+  isStandalone: boolean;
+  currentRoleInstalled: boolean;
+}
+
+const PerRoleInstallStatePanel = ({
+  currentRole,
+  hasPrompt,
+  isStandalone,
+  currentRoleInstalled,
+}: PerRoleInstallStatePanelProps) => {
+  const installedRoles = readInstalledRoles();
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
+
+  const clearRole = (roleKey: string) => {
+    try {
+      const next = installedRoles.filter((r) => r !== roleKey);
+      localStorage.setItem(INSTALLED_ROLES_KEY, JSON.stringify(next));
+      toast.success(`Cleared install state for ${ROLE_CONFIG[roleKey]?.shortName ?? roleKey}`);
+      window.setTimeout(() => window.location.reload(), 400);
+    } catch {
+      toast.error("Could not clear install state");
+    }
+  };
+
+  return (
+    <div className="mb-6" data-testid="install-state-panel">
+      <h2 className="text-sm font-bold text-foreground mb-3">Per-role install state</h2>
+      <div className="space-y-2">
+        {Object.entries(ROLE_CONFIG).map(([key, cfg]) => {
+          const isCurrent = key === currentRole;
+          const isInstalled = installedRoles.includes(key);
+          let reason = "";
+          let buttonState: "shown" | "hidden" = "hidden";
+
+          if (isCurrent) {
+            if (currentRoleInstalled) {
+              reason = "Already installed on this device — button hidden, success screen shown.";
+              buttonState = "hidden";
+            } else if (hasPrompt) {
+              reason = "beforeinstallprompt captured for this role — install button is shown.";
+              buttonState = "shown";
+            } else if (isStandalone) {
+              reason = "Running in standalone mode (another role app). Fallback button opens browser install page.";
+              buttonState = "shown";
+            } else {
+              reason = "No install prompt yet — showing manual install fallback with browser hints.";
+              buttonState = "shown";
+            }
+          } else if (isInstalled) {
+            reason = "Marked installed previously. Open its install page to reinstall or manage.";
+          } else {
+            reason = "Not installed. Open its install page to add this role app.";
+          }
+
+          return (
+            <div
+              key={key}
+              className={`p-3 rounded-2xl border ${
+                isCurrent ? "border-primary/50 bg-primary/5" : "border-border bg-muted/40"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <img src={cfg.icon} alt={cfg.shortName} className="w-9 h-9 rounded-lg shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-xs font-semibold text-foreground">{cfg.shortName}</p>
+                    {isCurrent && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary text-primary-foreground">
+                        CURRENT
+                      </span>
+                    )}
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                        isInstalled
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {isInstalled ? "INSTALLED" : "NOT INSTALLED"}
+                    </span>
+                    {isCurrent && (
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          buttonState === "shown"
+                            ? "bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        BUTTON {buttonState.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1">{reason}</p>
+                  <p className="text-[10px] text-muted-foreground/70 font-mono truncate mt-1">
+                    {origin}/install/{key}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1 shrink-0">
+                  {!isCurrent && (
+                    <a
+                      href={`/install/${key}`}
+                      className="text-[10px] px-2 py-1 rounded-md bg-background border border-border hover:bg-accent text-foreground text-center"
+                    >
+                      Open
+                    </a>
+                  )}
+                  {isInstalled && (
+                    <button
+                      type="button"
+                      onClick={() => clearRole(key)}
+                      className="text-[10px] px-2 py-1 rounded-md bg-background border border-border hover:bg-destructive/10 text-destructive"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-muted-foreground/70 mt-2">
+        Install state is tracked locally per browser. Each role installs as its own PWA with a unique manifest id.
+      </p>
+    </div>
+  );
+};
+
+
