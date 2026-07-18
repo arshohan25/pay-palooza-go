@@ -105,6 +105,26 @@ const openInstallLinkInBrowser = (url: string) => {
   if (!opened) window.location.href = url;
 };
 
+// Landing route for each role's installed PWA. Used by the "Open app" action
+// so an already-installed role can be launched directly instead of trying to
+// re-install (which would silently reload the current app shell).
+const ROLE_APP_PATH: Record<InstallableRoleKey, string> = {
+  customer: "/",
+  agent: "/agent",
+  merchant: "/merchant",
+  distributor: "/distributor",
+  "super-distributor": "/super-distributor",
+  admin: "/admin",
+};
+
+const launchInstalledRoleApp = (roleKey: InstallableRoleKey) => {
+  const path = ROLE_APP_PATH[roleKey] ?? "/";
+  // Same-origin nav so the browser routes into the installed PWA's scope when
+  // it exists, or opens the web version otherwise. Never reloads the current
+  // app shell in place.
+  window.location.assign(path);
+};
+
 const ACTION_LABEL: Record<InstallHistoryAction, string> = {
   prompted: "Install prompt shown",
   accepted: "Install accepted",
