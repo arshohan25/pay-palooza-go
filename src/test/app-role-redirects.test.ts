@@ -108,5 +108,18 @@ describe("computeAppRoleRedirect", () => {
         computeAppRoleRedirect({ ...base, path: `/${appRole}/install`, appRole })
       ).toBeNull();
     });
+
+    it("another role installer is never captured by the currently bound app", () => {
+      const otherRole = ROLES.find((role) => role !== appRole)!;
+      expect(
+        computeAppRoleRedirect({ ...base, path: `/${otherRole}/install`, appRole })
+      ).toBeNull();
+      expect(
+        computeAppRoleRedirect({ ...base, path: `/install/${otherRole}`, appRole })
+      ).toBeNull();
+      expect(
+        computeAppRoleRedirect({ ...base, path: "/install", appRole })
+      ).toBeNull();
+    });
   });
 });
