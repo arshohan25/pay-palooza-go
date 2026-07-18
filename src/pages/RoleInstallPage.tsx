@@ -100,6 +100,11 @@ const isStandaloneDisplayMode = () => {
   );
 };
 
+const openInstallLinkInBrowser = (url: string) => {
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+  if (!opened) window.location.href = url;
+};
+
 const ACTION_LABEL: Record<InstallHistoryAction, string> = {
   prompted: "Install prompt shown",
   accepted: "Install accepted",
@@ -574,7 +579,7 @@ const RoleInstallPage = () => {
           </div>
         </div>
 
-        <ShareLinksSection roleKey={role as AppRoleKey} shortName={config.shortName} />
+        <ShareLinksSection roleKey={role!} shortName={config.shortName} />
 
         <InstallabilityTestSection
           roleKey={role!}
