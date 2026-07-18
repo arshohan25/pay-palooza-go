@@ -182,7 +182,7 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
                 <Button
                   size="sm"
                   disabled={processingId === r.id}
-                  onClick={() => approve(r)}
+                  onClick={() => setPinTarget(r)}
                   className="flex-1 h-8 text-[11px] gradient-primary text-primary-foreground"
                 >
                   <Check size={12} className="mr-1" />
