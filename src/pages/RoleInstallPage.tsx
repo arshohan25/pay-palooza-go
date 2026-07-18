@@ -147,6 +147,30 @@ const ROLE_CONFIG: Record<string, {
   approvalNote: string;
   approvalEta: string;
 }> = {
+  customer: {
+    name: "EasyPay Customer",
+    shortName: "EP Customer",
+    description: "Send money, pay bills, cash out, shop, and manage your wallet.",
+    manifest: "/manifest.json",
+    icon: "/icons/icon-512.png",
+    color: "from-emerald-500 to-teal-500",
+    LucideIcon: Smartphone,
+    features: ["Send Money", "Cash Out", "Mobile Recharge", "Shop Payments"],
+    prerequisites: [
+      {
+        title: "Required details",
+        icon: FileText,
+        items: ["Active mobile number", "Wallet PIN", "KYC details for full limits"],
+      },
+      {
+        title: "Setup steps",
+        icon: ClipboardCheck,
+        items: ["Install the customer app", "Sign in or create your wallet", "Complete KYC when prompted"],
+      },
+    ],
+    approvalNote: "Customer app can be installed anytime. Some wallet features require KYC approval.",
+    approvalEta: "Instant install",
+  },
   admin: {
     name: "EasyPay Admin",
     shortName: "EP Admin",
@@ -368,8 +392,8 @@ const RoleInstallPage = () => {
     if (!prompt) {
       if (role) appendInstallHistory(role, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : "no beforeinstallprompt available");
       if (isStandalone) {
-        window.open(window.location.href, "_blank", "noopener,noreferrer");
-        toast.info("Opened the browser install page. Use the browser menu if the prompt is not shown.");
+        openInstallLinkInBrowser(window.location.href);
+        toast.info("Opening this installer in your browser. Install prompts cannot run inside another installed role app.");
       } else if (attemptCount > 0) {
         toast.info("Retrying — reloading to re-request the install prompt…");
         window.setTimeout(() => window.location.reload(), 400);
@@ -912,7 +936,7 @@ const InstallabilityTestSection = ({
 
 
 interface ShareLinksSectionProps {
-  roleKey: AppRoleKey;
+  roleKey: string;
   shortName: string;
 }
 
@@ -920,7 +944,10 @@ const ShareLinksSection = ({ roleKey, shortName }: ShareLinksSectionProps) => {
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
   const installUrl = `${origin}/${roleKey}/install`;
-  const loginUrl = `${origin}${getLoginPathForRole(roleKey)}?app=${roleKey}`;
+  const loginUrl =
+    roleKey === "customer"
+      ? `${origin}/customer/?app=customer`
+      : `${origin}${getLoginPathForRole(roleKey as AppRoleKey)}?app=${roleKey}`;
 
   const copy = async (url: string, label: string) => {
     try {
@@ -945,7 +972,7 @@ const ShareLinksSection = ({ roleKey, shortName }: ShareLinksSectionProps) => {
 
   const rows: { key: string; label: string; url: string }[] = [
     { key: "install", label: `${shortName} install page`, url: installUrl },
-    { key: "login", label: `${shortName} login`, url: loginUrl },
+    { key: "login", label: roleKey === "customer" ? `${shortName} app` : `${shortName} login`, url: loginUrl },
   ];
 
   return (
