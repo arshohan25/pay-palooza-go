@@ -124,17 +124,26 @@ test.describe("/install/<role> — beforeinstallprompt refires across role switc
     expect(firesRole2).not.toContain(MANIFEST.agent);
   });
 
-  test("chained role switches all re-fire BIP against the correct manifest", async ({ page }) => {
+  test("chained role switches all re-fire BIP against the correct manifest", async ({ browser }) => {
+    // Use a fresh context per test so addInitScript is only registered once.
     const chain: RoleKey[] = ["agent", "distributor", "super-distributor", "admin"];
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await clearAppState(page); // registers init script exactly once
 
     for (const role of chain) {
-      await clearAppState(page); // fresh instrumentation for each landing
+      // Reset the per-document instrumentation without re-adding the init script.
       await page.goto(`/install/${role}`, { waitUntil: "domcontentloaded" });
-
+      // Wait for any location.replace triggered by RoleInstallPage.
+      await page.waitForLoadState("domcontentloaded");
       await expect
         .poll(() => manifestHref(page), { timeout: 5_000 })
         .toBe(MANIFEST[role]);
 
+      // Clear the recorded fires for this landing, then dispatch & probe.
+      await page.evaluate(() => {
+        (window as unknown as { __bipFires: string[] }).__bipFires = [];
+      });
       expect(await fireSyntheticPromptAndProbe(page)).toBe(true);
 
       const fires = await page.evaluate(
@@ -142,6 +151,7 @@ test.describe("/install/<role> — beforeinstallprompt refires across role switc
       );
       expect(fires, `BIP for ${role} must see its own manifest`).toEqual([MANIFEST[role]]);
     }
+    await context.close();
   });
 
   test("installPromptStore captures the prompt on each landing (getInstallPrompt !== null)", async ({ page }) => {
