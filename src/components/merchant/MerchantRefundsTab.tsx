@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
+import PinConfirmSheet from "@/components/PinConfirmSheet";
 
 interface RefundRow {
   id: string;
@@ -58,6 +59,7 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
   const [partialAmount, setPartialAmount] = useState("");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
 
   const fetchRefunds = useCallback(async () => {
     const { data } = await supabase
@@ -301,7 +303,7 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
                   <Textarea placeholder={t("mrtReasonPlaceholder")} className="text-xs min-h-[60px]" value={reason} onChange={e => setReason(e.target.value)} />
                 </div>
 
-                <Button className="w-full" disabled={submitting || !reason.trim()} onClick={handleSubmitRefund}>
+                <Button className="w-full" disabled={submitting || !reason.trim()} onClick={() => setPinOpen(true)}>
                   {submitting ? <Loader2 className="animate-spin mr-2" size={16} /> : <Undo2 size={16} className="mr-2" />}
                   {t("mrtSubmitRefund")}
                 </Button>
@@ -310,6 +312,13 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
           </div>
         </SheetContent>
       </Sheet>
+      <PinConfirmSheet
+        open={pinOpen}
+        onClose={() => setPinOpen(false)}
+        title="Confirm refund"
+        description="Enter your PIN to authorize this refund."
+        onConfirmed={async () => { await handleSubmitRefund(); }}
+      />
     </div>
   );
 }

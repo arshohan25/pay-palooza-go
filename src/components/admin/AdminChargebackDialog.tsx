@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import PinConfirmSheet from "@/components/PinConfirmSheet";
 
 interface ChargebackTarget {
   userId: string;
@@ -30,6 +31,7 @@ export default function AdminChargebackDialog({ target, open, onOpenChange, onSu
   const [reason, setReason] = useState("");
   const [processing, setProcessing] = useState(false);
   const [step, setStep] = useState<"form" | "confirm">("form");
+  const [pinOpen, setPinOpen] = useState(false);
 
   const reset = () => {
     setAmount("");
@@ -162,13 +164,20 @@ export default function AdminChargebackDialog({ target, open, onOpenChange, onSu
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setStep("form")} disabled={processing}>Back</Button>
-              <Button variant="destructive" onClick={handleConfirm} disabled={processing}>
+              <Button variant="destructive" onClick={() => setPinOpen(true)} disabled={processing}>
                 {processing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Confirm & Deduct
               </Button>
             </DialogFooter>
           </div>
         )}
+        <PinConfirmSheet
+          open={pinOpen}
+          onClose={() => setPinOpen(false)}
+          title="Authorize chargeback"
+          description={`Enter your PIN to deduct ৳${Math.min(parsedAmount, target.balance).toLocaleString()} from ${target.name || target.phone}.`}
+          onConfirmed={async () => { await handleConfirm(); }}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CircleDollarSign, Check, X, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import PinConfirmSheet from "@/components/PinConfirmSheet";
 
 interface FloatReq {
   id: string;
@@ -30,6 +31,7 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
   const [rows, setRows] = useState<FloatReq[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [pinTarget, setPinTarget] = useState<FloatReq | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -180,7 +182,7 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
                 <Button
                   size="sm"
                   disabled={processingId === r.id}
-                  onClick={() => approve(r)}
+                  onClick={() => setPinTarget(r)}
                   className="flex-1 h-8 text-[11px] gradient-primary text-primary-foreground"
                 >
                   <Check size={12} className="mr-1" />
@@ -191,6 +193,13 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
           ))}
         </div>
       )}
+      <PinConfirmSheet
+        open={!!pinTarget}
+        onClose={() => setPinTarget(null)}
+        title="Confirm float approval"
+        description={pinTarget ? `Approve ৳${fmt(pinTarget.amount)} to ${pinTarget.agent_name || "agent"}? Enter your PIN to send funds.` : undefined}
+        onConfirmed={async () => { if (pinTarget) { const r = pinTarget; setPinTarget(null); await approve(r); } }}
+      />
     </Card>
   );
 };
