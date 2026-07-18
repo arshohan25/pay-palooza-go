@@ -57,6 +57,7 @@ const MerchantSupportPage = lazy(() => retryLazyImport(() => import("./pages/Mer
 const RoleInstallPage = lazy(() => import("./pages/RoleInstallPage"));
 const InstallLandingPage = lazy(() => import("./pages/InstallLandingPage"));
 const InstallStatusPage = lazy(() => import("./pages/InstallStatusPage"));
+const InstallAllRolesWizard = lazy(() => import("./pages/InstallAllRolesWizard"));
 const RoleLoginPage = lazy(() => import("./pages/RoleLoginPage"));
 
 const ShopPage = lazy(() => import("./pages/ShopPage"));
