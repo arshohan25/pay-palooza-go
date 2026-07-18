@@ -68,29 +68,30 @@ const InsurancePage = () => {
   
 
   const handlePurchase = async (plan: typeof PLANS["life"][0]) => {
-    if (!user) { toast.error(t("ipToastSignIn")); return; }
+    if (!user) throw new Error(t("ipToastSignIn"));
     setPurchasing(true);
-    const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + plan.duration);
+    try {
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + plan.duration);
 
-    const { error } = await supabase.from("insurance_policies").insert({
-      user_id: user.id,
-      plan_type: category,
-      plan_name: plan.name,
-      coverage_amount: plan.coverage,
-      premium: plan.premium,
-      duration_months: plan.duration,
-      expires_at: expiresAt.toISOString(),
-    } as any);
+      const { error } = await supabase.from("insurance_policies").insert({
+        user_id: user.id,
+        plan_type: category,
+        plan_name: plan.name,
+        coverage_amount: plan.coverage,
+        premium: plan.premium,
+        duration_months: plan.duration,
+        expires_at: expiresAt.toISOString(),
+      } as any);
 
-    if (error) toast.error(t("ipToastFailed"));
-    else {
+      if (error) { toast.error(t("ipToastFailed")); throw error; }
       toast.success(t("ipToastActivated"));
       setSelectedPlan(null);
       const { data } = await supabase.from("insurance_policies").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
       setPolicies(data || []);
+    } finally {
+      setPurchasing(false);
     }
-    setPurchasing(false);
   };
 
   return (
