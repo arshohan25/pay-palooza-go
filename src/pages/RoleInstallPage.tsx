@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, onPromptAvailable, clearPrompt } from "@/lib/installPromptStore";
 import { useI18n } from "@/lib/i18n";
-import { getLoginPathForRole, type AppRoleKey } from "@/lib/appRole";
+import { getLoginPathForRole, type AppRoleKey, type InstallableRoleKey } from "@/lib/appRole";
 
 interface PrerequisiteGroup {
   title: string;
@@ -139,7 +139,7 @@ const formatRelativeTime = (ts: number) => {
   return `${d}d ago`;
 };
 
-const ROLE_CONFIG: Record<string, {
+const ROLE_CONFIG: Record<InstallableRoleKey, {
   name: string;
   shortName: string;
   description: string;
@@ -335,7 +335,8 @@ const RoleInstallPage = () => {
     });
   };
 
-  const config = role ? ROLE_CONFIG[role] : null;
+  const roleKey = role && role in ROLE_CONFIG ? (role as InstallableRoleKey) : null;
+  const config = roleKey ? ROLE_CONFIG[roleKey] : null;
 
   // Swap manifest link for this role. If a different role manifest was
   // already evaluated on this page load, force a full reload so Chrome
@@ -343,8 +344,8 @@ const RoleInstallPage = () => {
   // first-visited role can be installed per tab.
   useEffect(() => {
     if (!config) return;
-    if (role && window.location.pathname.startsWith(`/install/${role}`)) {
-      window.location.replace(`/${role}/install${window.location.search}`);
+    if (roleKey && window.location.pathname.startsWith(`/install/${roleKey}`)) {
+      window.location.replace(`/${roleKey}/install${window.location.search}`);
       return;
     }
     const existing = document.querySelector('link[rel="manifest"]');
@@ -360,7 +361,7 @@ const RoleInstallPage = () => {
   useEffect(() => {
     setHasPrompt(!!getInstallPrompt());
     setIsStandalone(isStandaloneDisplayMode());
-    setInstalledRole(role && readInstalledRoles().includes(role) ? role : null);
+    setInstalledRole(roleKey && readInstalledRoles().includes(roleKey) ? roleKey : null);
 
     const unsub = onPromptAvailable(() => {
       setHasPrompt(true);
@@ -369,10 +370,10 @@ const RoleInstallPage = () => {
       setAttemptState("idle");
     });
     const onInstalled = () => {
-      if (!role) return;
-      rememberInstalledRole(role);
-      appendInstallHistory(role, "installed-event");
-      setInstalledRole(role);
+      if (!roleKey) return;
+      rememberInstalledRole(roleKey);
+      appendInstallHistory(roleKey, "installed-event");
+      setInstalledRole(roleKey);
       setAttemptState("idle");
     };
     // Chrome may re-fire beforeinstallprompt when the tab becomes visible
@@ -390,12 +391,12 @@ const RoleInstallPage = () => {
       document.removeEventListener("visibilitychange", recheck);
       window.clearInterval(interval);
     };
-  }, [role]);
+  }, [roleKey]);
 
   const handleInstall = async () => {
     const prompt = getInstallPrompt();
     if (!prompt) {
-      if (role) appendInstallHistory(role, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : "no beforeinstallprompt available");
+      if (roleKey) appendInstallHistory(roleKey, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : "no beforeinstallprompt available");
       if (isStandalone) {
         openInstallLinkInBrowser(window.location.href);
         toast.info("Opening this installer in your browser. Install prompts cannot run inside another installed role app.");
@@ -408,27 +409,27 @@ const RoleInstallPage = () => {
       return;
     }
     setAttemptCount((n) => n + 1);
-    if (role) appendInstallHistory(role, "prompted");
+    if (roleKey) appendInstallHistory(roleKey, "prompted");
     try {
       await prompt.prompt();
       const { outcome } = await prompt.userChoice;
       if (outcome === "accepted") {
-        if (role) {
-          rememberInstalledRole(role);
-          appendInstallHistory(role, "accepted");
-          setInstalledRole(role);
+        if (roleKey) {
+          rememberInstalledRole(roleKey);
+          appendInstallHistory(roleKey, "accepted");
+          setInstalledRole(roleKey);
         }
         clearPrompt();
         setHasPrompt(false);
         setAttemptState("idle");
       } else {
-        if (role) appendInstallHistory(role, "dismissed");
+        if (roleKey) appendInstallHistory(roleKey, "dismissed");
         clearPrompt();
         setHasPrompt(false);
         setAttemptState("dismissed");
       }
     } catch (err) {
-      if (role) appendInstallHistory(role, "failed", err instanceof Error ? err.message : undefined);
+      if (roleKey) appendInstallHistory(roleKey, "failed", err instanceof Error ? err.message : undefined);
       clearPrompt();
       setHasPrompt(false);
       setAttemptState("failed");
@@ -436,7 +437,7 @@ const RoleInstallPage = () => {
   };
 
   const handleRetry = () => {
-    if (role) appendInstallHistory(role, "retry");
+    if (roleKey) appendInstallHistory(roleKey, "retry");
     if (getInstallPrompt()) {
       setHasPrompt(true);
       setAttemptState("idle");
@@ -473,7 +474,7 @@ const RoleInstallPage = () => {
   }
 
   const Icon = config.LucideIcon;
-  const currentRoleInstalled = installedRole === role;
+  const currentRoleInstalled = installedRole === roleKey;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -579,10 +580,10 @@ const RoleInstallPage = () => {
           </div>
         </div>
 
-        <ShareLinksSection roleKey={role!} shortName={config.shortName} />
+        <ShareLinksSection roleKey={roleKey!} shortName={config.shortName} />
 
         <InstallabilityTestSection
-          roleKey={role!}
+          roleKey={roleKey!}
           manifestHref={config.manifest}
           hasPrompt={hasPrompt}
           isStandalone={isStandalone}
@@ -591,7 +592,7 @@ const RoleInstallPage = () => {
 
 
         <PerRoleInstallStatePanel
-          currentRole={role!}
+          currentRole={roleKey!}
           hasPrompt={hasPrompt}
           isStandalone={isStandalone}
           currentRoleInstalled={currentRoleInstalled}

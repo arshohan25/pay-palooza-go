@@ -9,9 +9,18 @@ export type AppRoleKey =
   | "distributor"
   | "super-distributor";
 
+export type InstallableRoleKey = "customer" | AppRoleKey;
+
 const STORAGE_KEY = "mfs_app_role";
 const SESSION_STORAGE_KEY = "mfs_active_app_role";
-export const INSTALLABLE_ROLE_KEYS = ["customer", "admin", "agent", "merchant", "distributor", "super-distributor"] as const;
+export const INSTALLABLE_ROLE_KEYS: readonly InstallableRoleKey[] = [
+  "customer",
+  "admin",
+  "agent",
+  "merchant",
+  "distributor",
+  "super-distributor",
+] as const;
 
 export const APP_ROLE_ALLOWED: Record<AppRoleKey, string[]> = {
   admin: [
@@ -52,6 +61,9 @@ export const APP_ROLE_HOME: Record<AppRoleKey, string> = {
 const isValid = (v: string | null): v is AppRoleKey =>
   !!v && v in APP_ROLE_ALLOWED;
 
+const isInstallable = (v: string | null): v is InstallableRoleKey =>
+  !!v && (INSTALLABLE_ROLE_KEYS as readonly string[]).includes(v);
+
 export function isInstallRoute(path: string): boolean {
   return (
     path === "/install" ||
@@ -66,6 +78,11 @@ export function captureAppRoleFromUrl() {
   try {
     const params = new URLSearchParams(window.location.search);
     const app = params.get("app");
+    if (app === "customer") {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, app);
+      localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
     if (isValid(app)) {
       sessionStorage.setItem(SESSION_STORAGE_KEY, app);
       localStorage.setItem(STORAGE_KEY, app);
@@ -78,6 +95,7 @@ export function getBoundAppRole(): AppRoleKey | null {
   if (typeof window === "undefined") return null;
   try {
     const sessionValue = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (sessionValue === "customer") return null;
     if (isValid(sessionValue)) return sessionValue;
     const v = localStorage.getItem(STORAGE_KEY);
     return isValid(v) ? v : null;
@@ -99,6 +117,14 @@ export function isRoleAllowedForApp(
 ): boolean {
   const allowed = APP_ROLE_ALLOWED[appRole];
   return userRoles.some((r) => allowed.includes(r));
+}
+
+export function getInstallPathForRole(role: InstallableRoleKey): string {
+  return `/${role}/install`;
+}
+
+export function getLaunchPathForRole(role: InstallableRoleKey): string {
+  return role === "customer" ? "/customer/" : APP_ROLE_HOME[role];
 }
 
 /** In-scope login path per installed role app. Legacy `/login/:role` routes remain supported. */
