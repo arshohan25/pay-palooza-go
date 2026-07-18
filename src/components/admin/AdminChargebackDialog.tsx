@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import PinConfirmSheet from "@/components/PinConfirmSheet";
 
 interface ChargebackTarget {
   userId: string;
