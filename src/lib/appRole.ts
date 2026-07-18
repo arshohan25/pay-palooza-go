@@ -10,6 +10,8 @@ export type AppRoleKey =
   | "super-distributor";
 
 const STORAGE_KEY = "mfs_app_role";
+const SESSION_STORAGE_KEY = "mfs_active_app_role";
+export const INSTALLABLE_ROLE_KEYS = ["customer", "admin", "agent", "merchant", "distributor", "super-distributor"] as const;
 
 export const APP_ROLE_ALLOWED: Record<AppRoleKey, string[]> = {
   admin: [
@@ -50,6 +52,14 @@ export const APP_ROLE_HOME: Record<AppRoleKey, string> = {
 const isValid = (v: string | null): v is AppRoleKey =>
   !!v && v in APP_ROLE_ALLOWED;
 
+export function isInstallRoute(path: string): boolean {
+  return (
+    path === "/install" ||
+    path.startsWith("/install/") ||
+    INSTALLABLE_ROLE_KEYS.some((role) => path === `/${role}/install` || path.startsWith(`/${role}/install/`))
+  );
+}
+
 /** Capture `?app=` from current URL (if any) and persist it. */
 export function captureAppRoleFromUrl() {
   if (typeof window === "undefined") return;
@@ -57,6 +67,7 @@ export function captureAppRoleFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const app = params.get("app");
     if (isValid(app)) {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, app);
       localStorage.setItem(STORAGE_KEY, app);
     }
   } catch {}
@@ -66,6 +77,8 @@ export function captureAppRoleFromUrl() {
 export function getBoundAppRole(): AppRoleKey | null {
   if (typeof window === "undefined") return null;
   try {
+    const sessionValue = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (isValid(sessionValue)) return sessionValue;
     const v = localStorage.getItem(STORAGE_KEY);
     return isValid(v) ? v : null;
   } catch {
@@ -75,6 +88,7 @@ export function getBoundAppRole(): AppRoleKey | null {
 
 export function clearBoundAppRole() {
   try {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
     localStorage.removeItem(STORAGE_KEY);
   } catch {}
 }
@@ -107,6 +121,11 @@ export interface EnforcerInput {
  */
 export function computeAppRoleRedirect(input: EnforcerInput): string | null {
   const { path, appRole, isAuthenticated, rolesLoading, userRoles, isStandalone } = input;
+
+  // Installer pages must always stay reachable. If one role PWA is already
+  // installed, its stored role binding must not capture/redirect another
+  // role's installer link.
+  if (isInstallRoute(path)) return null;
 
   // No bound app role: only intervene if launched from an installed PWA
   // that lost its role context.
