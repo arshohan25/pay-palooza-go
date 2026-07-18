@@ -56,6 +56,7 @@ const MerchantManagerLoginPage = lazy(() => retryLazyImport(() => import("./page
 const MerchantSupportPage = lazy(() => retryLazyImport(() => import("./pages/MerchantSupportPage")));
 const RoleInstallPage = lazy(() => import("./pages/RoleInstallPage"));
 const InstallLandingPage = lazy(() => import("./pages/InstallLandingPage"));
+const InstallStatusPage = lazy(() => import("./pages/InstallStatusPage"));
 const RoleLoginPage = lazy(() => import("./pages/RoleLoginPage"));
 
 const ShopPage = lazy(() => import("./pages/ShopPage"));
@@ -216,6 +217,7 @@ const App = () => (
                     <Route path="/merchant-manager-login" element={<MerchantManagerLoginPage />} />
                     <Route path="/merchant-support" element={<MerchantSupportPage />} />
                     <Route path="/install" element={<InstallLandingPage />} />
+                    <Route path="/install/status" element={<InstallStatusPage />} />
                     <Route path="/install/:role" element={<RoleInstallPage />} />
                     <Route path="/developers" element={<DeveloperPortal />} />
                     {import.meta.env.DEV && (
