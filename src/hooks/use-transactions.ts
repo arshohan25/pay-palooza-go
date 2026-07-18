@@ -222,5 +222,19 @@ export function useTransactions(limit?: number, refreshKey?: number, options: Tr
     };
   }, [fetchTxns]);
 
+  // Refetch when tab/route regains focus
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState === "visible") fetchTxns();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [fetchTxns]);
+
   return { transactions, loading, refetch: fetchTxns };
 }
+
