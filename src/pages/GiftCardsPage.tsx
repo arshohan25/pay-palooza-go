@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
 import FlowHeader from "@/components/FlowHeader";
+import PinConfirmSheet from "@/components/PinConfirmSheet";
 
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 
