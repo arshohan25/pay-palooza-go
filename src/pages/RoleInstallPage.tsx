@@ -15,6 +15,62 @@ interface PrerequisiteGroup {
 }
 
 const INSTALLED_ROLES_KEY = "mfs_pwa_installed_roles";
+const INSTALL_HISTORY_KEY = "mfs_pwa_install_history";
+const HISTORY_LIMIT_PER_ROLE = 20;
+
+export type InstallHistoryAction =
+  | "prompted"
+  | "accepted"
+  | "dismissed"
+  | "failed"
+  | "retry"
+  | "manual-fallback"
+  | "installed-event"
+  | "reset";
+
+export interface InstallHistoryEntry {
+  action: InstallHistoryAction;
+  at: number;
+  note?: string;
+}
+
+type InstallHistoryMap = Record<string, InstallHistoryEntry[]>;
+
+const readInstallHistory = (): InstallHistoryMap => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(INSTALL_HISTORY_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as InstallHistoryMap) : {};
+  } catch {
+    return {};
+  }
+};
+
+const appendInstallHistory = (roleKey: string, action: InstallHistoryAction, note?: string) => {
+  try {
+    const map = readInstallHistory();
+    const list = Array.isArray(map[roleKey]) ? map[roleKey] : [];
+    const next = [{ action, at: Date.now(), note }, ...list].slice(0, HISTORY_LIMIT_PER_ROLE);
+    map[roleKey] = next;
+    localStorage.setItem(INSTALL_HISTORY_KEY, JSON.stringify(map));
+    window.dispatchEvent(new CustomEvent("mfs:install-history", { detail: { roleKey } }));
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const clearInstallHistory = (roleKey: string) => {
+  try {
+    const map = readInstallHistory();
+    delete map[roleKey];
+    localStorage.setItem(INSTALL_HISTORY_KEY, JSON.stringify(map));
+    window.dispatchEvent(new CustomEvent("mfs:install-history", { detail: { roleKey } }));
+  } catch {
+    // ignore
+  }
+};
 
 const readInstalledRoles = (): string[] => {
   if (typeof window === "undefined") return [];
@@ -42,6 +98,40 @@ const isStandaloneDisplayMode = () => {
     window.matchMedia("(display-mode: standalone)").matches ||
     ("standalone" in window.navigator && Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone))
   );
+};
+
+const ACTION_LABEL: Record<InstallHistoryAction, string> = {
+  prompted: "Install prompt shown",
+  accepted: "Install accepted",
+  dismissed: "Install dismissed",
+  failed: "Install failed",
+  retry: "Retry requested",
+  "manual-fallback": "Manual install fallback",
+  "installed-event": "App installed",
+  reset: "Install state reset",
+};
+
+const ACTION_TONE: Record<InstallHistoryAction, string> = {
+  prompted: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  accepted: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  dismissed: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  failed: "bg-destructive/15 text-destructive",
+  retry: "bg-primary/15 text-primary",
+  "manual-fallback": "bg-muted text-muted-foreground",
+  "installed-event": "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  reset: "bg-muted text-muted-foreground",
+};
+
+const formatRelativeTime = (ts: number) => {
+  const diff = Date.now() - ts;
+  const s = Math.round(diff / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.round(h / 24);
+  return `${d}d ago`;
 };
 
 const ROLE_CONFIG: Record<string, {
