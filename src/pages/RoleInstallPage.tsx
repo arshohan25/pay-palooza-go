@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2, FileText, ClipboardCheck, Clock, RefreshCw, AlertCircle } from "lucide-react";
+import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2, FileText, ClipboardCheck, Clock, RefreshCw, AlertCircle, TestTube2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getInstallPrompt, onPromptAvailable, clearPrompt } from "@/lib/installPromptStore";
@@ -552,6 +552,15 @@ const RoleInstallPage = () => {
 
         <ShareLinksSection roleKey={role as AppRoleKey} shortName={config.shortName} />
 
+        <InstallabilityTestSection
+          roleKey={role!}
+          manifestHref={config.manifest}
+          hasPrompt={hasPrompt}
+          isStandalone={isStandalone}
+          color={config.color}
+        />
+
+
         <PerRoleInstallStatePanel
           currentRole={role!}
           hasPrompt={hasPrompt}
@@ -639,6 +648,268 @@ const RoleInstallPage = () => {
 };
 
 export default RoleInstallPage;
+
+interface InstallabilityTestSectionProps {
+  roleKey: string;
+  manifestHref: string;
+  hasPrompt: boolean;
+  isStandalone: boolean;
+  color: string;
+}
+
+type CheckStatus = "pass" | "fail" | "warn";
+interface CheckResult {
+  label: string;
+  status: CheckStatus;
+  detail: string;
+}
+
+const InstallabilityTestSection = ({
+  roleKey,
+  manifestHref,
+  hasPrompt,
+  isStandalone,
+  color,
+}: InstallabilityTestSectionProps) => {
+  const [running, setRunning] = useState(false);
+  const [results, setResults] = useState<CheckResult[] | null>(null);
+  const [ranAt, setRanAt] = useState<number | null>(null);
+
+  const overall: CheckStatus | null = results
+    ? results.some((r) => r.status === "fail")
+      ? "fail"
+      : results.some((r) => r.status === "warn")
+        ? "warn"
+        : "pass"
+    : null;
+
+  const runTest = async () => {
+    setRunning(true);
+    const checks: CheckResult[] = [];
+    const currentPath = window.location.pathname;
+    const expectedScope = `/${roleKey}/`;
+
+    // 1. Manifest <link> in DOM
+    const linkEl = document.querySelector('link[rel="manifest"]');
+    const linkHref = linkEl?.getAttribute("href") ?? null;
+    checks.push(
+      linkHref === manifestHref
+        ? { label: "Manifest <link> in head", status: "pass", detail: `href="${linkHref}"` }
+        : {
+            label: "Manifest <link> in head",
+            status: "fail",
+            detail: linkHref ? `Expected ${manifestHref}, found ${linkHref}` : "No manifest link tag found",
+          },
+    );
+
+    // 2. Manifest fetch + parse
+    let manifest: Record<string, unknown> | null = null;
+    try {
+      const res = await fetch(manifestHref, { cache: "no-cache" });
+      if (!res.ok) {
+        checks.push({
+          label: "Manifest file loads",
+          status: "fail",
+          detail: `HTTP ${res.status} fetching ${manifestHref}`,
+        });
+      } else {
+        manifest = (await res.json()) as Record<string, unknown>;
+        checks.push({
+          label: "Manifest file loads",
+          status: "pass",
+          detail: `Fetched ${manifestHref} (${JSON.stringify(manifest).length} bytes)`,
+        });
+      }
+    } catch (err) {
+      checks.push({
+        label: "Manifest file loads",
+        status: "fail",
+        detail: err instanceof Error ? err.message : "Failed to fetch manifest",
+      });
+    }
+
+    if (manifest) {
+      // 3. Scope matches current route
+      const scope = String(manifest.scope ?? "");
+      const scopeOk = scope === expectedScope;
+      const routeInScope = currentPath.startsWith(expectedScope) || currentPath === expectedScope.replace(/\/$/, "");
+      checks.push(
+        scopeOk
+          ? { label: "Manifest scope", status: "pass", detail: `scope="${scope}"` }
+          : { label: "Manifest scope", status: "fail", detail: `Expected "${expectedScope}", found "${scope || "(missing)"}"` },
+      );
+      checks.push(
+        routeInScope
+          ? { label: "Current route inside scope", status: "pass", detail: `${currentPath} ⊂ ${expectedScope}` }
+          : {
+              label: "Current route inside scope",
+              status: "fail",
+              detail: `Route ${currentPath} is not under ${expectedScope}`,
+            },
+      );
+
+      // 4. start_url under scope + carries ?app=<role>
+      const startUrl = String(manifest.start_url ?? "");
+      const startUrlOk = startUrl.startsWith(`/${roleKey}`) && startUrl.includes(`app=${roleKey}`);
+      checks.push(
+        startUrlOk
+          ? { label: "start_url binds this role", status: "pass", detail: startUrl }
+          : { label: "start_url binds this role", status: "fail", detail: `start_url="${startUrl}"` },
+      );
+
+      // 5. display: standalone
+      const display = String(manifest.display ?? "");
+      checks.push(
+        display === "standalone"
+          ? { label: "display: standalone", status: "pass", detail: display }
+          : { label: "display: standalone", status: "warn", detail: `display="${display || "(missing)"}"` },
+      );
+
+      // 6. icons present
+      const icons = Array.isArray(manifest.icons) ? (manifest.icons as unknown[]) : [];
+      checks.push(
+        icons.length > 0
+          ? { label: "Icons declared", status: "pass", detail: `${icons.length} icon(s)` }
+          : { label: "Icons declared", status: "fail", detail: "No icons in manifest" },
+      );
+
+      // 7. id present
+      const id = String(manifest.id ?? "");
+      checks.push(
+        id
+          ? { label: "Unique id", status: "pass", detail: `id="${id}"` }
+          : { label: "Unique id", status: "warn", detail: "No id — browser may share identity across roles" },
+      );
+    }
+
+    // 8. Service worker
+    const swReg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    checks.push(
+      swReg
+        ? { label: "Service worker registered", status: "pass", detail: `scope=${swReg.scope}` }
+        : { label: "Service worker registered", status: "warn", detail: "No SW — required for installability on most browsers" },
+    );
+
+    // 9. beforeinstallprompt / already installed
+    if (isStandalone) {
+      checks.push({
+        label: "Install prompt",
+        status: "warn",
+        detail: "Running in standalone (app already installed). Open in a browser tab to reinstall.",
+      });
+    } else if (hasPrompt) {
+      checks.push({ label: "Install prompt", status: "pass", detail: "beforeinstallprompt captured — ready to install" });
+    } else {
+      checks.push({
+        label: "Install prompt",
+        status: "warn",
+        detail: "No beforeinstallprompt yet — browser may not have qualified this app, or it's already installed",
+      });
+    }
+
+    setResults(checks);
+    setRanAt(Date.now());
+    setRunning(false);
+
+    const failed = checks.filter((c) => c.status === "fail").length;
+    const warned = checks.filter((c) => c.status === "warn").length;
+    if (failed > 0) {
+      toast.error(`${failed} installability check${failed > 1 ? "s" : ""} failed`);
+    } else if (warned > 0) {
+      toast.warning(`Installability OK, ${warned} warning${warned > 1 ? "s" : ""}`);
+    } else {
+      toast.success("All installability checks passed");
+    }
+  };
+
+  const StatusIcon = ({ status }: { status: CheckStatus }) =>
+    status === "pass" ? (
+      <Check size={12} className="text-emerald-600 dark:text-emerald-400" strokeWidth={3} />
+    ) : status === "fail" ? (
+      <X size={12} className="text-destructive" strokeWidth={3} />
+    ) : (
+      <AlertCircle size={12} className="text-amber-600 dark:text-amber-400" />
+    );
+
+  const statusBg = (s: CheckStatus) =>
+    s === "pass"
+      ? "bg-emerald-500/15"
+      : s === "fail"
+        ? "bg-destructive/15"
+        : "bg-amber-500/15";
+
+  return (
+    <div className="mb-6" data-testid="installability-test">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-bold text-foreground">Installability test</h2>
+        {overall && (
+          <span
+            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+              overall === "pass"
+                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                : overall === "fail"
+                  ? "bg-destructive/15 text-destructive"
+                  : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+            }`}
+          >
+            {overall === "pass" ? "READY" : overall === "fail" ? "BLOCKED" : "WARNINGS"}
+          </span>
+        )}
+      </div>
+      <Button
+        type="button"
+        onClick={runTest}
+        disabled={running}
+        variant="outline"
+        className="w-full h-11 rounded-2xl font-semibold"
+      >
+        {running ? (
+          <>
+            <Loader2 size={16} className="mr-2 animate-spin" />
+            Running checks…
+          </>
+        ) : (
+          <>
+            <TestTube2 size={16} className="mr-2" />
+            {results ? "Re-run installability test" : "Test installability"}
+          </>
+        )}
+      </Button>
+      {results && (
+        <div className="mt-3 p-3 rounded-2xl border border-border bg-muted/40 space-y-2">
+          <p className="text-[11px] text-muted-foreground">
+            Ran {ranAt ? formatRelativeTime(ranAt) : "just now"} · manifest <span className="font-mono">{manifestHref}</span> · scope <span className="font-mono">/{roleKey}/</span>
+          </p>
+          <ul className="space-y-1.5">
+            {results.map((r, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className={`w-5 h-5 rounded-full ${statusBg(r.status)} flex items-center justify-center shrink-0 mt-0.5`}>
+                  <StatusIcon status={r.status} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-foreground">{r.label}</p>
+                  <p className="text-[11px] text-muted-foreground break-words">{r.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {overall === "fail" && (
+            <p className="text-[11px] text-destructive font-medium pt-1">
+              Fix the failing checks above before the install prompt can appear reliably.
+            </p>
+          )}
+          {overall === "pass" && !hasPrompt && !isStandalone && (
+            <p className="text-[11px] text-muted-foreground pt-1">
+              Manifest and scope look correct. If no prompt appears, the browser may still be evaluating engagement heuristics — interact with the page and re-test.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 
 interface ShareLinksSectionProps {
   roleKey: AppRoleKey;
