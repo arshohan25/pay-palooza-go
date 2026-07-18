@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CircleDollarSign, Check, X, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import PinConfirmSheet from "@/components/PinConfirmSheet";
 
 interface FloatReq {
   id: string;
