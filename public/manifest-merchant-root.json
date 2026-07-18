@@ -1,0 +1,27 @@
+{
+  "name": "EasyPay Merchant",
+  "short_name": "EP Merchant",
+  "id": "/",
+  "description": "EasyPay Merchant – Accept payments, manage products, and track analytics.",
+  "start_url": "/?app=merchant",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f8",
+  "theme_color": "#1faa7c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/role-merchant.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/role-merchant.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["finance", "business"]
+}

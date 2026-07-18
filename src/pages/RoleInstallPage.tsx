@@ -8,6 +8,7 @@ import { getInstallPrompt, getInstallPromptForManifest, onPromptAvailable, clear
 import { useI18n } from "@/lib/i18n";
 import { getLaunchPathForRole, getLoginPathForRole, type AppRoleKey, type InstallableRoleKey } from "@/lib/appRole";
 import { ensureInstallServiceWorker, getInstallServiceWorkerBlockReason } from "@/lib/pwaServiceWorker";
+import { getExpectedManifestScopeForRole, getManifestHrefForRole, getRoleInstallUrl, getRoleLoginUrl } from "@/lib/rolePwaOrigins";
 
 interface PrerequisiteGroup {
   title: string;
@@ -347,30 +348,32 @@ const RoleInstallPage = () => {
 
   const roleKey = role && role in ROLE_CONFIG ? (role as InstallableRoleKey) : null;
   const config = roleKey ? ROLE_CONFIG[roleKey] : null;
+  const manifestHref = roleKey ? getManifestHrefForRole(roleKey) : null;
+  const expectedManifestScope = roleKey ? getExpectedManifestScopeForRole(roleKey) : null;
 
   // Swap manifest link for this role. If a different role manifest was
   // already evaluated on this page load, force a full reload so Chrome
   // re-fires `beforeinstallprompt` for the correct role — otherwise only the
   // first-visited role can be installed per tab.
   useEffect(() => {
-    if (!config) return;
+    if (!config || !manifestHref) return;
     if (roleKey && window.location.pathname.startsWith(`/install/${roleKey}`)) {
       window.location.replace(`/${roleKey}/install${window.location.search}`);
       return;
     }
     const existing = document.querySelector('link[rel="manifest"]');
     const currentHref = existing?.getAttribute("href");
-    const desired = config.manifest;
+    const desired = manifestHref;
     if (currentHref && currentHref !== desired) {
       window.location.replace(window.location.pathname + window.location.search);
       return;
     }
     if (existing) existing.setAttribute("href", desired);
-  }, [config]);
+  }, [config, manifestHref, roleKey]);
 
   useEffect(() => {
-    if (!config) return;
-    const rolePromptAvailable = () => Boolean(getInstallPromptForManifest(config.manifest));
+    if (!config || !manifestHref) return;
+    const rolePromptAvailable = () => Boolean(getInstallPromptForManifest(manifestHref));
     const recheck = () => setHasPrompt(rolePromptAvailable());
 
     recheck();
@@ -410,10 +413,10 @@ const RoleInstallPage = () => {
       document.removeEventListener("visibilitychange", recheck);
       window.clearInterval(interval);
     };
-  }, [roleKey, config]);
+  }, [roleKey, config, manifestHref]);
 
   const handleInstall = async () => {
-    const prompt = config ? getInstallPromptForManifest(config.manifest) : null;
+    const prompt = manifestHref ? getInstallPromptForManifest(manifestHref) : null;
     if (!prompt) {
       setAttemptCount((n) => n + 1);
       if (getInstallPrompt()) {
@@ -480,7 +483,7 @@ const RoleInstallPage = () => {
       toast.info("Opening this installer in your browser. Install prompts cannot run inside another installed role app.");
       return;
     }
-    if (config && getInstallPromptForManifest(config.manifest)) {
+    if (manifestHref && getInstallPromptForManifest(manifestHref)) {
       setHasPrompt(true);
       setAttemptState("idle");
       void handleInstall();
@@ -637,7 +640,8 @@ const RoleInstallPage = () => {
 
         <InstallabilityTestSection
           roleKey={roleKey!}
-          manifestHref={config.manifest}
+          manifestHref={manifestHref!}
+          expectedScope={expectedManifestScope!}
           hasPrompt={hasPrompt}
           isStandalone={isStandalone}
           color={config.color}
@@ -761,6 +765,7 @@ export default RoleInstallPage;
 interface InstallabilityTestSectionProps {
   roleKey: string;
   manifestHref: string;
+  expectedScope: string;
   hasPrompt: boolean;
   isStandalone: boolean;
   color: string;
@@ -776,6 +781,7 @@ interface CheckResult {
 const InstallabilityTestSection = ({
   roleKey,
   manifestHref,
+  expectedScope,
   hasPrompt,
   isStandalone,
   color,
@@ -796,7 +802,6 @@ const InstallabilityTestSection = ({
     setRunning(true);
     const checks: CheckResult[] = [];
     const currentPath = window.location.pathname;
-    const expectedScope = `/${roleKey}/`;
 
     // 1. Manifest <link> in DOM
     const linkEl = document.querySelector('link[rel="manifest"]');
@@ -859,7 +864,9 @@ const InstallabilityTestSection = ({
 
       // 4. start_url under scope + carries ?app=<role>
       const startUrl = String(manifest.start_url ?? "");
-      const startUrlOk = startUrl.startsWith(`/${roleKey}`) && startUrl.includes(`app=${roleKey}`);
+      const startUrlOk =
+        (expectedScope === "/" ? startUrl.startsWith("/") : startUrl.startsWith(`/${roleKey}`)) &&
+        startUrl.includes(`app=${roleKey}`);
       checks.push(
         startUrlOk
           ? { label: "start_url binds this role", status: "pass", detail: startUrl }
@@ -989,7 +996,7 @@ const InstallabilityTestSection = ({
       {results && (
         <div className="mt-3 p-3 rounded-2xl border border-border bg-muted/40 space-y-2">
           <p className="text-[11px] text-muted-foreground">
-            Ran {ranAt ? formatRelativeTime(ranAt) : "just now"} · manifest <span className="font-mono">{manifestHref}</span> · scope <span className="font-mono">/{roleKey}/</span>
+            Ran {ranAt ? formatRelativeTime(ranAt) : "just now"} · manifest <span className="font-mono">{manifestHref}</span> · scope <span className="font-mono">{expectedScope}</span>
           </p>
           <ul className="space-y-1.5">
             {results.map((r, i) => (
@@ -1030,11 +1037,8 @@ interface ShareLinksSectionProps {
 const ShareLinksSection = ({ roleKey, shortName }: ShareLinksSectionProps) => {
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
-  const installUrl = `${origin}/${roleKey}/install`;
-  const loginUrl =
-    roleKey === "customer"
-      ? `${origin}/customer/?app=customer`
-      : `${origin}${getLoginPathForRole(roleKey as AppRoleKey)}?app=${roleKey}`;
+  const installUrl = getRoleInstallUrl(roleKey as InstallableRoleKey);
+  const loginUrl = getRoleLoginUrl(roleKey as InstallableRoleKey);
 
   const copy = async (url: string, label: string) => {
     try {
@@ -1114,8 +1118,6 @@ const PerRoleInstallStatePanel = ({
   const [installedRoles, setInstalledRolesState] = useState<string[]>(() => readInstalledRoles());
   const [history, setHistory] = useState<InstallHistoryMap>(() => readInstallHistory());
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ [currentRole]: true });
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
 
   useEffect(() => {
     const refresh = () => {
@@ -1244,7 +1246,7 @@ const PerRoleInstallStatePanel = ({
                     <p className="text-[11px] text-muted-foreground/70 mt-1 italic">No install attempts recorded yet.</p>
                   )}
                   <p className="text-[10px] text-muted-foreground/70 font-mono truncate mt-1">
-                    {origin}/{key}/install
+                    {getRoleInstallUrl(key)}
                   </p>
                   {entries.length > 0 && (
                     <div className="mt-2">

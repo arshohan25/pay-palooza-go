@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Download, Shield, BarChart3, Users, Smartphone, ShoppingBag, User, ArrowRight, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { getRoleInstallUrl } from "@/lib/rolePwaOrigins";
+import type { InstallableRoleKey } from "@/lib/appRole";
 
 type RoleEntry = {
   key: string;
@@ -79,9 +81,6 @@ const ROLES: RoleEntry[] = [
 
 const InstallLandingPage = () => {
   const navigate = useNavigate();
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
-
   const copy = async (url: string, label: string) => {
     try {
       await navigator.clipboard.writeText(url);
@@ -116,7 +115,7 @@ const InstallLandingPage = () => {
       <main className="px-4 sm:px-6 pb-16 max-w-4xl mx-auto">
         <div className="grid gap-3 sm:grid-cols-2">
           {ROLES.map((role, i) => {
-            const url = `${origin}${role.installPath}`;
+            const url = getRoleInstallUrl(role.key as InstallableRoleKey);
             const Icon = role.Icon;
             return (
               <motion.article
