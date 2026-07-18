@@ -186,6 +186,8 @@ const RoleInstallPage = () => {
   const [hasPrompt, setHasPrompt] = useState(!!getInstallPrompt());
   const [installedRole, setInstalledRole] = useState<string | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [attemptState, setAttemptState] = useState<"idle" | "dismissed" | "failed">("idle");
+  const [attemptCount, setAttemptCount] = useState(0);
   const checklistKey = role ? `mfs_install_checklist_${role}` : null;
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
