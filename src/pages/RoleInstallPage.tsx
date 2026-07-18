@@ -338,6 +338,7 @@ const RoleInstallPage = () => {
     const onInstalled = () => {
       if (!role) return;
       rememberInstalledRole(role);
+      appendInstallHistory(role, "installed-event");
       setInstalledRole(role);
       setAttemptState("idle");
     };
@@ -361,9 +362,7 @@ const RoleInstallPage = () => {
   const handleInstall = async () => {
     const prompt = getInstallPrompt();
     if (!prompt) {
-      // No stored prompt — either never fired, was consumed, or we're in
-      // standalone. Try a hard reload to give the browser a chance to
-      // re-fire beforeinstallprompt for this role's manifest.
+      if (role) appendInstallHistory(role, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : "no beforeinstallprompt available");
       if (isStandalone) {
         window.open(window.location.href, "_blank", "noopener,noreferrer");
         toast.info("Opened the browser install page. Use the browser menu if the prompt is not shown.");
@@ -376,25 +375,27 @@ const RoleInstallPage = () => {
       return;
     }
     setAttemptCount((n) => n + 1);
+    if (role) appendInstallHistory(role, "prompted");
     try {
       await prompt.prompt();
       const { outcome } = await prompt.userChoice;
       if (outcome === "accepted") {
         if (role) {
           rememberInstalledRole(role);
+          appendInstallHistory(role, "accepted");
           setInstalledRole(role);
         }
         clearPrompt();
         setHasPrompt(false);
         setAttemptState("idle");
       } else {
-        // Dismissed — the event is consumed and cannot be re-prompted until
-        // the browser re-fires it. Surface a retry affordance immediately.
+        if (role) appendInstallHistory(role, "dismissed");
         clearPrompt();
         setHasPrompt(false);
         setAttemptState("dismissed");
       }
-    } catch {
+    } catch (err) {
+      if (role) appendInstallHistory(role, "failed", err instanceof Error ? err.message : undefined);
       clearPrompt();
       setHasPrompt(false);
       setAttemptState("failed");
@@ -402,8 +403,7 @@ const RoleInstallPage = () => {
   };
 
   const handleRetry = () => {
-    // If the browser already re-fired beforeinstallprompt, use it directly;
-    // otherwise reload the page so a fresh prompt can be captured.
+    if (role) appendInstallHistory(role, "retry");
     if (getInstallPrompt()) {
       setHasPrompt(true);
       setAttemptState("idle");
@@ -413,6 +413,7 @@ const RoleInstallPage = () => {
     toast.info("Reloading to re-request the install prompt…");
     window.setTimeout(() => window.location.reload(), 300);
   };
+
 
   if (!config) {
     return (
