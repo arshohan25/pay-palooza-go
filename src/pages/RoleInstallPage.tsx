@@ -1273,6 +1273,16 @@ const PerRoleInstallStatePanel = ({
                   {isInstalled && (
                     <button
                       type="button"
+                      data-testid={`launch-app-${key}`}
+                      onClick={() => launchInstalledRoleApp(key)}
+                      className="text-[10px] px-2 py-1 rounded-md bg-primary text-primary-foreground hover:opacity-90"
+                    >
+                      Launch app
+                    </button>
+                  )}
+                  {isInstalled && (
+                    <button
+                      type="button"
                       onClick={() => clearRole(key)}
                       className="text-[10px] px-2 py-1 rounded-md bg-background border border-border hover:bg-destructive/10 text-destructive"
                     >
