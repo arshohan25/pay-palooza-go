@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2, FileText, ClipboardCheck, Clock, RefreshCw, AlertCircle, TestTube2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { getInstallPrompt, onPromptAvailable, clearPrompt } from "@/lib/installPromptStore";
+import { getInstallPrompt, getInstallPromptForManifest, onPromptAvailable, clearPrompt } from "@/lib/installPromptStore";
 import { useI18n } from "@/lib/i18n";
 import { getLoginPathForRole, type AppRoleKey, type InstallableRoleKey } from "@/lib/appRole";
 
@@ -359,15 +359,20 @@ const RoleInstallPage = () => {
   }, [config]);
 
   useEffect(() => {
-    setHasPrompt(!!getInstallPrompt());
+    if (!config) return;
+    const rolePromptAvailable = () => Boolean(getInstallPromptForManifest(config.manifest));
+    const recheck = () => setHasPrompt(rolePromptAvailable());
+
+    recheck();
     setIsStandalone(isStandaloneDisplayMode());
     setInstalledRole(roleKey && readInstalledRoles().includes(roleKey) ? roleKey : null);
 
     const unsub = onPromptAvailable(() => {
-      setHasPrompt(true);
+      const hasRolePrompt = rolePromptAvailable();
+      setHasPrompt(hasRolePrompt);
       // A fresh prompt arrived — clear any prior attempt error state so the
       // primary install button reappears without a manual refresh.
-      setAttemptState("idle");
+      if (hasRolePrompt) setAttemptState("idle");
     });
     const onInstalled = () => {
       if (!roleKey) return;
@@ -379,7 +384,6 @@ const RoleInstallPage = () => {
     // Chrome may re-fire beforeinstallprompt when the tab becomes visible
     // again after a dismissal. Re-check on focus/visibility so the retry
     // button flips back to the primary install button automatically.
-    const recheck = () => setHasPrompt(!!getInstallPrompt());
     window.addEventListener("appinstalled", onInstalled);
     window.addEventListener("focus", recheck);
     document.addEventListener("visibilitychange", recheck);
@@ -391,12 +395,16 @@ const RoleInstallPage = () => {
       document.removeEventListener("visibilitychange", recheck);
       window.clearInterval(interval);
     };
-  }, [roleKey]);
+  }, [roleKey, config]);
 
   const handleInstall = async () => {
-    const prompt = getInstallPrompt();
+    const prompt = config ? getInstallPromptForManifest(config.manifest) : null;
     if (!prompt) {
-      if (roleKey) appendInstallHistory(roleKey, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : "no beforeinstallprompt available");
+      if (getInstallPrompt()) {
+        clearPrompt();
+        setHasPrompt(false);
+      }
+      if (roleKey) appendInstallHistory(roleKey, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : "no role-matched beforeinstallprompt available");
       if (isStandalone) {
         openInstallLinkInBrowser(window.location.href);
         toast.info("Opening this installer in your browser. Install prompts cannot run inside another installed role app.");
@@ -438,11 +446,20 @@ const RoleInstallPage = () => {
 
   const handleRetry = () => {
     if (roleKey) appendInstallHistory(roleKey, "retry");
-    if (getInstallPrompt()) {
+    if (isStandalone) {
+      openInstallLinkInBrowser(window.location.href);
+      toast.info("Opening this installer in your browser. Install prompts cannot run inside another installed role app.");
+      return;
+    }
+    if (config && getInstallPromptForManifest(config.manifest)) {
       setHasPrompt(true);
       setAttemptState("idle");
       void handleInstall();
       return;
+    }
+    if (getInstallPrompt()) {
+      clearPrompt();
+      setHasPrompt(false);
     }
     toast.info("Reloading to re-request the install prompt…");
     window.setTimeout(() => window.location.reload(), 300);
