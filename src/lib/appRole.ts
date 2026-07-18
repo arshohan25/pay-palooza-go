@@ -72,6 +72,10 @@ export function isInstallRoute(path: string): boolean {
   );
 }
 
+export function isCustomerScopeRoute(path: string): boolean {
+  return path === "/customer" || path.startsWith("/customer/");
+}
+
 /** Capture `?app=` from current URL (if any) and persist it. */
 export function captureAppRoleFromUrl() {
   if (typeof window === "undefined") return;
@@ -159,7 +163,7 @@ export function computeAppRoleRedirect(input: EnforcerInput): string | null {
     const isRoleScopedEntry = Object.keys(APP_ROLE_ALLOWED).some(
       (role) => path === `/${role}/install` || path === `/${role}/login`,
     );
-    if (isStandalone && !path.startsWith("/install") && !path.startsWith("/login/") && !isRoleScopedEntry && path !== "/merchant-login") {
+    if (isStandalone && !path.startsWith("/install") && !path.startsWith("/login/") && !isRoleScopedEntry && !isCustomerScopeRoute(path) && path !== "/merchant-login") {
       return "/install";
     }
     return null;

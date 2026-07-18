@@ -1054,7 +1054,7 @@ const PerRoleInstallStatePanel = ({
     };
   }, []);
 
-  const clearRole = (roleKey: string) => {
+  const clearRole = (roleKey: InstallableRoleKey) => {
     try {
       const next = installedRoles.filter((r) => r !== roleKey);
       localStorage.setItem(INSTALLED_ROLES_KEY, JSON.stringify(next));
@@ -1066,7 +1066,7 @@ const PerRoleInstallStatePanel = ({
     }
   };
 
-  const clearHistoryFor = (roleKey: string) => {
+  const clearHistoryFor = (roleKey: InstallableRoleKey) => {
     clearInstallHistory(roleKey);
     setHistory((prev) => {
       const next = { ...prev };
@@ -1080,7 +1080,7 @@ const PerRoleInstallStatePanel = ({
     <div className="mb-6" data-testid="install-state-panel">
       <h2 className="text-sm font-bold text-foreground mb-3">Per-role install state</h2>
       <div className="space-y-2">
-        {Object.entries(ROLE_CONFIG).map(([key, cfg]) => {
+        {(Object.entries(ROLE_CONFIG) as Array<[InstallableRoleKey, (typeof ROLE_CONFIG)[InstallableRoleKey]]>).map(([key, cfg]) => {
           const isCurrent = key === currentRole;
           const isInstalled = installedRoles.includes(key);
           const entries = history[key] ?? [];
