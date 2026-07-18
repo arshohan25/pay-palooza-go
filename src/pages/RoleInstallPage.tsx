@@ -406,6 +406,13 @@ const RoleInstallPage = () => {
 
         <ShareLinksSection roleKey={role as AppRoleKey} shortName={config.shortName} />
 
+        <PerRoleInstallStatePanel
+          currentRole={role!}
+          hasPrompt={hasPrompt}
+          isStandalone={isStandalone}
+          currentRoleInstalled={currentRoleInstalled}
+        />
+
         <AnimatePresence mode="wait">
 
           {currentRoleInstalled ? (
