@@ -64,6 +64,23 @@ const isValid = (v: string | null): v is AppRoleKey =>
 const isInstallable = (v: string | null): v is InstallableRoleKey =>
   !!v && (INSTALLABLE_ROLE_KEYS as readonly string[]).includes(v);
 
+const HOST_LABEL_ROLE: Record<string, AppRoleKey> = {
+  admin: "admin",
+  agent: "agent",
+  merchant: "merchant",
+  dist: "distributor",
+  distributor: "distributor",
+  sd: "super-distributor",
+  "super-distributor": "super-distributor",
+};
+
+const getAppRoleFromHostname = (hostname: string): AppRoleKey | null => {
+  const normalized = hostname.toLowerCase();
+  if (!normalized.endsWith(".smartshop.bd")) return null;
+  const firstLabel = normalized.split(".")[0];
+  return HOST_LABEL_ROLE[firstLabel] ?? null;
+};
+
 export function isInstallRoute(path: string): boolean {
   return (
     path === "/install" ||
@@ -80,6 +97,13 @@ export function isCustomerScopeRoute(path: string): boolean {
 export function captureAppRoleFromUrl() {
   if (typeof window === "undefined") return;
   try {
+    const hostRole = getAppRoleFromHostname(window.location.hostname);
+    if (hostRole) {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, hostRole);
+      localStorage.setItem(STORAGE_KEY, hostRole);
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const app = params.get("app");
     if (app === "customer") {

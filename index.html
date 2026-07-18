@@ -42,8 +42,21 @@
   <script>
     (function () {
       var path = window.location.pathname;
+      var host = window.location.hostname.toLowerCase();
+      var firstLabel = host.split(".")[0];
       var manifest = "/manifest.json";
-      if (path.indexOf("/install/super-distributor") === 0 || path.indexOf("/super-distributor") === 0 || path.indexOf("/login/super-distributor") === 0) {
+      var rootManifestByHost = {
+        agent: "/manifest-agent-root.json",
+        merchant: "/manifest-merchant-root.json",
+        dist: "/manifest-distributor-root.json",
+        distributor: "/manifest-distributor-root.json",
+        sd: "/manifest-super-distributor-root.json",
+        "super-distributor": "/manifest-super-distributor-root.json",
+        admin: "/manifest-admin-root.json"
+      };
+      if (host.indexOf(".smartshop.bd") > -1 && rootManifestByHost[firstLabel]) {
+        manifest = rootManifestByHost[firstLabel];
+      } else if (path.indexOf("/install/super-distributor") === 0 || path.indexOf("/super-distributor") === 0 || path.indexOf("/login/super-distributor") === 0) {
         manifest = "/manifest-super-distributor.json";
       } else if (path.indexOf("/install/distributor") === 0 || path.indexOf("/distributor") === 0 || path.indexOf("/login/distributor") === 0) {
         manifest = "/manifest-distributor.json";
