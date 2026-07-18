@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
+import PinConfirmSheet from "@/components/PinConfirmSheet";
 
 const PLAN_CATEGORIES: { key: string; labelKey: TranslationKey; icon: any; color: string }[] = [
   { key: "life", labelKey: "ipCatLife", icon: Heart, color: "text-red-500" },
@@ -46,6 +47,7 @@ const InsurancePage = () => {
   const [category, setCategory] = useState("life");
   const [selectedPlan, setSelectedPlan] = useState<typeof PLANS["life"][0] | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [pinPlan, setPinPlan] = useState<typeof PLANS["life"][0] | null>(null);
   const [policies, setPolicies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"browse" | "my">("browse");
@@ -66,29 +68,30 @@ const InsurancePage = () => {
   
 
   const handlePurchase = async (plan: typeof PLANS["life"][0]) => {
-    if (!user) { toast.error(t("ipToastSignIn")); return; }
+    if (!user) throw new Error(t("ipToastSignIn"));
     setPurchasing(true);
-    const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + plan.duration);
+    try {
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + plan.duration);
 
-    const { error } = await supabase.from("insurance_policies").insert({
-      user_id: user.id,
-      plan_type: category,
-      plan_name: plan.name,
-      coverage_amount: plan.coverage,
-      premium: plan.premium,
-      duration_months: plan.duration,
-      expires_at: expiresAt.toISOString(),
-    } as any);
+      const { error } = await supabase.from("insurance_policies").insert({
+        user_id: user.id,
+        plan_type: category,
+        plan_name: plan.name,
+        coverage_amount: plan.coverage,
+        premium: plan.premium,
+        duration_months: plan.duration,
+        expires_at: expiresAt.toISOString(),
+      } as any);
 
-    if (error) toast.error(t("ipToastFailed"));
-    else {
+      if (error) { toast.error(t("ipToastFailed")); throw error; }
       toast.success(t("ipToastActivated"));
       setSelectedPlan(null);
       const { data } = await supabase.from("insurance_policies").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
       setPolicies(data || []);
+    } finally {
+      setPurchasing(false);
     }
-    setPurchasing(false);
   };
 
   return (
@@ -128,7 +131,7 @@ const InsurancePage = () => {
                     ))}
                   </ul>
                 </div>
-                <Button onClick={() => handlePurchase(selectedPlan)} disabled={purchasing} className="w-full rounded-xl h-12 font-bold">
+                <Button onClick={() => setPinPlan(selectedPlan)} disabled={purchasing} className="w-full rounded-xl h-12 font-bold">
                   {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : t("ipPurchaseFor").replace("{amount}", String(selectedPlan.premium))}
                 </Button>
               </CardContent>
@@ -200,6 +203,13 @@ const InsurancePage = () => {
           </>
         )}
       </div>
+      <PinConfirmSheet
+        open={!!pinPlan}
+        onClose={() => setPinPlan(null)}
+        title="Confirm insurance purchase"
+        description={pinPlan ? `${pinPlan.name} · ৳${pinPlan.premium}/mo` : undefined}
+        onConfirmed={async () => { if (pinPlan) await handlePurchase(pinPlan); }}
+      />
     </div>
   );
 };

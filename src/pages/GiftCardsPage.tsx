@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
 import FlowHeader from "@/components/FlowHeader";
+import PinConfirmSheet from "@/components/PinConfirmSheet";
 
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 
@@ -70,6 +71,7 @@ const GiftCardsPage = () => {
   const [brand, setBrand] = useState("all");
   const [denomination, setDenomination] = useState(500);
   const [purchasing, setPurchasing] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
   const [cards, setCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"buy" | "my">("buy");
@@ -91,24 +93,29 @@ const GiftCardsPage = () => {
 
   
 
-  const handlePurchase = async () => {
+  const requestPurchase = () => {
     if (!user) { toast.error(t("giftCardsSignInFirst")); return; }
-    setPurchasing(true);
-    const selectedBrandInfo = brand === "all" ? BRANDS[0] : BRANDS.find(b => b.id === brand)!;
-    const { error } = await supabase.from("gift_cards").insert({
-      purchaser_id: user.id,
-      brand: selectedBrandInfo?.name || brand,
-      denomination,
-    } as any);
+    setPinOpen(true);
+  };
 
-    if (error) toast.error(t("giftCardsBuyFailed"));
-    else {
+  const handlePurchase = async () => {
+    if (!user) throw new Error(t("giftCardsSignInFirst"));
+    setPurchasing(true);
+    try {
+      const selectedBrandInfo = brand === "all" ? BRANDS[0] : BRANDS.find(b => b.id === brand)!;
+      const { error } = await supabase.from("gift_cards").insert({
+        purchaser_id: user.id,
+        brand: selectedBrandInfo?.name || brand,
+        denomination,
+      } as any);
+      if (error) { toast.error(t("giftCardsBuyFailed")); throw error; }
       toast.success(t("giftCardsBought"));
       const { data } = await supabase.from("gift_cards").select("*").eq("purchaser_id", user.id).order("created_at", { ascending: false });
       setCards(data || []);
       setTab("my");
+    } finally {
+      setPurchasing(false);
     }
-    setPurchasing(false);
   };
 
   const copyCode = (code: string) => {
@@ -287,7 +294,7 @@ const GiftCardsPage = () => {
 
               {/* Purchase */}
               <motion.div whileTap={{ scale: 0.98 }}>
-                <Button onClick={handlePurchase} disabled={purchasing} className="w-full rounded-2xl h-13 font-bold text-base shadow-lg shadow-primary/20">
+                <Button onClick={requestPurchase} disabled={purchasing} className="w-full rounded-2xl h-13 font-bold text-base shadow-lg shadow-primary/20">
                   {purchasing ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                     <><Gift className="w-4 h-4 mr-2" />{t("giftCardsPurchase")} ৳{denomination.toLocaleString()} {brand === "all" ? t("giftCardsUniversalChip") : t(selectedBrand.i18n)} {t("giftCardsCard")}</>
                   )}
@@ -390,6 +397,13 @@ const GiftCardsPage = () => {
           )}
         </AnimatePresence>
       </div>
+      <PinConfirmSheet
+        open={pinOpen}
+        onClose={() => setPinOpen(false)}
+        title="Confirm gift card purchase"
+        description={`৳${denomination.toLocaleString()} · ${brand === "all" ? BRANDS[0].name : BRANDS.find(b => b.id === brand)?.name}`}
+        onConfirmed={handlePurchase}
+      />
     </div>
   );
 };
