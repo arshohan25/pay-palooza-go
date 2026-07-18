@@ -1,7 +1,7 @@
 {
   "name": "EasyPay – Mobile Financial Services",
   "short_name": "EasyPay",
-  "id": "/?app=customer",
+  "id": "/customer-app",
   "description": "Send money, pay bills, cash out and manage your finances securely.",
   "start_url": "/?app=customer",
   "display": "standalone",
