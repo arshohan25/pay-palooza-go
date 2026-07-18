@@ -474,6 +474,35 @@ const RoleInstallPage = () => {
               <p className="font-bold text-foreground">{t("ripAppInstalled")}</p>
               <p className="text-sm text-muted-foreground mt-1">{t("ripCheckHome")}</p>
             </motion.div>
+          ) : attemptState !== "idle" && !hasPrompt ? (
+            <motion.div key="retry" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+              <div className="p-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 flex items-start gap-2">
+                <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">
+                    {attemptState === "dismissed" ? "Install cancelled" : "Install did not complete"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    You can retry right away — no need to refresh manually.
+                    {attemptCount > 1 ? " If the prompt still won't appear, we'll reload the page for you." : ""}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleRetry}
+                className={`w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r ${config.color} text-white shadow-lg`}
+              >
+                <RefreshCw size={18} className="mr-2" />
+                Retry install {config.shortName}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setAttemptState("idle")}
+                className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                Dismiss and use manual install steps
+              </button>
+            </motion.div>
           ) : hasPrompt ? (
             <motion.div key="installable" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <Button
@@ -508,6 +537,7 @@ const RoleInstallPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
       </div>
     </div>
   );
