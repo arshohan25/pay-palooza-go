@@ -253,7 +253,12 @@ const RoleInstallPage = () => {
   const handleInstall = async () => {
     const prompt = getInstallPrompt();
     if (!prompt) {
-      toast.info("Use your browser menu to install this role app, or refresh this install page.");
+      if (isStandalone) {
+        window.open(window.location.href, "_blank", "noopener,noreferrer");
+        toast.info("Opened the browser install page. Use the browser menu if the prompt is not shown.");
+      } else {
+        toast.info("Use your browser menu to install this role app, or refresh this install page.");
+      }
       return;
     }
     await prompt.prompt();
