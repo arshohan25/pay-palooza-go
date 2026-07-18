@@ -148,7 +148,14 @@ const InstallLandingPage = () => {
                 <div className="relative mt-4 flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => navigate(role.installPath)}
+                    onClick={() => {
+                      const target = getRoleInstallUrl(role.key as InstallableRoleKey);
+                      if (target.startsWith(window.location.origin)) {
+                        navigate(role.installPath);
+                      } else {
+                        window.location.href = target;
+                      }
+                    }}
                     className={`flex-1 h-10 rounded-xl bg-gradient-to-r ${role.color} text-white text-sm font-semibold shadow-sm flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition`}
                     aria-label={`Install ${role.name}`}
                   >
