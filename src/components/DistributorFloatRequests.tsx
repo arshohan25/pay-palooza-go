@@ -193,6 +193,13 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
           ))}
         </div>
       )}
+      <PinConfirmSheet
+        open={!!pinTarget}
+        onClose={() => setPinTarget(null)}
+        title="Confirm float approval"
+        description={pinTarget ? `Approve ৳${fmt(pinTarget.amount)} to ${pinTarget.agent_name || "agent"}? Enter your PIN to send funds.` : undefined}
+        onConfirmed={async () => { if (pinTarget) { const r = pinTarget; setPinTarget(null); await approve(r); } }}
+      />
     </Card>
   );
 };
