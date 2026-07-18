@@ -225,6 +225,7 @@ const App = () => (
                     <Route path="/merchant-support" element={<MerchantSupportPage />} />
                     <Route path="/install" element={<InstallLandingPage />} />
                     <Route path="/install/status" element={<InstallStatusPage />} />
+                    <Route path="/install/all" element={<InstallAllRolesWizard />} />
                     <Route path="/install/:role" element={<RoleInstallPage />} />
                     <Route path="/developers" element={<DeveloperPortal />} />
                     {import.meta.env.DEV && (
