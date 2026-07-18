@@ -186,15 +186,20 @@ const RoleInstallPage = () => {
 
   const config = role ? ROLE_CONFIG[role] : null;
 
-  // Swap manifest link for this role
+  // Swap manifest link for this role. If a different role manifest was
+  // already evaluated on this page load, force a full reload so Chrome
+  // re-fires `beforeinstallprompt` for the correct role — otherwise only the
+  // first-visited role can be installed per tab.
   useEffect(() => {
     if (!config) return;
     const existing = document.querySelector('link[rel="manifest"]');
-    const oldHref = existing?.getAttribute("href");
-    if (existing) existing.setAttribute("href", config.manifest);
-    return () => {
-      if (existing && oldHref) existing.setAttribute("href", oldHref);
-    };
+    const currentHref = existing?.getAttribute("href");
+    const desired = config.manifest;
+    if (currentHref && currentHref !== desired) {
+      window.location.replace(window.location.pathname + window.location.search);
+      return;
+    }
+    if (existing) existing.setAttribute("href", desired);
   }, [config]);
 
   useEffect(() => {
