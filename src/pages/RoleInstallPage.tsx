@@ -15,6 +15,62 @@ interface PrerequisiteGroup {
 }
 
 const INSTALLED_ROLES_KEY = "mfs_pwa_installed_roles";
+const INSTALL_HISTORY_KEY = "mfs_pwa_install_history";
+const HISTORY_LIMIT_PER_ROLE = 20;
+
+export type InstallHistoryAction =
+  | "prompted"
+  | "accepted"
+  | "dismissed"
+  | "failed"
+  | "retry"
+  | "manual-fallback"
+  | "installed-event"
+  | "reset";
+
+export interface InstallHistoryEntry {
+  action: InstallHistoryAction;
+  at: number;
+  note?: string;
+}
+
+type InstallHistoryMap = Record<string, InstallHistoryEntry[]>;
+
+const readInstallHistory = (): InstallHistoryMap => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(INSTALL_HISTORY_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as InstallHistoryMap) : {};
+  } catch {
+    return {};
+  }
+};
+
+const appendInstallHistory = (roleKey: string, action: InstallHistoryAction, note?: string) => {
+  try {
+    const map = readInstallHistory();
+    const list = Array.isArray(map[roleKey]) ? map[roleKey] : [];
+    const next = [{ action, at: Date.now(), note }, ...list].slice(0, HISTORY_LIMIT_PER_ROLE);
+    map[roleKey] = next;
+    localStorage.setItem(INSTALL_HISTORY_KEY, JSON.stringify(map));
+    window.dispatchEvent(new CustomEvent("mfs:install-history", { detail: { roleKey } }));
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const clearInstallHistory = (roleKey: string) => {
+  try {
+    const map = readInstallHistory();
+    delete map[roleKey];
+    localStorage.setItem(INSTALL_HISTORY_KEY, JSON.stringify(map));
+    window.dispatchEvent(new CustomEvent("mfs:install-history", { detail: { roleKey } }));
+  } catch {
+    // ignore
+  }
+};
 
 const readInstalledRoles = (): string[] => {
   if (typeof window === "undefined") return [];
@@ -42,6 +98,40 @@ const isStandaloneDisplayMode = () => {
     window.matchMedia("(display-mode: standalone)").matches ||
     ("standalone" in window.navigator && Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone))
   );
+};
+
+const ACTION_LABEL: Record<InstallHistoryAction, string> = {
+  prompted: "Install prompt shown",
+  accepted: "Install accepted",
+  dismissed: "Install dismissed",
+  failed: "Install failed",
+  retry: "Retry requested",
+  "manual-fallback": "Manual install fallback",
+  "installed-event": "App installed",
+  reset: "Install state reset",
+};
+
+const ACTION_TONE: Record<InstallHistoryAction, string> = {
+  prompted: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  accepted: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  dismissed: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  failed: "bg-destructive/15 text-destructive",
+  retry: "bg-primary/15 text-primary",
+  "manual-fallback": "bg-muted text-muted-foreground",
+  "installed-event": "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  reset: "bg-muted text-muted-foreground",
+};
+
+const formatRelativeTime = (ts: number) => {
+  const diff = Date.now() - ts;
+  const s = Math.round(diff / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.round(h / 24);
+  return `${d}d ago`;
 };
 
 const ROLE_CONFIG: Record<string, {
@@ -248,6 +338,7 @@ const RoleInstallPage = () => {
     const onInstalled = () => {
       if (!role) return;
       rememberInstalledRole(role);
+      appendInstallHistory(role, "installed-event");
       setInstalledRole(role);
       setAttemptState("idle");
     };
@@ -271,9 +362,7 @@ const RoleInstallPage = () => {
   const handleInstall = async () => {
     const prompt = getInstallPrompt();
     if (!prompt) {
-      // No stored prompt — either never fired, was consumed, or we're in
-      // standalone. Try a hard reload to give the browser a chance to
-      // re-fire beforeinstallprompt for this role's manifest.
+      if (role) appendInstallHistory(role, "manual-fallback", isStandalone ? "standalone: opened in browser tab" : "no beforeinstallprompt available");
       if (isStandalone) {
         window.open(window.location.href, "_blank", "noopener,noreferrer");
         toast.info("Opened the browser install page. Use the browser menu if the prompt is not shown.");
@@ -286,25 +375,27 @@ const RoleInstallPage = () => {
       return;
     }
     setAttemptCount((n) => n + 1);
+    if (role) appendInstallHistory(role, "prompted");
     try {
       await prompt.prompt();
       const { outcome } = await prompt.userChoice;
       if (outcome === "accepted") {
         if (role) {
           rememberInstalledRole(role);
+          appendInstallHistory(role, "accepted");
           setInstalledRole(role);
         }
         clearPrompt();
         setHasPrompt(false);
         setAttemptState("idle");
       } else {
-        // Dismissed — the event is consumed and cannot be re-prompted until
-        // the browser re-fires it. Surface a retry affordance immediately.
+        if (role) appendInstallHistory(role, "dismissed");
         clearPrompt();
         setHasPrompt(false);
         setAttemptState("dismissed");
       }
-    } catch {
+    } catch (err) {
+      if (role) appendInstallHistory(role, "failed", err instanceof Error ? err.message : undefined);
       clearPrompt();
       setHasPrompt(false);
       setAttemptState("failed");
@@ -312,8 +403,7 @@ const RoleInstallPage = () => {
   };
 
   const handleRetry = () => {
-    // If the browser already re-fired beforeinstallprompt, use it directly;
-    // otherwise reload the page so a fresh prompt can be captured.
+    if (role) appendInstallHistory(role, "retry");
     if (getInstallPrompt()) {
       setHasPrompt(true);
       setAttemptState("idle");
@@ -323,6 +413,7 @@ const RoleInstallPage = () => {
     toast.info("Reloading to re-request the install prompt…");
     window.setTimeout(() => window.location.reload(), 300);
   };
+
 
   if (!config) {
     return (
@@ -631,19 +722,50 @@ const PerRoleInstallStatePanel = ({
   isStandalone,
   currentRoleInstalled,
 }: PerRoleInstallStatePanelProps) => {
-  const installedRoles = readInstalledRoles();
+  const [installedRoles, setInstalledRolesState] = useState<string[]>(() => readInstalledRoles());
+  const [history, setHistory] = useState<InstallHistoryMap>(() => readInstallHistory());
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ [currentRole]: true });
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://pay-palooza-go.lovable.app";
+
+  useEffect(() => {
+    const refresh = () => {
+      setInstalledRolesState(readInstalledRoles());
+      setHistory(readInstallHistory());
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key === INSTALL_HISTORY_KEY || e.key === INSTALLED_ROLES_KEY) refresh();
+    };
+    window.addEventListener("mfs:install-history", refresh as EventListener);
+    window.addEventListener("storage", onStorage);
+    const interval = window.setInterval(refresh, 2000);
+    return () => {
+      window.removeEventListener("mfs:install-history", refresh as EventListener);
+      window.removeEventListener("storage", onStorage);
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const clearRole = (roleKey: string) => {
     try {
       const next = installedRoles.filter((r) => r !== roleKey);
       localStorage.setItem(INSTALLED_ROLES_KEY, JSON.stringify(next));
+      appendInstallHistory(roleKey, "reset");
       toast.success(`Cleared install state for ${ROLE_CONFIG[roleKey]?.shortName ?? roleKey}`);
       window.setTimeout(() => window.location.reload(), 400);
     } catch {
       toast.error("Could not clear install state");
     }
+  };
+
+  const clearHistoryFor = (roleKey: string) => {
+    clearInstallHistory(roleKey);
+    setHistory((prev) => {
+      const next = { ...prev };
+      delete next[roleKey];
+      return next;
+    });
+    toast.success(`Cleared history for ${ROLE_CONFIG[roleKey]?.shortName ?? roleKey}`);
   };
 
   return (
@@ -653,6 +775,9 @@ const PerRoleInstallStatePanel = ({
         {Object.entries(ROLE_CONFIG).map(([key, cfg]) => {
           const isCurrent = key === currentRole;
           const isInstalled = installedRoles.includes(key);
+          const entries = history[key] ?? [];
+          const lastEntry = entries[0];
+          const isOpen = !!expanded[key];
           let reason = "";
           let buttonState: "shown" | "hidden" = "hidden";
 
@@ -715,9 +840,58 @@ const PerRoleInstallStatePanel = ({
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1">{reason}</p>
+                  {lastEntry ? (
+                    <p className="text-[11px] text-foreground mt-1">
+                      <span
+                        className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded mr-1 align-middle ${ACTION_TONE[lastEntry.action]}`}
+                      >
+                        {ACTION_LABEL[lastEntry.action]}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {formatRelativeTime(lastEntry.at)} · {new Date(lastEntry.at).toLocaleString()}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground/70 mt-1 italic">No install attempts recorded yet.</p>
+                  )}
                   <p className="text-[10px] text-muted-foreground/70 font-mono truncate mt-1">
                     {origin}/install/{key}
                   </p>
+                  {entries.length > 0 && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }))}
+                        className="text-[10px] font-semibold text-primary hover:underline"
+                        aria-expanded={isOpen}
+                      >
+                        {isOpen ? "Hide" : "Show"} history ({entries.length})
+                      </button>
+                      {isOpen && (
+                        <ol className="mt-2 space-y-1 border-l border-border pl-3">
+                          {entries.map((entry, idx) => (
+                            <li key={`${entry.at}-${idx}`} className="text-[11px] flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span
+                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${ACTION_TONE[entry.action]}`}
+                                >
+                                  {ACTION_LABEL[entry.action]}
+                                </span>
+                                <span className="text-muted-foreground">{formatRelativeTime(entry.at)}</span>
+                                <span className="text-muted-foreground/70">·</span>
+                                <span className="text-muted-foreground/70 tabular-nums">
+                                  {new Date(entry.at).toLocaleString()}
+                                </span>
+                              </div>
+                              {entry.note && (
+                                <p className="text-[10px] text-muted-foreground/80 pl-1">{entry.note}</p>
+                              )}
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1 shrink-0">
                   {!isCurrent && (
@@ -737,6 +911,15 @@ const PerRoleInstallStatePanel = ({
                       Reset
                     </button>
                   )}
+                  {entries.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => clearHistoryFor(key)}
+                      className="text-[10px] px-2 py-1 rounded-md bg-background border border-border hover:bg-accent text-muted-foreground"
+                    >
+                      Clear log
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -744,10 +927,11 @@ const PerRoleInstallStatePanel = ({
         })}
       </div>
       <p className="text-[10px] text-muted-foreground/70 mt-2">
-        Install state is tracked locally per browser. Each role installs as its own PWA with a unique manifest id.
+        Install state and attempt history are tracked locally per browser (last {HISTORY_LIMIT_PER_ROLE} events per role).
       </p>
     </div>
   );
 };
+
 
 
