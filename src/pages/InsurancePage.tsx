@@ -47,6 +47,7 @@ const InsurancePage = () => {
   const [category, setCategory] = useState("life");
   const [selectedPlan, setSelectedPlan] = useState<typeof PLANS["life"][0] | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [pinPlan, setPinPlan] = useState<typeof PLANS["life"][0] | null>(null);
   const [policies, setPolicies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"browse" | "my">("browse");
