@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag, Copy, Share2, FileText, ClipboardCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { getInstallPrompt, onPromptAvailable, isAppInstalled, clearPrompt } from "@/lib/installPromptStore";
+import { getInstallPrompt, onPromptAvailable, clearPrompt } from "@/lib/installPromptStore";
 import { useI18n } from "@/lib/i18n";
 import { getLoginPathForRole, type AppRoleKey } from "@/lib/appRole";
 
@@ -13,6 +13,36 @@ interface PrerequisiteGroup {
   icon: typeof Shield;
   items: string[];
 }
+
+const INSTALLED_ROLES_KEY = "mfs_pwa_installed_roles";
+
+const readInstalledRoles = (): string[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(INSTALLED_ROLES_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed.filter((r): r is string => typeof r === "string") : [];
+  } catch {
+    return [];
+  }
+};
+
+const rememberInstalledRole = (roleKey: string) => {
+  try {
+    const roles = new Set(readInstalledRoles());
+    roles.add(roleKey);
+    localStorage.setItem(INSTALLED_ROLES_KEY, JSON.stringify([...roles]));
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const isStandaloneDisplayMode = () => {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    ("standalone" in window.navigator && Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone))
+  );
+};
 
 const ROLE_CONFIG: Record<string, {
   name: string;
@@ -154,7 +184,7 @@ const RoleInstallPage = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
   const [hasPrompt, setHasPrompt] = useState(!!getInstallPrompt());
-  const [installed, setInstalled] = useState(false);
+  const [installedRole, setInstalledRole] = useState<string | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const checklistKey = role ? `mfs_install_checklist_${role}` : null;
   const [checked, setChecked] = useState<Record<string, boolean>>({});
@@ -203,21 +233,38 @@ const RoleInstallPage = () => {
   }, [config]);
 
   useEffect(() => {
-    setIsStandalone(isAppInstalled());
+    setHasPrompt(!!getInstallPrompt());
+    setIsStandalone(isStandaloneDisplayMode());
+    setInstalledRole(role && readInstalledRoles().includes(role) ? role : null);
 
     const unsub = onPromptAvailable(() => setHasPrompt(true));
-    window.addEventListener("appinstalled", () => setInstalled(true));
-    return unsub;
-  }, []);
+    const onInstalled = () => {
+      if (!role) return;
+      rememberInstalledRole(role);
+      setInstalledRole(role);
+    };
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      unsub();
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, [role]);
 
   const handleInstall = async () => {
     const prompt = getInstallPrompt();
-    if (!prompt) return;
+    if (!prompt) {
+      toast.info("Use your browser menu to install this role app, or refresh this install page.");
+      return;
+    }
     await prompt.prompt();
     const { outcome } = await prompt.userChoice;
     if (outcome === "accepted") {
-      setInstalled(true);
+      if (role) {
+        rememberInstalledRole(role);
+        setInstalledRole(role);
+      }
       clearPrompt();
+      setHasPrompt(false);
     }
   };
 
@@ -246,6 +293,7 @@ const RoleInstallPage = () => {
   }
 
   const Icon = config.LucideIcon;
+  const currentRoleInstalled = installedRole === role;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -355,7 +403,7 @@ const RoleInstallPage = () => {
 
         <AnimatePresence mode="wait">
 
-          {installed || isStandalone ? (
+          {currentRoleInstalled ? (
             <motion.div key="installed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center py-8">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                 <Check size={28} className="text-primary" />
@@ -375,9 +423,18 @@ const RoleInstallPage = () => {
             </motion.div>
           ) : (
             <motion.div key="manual" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-3">
+              <Button
+                onClick={handleInstall}
+                className={`w-full h-14 text-base font-bold rounded-2xl bg-gradient-to-r ${config.color} text-white shadow-lg`}
+              >
+                <Download size={18} className="mr-2" />
+                {t("ripInstall")} {config.shortName}
+              </Button>
               <div className="p-4 rounded-2xl bg-muted/50 border border-border">
                 <Icon size={24} className="text-primary mx-auto mb-2" />
-                <p className="text-sm font-semibold text-foreground">{t("ripInstallManually")}</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {isStandalone ? "Open this link in your browser to add another role app" : t("ripInstallManually")}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   <strong>{t("ripIphone")}</strong> {t("ripIphoneHint")}
                 </p>
