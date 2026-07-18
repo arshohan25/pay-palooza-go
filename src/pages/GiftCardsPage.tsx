@@ -71,6 +71,7 @@ const GiftCardsPage = () => {
   const [brand, setBrand] = useState("all");
   const [denomination, setDenomination] = useState(500);
   const [purchasing, setPurchasing] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
   const [cards, setCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"buy" | "my">("buy");
