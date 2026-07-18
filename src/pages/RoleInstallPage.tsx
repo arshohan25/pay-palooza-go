@@ -638,12 +638,35 @@ const RoleInstallPage = () => {
         <AnimatePresence mode="wait">
 
           {currentRoleInstalled ? (
-            <motion.div key="installed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center py-8">
+            <motion.div key="installed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center py-8" data-testid="installed-success">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                 <Check size={28} className="text-primary" />
               </div>
               <p className="font-bold text-foreground">{t("ripAppInstalled")}</p>
               <p className="text-sm text-muted-foreground mt-1">{t("ripCheckHome")}</p>
+              <Button
+                data-testid="open-installed-app"
+                onClick={() => launchInstalledRoleApp(roleKey!)}
+                className={`mt-4 h-12 px-6 rounded-2xl bg-gradient-to-r ${config.color} text-white font-semibold shadow-lg`}
+              >
+                Open {config.shortName}
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = readInstalledRoles().filter((r) => r !== roleKey);
+                  try {
+                    localStorage.setItem(INSTALLED_ROLES_KEY, JSON.stringify(next));
+                  } catch {
+                    /* ignore */
+                  }
+                  if (roleKey) appendInstallHistory(roleKey, "reset");
+                  setInstalledRole(null);
+                }}
+                className="block mx-auto mt-2 text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                Not installed anymore? Reset state
+              </button>
             </motion.div>
           ) : attemptState !== "idle" && !hasPrompt ? (
             <motion.div key="retry" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
