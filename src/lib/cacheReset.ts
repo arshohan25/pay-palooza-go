@@ -40,6 +40,11 @@ const PRESERVED_KEYS = [
   "mfs_onboarding_completed",
   "mfs_has_authenticated",
   "mfs_app_role",
+  // PWA per-role install tracking must survive cache resets so returning
+  // users still see the installed-state "Open app" screen after the shell
+  // bumps its cache version.
+  "mfs_pwa_installed_roles",
+  "mfs_pwa_install_history",
 ];
 
 export async function clearClientCache(version = CACHE_VERSION) {
