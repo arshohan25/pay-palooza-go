@@ -64,8 +64,15 @@ export function getRoleInstallUrl(role: InstallableRoleKey): string {
   if (typeof window === "undefined") return `https://${ROLE_SUBDOMAIN[role]}/${role}/install`;
   const { protocol, hostname, origin } = window.location;
   const normalized = hostname.toLowerCase();
-  const isSmartshopDomain = normalized === SMARTSHOP_ROOT || normalized.endsWith(`.${SMARTSHOP_ROOT}`);
-  if (!isSmartshopDomain) return `${origin}/${role}/install`;
+  const isLocalOrPreview =
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized.startsWith("id-preview--") ||
+    normalized.startsWith("preview--") ||
+    normalized.endsWith(".lovableproject.com") ||
+    normalized.endsWith(".lovableproject-dev.com") ||
+    normalized.endsWith(".beta.lovable.dev");
+  if (isLocalOrPreview) return `${origin}/${role}/install`;
   return `${protocol}//${ROLE_SUBDOMAIN[role]}/${role}/install`;
 }
 
