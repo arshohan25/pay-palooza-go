@@ -111,7 +111,10 @@ export function computeAppRoleRedirect(input: EnforcerInput): string | null {
   // No bound app role: only intervene if launched from an installed PWA
   // that lost its role context.
   if (!appRole) {
-    if (isStandalone && !path.startsWith("/install") && !path.startsWith("/login/") && path !== "/merchant-login") {
+    const isRoleScopedEntry = Object.keys(APP_ROLE_ALLOWED).some(
+      (role) => path === `/${role}/install` || path === `/${role}/login`,
+    );
+    if (isStandalone && !path.startsWith("/install") && !path.startsWith("/login/") && !isRoleScopedEntry && path !== "/merchant-login") {
       return "/install";
     }
     return null;
@@ -123,6 +126,7 @@ export function computeAppRoleRedirect(input: EnforcerInput): string | null {
   const allowedPrefixes = [
     home,
     loginPath,
+    `/${appRole}/install`,
     `/login/${appRole}`,
     "/install",
     "/forgot-pin",

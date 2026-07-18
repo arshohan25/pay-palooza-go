@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * Verifies that /login/distributor, /login/super-distributor and /login/admin
+ * Verifies that /distributor/login, /super-distributor/login and /admin/login
  * render their dedicated login UIs (not the generic customer AuthPage), and
  * that signed-out visits to their protected routes redirect back to the
  * matching login page.
@@ -17,19 +17,19 @@ type RoleSpec = {
 const ROLES: RoleSpec[] = [
   {
     role: "distributor",
-    loginPath: "/login/distributor",
+    loginPath: "/distributor/login",
     heading: /Distributor Portal/i,
     protectedRoutes: ["/distributor"],
   },
   {
     role: "super-distributor",
-    loginPath: "/login/super-distributor",
+    loginPath: "/super-distributor/login",
     heading: /Super Distributor/i,
     protectedRoutes: ["/super-distributor"],
   },
   {
     role: "admin",
-    loginPath: "/login/admin",
+    loginPath: "/admin/login",
     heading: /Admin Console/i,
     protectedRoutes: ["/admin"],
   },

@@ -27,11 +27,11 @@ const HOME: Record<RoleKey, string> = {
 };
 
 const LOGIN: Record<RoleKey, string> = {
-  admin: "/login/admin",
-  agent: "/login/agent",
-  distributor: "/login/distributor",
-  "super-distributor": "/login/super-distributor",
-  merchant: "/merchant-login",
+  admin: "/admin/login",
+  agent: "/agent/login",
+  distributor: "/distributor/login",
+  "super-distributor": "/super-distributor/login",
+  merchant: "/merchant/login",
 };
 
 async function bindRoleAndSeedFakeSession(page: Page, role: RoleKey) {
