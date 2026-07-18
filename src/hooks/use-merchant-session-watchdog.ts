@@ -29,6 +29,8 @@ export function useMerchantSessionWatchdog() {
 
   const onMerchantRoute =
     location.pathname.startsWith("/merchant") &&
+    location.pathname !== "/merchant/install" &&
+    location.pathname !== "/merchant/login" &&
     location.pathname !== "/merchant-login" &&
     location.pathname !== "/merchant-manager-login" &&
     location.pathname !== "/merchant-support";

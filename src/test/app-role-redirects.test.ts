@@ -13,7 +13,7 @@ const base = {
 describe("computeAppRoleRedirect", () => {
   describe("no bound app role (browser tab)", () => {
     it("does not redirect off any route in a normal tab", () => {
-      for (const path of ["/", "/dashboard", "/agent", "/login/agent", "/install", "/install/admin"]) {
+      for (const path of ["/", "/dashboard", "/agent", "/login/agent", "/install", "/install/admin", "/agent/install", "/agent/login"]) {
         expect(computeAppRoleRedirect({ ...base, path, appRole: null })).toBeNull();
       }
     });
@@ -24,8 +24,8 @@ describe("computeAppRoleRedirect", () => {
       ).toBe("/install");
     });
 
-    it("standalone on /install or /login/<role> stays put", () => {
-      for (const path of ["/install", "/install/agent", "/login/agent", "/merchant-login"]) {
+    it("standalone on install or login entry routes stays put", () => {
+      for (const path of ["/install", "/install/agent", "/login/agent", "/agent/install", "/agent/login", "/merchant/login", "/merchant-login"]) {
         expect(
           computeAppRoleRedirect({ ...base, path, appRole: null, isStandalone: true })
         ).toBeNull();
@@ -103,9 +103,9 @@ describe("computeAppRoleRedirect", () => {
       ).toBeNull();
     });
 
-    it("/install/<role> stays in scope for a bound app", () => {
+    it("/<role>/install stays in scope for a bound app", () => {
       expect(
-        computeAppRoleRedirect({ ...base, path: `/install/${appRole}`, appRole })
+        computeAppRoleRedirect({ ...base, path: `/${appRole}/install`, appRole })
       ).toBeNull();
     });
   });

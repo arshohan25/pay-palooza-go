@@ -35,14 +35,14 @@ type GuardSpec = {
 };
 
 const ROUTE_MATRIX: GuardSpec[] = [
-  { path: "/agent", allowed: ["agent"], loginRedirect: "/login/agent" },
-  { path: "/distributor", allowed: ["distributor"], loginRedirect: "/login/distributor" },
-  { path: "/super-distributor", allowed: ["super_distributor"], loginRedirect: "/login/super-distributor" },
-  { path: "/merchant", allowed: ["merchant"], loginRedirect: "/login/merchant", allowStaff: true },
+  { path: "/agent", allowed: ["agent"], loginRedirect: "/agent/login" },
+  { path: "/distributor", allowed: ["distributor"], loginRedirect: "/distributor/login" },
+  { path: "/super-distributor", allowed: ["super_distributor"], loginRedirect: "/super-distributor/login" },
+  { path: "/merchant", allowed: ["merchant"], loginRedirect: "/merchant/login", allowStaff: true },
   {
     path: "/admin",
     allowed: ["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"],
-    loginRedirect: "/login/admin",
+    loginRedirect: "/admin/login",
   },
 ];
 
@@ -132,7 +132,7 @@ describe("E2E role access matrix", () => {
     setAuth(true, [], true);
     renderGuarded(spec);
     expect(screen.queryByTestId("protected")).toBeNull();
-    expect(screen.getByTestId("login")).toHaveTextContent("/login/admin");
+    expect(screen.getByTestId("login")).toHaveTextContent("/admin/login");
   });
 
   it("admin-family roles (compliance/finance/support) can reach /admin", () => {

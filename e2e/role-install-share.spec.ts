@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 /**
  * Verifies that each per-role install page:
- *   1. Exposes copy + share buttons for the /install/<role> and login URLs.
+ *   1. Exposes copy + share buttons for the /<role>/install and login URLs.
  *   2. Copy writes the correct URL to the clipboard.
  *   3. Opening the copied /login URL (with matching ?app=<role>) lands on
  *      that role's login page; opening the same URL without ?app also
@@ -12,15 +12,15 @@ import { test, expect, type Page } from "@playwright/test";
 type RoleKey = "admin" | "agent" | "distributor" | "super-distributor" | "merchant";
 
 const ROLES: { role: RoleKey; loginPath: string; bodyText: RegExp }[] = [
-  { role: "admin", loginPath: "/login/admin", bodyText: /EasyPay Admin/i },
-  { role: "agent", loginPath: "/login/agent", bodyText: /EasyPay Agent/i },
-  { role: "distributor", loginPath: "/login/distributor", bodyText: /EasyPay Distributor/i },
+  { role: "admin", loginPath: "/admin/login", bodyText: /EasyPay Admin/i },
+  { role: "agent", loginPath: "/agent/login", bodyText: /EasyPay Agent/i },
+  { role: "distributor", loginPath: "/distributor/login", bodyText: /EasyPay Distributor/i },
   {
     role: "super-distributor",
-    loginPath: "/login/super-distributor",
+    loginPath: "/super-distributor/login",
     bodyText: /EasyPay Super Distributor/i,
   },
-  { role: "merchant", loginPath: "/merchant-login", bodyText: /Merchant Portal/i },
+  { role: "merchant", loginPath: "/merchant/login", bodyText: /Merchant Portal/i },
 ];
 
 async function grantClipboard(page: Page) {
@@ -37,23 +37,23 @@ test.describe("role install page — copy/share links", () => {
       page,
     }) => {
       await grantClipboard(page);
-      await page.goto(`/install/${role}`);
+      await page.goto(`/${role}/install`);
       await expect(page.getByTestId("share-links")).toBeVisible();
 
       await page.getByRole("button", { name: /Copy .* install page link/i }).click();
       const copied = await readClipboard(page);
-      expect(copied).toContain(`/install/${role}`);
+      expect(copied).toContain(`/${role}/install`);
 
       await page.goto(copied.replace(/^https?:\/\/[^/]+/, ""));
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      expect(page.url()).toContain(`/install/${role}`);
+      expect(page.url()).toContain(`/${role}/install`);
     });
 
     test(`${role}: copied login link with ?app=${role} lands on the role login`, async ({
       page,
     }) => {
       await grantClipboard(page);
-      await page.goto(`/install/${role}`);
+      await page.goto(`/${role}/install`);
 
       await page.getByRole("button", { name: /Copy .* login link/i }).click();
       const copied = await readClipboard(page);

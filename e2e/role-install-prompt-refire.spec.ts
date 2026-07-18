@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 /**
  * `beforeinstallprompt` fires at most once per page load in Chromium. When a
- * user navigates between /install/<role> pages in the same tab, the SPA must
+ * user navigates between /<role>/install pages in the same tab, the SPA must
  * force a full reload whenever the active manifest link changes so Chrome
  * re-evaluates installability and re-fires the event for the new role.
  *
@@ -74,11 +74,11 @@ async function fireSyntheticPromptAndProbe(page: Page): Promise<boolean> {
   });
 }
 
-test.describe("/install/<role> — beforeinstallprompt refires across role switches", () => {
+test.describe("/<role>/install — beforeinstallprompt refires across role switches", () => {
   test("switching roles in the same tab forces a full reload so BIP re-fires", async ({ page }) => {
     await clearAppState(page);
 
-    await page.goto("/install/agent", { waitUntil: "domcontentloaded" });
+    await page.goto("/agent/install", { waitUntil: "domcontentloaded" });
     await expect
       .poll(() => manifestHref(page), { timeout: 5_000 })
       .toBe(MANIFEST.agent);
@@ -97,7 +97,7 @@ test.describe("/install/<role> — beforeinstallprompt refires across role switc
 
     // Same-tab navigation to a different role. The app must trigger a full
     // reload — proven by __loadCount resetting to 1 (init script re-runs).
-    await page.goto("/install/merchant", { waitUntil: "domcontentloaded" });
+    await page.goto("/merchant/install", { waitUntil: "domcontentloaded" });
 
     // The RoleInstallPage effect calls location.replace() when the previous
     // manifest link differs. Wait for that reload to settle.
@@ -133,7 +133,7 @@ test.describe("/install/<role> — beforeinstallprompt refires across role switc
 
     for (const role of chain) {
       // Reset the per-document instrumentation without re-adding the init script.
-      await page.goto(`/install/${role}`, { waitUntil: "domcontentloaded" });
+      await page.goto(`/${role}/install`, { waitUntil: "domcontentloaded" });
       // Wait for any location.replace triggered by RoleInstallPage.
       await page.waitForLoadState("domcontentloaded");
       await expect
@@ -158,7 +158,7 @@ test.describe("/install/<role> — beforeinstallprompt refires across role switc
     await clearAppState(page);
 
     for (const role of ["agent", "merchant"] as RoleKey[]) {
-      await page.goto(`/install/${role}`, { waitUntil: "domcontentloaded" });
+      await page.goto(`/${role}/install`, { waitUntil: "domcontentloaded" });
       await expect
         .poll(() => manifestHref(page), { timeout: 5_000 })
         .toBe(MANIFEST[role]);

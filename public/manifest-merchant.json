@@ -1,10 +1,10 @@
 {
   "name": "EasyPay Merchant",
   "short_name": "EP Merchant",
-  "id": "/merchant-app",
+  "id": "/merchant/install",
   "description": "EasyPay Merchant \u2013 Accept payments, manage products, and track analytics.",
-  "start_url": "/merchant?app=merchant",
-  "scope": "/",
+  "start_url": "/merchant/?app=merchant",
+  "scope": "/merchant/",
   "display": "standalone",
   "background_color": "#f3f4f8",
   "theme_color": "#1faa7c",

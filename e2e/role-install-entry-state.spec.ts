@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 /**
- * For every /install/<role> entry, verify:
+ * For every /<role>/install entry, verify:
  *   1. The manifest <link> is swapped to the role-specific manifest file.
  *   2. That manifest JSON exists, has the correct `name`, `display: standalone`,
  *      and a `start_url` that carries `?app=<role>` under the role's home path.
@@ -17,6 +17,7 @@ interface RoleSpec {
   manifest: string;
   manifestName: RegExp;
   home: string;
+  scope: string;
   loginPath: string;
   loginHeading: RegExp;
 }
@@ -27,7 +28,8 @@ const ROLES: RoleSpec[] = [
     manifest: "/manifest-admin.json",
     manifestName: /EasyPay Admin/i,
     home: "/admin",
-    loginPath: "/login/admin",
+    scope: "/admin/",
+    loginPath: "/admin/login",
     loginHeading: /Admin Console/i,
   },
   {
@@ -35,7 +37,8 @@ const ROLES: RoleSpec[] = [
     manifest: "/manifest-agent.json",
     manifestName: /EasyPay Agent/i,
     home: "/agent",
-    loginPath: "/login/agent",
+    scope: "/agent/",
+    loginPath: "/agent/login",
     loginHeading: /Agent/i,
   },
   {
@@ -43,7 +46,8 @@ const ROLES: RoleSpec[] = [
     manifest: "/manifest-distributor.json",
     manifestName: /EasyPay Distributor/i,
     home: "/distributor",
-    loginPath: "/login/distributor",
+    scope: "/distributor/",
+    loginPath: "/distributor/login",
     loginHeading: /Distributor Portal/i,
   },
   {
@@ -51,7 +55,8 @@ const ROLES: RoleSpec[] = [
     manifest: "/manifest-super-distributor.json",
     manifestName: /EasyPay Super Distributor/i,
     home: "/super-distributor",
-    loginPath: "/login/super-distributor",
+    scope: "/super-distributor/",
+    loginPath: "/super-distributor/login",
     loginHeading: /Super Distributor/i,
   },
   {
@@ -59,7 +64,8 @@ const ROLES: RoleSpec[] = [
     manifest: "/manifest-merchant.json",
     manifestName: /EasyPay Merchant/i,
     home: "/merchant",
-    loginPath: "/merchant-login",
+    scope: "/merchant/",
+    loginPath: "/merchant/login",
     loginHeading: /Merchant Portal/i,
   },
 ];
@@ -74,11 +80,11 @@ async function clearAppState(page: Page) {
   });
 }
 
-test.describe("/install/<role> — correct PWA entry state + redirect", () => {
+test.describe("/<role>/install — correct PWA entry state + redirect", () => {
   for (const spec of ROLES) {
     test(`${spec.role}: install page swaps manifest link to ${spec.manifest}`, async ({ page }) => {
       await clearAppState(page);
-      await page.goto(`/install/${spec.role}`);
+      await page.goto(`/${spec.role}/install`);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
       // Manifest link should point at the role-specific file.
@@ -92,6 +98,7 @@ test.describe("/install/<role> — correct PWA entry state + redirect", () => {
       const body = await res.json();
       expect(body.name).toMatch(spec.manifestName);
       expect(body.display).toBe("standalone");
+      expect(body.scope).toBe(spec.scope);
       // start_url must live under the role's home AND carry ?app=<role> so the
       // installed app rebinds its role on every cold launch.
       expect(String(body.start_url)).toContain(spec.home);

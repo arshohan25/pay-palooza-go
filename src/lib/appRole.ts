@@ -87,9 +87,9 @@ export function isRoleAllowedForApp(
   return userRoles.some((r) => allowed.includes(r));
 }
 
-/** Login path per role (merchant uses the dedicated merchant login). */
+/** In-scope login path per installed role app. Legacy `/login/:role` routes remain supported. */
 export function getLoginPathForRole(appRole: AppRoleKey): string {
-  return appRole === "merchant" ? "/merchant-login" : `/login/${appRole}`;
+  return `/${appRole}/login`;
 }
 
 export interface EnforcerInput {
@@ -111,7 +111,10 @@ export function computeAppRoleRedirect(input: EnforcerInput): string | null {
   // No bound app role: only intervene if launched from an installed PWA
   // that lost its role context.
   if (!appRole) {
-    if (isStandalone && !path.startsWith("/install") && !path.startsWith("/login/") && path !== "/merchant-login") {
+    const isRoleScopedEntry = Object.keys(APP_ROLE_ALLOWED).some(
+      (role) => path === `/${role}/install` || path === `/${role}/login`,
+    );
+    if (isStandalone && !path.startsWith("/install") && !path.startsWith("/login/") && !isRoleScopedEntry && path !== "/merchant-login") {
       return "/install";
     }
     return null;
@@ -123,6 +126,8 @@ export function computeAppRoleRedirect(input: EnforcerInput): string | null {
   const allowedPrefixes = [
     home,
     loginPath,
+    `/${appRole}/install`,
+    `/login/${appRole}`,
     "/install",
     "/forgot-pin",
     "/.lovable",

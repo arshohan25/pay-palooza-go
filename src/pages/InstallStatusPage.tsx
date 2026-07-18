@@ -11,15 +11,16 @@ interface RoleCheck {
   installPath: string;
   manifestPath: string | null;
   expectedManifestName: RegExp;
+  expectedScope?: string;
 }
 
 const CHECKS: RoleCheck[] = [
   { role: "customer", label: "Customer", installPath: "/", manifestPath: "/manifest.json", expectedManifestName: /EasyPay/i },
-  { role: "agent", label: "Agent", installPath: "/install/agent", manifestPath: "/manifest-agent.json", expectedManifestName: /Agent/i },
-  { role: "merchant", label: "Merchant", installPath: "/install/merchant", manifestPath: "/manifest-merchant.json", expectedManifestName: /Merchant/i },
-  { role: "distributor", label: "Distributor", installPath: "/install/distributor", manifestPath: "/manifest-distributor.json", expectedManifestName: /Distributor/i },
-  { role: "super-distributor", label: "Super Distributor", installPath: "/install/super-distributor", manifestPath: "/manifest-super-distributor.json", expectedManifestName: /Super Distributor/i },
-  { role: "admin", label: "Admin", installPath: "/install/admin", manifestPath: "/manifest-admin.json", expectedManifestName: /Admin/i },
+  { role: "agent", label: "Agent", installPath: "/agent/install", manifestPath: "/manifest-agent.json", expectedManifestName: /Agent/i, expectedScope: "/agent/" },
+  { role: "merchant", label: "Merchant", installPath: "/merchant/install", manifestPath: "/manifest-merchant.json", expectedManifestName: /Merchant/i, expectedScope: "/merchant/" },
+  { role: "distributor", label: "Distributor", installPath: "/distributor/install", manifestPath: "/manifest-distributor.json", expectedManifestName: /Distributor/i, expectedScope: "/distributor/" },
+  { role: "super-distributor", label: "Super Distributor", installPath: "/super-distributor/install", manifestPath: "/manifest-super-distributor.json", expectedManifestName: /Super Distributor/i, expectedScope: "/super-distributor/" },
+  { role: "admin", label: "Admin", installPath: "/admin/install", manifestPath: "/manifest-admin.json", expectedManifestName: /Admin/i, expectedScope: "/admin/" },
 ];
 
 type Status = "idle" | "checking" | "ok" | "fail";
@@ -31,6 +32,7 @@ interface Result {
   manifestOk?: boolean;
   manifestName?: string;
   manifestStartUrl?: string;
+  manifestScope?: string;
   latencyMs?: number;
   error?: string;
   checkedAt?: number;
@@ -68,13 +70,17 @@ const InstallStatusPage = () => {
         let manifestOk = false;
         let manifestName: string | undefined;
         let manifestStartUrl: string | undefined;
+        let manifestScope: string | undefined;
         if (c.manifestPath) {
           const mRes = await fetch(`${origin}${c.manifestPath}`, { cache: "no-store" });
           if (mRes.ok) {
             const body = await mRes.json();
             manifestName = body.name;
             manifestStartUrl = body.start_url;
-            manifestOk = c.expectedManifestName.test(String(body.name || ""));
+            manifestScope = body.scope;
+            manifestOk =
+              c.expectedManifestName.test(String(body.name || "")) &&
+              (!c.expectedScope || String(body.scope || "") === c.expectedScope);
           }
         } else {
           manifestOk = true;
@@ -89,6 +95,7 @@ const InstallStatusPage = () => {
           manifestOk,
           manifestName,
           manifestStartUrl,
+          manifestScope,
           latencyMs,
           checkedAt: Date.now(),
         };
@@ -240,7 +247,7 @@ const InstallStatusPage = () => {
                     />
                     {r.manifestStartUrl && (
                       <p className="col-span-2 sm:col-span-4 text-[10px] text-muted-foreground font-mono truncate">
-                        start_url: {r.manifestStartUrl}
+                        start_url: {r.manifestStartUrl} {r.manifestScope ? `· scope: ${r.manifestScope}` : ""}
                       </p>
                     )}
                     {r.error && (
