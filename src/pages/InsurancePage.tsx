@@ -203,6 +203,13 @@ const InsurancePage = () => {
           </>
         )}
       </div>
+      <PinConfirmSheet
+        open={!!pinPlan}
+        onClose={() => setPinPlan(null)}
+        title="Confirm insurance purchase"
+        description={pinPlan ? `${pinPlan.name} · ৳${pinPlan.premium}/mo` : undefined}
+        onConfirmed={async () => { if (pinPlan) await handlePurchase(pinPlan); }}
+      />
     </div>
   );
 };
