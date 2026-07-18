@@ -552,6 +552,15 @@ const RoleInstallPage = () => {
 
         <ShareLinksSection roleKey={role as AppRoleKey} shortName={config.shortName} />
 
+        <InstallabilityTestSection
+          roleKey={role!}
+          manifestHref={config.manifest}
+          hasPrompt={hasPrompt}
+          isStandalone={isStandalone}
+          color={config.color}
+        />
+
+
         <PerRoleInstallStatePanel
           currentRole={role!}
           hasPrompt={hasPrompt}
