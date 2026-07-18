@@ -93,24 +93,29 @@ const GiftCardsPage = () => {
 
   
 
-  const handlePurchase = async () => {
+  const requestPurchase = () => {
     if (!user) { toast.error(t("giftCardsSignInFirst")); return; }
-    setPurchasing(true);
-    const selectedBrandInfo = brand === "all" ? BRANDS[0] : BRANDS.find(b => b.id === brand)!;
-    const { error } = await supabase.from("gift_cards").insert({
-      purchaser_id: user.id,
-      brand: selectedBrandInfo?.name || brand,
-      denomination,
-    } as any);
+    setPinOpen(true);
+  };
 
-    if (error) toast.error(t("giftCardsBuyFailed"));
-    else {
+  const handlePurchase = async () => {
+    if (!user) throw new Error(t("giftCardsSignInFirst"));
+    setPurchasing(true);
+    try {
+      const selectedBrandInfo = brand === "all" ? BRANDS[0] : BRANDS.find(b => b.id === brand)!;
+      const { error } = await supabase.from("gift_cards").insert({
+        purchaser_id: user.id,
+        brand: selectedBrandInfo?.name || brand,
+        denomination,
+      } as any);
+      if (error) { toast.error(t("giftCardsBuyFailed")); throw error; }
       toast.success(t("giftCardsBought"));
       const { data } = await supabase.from("gift_cards").select("*").eq("purchaser_id", user.id).order("created_at", { ascending: false });
       setCards(data || []);
       setTab("my");
+    } finally {
+      setPurchasing(false);
     }
-    setPurchasing(false);
   };
 
   const copyCode = (code: string) => {
