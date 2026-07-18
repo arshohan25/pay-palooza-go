@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
+import PinConfirmSheet from "@/components/PinConfirmSheet";
 
 const PLAN_CATEGORIES: { key: string; labelKey: TranslationKey; icon: any; color: string }[] = [
   { key: "life", labelKey: "ipCatLife", icon: Heart, color: "text-red-500" },
