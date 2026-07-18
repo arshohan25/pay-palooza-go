@@ -59,6 +59,7 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
   const [partialAmount, setPartialAmount] = useState("");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
 
   const fetchRefunds = useCallback(async () => {
     const { data } = await supabase
