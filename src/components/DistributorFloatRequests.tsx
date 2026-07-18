@@ -31,6 +31,7 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
   const [rows, setRows] = useState<FloatReq[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [pinTarget, setPinTarget] = useState<FloatReq | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
