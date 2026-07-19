@@ -34,9 +34,25 @@ const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
 // ─── Utility helpers ──────────────────────────────────────────────────────────
 const pickFirstString = (...values: unknown[]) => {
   for (const value of values) {
-    if (typeof value !== "string") continue;
-    const trimmed = value.trim();
-    if (trimmed) return trimmed;
+    if (value === null || value === undefined) continue;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed && trimmed.toLowerCase() !== "null" && trimmed.toLowerCase() !== "n/a") return trimmed;
+      continue;
+    }
+    if (typeof value === "number" || typeof value === "bigint") {
+      const s = String(value).trim();
+      if (s) return s;
+      continue;
+    }
+    if (typeof value === "object") {
+      // Handle nested date objects like { day, month, year } or { value: "..." }
+      const anyVal = value as Record<string, unknown>;
+      if (typeof anyVal.value === "string" && anyVal.value.trim()) return anyVal.value.trim();
+      if (anyVal.day && anyVal.month && anyVal.year) {
+        return `${String(anyVal.day).padStart(2, "0")}/${String(anyVal.month).padStart(2, "0")}/${anyVal.year}`;
+      }
+    }
   }
   return "";
 };
@@ -1861,23 +1877,28 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                   </div>
 
                   <div className="flex items-center gap-2 rounded-xl bg-primary/8 border border-primary/15 px-4 py-2.5">
-                    <Sparkles size={14} className="text-primary shrink-0" />
-                    <p className="text-xs text-primary font-medium">{t("aiExtractedBadge")}</p>
+                    <Sparkles size={14} className={`text-primary shrink-0 ${ocrLoading ? "animate-pulse" : ""}`} />
+                    <p className="text-xs text-primary font-medium flex-1">
+                      {ocrLoading ? "Reading NID..." : t("aiExtractedBadge")}
+                    </p>
+                    {!ocrLoading && nidFront && (
+                      <button
+                        type="button"
+                        onClick={() => runOcr(nidFront)}
+                        className="text-[11px] font-semibold text-primary underline underline-offset-2"
+                      >
+                        Rescan
+                      </button>
+                    )}
                   </div>
 
                   <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
                     <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
-                    {nidNameBn && (
-                      <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
-                    )}
+                    <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
                     <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
                     <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01/01/1990" />
-                    {fatherName && (
-                      <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} />
-                    )}
-                    {motherName && (
-                      <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} />
-                    )}
+                    <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} placeholder="Father's name" />
+                    <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} placeholder="Mother's name" />
                   </div>
                 </div>
 
