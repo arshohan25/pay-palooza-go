@@ -98,7 +98,7 @@ export function generateTxnReceiptPdf(tx: ReceiptTxn, opts?: { appName?: string 
     margin: { left: 40, right: 40 },
   });
 
-  // Totals card
+  // Totals card — only render a settled total when completed
   const finalY = (doc as any).lastAutoTable?.finalY ?? 200;
   const base = Math.abs(Number(tx.amount) || 0);
   const feeN = Number(tx.fee) || 0;
@@ -111,11 +111,16 @@ export function generateTxnReceiptPdf(tx: ReceiptTxn, opts?: { appName?: string 
   doc.setTextColor(80, 80, 80);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
-  doc.text(isCredit ? "Net Credited" : "Total Deducted", 56, finalY + 46);
+  const totalLabel = isCompleted
+    ? (isCredit ? "Net Credited" : "Total Deducted")
+    : isPending
+      ? "Requested Amount (unsettled)"
+      : "Attempted Amount (not charged)";
+  doc.text(totalLabel, 56, finalY + 46);
   doc.setTextColor(20, 20, 20);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text(`BDT ${fmt(total)}`, pageW - 56, finalY + 50, { align: "right" });
+  doc.text(`BDT ${fmt(isCompleted ? total : base)}`, pageW - 56, finalY + 50, { align: "right" });
 
   // Footer
   doc.setFont("helvetica", "normal");
