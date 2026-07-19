@@ -35,7 +35,7 @@ const INITIAL_PAYLOAD: OcrPayload = {
   father_name: "Abdul Karim",
   father_name_confidence: 0.9,
   mother_name: "Ayesha",
-  mother_name_confidence: 0.5,
+  mother_name_confidence: 0.7,
   nid_number: "19901234567890",
   date_of_birth: "01/01/1990",
 };
