@@ -40,7 +40,14 @@ export type KycAnalyticsEvent =
   | "kyc_ocr_rescan_cancelled"
   | "kyc_ocr_run_start"
   | "kyc_ocr_run_end"
-  | "kyc_ocr_confidence";
+  | "kyc_ocr_confidence"
+  // Agent Customer-KYC sheet lifecycle + realtime observability.
+  | "kyc_sheet_loading"
+  | "kyc_sheet_populated"
+  | "kyc_sheet_empty"
+  | "kyc_sheet_error"
+  | "kyc_sheet_long_reason"
+  | "kyc_sheet_realtime";
 
 export interface KycAnalyticsPayload {
   side?: "front" | "back";
@@ -52,6 +59,14 @@ export interface KycAnalyticsPayload {
   level?: OcrConfidenceLevel;
   confidences?: Partial<Record<"bn_name" | "father" | "mother", OcrConfidenceLevel>>;
   sampled_count?: number;
+  // Sheet-lifecycle fields:
+  total?: number;
+  verified?: number;
+  pending?: number;
+  rejected?: number;
+  reason_length?: number;
+  event_type?: "INSERT" | "UPDATE" | "DELETE";
+  source?: "fetch" | "realtime" | "focus" | "manual";
   [key: string]: unknown;
 }
 
