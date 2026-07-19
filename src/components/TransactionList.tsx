@@ -317,9 +317,9 @@ const TransactionDetailSheet = ({ tx: initialTx, onClose }: { tx: DbTransaction;
             className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl h-11 border border-border/60 bg-card hover:bg-muted/40 active:bg-muted/60 text-[13px] font-bold text-foreground tap-target"
           >
             <Download size={14} />
-            {tx.status === "completed" || tx.status === "success"
+            {tx.status === "completed"
               ? "Download Receipt (PDF)"
-              : tx.status === "pending" || tx.status === "processing"
+              : tx.status === "pending"
                 ? "Download Pending Advice (PDF)"
                 : "Download Failed Advice (PDF)"}
           </button>
