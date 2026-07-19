@@ -296,30 +296,34 @@ const TransactionDetailSheet = ({ tx: initialTx, onClose }: { tx: DbTransaction;
             </div>
           )}
 
-          {tx.status === "completed" && (
-            <button
-              onClick={() =>
-                downloadTxnReceiptPdf({
-                  id: tx.id,
-                  short_id: tx.short_id,
-                  type: tx.type,
-                  typeLabel: display.label,
-                  amount: Math.abs(display.amount),
-                  fee: tx.fee,
-                  commission: tx.commission,
-                  status: tx.status,
-                  party_name: display.name,
-                  party_phone: tx.recipient_phone,
-                  description: tx.description,
-                  created_at: tx.created_at,
-                  isCredit,
-                })
-              }
-              className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl h-11 border border-border/60 bg-card hover:bg-muted/40 active:bg-muted/60 text-[13px] font-bold text-foreground tap-target"
-            >
-              <Download size={14} /> Download Receipt (PDF)
-            </button>
-          )}
+          <button
+            onClick={() =>
+              downloadTxnReceiptPdf({
+                id: tx.id,
+                short_id: tx.short_id,
+                type: tx.type,
+                typeLabel: display.label,
+                amount: Math.abs(display.amount),
+                fee: tx.fee,
+                commission: tx.commission,
+                status: tx.status,
+                party_name: display.name,
+                party_phone: tx.recipient_phone,
+                description: tx.description,
+                created_at: tx.created_at,
+                isCredit,
+              })
+            }
+            className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl h-11 border border-border/60 bg-card hover:bg-muted/40 active:bg-muted/60 text-[13px] font-bold text-foreground tap-target"
+          >
+            <Download size={14} />
+            {tx.status === "completed"
+              ? "Download Receipt (PDF)"
+              : tx.status === "pending"
+                ? "Download Pending Advice (PDF)"
+                : "Download Failed Advice (PDF)"}
+          </button>
+
         </div>
       </motion.div>
     </>
