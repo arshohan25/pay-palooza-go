@@ -386,6 +386,47 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     );
   }, [toggles, isGloballyHidden]);
 
+  // More Services drag-and-drop order (persisted to localStorage; new/future items append at end)
+  const MORE_ORDER_KEY = "more-services-order";
+  const [moreOrder, setMoreOrder] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(MORE_ORDER_KEY);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch { return []; }
+  });
+  useEffect(() => {
+    localStorage.setItem(MORE_ORDER_KEY, JSON.stringify(moreOrder));
+  }, [moreOrder]);
+
+  const orderedMoreServices = useMemo(() => {
+    const map = new Map(visibleMoreServices.map(i => [i.id, i]));
+    const ordered = moreOrder.map(id => map.get(id)).filter(Boolean) as typeof visibleMoreServices;
+    const seen = new Set(ordered.map(i => i.id));
+    const appended = visibleMoreServices.filter(i => !seen.has(i.id));
+    return [...ordered, ...appended];
+  }, [visibleMoreServices, moreOrder]);
+
+  const handleMoreDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+    if (!over || active.id === over.id) return;
+    haptics.success();
+    const currentIds = orderedMoreServices.map(i => i.id);
+    const oldIndex = currentIds.indexOf(active.id as string);
+    const newIndex = currentIds.indexOf(over.id as string);
+    if (oldIndex === -1 || newIndex === -1) return;
+    setMoreOrder(arrayMove(currentIds, oldIndex, newIndex));
+    setJustDroppedId(active.id as string);
+    setTimeout(() => setJustDroppedId(null), 450);
+  }, [orderedMoreServices]);
+
+  const resetMoreOrder = useCallback(() => {
+    setMoreOrder([]);
+    toast.success("More Services order restored to default");
+  }, []);
+
+  const isMoreCustomOrder = moreOrder.length > 0;
+
   const triggerRipple = useCallback((id: string, e: React.MouseEvent | React.TouchEvent) => {
     const el = (e.currentTarget as HTMLElement).querySelector("[data-ripple-container]") as HTMLElement;
     if (!el) return;
