@@ -262,11 +262,15 @@ export default function AdminBlockedPhonesPage() {
             </label>
             <Button
               size="sm"
-              disabled={selected.size === 0}
+              disabled={selected.size === 0 || bulkUnblock.isPending}
               onClick={() => setBulkOpen(true)}
             >
-              <Users className="h-3.5 w-3.5 mr-1.5" />
-              Bulk unblock
+              {bulkUnblock.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Users className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              {bulkUnblock.isPending ? "Unblocking…" : "Bulk unblock"}
             </Button>
           </div>
         )}
