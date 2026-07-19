@@ -259,6 +259,24 @@ export default function AdminBlockedPhonesPage() {
       setCooldownUntil(Date.now() + BULK_COOLDOWN_MS);
       setNowTick(Date.now());
 
+      sha256Hex(`${[...res.phones].sort().join(",")}|${res.reason}`).then((hash) => {
+        const status: BulkJob["status"] = allOk ? "success" : noneOk ? "failed" : "partial";
+        const job: BulkJob = {
+          id: `${res.at}-${hash}`,
+          at: res.at,
+          operator_id: currentUser?.id ?? null,
+          operator_name: currentUser?.name ?? null,
+          payload_hash: hash,
+          reason: res.reason,
+          phones: res.phones,
+          status,
+          requested: res.requested,
+          unblocked: res.unblocked,
+          failed: res.failed,
+        };
+        setJobs((prev) => [job, ...prev].slice(0, 50));
+      });
+
       toast({
         title: allOk
           ? `Unblocked ${unblocked}/${requested}`
