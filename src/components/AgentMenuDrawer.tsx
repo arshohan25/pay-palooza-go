@@ -418,11 +418,11 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                     </button>
 
                     {/* Meta chips */}
-                    <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
-                      <span className="px-2 py-1 text-[10px] font-bold tracking-widest bg-white/20 backdrop-blur-md rounded-md ring-1 ring-white/15 uppercase">
+                    <div className="mt-2.5 flex items-center gap-1.5 flex-nowrap overflow-hidden">
+                      <span className="shrink-0 px-2 py-1 text-[10px] font-bold tracking-widest bg-white/20 backdrop-blur-md rounded-md ring-1 ring-white/15 uppercase">
                         {agentInfo?.territory_code || "BD"}
                       </span>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/25 backdrop-blur-sm rounded-full ring-1 ring-emerald-300/40">
+                      <div className="shrink-0 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/25 backdrop-blur-sm rounded-full ring-1 ring-emerald-300/40">
                         <span className="relative flex h-1.5 w-1.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
                           <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-300" />
@@ -431,7 +431,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                           {agentInfo?.status || t("agActive")}
                         </span>
                       </div>
-                      <span className="text-[11px] font-semibold tracking-tight text-white/95 tabular-nums">
+                      <span className="min-w-0 text-[11px] font-semibold tracking-tight text-white/95 tabular-nums truncate">
                         {profile.phone || "—"}
                       </span>
                     </div>
