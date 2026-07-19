@@ -162,27 +162,28 @@ export default function LoyaltyBadge({
 
   const Icon = (Icons as any)[tier.badge_icon] ?? Icons.Award;
   const dims =
-    size === "sm" ? "h-6 px-2 text-[10px] gap-1" :
-    size === "lg" ? "h-9 px-3.5 text-sm gap-1.5" :
-    "h-7 px-2.5 text-xs gap-1";
-  const iconSize = size === "sm" ? 12 : size === "lg" ? 16 : 14;
+    size === "sm" ? "h-6 pl-1 pr-2 text-[10px] gap-1" :
+    size === "lg" ? "h-9 pl-1.5 pr-3.5 text-sm gap-1.5" :
+    "h-7 pl-1 pr-2.5 text-xs gap-1.5";
+  const iconWrap = size === "sm" ? "w-5 h-5" : size === "lg" ? "w-7 h-7" : "w-6 h-6";
+  const iconSize = size === "sm" ? 11 : size === "lg" ? 15 : 13;
 
-  const bg = tier.gradient_from && tier.gradient_to
-    ? `linear-gradient(135deg, ${tier.gradient_from}, ${tier.gradient_to})`
-    : tier.badge_color;
+  const from = tier.gradient_from ?? tier.badge_color;
+  const to = tier.gradient_to ?? tier.badge_color;
+  const bg = `linear-gradient(135deg, ${from} 0%, ${to} 100%)`;
+  const glow = `0 6px 20px -6px ${from}88, 0 2px 6px -2px ${to}66, inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.12)`;
 
   const pctLabel = progress == null ? null : `${Math.round(progress)}%`;
+  const isTopTier = !nextTier;
   const ariaLabel = nextTier && pctLabel
     ? `EasyPay Club tier: ${tier.name}. ${pctLabel} progress toward ${nextTier.name}.`
-    : `EasyPay Club tier: ${tier.name}. Top tier reached.`;
+    : `EasyPay Club tier: ${tier.name}. Top tier reached — congratulations!`;
 
   const handleBadgeClick = () => {
     if (isTouch) {
-      // Mobile: tap toggles tooltip. Perks sheet opens via the tooltip button.
       handleOpenChange(!open);
       return;
     }
-    // Desktop: click goes straight to perks sheet.
     openPerks();
   };
 
@@ -195,16 +196,46 @@ export default function LoyaltyBadge({
       aria-haspopup={onClick ? "dialog" : undefined}
       title={ariaLabel}
       className={cn(
-        "inline-flex items-center rounded-full font-semibold text-white shadow-sm border border-white/25",
+        "group relative inline-flex items-center rounded-full font-semibold text-white",
         "outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
-        "active:scale-95 transition-transform cursor-pointer hover:brightness-110",
+        "active:scale-[0.96] transition-all duration-200 cursor-pointer hover:brightness-110 hover:-translate-y-[1px]",
+        "border border-white/30 backdrop-blur-sm overflow-hidden",
         dims,
         className
       )}
-      style={{ background: bg }}
+      style={{ background: bg, boxShadow: glow }}
     >
-      <Icon size={iconSize} className="shrink-0" aria-hidden="true" />
-      {showName && <span className="truncate">{tier.name}</span>}
+      {/* Sheen sweep */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-70"
+        style={{
+          background: "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%)",
+          animation: "loyalty-sheen 2.8s ease-in-out infinite",
+        }}
+      />
+      {/* Icon medallion */}
+      <span
+        className={cn(
+          "relative shrink-0 inline-flex items-center justify-center rounded-full",
+          "bg-white/25 backdrop-blur ring-1 ring-white/40 shadow-inner",
+          iconWrap
+        )}
+      >
+        <Icon size={iconSize} className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.3)]" aria-hidden="true" />
+      </span>
+      {showName && (
+        <span className="relative truncate tracking-wide drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]">
+          {tier.name}
+        </span>
+      )}
+      {isTopTier && (
+        <Icons.Sparkles
+          size={size === "sm" ? 9 : 11}
+          className="relative -ml-0.5 text-white/95 animate-pulse"
+          aria-hidden="true"
+        />
+      )}
     </button>
   );
 
@@ -241,7 +272,15 @@ export default function LoyaltyBadge({
           </div>
         </>
       ) : (
-        <p className="text-[11px] text-muted-foreground">Top tier reached — enjoy every perk.</p>
+        <div className="rounded-lg bg-gradient-to-br from-amber-500/10 via-fuchsia-500/10 to-primary/10 border border-amber-500/20 p-2">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Icons.Crown size={11} className="text-amber-500" aria-hidden="true" />
+            <span className="text-[11px] font-bold text-foreground">Congratulations! 🎉</span>
+          </div>
+          <p className="text-[10.5px] text-muted-foreground leading-snug">
+            You've reached the highest tier. Enjoy every EasyPay Club perk — you're royalty.
+          </p>
+        </div>
       )}
       {isTouch && onClick && (
         <button
