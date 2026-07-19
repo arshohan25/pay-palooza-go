@@ -340,16 +340,62 @@ export default function AdminBlockedPhonesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkOpen(false)}>Cancel</Button>
             <Button
-              disabled={bulkReason.trim().length < 5 || bulkUnblock.isPending || selected.size === 0}
-              onClick={() =>
-                bulkUnblock.mutate({ phones: [...selected], reason: bulkReason.trim() })
-              }
+              disabled={bulkReason.trim().length < 5 || selected.size === 0}
+              onClick={() => setBulkConfirm(true)}
             >
-              {bulkUnblock.isPending ? "Unblocking…" : `Confirm unblock (${selected.size})`}
+              Review & confirm ({selected.size})
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk confirmation */}
+      <Dialog open={bulkConfirm} onOpenChange={(o) => !o && setBulkConfirm(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm bulk unblock</DialogTitle>
+            <DialogDescription>
+              This will unblock {selected.size} phone number(s) and log the reason below against your admin ID. This
+              action cannot be undone from this screen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
+                Phones ({selected.size})
+              </div>
+              <div className="max-h-40 overflow-auto rounded-md border border-border/60 p-2 text-xs space-y-1">
+                {[...selected].map((p) => (
+                  <div key={p} className="font-mono">{p}</div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Reason</div>
+              <div className="rounded-md border border-border/60 p-2 text-sm whitespace-pre-wrap">
+                {bulkReason.trim()}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkConfirm(false)} disabled={bulkUnblock.isPending}>
+              Back
+            </Button>
+            <Button
+              disabled={bulkUnblock.isPending}
+              onClick={() => {
+                bulkUnblock.mutate(
+                  { phones: [...selected], reason: bulkReason.trim() },
+                  { onSuccess: () => setBulkConfirm(false) }
+                );
+              }}
+            >
+              {bulkUnblock.isPending ? "Unblocking…" : `Unblock ${selected.size} now`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Details drawer */}
       <Sheet open={!!details} onOpenChange={(o) => !o && setDetails(null)}>
