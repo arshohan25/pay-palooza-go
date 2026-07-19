@@ -106,7 +106,9 @@ export async function checkDailyLimit(
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return { allowed: false, remaining: 0, used: 0, limit: config.maxDaily };
 
-  const effectiveLimit = await getEffectiveLimit(session.user.id, txnType);
+  const baseLimit = await getEffectiveLimit(session.user.id, txnType);
+  const multiplier = await getLoyaltyLimitMultiplier(session.user.id);
+  const effectiveLimit = baseLimit > 0 ? baseLimit * multiplier : baseLimit;
 
   // No limit (0 means unlimited in the system)
   if (effectiveLimit <= 0) return { allowed: true, remaining: Infinity, used: 0, limit: 0 };
