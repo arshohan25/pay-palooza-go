@@ -9,7 +9,9 @@ interface LoyaltyBadgeProps {
   className?: string;
   /** Pass a specific tier to render (skips fetching current user tier) */
   tier?: LoyaltyTier;
+  onClick?: () => void;
 }
+
 
 /**
  * Displays the user's current EasyPay Club tier as a gradient badge.
@@ -19,6 +21,7 @@ export default function LoyaltyBadge({
   showName = true,
   className,
   tier: tierProp,
+  onClick,
 }: LoyaltyBadgeProps) {
   const { data: tiers } = useLoyaltyTiers();
   const { data: loyalty } = useMyLoyalty();
@@ -42,11 +45,15 @@ export default function LoyaltyBadge({
     ? `linear-gradient(135deg, ${tier.gradient_from}, ${tier.gradient_to})`
     : tier.badge_color;
 
+  const Wrapper: any = onClick ? "button" : "div";
   return (
-    <div
+    <Wrapper
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
       className={cn(
         "inline-flex items-center rounded-full font-semibold text-white shadow-sm border border-white/20",
         dims,
+        onClick && "active:scale-95 transition-transform cursor-pointer",
         className
       )}
       style={{ background: bg }}
@@ -54,6 +61,6 @@ export default function LoyaltyBadge({
     >
       <Icon size={iconSize} className="shrink-0" />
       {showName && <span className="truncate">{tier.name}</span>}
-    </div>
+    </Wrapper>
   );
 }
