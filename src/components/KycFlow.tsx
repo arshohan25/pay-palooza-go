@@ -609,7 +609,7 @@ const CameraBox = ({ label, preview, onCapture, onClose, icon: Icon, gradient, g
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
-              className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[hsl(340,80%,55%)] to-[hsl(280,70%,50%)] flex items-center justify-center shadow-[0_0_40px_rgba(220,50,100,0.4)]"
+              className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-[0_0_40px_hsl(var(--primary)/0.4)]"
             >
               <AlertCircle size={36} className="text-white" />
             </motion.div>
@@ -617,7 +617,7 @@ const CameraBox = ({ label, preview, onCapture, onClose, icon: Icon, gradient, g
             <p className="text-xs text-white/50">ক্যামেরা পারমিশন দিন বা আবার চেষ্টা করুন</p>
             <button
               onClick={startCamera}
-              className="mt-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[hsl(340,80%,55%)] to-[hsl(280,70%,50%)] text-white font-bold text-sm shadow-lg active:scale-95 transition-transform"
+              className="mt-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-primary to-primary/70 text-white font-bold text-sm shadow-lg active:scale-95 transition-transform"
             >
               আবার চেষ্টা করুন
             </button>
@@ -697,7 +697,7 @@ const CameraBox = ({ label, preview, onCapture, onClose, icon: Icon, gradient, g
                     transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                     className="absolute left-2 right-2 h-[2px] rounded-full"
                     style={{
-                      background: "linear-gradient(90deg, transparent, hsl(340,80%,55%), hsl(280,70%,60%), transparent)",
+                      background: "linear-gradient(90deg, transparent, hsl(var(--primary)), hsl(var(--primary)/0.6), transparent)",
                       boxShadow: "0 0 12px 3px hsla(340,80%,55%,0.5)"
                     }}
                   />
@@ -1206,8 +1206,8 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-6 text-center">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 20 }}>
-          <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4 mx-auto">
-            <ShieldCheck className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4 mx-auto">
+            <ShieldCheck className="w-10 h-10 text-primary" />
           </div>
         </motion.div>
         <h2 className="text-xl font-bold text-foreground mb-1.5">KYC Verified ✓</h2>
@@ -1226,8 +1226,8 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-6 text-center">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 20 }}>
-          <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4 mx-auto">
-            <Clock className="w-10 h-10 text-amber-600 dark:text-amber-400" />
+          <div className="w-20 h-20 rounded-full bg-accent/15 flex items-center justify-center mb-4 mx-auto">
+            <Clock className="w-10 h-10 text-accent" />
           </div>
         </motion.div>
         <h2 className="text-xl font-bold text-foreground mb-1.5">Under Review</h2>
@@ -1340,7 +1340,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
             {step === "intro" && (
               <div className="flex flex-col min-h-full">
                 {/* Gradient Header */}
-                <div className="relative overflow-clip bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-8 text-white">
+                <div className="relative overflow-clip bg-gradient-to-br from-primary via-primary to-primary/80 px-5 pt-4 pb-8 text-white">
                   <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/8 pointer-events-none translate-x-12 -translate-y-12" />
                   <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white/5 pointer-events-none -translate-x-8 translate-y-16" />
                   
@@ -1368,7 +1368,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                       </div>
                       {/* Pink badge */}
                       <motion.div
-                        className="absolute -top-2 -right-2 w-9 h-9 rounded-full bg-gradient-to-br from-[hsl(340,80%,58%)] to-[hsl(330,75%,48%)] flex items-center justify-center shadow-[0_3px_12px_rgba(220,40,80,0.35)] ring-2 ring-white"
+                        className="absolute -top-2 -right-2 w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-[0_3px_12px_hsl(var(--primary)/0.35)] ring-2 ring-background"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
@@ -1399,7 +1399,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.25, type: "spring", stiffness: 300 }}
-                    className="bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-[13px] px-7 py-3 rounded-full shadow-[0_4px_20px_rgba(220,40,80,0.4)] tracking-wide"
+                    className="bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-[13px] px-7 py-3 rounded-full shadow-[0_4px_20px_hsl(var(--primary)/0.35)] tracking-wide"
                   >
                     ৩টি সহজ ধাপে আপনার তথ্য সাবমিট করুন
                   </motion.div>
@@ -1423,10 +1423,10 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                         className="flex items-start gap-4"
                       >
                         <div className="flex flex-col items-center">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] flex items-center justify-center text-white shadow-md">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-md">
                             <CreditCard size={22} />
                           </div>
-                          <div className="w-0.5 h-8 bg-gradient-to-b from-[hsl(330,80%,55%)/40] to-transparent mt-1" />
+                          <div className="w-0.5 h-8 bg-gradient-to-b from-primary/40 to-transparent mt-1" />
                         </div>
                         <div className="flex-1 pt-1">
                           <p className="text-sm font-bold text-foreground">আপনার NID এর ছবি তুলুন</p>
@@ -1506,7 +1506,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                     transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => goTo("terms")}
-                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-base shadow-lg shadow-[hsl(340,85%,50%)/25] flex items-center justify-center gap-2 active:shadow-md transition-shadow"
+                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-base shadow-lg shadow-primary/25 flex items-center justify-center gap-2 active:shadow-md transition-shadow"
                   >
                     শুরু করুন
                     <ChevronLeft size={18} className="rotate-180" />
@@ -1519,7 +1519,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
             {step === "terms" && (
               <div className="flex flex-col min-h-full">
                 {/* Gradient Header — compact with no icon clipping */}
-                <div className="relative overflow-clip bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-6 text-white">
+                <div className="relative overflow-clip bg-gradient-to-br from-primary via-primary to-primary/80 px-5 pt-4 pb-6 text-white">
                   <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/8 pointer-events-none translate-x-12 -translate-y-12" />
                   <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white/5 pointer-events-none -translate-x-8 translate-y-16" />
                   
@@ -1540,7 +1540,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.15, type: "spring", stiffness: 300 }}
-                    className="bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-[13px] px-6 py-2.5 rounded-full shadow-[0_4px_20px_rgba(220,40,80,0.35)] tracking-wide"
+                    className="bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-[13px] px-6 py-2.5 rounded-full shadow-[0_4px_20px_hsl(var(--primary)/0.35)] tracking-wide"
                   >
                     KYC যাচাইয়ের শর্তাবলী
                   </motion.div>
@@ -1556,7 +1556,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                   >
                     <div className="space-y-3 text-[13px] text-foreground leading-relaxed max-h-[380px] overflow-y-auto pr-1 scrollbar-none">
                       <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="flex items-start gap-3 p-3 rounded-xl bg-muted/40">
-                        <div className="w-9 h-9 min-w-[36px] rounded-full bg-gradient-to-br from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] flex items-center justify-center text-white shrink-0 shadow-sm">
+                        <div className="w-9 h-9 min-w-[36px] rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shrink-0 shadow-sm">
                           <span className="text-xs font-bold">১</span>
                         </div>
                         <p className="pt-1.5">আমি নিশ্চিত করছি যে, আমার প্রদানকৃত সকল তথ্য সঠিক এবং সত্য। ভুল বা মিথ্যা তথ্য প্রদান করলে আমার অ্যাকাউন্ট স্থগিত বা বন্ধ করা হতে পারে।</p>
@@ -1616,7 +1616,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                     >
                       <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                         termsAccepted 
-                          ? "bg-gradient-to-br from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] border-transparent shadow-md" 
+                          ? "bg-gradient-to-br from-primary to-primary/80 border-transparent shadow-md" 
                           : "border-border bg-card"
                       }`}>
                         {termsAccepted && <Check size={14} className="text-white" />}
@@ -1703,7 +1703,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                     disabled={!termsAccepted}
                     className={`w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
                       termsAccepted
-                        ? "bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white shadow-lg shadow-[hsl(340,85%,50%)/25] active:shadow-md"
+                        ? "bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/25 active:shadow-md"
                         : "bg-muted text-muted-foreground cursor-not-allowed"
                     }`}
                   >
