@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { formatMdrPercent, validateMdrInput } from "@/lib/mdr";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
@@ -310,11 +311,13 @@ export default function AdminMerchantManagement() {
   // ─── MDR save ───
   const saveMdr = async () => {
     if (!editingMdr) return;
+    const v = validateMdrInput(editingMdr.mdr);
+    if (!v.ok) { toast.error(v.error ?? "Invalid MDR"); return; }
     setSavingMdr(true);
     const { error } = await supabase.from("merchants")
-      .update({ mdr_rate: parseFloat(editingMdr.mdr), settlement_frequency: editingMdr.settlement } as any)
+      .update({ mdr_rate: v.value, settlement_frequency: editingMdr.settlement } as any)
       .eq("id", editingMdr.id);
-    if (error) { toast.error("Failed to update"); }
+    if (error) { toast.error("Failed to update: " + error.message); }
     else {
       toast.success("MDR & settlement updated");
       const { data: { session } } = await supabase.auth.getSession();
@@ -421,9 +424,10 @@ export default function AdminMerchantManagement() {
     const businessName = createForm.business_name.trim();
     if (!phone || !businessName) { toast.error("Phone and business name are required"); return; }
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Phone must be a valid 11-digit BD number (01XXXXXXXXX)"); return; }
-    const mdr = Number(createForm.mdr_rate);
+    const mdrCheck = validateMdrInput(createForm.mdr_rate);
     const commission = Number(createForm.commission_rate);
-    if (!Number.isFinite(mdr) || mdr < 0) { toast.error("MDR rate must be zero or greater"); return; }
+    if (!mdrCheck.ok) { toast.error(mdrCheck.error ?? "Invalid MDR"); return; }
+    const mdr = mdrCheck.value;
     if (!Number.isFinite(commission) || commission < 0) { toast.error("Commission rate must be zero or greater"); return; }
     if (createForm.contact_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.contact_email.trim())) { toast.error("Contact email is not valid"); return; }
     if (createForm.kyc_status === "verified") {
@@ -786,7 +790,7 @@ export default function AdminMerchantManagement() {
                     <td className="px-4 py-3">
                       <KycRowBadge status={kycRowStatus(m)} onClick={() => openDetail(m, "profile")} />
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{Number(m.mdr_rate ?? 0)}%</td>
+                    <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{formatMdrPercent(m.mdr_rate)}</td>
                     <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{m.settlement_frequency}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
                       {new Date(m.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
@@ -849,7 +853,7 @@ export default function AdminMerchantManagement() {
             <AlertDialogDescription className="space-y-2">
               <div className="grid grid-cols-2 gap-2 text-sm mt-2">
                 <div><span className="text-muted-foreground">Category:</span> <span className="capitalize font-medium">{approvalTarget?.category}</span></div>
-                <div><span className="text-muted-foreground">MDR:</span> <span className="font-medium">{approvalTarget ? Number(approvalTarget.mdr_rate ?? 0) : 0}%</span></div>
+                <div><span className="text-muted-foreground">MDR:</span> <span className="font-medium">{approvalTarget ? formatMdrPercent(approvalTarget.mdr_rate) : "0%"}</span></div>
                 {approvalTarget?.trade_license && <div className="col-span-2"><span className="text-muted-foreground">Trade License:</span> <span className="font-mono text-xs">{approvalTarget.trade_license}</span></div>}
                 {approvalTarget?.bank_name && <div className="col-span-2"><span className="text-muted-foreground">Bank:</span> {approvalTarget.bank_name} - {approvalTarget.bank_account_number}</div>}
               </div>
@@ -932,7 +936,7 @@ export default function AdminMerchantManagement() {
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <InfoCell label="Business Name" value={detail.merchant.business_name} />
                     <InfoCell label="Category" value={detail.merchant.category} className="capitalize" />
-                    <InfoCell label="MDR Rate" value={`${Number(detail.merchant.mdr_rate ?? 0)}%`} />
+                    <InfoCell label="MDR Rate" value={formatMdrPercent(detail.merchant.mdr_rate)} />
                     <InfoCell label="Settlement" value={detail.merchant.settlement_frequency} />
                     <InfoCell label="Trade License" value={detail.merchant.trade_license || "—"} />
                     <InfoCell label="QR Code" value={detail.merchant.qr_code_data ? "Generated" : "—"} />
@@ -1208,7 +1212,7 @@ export default function AdminMerchantManagement() {
                         <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
                           <div>
                             <p className="text-xs text-muted-foreground">MDR Rate</p>
-                            <p className="font-semibold text-foreground">{Number(detail.merchant.mdr_rate ?? 0)}%</p>
+                            <p className="font-semibold text-foreground">{formatMdrPercent(detail.merchant.mdr_rate)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Settlement</p>

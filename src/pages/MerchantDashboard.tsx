@@ -28,6 +28,7 @@ import {
 import MerchantBusinessKycFlow from "@/components/MerchantBusinessKycFlow";
 import VendorOnboardingChecklist from "@/components/VendorOnboardingChecklist";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
+import { formatMdrPercent, mdrFraction } from "@/lib/mdr";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -1078,7 +1079,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const [overviewSelectedTx, setOverviewSelectedTx] = useState<TxnRow | null>(null);
 
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
-  const mdrDeducted = Math.round(totalRevenue * (merchant?.mdr_rate ?? 0.015));
+  const mdrDeducted = Math.round(totalRevenue * mdrFraction(merchant?.mdr_rate));
   const avgTxn = paymentTxns.length > 0 ? Math.round(totalRevenue / paymentTxns.length) : 0;
   const uniqueCustomers = new Set(paymentTxns.map(t => t.recipient_phone)).size;
 
@@ -1520,7 +1521,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
 const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
   const { getFeeLabel: getMerchFeeLabel } = useFeeConfig();
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
-  const mdrDeducted = Math.round(totalRevenue * (merchant?.mdr_rate ?? 0.015));
+  const mdrDeducted = Math.round(totalRevenue * mdrFraction(merchant?.mdr_rate));
   const avgTxn = paymentTxns.length > 0 ? Math.round(totalRevenue / paymentTxns.length) : 0;
   const uniqueCustomers = new Set(paymentTxns.map(t => t.recipient_phone)).size;
 
@@ -1580,7 +1581,7 @@ const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null
             </div>
             <div className="text-center p-2.5 rounded-xl bg-muted/40">
               <Award size={14} className="text-primary mx-auto mb-1" />
-              <p className="text-sm font-bold text-foreground">{((merchant?.mdr_rate ?? 0.015) * 100).toFixed(1)}%</p>
+              <p className="text-sm font-bold text-foreground">{formatMdrPercent(merchant?.mdr_rate)}</p>
               <p className="text-[9px] text-muted-foreground">MDR Rate</p>
             </div>
           </div>
@@ -1671,7 +1672,7 @@ const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null
               { label: "Send Money to User", fee: getMerchFeeLabel("send") || "Flat ৳5", icon: Send, color: "text-blue-600", bg: "bg-blue-500/10" },
               { label: "Cash Out (Merchant)", fee: getMerchFeeLabel("cashout") || "1.15%", icon: HandCoins, color: "text-emerald-600", bg: "bg-emerald-500/10" },
               { label: "Bank Auto-Settlement", fee: getMerchFeeLabel("banktransfer") || "1.00%", icon: Landmark, color: "text-amber-600", bg: "bg-amber-500/10" },
-              { label: "MDR on Payments", fee: `${((merchant?.mdr_rate ?? 0.015) * 100).toFixed(2)}%`, icon: Percent, color: "text-purple-600", bg: "bg-purple-500/10" },
+              { label: "MDR on Payments", fee: formatMdrPercent(merchant?.mdr_rate), icon: Percent, color: "text-purple-600", bg: "bg-purple-500/10" },
             ].map(item => (
               <div key={item.label} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/30 border border-border/30">
                 <div className="flex items-center gap-3">
@@ -1956,7 +1957,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
               { label: "Merchant ID", value: qrPayload },
               { label: "Business", value: merchant?.business_name || "—" },
               { label: "Category", value: merchant?.category || "—" },
-              { label: "MDR Rate", value: `${((merchant?.mdr_rate ?? 0.015) * 100).toFixed(2)}%` },
+              { label: "MDR Rate", value: formatMdrPercent(merchant?.mdr_rate) },
               { label: "Trade License", value: merchant?.trade_license || "—" },
             ].map(r => (
               <div key={r.label} className="flex justify-between py-2 border-b border-border/50 last:border-0">
@@ -2488,8 +2489,8 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
 /* ── Settlement Tab ── */
 const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
-  const mdrRate = merchant?.mdr_rate ?? 0.015;
-  const totalMDR = Math.round(totalRevenue * mdrRate);
+  const mdrFrac = mdrFraction(merchant?.mdr_rate);
+  const totalMDR = Math.round(totalRevenue * mdrFrac);
   const netSettlement = totalRevenue - totalMDR;
 
   const dailyBatches = useMemo(() => {
@@ -2499,10 +2500,10 @@ const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | nul
       if (!groups[day]) groups[day] = { date: day, amount: 0, count: 0, mdr: 0 };
       groups[day].amount += t.amount;
       groups[day].count++;
-      groups[day].mdr += Math.round(t.amount * mdrRate);
+      groups[day].mdr += Math.round(t.amount * mdrFrac);
     });
     return Object.values(groups).reverse();
-  }, [paymentTxns, mdrRate]);
+  }, [paymentTxns, mdrFrac]);
 
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
@@ -2584,9 +2585,9 @@ const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | nul
 
 /* ── MDR Analytics Tab ── */
 const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
-  const mdrRate = merchant?.mdr_rate ?? 0.015;
+  const mdrFrac = mdrFraction(merchant?.mdr_rate);
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
-  const totalMDR = Math.round(totalRevenue * mdrRate);
+  const totalMDR = Math.round(totalRevenue * mdrFrac);
   const avgTxnSize = paymentTxns.length > 0 ? Math.round(totalRevenue / paymentTxns.length) : 0;
   const avgMDRPerTxn = paymentTxns.length > 0 ? Math.round(totalMDR / paymentTxns.length) : 0;
 
@@ -2613,7 +2614,7 @@ const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paym
           </h3>
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { label: "Your MDR Rate", value: `${(mdrRate * 100).toFixed(2)}%`, icon: Percent, color: "bg-primary/10 text-primary" },
+              { label: "Your MDR Rate", value: formatMdrPercent(merchant?.mdr_rate), icon: Percent, color: "bg-primary/10 text-primary" },
               { label: "Total MDR Paid", value: `৳${fmt(totalMDR)}`, icon: DollarSign, color: "bg-red-500/10 text-red-500" },
               { label: "Avg MDR/Txn", value: `৳${fmt(avgMDRPerTxn)}`, icon: Receipt, color: "bg-amber-500/10 text-amber-600" },
               { label: "Avg Txn Size", value: `৳${fmt(avgTxnSize)}`, icon: CreditCard, color: "bg-blue-500/10 text-blue-600" },
