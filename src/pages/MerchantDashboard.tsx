@@ -642,8 +642,18 @@ const MerchantDashboard = () => {
                   transition={{ duration: 0.35 }}
                   className="px-4 py-4"
                 >
-                  {activeTab === "products" && merchant && <MerchantProductsTab merchantId={merchant.id} businessName={merchant.business_name} />}
-                  {activeTab === "orders" && merchant && <MerchantOrdersTab merchantId={merchant.id} />}
+                  {activeTab === "products" && merchant && (
+                    <>
+                      {user && !isStaff && <VendorApplyBanner userId={user.id} />}
+                      <MerchantProductsTab merchantId={merchant.id} businessName={merchant.business_name} />
+                    </>
+                  )}
+                  {activeTab === "orders" && merchant && (
+                    <>
+                      {user && !isStaff && <VendorApplyBanner userId={user.id} />}
+                      <MerchantOrdersTab merchantId={merchant.id} />
+                    </>
+                  )}
                 </motion.div>
               </AnimatePresence>
             </div>
