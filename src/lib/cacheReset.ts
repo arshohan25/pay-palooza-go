@@ -45,7 +45,23 @@ const PRESERVED_KEYS = [
   // bumps its cache version.
   "mfs_pwa_installed_roles",
   "mfs_pwa_install_history",
+  // Remember last-used phone number per role so login screens can prefill
+  // after a cache reset or sign-out.
+  "easypay_agent_last_phone",
+  "easypay_merchant_last_phone",
+  "easypay_distributor_last_phone",
+  "easypay_super_distributor_last_phone",
+  "easypay_admin_last_phone",
+  "easypay_user_last_phone",
 ];
+
+/** Key prefixes that should survive cache resets (per-phone/per-role entries). */
+const PRESERVED_KEY_PREFIXES = [
+  // Device trust tokens: `mfs_devtok_<portal>_<phone>` — required so trusted
+  // devices don't have to re-verify OTP after a logout or cache bump.
+  "mfs_devtok_",
+];
+
 
 export async function clearClientCache(version = CACHE_VERSION) {
   const preserved: Record<string, string> = {};
