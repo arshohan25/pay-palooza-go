@@ -59,7 +59,7 @@ export default function AdminMerchantApprovalQueue() {
       merchant_user_id: target.user_id,
       actor_id: session?.user?.id,
       event_type: decision === "approve" ? "approval" : "rejection",
-      reason: reason.trim(),
+      reason: note,
       to_value: { status: newStatus },
     });
 
