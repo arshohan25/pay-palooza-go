@@ -17,8 +17,8 @@ import {
 const AGENT_TYPES = ["cashin", "cashout", "b2b", "banktransfer", "paybill"];
 
 const TYPE_META: Record<string, { label: string; icon: any; accent: string }> = {
-  cashin:       { label: "Cash In",       icon: ArrowDownToLine, accent: "hsl(var(--primary))" },
-  cashout:      { label: "Cash Out",      icon: Banknote,        accent: "hsl(var(--accent))" },
+  cashin:       { label: "Cash In",       icon: ArrowUpFromLine, accent: "hsl(var(--primary))" },
+  cashout:      { label: "Cash Out",      icon: ArrowDownToLine, accent: "hsl(var(--accent))" },
   b2b:          { label: "B2B Transfer",  icon: ArrowRightLeft,  accent: "hsl(262 83% 58%)" },
   banktransfer: { label: "Bank Transfer", icon: Building2,       accent: "hsl(221 83% 53%)" },
   paybill:      { label: "Bill Pay",      icon: Receipt,         accent: "hsl(25 95% 53%)" },
