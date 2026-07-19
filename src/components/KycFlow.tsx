@@ -25,7 +25,7 @@ import {
   resolveConfidence,
   type ConfidenceLevel,
 } from "@/lib/ocrConfidence";
-import { trackKycEvent } from "@/lib/kycAnalytics";
+import { trackKycEvent, flushKycAnalytics } from "@/lib/kycAnalytics";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "intro" | "terms" | "nid_capture" | "nid_details" | "additional_info" | "selfie" | "review" | "submitted";
