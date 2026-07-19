@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Smartphone, Lock, ShieldCheck, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { Smartphone, Lock, ShieldCheck, ArrowRight, Loader2, AlertCircle, WifiOff } from "lucide-react";
 import { signIn } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
