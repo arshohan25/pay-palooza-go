@@ -60,6 +60,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [agentRating, setAgentRating] = useState<{ avg: number | null; total: number }>({ avg: null, total: 0 });
   type KycCustomer = {
     user_id: string;
     name: string | null;
