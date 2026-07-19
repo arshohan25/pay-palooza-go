@@ -7826,6 +7826,10 @@ export type Database = {
         Args: { p_admin_note?: string; p_request_ids: string[] }
         Returns: Json
       }
+      admin_bulk_unblock_phones: {
+        Args: { _phones: string[]; _reason: string }
+        Returns: Json
+      }
       admin_chargeback: {
         Args: {
           p_amount: number
@@ -7869,10 +7873,13 @@ export type Database = {
         Args: never
         Returns: {
           deleted_at: string
+          deleted_by: string
+          deleted_by_name: string
           deleted_user_id: string
           deletion_reason: string
           last_unblock_attempt: string
           name: string
+          original_user_id: string
           phone: string
         }[]
       }
