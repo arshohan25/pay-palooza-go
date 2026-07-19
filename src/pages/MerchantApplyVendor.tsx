@@ -269,6 +269,51 @@ export default function MerchantApplyVendor() {
     </div>
   );
 
+  if (merchant.status !== "approved" || merchant.business_kyc_status !== "approved") {
+    const isRejected = merchant.status === "rejected" || merchant.business_kyc_status === "rejected";
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Store className="w-5 h-5 text-primary" /> Merchant approval required
+              </CardTitle>
+              <Badge className={isRejected
+                ? "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30"
+                : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"}>
+                {isRejected ? <><XCircle className="w-3 h-3 mr-1" /> Rejected</> : <><Clock className="w-3 h-3 mr-1" /> Pending review</>}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {isRejected
+                ? "Your merchant profile was rejected. Please resolve the admin feedback and get your merchant profile approved first — vendor / EasyPay Shop upgrade unlocks after that."
+                : "Your merchant profile is still awaiting admin approval. Vendor / EasyPay Shop upgrade opens automatically once your merchant profile is approved."}
+            </p>
+            <div className="text-xs text-muted-foreground grid gap-1">
+              <div className="flex justify-between"><span>Business status</span><span className="font-medium capitalize">{merchant.status}</span></div>
+              <div className="flex justify-between"><span>Business KYC</span><span className="font-medium capitalize">{merchant.business_kyc_status}</span></div>
+            </div>
+            {isRejected && merchant.admin_notes && (
+              <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/30 text-xs">
+                <p className="font-semibold text-red-700 dark:text-red-300 mb-1">Admin feedback</p>
+                <p className="text-muted-foreground">{merchant.admin_notes}</p>
+              </div>
+            )}
+            <div className="flex gap-2">
+              {isRejected && (
+                <Button className="flex-1" onClick={() => nav("/merchant/apply")}>Update merchant profile</Button>
+              )}
+              <Button variant="outline" className={isRejected ? "" : "flex-1"} onClick={() => nav("/merchant")}>Back to merchant</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const statusBadge = existing && (
     <Badge className={
       existing.status === "approved" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30" :
