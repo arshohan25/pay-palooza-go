@@ -305,10 +305,27 @@ export default function AdminBlockedPhonesPage() {
       }
       invalidate();
     },
-    onError: (e: any) => {
+    onError: (e: any, vars) => {
       const msg = e?.message ?? String(e);
       setCooldownUntil(Date.now() + BULK_COOLDOWN_MS);
       setNowTick(Date.now());
+      const at = new Date().toISOString();
+      sha256Hex(`${[...vars.phones].sort().join(",")}|${vars.reason}`).then((hash) => {
+        setJobs((prev) => [{
+          id: `${at}-${hash}`,
+          at,
+          operator_id: currentUser?.id ?? null,
+          operator_name: currentUser?.name ?? null,
+          payload_hash: hash,
+          reason: vars.reason,
+          phones: vars.phones,
+          status: "failed",
+          requested: vars.phones.length,
+          unblocked: 0,
+          failed: vars.phones.map((p) => ({ phone: p, error: msg })),
+          error: msg,
+        }, ...prev].slice(0, 50));
+      });
       toast({
         title: "Bulk unblock failed",
         description: msg.includes("reason_too_short")
