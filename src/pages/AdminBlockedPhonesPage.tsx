@@ -44,6 +44,7 @@ export default function AdminBlockedPhonesPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkReason, setBulkReason] = useState("");
+  const [bulkConfirm, setBulkConfirm] = useState(false);
 
   const { data: blocked = [], isLoading } = useQuery({
     queryKey: ["admin-blocked-phones"],
@@ -67,9 +68,44 @@ export default function AdminBlockedPhonesPage() {
     },
   });
 
+  const { data: phoneHistory = [], isLoading: phoneHistoryLoading } = useQuery({
+    queryKey: ["phone-unblock-history", details?.phone],
+    enabled: !!details?.phone,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("phone_unblock_audit")
+        .select("id, phone, admin_id, reason, created_at")
+        .eq("phone", details!.phone)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as AuditRow[];
+    },
+  });
+
+  const adminIds = useMemo(
+    () => Array.from(new Set(phoneHistory.map((h) => h.admin_id))),
+    [phoneHistory]
+  );
+
+  const { data: adminNames = {} } = useQuery({
+    queryKey: ["phone-unblock-admin-names", adminIds],
+    enabled: adminIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, name")
+        .in("user_id", adminIds);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((p: any) => { map[p.user_id] = p.name ?? "Unknown"; });
+      return map;
+    },
+  });
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin-blocked-phones"] });
     qc.invalidateQueries({ queryKey: ["phone-unblock-audit"] });
+    qc.invalidateQueries({ queryKey: ["phone-unblock-history"] });
   };
 
   const unblock = useMutation({
@@ -304,16 +340,62 @@ export default function AdminBlockedPhonesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkOpen(false)}>Cancel</Button>
             <Button
-              disabled={bulkReason.trim().length < 5 || bulkUnblock.isPending || selected.size === 0}
-              onClick={() =>
-                bulkUnblock.mutate({ phones: [...selected], reason: bulkReason.trim() })
-              }
+              disabled={bulkReason.trim().length < 5 || selected.size === 0}
+              onClick={() => setBulkConfirm(true)}
             >
-              {bulkUnblock.isPending ? "Unblocking…" : `Confirm unblock (${selected.size})`}
+              Review & confirm ({selected.size})
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk confirmation */}
+      <Dialog open={bulkConfirm} onOpenChange={(o) => !o && setBulkConfirm(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm bulk unblock</DialogTitle>
+            <DialogDescription>
+              This will unblock {selected.size} phone number(s) and log the reason below against your admin ID. This
+              action cannot be undone from this screen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
+                Phones ({selected.size})
+              </div>
+              <div className="max-h-40 overflow-auto rounded-md border border-border/60 p-2 text-xs space-y-1">
+                {[...selected].map((p) => (
+                  <div key={p} className="font-mono">{p}</div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Reason</div>
+              <div className="rounded-md border border-border/60 p-2 text-sm whitespace-pre-wrap">
+                {bulkReason.trim()}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkConfirm(false)} disabled={bulkUnblock.isPending}>
+              Back
+            </Button>
+            <Button
+              disabled={bulkUnblock.isPending}
+              onClick={() => {
+                bulkUnblock.mutate(
+                  { phones: [...selected], reason: bulkReason.trim() },
+                  { onSuccess: () => setBulkConfirm(false) }
+                );
+              }}
+            >
+              {bulkUnblock.isPending ? "Unblocking…" : `Unblock ${selected.size} now`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Details drawer */}
       <Sheet open={!!details} onOpenChange={(o) => !o && setDetails(null)}>
@@ -358,6 +440,44 @@ export default function AdminBlockedPhonesPage() {
                     : "Never"
                 }
               />
+
+              <div className="pt-2 border-t border-border/60">
+                <div className="flex items-center gap-2 mb-2">
+                  <History className="h-3.5 w-3.5 text-muted-foreground" />
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Unblock history ({phoneHistory.length})
+                  </div>
+                </div>
+                {phoneHistoryLoading ? (
+                  <div className="text-xs text-muted-foreground py-2">Loading history…</div>
+                ) : phoneHistory.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">
+                    This phone has never been unblocked.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {phoneHistory.map((h) => (
+                      <div
+                        key={h.id}
+                        className="rounded-md border border-border/60 p-2 text-xs space-y-1"
+                      >
+                        <div className="flex justify-between gap-2">
+                          <span className="font-medium">
+                            {adminNames[h.admin_id] ?? "Unknown admin"}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {new Date(h.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="font-mono text-[10px] text-muted-foreground break-all">
+                          {h.admin_id}
+                        </div>
+                        <div className="whitespace-pre-wrap">{h.reason}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <SheetFooter className="mt-6">
