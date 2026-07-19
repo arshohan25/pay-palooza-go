@@ -1180,7 +1180,8 @@ export default function AdminMerchantManagement() {
                           <label className="text-xs text-muted-foreground">MDR Rate (%)</label>
                           <Input
                             type="number"
-                            step="0.01"
+                            step="0.001"
+                            min="0"
                             value={editingMdr.mdr}
                             onChange={e => setEditingMdr({ ...editingMdr, mdr: e.target.value })}
                             className="mt-1"
