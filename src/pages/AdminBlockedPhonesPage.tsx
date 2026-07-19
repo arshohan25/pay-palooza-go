@@ -101,12 +101,40 @@ export default function AdminBlockedPhonesPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [contextFilter, setContextFilter] = useState<"all" | "admin" | "system" | string>("all");
+  const [sortBy, setSortBy] = useState<"deleted_desc" | "deleted_asc" | "phone_asc" | "phone_desc">("deleted_desc");
 
   // Anti-spam state
   const lastSubmitRef = useRef<{ hash: string; at: number } | null>(null);
   const [cooldownUntil, setCooldownUntil] = useState<number>(0);
   const [nowTick, setNowTick] = useState(Date.now());
   const [lastResult, setLastResult] = useState<BulkResult | null>(null);
+
+  // Bulk job timeline
+  const [jobs, setJobs] = useState<BulkJob[]>(() => {
+    try {
+      const raw = localStorage.getItem(JOBS_STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as BulkJob[]) : [];
+    } catch { return []; }
+  });
+  const [openJob, setOpenJob] = useState<BulkJob | null>(null);
+
+  useEffect(() => {
+    try { localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobs.slice(0, 50))); } catch {}
+  }, [jobs]);
+
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-admin-profile"],
+    queryFn: async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, name")
+        .eq("user_id", auth.user.id)
+        .maybeSingle();
+      return { id: auth.user.id, name: (data as any)?.name ?? null };
+    },
+  });
 
   useEffect(() => {
     if (cooldownUntil <= Date.now()) return;
