@@ -32,6 +32,7 @@
  * `flushKycAnalytics()` clears the throttle/sample state (useful in tests).
  */
 import { supabase } from "@/integrations/supabase/client";
+import { assertKycAnalyticsSchema } from "./kycAnalyticsSchema";
 
 export type OcrConfidenceLevel = "high" | "medium" | "low" | "none" | "unknown";
 
@@ -86,6 +87,15 @@ const confidenceState = new Map<string, ConfidenceState>();
 
 function pushToDataLayer(event: KycAnalyticsEvent, payload: KycAnalyticsPayload) {
   if (!isBrowser) return;
+  // Runtime schema assertion — records violations on window and, in strict
+  // mode (tests), throws. In normal sessions the invalid event is still
+  // pushed so we don't lose signal; validation is observability, not gating.
+  try {
+    assertKycAnalyticsSchema(event, payload);
+  } catch (err) {
+    // Strict-mode throw from the validator — re-throw so tests can catch it.
+    throw err;
+  }
   try {
     const w = window as unknown as { dataLayer?: Array<Record<string, unknown>> };
     w.dataLayer = w.dataLayer || [];
