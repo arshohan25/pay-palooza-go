@@ -143,14 +143,24 @@ const AgentLoginPage = () => {
                 autoComplete="tel"
                 placeholder="01XXXXXXXXX"
                 maxLength={11}
-                value={phone}
+                value={
+                  !phoneFocused && phone.length >= 7
+                    ? `${phone.slice(0, 3)}••••${phone.slice(7)}`
+                    : phone
+                }
+                onFocus={() => setPhoneFocused(true)}
+                onBlur={() => setPhoneFocused(false)}
                 onChange={(e) => {
                   setError(null);
-                  setPhone(e.target.value.replace(/\D/g, "").slice(0, 11));
+                  setPhone(e.target.value.replace(/[^\d]/g, "").slice(0, 11));
                 }}
-                className="w-full h-12 pl-10 pr-3 rounded-xl bg-black/30 border border-white/10 text-white text-base tracking-wider placeholder:text-white/30 focus:outline-none focus:border-orange-400"
+                className="w-full h-12 px-3 rounded-xl bg-black/30 border border-white/10 text-white text-base tracking-[0.3em] text-center placeholder:text-white/30 placeholder:tracking-wider focus:outline-none focus:border-orange-400"
               />
-            </div>
+              <Smartphone
+                size={18}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-orange-400"
+              />
+              </div>
           </div>
 
           <div className="space-y-1">
