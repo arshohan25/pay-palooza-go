@@ -1212,7 +1212,7 @@ export default function AdminMerchantManagement() {
                         <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
                           <div>
                             <p className="text-xs text-muted-foreground">MDR Rate</p>
-                            <p className="font-semibold text-foreground">{Number(detail.merchant.mdr_rate ?? 0)}%</p>
+                            <p className="font-semibold text-foreground">{formatMdrPercent(detail.merchant.mdr_rate)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Settlement</p>
