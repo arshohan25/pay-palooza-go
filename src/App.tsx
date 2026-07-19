@@ -83,6 +83,7 @@ const RecipientHarness = lazy(() => import("./pages/RecipientHarness"));
 const CashOutHarness = lazy(() => import("./pages/CashOutHarness"));
 const WalletSetupHarness = lazy(() => import("./pages/WalletSetupHarness"));
 const AgentKycHarness = lazy(() => import("./pages/AgentKycHarness"));
+const KycOcrRescanHarness = lazy(() => import("./pages/KycOcrRescanHarness"));
 const QrScanRouterHarness = lazy(() => import("./pages/QrScanRouterHarness"));
 const CashOutQrErrorHarness = lazy(() => import("./pages/CashOutQrErrorHarness"));
 const PaymentRequestsPage = lazy(() => import("./pages/PaymentRequestsPage"));
@@ -250,6 +251,10 @@ const App = () => (
                         <Route
                           path="/__test/agent-kyc-harness"
                           element={<AgentKycHarness />}
+                        />
+                        <Route
+                          path="/__test/kyc-ocr-rescan-harness"
+                          element={<KycOcrRescanHarness />}
                         />
                         <Route
                           path="/__test/qr-scan-router-harness"
