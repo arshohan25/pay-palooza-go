@@ -54,6 +54,10 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     division: null, district: null, upazila: null, union_parishad: null, area_type: null,
   });
   const [locError, setLocError] = useState<LocationMismatch | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftKey = userId ? `easypay_merchant_apply_draft_${userId}` : null;
 
   const applicationSchema = useMemo(() => z.object({
     business_name: z.string().trim().min(2, t("mafErrBusinessName")).max(100),
@@ -89,8 +93,11 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     if (!open) return;
     const load = async () => {
       setLoading(true);
+      setDraftLoaded(false);
+      setDraftRestored(false);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
+      setUserId(session.user.id);
       const { data } = await (supabase as any)
         .from("merchant_applications")
         .select("*")
@@ -99,10 +106,36 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
         .limit(1)
         .maybeSingle();
       setExisting(data);
+
+      // Only hydrate the draft when there's no locked application (pending/approved).
+      const locked = data && (data.status === "pending" || data.status === "approved");
+      if (!locked) {
+        try {
+          const raw = localStorage.getItem(`easypay_merchant_apply_draft_${session.user.id}`);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.form) setForm(f => ({ ...f, ...parsed.form }));
+            if (parsed?.location) setLocation(l => ({ ...l, ...parsed.location }));
+            if (typeof parsed?.customCategory === "string") setCustomCategory(parsed.customCategory);
+            setDraftRestored(true);
+          }
+        } catch { /* ignore corrupt draft */ }
+      }
+      setDraftLoaded(true);
       setLoading(false);
     };
     load();
   }, [open]);
+
+  // Persist draft on any edit while the sheet is open and no lock exists.
+  useEffect(() => {
+    if (!open || !draftKey || !draftLoaded) return;
+    const locked = existing && (existing.status === "pending" || existing.status === "approved");
+    if (locked) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({ form, location, customCategory, savedAt: Date.now() }));
+    } catch { /* quota — ignore */ }
+  }, [open, draftKey, draftLoaded, existing, form, location, customCategory]);
 
   const handleSubmit = async () => {
     const isOther = form.category === "__other__" || form.category === "other";
@@ -177,6 +210,8 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       }
     } else {
       toast.success(t("mafToastSuccess"));
+      if (draftKey) { try { localStorage.removeItem(draftKey); } catch { /* noop */ } }
+      setDraftRestored(false);
       const { data } = await (supabase as any)
         .from("merchant_applications")
         .select("*")
@@ -232,6 +267,29 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
 
               <div className="space-y-4">
                 <p className="text-xs text-muted-foreground">{t("mafRequiredNote")}</p>
+                {draftRestored && (
+                  <div className="flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+                    <span className="text-foreground/80">Draft restored — pick up where you left off.</span>
+                    <button
+                      type="button"
+                      className="text-primary font-medium hover:underline"
+                      onClick={() => {
+                        if (draftKey) { try { localStorage.removeItem(draftKey); } catch { /* noop */ } }
+                        setForm({
+                          business_name: "", category: "retail", trade_license: "", owner_name: "",
+                          contact_number: "", contact_email: "", business_address: "", route_code: "",
+                          bank_name: "", bank_branch: "", bank_account_number: "", bank_account_holder: "",
+                          bank_routing: "", reason: "",
+                        });
+                        setLocation({ division: null, district: null, upazila: null, union_parishad: null, area_type: null });
+                        setCustomCategory("");
+                        setDraftRestored(false);
+                      }}
+                    >
+                      Clear draft
+                    </button>
+                  </div>
+                )}
 
                 {/* Business Information */}
                 <div className="space-y-3">
