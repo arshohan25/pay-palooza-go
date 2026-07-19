@@ -257,8 +257,17 @@ export default function LoyaltyBadge({
 
   return (
     <div ref={rootRef} className="inline-flex">
-      <TooltipProvider delayDuration={isTouch ? 0 : 200} disableHoverableContent={false}>
-        <Tooltip open={open} onOpenChange={handleOpenChange}>
+      <TooltipProvider delayDuration={isTouch ? 999999 : 200} disableHoverableContent={false}>
+        <Tooltip
+          open={open}
+          onOpenChange={(next) => {
+            // On touch, ignore Radix's focus/hover-driven open events — the
+            // badge's onClick is the single source of truth so a tap reliably
+            // toggles and never fights with focus events.
+            if (isTouch && next && !open) return;
+            handleOpenChange(next);
+          }}
+        >
           <TooltipTrigger asChild>{badge}</TooltipTrigger>
           <TooltipContent
             side="bottom"
