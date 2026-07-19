@@ -102,8 +102,10 @@ export default function AdminBlockedPhonesPage() {
     },
   });
 
+  const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin-blocked-phones"] });
     qc.invalidateQueries({ queryKey: ["phone-unblock-audit"] });
+    qc.invalidateQueries({ queryKey: ["phone-unblock-history"] });
   };
 
   const unblock = useMutation({
