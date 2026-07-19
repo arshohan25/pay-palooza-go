@@ -925,6 +925,8 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
 
    const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrDone, setOcrDone]     = useState(false);
+  const [rawOcr, setRawOcr] = useState<Record<string, unknown> | null>(null);
+  const [showOcrDebug, setShowOcrDebug] = useState(false);
   const [faceMatchLoading, setFaceMatchLoading] = useState(false);
   const [faceMatchResult, setFaceMatchResult] = useState<{ match: boolean; confidence: number; result: string; reason: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
