@@ -89,6 +89,10 @@ interface MerchantInfo {
   bank_branch: string | null;
   trade_license: string | null;
   qr_code_data: string | null;
+  qr_card_tagline?: string | null;
+  qr_card_band_color_start?: string | null;
+  qr_card_band_color_end?: string | null;
+  qr_card_logo_url?: string | null;
 }
 
 interface TxnRow {
