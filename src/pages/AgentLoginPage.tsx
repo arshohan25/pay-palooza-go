@@ -139,13 +139,7 @@ const AgentLoginPage = () => {
                 autoComplete="tel"
                 placeholder="01XXXXXXXXX"
                 maxLength={11}
-                value={
-                  !phoneFocused && phone.length >= 7
-                    ? `${phone.slice(0, 3)}••••${phone.slice(7)}`
-                    : phone
-                }
-                onFocus={() => setPhoneFocused(true)}
-                onBlur={() => setPhoneFocused(false)}
+                value={phone}
                 onChange={(e) => {
                   setError(null);
                   setPhone(e.target.value.replace(/[^\d]/g, "").slice(0, 11));
