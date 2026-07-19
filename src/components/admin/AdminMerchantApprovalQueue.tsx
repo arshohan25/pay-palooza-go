@@ -42,13 +42,14 @@ export default function AdminMerchantApprovalQueue() {
 
   const submit = async () => {
     if (!target) return;
-    if (!reason.trim()) { toast.error("Reason is required for audit log"); return; }
+    // Admin override: reason is optional. Reject still recommends a reason but is not enforced.
     setSaving(true);
     const newStatus = decision === "approve" ? "active" : "suspended";
     const { data: { session } } = await supabase.auth.getSession();
+    const note = reason.trim() || (decision === "approve" ? "Admin approved (no note)" : "Admin rejected (no note)");
 
     const { error } = await supabase.from("merchants")
-      .update({ status: newStatus as any, admin_notes: reason.trim() })
+      .update({ status: newStatus as any, admin_notes: note })
       .eq("id", target.id);
     if (error) { toast.error("Failed: " + error.message); setSaving(false); return; }
 
