@@ -210,6 +210,8 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       }
     } else {
       toast.success(t("mafToastSuccess"));
+      if (draftKey) { try { localStorage.removeItem(draftKey); } catch { /* noop */ } }
+      setDraftRestored(false);
       const { data } = await (supabase as any)
         .from("merchant_applications")
         .select("*")
