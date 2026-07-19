@@ -1878,14 +1878,18 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                   </div>
 
                   <div className="flex items-center gap-2 rounded-xl bg-primary/8 border border-primary/15 px-4 py-2.5">
-                    <Sparkles size={14} className={`text-primary shrink-0 ${ocrLoading ? "animate-pulse" : ""}`} />
+                    {ocrLoading ? (
+                      <Loader2 size={14} className="text-primary shrink-0 animate-spin" />
+                    ) : (
+                      <Sparkles size={14} className="text-primary shrink-0" />
+                    )}
                     <p className="text-xs text-primary font-medium flex-1">
-                      {ocrLoading ? "Reading NID..." : t("aiExtractedBadge")}
+                      {ocrLoading ? "Reading NID… extracting fields" : t("aiExtractedBadge")}
                     </p>
                     {!ocrLoading && nidFront && (
                       <button
                         type="button"
-                        onClick={() => runOcr(nidFront)}
+                        onClick={handleRescan}
                         className="text-[11px] font-semibold text-primary underline underline-offset-2"
                       >
                         Rescan
@@ -1893,14 +1897,68 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                     )}
                   </div>
 
-                  <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
-                    <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
-                    <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
-                    <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
-                    <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01/01/1990" />
-                    <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} placeholder="Father's name" />
-                    <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} placeholder="Mother's name" />
-                  </div>
+                  {ocrLoading && (
+                    <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-3">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="space-y-1.5">
+                          <div className="h-2.5 w-24 rounded bg-muted animate-pulse" />
+                          <div className="h-9 w-full rounded-xl bg-muted/70 animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {!ocrLoading && (
+                    <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
+                      <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
+                      <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
+                      <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
+                      <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01/01/1990" />
+                      <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} placeholder="Father's name" />
+                      <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} placeholder="Mother's name" />
+                    </div>
+                  )}
+
+                  {!ocrLoading && rawOcr && (
+                    <div className="rounded-2xl border border-dashed border-border bg-muted/30 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setShowOcrDebug((s) => !s)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                      >
+                        <span>OCR Debug</span>
+                        <span>{showOcrDebug ? "Hide" : "Show"}</span>
+                      </button>
+                      {showOcrDebug && (
+                        <div className="px-4 pb-3 space-y-3">
+                          <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div className="rounded-lg bg-background/60 p-2">
+                              <p className="text-muted-foreground">Selected BN name</p>
+                              <p className="font-mono text-foreground break-all">{nidNameBn || "—"}</p>
+                            </div>
+                            <div className="rounded-lg bg-background/60 p-2">
+                              <p className="text-muted-foreground">Selected DOB</p>
+                              <p className="font-mono text-foreground break-all">{nidDob || "—"}</p>
+                            </div>
+                            <div className="rounded-lg bg-background/60 p-2">
+                              <p className="text-muted-foreground">Selected father</p>
+                              <p className="font-mono text-foreground break-all">{fatherName || "—"}</p>
+                            </div>
+                            <div className="rounded-lg bg-background/60 p-2">
+                              <p className="text-muted-foreground">Selected mother</p>
+                              <p className="font-mono text-foreground break-all">{motherName || "—"}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[11px] text-muted-foreground mb-1">Raw OCR payload</p>
+                            <pre className="text-[10px] leading-snug bg-background/70 border border-border rounded-lg p-2 max-h-56 overflow-auto whitespace-pre-wrap break-all">
+{JSON.stringify(rawOcr, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="sticky bottom-0 px-4 pb-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
