@@ -41,7 +41,9 @@ const RULES: Record<RecipientKind, RecipientRule> = {
     digitsOnly: true,
     emptyOrShortMessage: () => "Enter an 11-digit mobile number.",
     extra: (v) => {
-      const digits = v.replace(/\D/g, "");
+      let digits = v.replace(/\D/g, "");
+      // Accept international format: "+8801…" / "8801…" → strip country code.
+      if (digits.startsWith("880")) digits = "0" + digits.slice(3);
       if (digits.length > 2 && !digits.startsWith("01")) return "Number must start with 01.";
       return null;
     },
