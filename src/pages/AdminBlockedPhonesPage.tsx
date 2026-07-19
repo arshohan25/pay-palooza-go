@@ -50,6 +50,36 @@ type BulkResult = {
   at: string;
 };
 
+type BulkJob = {
+  id: string;
+  at: string;
+  operator_id: string | null;
+  operator_name: string | null;
+  payload_hash: string;
+  reason: string;
+  phones: string[];
+  status: "success" | "partial" | "failed";
+  requested: number;
+  unblocked: number;
+  failed: Array<{ phone: string; error: string }>;
+  error?: string;
+};
+
+const JOBS_STORAGE_KEY = "admin_bulk_unblock_jobs_v1";
+
+async function sha256Hex(input: string): Promise<string> {
+  try {
+    const buf = new TextEncoder().encode(input);
+    const digest = await crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .slice(0, 16);
+  } catch {
+    return Math.random().toString(36).slice(2, 18);
+  }
+}
+
 // Cooldown after a successful/failed bulk submit before another can fire (ms)
 const BULK_COOLDOWN_MS = 15_000;
 // Window during which the exact same payload is treated as a duplicate (ms)
