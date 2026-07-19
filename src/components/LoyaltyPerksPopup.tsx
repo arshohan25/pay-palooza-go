@@ -20,12 +20,35 @@ interface LoyaltyPerksPopupProps {
 export default function LoyaltyPerksPopup({ open, onOpenChange }: LoyaltyPerksPopupProps) {
   const perks = useLoyaltyPerks();
   const navigate = useNavigate();
+  const { data: tiers } = useLoyaltyTiers();
+  const { data: loyalty } = useMyLoyalty();
   const t = perks.tier;
 
   const Icon = (t && ((Icons as any)[t.badge_icon] ?? Icons.Award)) ?? Icons.Award;
   const bg = t
     ? `linear-gradient(135deg, ${t.gradient_from ?? t.badge_color}, ${t.gradient_to ?? t.badge_color})`
     : "linear-gradient(135deg, #64748b, #334155)";
+
+  const nextProgress = useMemo(() => {
+    if (!tiers || !loyalty) return null;
+    const sorted = tiers.slice().sort((a, b) => a.rank - b.rank);
+    const next = t ? sorted.find((x) => x.rank > t.rank && x.is_active) : sorted[0];
+    if (!next) return null;
+    const fields: Array<[string, number]> = [
+      ["min_volume_30d", Number(loyalty.volume_30d ?? 0)],
+      ["min_lifetime_txn_count", Number(loyalty.lifetime_txn_count ?? 0)],
+      ["min_wallet_balance", Number(loyalty.wallet_balance ?? 0)],
+      ["min_addmoney_lifetime", Number(loyalty.addmoney_lifetime ?? 0)],
+      ["min_savings_balance", Number(loyalty.savings_balance ?? 0)],
+    ];
+    const gaps = fields
+      .map(([k, cur]) => {
+        const target = Number((next as any)[k] ?? 0);
+        return target > 0 ? Math.min(100, (cur / target) * 100) : 100;
+      });
+    const pct = gaps.length ? gaps.reduce((s, p) => s + p, 0) / gaps.length : 100;
+    return { next, pct };
+  }, [tiers, loyalty, t]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -69,6 +92,18 @@ export default function LoyaltyPerksPopup({ open, onOpenChange }: LoyaltyPerksPo
           <PerkRow icon={Percent} label="Fee discount" value={perks.feeDiscountPct > 0 ? `−${perks.feeDiscountPct}%` : "—"} tone="text-emerald-600" />
           <PerkRow icon={Gift} label="Cashback bonus" value={perks.cashbackBonusPct > 0 ? `+${perks.cashbackBonusPct}%` : "—"} tone="text-amber-600" />
           <PerkRow icon={Headphones} label="Priority support" value={perks.prioritySupport ? "Yes" : "No"} tone={perks.prioritySupport ? "text-primary" : "text-muted-foreground"} />
+
+          {nextProgress && (
+            <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+              <div className="flex items-baseline justify-between mb-1">
+                <p className="text-[11px] font-semibold">
+                  {Math.round(nextProgress.pct)}% to <span className="text-primary">{nextProgress.next.name}</span>
+                </p>
+                <span className="text-[10px] text-muted-foreground">Next tier</span>
+              </div>
+              <Progress value={nextProgress.pct} className="h-1.5" />
+            </div>
+          )}
 
           <Button
             className="w-full mt-3 h-11 rounded-2xl"
