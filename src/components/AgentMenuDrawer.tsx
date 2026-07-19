@@ -343,77 +343,98 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               className="fixed top-0 left-0 bottom-0 w-[86vw] max-w-sm z-[71] bg-card shadow-float flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Sticky colorful header with profile */}
-              <div className="relative px-4 pt-4 pb-5 overflow-hidden bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 text-white">
-                <div className="absolute inset-0 opacity-25 pointer-events-none [background-image:radial-gradient(circle_at_20%_20%,white_1px,transparent_1px),radial-gradient(circle_at_80%_60%,white_1px,transparent_1px)] [background-size:22px_22px,28px_28px]" />
-                <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-white/25 blur-2xl pointer-events-none" />
-                <div className="absolute -bottom-14 -left-10 w-40 h-40 rounded-full bg-yellow-300/30 blur-3xl pointer-events-none" />
-                <div className="relative">
-                  {/* Top row: avatar + rating + close */}
-                  <div className="flex items-start gap-3 mb-3">
-                    <button
-                      onClick={() => openAfterClose(() => setAvatarSheetOpen(true))}
-                      className="relative w-14 h-14 rounded-2xl overflow-hidden bg-white/25 backdrop-blur-sm ring-2 ring-white/50 flex items-center justify-center group shrink-0 shadow-lg"
-                      aria-label={t("agChangeAvatar")}
-                    >
-                      {profile.avatar_url ? (
-                        <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        <Building2 size={22} className="text-white" />
-                      )}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Camera size={14} className="text-white" />
-                      </div>
-                    </button>
+              {/* Premium glass header — avatar left, identity + rating + meta right */}
+              <div className="relative px-5 pt-5 pb-6 overflow-hidden bg-gradient-to-br from-orange-500 via-orange-400 to-amber-500 text-white">
+                {/* Decorative layers */}
+                <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/20 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-16 -left-12 w-48 h-48 rounded-full bg-amber-300/25 blur-3xl pointer-events-none" />
+                <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                  <svg className="absolute -right-8 -bottom-8 w-48 h-48" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="2" strokeDasharray="4 8" />
+                    <circle cx="50" cy="50" r="30" stroke="currentColor" strokeWidth="1" strokeDasharray="2 6" />
+                  </svg>
+                </div>
 
-                    {/* Rating card fills the previously-empty space */}
+                {/* Close button */}
+                <button
+                  onClick={onClose}
+                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md ring-1 ring-white/20 flex items-center justify-center text-white transition-colors"
+                  aria-label="Close"
+                >
+                  <X size={15} />
+                </button>
+
+                <div className="relative flex items-start gap-4">
+                  {/* Avatar */}
+                  <button
+                    onClick={() => openAfterClose(() => setAvatarSheetOpen(true))}
+                    className="relative w-16 h-16 rounded-2xl overflow-hidden bg-white/20 backdrop-blur-xl ring-1 ring-white/30 flex items-center justify-center group shrink-0 shadow-lg"
+                    aria-label={t("agChangeAvatar")}
+                  >
+                    {profile.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <Building2 size={26} className="text-white" />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Camera size={16} className="text-white" />
+                    </div>
+                  </button>
+
+                  {/* Right column: name → rating → chips */}
+                  <div className="flex-1 min-w-0 pr-8">
+                    <h3 className="text-[17px] font-extrabold tracking-tight text-white truncate drop-shadow-sm">
+                      {agentInfo?.business_name || t("agAgentPortal")}
+                    </h3>
+
+                    {/* Rating row (under name) */}
                     <button
                       type="button"
                       onClick={() => openAfterClose(() => navigate("/agent/analytics"))}
-                      className="flex-1 min-w-0 rounded-2xl bg-white/20 backdrop-blur-md ring-1 ring-white/30 px-3 py-2 text-left hover:bg-white/25 transition-colors shadow-md"
+                      className="mt-1.5 inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-black/15 backdrop-blur-md ring-1 ring-white/15 hover:bg-black/20 transition-colors"
                       aria-label="Ratings & reviews"
                     >
-                      <div className="flex items-center gap-1 text-white">
+                      <div className="flex items-center gap-0.5">
                         {[1,2,3,4,5].map(n => {
                           const filled = (agentRating.avg ?? 0) >= n - 0.25;
                           const half = !filled && (agentRating.avg ?? 0) >= n - 0.75;
                           return (
                             <Star
                               key={n}
-                              size={12}
-                              className={filled || half ? "fill-yellow-200 text-yellow-200" : "text-white/40"}
+                              size={11}
+                              className={filled || half ? "fill-yellow-200 text-yellow-200" : "text-white/35"}
                             />
                           );
                         })}
-                        <span className="ml-1 text-[13px] font-extrabold leading-none">
-                          {agentRating.avg != null ? Number(agentRating.avg).toFixed(1) : "—"}
+                      </div>
+                      <span className="text-[12px] font-extrabold leading-none tracking-tight">
+                        {agentRating.avg != null ? Number(agentRating.avg).toFixed(1) : "0.0"}
+                      </span>
+                      <span className="text-[10px] font-semibold text-white/85 leading-none">
+                        {agentRating.total > 0
+                          ? `${agentRating.total.toLocaleString()} ${agentRating.total === 1 ? "review" : "reviews"}`
+                          : "Earn your first ★"}
+                      </span>
+                    </button>
+
+                    {/* Meta chips */}
+                    <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-1 text-[10px] font-bold tracking-widest bg-white/20 backdrop-blur-md rounded-md ring-1 ring-white/15 uppercase">
+                        {agentInfo?.territory_code || "BD"}
+                      </span>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/25 backdrop-blur-sm rounded-full ring-1 ring-emerald-300/40">
+                        <span className="relative flex h-1.5 w-1.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-300" />
+                        </span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-50 capitalize">
+                          {agentInfo?.status || t("agActive")}
                         </span>
                       </div>
-                      <p className="text-[10px] text-white/95 font-semibold mt-1 truncate">
-                        {agentRating.total > 0
-                          ? `${agentRating.total.toLocaleString()} ${agentRating.total === 1 ? "review" : "reviews"} from customers`
-                          : "No reviews yet · earn your first ★"}
-                      </p>
-                    </button>
-
-                    <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center text-white shrink-0 transition-colors">
-                      <X size={15} />
-                    </button>
-                  </div>
-
-                  {/* Business name + meta */}
-                  <h3 className="text-base font-extrabold text-white truncate drop-shadow-sm">
-                    {agentInfo?.business_name || t("agAgentPortal")}
-                  </h3>
-                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                    <Badge className="bg-white/25 backdrop-blur-sm text-white border-0 text-[9.5px] px-2 py-0.5 font-bold rounded-full">
-                      {agentInfo?.territory_code || "BD"}
-                    </Badge>
-                    <Badge className="bg-emerald-500/90 text-white border-0 text-[9.5px] px-2 py-0.5 font-bold rounded-full capitalize inline-flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                      {agentInfo?.status || t("agActive")}
-                    </Badge>
-                    <span className="text-[10.5px] text-white/90 font-semibold truncate">{profile.phone || "—"}</span>
+                      <span className="text-[11px] font-semibold tracking-tight text-white/95 tabular-nums">
+                        {profile.phone || "—"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
