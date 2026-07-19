@@ -117,7 +117,12 @@ export function validateRecipient(
 ): RecipientCheck {
   const rule = RULES[kind];
   const trimmed = value.trim();
-  const normalized = rule.digitsOnly ? trimmed.replace(/\D/g, "") : trimmed;
+  let normalized = rule.digitsOnly ? trimmed.replace(/\D/g, "") : trimmed;
+  // Phone: strip +880 / 880 country code so international-formatted paste
+  // resolves to the local 11-digit MSISDN starting with 0.
+  if (kind === "phone" && normalized.startsWith("880")) {
+    normalized = "0" + normalized.slice(3);
+  }
   const isEmpty = normalized.length === 0;
 
   if (isEmpty) {
