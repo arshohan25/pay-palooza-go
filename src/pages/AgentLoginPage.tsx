@@ -330,6 +330,7 @@ const AgentLoginPage = () => {
             </div>
           </motion.form>
         )}
+        </AnimatePresence>
       </div>
     </div>
   );
