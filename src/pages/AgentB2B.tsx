@@ -262,7 +262,7 @@ const AgentB2B = () => {
         onScan={async (result) => {
           setShowQr(false);
           const parsed = parseQrData(result);
-          const extracted = normalizeBDPhoneInput(parsed.identifier?) || normalizeBDPhoneInput(result);
+          const extracted = normalizeBDPhoneInput(parsed.identifier ?? "") || normalizeBDPhoneInput(result);
           setPhone(extracted);
           try {
             const { data } = await supabase.rpc("resolve_transfer_recipient", { p_identifier: extracted, p_flow: "send" });

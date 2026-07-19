@@ -247,7 +247,7 @@ const AgentCashOut = () => {
         onScan={(result) => {
           setShowQr(false);
           const parsed = parseQrData(result);
-          const extracted = normalizeBDPhoneInput(parsed.identifier?) || normalizeBDPhoneInput(result);
+          const extracted = normalizeBDPhoneInput(parsed.identifier ?? "") || normalizeBDPhoneInput(result);
           setPhone(extracted);
         }}
       />
