@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { X, Share2, Bug, Loader2, CheckCircle2, AlertCircle, History } from "lucide-react";
+import { X, Share2, Bug, Loader2, CheckCircle2, AlertCircle, History, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getAgentTxnLabel, isAgentTxnCredit } from "@/lib/agentTransactions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
+import { downloadTxnReceiptPdf } from "@/lib/txnReceiptPdf";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(Number(n) || 0));
@@ -244,6 +245,32 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx: initi
               </div>
             )}
           </div>
+          )}
+          {(status === "completed" || status === "success") && (
+            <Button
+              variant="outline"
+              onClick={() =>
+                downloadTxnReceiptPdf({
+                  id: tx.id,
+                  short_id: tx.short_id,
+                  type: tx.type,
+                  typeLabel: displayType,
+                  amount: tx.amount,
+                  fee: tx.fee,
+                  commission: tx.commission,
+                  status: tx.status,
+                  party_name: tx.recipient_name,
+                  party_phone: tx.recipient_phone,
+                  description: tx.description,
+                  balance_after: tx.balance_after,
+                  created_at: tx.created_at,
+                  isCredit,
+                })
+              }
+              className="w-full rounded-xl h-11 text-xs font-bold gap-2"
+            >
+              <Download size={14} /> Download Receipt (PDF)
+            </Button>
           )}
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => onShare(tx)} className="rounded-xl h-11 text-xs font-bold gap-2">
