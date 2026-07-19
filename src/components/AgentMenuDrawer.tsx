@@ -344,38 +344,76 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               onClick={(e) => e.stopPropagation()}
             >
               {/* Sticky colorful header with profile */}
-              <div className="relative px-4 pt-4 pb-4 overflow-hidden bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 text-white">
+              <div className="relative px-4 pt-4 pb-5 overflow-hidden bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 text-white">
                 <div className="absolute inset-0 opacity-25 pointer-events-none [background-image:radial-gradient(circle_at_20%_20%,white_1px,transparent_1px),radial-gradient(circle_at_80%_60%,white_1px,transparent_1px)] [background-size:22px_22px,28px_28px]" />
-                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
+                <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-white/25 blur-2xl pointer-events-none" />
+                <div className="absolute -bottom-14 -left-10 w-40 h-40 rounded-full bg-yellow-300/30 blur-3xl pointer-events-none" />
                 <div className="relative">
-                  <div className="flex items-start justify-between mb-3">
+                  {/* Top row: avatar + rating + close */}
+                  <div className="flex items-start gap-3 mb-3">
                     <button
                       onClick={() => openAfterClose(() => setAvatarSheetOpen(true))}
-                      className="relative w-12 h-12 rounded-2xl overflow-hidden bg-white/25 backdrop-blur-sm ring-2 ring-white/40 flex items-center justify-center group shrink-0 shadow-lg"
+                      className="relative w-14 h-14 rounded-2xl overflow-hidden bg-white/25 backdrop-blur-sm ring-2 ring-white/50 flex items-center justify-center group shrink-0 shadow-lg"
                       aria-label={t("agChangeAvatar")}
                     >
                       {profile.avatar_url ? (
                         <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
-                        <Building2 size={20} className="text-white" />
+                        <Building2 size={22} className="text-white" />
                       )}
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Camera size={14} className="text-white" />
                       </div>
                     </button>
+
+                    {/* Rating card fills the previously-empty space */}
+                    <button
+                      type="button"
+                      onClick={() => openAfterClose(() => navigate("/agent/analytics"))}
+                      className="flex-1 min-w-0 rounded-2xl bg-white/20 backdrop-blur-md ring-1 ring-white/30 px-3 py-2 text-left hover:bg-white/25 transition-colors shadow-md"
+                      aria-label="Ratings & reviews"
+                    >
+                      <div className="flex items-center gap-1 text-white">
+                        {[1,2,3,4,5].map(n => {
+                          const filled = (agentRating.avg ?? 0) >= n - 0.25;
+                          const half = !filled && (agentRating.avg ?? 0) >= n - 0.75;
+                          return (
+                            <Star
+                              key={n}
+                              size={12}
+                              className={filled || half ? "fill-yellow-200 text-yellow-200" : "text-white/40"}
+                            />
+                          );
+                        })}
+                        <span className="ml-1 text-[13px] font-extrabold leading-none">
+                          {agentRating.avg != null ? Number(agentRating.avg).toFixed(1) : "—"}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-white/95 font-semibold mt-1 truncate">
+                        {agentRating.total > 0
+                          ? `${agentRating.total.toLocaleString()} ${agentRating.total === 1 ? "review" : "reviews"} from customers`
+                          : "No reviews yet · earn your first ★"}
+                      </p>
+                    </button>
+
                     <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center text-white shrink-0 transition-colors">
                       <X size={15} />
                     </button>
                   </div>
-                  <h3 className="text-sm font-extrabold text-white truncate drop-shadow-sm">
+
+                  {/* Business name + meta */}
+                  <h3 className="text-base font-extrabold text-white truncate drop-shadow-sm">
                     {agentInfo?.business_name || t("agAgentPortal")}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <Badge className="bg-white/25 backdrop-blur-sm text-white border-0 text-[9px] px-1.5 py-0 font-semibold">
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    <Badge className="bg-white/25 backdrop-blur-sm text-white border-0 text-[9.5px] px-2 py-0.5 font-bold rounded-full">
                       {agentInfo?.territory_code || "BD"}
                     </Badge>
-                    <span className="text-[10px] text-white/90 capitalize">{agentInfo?.status || t("agActive")}</span>
-                    <span className="text-[10px] text-white/90 truncate">· {profile.phone || "—"}</span>
+                    <Badge className="bg-emerald-500/90 text-white border-0 text-[9.5px] px-2 py-0.5 font-bold rounded-full capitalize inline-flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      {agentInfo?.status || t("agActive")}
+                    </Badge>
+                    <span className="text-[10.5px] text-white/90 font-semibold truncate">{profile.phone || "—"}</span>
                   </div>
                 </div>
               </div>
