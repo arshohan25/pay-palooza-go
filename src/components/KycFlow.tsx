@@ -1879,7 +1879,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                   <div className="flex items-center gap-2 rounded-xl bg-primary/8 border border-primary/15 px-4 py-2.5">
                     <Sparkles size={14} className={`text-primary shrink-0 ${ocrLoading ? "animate-pulse" : ""}`} />
                     <p className="text-xs text-primary font-medium flex-1">
-                      {ocrLoading ? t("ocrLoading") || "Reading NID..." : t("aiExtractedBadge")}
+                      {ocrLoading ? "Reading NID..." : t("aiExtractedBadge")}
                     </p>
                     {!ocrLoading && nidFront && (
                       <button
@@ -1887,7 +1887,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                         onClick={() => runOcr(nidFront)}
                         className="text-[11px] font-semibold text-primary underline underline-offset-2"
                       >
-                        {t("rescan") || "Rescan"}
+                        Rescan
                       </button>
                     )}
                   </div>
