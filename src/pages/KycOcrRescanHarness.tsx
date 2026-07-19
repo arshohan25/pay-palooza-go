@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   pickFirstWithSiblingConfidence,
   resolveConfidence,
   type ConfidenceLevel,
 } from "@/lib/ocrConfidence";
+import { flushKycAnalytics, trackKycEvent } from "@/lib/kycAnalytics";
 
 /**
  * Dev-only harness that reproduces the exact "NID details" step behavior we
