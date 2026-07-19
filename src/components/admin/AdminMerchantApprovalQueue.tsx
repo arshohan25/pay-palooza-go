@@ -70,7 +70,7 @@ export default function AdminMerchantApprovalQueue() {
           user_id: target.user_id,
           merchant_id: target.id,
           status: decision === "approve" ? "approved" : "rejected",
-          reason: reason.trim(),
+          reason: note,
           business_name: target.business_name,
         },
       });
@@ -83,7 +83,7 @@ export default function AdminMerchantApprovalQueue() {
       title: decision === "approve" ? "Merchant Approved" : "Merchant Application Rejected",
       body: decision === "approve"
         ? `Your merchant "${target.business_name}" is now active.`
-        : `Reason: ${reason.trim()}`,
+        : `Reason: ${note}`,
       category: "merchant_ops",
     });
 
