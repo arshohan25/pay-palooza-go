@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock, Coins, AlertCircle, Shield, Phone } from "lucide-react";
+import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock, Coins, AlertCircle, Shield, Phone, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
 import { useI18n } from "@/lib/i18n";
 import { getContactNameByPhone } from "@/lib/contactStore";
 import { subscribeRealtime } from "@/lib/realtimeManager";
+import { downloadTxnReceiptPdf } from "@/lib/txnReceiptPdf";
 import {
   TxSendIcon,
   TxReceiveIcon,
@@ -293,6 +294,31 @@ const TransactionDetailSheet = ({ tx: initialTx, onClose }: { tx: DbTransaction;
                 {isCredit ? "+" : "−"}৳{fmt(Math.abs(display.amount))}
               </span>
             </div>
+          )}
+
+          {(tx.status === "completed" || tx.status === "success") && (
+            <button
+              onClick={() =>
+                downloadTxnReceiptPdf({
+                  id: tx.id,
+                  short_id: tx.short_id,
+                  type: tx.type,
+                  typeLabel: display.label,
+                  amount: Math.abs(display.amount),
+                  fee: tx.fee,
+                  commission: tx.commission,
+                  status: tx.status,
+                  party_name: display.name,
+                  party_phone: tx.recipient_phone,
+                  description: tx.description,
+                  created_at: tx.created_at,
+                  isCredit,
+                })
+              }
+              className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl h-11 border border-border/60 bg-card hover:bg-muted/40 active:bg-muted/60 text-[13px] font-bold text-foreground tap-target"
+            >
+              <Download size={14} /> {t("downloadReceipt") !== "downloadReceipt" ? t("downloadReceipt") : "Download Receipt (PDF)"}
+            </button>
           )}
         </div>
       </motion.div>
