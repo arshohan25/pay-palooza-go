@@ -533,6 +533,27 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     setIsSubmitting(true);
     setError("");
     try {
+      // Server-side pre-auth guard: block elevated-role phones BEFORE creating a session.
+      try {
+        const { data: guard, error: guardErr } = await supabase.functions.invoke(
+          "check-customer-login-eligibility",
+          { body: { phone: loginPhone } },
+        );
+        // supabase.functions.invoke returns error on non-2xx; body may still be in error.context.
+        const payload: any = guard ?? (guardErr as any)?.context ?? null;
+        if (payload && payload.allowed === false) {
+          setError(
+            lang === "bn"
+              ? `এই নম্বরটি ${payload.role} অ্যাকাউন্ট। ${payload.portal} থেকে সাইন ইন করুন।`
+              : payload.message || `This number belongs to a ${payload.role} account.`,
+          );
+          haptics.error();
+          setTimeout(() => setPin(""), 300);
+          setIsSubmitting(false);
+          return;
+        }
+      } catch { /* if guard is unreachable, fall through to signIn + client-side check */ }
+
       const { user } = await signIn(loginPhone, entered);
       
       // Check if account is locked
