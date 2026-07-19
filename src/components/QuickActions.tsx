@@ -689,79 +689,63 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
             <div className="border-t border-border/40 mt-4 pt-4">
               <div className="flex items-center justify-between mb-3 px-1">
                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("qaMoreServices")}</h3>
-                <button
-                  onClick={() => setExpanded(false)}
-                  className="w-6 h-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-                >
-                  <ChevronUp size={12} className="text-muted-foreground" />
-                </button>
-              </div>
-              <div className={`grid gap-y-5 gap-x-2 sm:gap-x-3 ${gridCols === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
-                {filteredMoreServices.map((item, i) => {
-                  const moreGlobalOff = item.featureKey ? isGloballyDisabled(item.featureKey) : false;
-                  return (
-                    <motion.button
-                      key={item.id}
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ type: "spring", stiffness: 450, damping: 26, delay: 0.03 * i }}
-                      whileTap={{ scale: 0.90 }}
-                      onClick={() => {
-                        if (didLongPress.current) { didLongPress.current = false; return; }
-                        if (moreGlobalOff) { toast.info(t("qaUnavailable").replace("{label}", item.label), { description: t("qaDisabledDesc") }); return; }
-                        handleMoreService(item.id, item.soon);
-                      }}
-                      onPointerDown={() => startLongPress(item.id)}
-                      onPointerUp={cancelLongPress}
-                      onPointerLeave={cancelLongPress}
-                      onMouseEnter={() => setHoveredMoreId(item.id)}
-                      onMouseLeave={() => setHoveredMoreId(null)}
-                      className="flex flex-col items-center gap-2.5 group outline-none relative"
+                <div className="flex items-center gap-1.5">
+                  {isDnDEnabled && isMoreCustomOrder && (
+                    <button
+                      onClick={resetMoreOrder}
+                      className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-full bg-muted/60 hover:bg-muted"
                     >
-                      <motion.div
-                        whileHover={{ scale: 1.06, y: -2 }}
-                        transition={{ type: "spring", stiffness: 380, damping: 22 }}
-                        className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden"
-                        style={{ width: iconSizePx, height: iconSizePx, filter: moreGlobalOff ? "grayscale(1)" : "none", opacity: moreGlobalOff ? 0.5 : 1 }}
-                      >
-                        <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-[0.14]`} />
-                        {item.soon && <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-20 animate-pulse`} />}
-                        {item.soon && (
-                          <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
-                            <div className="absolute inset-0" style={{ background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)", animation: "shimmer-sweep 2.5s ease-in-out infinite" }} />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
-                          <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
-                        </div>
-                        <item.Icon isHovered={hoveredMoreId === item.id} />
-                      </motion.div>
-                      {item.soon && (
-                        <motion.div className="absolute -top-1 right-0 z-10" animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
-                          <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>{t("qaSoon")}</span>
-                        </motion.div>
-                      )}
-                      <AnimatePresence>
-                        {longPressId === item.id && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 6, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            transition={{ duration: 0.18 }}
-                            className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 whitespace-nowrap rounded-lg bg-popover border border-border px-2.5 py-1 text-[10px] font-medium text-popover-foreground shadow-lg pointer-events-none"
-                          >
-                            {item.desc}
-                            <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-popover border-r border-b border-border" />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${moreGlobalOff ? "opacity-50 grayscale" : ""}`}>
-                        {"labelKey" in item && (item as any).labelKey ? t((item as any).labelKey as TranslationKey) : item.label}
-                      </span>
-                    </motion.button>
-                  );
-                })}
+                      <RotateCcw className="w-3 h-3" />
+                      Reset
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setExpanded(false)}
+                    className="w-6 h-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+                  >
+                    <ChevronUp size={12} className="text-muted-foreground" />
+                  </button>
+                </div>
               </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={(e) => { setActiveDragId(e.active.id as string); haptics.medium(); }}
+                onDragEnd={handleMoreDragEnd}
+              >
+                <SortableContext items={orderedMoreServices.map(i => i.id)} strategy={rectSortingStrategy}>
+                  <div className={`grid gap-y-5 gap-x-2 sm:gap-x-3 ${gridCols === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
+                    {orderedMoreServices.map((item, i) => {
+                      const moreGlobalOff = item.featureKey ? isGloballyDisabled(item.featureKey) : false;
+                      const label = "labelKey" in item && (item as any).labelKey ? t((item as any).labelKey as TranslationKey) : item.label;
+                      return (
+                        <SortableMoreItem
+                          key={item.id}
+                          item={item}
+                          index={i}
+                          isDraggable={isDnDEnabled}
+                          iconSizePx={iconSizePx}
+                          moreGlobalOff={moreGlobalOff}
+                          longPressId={longPressId}
+                          hoveredMoreId={hoveredMoreId}
+                          justDropped={justDroppedId === item.id}
+                          tLabel={label}
+                          tSoon={t("qaSoon")}
+                          onClick={() => {
+                            if (moreGlobalOff) { toast.info(t("qaUnavailable").replace("{label}", item.label), { description: t("qaDisabledDesc") }); return; }
+                            handleMoreService(item.id, item.soon);
+                          }}
+                          onStartLongPress={startLongPress}
+                          onCancelLongPress={cancelLongPress}
+                          onHoverStart={setHoveredMoreId}
+                          onHoverEnd={() => setHoveredMoreId(null)}
+                          didLongPressRef={didLongPress}
+                        />
+                      );
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
           </motion.div>
         )}
