@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { ShieldAlert, Search, Unlock, History, Info, Users } from "lucide-react";
+import { ShieldAlert, Search, Unlock, History, Info, Users, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 
 type Blocked = {
   phone: string;
@@ -135,22 +135,66 @@ export default function AdminBlockedPhonesPage() {
         _reason: reason,
       });
       if (error) throw error;
-      return data as { unblocked: number; failed: Array<{ phone: string; error: string }> };
+      return {
+        requested: phones.length,
+        unblocked: (data as any)?.unblocked ?? 0,
+        failed: ((data as any)?.failed ?? []) as Array<{ phone: string; error: string }>,
+      };
+    },
+    onMutate: ({ phones }) => {
+      toast({
+        title: "Bulk unblock started",
+        description: `Processing ${phones.length} phone number(s)…`,
+      });
     },
     onSuccess: (res) => {
-      const failedCount = res?.failed?.length ?? 0;
+      const { requested, unblocked, failed } = res;
+      const failedCount = failed.length;
+      const allOk = failedCount === 0 && unblocked === requested;
+      const noneOk = unblocked === 0;
+      const sampleFailures = failed.slice(0, 3).map((f) => `${f.phone}: ${f.error}`).join(" · ");
+
       toast({
-        title: `Unblocked ${res?.unblocked ?? 0} number(s)`,
-        description: failedCount ? `${failedCount} failed — see audit log.` : "All selected numbers unblocked.",
-        variant: failedCount ? "destructive" : "default",
+        title: allOk
+          ? `Unblocked ${unblocked}/${requested}`
+          : noneOk
+          ? `Bulk unblock failed (0/${requested})`
+          : `Partial success: ${unblocked}/${requested} unblocked`,
+        description: allOk
+          ? "All selected numbers were unblocked and audited."
+          : `${failedCount} failed${sampleFailures ? ` — ${sampleFailures}` : ""}${
+              failedCount > 3 ? ` (+${failedCount - 3} more)` : ""
+            }`,
+        variant: allOk ? "default" : "destructive",
       });
-      setBulkOpen(false);
-      setBulkReason("");
-      setSelected(new Set());
+
+      if (unblocked > 0) {
+        setSelected((prev) => {
+          const next = new Set(prev);
+          const failedPhones = new Set(failed.map((f) => f.phone));
+          [...next].forEach((p) => { if (!failedPhones.has(p)) next.delete(p); });
+          return next;
+        });
+      }
+      if (allOk) {
+        setBulkOpen(false);
+        setBulkReason("");
+      }
       invalidate();
     },
     onError: (e: any) => {
-      toast({ title: "Bulk unblock failed", description: e.message ?? String(e), variant: "destructive" });
+      const msg = e?.message ?? String(e);
+      toast({
+        title: "Bulk unblock failed",
+        description: msg.includes("reason_too_short")
+          ? "Reason must be at least 5 characters."
+          : msg.includes("not_authorized")
+          ? "You don't have permission to perform this action."
+          : msg.includes("no_phones_provided")
+          ? "No phone numbers were provided."
+          : `RPC error: ${msg}`,
+        variant: "destructive",
+      });
     },
   });
 
@@ -218,11 +262,15 @@ export default function AdminBlockedPhonesPage() {
             </label>
             <Button
               size="sm"
-              disabled={selected.size === 0}
+              disabled={selected.size === 0 || bulkUnblock.isPending}
               onClick={() => setBulkOpen(true)}
             >
-              <Users className="h-3.5 w-3.5 mr-1.5" />
-              Bulk unblock
+              {bulkUnblock.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Users className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              {bulkUnblock.isPending ? "Unblocking…" : "Bulk unblock"}
             </Button>
           </div>
         )}
@@ -336,11 +384,18 @@ export default function AdminBlockedPhonesPage() {
             value={bulkReason}
             onChange={(e) => setBulkReason(e.target.value)}
             rows={4}
+            disabled={bulkUnblock.isPending}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkOpen(false)}>Cancel</Button>
             <Button
-              disabled={bulkReason.trim().length < 5 || selected.size === 0}
+              variant="outline"
+              onClick={() => setBulkOpen(false)}
+              disabled={bulkUnblock.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={bulkReason.trim().length < 5 || selected.size === 0 || bulkUnblock.isPending}
               onClick={() => setBulkConfirm(true)}
             >
               Review & confirm ({selected.size})
@@ -350,13 +405,29 @@ export default function AdminBlockedPhonesPage() {
       </Dialog>
 
       {/* Bulk confirmation */}
-      <Dialog open={bulkConfirm} onOpenChange={(o) => !o && setBulkConfirm(false)}>
+      <Dialog
+        open={bulkConfirm}
+        onOpenChange={(o) => {
+          if (bulkUnblock.isPending) return;
+          if (!o) setBulkConfirm(false);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm bulk unblock</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {bulkUnblock.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Unblocking {selected.size} number(s)…
+                </>
+              ) : (
+                <>Confirm bulk unblock</>
+              )}
+            </DialogTitle>
             <DialogDescription>
-              This will unblock {selected.size} phone number(s) and log the reason below against your admin ID. This
-              action cannot be undone from this screen.
+              {bulkUnblock.isPending
+                ? "Do not close this window. Awaiting server response…"
+                : `This will unblock ${selected.size} phone number(s) and log the reason below against your admin ID. This action cannot be undone from this screen.`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -366,7 +437,12 @@ export default function AdminBlockedPhonesPage() {
               </div>
               <div className="max-h-40 overflow-auto rounded-md border border-border/60 p-2 text-xs space-y-1">
                 {[...selected].map((p) => (
-                  <div key={p} className="font-mono">{p}</div>
+                  <div key={p} className="font-mono flex items-center justify-between gap-2">
+                    <span>{p}</span>
+                    {bulkUnblock.isPending && (
+                      <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -376,25 +452,49 @@ export default function AdminBlockedPhonesPage() {
                 {bulkReason.trim()}
               </div>
             </div>
+            {bulkUnblock.isError && (
+              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>{(bulkUnblock.error as any)?.message ?? "Something went wrong."}</span>
+              </div>
+            )}
+            {bulkUnblock.isSuccess && (
+              <div className="flex items-start gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/5 p-2 text-xs text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>
+                  Unblocked {bulkUnblock.data?.unblocked ?? 0}/{bulkUnblock.data?.requested ?? 0}.
+                  {(bulkUnblock.data?.failed?.length ?? 0) > 0
+                    ? ` ${bulkUnblock.data!.failed.length} still selected — review and retry.`
+                    : ""}
+                </span>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkConfirm(false)} disabled={bulkUnblock.isPending}>
-              Back
+              {bulkUnblock.isSuccess ? "Close" : "Back"}
             </Button>
             <Button
-              disabled={bulkUnblock.isPending}
+              disabled={bulkUnblock.isPending || selected.size === 0}
               onClick={() => {
-                bulkUnblock.mutate(
-                  { phones: [...selected], reason: bulkReason.trim() },
-                  { onSuccess: () => setBulkConfirm(false) }
-                );
+                bulkUnblock.mutate({ phones: [...selected], reason: bulkReason.trim() });
               }}
             >
-              {bulkUnblock.isPending ? "Unblocking…" : `Unblock ${selected.size} now`}
+              {bulkUnblock.isPending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Unblocking…
+                </>
+              ) : bulkUnblock.isError ? (
+                `Retry unblock (${selected.size})`
+              ) : (
+                `Unblock ${selected.size} now`
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
 
       {/* Details drawer */}
