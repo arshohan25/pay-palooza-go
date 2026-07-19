@@ -1324,11 +1324,11 @@ export default function AdminMerchantManagement() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>MDR Rate (%)</Label>
-                  <Input type="number" step="0.01" min="0" max="10" value={createForm.mdr_rate} onChange={e => setCreateForm(f => ({ ...f, mdr_rate: e.target.value }))} />
+                  <Input type="number" step="0.001" min="0" value={createForm.mdr_rate} onChange={e => setCreateForm(f => ({ ...f, mdr_rate: e.target.value }))} />
                 </div>
                 <div>
                   <Label>Commission (%)</Label>
-                  <Input type="number" step="0.01" min="0" max="100" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} />
+                  <Input type="number" step="0.001" min="0" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} />
                 </div>
                 <div>
                   <Label>Settlement</Label>
