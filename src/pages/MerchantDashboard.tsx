@@ -2489,8 +2489,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
 /* ── Settlement Tab ── */
 const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
-  const mdrRate = merchant?.mdr_rate ?? 0.015;
-  const totalMDR = Math.round(totalRevenue * mdrRate);
+  const totalMDR = Math.round(totalRevenue * mdrFraction(merchant?.mdr_rate));
   const netSettlement = totalRevenue - totalMDR;
 
   const dailyBatches = useMemo(() => {
