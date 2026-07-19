@@ -564,7 +564,35 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
           setIsSubmitting(false);
           return;
         }
+
+        // Block elevated roles from customer app — each role has its own portal.
+        const { data: roleRows } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+        const elevated = (roleRows ?? []).map((r: any) => r.role)
+          .find((r: string) => ["agent", "merchant", "distributor", "super_distributor", "admin"].includes(r));
+        if (elevated) {
+          await supabase.auth.signOut();
+          const portal: Record<string, string> = {
+            agent: "/agent/login",
+            merchant: "/merchant-login",
+            distributor: "/distributor/login",
+            super_distributor: "/sd/login",
+            admin: "/admin/login",
+          };
+          setError(
+            lang === "bn"
+              ? `এই নম্বরটি ${elevated} অ্যাকাউন্ট। ${portal[elevated]} থেকে সাইন ইন করুন।`
+              : `This number is a ${elevated} account. Please sign in from ${portal[elevated]}.`
+          );
+          haptics.error();
+          setTimeout(() => setPin(""), 300);
+          setIsSubmitting(false);
+          return;
+        }
       }
+
       
       // Success — clear lockout state
       localStorage.removeItem(attKey);
