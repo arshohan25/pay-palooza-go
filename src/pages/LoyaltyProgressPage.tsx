@@ -1,15 +1,15 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import * as Icons from "lucide-react";
-import { ArrowLeft, Sparkles, TrendingUp, Wallet, PiggyBank, Repeat, Award, Percent, Gift, Headphones } from "lucide-react";
+import { ArrowLeft, Sparkles, TrendingUp, Wallet, PiggyBank, Repeat, Award, Percent, Gift, Headphones, Calculator } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import LoyaltyBadge from "@/components/LoyaltyBadge";
 import { useLoyaltyTiers, useMyLoyalty, type LoyaltyTier } from "@/hooks/use-loyalty";
 import { useLoyaltyPerks } from "@/hooks/use-loyalty-perks";
+import { computeScoreBreakdown, LOYALTY_SCORE_WEIGHTS } from "@/lib/loyaltyScore";
 
-/** Fields that count towards tier advancement, in order of relative impact. */
 const METRIC_FIELDS: Array<{
   key: keyof LoyaltyTier & string;
   current: (l: any) => number;
@@ -19,15 +19,17 @@ const METRIC_FIELDS: Array<{
   action: string;
   actionRoute?: string;
 }> = [
-  { key: "min_volume_30d",         current: (l) => Number(l?.volume_30d ?? 0),         label: "30-day volume",       icon: TrendingUp, suffix: "৳", action: "Send money, pay bills or shop",    actionRoute: "/pay" },
-  { key: "min_lifetime_txn_count", current: (l) => Number(l?.lifetime_txn_count ?? 0), label: "Lifetime transactions", icon: Repeat,   suffix: "",  action: "Complete more transactions",       actionRoute: "/" },
-  { key: "min_wallet_balance",     current: (l) => Number(l?.wallet_balance ?? 0),     label: "Wallet balance",      icon: Wallet,     suffix: "৳", action: "Add money to your wallet",         actionRoute: "/" },
-  { key: "min_addmoney_lifetime",  current: (l) => Number(l?.addmoney_lifetime ?? 0),  label: "Add-money lifetime",  icon: Wallet,     suffix: "৳", action: "Top up from your bank / card",     actionRoute: "/" },
-  { key: "min_savings_balance",    current: (l) => Number(l?.savings_balance ?? 0),    label: "Savings balance",     icon: PiggyBank,  suffix: "৳", action: "Grow your savings goals",          actionRoute: "/savings" },
+  { key: "min_volume_30d",         current: (l) => Number(l?.volume_30d ?? 0),         label: "30-day volume",         icon: TrendingUp, suffix: "৳", action: "Send money, pay bills or shop",    actionRoute: "/pay" },
+  { key: "min_lifetime_txn_count", current: (l) => Number(l?.lifetime_txn_count ?? 0), label: "Lifetime transactions", icon: Repeat,     suffix: "",  action: "Complete more transactions",       actionRoute: "/" },
+  { key: "min_wallet_balance",     current: (l) => Number(l?.wallet_balance ?? 0),     label: "Wallet balance",        icon: Wallet,     suffix: "৳", action: "Add money to your wallet",         actionRoute: "/" },
+  { key: "min_addmoney_lifetime",  current: (l) => Number(l?.addmoney_lifetime ?? 0),  label: "Add-money lifetime",    icon: Wallet,     suffix: "৳", action: "Top up from your bank / card",     actionRoute: "/" },
+  { key: "min_savings_balance",    current: (l) => Number(l?.savings_balance ?? 0),    label: "Savings balance",       icon: PiggyBank,  suffix: "৳", action: "Grow your savings goals",          actionRoute: "/savings" },
 ];
 
 const fmt = (n: number, suffix?: string) =>
-  suffix === "৳" ? `৳${n.toLocaleString()}` : `${n.toLocaleString()}${suffix ?? ""}`;
+  suffix === "৳" ? `৳${Math.round(n).toLocaleString()}` : `${Math.round(n).toLocaleString()}${suffix ?? ""}`;
+
+const pctLabel = (p: number) => `${p.toFixed(p < 10 ? 1 : 0)}%`;
 
 export default function LoyaltyProgressPage() {
   const navigate = useNavigate();
@@ -49,18 +51,22 @@ export default function LoyaltyProgressPage() {
       const current = f.current(loyalty);
       const remaining = Math.max(0, target - current);
       const pct = target > 0 ? Math.min(100, (current / target) * 100) : 100;
-      return { ...f, target, current, remaining, pct };
+      const done = current >= target;
+      return { ...f, target, current, remaining, pct, done };
     }).filter((g) => g.target > 0);
   }, [nextTier, loyalty]);
 
   const overallPct = useMemo(() => {
     if (!gaps.length) return 100;
-    return Math.round(gaps.reduce((s, g) => s + g.pct, 0) / gaps.length);
+    return gaps.reduce((s, g) => s + g.pct, 0) / gaps.length;
   }, [gaps]);
+
+  const breakdown = useMemo(() => computeScoreBreakdown(loyalty ?? {}), [loyalty]);
+  const scoreTarget = Number(nextTier?.min_combined_score ?? 0);
+  const scorePct = scoreTarget > 0 ? Math.min(100, (breakdown.total / scoreTarget) * 100) : 100;
 
   return (
     <div className="min-h-[100dvh] bg-background">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-background/85 backdrop-blur border-b border-border/60 px-4 py-3 flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
           <ArrowLeft size={18} />
@@ -112,37 +118,43 @@ export default function LoyaltyProgressPage() {
                 <LoyaltyBadge tier={nextTier} size="md" />
               </div>
 
-              <div>
-                <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="text-muted-foreground">Overall progress</span>
-                  <span className="font-semibold">{overallPct}%</span>
+              <div className="rounded-2xl bg-primary/5 border border-primary/20 p-3">
+                <div className="flex items-baseline justify-between mb-1.5">
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Overall</span>
+                  <span className="text-xl font-bold text-primary">{pctLabel(overallPct)}</span>
                 </div>
                 <Progress value={overallPct} className="h-2" />
+                <p className="text-[10.5px] text-muted-foreground mt-1.5">
+                  Averaged across {gaps.length} requirement{gaps.length === 1 ? "" : "s"}.
+                </p>
               </div>
 
               <div className="space-y-2 pt-1">
                 {gaps.map((g) => (
-                  <div key={g.key} className="rounded-2xl border border-border/60 p-3">
+                  <div
+                    key={g.key}
+                    className={`rounded-2xl border p-3 ${g.done ? "border-emerald-500/40 bg-emerald-500/5" : "border-border/60"}`}
+                  >
                     <div className="flex items-center gap-2 mb-1.5">
-                      <g.icon size={14} className="text-primary" />
+                      <g.icon size={14} className={g.done ? "text-emerald-600" : "text-primary"} />
                       <p className="text-[13px] font-medium flex-1">{g.label}</p>
-                      <span className="text-[11px] text-muted-foreground">
-                        {fmt(g.current, g.suffix)} / {fmt(g.target, g.suffix)}
+                      <span className={`text-[11.5px] font-bold ${g.done ? "text-emerald-600" : "text-foreground"}`}>
+                        {pctLabel(g.pct)}
                       </span>
                     </div>
                     <Progress value={g.pct} className="h-1.5" />
-                    {g.remaining > 0 && (
-                      <div className="flex items-center justify-between mt-2">
-                        <p className="text-[11px] text-muted-foreground">
-                          {fmt(g.remaining, g.suffix)} to go — {g.action}
-                        </p>
-                        {g.actionRoute && (
-                          <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => navigate(g.actionRoute!)}>
-                            Go →
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between mt-2 gap-2">
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {fmt(g.current, g.suffix)} <span className="opacity-60">of</span> {fmt(g.target, g.suffix)}
+                        {!g.done && <> · <span className="text-foreground/80 font-medium">{fmt(g.remaining, g.suffix)} to go</span></>}
+                      </p>
+                      {!g.done && g.actionRoute && (
+                        <Button size="sm" variant="ghost" className="h-7 text-[11px] shrink-0" onClick={() => navigate(g.actionRoute!)}>
+                          {g.action.split(" ").slice(0, 2).join(" ")} →
+                        </Button>
+                      )}
+                      {g.done && <span className="text-[10px] font-bold text-emerald-600">DONE</span>}
+                    </div>
                   </div>
                 ))}
                 {gaps.length === 0 && (
@@ -160,6 +172,56 @@ export default function LoyaltyProgressPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Combined score breakdown */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Calculator size={15} className="text-primary" />
+              <p className="text-sm font-bold flex-1">Combined score breakdown</p>
+              <span className="text-[11px] text-muted-foreground">
+                {breakdown.total.toFixed(1)}
+                {scoreTarget > 0 && ` / ${scoreTarget.toLocaleString()}`}
+              </span>
+            </div>
+
+            {scoreTarget > 0 && (
+              <div>
+                <div className="flex items-center justify-between text-[11px] mb-1">
+                  <span className="text-muted-foreground">Score toward {nextTier?.name}</span>
+                  <span className="font-semibold">{pctLabel(scorePct)}</span>
+                </div>
+                <Progress value={scorePct} className="h-1.5" />
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              {breakdown.parts.map((p) => (
+                <div key={p.key} className="rounded-xl bg-muted/40 px-3 py-2">
+                  <div className="flex items-baseline justify-between text-[12px]">
+                    <span className="font-medium">{p.label}</span>
+                    <span className="tabular-nums font-bold">+{p.points.toFixed(1)} pts</span>
+                  </div>
+                  <p className="text-[10.5px] text-muted-foreground mt-0.5">
+                    {p.metric.toLocaleString()} × {p.weight} weight · contributes {pctLabel(p.pctOfScore)} of your score
+                  </p>
+                  <div className="mt-1 h-1 rounded-full bg-background overflow-hidden">
+                    <div
+                      className="h-full bg-primary/70"
+                      style={{ width: `${Math.min(100, p.pctOfScore)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Weights: volume ×{LOYALTY_SCORE_WEIGHTS.volume_30d}, txn count ×{LOYALTY_SCORE_WEIGHTS.txn_count},
+              wallet ×{LOYALTY_SCORE_WEIGHTS.wallet}, add-money ×{LOYALTY_SCORE_WEIGHTS.addmoney},
+              savings ×{LOYALTY_SCORE_WEIGHTS.savings}. The bigger the contribution bar, the more that metric moves your tier.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* All tiers roadmap */}
         <Card>
