@@ -278,11 +278,6 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/6 pointer-events-none" />
           <div className="absolute -bottom-10 left-4 w-32 h-32 rounded-full bg-white/4 pointer-events-none" />
 
-          {/* Floating loyalty badge — top-right corner */}
-          <div className="absolute top-4 right-4 z-10">
-            <LoyaltyBadge size="sm" onClick={() => setShowLoyaltyPerks(true)} />
-          </div>
-
           <div className="relative flex items-center gap-4">
             <button
               onClick={() => setShowProfileEdit(true)}
@@ -300,10 +295,15 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               </div>
             </button>
 
-            <div className="flex-1 min-w-0 pr-20">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[17px] font-bold truncate">{displayName}</p>
                 {kycStatus !== "verified" && <KycBadge status={kycStatus} loading={kycLoading} />}
+                <LoyaltyBadge
+                  size="sm"
+                  surface="profile_card"
+                  onClick={() => setShowLoyaltyPerks(true)}
+                />
               </div>
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+88 ${registeredPhone}` : "—"}</p>
               {userEmail && (
