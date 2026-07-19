@@ -26,6 +26,7 @@ const AgentLoginPage = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
 
+  const [phoneFocused, setPhoneFocused] = useState(false);
   const [phone, setPhone] = useState(() => {
     if (typeof window === "undefined") return "";
     return window.localStorage.getItem(AGENT_LAST_PHONE_KEY) || "";
