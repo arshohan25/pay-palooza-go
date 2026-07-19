@@ -287,6 +287,10 @@ export default function AdminLoyaltyTiers() {
         <TabsContent value="override">
           <OverrideUserPanel />
         </TabsContent>
+
+        <TabsContent value="templates">
+          <AdminLoyaltyNotificationTemplates />
+        </TabsContent>
       </Tabs>
 
       {(editing || creating) && (
