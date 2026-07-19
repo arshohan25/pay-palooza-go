@@ -125,13 +125,16 @@ export default function LoyaltyBadge({
     </Wrapper>
   );
 
-  if (disableTooltip) return badge;
+  // On touch devices the tap is reserved for opening the full perks sheet
+  // (Radix tooltip on tap is unreliable and can cover profile actions).
+  if (disableTooltip || isTouch) return badge;
 
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>{badge}</TooltipTrigger>
-        <TooltipContent side="bottom" className="px-3 py-2 max-w-[220px]">
+        <TooltipContent side="bottom" align="end" sideOffset={8} collisionPadding={12} className="px-3 py-2 max-w-[220px] z-50">
+
           <div className="flex items-center gap-2 mb-1">
             <Icon size={12} aria-hidden="true" style={{ color: tier.gradient_from ?? tier.badge_color }} />
             <span className="text-xs font-bold">{tier.name}</span>
