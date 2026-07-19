@@ -11,7 +11,7 @@ type VendorStatus = "none" | "draft" | "pending" | "under_review" | "rejected" |
  * Shows a "Apply as EasyPay Shop vendor" CTA on merchant Products/Orders tabs
  * until the vendor application is approved. Hides once approved.
  */
-const VendorApplyBanner = () => {
+const VendorApplyBanner = (_props: { userId?: string } = {}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState<VendorStatus | null>(null);
