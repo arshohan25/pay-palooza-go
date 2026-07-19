@@ -1123,6 +1123,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
       return;
     }
     trackKycEvent("kyc_ocr_rescan_confirmed", { side: "front" });
+    flushKycAnalytics();
     haptics.medium();
     runOcr(nidFront, { reset: true });
   }, [nidFront, ocrLoading, runOcr]);
