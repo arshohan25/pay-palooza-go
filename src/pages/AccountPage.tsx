@@ -299,6 +299,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[17px] font-bold">{displayName}</p>
                 <KycBadge status={kycStatus} loading={kycLoading} />
+                <LoyaltyBadge size="sm" onClick={() => setShowLoyaltyPerks(true)} />
               </div>
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+88 ${registeredPhone}` : "—"}</p>
               {userEmail && (
@@ -451,7 +452,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         <Section title={t("sectionInsightsLimits")}>
           {!isDisabled("account_spending_insights") && <MenuRow icon={BarChart3}  iconClass="gradient-payment"  label={t("spendingInsights")} sub={t("insightsSub")}        onClick={() => setSubPage("insights")} />}
           {!isDisabled("account_limits_charges") && <MenuRow icon={CreditCard} iconClass="gradient-cashout"  label={t("limitsCharges")}  sub={t("limitsSub")}   onClick={() => setSubPage("limits")} />}
-          
+          <MenuRow icon={Sparkles} iconClass="gradient-accent" label="EasyPay Club" sub="See your tier, perks & next-level progress" onClick={() => navigate("/loyalty")} />
         </Section>
 
         {/* ── Notifications ── */}
