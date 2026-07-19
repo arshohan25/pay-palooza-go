@@ -440,6 +440,44 @@ export default function AdminBlockedPhonesPage() {
                     : "Never"
                 }
               />
+
+              <div className="pt-2 border-t border-border/60">
+                <div className="flex items-center gap-2 mb-2">
+                  <History className="h-3.5 w-3.5 text-muted-foreground" />
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Unblock history ({phoneHistory.length})
+                  </div>
+                </div>
+                {phoneHistoryLoading ? (
+                  <div className="text-xs text-muted-foreground py-2">Loading history…</div>
+                ) : phoneHistory.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">
+                    This phone has never been unblocked.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {phoneHistory.map((h) => (
+                      <div
+                        key={h.id}
+                        className="rounded-md border border-border/60 p-2 text-xs space-y-1"
+                      >
+                        <div className="flex justify-between gap-2">
+                          <span className="font-medium">
+                            {adminNames[h.admin_id] ?? "Unknown admin"}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {new Date(h.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="font-mono text-[10px] text-muted-foreground break-all">
+                          {h.admin_id}
+                        </div>
+                        <div className="whitespace-pre-wrap">{h.reason}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <SheetFooter className="mt-6">
