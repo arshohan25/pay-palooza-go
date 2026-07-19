@@ -2489,7 +2489,8 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
 /* ── Settlement Tab ── */
 const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
-  const totalMDR = Math.round(totalRevenue * mdrFraction(merchant?.mdr_rate));
+  const mdrFrac = mdrFraction(merchant?.mdr_rate);
+  const totalMDR = Math.round(totalRevenue * mdrFrac);
   const netSettlement = totalRevenue - totalMDR;
 
   const dailyBatches = useMemo(() => {
@@ -2499,10 +2500,10 @@ const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | nul
       if (!groups[day]) groups[day] = { date: day, amount: 0, count: 0, mdr: 0 };
       groups[day].amount += t.amount;
       groups[day].count++;
-      groups[day].mdr += Math.round(t.amount * mdrRate);
+      groups[day].mdr += Math.round(t.amount * mdrFrac);
     });
     return Object.values(groups).reverse();
-  }, [paymentTxns, mdrRate]);
+  }, [paymentTxns, mdrFrac]);
 
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
