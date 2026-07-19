@@ -1581,7 +1581,7 @@ const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null
             </div>
             <div className="text-center p-2.5 rounded-xl bg-muted/40">
               <Award size={14} className="text-primary mx-auto mb-1" />
-              <p className="text-sm font-bold text-foreground">{((merchant?.mdr_rate ?? 0.015) * 100).toFixed(1)}%</p>
+              <p className="text-sm font-bold text-foreground">{formatMdrPercent(merchant?.mdr_rate)}</p>
               <p className="text-[9px] text-muted-foreground">MDR Rate</p>
             </div>
           </div>
