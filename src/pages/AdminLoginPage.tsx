@@ -46,6 +46,7 @@ const AdminLoginPage = () => {
     setSubmitting(true);
     try {
       await signIn(phone, pin);
+      try { localStorage.setItem(ADMIN_LAST_PHONE_KEY, phone); } catch {}
       localStorage.setItem("mfs_has_authenticated", "1");
       haptics.success();
       toast.success("Signed in");
