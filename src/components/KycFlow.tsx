@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,6 +20,11 @@ import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { pickFirstString } from "@/lib/ocrPickFirst";
+import {
+  pickFirstWithSiblingConfidence,
+  resolveConfidence,
+  type ConfidenceLevel,
+} from "@/lib/ocrConfidence";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "intro" | "terms" | "nid_capture" | "nid_details" | "additional_info" | "selfie" | "review" | "submitted";
@@ -770,9 +775,42 @@ const TipChip = ({ text }: { text: string }) => (
 );
 
 // ─── Editable field ───────────────────────────────────────────────────────────
+const CONFIDENCE_META: Record<ConfidenceLevel, { label: string; className: string }> = {
+  high:   { label: "High",   className: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" },
+  medium: { label: "Medium", className: "bg-amber-500/15  text-amber-600  border-amber-500/30" },
+  low:    { label: "Low",    className: "bg-rose-500/15   text-rose-600   border-rose-500/30" },
+  none:   { label: "",       className: "" },
+};
+
+const ConfidenceBadge = ({ level, testId }: { level: ConfidenceLevel; testId?: string }) => {
+  if (level === "none") return null;
+  const meta = CONFIDENCE_META[level];
+  return (
+    <span
+      data-testid={testId}
+      data-confidence={level}
+      title={`OCR confidence: ${meta.label}`}
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9px] font-semibold uppercase tracking-wider ${meta.className}`}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-current" />
+      {meta.label}
+    </span>
+  );
+};
+
 const EditableField = ({
-  label, value, onChange, placeholder, notExtractedLabel = "Not extracted"
-}: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; notExtractedLabel?: string }) => {
+  label, value, onChange, placeholder, notExtractedLabel = "Not extracted",
+  confidence, confidenceTestId, fieldTestId,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  notExtractedLabel?: string;
+  confidence?: ConfidenceLevel;
+  confidenceTestId?: string;
+  fieldTestId?: string;
+}) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -793,8 +831,11 @@ const EditableField = ({
   useEffect(() => { setDraft(value); }, [value]);
 
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+    <div className="flex flex-col gap-1" data-testid={fieldTestId}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+        {confidence && <ConfidenceBadge level={confidence} testId={confidenceTestId} />}
+      </div>
       {editing ? (
         <div className="flex items-center gap-2">
           <input
@@ -932,6 +973,37 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
   const [submitting, setSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsSheetOpen, setTermsSheetOpen] = useState(false);
+
+  // Per-field OCR confidence derived from the raw OCR payload + current value.
+  // Uses explicit provider scores when present (nested `{value, confidence}`
+  // or sibling `<key>_confidence`), otherwise falls back to a deterministic
+  // heuristic so reviewers can spot low-confidence values before submitting.
+  // If the user has edited a field, the provider score no longer applies —
+  // fall back to the heuristic against the current value.
+  const resolveEdited = (
+    kind: Parameters<typeof resolveConfidence>[0],
+    keys: string[],
+    current: string,
+  ) => {
+    const picked = pickFirstWithSiblingConfidence(rawOcr, keys);
+    const edited = picked.value.trim() !== current.trim();
+    return resolveConfidence(kind, {
+      value: current,
+      confidence: edited ? null : picked.confidence,
+    });
+  };
+  const bnNameConfidence = useMemo(
+    () => resolveEdited("name_bn", ["full_name_bn", "name_bn", "bangla_name"], nidNameBn),
+    [rawOcr, nidNameBn],
+  );
+  const fatherConfidence = useMemo(
+    () => resolveEdited("father", ["father_name", "father", "fatherName"], fatherName),
+    [rawOcr, fatherName],
+  );
+  const motherConfidence = useMemo(
+    () => resolveEdited("mother", ["mother_name", "mother", "motherName"], motherName),
+    [rawOcr, motherName],
+  );
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -1911,11 +1983,12 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                   {!ocrLoading && (
                     <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
                       <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
-                      <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
+                      <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" confidence={bnNameConfidence} confidenceTestId="ocr-conf-bn-name" fieldTestId="kyc-field-bn-name" />
                       <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
                       <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01/01/1990" />
-                      <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} placeholder="Father's name" />
-                      <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} placeholder="Mother's name" />
+                      <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} placeholder="Father's name" confidence={fatherConfidence} confidenceTestId="ocr-conf-father" fieldTestId="kyc-field-father" />
+                      <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} placeholder="Mother's name" confidence={motherConfidence} confidenceTestId="ocr-conf-mother" fieldTestId="kyc-field-mother" />
+
                     </div>
                   )}
 
