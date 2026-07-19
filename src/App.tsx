@@ -22,6 +22,7 @@ import { retryLazyImport } from "@/lib/cacheReset";
 const Index = lazy(() => retryLazyImport(() => import("./pages/Index")));
 const AdminDashboard = lazy(() => retryLazyImport(() => import("./pages/AdminDashboard")));
 const AdminUserProfilePage = lazy(() => import("./pages/AdminUserProfilePage"));
+const AdminBlockedPhonesPage = lazy(() => import("./pages/AdminBlockedPhonesPage"));
 const AgentDashboard = lazy(() => import("./pages/AgentDashboard"));
 const AgentCashIn = lazy(() => import("./pages/AgentCashIn"));
 const AgentCashOut = lazy(() => import("./pages/AgentCashOut"));
@@ -177,6 +178,7 @@ const App = () => (
 
                     <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminDashboard /></RoleGuard>} />
                     <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminUserProfilePage /></RoleGuard>} />
+                    <Route path="/admin/blocked-phones" element={<RoleGuard roles={["admin", "compliance"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminBlockedPhonesPage /></RoleGuard>} />
                     <Route path="/admin/mcp-activity" element={<RoleGuard roles={["admin", "developer", "audit"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminMcpActivityLog /></RoleGuard>} />
                     <Route path="/admin/auth-diagnostics" element={<RoleGuard roles={["admin", "developer"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminAuthDiagnosticsPage /></RoleGuard>} />
 
