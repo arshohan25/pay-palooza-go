@@ -19,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { pickFirstString } from "@/lib/ocrPickFirst";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "intro" | "terms" | "nid_capture" | "nid_details" | "additional_info" | "selfie" | "review" | "submitted";
@@ -32,30 +33,7 @@ const INCOME_OPTIONS = ["Below ৳10,000", "৳10,001–৳25,000", "৳25,001�
 const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
 
 // ─── Utility helpers ──────────────────────────────────────────────────────────
-const pickFirstString = (...values: unknown[]) => {
-  for (const value of values) {
-    if (value === null || value === undefined) continue;
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (trimmed && trimmed.toLowerCase() !== "null" && trimmed.toLowerCase() !== "n/a") return trimmed;
-      continue;
-    }
-    if (typeof value === "number" || typeof value === "bigint") {
-      const s = String(value).trim();
-      if (s) return s;
-      continue;
-    }
-    if (typeof value === "object") {
-      // Handle nested date objects like { day, month, year } or { value: "..." }
-      const anyVal = value as Record<string, unknown>;
-      if (typeof anyVal.value === "string" && anyVal.value.trim()) return anyVal.value.trim();
-      if (anyVal.day && anyVal.month && anyVal.year) {
-        return `${String(anyVal.day).padStart(2, "0")}/${String(anyVal.month).padStart(2, "0")}/${anyVal.year}`;
-      }
-    }
-  }
-  return "";
-};
+// pickFirstString lives in "@/lib/ocrPickFirst" and is unit-tested there.
 
 // ─── Glassmorphic SelectField ─────────────────────────────────────────────────
 interface SelectFieldProps {
@@ -947,6 +925,8 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
 
    const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrDone, setOcrDone]     = useState(false);
+  const [rawOcr, setRawOcr] = useState<Record<string, unknown> | null>(null);
+  const [showOcrDebug, setShowOcrDebug] = useState(false);
   const [faceMatchLoading, setFaceMatchLoading] = useState(false);
   const [faceMatchResult, setFaceMatchResult] = useState<{ match: boolean; confidence: number; result: string; reason: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -975,10 +955,20 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
   };
 
   // Run OCR when NID front is captured
-  const runOcr = useCallback(async (imageData: string) => {
+  const runOcr = useCallback(async (imageData: string, opts?: { reset?: boolean }) => {
     if (!imageData) return;
     setOcrLoading(true);
     setOcrDone(false);
+    if (opts?.reset) {
+      // Clear all OCR-derived fields so the user sees a fresh extraction
+      setNidName("");
+      setNidNameBn("");
+      setNidNumber("");
+      setNidDob("");
+      setFatherName("");
+      setMotherName("");
+      setRawOcr(null);
+    }
     try {
       const base64 = imageData.replace(/^data:image\/[a-z]+;base64,/, "");
       const { data, error } = await supabase.functions.invoke("kyc-ocr", {
@@ -987,6 +977,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
       if (error) throw error;
 
       const extracted = data?.data ?? {};
+      setRawOcr(extracted as Record<string, unknown>);
       const fullName = pickFirstString(extracted.full_name, extracted.full_name_en, extracted.name, extracted.fullName, extracted.english_name);
       const fullNameBn = pickFirstString(extracted.full_name_bn, extracted.name_bn, extracted.bangla_name);
       const nidNumberValue = pickFirstString(extracted.nid_number, extracted.nid_no, extracted.nid, extracted.id_number, extracted.national_id).replace(/\D/g, "");
@@ -1014,6 +1005,16 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
       setOcrLoading(false);
     }
   }, [t]);
+
+  const handleRescan = useCallback(() => {
+    if (!nidFront || ocrLoading) return;
+    const ok = typeof window !== "undefined"
+      ? window.confirm("Rescan NID? This will clear the current extracted fields and re-run OCR.")
+      : true;
+    if (!ok) return;
+    haptics.medium();
+    runOcr(nidFront, { reset: true });
+  }, [nidFront, ocrLoading, runOcr]);
 
   // Run OCR on NID back and extract address only
   const runBackOcr = useCallback(async (imageData: string) => {
@@ -1877,14 +1878,18 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                   </div>
 
                   <div className="flex items-center gap-2 rounded-xl bg-primary/8 border border-primary/15 px-4 py-2.5">
-                    <Sparkles size={14} className={`text-primary shrink-0 ${ocrLoading ? "animate-pulse" : ""}`} />
+                    {ocrLoading ? (
+                      <Loader2 size={14} className="text-primary shrink-0 animate-spin" />
+                    ) : (
+                      <Sparkles size={14} className="text-primary shrink-0" />
+                    )}
                     <p className="text-xs text-primary font-medium flex-1">
-                      {ocrLoading ? "Reading NID..." : t("aiExtractedBadge")}
+                      {ocrLoading ? "Reading NID… extracting fields" : t("aiExtractedBadge")}
                     </p>
                     {!ocrLoading && nidFront && (
                       <button
                         type="button"
-                        onClick={() => runOcr(nidFront)}
+                        onClick={handleRescan}
                         className="text-[11px] font-semibold text-primary underline underline-offset-2"
                       >
                         Rescan
@@ -1892,14 +1897,68 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                     )}
                   </div>
 
-                  <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
-                    <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
-                    <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
-                    <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
-                    <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01/01/1990" />
-                    <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} placeholder="Father's name" />
-                    <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} placeholder="Mother's name" />
-                  </div>
+                  {ocrLoading && (
+                    <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-3">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="space-y-1.5">
+                          <div className="h-2.5 w-24 rounded bg-muted animate-pulse" />
+                          <div className="h-9 w-full rounded-xl bg-muted/70 animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {!ocrLoading && (
+                    <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
+                      <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
+                      <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
+                      <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
+                      <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01/01/1990" />
+                      <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} placeholder="Father's name" />
+                      <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} placeholder="Mother's name" />
+                    </div>
+                  )}
+
+                  {!ocrLoading && rawOcr && (
+                    <div className="rounded-2xl border border-dashed border-border bg-muted/30 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setShowOcrDebug((s) => !s)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                      >
+                        <span>OCR Debug</span>
+                        <span>{showOcrDebug ? "Hide" : "Show"}</span>
+                      </button>
+                      {showOcrDebug && (
+                        <div className="px-4 pb-3 space-y-3">
+                          <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div className="rounded-lg bg-background/60 p-2">
+                              <p className="text-muted-foreground">Selected BN name</p>
+                              <p className="font-mono text-foreground break-all">{nidNameBn || "—"}</p>
+                            </div>
+                            <div className="rounded-lg bg-background/60 p-2">
+                              <p className="text-muted-foreground">Selected DOB</p>
+                              <p className="font-mono text-foreground break-all">{nidDob || "—"}</p>
+                            </div>
+                            <div className="rounded-lg bg-background/60 p-2">
+                              <p className="text-muted-foreground">Selected father</p>
+                              <p className="font-mono text-foreground break-all">{fatherName || "—"}</p>
+                            </div>
+                            <div className="rounded-lg bg-background/60 p-2">
+                              <p className="text-muted-foreground">Selected mother</p>
+                              <p className="font-mono text-foreground break-all">{motherName || "—"}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[11px] text-muted-foreground mb-1">Raw OCR payload</p>
+                            <pre className="text-[10px] leading-snug bg-background/70 border border-border rounded-lg p-2 max-h-56 overflow-auto whitespace-pre-wrap break-all">
+{JSON.stringify(rawOcr, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="sticky bottom-0 px-4 pb-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
