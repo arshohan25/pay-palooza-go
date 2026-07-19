@@ -139,5 +139,10 @@ export function generateTxnReceiptPdf(tx: ReceiptTxn, opts?: { appName?: string 
 export function downloadTxnReceiptPdf(tx: ReceiptTxn, opts?: { appName?: string }) {
   const doc = generateTxnReceiptPdf(tx, opts);
   const ref = (tx.short_id || tx.id).toString().slice(0, 20);
-  doc.save(`receipt-${ref}.pdf`);
+  const status = (tx.status || "completed").toLowerCase();
+  const suffix =
+    status === "completed" || status === "success"
+      ? ""
+      : `-${status}`;
+  doc.save(`receipt-${ref}${suffix}.pdf`);
 }
