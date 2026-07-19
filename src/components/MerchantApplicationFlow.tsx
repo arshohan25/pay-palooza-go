@@ -267,6 +267,29 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
 
               <div className="space-y-4">
                 <p className="text-xs text-muted-foreground">{t("mafRequiredNote")}</p>
+                {draftRestored && (
+                  <div className="flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+                    <span className="text-foreground/80">Draft restored — pick up where you left off.</span>
+                    <button
+                      type="button"
+                      className="text-primary font-medium hover:underline"
+                      onClick={() => {
+                        if (draftKey) { try { localStorage.removeItem(draftKey); } catch { /* noop */ } }
+                        setForm({
+                          business_name: "", category: "retail", trade_license: "", owner_name: "",
+                          contact_number: "", contact_email: "", business_address: "", route_code: "",
+                          bank_name: "", bank_branch: "", bank_account_number: "", bank_account_holder: "",
+                          bank_routing: "", reason: "",
+                        });
+                        setLocation({ division: null, district: null, upazila: null, union_parishad: null, area_type: null });
+                        setCustomCategory("");
+                        setDraftRestored(false);
+                      }}
+                    >
+                      Clear draft
+                    </button>
+                  </div>
+                )}
 
                 {/* Business Information */}
                 <div className="space-y-3">
