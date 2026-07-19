@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 /* MerchantDashboard v2 */
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { isWithinInterval, format } from "date-fns";
@@ -3154,7 +3155,7 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
                 <div>
                   <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Recipient Number</label>
                   <div className="flex gap-2">
-                    <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))} onBlur={() => phoneValidation.setTouched(true)} className={`h-12 rounded-xl text-lg flex-1 ${phoneValidation.inputClassName}`} inputMode="numeric" />
+                    <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(normalizeBDPhoneInput(e.target.value))} onBlur={() => phoneValidation.setTouched(true)} className={`h-12 rounded-xl text-lg flex-1 ${phoneValidation.inputClassName}`} inputMode="numeric" />
                     <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0 border-dashed border-primary/40" onClick={() => setShowQr(true)}>
                       <ScanLine size={18} className="text-primary" />
                     </Button>
@@ -3237,7 +3238,7 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
           </AnimatePresence>
         </motion.div>
       </div>
-      <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={(result) => setPhone(result.replace(/\D/g, "").slice(0, 11))} title="Scan Recipient QR" />
+      <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={(result) => setPhone(normalizeBDPhoneInput(result))} title="Scan Recipient QR" />
     </>
   );
 };
@@ -3377,7 +3378,7 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
                 <div>
                   <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Agent Number</label>
                   <div className="flex gap-2">
-                    <Input placeholder="Agent ID or number" value={agentId} onChange={e => setAgentId(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl flex-1" inputMode="numeric" />
+                    <Input placeholder="Agent ID or number" value={agentId} onChange={e => setAgentId(normalizeBDPhoneInput(e.target.value))} className="h-12 rounded-xl flex-1" inputMode="numeric" />
                     <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0 border-dashed border-primary/40" onClick={() => setShowQr(true)}>
                       <ScanLine size={18} className="text-primary" />
                     </Button>
@@ -3459,7 +3460,7 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
           </AnimatePresence>
         </motion.div>
       </div>
-      <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={(result) => setAgentId(result.replace(/\D/g, "").slice(0, 11))} title="Scan Agent QR" />
+      <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={(result) => setAgentId(normalizeBDPhoneInput(result))} title="Scan Agent QR" />
     </>
   );
 };

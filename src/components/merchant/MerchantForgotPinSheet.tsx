@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -278,7 +279,7 @@ export default function MerchantForgotPinSheet({
                     autoComplete="tel"
                     placeholder="01XXXXXXXXX"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                    onChange={(e) => setPhone(normalizeBDPhoneInput(e.target.value))}
                     className="h-9 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>

@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -458,7 +459,7 @@ export default function MerchantManagerLoginPage() {
                       placeholder="01XXXXXXXXX"
                       value={phone}
                       disabled={isLocked}
-                      onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); if (wrongPin) setWrongPin(false); }}
+                      onChange={(e) => { setPhone(normalizeBDPhoneInput(e.target.value)); if (wrongPin) setWrongPin(false); }}
                       className="h-9 border-0 bg-transparent px-0 text-base text-white placeholder:text-white/30 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60"
                     />
                   </div>

@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -528,7 +529,7 @@ const CheckoutPage = () => {
                     type="tel"
                     placeholder="01XXXXXXXXX"
                     value={phone}
-                    onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                    onChange={e => setPhone(normalizeBDPhoneInput(e.target.value))}
                     maxLength={11}
                     inputMode="numeric"
                     className="w-full h-12 px-4 rounded-2xl bg-muted/50 border border-border/60 text-base font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all text-center"

@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -646,7 +647,7 @@ const NewContactSheet = ({ onClose, onCreate, findUser }: NewContactSheetProps) 
           <>
             <div className="mb-6">
               <label className="text-[12px] font-semibold text-muted-foreground mb-1.5 block">{t("ipPhoneNumber")}</label>
-              <input type="tel" inputMode="numeric" value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); setError(""); }}
+              <input type="tel" inputMode="numeric" value={phone} onChange={(e) => { setPhone(normalizeBDPhoneInput(e.target.value)); setError(""); }}
                 placeholder={t("ipPhonePlaceholder")}
                 className={`w-full h-12 px-4 bg-background border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${error ? "border-destructive" : "border-border"}`} />
               {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
