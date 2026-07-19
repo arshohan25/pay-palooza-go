@@ -16,7 +16,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 
-export type OcrConfidenceLevel = "high" | "medium" | "low" | "unknown";
+export type OcrConfidenceLevel = "high" | "medium" | "low" | "none" | "unknown";
 
 export type KycAnalyticsEvent =
   | "kyc_ocr_rescan_confirmed"
