@@ -104,10 +104,17 @@ Deno.serve(async (req) => {
     // --- DEV MODE: Log OTP to function logs (replace with SMS API in production) ---
     console.log(`[DEV] OTP for ${phone}: ${code}`);
 
+    // Expose OTP on-screen for non-production origins (preview/localhost/lovable domains)
+    // so device verification can be tested without a live SMS gateway.
+    const origin = req.headers.get("origin") || req.headers.get("referer") || "";
+    const isDevOrigin =
+      /localhost|127\.0\.0\.1|lovable\.app|lovableproject\.com|lovable\.dev/i.test(origin);
+
     return new Response(
       JSON.stringify({
         success: true,
         message: "OTP sent successfully.",
+        ...(isDevOrigin ? { dev_otp: code } : {}),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
