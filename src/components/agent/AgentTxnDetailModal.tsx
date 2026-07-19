@@ -246,32 +246,36 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx: initi
             )}
           </div>
           )}
-          {(status === "completed" || status === "success") && (
-            <Button
-              variant="outline"
-              onClick={() =>
-                downloadTxnReceiptPdf({
-                  id: tx.id,
-                  short_id: tx.short_id,
-                  type: tx.type,
-                  typeLabel: displayType,
-                  amount: tx.amount,
-                  fee: tx.fee,
-                  commission: tx.commission,
-                  status: tx.status,
-                  party_name: tx.recipient_name,
-                  party_phone: tx.recipient_phone,
-                  description: tx.description,
-                  balance_after: tx.balance_after,
-                  created_at: tx.created_at,
-                  isCredit,
-                })
-              }
-              className="w-full rounded-xl h-11 text-xs font-bold gap-2"
-            >
-              <Download size={14} /> Download Receipt (PDF)
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            onClick={() =>
+              downloadTxnReceiptPdf({
+                id: tx.id,
+                short_id: tx.short_id,
+                type: tx.type,
+                typeLabel: displayType,
+                amount: tx.amount,
+                fee: tx.fee,
+                commission: tx.commission,
+                status: tx.status,
+                party_name: tx.recipient_name,
+                party_phone: tx.recipient_phone,
+                description: tx.description,
+                balance_after: tx.balance_after,
+                created_at: tx.created_at,
+                isCredit,
+              })
+            }
+            className="w-full rounded-xl h-11 text-xs font-bold gap-2"
+          >
+            <Download size={14} />
+            {status === "completed" || status === "success"
+              ? "Download Receipt (PDF)"
+              : status === "pending" || status === "processing"
+                ? "Download Pending Advice (PDF)"
+                : "Download Failed Advice (PDF)"}
+          </Button>
+
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => onShare(tx)} className="rounded-xl h-11 text-xs font-bold gap-2">
               <Share2 size={14} /> Share Receipt
