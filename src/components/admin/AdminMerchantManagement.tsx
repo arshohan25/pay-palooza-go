@@ -1208,7 +1208,7 @@ export default function AdminMerchantManagement() {
                         <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
                           <div>
                             <p className="text-xs text-muted-foreground">MDR Rate</p>
-                            <p className="font-semibold text-foreground">{(Number(detail.merchant.mdr_rate) * 100).toFixed(2)}%</p>
+                            <p className="font-semibold text-foreground">{Number(detail.merchant.mdr_rate ?? 0)}%</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Settlement</p>
@@ -1220,7 +1220,7 @@ export default function AdminMerchantManagement() {
                             className="gap-1"
                             onClick={() => setEditingMdr({
                               id: detail.merchant.id,
-                              mdr: (Number(detail.merchant.mdr_rate) * 100).toFixed(2),
+                              mdr: String(detail.merchant.mdr_rate ?? 0),
                               settlement: detail.merchant.settlement_frequency,
                             })}
                           >
