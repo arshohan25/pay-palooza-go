@@ -317,36 +317,40 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               className="fixed top-0 left-0 bottom-0 w-[86vw] max-w-sm z-[71] bg-card shadow-float flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Sticky header with profile */}
-              <div className="px-4 pt-4 pb-3 border-b border-border/50 bg-card">
-                <div className="flex items-start justify-between mb-3">
-                  <button
-                    onClick={() => openAfterClose(() => setAvatarSheetOpen(true))}
-                    className="relative w-12 h-12 rounded-2xl overflow-hidden bg-muted flex items-center justify-center group shrink-0"
-                    aria-label={t("agChangeAvatar")}
-                  >
-                    {profile.avatar_url ? (
-                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <Building2 size={20} className="text-muted-foreground" />
-                    )}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Camera size={14} className="text-white" />
-                    </div>
-                  </button>
-                  <button onClick={onClose} className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                    <X size={15} />
-                  </button>
-                </div>
-                <h3 className="text-sm font-bold text-foreground truncate">
-                  {agentInfo?.business_name || t("agAgentPortal")}
-                </h3>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge className="bg-primary/10 text-primary border-0 text-[9px] px-1.5 py-0 font-semibold">
-                    {agentInfo?.territory_code || "BD"}
-                  </Badge>
-                  <span className="text-[10px] text-muted-foreground capitalize">{agentInfo?.status || t("agActive")}</span>
-                  <span className="text-[10px] text-muted-foreground truncate">· {profile.phone || "—"}</span>
+              {/* Sticky colorful header with profile */}
+              <div className="relative px-4 pt-4 pb-4 overflow-hidden bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 text-white">
+                <div className="absolute inset-0 opacity-25 pointer-events-none [background-image:radial-gradient(circle_at_20%_20%,white_1px,transparent_1px),radial-gradient(circle_at_80%_60%,white_1px,transparent_1px)] [background-size:22px_22px,28px_28px]" />
+                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/20 blur-2xl pointer-events-none" />
+                <div className="relative">
+                  <div className="flex items-start justify-between mb-3">
+                    <button
+                      onClick={() => openAfterClose(() => setAvatarSheetOpen(true))}
+                      className="relative w-12 h-12 rounded-2xl overflow-hidden bg-white/25 backdrop-blur-sm ring-2 ring-white/40 flex items-center justify-center group shrink-0 shadow-lg"
+                      aria-label={t("agChangeAvatar")}
+                    >
+                      {profile.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <Building2 size={20} className="text-white" />
+                      )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Camera size={14} className="text-white" />
+                      </div>
+                    </button>
+                    <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center text-white shrink-0 transition-colors">
+                      <X size={15} />
+                    </button>
+                  </div>
+                  <h3 className="text-sm font-extrabold text-white truncate drop-shadow-sm">
+                    {agentInfo?.business_name || t("agAgentPortal")}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <Badge className="bg-white/25 backdrop-blur-sm text-white border-0 text-[9px] px-1.5 py-0 font-semibold">
+                      {agentInfo?.territory_code || "BD"}
+                    </Badge>
+                    <span className="text-[10px] text-white/90 capitalize">{agentInfo?.status || t("agActive")}</span>
+                    <span className="text-[10px] text-white/90 truncate">· {profile.phone || "—"}</span>
+                  </div>
                 </div>
               </div>
 
