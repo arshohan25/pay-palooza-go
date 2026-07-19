@@ -418,21 +418,27 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                     </button>
 
                     {/* Meta chips */}
-                    <div className="mt-2.5 flex items-center gap-1.5 flex-nowrap overflow-hidden">
-                      <span className="shrink-0 px-2 py-1 text-[10px] font-bold tracking-widest bg-white/20 backdrop-blur-md rounded-md ring-1 ring-white/15 uppercase">
+                    <div className="mt-2.5 flex items-center gap-1 flex-nowrap">
+                      {/* Territory badge */}
+                      <span className="shrink-0 px-1.5 py-[3px] text-[9px] font-black tracking-[0.12em] bg-gradient-to-b from-white/30 to-white/10 backdrop-blur-md rounded-[6px] ring-1 ring-inset ring-white/25 uppercase shadow-[0_1px_0_rgba(255,255,255,0.25)_inset]">
                         {agentInfo?.territory_code || "BD"}
                       </span>
-                      <div className="shrink-0 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/25 backdrop-blur-sm rounded-full ring-1 ring-emerald-300/40">
+                      {/* Status dot pill */}
+                      <span className="shrink-0 flex items-center gap-1 px-1.5 py-[3px] rounded-full bg-emerald-400/20 ring-1 ring-inset ring-emerald-200/40 backdrop-blur-md">
                         <span className="relative flex h-1.5 w-1.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-300" />
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-300 shadow-[0_0_6px_rgba(110,231,183,0.9)]" />
                         </span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-50 capitalize">
+                        <span className="text-[9px] font-black uppercase tracking-[0.1em] text-emerald-50">
                           {agentInfo?.status || t("agActive")}
                         </span>
-                      </div>
-                      <span className="min-w-0 text-[11px] font-semibold tracking-tight text-white/95 tabular-nums truncate">
-                        {profile.phone || "—"}
+                      </span>
+                      {/* Phone chip — full number, monospace, premium */}
+                      <span className="shrink-0 ml-auto flex items-center gap-1 pl-2 pr-2 py-[3px] rounded-full bg-black/25 backdrop-blur-md ring-1 ring-inset ring-white/15">
+                        <span className="h-1 w-1 rounded-full bg-white/60" />
+                        <span className="text-[10.5px] font-bold tracking-[0.02em] text-white tabular-nums leading-none">
+                          {profile.phone || "—"}
+                        </span>
                       </span>
                     </div>
                   </div>
