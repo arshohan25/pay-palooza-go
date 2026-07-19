@@ -565,7 +565,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, onRouteToCashOut, prefilledMerchant
                         )}
                         {v.isValid && (
                           <Button
-                            className="w-full h-11 gradient-payment border-0 text-white font-semibold animate-fade-in"
+                            className="w-full h-11 mt-3 gradient-payment border-0 text-white font-semibold animate-fade-in"
                             onClick={handleMerchantIdContinue}
                           >
                             {t("continue")}
