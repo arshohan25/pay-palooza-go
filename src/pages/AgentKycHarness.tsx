@@ -83,10 +83,35 @@ export default function AgentKycHarness() {
   const loadData = useCallback(
     (opts?: { markRefresh?: boolean; forceSuccess?: boolean }) => {
       setLoading(true);
+      trackKycEvent("kyc_sheet_loading", { source: opts?.markRefresh ? "focus" : "fetch" });
       const done = (data: KycCustomer[] | null, err: string | null) => {
         setCustomers(data ?? []);
         setError(err);
         setLoading(false);
+        if (err) {
+          trackKycEvent("kyc_sheet_error", { error: err, source: opts?.forceSuccess ? "manual" : "fetch" });
+        } else {
+          const rows = data ?? [];
+          if (rows.length === 0) {
+            trackKycEvent("kyc_sheet_empty", { total: 0 });
+          } else {
+            const verified = rows.filter((r) => r.status === "verified").length;
+            const rejected = rows.filter((r) => r.status === "rejected").length;
+            const pending = rows.length - verified - rejected;
+            trackKycEvent("kyc_sheet_populated", {
+              total: rows.length, verified, pending, rejected,
+              source: opts?.markRefresh ? "focus" : "fetch",
+            });
+            const latest = rows
+              .filter((r) => r.status === "rejected" && r.rejection_reason)
+              .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""))[0];
+            if (latest && (latest.rejection_reason?.length ?? 0) > 120) {
+              trackKycEvent("kyc_sheet_long_reason", {
+                reason_length: latest.rejection_reason!.length,
+              });
+            }
+          }
+        }
         if (opts?.markRefresh) {
           setJustRefreshed(true);
           toast.success("Customer KYC updated");
