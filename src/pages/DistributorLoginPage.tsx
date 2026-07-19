@@ -103,7 +103,7 @@ const DistributorLoginPage = () => {
               Distributor mobile number
             </label>
             <div className="relative">
-              <Smartphone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400" />
+              
               <input
                 type="tel"
                 inputMode="numeric"
