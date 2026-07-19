@@ -41,7 +41,29 @@ const inferRpc = (tx: AgentTxnDetailTx): string => {
   return "transfer_money";
 };
 
-const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx, onClose, onShare }, ref) => {
+import { subscribeRealtime } from "@/lib/realtimeManager";
+
+const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx: initialTx, onClose, onShare }, ref) => {
+  const [tx, setTx] = useState<AgentTxnDetailTx>(initialTx);
+  useEffect(() => { setTx(initialTx); }, [initialTx]);
+
+  // Live-refresh this transaction until it settles. Manager de-duplicates by id
+  // so multiple detail views for the same txn share one channel.
+  useEffect(() => {
+    if (!tx.id) return;
+    const handle = subscribeRealtime(`txn-detail:${tx.id}`, (ch) =>
+      ch.on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "transactions", filter: `id=eq.${tx.id}` },
+        (payload) => {
+          const row = payload.new as Partial<AgentTxnDetailTx>;
+          setTx((prev) => ({ ...prev, ...row }));
+        },
+      ),
+    );
+    return () => handle.unsubscribe();
+  }, [tx.id]);
+
   const isCredit = isAgentTxnCredit(tx);
   const { isAdmin } = useAdmin();
   const [showDebug, setShowDebug] = useState(false);

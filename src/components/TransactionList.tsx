@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock, Coins, AlertCircle, Shield, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
 import { useI18n } from "@/lib/i18n";
 import { getContactNameByPhone } from "@/lib/contactStore";
+import { subscribeRealtime } from "@/lib/realtimeManager";
 import {
   TxSendIcon,
   TxReceiveIcon,
@@ -94,9 +95,28 @@ interface TransactionListProps {
   refreshKey?: number;
 }
 
-const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: () => void }) => {
+const TransactionDetailSheet = ({ tx: initialTx, onClose }: { tx: DbTransaction; onClose: () => void }) => {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
+  const [tx, setTx] = useState<DbTransaction>(initialTx);
+  useEffect(() => { setTx(initialTx); }, [initialTx]);
+
+  // Auto-refresh status/amount when the underlying row changes (e.g. pending → completed).
+  useEffect(() => {
+    if (!tx.id) return;
+    const handle = subscribeRealtime(`txn-detail:${tx.id}`, (ch) =>
+      ch.on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "transactions", filter: `id=eq.${tx.id}` },
+        (payload) => {
+          const row = payload.new as Partial<DbTransaction>;
+          setTx((prev) => ({ ...prev, ...row }));
+        },
+      ),
+    );
+    return () => handle.unsubscribe();
+  }, [tx.id]);
+
   const display = getTxDisplay(tx);
   const isCredit = display.amount > 0;
   const txDate = new Date(tx.created_at);
