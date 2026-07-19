@@ -20,6 +20,11 @@ import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { pickFirstString } from "@/lib/ocrPickFirst";
+import {
+  pickFirstWithSiblingConfidence,
+  resolveConfidence,
+  type ConfidenceLevel,
+} from "@/lib/ocrConfidence";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "intro" | "terms" | "nid_capture" | "nid_details" | "additional_info" | "selfie" | "review" | "submitted";
@@ -770,9 +775,42 @@ const TipChip = ({ text }: { text: string }) => (
 );
 
 // ─── Editable field ───────────────────────────────────────────────────────────
+const CONFIDENCE_META: Record<ConfidenceLevel, { label: string; className: string }> = {
+  high:   { label: "High",   className: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" },
+  medium: { label: "Medium", className: "bg-amber-500/15  text-amber-600  border-amber-500/30" },
+  low:    { label: "Low",    className: "bg-rose-500/15   text-rose-600   border-rose-500/30" },
+  none:   { label: "",       className: "" },
+};
+
+const ConfidenceBadge = ({ level, testId }: { level: ConfidenceLevel; testId?: string }) => {
+  if (level === "none") return null;
+  const meta = CONFIDENCE_META[level];
+  return (
+    <span
+      data-testid={testId}
+      data-confidence={level}
+      title={`OCR confidence: ${meta.label}`}
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9px] font-semibold uppercase tracking-wider ${meta.className}`}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-current" />
+      {meta.label}
+    </span>
+  );
+};
+
 const EditableField = ({
-  label, value, onChange, placeholder, notExtractedLabel = "Not extracted"
-}: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; notExtractedLabel?: string }) => {
+  label, value, onChange, placeholder, notExtractedLabel = "Not extracted",
+  confidence, confidenceTestId, fieldTestId,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  notExtractedLabel?: string;
+  confidence?: ConfidenceLevel;
+  confidenceTestId?: string;
+  fieldTestId?: string;
+}) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -793,8 +831,11 @@ const EditableField = ({
   useEffect(() => { setDraft(value); }, [value]);
 
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+    <div className="flex flex-col gap-1" data-testid={fieldTestId}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+        {confidence && <ConfidenceBadge level={confidence} testId={confidenceTestId} />}
+      </div>
       {editing ? (
         <div className="flex items-center gap-2">
           <input
