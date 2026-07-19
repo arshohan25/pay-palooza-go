@@ -63,6 +63,29 @@ function checkConfidencesMap(v: unknown, reasons: string[]) {
   }
 }
 
+/**
+ * Whitelisted top-level keys per event. Any key present on the payload that
+ * isn't in this set is reported as `unknown field: <name>`.
+ *
+ * `sheet_*` events remain open-shaped (loose observability payloads), so
+ * they are absent from this map.
+ */
+const ALLOWED_KEYS: Partial<Record<KycAnalyticsEvent, ReadonlySet<string>>> = {
+  kyc_ocr_rescan_confirmed: new Set(["side", "reset"]),
+  kyc_ocr_rescan_cancelled: new Set(["side"]),
+  kyc_ocr_run_start: new Set(["side"]),
+  kyc_ocr_run_end: new Set(["side", "status", "duration_ms", "confidences", "error"]),
+  kyc_ocr_confidence: new Set(["side", "field", "level", "sampled_count"]),
+};
+
+function checkUnknownKeys(event: KycAnalyticsEvent, payload: KycAnalyticsPayload, reasons: string[]) {
+  const allowed = ALLOWED_KEYS[event];
+  if (!allowed) return;
+  for (const k of Object.keys(payload)) {
+    if (!allowed.has(k)) reasons.push(`unknown field: ${k}`);
+  }
+}
+
 export function validateKycAnalytics(
   event: KycAnalyticsEvent,
   payload: KycAnalyticsPayload,
@@ -128,8 +151,10 @@ export function validateKycAnalytics(
       break;
     default:
       reasons.push(`unknown event: ${event}`);
+      return reasons;
   }
 
+  checkUnknownKeys(event, payload, reasons);
   return reasons;
 }
 
