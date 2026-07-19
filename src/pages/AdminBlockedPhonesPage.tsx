@@ -135,22 +135,66 @@ export default function AdminBlockedPhonesPage() {
         _reason: reason,
       });
       if (error) throw error;
-      return data as { unblocked: number; failed: Array<{ phone: string; error: string }> };
+      return {
+        requested: phones.length,
+        unblocked: (data as any)?.unblocked ?? 0,
+        failed: ((data as any)?.failed ?? []) as Array<{ phone: string; error: string }>,
+      };
+    },
+    onMutate: ({ phones }) => {
+      toast({
+        title: "Bulk unblock started",
+        description: `Processing ${phones.length} phone number(s)…`,
+      });
     },
     onSuccess: (res) => {
-      const failedCount = res?.failed?.length ?? 0;
+      const { requested, unblocked, failed } = res;
+      const failedCount = failed.length;
+      const allOk = failedCount === 0 && unblocked === requested;
+      const noneOk = unblocked === 0;
+      const sampleFailures = failed.slice(0, 3).map((f) => `${f.phone}: ${f.error}`).join(" · ");
+
       toast({
-        title: `Unblocked ${res?.unblocked ?? 0} number(s)`,
-        description: failedCount ? `${failedCount} failed — see audit log.` : "All selected numbers unblocked.",
-        variant: failedCount ? "destructive" : "default",
+        title: allOk
+          ? `Unblocked ${unblocked}/${requested}`
+          : noneOk
+          ? `Bulk unblock failed (0/${requested})`
+          : `Partial success: ${unblocked}/${requested} unblocked`,
+        description: allOk
+          ? "All selected numbers were unblocked and audited."
+          : `${failedCount} failed${sampleFailures ? ` — ${sampleFailures}` : ""}${
+              failedCount > 3 ? ` (+${failedCount - 3} more)` : ""
+            }`,
+        variant: allOk ? "default" : "destructive",
       });
-      setBulkOpen(false);
-      setBulkReason("");
-      setSelected(new Set());
+
+      if (unblocked > 0) {
+        setSelected((prev) => {
+          const next = new Set(prev);
+          const failedPhones = new Set(failed.map((f) => f.phone));
+          [...next].forEach((p) => { if (!failedPhones.has(p)) next.delete(p); });
+          return next;
+        });
+      }
+      if (allOk) {
+        setBulkOpen(false);
+        setBulkReason("");
+      }
       invalidate();
     },
     onError: (e: any) => {
-      toast({ title: "Bulk unblock failed", description: e.message ?? String(e), variant: "destructive" });
+      const msg = e?.message ?? String(e);
+      toast({
+        title: "Bulk unblock failed",
+        description: msg.includes("reason_too_short")
+          ? "Reason must be at least 5 characters."
+          : msg.includes("not_authorized")
+          ? "You don't have permission to perform this action."
+          : msg.includes("no_phones_provided")
+          ? "No phone numbers were provided."
+          : `RPC error: ${msg}`,
+        variant: "destructive",
+      });
     },
   });
 
