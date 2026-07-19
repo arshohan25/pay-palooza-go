@@ -1,9 +1,12 @@
+import { useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import * as Icons from "lucide-react";
 import { Sparkles, TrendingUp, Percent, Gift, Headphones, Crown, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { useLoyaltyPerks } from "@/hooks/use-loyalty-perks";
+import { useLoyaltyTiers, useMyLoyalty } from "@/hooks/use-loyalty";
 
 interface LoyaltyPerksPopupProps {
   open: boolean;
