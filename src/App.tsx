@@ -22,6 +22,7 @@ import { retryLazyImport } from "@/lib/cacheReset";
 const Index = lazy(() => retryLazyImport(() => import("./pages/Index")));
 const AdminDashboard = lazy(() => retryLazyImport(() => import("./pages/AdminDashboard")));
 const AdminUserProfilePage = lazy(() => import("./pages/AdminUserProfilePage"));
+const AdminBlockedPhonesPage = lazy(() => import("./pages/AdminBlockedPhonesPage"));
 const AgentDashboard = lazy(() => import("./pages/AgentDashboard"));
 const AgentCashIn = lazy(() => import("./pages/AgentCashIn"));
 const AgentCashOut = lazy(() => import("./pages/AgentCashOut"));
