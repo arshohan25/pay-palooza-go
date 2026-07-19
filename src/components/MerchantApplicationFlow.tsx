@@ -54,6 +54,10 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     division: null, district: null, upazila: null, union_parishad: null, area_type: null,
   });
   const [locError, setLocError] = useState<LocationMismatch | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftKey = userId ? `easypay_merchant_apply_draft_${userId}` : null;
 
   const applicationSchema = useMemo(() => z.object({
     business_name: z.string().trim().min(2, t("mafErrBusinessName")).max(100),
