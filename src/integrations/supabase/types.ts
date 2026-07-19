@@ -6297,6 +6297,57 @@ export type Database = {
           },
         ]
       }
+      role_limit_overrides: {
+        Row: {
+          badge_color: string | null
+          badge_label: string | null
+          created_at: string
+          daily_cashin_limit: number | null
+          daily_cashout_limit: number | null
+          daily_txn_limit: number | null
+          extra_rules: Json
+          id: string
+          is_active: boolean
+          monthly_txn_limit: number | null
+          per_txn_limit: number | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          badge_color?: string | null
+          badge_label?: string | null
+          created_at?: string
+          daily_cashin_limit?: number | null
+          daily_cashout_limit?: number | null
+          daily_txn_limit?: number | null
+          extra_rules?: Json
+          id?: string
+          is_active?: boolean
+          monthly_txn_limit?: number | null
+          per_txn_limit?: number | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          badge_color?: string | null
+          badge_label?: string | null
+          created_at?: string
+          daily_cashin_limit?: number | null
+          daily_cashout_limit?: number | null
+          daily_txn_limit?: number | null
+          extra_rules?: Json
+          id?: string
+          is_active?: boolean
+          monthly_txn_limit?: number | null
+          per_txn_limit?: number | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       role_redirect_logs: {
         Row: {
           attempted_app_role: string
@@ -7981,6 +8032,13 @@ export type Database = {
       approve_vendor_payout: {
         Args: { p_note?: string; p_payout_id: string }
         Returns: Json
+      }
+      assign_single_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: undefined
       }
       buy_gold: {
         Args: { p_grams: number; p_karat: string; p_price_per_gram: number }
