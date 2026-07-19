@@ -82,11 +82,38 @@ Deno.serve(async (req) => {
       }, { onConflict: "user_id" });
     }
 
-    // Assign single role (replaces any existing) via RPC — but service role bypasses admin check,
-    // so do it directly here.
-    await admin.from("user_roles").delete().eq("user_id", userId);
+    // Enforce one-role-per-phone: reject if this user already has ANY role.
+    const { data: existingRoles } = await admin
+      .from("user_roles").select("role").eq("user_id", userId);
+    if ((existingRoles ?? []).length > 0) {
+      const currentRole = existingRoles![0].role;
+      if (currentRole === role) {
+        return json({
+          error: `Phone ${normalizedPhone} is already assigned the '${role}' role. No changes made.`,
+          code: "ROLE_ALREADY_ASSIGNED",
+        }, 409);
+      }
+      return json({
+        error: `Phone ${normalizedPhone} already holds the '${currentRole}' role. Each phone number can hold only one role. Remove the existing role before assigning '${role}'.`,
+        code: "ROLE_CONFLICT",
+        current_role: currentRole,
+        requested_role: role,
+      }, 409);
+    }
+
     const { error: roleErr } = await admin.from("user_roles").insert({ user_id: userId, role });
-    if (roleErr) return json({ error: `Role assign failed: ${roleErr.message}` }, 400);
+    if (roleErr) {
+      // Surface DB trigger message (trg_enforce_single_role_per_user) verbatim
+      const msg = roleErr.message || "Role assignment failed";
+      const isConflict = /already has role|single role|unique/i.test(msg);
+      return json({
+        error: isConflict
+          ? `Phone ${normalizedPhone} already has a role assigned. Each phone number can hold only one role.`
+          : `Role assign failed: ${msg}`,
+        code: isConflict ? "ROLE_CONFLICT" : "ROLE_INSERT_FAILED",
+        db_message: msg,
+      }, isConflict ? 409 : 400);
+    }
 
     await admin.from("audit_logs").insert({
       actor_id: caller.id,
