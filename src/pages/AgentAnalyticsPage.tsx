@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, ArrowDownToLine, Banknote, ArrowRightLeft, Building2, Receipt } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, ArrowDownToLine, ArrowUpFromLine, Banknote, ArrowRightLeft, Building2, Receipt } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
