@@ -167,6 +167,24 @@ export default function MerchantApplyVendor() {
 
   const submit = async () => {
     if (!user || !merchant) return;
+    // Client-side guard: merchant + business KYC MUST be approved before any submit.
+    if (merchant.status !== "approved" || merchant.business_kyc_status !== "approved") {
+      toast.error(`Vendor application blocked — merchant status: ${merchant.status}, business KYC: ${merchant.business_kyc_status}. Both must be "approved".`, { duration: 6000 });
+      return;
+    }
+    // Re-verify against the database in case status changed since the page loaded.
+    const { data: fresh, error: freshErr } = await supabase
+      .from("merchants")
+      .select("status,business_kyc_status,admin_notes")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (freshErr) { toast.error("Could not verify merchant status: " + freshErr.message); return; }
+    if (!fresh) { toast.error("Merchant profile not found. Please complete the merchant application first."); nav("/merchant/apply"); return; }
+    if (fresh.status !== "approved" || fresh.business_kyc_status !== "approved") {
+      setMerchant((m: any) => ({ ...(m ?? {}), ...fresh }));
+      toast.error(`Vendor application blocked — merchant status is now "${fresh.status}" and business KYC is "${fresh.business_kyc_status}". Both must be "approved".`, { duration: 6000 });
+      return;
+    }
     if (!form.store_name.trim()) { toast.error("Store name is required"); return; }
     if (!form.pickup_address.trim()) { toast.error("Pickup address is required"); return; }
     if (!photos.shop_front.url)  { toast.error("Shop front photo is required"); return; }
