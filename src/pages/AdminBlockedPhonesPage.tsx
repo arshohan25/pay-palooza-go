@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,14 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
 } from "@/components/ui/sheet";
 import { Card } from "@/components/ui/card";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { ShieldAlert, Search, Unlock, History, Info, Users, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  ShieldAlert, Search, Unlock, History, Info, Users, Loader2, CheckCircle2,
+  AlertTriangle, SlidersHorizontal, Download, X,
+} from "lucide-react";
 
 type Blocked = {
   phone: string;
@@ -35,6 +41,20 @@ type AuditRow = {
   created_at: string;
 };
 
+type BulkResult = {
+  requested: number;
+  unblocked: number;
+  failed: Array<{ phone: string; error: string }>;
+  reason: string;
+  phones: string[];
+  at: string;
+};
+
+// Cooldown after a successful/failed bulk submit before another can fire (ms)
+const BULK_COOLDOWN_MS = 15_000;
+// Window during which the exact same payload is treated as a duplicate (ms)
+const BULK_DEDUPE_MS = 60_000;
+
 export default function AdminBlockedPhonesPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
@@ -45,6 +65,26 @@ export default function AdminBlockedPhonesPage() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkReason, setBulkReason] = useState("");
   const [bulkConfirm, setBulkConfirm] = useState(false);
+
+  // Advanced filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [contextFilter, setContextFilter] = useState<"all" | "admin" | "system" | string>("all");
+
+  // Anti-spam state
+  const lastSubmitRef = useRef<{ hash: string; at: number } | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number>(0);
+  const [nowTick, setNowTick] = useState(Date.now());
+  const [lastResult, setLastResult] = useState<BulkResult | null>(null);
+
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return;
+    const t = setInterval(() => setNowTick(Date.now()), 500);
+    return () => clearInterval(t);
+  }, [cooldownUntil]);
+
+  const cooldownRemaining = Math.max(0, Math.ceil((cooldownUntil - nowTick) / 1000));
 
   const { data: blocked = [], isLoading } = useQuery({
     queryKey: ["admin-blocked-phones"],
@@ -139,7 +179,10 @@ export default function AdminBlockedPhonesPage() {
         requested: phones.length,
         unblocked: (data as any)?.unblocked ?? 0,
         failed: ((data as any)?.failed ?? []) as Array<{ phone: string; error: string }>,
-      };
+        reason,
+        phones,
+        at: new Date().toISOString(),
+      } as BulkResult;
     },
     onMutate: ({ phones }) => {
       toast({
@@ -153,6 +196,10 @@ export default function AdminBlockedPhonesPage() {
       const allOk = failedCount === 0 && unblocked === requested;
       const noneOk = unblocked === 0;
       const sampleFailures = failed.slice(0, 3).map((f) => `${f.phone}: ${f.error}`).join(" · ");
+
+      setLastResult(res);
+      setCooldownUntil(Date.now() + BULK_COOLDOWN_MS);
+      setNowTick(Date.now());
 
       toast({
         title: allOk
@@ -184,6 +231,8 @@ export default function AdminBlockedPhonesPage() {
     },
     onError: (e: any) => {
       const msg = e?.message ?? String(e);
+      setCooldownUntil(Date.now() + BULK_COOLDOWN_MS);
+      setNowTick(Date.now());
       toast({
         title: "Bulk unblock failed",
         description: msg.includes("reason_too_short")
@@ -198,15 +247,44 @@ export default function AdminBlockedPhonesPage() {
     },
   });
 
-  const filtered = useMemo(
-    () =>
-      blocked.filter((b) =>
-        q.trim()
-          ? (b.phone ?? "").includes(q.trim()) || (b.name ?? "").toLowerCase().includes(q.trim().toLowerCase())
-          : true
-      ),
-    [blocked, q]
-  );
+  // Distinct triggering contexts for the filter dropdown
+  const contextOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    blocked.forEach((b) => {
+      if (b.deleted_by) map.set(b.deleted_by, b.deleted_by_name ?? b.deleted_by.slice(0, 8));
+    });
+    return [...map.entries()];
+  }, [blocked]);
+
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const fromTs = dateFrom ? new Date(dateFrom).getTime() : null;
+    const toTs = dateTo ? new Date(dateTo).getTime() + 24 * 3600 * 1000 - 1 : null;
+    return blocked.filter((b) => {
+      if (term) {
+        const hit = (b.phone ?? "").includes(term) || (b.name ?? "").toLowerCase().includes(term);
+        if (!hit) return false;
+      }
+      const ts = new Date(b.deleted_at).getTime();
+      if (fromTs !== null && ts < fromTs) return false;
+      if (toTs !== null && ts > toTs) return false;
+      if (contextFilter !== "all") {
+        if (contextFilter === "system" && b.deleted_by) return false;
+        if (contextFilter === "admin" && !b.deleted_by) return false;
+        if (contextFilter !== "system" && contextFilter !== "admin" && b.deleted_by !== contextFilter) return false;
+      }
+      return true;
+    });
+  }, [blocked, q, dateFrom, dateTo, contextFilter]);
+
+  const activeFilterCount =
+    (dateFrom ? 1 : 0) + (dateTo ? 1 : 0) + (contextFilter !== "all" ? 1 : 0);
+
+  const clearFilters = () => {
+    setDateFrom("");
+    setDateTo("");
+    setContextFilter("all");
+  };
 
   const toggleOne = (phone: string) => {
     setSelected((prev) => {
@@ -220,6 +298,66 @@ export default function AdminBlockedPhonesPage() {
   const toggleAll = () => {
     if (selected.size === filtered.length) setSelected(new Set());
     else setSelected(new Set(filtered.map((b) => b.phone)));
+  };
+
+  // Anti-spam guarded submit
+  const submitBulk = () => {
+    const phones = [...selected].sort();
+    const trimmedReason = bulkReason.trim();
+    const hash = `${phones.join(",")}|${trimmedReason}`;
+    const now = Date.now();
+
+    if (cooldownUntil > now) {
+      const left = Math.ceil((cooldownUntil - now) / 1000);
+      toast({
+        title: "Please wait",
+        description: `Cooldown active — try again in ${left}s.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const last = lastSubmitRef.current;
+    if (last && last.hash === hash && now - last.at < BULK_DEDUPE_MS) {
+      toast({
+        title: "Duplicate submission blocked",
+        description:
+          "The same phones with the same reason were just submitted. Change the selection or reason to submit again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    lastSubmitRef.current = { hash, at: now };
+    bulkUnblock.mutate({ phones, reason: trimmedReason });
+  };
+
+  const downloadReport = () => {
+    if (!lastResult) return;
+    const failedMap = new Map(lastResult.failed.map((f) => [f.phone, f.error]));
+    const rows = [
+      ["phone", "status", "error", "reason", "submitted_at"],
+      ...lastResult.phones.map((p) => {
+        const err = failedMap.get(p);
+        return [
+          p,
+          err ? "failed" : "unblocked",
+          err ?? "",
+          lastResult.reason,
+          lastResult.at,
+        ];
+      }),
+    ];
+    const csv = rows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bulk-unblock-${lastResult.at.replace(/[:.]/g, "-")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -237,15 +375,71 @@ export default function AdminBlockedPhonesPage() {
       </div>
 
       <Card className="p-4 space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="Search by phone or name…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Search by phone or name…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+          <Button
+            variant={showFilters ? "default" : "outline"}
+            size="icon"
+            onClick={() => setShowFilters((v) => !v)}
+            title="Advanced filters"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
         </div>
+
+        {showFilters && (
+          <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Advanced filters
+              </div>
+              {activeFilterCount > 0 && (
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={clearFilters}>
+                  <X className="h-3 w-3 mr-1" /> Clear
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <div className="text-[11px] text-muted-foreground mb-1">Deleted from</div>
+                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              </div>
+              <div>
+                <div className="text-[11px] text-muted-foreground mb-1">Deleted to</div>
+                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              </div>
+              <div>
+                <div className="text-[11px] text-muted-foreground mb-1">Triggered by</div>
+                <Select value={contextFilter} onValueChange={setContextFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any context</SelectItem>
+                    <SelectItem value="admin">Any admin</SelectItem>
+                    <SelectItem value="system">System / self-deletion</SelectItem>
+                    {contextOptions.map(([id, name]) => (
+                      <SelectItem key={id} value={id}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        )}
 
         {filtered.length > 0 && (
           <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
@@ -262,7 +456,7 @@ export default function AdminBlockedPhonesPage() {
             </label>
             <Button
               size="sm"
-              disabled={selected.size === 0 || bulkUnblock.isPending}
+              disabled={selected.size === 0 || bulkUnblock.isPending || cooldownRemaining > 0}
               onClick={() => setBulkOpen(true)}
             >
               {bulkUnblock.isPending ? (
@@ -270,7 +464,28 @@ export default function AdminBlockedPhonesPage() {
               ) : (
                 <Users className="h-3.5 w-3.5 mr-1.5" />
               )}
-              {bulkUnblock.isPending ? "Unblocking…" : "Bulk unblock"}
+              {bulkUnblock.isPending
+                ? "Unblocking…"
+                : cooldownRemaining > 0
+                ? `Cooldown ${cooldownRemaining}s`
+                : "Bulk unblock"}
+            </Button>
+          </div>
+        )}
+
+        {lastResult && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs">
+            <div className="min-w-0">
+              <div className="font-medium">
+                Last bulk run · {lastResult.unblocked}/{lastResult.requested} unblocked
+              </div>
+              <div className="text-muted-foreground truncate">
+                {new Date(lastResult.at).toLocaleString()} · {lastResult.failed.length} failed
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={downloadReport}>
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Report
             </Button>
           </div>
         )}
@@ -386,6 +601,11 @@ export default function AdminBlockedPhonesPage() {
             rows={4}
             disabled={bulkUnblock.isPending}
           />
+          {cooldownRemaining > 0 && (
+            <div className="text-xs text-amber-500 flex items-center gap-1.5">
+              <AlertTriangle className="h-3 w-3" /> Cooldown active — {cooldownRemaining}s remaining.
+            </div>
+          )}
           <DialogFooter>
             <Button
               variant="outline"
@@ -395,7 +615,7 @@ export default function AdminBlockedPhonesPage() {
               Cancel
             </Button>
             <Button
-              disabled={bulkReason.trim().length < 5 || selected.size === 0 || bulkUnblock.isPending}
+              disabled={bulkReason.trim().length < 5 || selected.size === 0 || bulkUnblock.isPending || cooldownRemaining > 0}
               onClick={() => setBulkConfirm(true)}
             >
               Review & confirm ({selected.size})
@@ -469,22 +689,33 @@ export default function AdminBlockedPhonesPage() {
                 </span>
               </div>
             )}
+            {lastResult && (bulkUnblock.isSuccess || bulkUnblock.isError) && (
+              <Button variant="outline" size="sm" className="w-full" onClick={downloadReport}>
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                Download results report (.csv)
+              </Button>
+            )}
+            {cooldownRemaining > 0 && !bulkUnblock.isPending && (
+              <div className="text-xs text-amber-500 flex items-center gap-1.5">
+                <AlertTriangle className="h-3 w-3" /> Cooldown active — {cooldownRemaining}s remaining.
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkConfirm(false)} disabled={bulkUnblock.isPending}>
               {bulkUnblock.isSuccess ? "Close" : "Back"}
             </Button>
             <Button
-              disabled={bulkUnblock.isPending || selected.size === 0}
-              onClick={() => {
-                bulkUnblock.mutate({ phones: [...selected], reason: bulkReason.trim() });
-              }}
+              disabled={bulkUnblock.isPending || selected.size === 0 || cooldownRemaining > 0}
+              onClick={submitBulk}
             >
               {bulkUnblock.isPending ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                   Unblocking…
                 </>
+              ) : cooldownRemaining > 0 ? (
+                `Cooldown ${cooldownRemaining}s`
               ) : bulkUnblock.isError ? (
                 `Retry unblock (${selected.size})`
               ) : (
@@ -494,8 +725,6 @@ export default function AdminBlockedPhonesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
 
       {/* Details drawer */}
       <Sheet open={!!details} onOpenChange={(o) => !o && setDetails(null)}>
@@ -508,20 +737,9 @@ export default function AdminBlockedPhonesPage() {
             <div className="mt-6 space-y-4 text-sm">
               <Field label="Phone" value={details.phone} mono />
               <Field label="Account holder name" value={details.name ?? "—"} />
-              <Field
-                label="Original account ID"
-                value={details.original_user_id ?? "—"}
-                mono
-              />
-              <Field
-                label="Deleted-users record ID"
-                value={details.deleted_user_id ?? "—"}
-                mono
-              />
-              <Field
-                label="Deleted at"
-                value={new Date(details.deleted_at).toLocaleString()}
-              />
+              <Field label="Original account ID" value={details.original_user_id ?? "—"} mono />
+              <Field label="Deleted-users record ID" value={details.deleted_user_id ?? "—"} mono />
+              <Field label="Deleted at" value={new Date(details.deleted_at).toLocaleString()} />
               <Field label="Deletion reason" value={details.deletion_reason ?? "—"} />
               <Field
                 label="Triggered by"
@@ -557,14 +775,9 @@ export default function AdminBlockedPhonesPage() {
                 ) : (
                   <div className="space-y-2">
                     {phoneHistory.map((h) => (
-                      <div
-                        key={h.id}
-                        className="rounded-md border border-border/60 p-2 text-xs space-y-1"
-                      >
+                      <div key={h.id} className="rounded-md border border-border/60 p-2 text-xs space-y-1">
                         <div className="flex justify-between gap-2">
-                          <span className="font-medium">
-                            {adminNames[h.admin_id] ?? "Unknown admin"}
-                          </span>
+                          <span className="font-medium">{adminNames[h.admin_id] ?? "Unknown admin"}</span>
                           <span className="text-muted-foreground">
                             {new Date(h.created_at).toLocaleString()}
                           </span>
