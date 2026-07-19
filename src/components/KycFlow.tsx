@@ -33,30 +33,7 @@ const INCOME_OPTIONS = ["Below ৳10,000", "৳10,001–৳25,000", "৳25,001�
 const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
 
 // ─── Utility helpers ──────────────────────────────────────────────────────────
-const pickFirstString = (...values: unknown[]) => {
-  for (const value of values) {
-    if (value === null || value === undefined) continue;
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (trimmed && trimmed.toLowerCase() !== "null" && trimmed.toLowerCase() !== "n/a") return trimmed;
-      continue;
-    }
-    if (typeof value === "number" || typeof value === "bigint") {
-      const s = String(value).trim();
-      if (s) return s;
-      continue;
-    }
-    if (typeof value === "object") {
-      // Handle nested date objects like { day, month, year } or { value: "..." }
-      const anyVal = value as Record<string, unknown>;
-      if (typeof anyVal.value === "string" && anyVal.value.trim()) return anyVal.value.trim();
-      if (anyVal.day && anyVal.month && anyVal.year) {
-        return `${String(anyVal.day).padStart(2, "0")}/${String(anyVal.month).padStart(2, "0")}/${anyVal.year}`;
-      }
-    }
-  }
-  return "";
-};
+// pickFirstString lives in "@/lib/ocrPickFirst" and is unit-tested there.
 
 // ─── Glassmorphic SelectField ─────────────────────────────────────────────────
 interface SelectFieldProps {
