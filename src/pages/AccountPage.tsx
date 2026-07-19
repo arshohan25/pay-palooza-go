@@ -34,6 +34,9 @@ import { useKycStatus, KycStatus } from "@/hooks/use-kyc-status";
 import { supabase } from "@/integrations/supabase/client";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { useMerchantApplyAccess } from "@/hooks/use-merchant-apply-access";
+import LoyaltyBadge from "@/components/LoyaltyBadge";
+import LoyaltyPerksPopup from "@/components/LoyaltyPerksPopup";
+import { Sparkles } from "lucide-react";
 
 const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   customer:          { label: "Customer",          bg: "bg-primary/10",      text: "text-primary" },
@@ -167,6 +170,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [myRewards, setMyRewards] = useState<{ id: string; reward_type: string; reward_value: any; reason: string | null; status: string }[]>([]);
   const [chatDraft, setChatDraft] = useState<string | undefined>(undefined);
   const [chatContext, setChatContext] = useState<{ title: string; body: string } | null>(null);
+  const [showLoyaltyPerks, setShowLoyaltyPerks] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
