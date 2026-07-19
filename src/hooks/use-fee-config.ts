@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLoyaltyPerks } from "@/hooks/use-loyalty-perks";
 
 export interface FeeRule {
   id: string;
@@ -38,6 +39,7 @@ export interface FeeConfig {
 export function useFeeConfig(): FeeConfig {
   const [rules, setRules] = useState<FeeRule[]>([]);
   const [loading, setLoading] = useState(true);
+  const { feeDiscountPct } = useLoyaltyPerks();
 
   const fetchRules = useCallback(async () => {
     const { data } = await supabase
@@ -79,11 +81,13 @@ export function useFeeConfig(): FeeConfig {
     if (amount <= 0) return 0;
     const rule = findRule(txnType, amount);
     if (!rule) return 0;
-    if (rule.fee_type === "percentage") {
-      return parseFloat((amount * rule.fee_value / 100).toFixed(2));
-    }
-    return rule.fee_value;
-  }, [findRule]);
+    const raw = rule.fee_type === "percentage"
+      ? (amount * rule.fee_value / 100)
+      : rule.fee_value;
+    // Apply loyalty fee discount (never below zero)
+    const discounted = raw * Math.max(0, 1 - (feeDiscountPct / 100));
+    return parseFloat(Math.max(0, discounted).toFixed(2));
+  }, [findRule, feeDiscountPct]);
 
   const calcCashOutFee = useCallback((amount: number) => calcFee("cashout", amount), [calcFee]);
   const calcBankTransferFee = useCallback((amount: number) => calcFee("banktransfer", amount), [calcFee]);
