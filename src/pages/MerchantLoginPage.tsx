@@ -413,7 +413,7 @@ export default function MerchantLoginPage() {
       if (setErr) throw setErr;
 
       try {
-        localStorage.setItem("mfs_device_phone", pending.cleanedPhone);
+        localStorage.setItem("easypay_merchant_last_phone", pending.cleanedPhone);
         localStorage.setItem("mfs_has_authenticated", "1");
       } catch {}
 
