@@ -974,6 +974,32 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsSheetOpen, setTermsSheetOpen] = useState(false);
 
+  // Per-field OCR confidence derived from the raw OCR payload + current value.
+  // Uses explicit provider scores when present (nested `{value, confidence}`
+  // or sibling `<key>_confidence`), otherwise falls back to a deterministic
+  // heuristic so reviewers can spot low-confidence values before submitting.
+  const bnNameConfidence = useMemo(
+    () => resolveConfidence("name_bn", {
+      ...pickFirstWithSiblingConfidence(rawOcr, ["full_name_bn", "name_bn", "bangla_name"]),
+      value: nidNameBn,
+    }),
+    [rawOcr, nidNameBn],
+  );
+  const fatherConfidence = useMemo(
+    () => resolveConfidence("father", {
+      ...pickFirstWithSiblingConfidence(rawOcr, ["father_name", "father", "fatherName"]),
+      value: fatherName,
+    }),
+    [rawOcr, fatherName],
+  );
+  const motherConfidence = useMemo(
+    () => resolveConfidence("mother", {
+      ...pickFirstWithSiblingConfidence(rawOcr, ["mother_name", "mother", "motherName"]),
+      value: motherName,
+    }),
+    [rawOcr, motherName],
+  );
+
   const stepIndex = STEPS.indexOf(step);
 
   const goTo = (next: Step, dir = 1) => {
