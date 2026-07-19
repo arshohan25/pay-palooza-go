@@ -85,7 +85,24 @@ const KycOcrRescanHarness = () => {
   const fatherConf = useMemo(() => resolveEdited("father", ["father_name"], father), [raw, father]);
   const motherConf = useMemo(() => resolveEdited("mother", ["mother_name"], mother), [raw, mother]);
 
+  // Emit a `kyc_ocr_confidence` event whenever a per-field level is (re)computed.
+  // The tracker itself dedups, throttles, and samples — we just fire on every
+  // change so the tracker's suppression logic is exercised.
+  useEffect(() => {
+    trackKycEvent("kyc_ocr_confidence", { side: "front", field: "bn_name", level: bnConf });
+  }, [bnConf]);
+  useEffect(() => {
+    trackKycEvent("kyc_ocr_confidence", { side: "front", field: "father", level: fatherConf });
+  }, [fatherConf]);
+  useEffect(() => {
+    trackKycEvent("kyc_ocr_confidence", { side: "front", field: "mother", level: motherConf });
+  }, [motherConf]);
+
+  const runStartAt = useRef<number>(0);
+
   const runOcr = useCallback(async (payload: OcrPayload) => {
+    runStartAt.current = Date.now();
+    trackKycEvent("kyc_ocr_run_start", { side: "front" });
     setLoading(true);
     // Clear all OCR-derived fields immediately so the skeleton state is
     // observable — this is exactly what KycFlow does with `opts.reset`.
@@ -100,13 +117,31 @@ const KycOcrRescanHarness = () => {
     setMother(payload.mother_name);
     setRunCount((n) => n + 1);
     setLoading(false);
+    // Summary event closes out the run with a confidences snapshot.
+    trackKycEvent("kyc_ocr_run_end", {
+      side: "front",
+      status: "success",
+      duration_ms: Date.now() - runStartAt.current,
+      confidences: {
+        bn_name: resolveConfidence("name_bn", { value: payload.full_name_bn.value, confidence: payload.full_name_bn.confidence }),
+        father: resolveConfidence("father", { value: payload.father_name, confidence: payload.father_name_confidence }),
+        mother: resolveConfidence("mother", { value: payload.mother_name, confidence: payload.mother_name_confidence }),
+      },
+    });
   }, []);
 
   const handleRescan = useCallback(() => {
     const ok = window.confirm(
       "Rescan NID? This will clear the current extracted fields and re-run OCR.",
     );
-    if (!ok) return;
+    if (!ok) {
+      trackKycEvent("kyc_ocr_rescan_cancelled", { side: "front" });
+      return;
+    }
+    trackKycEvent("kyc_ocr_rescan_confirmed", { side: "front", reset: true });
+    // Flush per-field throttle/sample state so the fresh run isn't blocked
+    // by leftover cooldowns from the previous session.
+    flushKycAnalytics();
     void runOcr(RESCAN_PAYLOAD);
   }, [runOcr]);
 
