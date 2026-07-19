@@ -353,9 +353,13 @@ export default function AdminBlockedPhonesPage() {
     const term = q.trim().toLowerCase();
     const fromTs = dateFrom ? new Date(dateFrom).getTime() : null;
     const toTs = dateTo ? new Date(dateTo).getTime() + 24 * 3600 * 1000 - 1 : null;
-    return blocked.filter((b) => {
+    const list = blocked.filter((b) => {
       if (term) {
-        const hit = (b.phone ?? "").includes(term) || (b.name ?? "").toLowerCase().includes(term);
+        const hit =
+          (b.phone ?? "").toLowerCase().includes(term) ||
+          (b.name ?? "").toLowerCase().includes(term) ||
+          (b.original_user_id ?? "").toLowerCase().includes(term) ||
+          (b.deleted_user_id ?? "").toLowerCase().includes(term);
         if (!hit) return false;
       }
       const ts = new Date(b.deleted_at).getTime();
@@ -368,7 +372,21 @@ export default function AdminBlockedPhonesPage() {
       }
       return true;
     });
-  }, [blocked, q, dateFrom, dateTo, contextFilter]);
+    const sorted = [...list].sort((a, b) => {
+      switch (sortBy) {
+        case "deleted_asc":
+          return new Date(a.deleted_at).getTime() - new Date(b.deleted_at).getTime();
+        case "phone_asc":
+          return (a.phone ?? "").localeCompare(b.phone ?? "");
+        case "phone_desc":
+          return (b.phone ?? "").localeCompare(a.phone ?? "");
+        case "deleted_desc":
+        default:
+          return new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime();
+      }
+    });
+    return sorted;
+  }, [blocked, q, dateFrom, dateTo, contextFilter, sortBy]);
 
   const activeFilterCount =
     (dateFrom ? 1 : 0) + (dateTo ? 1 : 0) + (contextFilter !== "all" ? 1 : 0);
