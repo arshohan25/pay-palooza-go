@@ -1078,7 +1078,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const [overviewSelectedTx, setOverviewSelectedTx] = useState<TxnRow | null>(null);
 
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
-  const mdrDeducted = Math.round(totalRevenue * (merchant?.mdr_rate ?? 0.015));
+  const mdrDeducted = Math.round(totalRevenue * mdrFraction(merchant?.mdr_rate));
   const avgTxn = paymentTxns.length > 0 ? Math.round(totalRevenue / paymentTxns.length) : 0;
   const uniqueCustomers = new Set(paymentTxns.map(t => t.recipient_phone)).size;
 
