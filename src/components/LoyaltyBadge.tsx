@@ -272,7 +272,15 @@ export default function LoyaltyBadge({
           </div>
         </>
       ) : (
-        <p className="text-[11px] text-muted-foreground">Top tier reached — enjoy every perk.</p>
+        <div className="rounded-lg bg-gradient-to-br from-amber-500/10 via-fuchsia-500/10 to-primary/10 border border-amber-500/20 p-2">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Icons.Crown size={11} className="text-amber-500" aria-hidden="true" />
+            <span className="text-[11px] font-bold text-foreground">Congratulations! 🎉</span>
+          </div>
+          <p className="text-[10.5px] text-muted-foreground leading-snug">
+            You've reached the highest tier. Enjoy every EasyPay Club perk — you're royalty.
+          </p>
+        </div>
       )}
       {isTouch && onClick && (
         <button
