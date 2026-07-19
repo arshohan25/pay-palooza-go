@@ -9,6 +9,8 @@ interface RoleGuardLayoutProps {
   allowStaff?: boolean;
   unauthenticatedRedirect?: string;
   unauthorizedRedirect?: string;
+  /** Optional CSS class applied to a wrapper around the outlet — used to scope role-specific theme tokens. */
+  themeClass?: string;
 }
 
 const RoleGuardLayout = ({
@@ -16,6 +18,7 @@ const RoleGuardLayout = ({
   allowStaff,
   unauthenticatedRedirect,
   unauthorizedRedirect,
+  themeClass,
 }: RoleGuardLayoutProps) => (
   <RoleGuard
     roles={roles}
@@ -23,8 +26,15 @@ const RoleGuardLayout = ({
     unauthenticatedRedirect={unauthenticatedRedirect}
     unauthorizedRedirect={unauthorizedRedirect}
   >
-    <Outlet />
+    {themeClass ? (
+      <div className={themeClass}>
+        <Outlet />
+      </div>
+    ) : (
+      <Outlet />
+    )}
   </RoleGuard>
 );
 
 export default RoleGuardLayout;
+

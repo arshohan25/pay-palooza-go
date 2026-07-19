@@ -282,7 +282,7 @@ const AgentLoginPage = () => {
                 </>
               ) : (
                 <>
-                  Sign in as Agent <ArrowRight size={18} />
+                  Sign In <ArrowRight size={18} />
                 </>
               )}
             </button>
