@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import { useState, useRef, useEffect, useCallback, useMemo, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -317,7 +318,7 @@ function PhoneInput({ value, onChange, error, autoFocus = false }: { value: stri
           <span className="text-sm font-black text-foreground shrink-0">+88</span>
         </div>
         <input ref={ref} type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={value}
-          onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 11))}
+          onChange={(e) => onChange(normalizeBDPhoneInput(e.target.value))}
           className="flex-1 min-w-0 h-full px-4 text-lg font-bold bg-transparent focus:outline-none placeholder:text-muted-foreground/30 placeholder:font-normal" />
         {value.length === 11 && (
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="pr-3 mr-2 shrink-0">

@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -231,7 +232,7 @@ const ForgotPinPage = () => {
                     inputMode="numeric"
                     maxLength={11}
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                    onChange={(e) => setPhone(normalizeBDPhoneInput(e.target.value))}
                     placeholder="01XXXXXXXXX"
                     className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />

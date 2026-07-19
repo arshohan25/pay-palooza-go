@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -246,7 +247,7 @@ const AgentCashOut = () => {
         onScan={(result) => {
           setShowQr(false);
           const parsed = parseQrData(result);
-          const extracted = parsed.identifier?.replace(/\D/g, "").slice(0, 11) || result.replace(/\D/g, "").slice(0, 11);
+          const extracted = normalizeBDPhoneInput(parsed.identifier ?? "") || normalizeBDPhoneInput(result);
           setPhone(extracted);
         }}
       />

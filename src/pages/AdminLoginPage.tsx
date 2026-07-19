@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -112,7 +113,7 @@ const AdminLoginPage = () => {
                 value={phone}
                 onChange={(e) => {
                   setError(null);
-                  setPhone(e.target.value.replace(/\D/g, "").slice(0, 11));
+                  setPhone(normalizeBDPhoneInput(e.target.value));
                 }}
                 className="w-full h-12 px-3 rounded-xl bg-black/30 border border-white/10 text-white text-base tracking-[0.3em] text-center placeholder:text-white/30 placeholder:tracking-wider focus:outline-none focus:border-emerald-400"
               />

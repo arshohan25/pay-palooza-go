@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import Seo from "@/components/Seo";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -543,7 +544,7 @@ const PayPage = () => {
               </div>
               <div>
                 <input type="tel" inputMode="numeric" maxLength={11} value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                  onChange={(e) => setPhone(normalizeBDPhoneInput(e.target.value))}
                   placeholder="01XXXXXXXXX"
                   className="w-full px-6 py-3.5 rounded-full bg-muted/30 border border-border/30 text-foreground text-center text-lg font-semibold tracking-widest placeholder:text-center placeholder:text-muted-foreground/40 placeholder:font-medium placeholder:text-base placeholder:tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/20 shadow-inner transition-all"
                   autoFocus />

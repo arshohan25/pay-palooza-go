@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import { validateRecipient } from "@/lib/recipientValidation";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
@@ -173,7 +174,7 @@ const generateTxnId = () => {
 };
 
 const formatPhone = (raw: string) => {
-  const d = raw.replace(/\D/g, "").slice(0, 11);
+  const d = normalizeBDPhoneInput(raw);
   if (d.length <= 3) return d;
   if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`;
   return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
@@ -609,7 +610,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       type="tel"
                       placeholder="017X-XXXX-XXXX"
                       value={formatPhone(phone)}
-                      onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); setError(""); }}
+                      onChange={(e) => { setPhone(normalizeBDPhoneInput(e.target.value)); setError(""); }}
                       className="pl-9 h-12 text-base bg-card border-border tracking-wide"
                     />
                   </div>

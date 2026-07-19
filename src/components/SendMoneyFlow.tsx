@@ -1,3 +1,4 @@
+import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { haptics } from "@/lib/haptics";
 import { supabase } from "@/integrations/supabase/client";
@@ -435,7 +436,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess, onRouteToCashOut }:
   const handleInputChange = (val: string) => {
     // If starts with digit, cap at 11 digits (strip non-digits)
     if (/^\d/.test(val)) {
-      const digits = val.replace(/\D/g, "").slice(0, 11);
+      const digits = normalizeBDPhoneInput(val);
       setInputVal(digits);
       setInputType(detectRecipientType(digits));
       setError("");
