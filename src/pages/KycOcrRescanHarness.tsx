@@ -67,36 +67,22 @@ const KycOcrRescanHarness = () => {
   const [loading, setLoading] = useState(false);
   const [runCount, setRunCount] = useState(1);
 
-  const bnConf = useMemo(
-    () =>
-      resolveConfidence("name_bn", {
-        ...pickFirstWithSiblingConfidence(raw as unknown as Record<string, unknown>, [
-          "full_name_bn",
-        ]),
-        value: nameBn,
-      }),
-    [raw, nameBn],
-  );
-  const fatherConf = useMemo(
-    () =>
-      resolveConfidence("father", {
-        ...pickFirstWithSiblingConfidence(raw as unknown as Record<string, unknown>, [
-          "father_name",
-        ]),
-        value: father,
-      }),
-    [raw, father],
-  );
-  const motherConf = useMemo(
-    () =>
-      resolveConfidence("mother", {
-        ...pickFirstWithSiblingConfidence(raw as unknown as Record<string, unknown>, [
-          "mother_name",
-        ]),
-        value: mother,
-      }),
-    [raw, mother],
-  );
+  const resolveEdited = (
+    kind: Parameters<typeof resolveConfidence>[0],
+    keys: string[],
+    current: string,
+  ) => {
+    const picked = pickFirstWithSiblingConfidence(raw as unknown as Record<string, unknown>, keys);
+    const edited = picked.value.trim() !== current.trim();
+    return resolveConfidence(kind, {
+      value: current,
+      confidence: edited ? null : picked.confidence,
+    });
+  };
+
+  const bnConf = useMemo(() => resolveEdited("name_bn", ["full_name_bn"], nameBn), [raw, nameBn]);
+  const fatherConf = useMemo(() => resolveEdited("father", ["father_name"], father), [raw, father]);
+  const motherConf = useMemo(() => resolveEdited("mother", ["mother_name"], mother), [raw, mother]);
 
   const runOcr = useCallback(async (payload: OcrPayload) => {
     setLoading(true);

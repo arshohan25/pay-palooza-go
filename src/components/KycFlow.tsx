@@ -978,25 +978,30 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
   // Uses explicit provider scores when present (nested `{value, confidence}`
   // or sibling `<key>_confidence`), otherwise falls back to a deterministic
   // heuristic so reviewers can spot low-confidence values before submitting.
+  // If the user has edited a field, the provider score no longer applies —
+  // fall back to the heuristic against the current value.
+  const resolveEdited = (
+    kind: Parameters<typeof resolveConfidence>[0],
+    keys: string[],
+    current: string,
+  ) => {
+    const picked = pickFirstWithSiblingConfidence(rawOcr, keys);
+    const edited = picked.value.trim() !== current.trim();
+    return resolveConfidence(kind, {
+      value: current,
+      confidence: edited ? null : picked.confidence,
+    });
+  };
   const bnNameConfidence = useMemo(
-    () => resolveConfidence("name_bn", {
-      ...pickFirstWithSiblingConfidence(rawOcr, ["full_name_bn", "name_bn", "bangla_name"]),
-      value: nidNameBn,
-    }),
+    () => resolveEdited("name_bn", ["full_name_bn", "name_bn", "bangla_name"], nidNameBn),
     [rawOcr, nidNameBn],
   );
   const fatherConfidence = useMemo(
-    () => resolveConfidence("father", {
-      ...pickFirstWithSiblingConfidence(rawOcr, ["father_name", "father", "fatherName"]),
-      value: fatherName,
-    }),
+    () => resolveEdited("father", ["father_name", "father", "fatherName"], fatherName),
     [rawOcr, fatherName],
   );
   const motherConfidence = useMemo(
-    () => resolveConfidence("mother", {
-      ...pickFirstWithSiblingConfidence(rawOcr, ["mother_name", "mother", "motherName"]),
-      value: motherName,
-    }),
+    () => resolveEdited("mother", ["mother_name", "mother", "motherName"], motherName),
     [rawOcr, motherName],
   );
 
