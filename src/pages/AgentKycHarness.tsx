@@ -139,6 +139,35 @@ export default function AgentKycHarness() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fixture, agent]);
 
+  // Simulate Supabase realtime `postgres_changes` events. Playwright dispatches
+  // CustomEvent('kyc:realtime', { detail: { eventType, new, old } }) — the
+  // handler mutates local state exactly like the subscription callback would,
+  // proving the UI reflects DB changes without a page refresh.
+  useEffect(() => {
+    const onRealtime = (e: Event) => {
+      const detail = (e as CustomEvent).detail as {
+        eventType: "INSERT" | "UPDATE" | "DELETE";
+        new?: KycCustomer;
+        old?: { user_id: string };
+      };
+      setCustomers((prev) => {
+        if (detail.eventType === "INSERT" && detail.new) {
+          if (prev.some((c) => c.user_id === detail.new!.user_id)) return prev;
+          return [...prev, detail.new];
+        }
+        if (detail.eventType === "UPDATE" && detail.new) {
+          return prev.map((c) => (c.user_id === detail.new!.user_id ? { ...c, ...detail.new! } : c));
+        }
+        if (detail.eventType === "DELETE" && detail.old) {
+          return prev.filter((c) => c.user_id !== detail.old!.user_id);
+        }
+        return prev;
+      });
+    };
+    window.addEventListener("kyc:realtime", onRealtime as EventListener);
+    return () => window.removeEventListener("kyc:realtime", onRealtime as EventListener);
+  }, []);
+
   const counts = useMemo(() => {
     const c = { verified: 0, pending: 0, rejected: 0, total: customers.length };
     customers.forEach((k) => {
