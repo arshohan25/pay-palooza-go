@@ -97,12 +97,19 @@ const AgentLoginPage = () => {
       await otp.sendOtp(phone);
     } catch (err) {
       haptics.error();
-      const msg =
-        err instanceof Error && err.message.includes("Invalid login credentials")
-          ? "Incorrect phone number or PIN."
-          : err instanceof Error
-            ? err.message
-            : "Unable to sign in right now.";
+      const raw = err instanceof Error ? err.message : String(err ?? "");
+      let msg = "Unable to sign in right now. Please try again.";
+      if (/Failed to fetch|NetworkError|network|ECONN/i.test(raw) || !navigator.onLine) {
+        msg = "You appear to be offline. Check your connection and try again.";
+      } else if (/Invalid login credentials/i.test(raw)) {
+        msg = "Incorrect phone number or PIN.";
+      } else if (/temporary PIN has expired/i.test(raw)) {
+        msg = raw;
+      } else if (/rate|too many/i.test(raw)) {
+        msg = "Too many attempts. Please wait a moment and try again.";
+      } else if (raw) {
+        msg = raw;
+      }
       setError(msg);
       setPin("");
     } finally {
@@ -126,7 +133,20 @@ const AgentLoginPage = () => {
       otp.saveTrustToken(phone, token, expires_at);
       finishLogin();
     } catch (err: any) {
-      toast.error(err?.message || "Verification failed");
+      const raw = err?.message || String(err ?? "");
+      let msg = "Verification failed. Please try again.";
+      if (/Failed to fetch|NetworkError|network/i.test(raw) || !navigator.onLine) {
+        msg = "Network error. Please check your connection and retry.";
+      } else if (/expired/i.test(raw)) {
+        msg = "This code has expired. Tap Resend to get a new one.";
+      } else if (/invalid|incorrect|mismatch/i.test(raw)) {
+        msg = "Incorrect code. Please double-check and try again.";
+      } else if (/too many|rate/i.test(raw)) {
+        msg = "Too many attempts. Please wait before retrying.";
+      } else if (raw) {
+        msg = raw;
+      }
+      toast.error(msg);
     } finally {
       setFinalizing(false);
     }
