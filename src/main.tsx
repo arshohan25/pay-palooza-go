@@ -2,11 +2,14 @@ import { captureInstallPrompt } from "./lib/installPromptStore";
 import { cleanupCacheRecoveryParams, clearPreviewCacheArtifacts, syncClientCacheVersion } from "./lib/cacheReset";
 import { captureAppRoleFromUrl } from "./lib/appRole";
 import { purgeInvalidStoredAuthSession } from "./lib/authSessionRecovery";
+import { installRealtimeAuthGuard } from "./lib/realtimeManager";
 
 // Purge corrupt persisted auth before React/Supabase initialize.
 purgeInvalidStoredAuthSession();
 // Capture before React renders so the event is never lost
 captureInstallPrompt();
+// Tear down realtime channels on sign-out / user switch to prevent leaks.
+installRealtimeAuthGuard();
 
 
 import { createRoot } from "react-dom/client";
