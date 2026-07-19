@@ -44,6 +44,7 @@ export default function AdminBlockedPhonesPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkReason, setBulkReason] = useState("");
+  const [bulkConfirm, setBulkConfirm] = useState(false);
 
   const { data: blocked = [], isLoading } = useQuery({
     queryKey: ["admin-blocked-phones"],
