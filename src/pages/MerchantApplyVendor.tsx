@@ -244,9 +244,28 @@ export default function MerchantApplyVendor() {
 
   if (loading) return <div className="p-10 text-center text-muted-foreground">Loading…</div>;
   if (!merchant) return (
-    <div className="p-10 text-center">
-      <p className="text-muted-foreground">You need a merchant account first.</p>
-      <Button onClick={() => nav("/merchant")} className="mt-4">Back</Button>
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <Card className="max-w-md w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Store className="w-5 h-5 text-primary" /> Finish your merchant setup
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Your account has the merchant role, but the merchant business profile
+            (business name, KYC, bank details) hasn't been submitted yet. Complete
+            the merchant application first — vendor / EasyPay Shop upgrade unlocks
+            right after your merchant profile is approved.
+          </p>
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={() => nav("/merchant/apply")}>
+              Start merchant application
+            </Button>
+            <Button variant="outline" onClick={() => nav("/merchant")}>Back</Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 
