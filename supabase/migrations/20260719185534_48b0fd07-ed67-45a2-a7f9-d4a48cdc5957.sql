@@ -1,0 +1,1 @@
+DELETE FROM public.otp_codes WHERE phone = '01859975119' AND created_at > now() - interval '2 hours';
