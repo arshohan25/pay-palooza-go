@@ -936,7 +936,7 @@ export default function AdminMerchantManagement() {
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <InfoCell label="Business Name" value={detail.merchant.business_name} />
                     <InfoCell label="Category" value={detail.merchant.category} className="capitalize" />
-                    <InfoCell label="MDR Rate" value={`${Number(detail.merchant.mdr_rate ?? 0)}%`} />
+                    <InfoCell label="MDR Rate" value={formatMdrPercent(detail.merchant.mdr_rate)} />
                     <InfoCell label="Settlement" value={detail.merchant.settlement_frequency} />
                     <InfoCell label="Trade License" value={detail.merchant.trade_license || "—"} />
                     <InfoCell label="QR Code" value={detail.merchant.qr_code_data ? "Generated" : "—"} />
