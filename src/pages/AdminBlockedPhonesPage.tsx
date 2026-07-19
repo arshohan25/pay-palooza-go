@@ -486,19 +486,31 @@ export default function AdminBlockedPhonesPage() {
       </div>
 
       <Card className="p-4 space-y-3">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search by phone or name…"
+              placeholder="Search by phone, name, or deleted account ID…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
+          <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="deleted_desc">Newest deleted</SelectItem>
+              <SelectItem value="deleted_asc">Oldest deleted</SelectItem>
+              <SelectItem value="phone_asc">Phone A→Z</SelectItem>
+              <SelectItem value="phone_desc">Phone Z→A</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             variant={showFilters ? "default" : "outline"}
             size="icon"
+            className="relative"
             onClick={() => setShowFilters((v) => !v)}
             title="Advanced filters"
           >
@@ -510,6 +522,7 @@ export default function AdminBlockedPhonesPage() {
             )}
           </Button>
         </div>
+
 
         {showFilters && (
           <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
