@@ -186,7 +186,7 @@ const App = () => (
                     <Route path="/admin/auth-diagnostics" element={<RoleGuard roles={["admin", "developer"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminAuthDiagnosticsPage /></RoleGuard>} />
 
 
-                    <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} unauthenticatedRedirect="/agent/login" unauthorizedRedirect="/agent/login" />}>
+                    <Route path="/agent" element={<RoleGuardLayout themeClass="agent-theme" roles={["agent", "admin"]} unauthenticatedRedirect="/agent/login" unauthorizedRedirect="/agent/login" />}>
                       <Route index element={<AgentDashboard />} />
                       <Route path="cashin" element={<AgentCashIn />} />
                       <Route path="cashout" element={<AgentCashOut />} />
