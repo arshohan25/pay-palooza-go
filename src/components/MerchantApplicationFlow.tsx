@@ -93,8 +93,11 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     if (!open) return;
     const load = async () => {
       setLoading(true);
+      setDraftLoaded(false);
+      setDraftRestored(false);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
+      setUserId(session.user.id);
       const { data } = await (supabase as any)
         .from("merchant_applications")
         .select("*")
@@ -103,10 +106,36 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
         .limit(1)
         .maybeSingle();
       setExisting(data);
+
+      // Only hydrate the draft when there's no locked application (pending/approved).
+      const locked = data && (data.status === "pending" || data.status === "approved");
+      if (!locked) {
+        try {
+          const raw = localStorage.getItem(`easypay_merchant_apply_draft_${session.user.id}`);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.form) setForm(f => ({ ...f, ...parsed.form }));
+            if (parsed?.location) setLocation(l => ({ ...l, ...parsed.location }));
+            if (typeof parsed?.customCategory === "string") setCustomCategory(parsed.customCategory);
+            setDraftRestored(true);
+          }
+        } catch { /* ignore corrupt draft */ }
+      }
+      setDraftLoaded(true);
       setLoading(false);
     };
     load();
   }, [open]);
+
+  // Persist draft on any edit while the sheet is open and no lock exists.
+  useEffect(() => {
+    if (!open || !draftKey || !draftLoaded) return;
+    const locked = existing && (existing.status === "pending" || existing.status === "approved");
+    if (locked) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({ form, location, customCategory, savedAt: Date.now() }));
+    } catch { /* quota — ignore */ }
+  }, [open, draftKey, draftLoaded, existing, form, location, customCategory]);
 
   const handleSubmit = async () => {
     const isOther = form.category === "__other__" || form.category === "other";
