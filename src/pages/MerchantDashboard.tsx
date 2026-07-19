@@ -1793,12 +1793,39 @@ const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null
 };
 
 
+const EASYPAY_LOGO_URL = "/icons/easypay-logo.webp";
+const DEFAULT_QR_TAGLINE = "Scan to Pay for good";
+const DEFAULT_BAND_START = "#ff6a1a";
+const DEFAULT_BAND_END = "#c02a55";
+
 const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    qr_card_tagline: merchant?.qr_card_tagline || DEFAULT_QR_TAGLINE,
+    qr_card_band_color_start: merchant?.qr_card_band_color_start || DEFAULT_BAND_START,
+    qr_card_band_color_end: merchant?.qr_card_band_color_end || DEFAULT_BAND_END,
+    qr_card_logo_url: merchant?.qr_card_logo_url || "",
+  });
+
+  useEffect(() => {
+    setForm({
+      qr_card_tagline: merchant?.qr_card_tagline || DEFAULT_QR_TAGLINE,
+      qr_card_band_color_start: merchant?.qr_card_band_color_start || DEFAULT_BAND_START,
+      qr_card_band_color_end: merchant?.qr_card_band_color_end || DEFAULT_BAND_END,
+      qr_card_logo_url: merchant?.qr_card_logo_url || "",
+    });
+  }, [merchant?.id, merchant?.qr_card_tagline, merchant?.qr_card_band_color_start, merchant?.qr_card_band_color_end, merchant?.qr_card_logo_url]);
+
   const rawPayload = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
   const qrPayload = rawPayload.toUpperCase();
   const shopName = merchant?.business_name || "Merchant";
-  const tagline = "Scan • Pay • Done";
+  const tagline = merchant?.qr_card_tagline || DEFAULT_QR_TAGLINE;
+  const bandStart = merchant?.qr_card_band_color_start || DEFAULT_BAND_START;
+  const bandEnd = merchant?.qr_card_band_color_end || DEFAULT_BAND_END;
+  const shopLogo = merchant?.qr_card_logo_url || "";
 
   useEffect(() => {
     QRCode.toDataURL(qrPayload, {
@@ -1809,50 +1836,148 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
     }).then(setQrDataUrl).catch(() => {});
   }, [qrPayload]);
 
+  // Preload EasyPay logo as data URL for reliable print rendering across browsers
+  useEffect(() => {
+    fetch(EASYPAY_LOGO_URL)
+      .then(r => r.blob())
+      .then(b => new Promise<string>((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(String(fr.result));
+        fr.onerror = rej;
+        fr.readAsDataURL(b);
+      }))
+      .then(setLogoDataUrl)
+      .catch(() => setLogoDataUrl(null));
+  }, []);
+
   const copyCode = () => {
     navigator.clipboard.writeText(qrPayload);
     toast({ title: "Copied!", description: "Merchant ID copied to clipboard" });
+  };
+
+  const saveSettings = async () => {
+    if (!merchant?.id) return;
+    setSaving(true);
+    const patch = {
+      qr_card_tagline: form.qr_card_tagline.trim() || null,
+      qr_card_band_color_start: form.qr_card_band_color_start || null,
+      qr_card_band_color_end: form.qr_card_band_color_end || null,
+      qr_card_logo_url: form.qr_card_logo_url.trim() || null,
+    };
+    const { error } = await supabase.from("merchants").update(patch as any).eq("id", merchant.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Saved", description: "QR card branding updated" });
+    setSettingsOpen(false);
   };
 
   const handlePrint = () => {
     if (!qrDataUrl) return;
     const w = window.open("", "_blank", "width=800,height=1000");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>${shopName} — Payment QR</title>
+    const easypayLogo = logoDataUrl || EASYPAY_LOGO_URL;
+    const shopLogoImg = shopLogo
+      ? `<img src="${shopLogo}" alt="" style="width:34px;height:34px;object-fit:contain;border-radius:8px;background:#fff;padding:3px" />`
+      : "";
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"/><title>${shopName} — Payment QR</title>
       <style>
-        @page { size: A6; margin: 8mm; }
-        *{box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-        body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff}
-        .card{width:340px;border-radius:24px;padding:22px 20px;text-align:center;
-          background:linear-gradient(160deg,#fff 0%,#fff 55%,#fff5ee 100%);
-          border:2px solid #0b0b1f;position:relative;overflow:hidden}
-        .band{position:absolute;top:0;left:0;right:0;height:56px;background:linear-gradient(135deg,#ff6a1a,#c02a55);color:#fff;
-          display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:1.5px;font-size:12px;text-transform:uppercase}
-        .body{margin-top:64px}
-        h1{margin:0 0 2px;font-size:20px;color:#0b0b1f;letter-spacing:.3px}
-        .tag{margin:0 0 14px;font-size:11px;color:#c02a55;font-weight:700;letter-spacing:2px;text-transform:uppercase}
-        .qr{padding:14px;border-radius:20px;background:#fff;border:1.5px dashed #0b0b1f33;display:inline-block}
-        .qr img{width:230px;height:230px;display:block}
-        .mid{margin:14px auto 6px;display:inline-block;padding:8px 16px;border-radius:999px;
-          background:#0b0b1f;color:#fff;font-family:'SFMono-Regular',Menlo,monospace;font-weight:700;letter-spacing:2px;font-size:13px}
-        .foot{margin-top:8px;font-size:10px;color:#6b6b7b;letter-spacing:1px;text-transform:uppercase}
-        .brand{margin-top:4px;font-size:11px;color:#0b0b1f;font-weight:800;letter-spacing:2px}
+        /* Exact A6: 105mm x 148mm. Zero page margin so the card owns the sheet. */
+        @page { size: 105mm 148mm; margin: 0; }
+        html, body { width: 105mm; height: 148mm; margin: 0; padding: 0; background: #fff; }
+        *, *::before, *::after {
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          color-adjust: exact;
+        }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; }
+        .sheet {
+          width: 105mm; height: 148mm;
+          padding: 5mm; /* internal margin so the card doesn't touch bleed */
+          display: flex; align-items: stretch; justify-content: stretch;
+        }
+        .card {
+          width: 100%; height: 100%;
+          border-radius: 6mm;
+          border: 0.6mm solid #0b0b1f;
+          position: relative; overflow: hidden;
+          background: linear-gradient(160deg,#fff 0%,#fff 55%,#fff5ee 100%);
+          text-align: center;
+          display: flex; flex-direction: column;
+        }
+        .band {
+          height: 18mm;
+          background: linear-gradient(135deg, ${bandStart}, ${bandEnd});
+          color: #fff;
+          display: flex; align-items: center; justify-content: center; gap: 3mm;
+          font-weight: 800; letter-spacing: 1.2px; font-size: 3.2mm; text-transform: uppercase;
+        }
+        .band img.ep { height: 7mm; width: auto; filter: brightness(0) invert(1); opacity: .95; }
+        .band .sep { width: 0.4mm; height: 6mm; background: rgba(255,255,255,.5); }
+        .body {
+          flex: 1;
+          padding: 4mm 5mm 3mm;
+          display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+        }
+        .shop-row { display: flex; align-items: center; justify-content: center; gap: 2.5mm; }
+        h1 { margin: 0; font-size: 5.2mm; color: #0b0b1f; letter-spacing: .2px; line-height: 1.1; }
+        .tag { margin: 1mm 0 0; font-size: 3mm; color: ${bandEnd}; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; }
+        .qr-wrap { padding: 3mm; border-radius: 5mm; background: #fff; border: 0.4mm dashed rgba(11,11,31,.2); display: inline-block; }
+        .qr-wrap img { width: 55mm; height: 55mm; display: block; }
+        .mid {
+          display: inline-block;
+          padding: 2mm 5mm;
+          border-radius: 20mm;
+          background: #0b0b1f; color: #fff;
+          font-family: 'SFMono-Regular', Menlo, monospace;
+          font-weight: 700; letter-spacing: 1.5px; font-size: 3.4mm;
+          text-transform: uppercase;
+        }
+        .foot { font-size: 2.6mm; color: #6b6b7b; letter-spacing: 1px; text-transform: uppercase; }
+        .brand-row {
+          display: flex; align-items: center; justify-content: center; gap: 2mm;
+          font-size: 2.6mm; color: #0b0b1f; font-weight: 800; letter-spacing: 1.4px;
+        }
+        .brand-row img { height: 4mm; width: auto; }
       </style></head><body>
-      <div class="card">
-        <div class="band">EasyPay • Accepted Here</div>
-        <div class="body">
-          <h1>${shopName}</h1>
-          <p class="tag">${tagline}</p>
-          <div class="qr"><img src="${qrDataUrl}" alt="QR"/></div>
-          <div class="mid">${qrPayload}</div>
-          <div class="foot">Scan with any EasyPay app</div>
-          <div class="brand">— powered by EasyPay —</div>
+      <div class="sheet">
+        <div class="card">
+          <div class="band">
+            <img class="ep" src="${easypayLogo}" alt="EasyPay"/>
+            <span class="sep"></span>
+            <span>Accepted Here</span>
+          </div>
+          <div class="body">
+            <div>
+              <div class="shop-row">${shopLogoImg}<h1>${shopName}</h1></div>
+              <p class="tag">${tagline}</p>
+            </div>
+            <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR"/></div>
+            <div>
+              <div class="mid">${qrPayload}</div>
+              <div class="foot" style="margin-top:1.5mm">Scan with any EasyPay app</div>
+            </div>
+            <div class="brand-row">
+              <span>powered by</span>
+              <img src="${easypayLogo}" alt="EasyPay" style="filter:none"/>
+            </div>
+          </div>
         </div>
       </div>
-      <script>window.onload=()=>{setTimeout(()=>{window.print();},250)}</script>
+      <script>
+        (function(){
+          function go(){ try { window.focus(); window.print(); } catch(e){} }
+          if (document.readyState === 'complete') setTimeout(go, 200);
+          else window.addEventListener('load', function(){ setTimeout(go, 200); });
+        })();
+      </script>
       </body></html>`);
     w.document.close();
   };
+
 
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
