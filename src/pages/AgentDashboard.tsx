@@ -246,12 +246,20 @@ const AgentDashboard = () => {
     );
   }
   if (isAgent === false) {
+    const currentPhone = (user as any)?.phone || (user as any)?.email?.replace("@easypay.app", "") || "unknown";
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6 text-center">
         <Building2 size={48} className="text-muted-foreground" />
         <p className="text-lg font-semibold text-foreground">Agent Access Required</p>
-        <p className="text-sm text-muted-foreground max-w-xs">Contact your distributor or admin for agent access.</p>
-        <Button onClick={() => navigate("/")} variant="outline"><ArrowLeft size={16} className="mr-2" />Back to Home</Button>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          You're signed in as <span className="font-semibold text-foreground">{currentPhone}</span>, which is not an agent account. Sign out and log in with your assigned agent number.
+        </p>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate("/")} variant="outline"><ArrowLeft size={16} className="mr-2" />Home</Button>
+          <Button
+            onClick={async () => { await supabase.auth.signOut(); navigate("/agent/login"); }}
+          >Sign out & switch</Button>
+        </div>
       </div>
     );
   }
