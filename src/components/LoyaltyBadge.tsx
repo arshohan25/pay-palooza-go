@@ -28,8 +28,15 @@ export default function LoyaltyBadge({
 
   const tier = useMemo(() => {
     if (tierProp) return tierProp;
-    if (!loyalty?.current_tier_id || !tiers) return null;
-    return tiers.find((t) => t.id === loyalty.current_tier_id) ?? null;
+    if (!tiers || tiers.length === 0) return null;
+    const activeTiers = tiers.filter((t) => t.is_active);
+    const pool = activeTiers.length ? activeTiers : tiers;
+    // Prefer override, then current tier, then fallback to lowest-rank (Starter)
+    const overrideId = (loyalty as any)?.override_tier_id;
+    const currentId = loyalty?.current_tier_id;
+    const byId = (id?: string | null) => (id ? pool.find((t) => t.id === id) : null);
+    const fallback = [...pool].sort((a, b) => a.rank - b.rank)[0] ?? null;
+    return byId(overrideId) ?? byId(currentId) ?? fallback;
   }, [tierProp, loyalty, tiers]);
 
   if (!tier) return null;
