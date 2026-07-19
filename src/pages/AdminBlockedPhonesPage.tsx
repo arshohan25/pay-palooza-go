@@ -319,7 +319,7 @@ export default function AdminBlockedPhonesPage() {
           payload_hash: hash,
           reason: vars.reason,
           phones: vars.phones,
-          status: "failed",
+          status: "failed" as const,
           requested: vars.phones.length,
           unblocked: 0,
           failed: vars.phones.map((p) => ({ phone: p, error: msg })),
