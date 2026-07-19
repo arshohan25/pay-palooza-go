@@ -173,7 +173,7 @@ export default function MerchantApplyVendor() {
       return;
     }
     // Re-verify against the database in case status changed since the page loaded.
-    const { data: fresh, error: freshErr } = await supabase
+    const { data: fresh, error: freshErr } = await (supabase as any)
       .from("merchants")
       .select("status,business_kyc_status,admin_notes")
       .eq("user_id", user.id)
