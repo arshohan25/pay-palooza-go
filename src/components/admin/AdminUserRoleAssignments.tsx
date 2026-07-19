@@ -151,8 +151,8 @@ function AssignPanel({ readOnly }: { readOnly: boolean }) {
       _role: role as any,
     });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Assigned ${ROLE_LABEL[role as AppRole]} — previous role replaced.`);
+    if (error) { toast.error(error.message || "Role assignment rejected"); return; }
+    toast.success(`Assigned ${ROLE_LABEL[role as AppRole]}.`);
     await logAudit("role_assigned_single_ui", { user_id: lookup.profile.user_id, role });
     runLookup();
   };
