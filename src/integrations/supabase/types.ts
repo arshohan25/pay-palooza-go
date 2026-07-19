@@ -4690,6 +4690,10 @@ export type Database = {
           nid_back_url: string | null
           nid_front_url: string | null
           owner_name: string | null
+          qr_card_band_color_end: string | null
+          qr_card_band_color_start: string | null
+          qr_card_logo_url: string | null
+          qr_card_tagline: string | null
           qr_code_data: string | null
           settlement_frequency: string
           status: Database["public"]["Enums"]["agent_status"]
@@ -4722,6 +4726,10 @@ export type Database = {
           nid_back_url?: string | null
           nid_front_url?: string | null
           owner_name?: string | null
+          qr_card_band_color_end?: string | null
+          qr_card_band_color_start?: string | null
+          qr_card_logo_url?: string | null
+          qr_card_tagline?: string | null
           qr_code_data?: string | null
           settlement_frequency?: string
           status?: Database["public"]["Enums"]["agent_status"]
@@ -4754,6 +4762,10 @@ export type Database = {
           nid_back_url?: string | null
           nid_front_url?: string | null
           owner_name?: string | null
+          qr_card_band_color_end?: string | null
+          qr_card_band_color_start?: string | null
+          qr_card_logo_url?: string | null
+          qr_card_tagline?: string | null
           qr_code_data?: string | null
           settlement_frequency?: string
           status?: Database["public"]["Enums"]["agent_status"]
