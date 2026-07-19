@@ -15,6 +15,8 @@ import {
 } from "@/lib/appRole";
 import { haptics } from "@/lib/haptics";
 
+const AGENT_LAST_PHONE_KEY = "easypay_agent_last_phone";
+
 /**
  * Dedicated Agent login screen — agent-specific copy, phone + 4-digit PIN,
  * no signup/customer flows. Uses the same phone-as-email auth backend.
@@ -24,7 +26,10 @@ const AgentLoginPage = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
 
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(AGENT_LAST_PHONE_KEY) || "";
+  });
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -64,6 +69,7 @@ const AgentLoginPage = () => {
           throw new Error("Your temporary PIN has expired. Please ask your admin to resend a new one.");
         }
       }
+      localStorage.setItem(AGENT_LAST_PHONE_KEY, phone);
       localStorage.setItem("mfs_has_authenticated", "1");
       haptics.success();
       toast.success("Signed in");
