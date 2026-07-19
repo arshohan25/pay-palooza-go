@@ -70,9 +70,18 @@ export async function clearClientCache(version = CACHE_VERSION) {
       const v = localStorage.getItem(key);
       if (v !== null) preserved[key] = v;
     }
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (PRESERVED_KEY_PREFIXES.some((p) => key.startsWith(p))) {
+        const v = localStorage.getItem(key);
+        if (v !== null) preserved[key] = v;
+      }
+    }
   } catch {
     // Ignore storage failures
   }
+
 
   try {
     localStorage.clear();
