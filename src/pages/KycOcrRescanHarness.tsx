@@ -68,6 +68,16 @@ const KycOcrRescanHarness = () => {
   const [loading, setLoading] = useState(false);
   const [runCount, setRunCount] = useState(1);
 
+  // Test-only escape hatch: expose the tracker so e2e specs can drive
+  // arbitrary (including intentionally-invalid) payloads to exercise the
+  // runtime schema validator without needing a fake UI surface.
+  useEffect(() => {
+    (window as unknown as { __kycTrack?: typeof trackKycEvent }).__kycTrack = trackKycEvent;
+    return () => {
+      delete (window as unknown as { __kycTrack?: typeof trackKycEvent }).__kycTrack;
+    };
+  }, []);
+
   const resolveEdited = (
     kind: Parameters<typeof resolveConfidence>[0],
     keys: string[],
