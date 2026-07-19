@@ -270,7 +270,7 @@ const AgentDashboard = () => {
   const todayCommission = todayTxns.reduce((sum, t) => sum + (t.commission || 0), 0);
 
   const quickActions = [
-    { icon: ArrowDownToLine, label: t("cashIn"), bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", path: "/agent/cashin", toggleKey: "agent_cash_in" },
+    { icon: ArrowUpFromLine, label: t("cashIn"), bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", path: "/agent/cashin", toggleKey: "agent_cash_in" },
     
     { icon: ArrowRightLeft, label: t("agdB2BSend"), bg: "rgba(233,30,99,0.12)", ring: "1px solid rgba(233,30,99,0.25)", path: "/agent/b2b", toggleKey: "agent_b2b" },
     { icon: Banknote, label: t("bank"), bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", path: "/agent/bank", toggleKey: "agent_bank_transfer" },
