@@ -166,9 +166,9 @@ export default function AdminMerchantApprovalQueue() {
               </div>
             </RadioGroup>
             <div>
-              <Label className="text-xs">Reason / audit note *</Label>
+              <Label className="text-xs">Reason / audit note <span className="text-muted-foreground">(optional for admin)</span></Label>
               <Textarea value={reason} onChange={e => setReason(e.target.value)} rows={3}
-                placeholder="e.g. All documents verified, MDR aligned with tier." />
+                placeholder="Optional. Leave blank to approve with no note." />
             </div>
           </div>
           <AlertDialogFooter>
