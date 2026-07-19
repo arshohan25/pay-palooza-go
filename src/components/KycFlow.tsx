@@ -955,10 +955,20 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
   };
 
   // Run OCR when NID front is captured
-  const runOcr = useCallback(async (imageData: string) => {
+  const runOcr = useCallback(async (imageData: string, opts?: { reset?: boolean }) => {
     if (!imageData) return;
     setOcrLoading(true);
     setOcrDone(false);
+    if (opts?.reset) {
+      // Clear all OCR-derived fields so the user sees a fresh extraction
+      setNidName("");
+      setNidNameBn("");
+      setNidNumber("");
+      setNidDob("");
+      setFatherName("");
+      setMotherName("");
+      setRawOcr(null);
+    }
     try {
       const base64 = imageData.replace(/^data:image\/[a-z]+;base64,/, "");
       const { data, error } = await supabase.functions.invoke("kyc-ocr", {
@@ -967,6 +977,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
       if (error) throw error;
 
       const extracted = data?.data ?? {};
+      setRawOcr(extracted as Record<string, unknown>);
       const fullName = pickFirstString(extracted.full_name, extracted.full_name_en, extracted.name, extracted.fullName, extracted.english_name);
       const fullNameBn = pickFirstString(extracted.full_name_bn, extracted.name_bn, extracted.bangla_name);
       const nidNumberValue = pickFirstString(extracted.nid_number, extracted.nid_no, extracted.nid, extracted.id_number, extracted.national_id).replace(/\D/g, "");
@@ -994,6 +1005,16 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
       setOcrLoading(false);
     }
   }, [t]);
+
+  const handleRescan = useCallback(() => {
+    if (!nidFront || ocrLoading) return;
+    const ok = typeof window !== "undefined"
+      ? window.confirm("Rescan NID? This will clear the current extracted fields and re-run OCR.")
+      : true;
+    if (!ok) return;
+    haptics.medium();
+    runOcr(nidFront, { reset: true });
+  }, [nidFront, ocrLoading, runOcr]);
 
   // Run OCR on NID back and extract address only
   const runBackOcr = useCallback(async (imageData: string) => {
