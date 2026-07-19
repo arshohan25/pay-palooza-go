@@ -26,8 +26,18 @@ export function generateTxnReceiptPdf(tx: ReceiptTxn, opts?: { appName?: string 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
 
-  // Header bar
-  doc.setFillColor(233, 30, 140);
+  const rawStatus = (tx.status || "completed").toLowerCase();
+  const isCompleted = rawStatus === "completed" || rawStatus === "success";
+  const isPending = rawStatus === "pending" || rawStatus === "processing";
+  const isFailed = !isCompleted && !isPending;
+
+  // Header bar — color reflects status
+  const header: [number, number, number] = isCompleted
+    ? [233, 30, 140]
+    : isPending
+      ? [217, 119, 6]
+      : [190, 30, 45];
+  doc.setFillColor(header[0], header[1], header[2]);
   doc.rect(0, 0, pageW, 70, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
@@ -35,20 +45,33 @@ export function generateTxnReceiptPdf(tx: ReceiptTxn, opts?: { appName?: string 
   doc.text(opts?.appName || "EasyPay", 40, 34);
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text("Transaction Receipt", 40, 54);
+  const heading = isCompleted
+    ? "Transaction Receipt"
+    : isPending
+      ? "Pending Transaction Advice"
+      : "Failed Transaction Advice";
+  doc.text(heading, 40, 54);
 
   // Amount hero
   const isCredit = !!tx.isCredit;
   doc.setTextColor(30, 30, 30);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
-  doc.text(`${isCredit ? "+" : "-"} BDT ${fmt(tx.amount)}`, 40, 120);
+  const amountPrefix = isCompleted ? (isCredit ? "+" : "-") : "";
+  doc.text(`${amountPrefix} BDT ${fmt(tx.amount)}`.trim(), 40, 120);
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
+  doc.setTextColor(header[0], header[1], header[2]);
+  doc.text(`Status: ${rawStatus.toUpperCase()}`, 40, 140);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(80, 80, 80);
-  doc.text(`Status: ${(tx.status || "completed").toUpperCase()}`, 40, 140);
   doc.text(new Date(tx.created_at).toLocaleString("en-BD"), 40, 156);
+  if (isPending) {
+    doc.text("Funds are not yet settled. This advice is for reference only.", 40, 170);
+  } else if (isFailed) {
+    doc.text("This transaction did not complete. No funds were moved.", 40, 170);
+  }
 
   // Details table
   const rows: [string, string][] = [
