@@ -5418,6 +5418,36 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_unblock_audit: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          phone: string
+          previous_deleted_user_id: string | null
+          reason: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          phone: string
+          previous_deleted_user_id?: string | null
+          reason: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          phone?: string
+          previous_deleted_user_id?: string | null
+          reason?: string
+        }
+        Relationships: []
+      }
       pin_change_history: {
         Row: {
           change_type: string
@@ -7835,6 +7865,17 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_blocked_phones: {
+        Args: never
+        Returns: {
+          deleted_at: string
+          deleted_user_id: string
+          deletion_reason: string
+          last_unblock_attempt: string
+          name: string
+          phone: string
+        }[]
+      }
       admin_reject_fund_request: {
         Args: { p_admin_note?: string; p_request_id: string }
         Returns: Json
@@ -7857,6 +7898,10 @@ export type Database = {
       }
       admin_toggle_referral_milestone: {
         Args: { p_action: string; p_milestone: number; p_referral_id: string }
+        Returns: Json
+      }
+      admin_unblock_phone: {
+        Args: { _phone: string; _reason: string }
         Returns: Json
       }
       admin_user_metrics: { Args: never; Returns: Json }
