@@ -46,6 +46,7 @@ const DistributorLoginPage = () => {
     setSubmitting(true);
     try {
       await signIn(phone, pin);
+      try { localStorage.setItem(DIST_LAST_PHONE_KEY, phone); } catch {}
       localStorage.setItem("mfs_has_authenticated", "1");
       haptics.success();
       toast.success("Signed in");
