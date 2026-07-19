@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Loader2, Star, Copy, ArrowUpFromLine, Navigation } from "lucide-react";
+import { MapPin, Loader2, Star, Copy, ArrowDownToLine, Navigation } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import FlowHeader from "@/components/FlowHeader";
@@ -204,7 +204,7 @@ const NearbyAgentsPage = () => {
               </div>
               <Button className="w-full rounded-xl h-11 mt-2"
                 onClick={() => { const uid = selected.easypay_uid ?? ""; navigate(`/agent/cashout?agent=${encodeURIComponent(uid)}`); }}>
-                <ArrowUpFromLine size={14} className="mr-1.5" /> Cash out here
+                <ArrowDownToLine size={14} className="mr-1.5" /> Cash out here
               </Button>
             </div>
           )}

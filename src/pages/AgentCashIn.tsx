@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowDownToLine, CheckCircle2, Home, HandCoins, ScanLine } from "lucide-react";
+import { ArrowLeft, ArrowUpFromLine, CheckCircle2, Home, HandCoins, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -117,7 +117,7 @@ const AgentCashIn = () => {
           </button>
           <div className="flex items-center gap-2.5 flex-1">
             <div className="w-9 h-9 rounded-xl glass-hero flex items-center justify-center">
-              <ArrowDownToLine size={16} className="text-primary-foreground" />
+              <ArrowUpFromLine size={16} className="text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-sm font-bold text-primary-foreground">Cash In</h1>

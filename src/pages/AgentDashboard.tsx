@@ -270,7 +270,7 @@ const AgentDashboard = () => {
   const todayCommission = todayTxns.reduce((sum, t) => sum + (t.commission || 0), 0);
 
   const quickActions = [
-    { icon: ArrowDownToLine, label: t("cashIn"), bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", path: "/agent/cashin", toggleKey: "agent_cash_in" },
+    { icon: ArrowUpFromLine, label: t("cashIn"), bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", path: "/agent/cashin", toggleKey: "agent_cash_in" },
     
     { icon: ArrowRightLeft, label: t("agdB2BSend"), bg: "rgba(233,30,99,0.12)", ring: "1px solid rgba(233,30,99,0.25)", path: "/agent/b2b", toggleKey: "agent_b2b" },
     { icon: Banknote, label: t("bank"), bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", path: "/agent/bank", toggleKey: "agent_bank_transfer" },
@@ -520,8 +520,8 @@ const AgentDashboard = () => {
                   const isCredit = isAgentTxnCredit(tx);
                   const txIcon = (() => {
                     switch (displayType) {
-                      case "cashin": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
-                      case "cashout": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+                      case "cashin": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+                      case "cashout": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
                       case "banktransfer": return { Icon: Landmark, cls: "bg-accent/10 text-accent" };
                       case "paybill": return { Icon: FileText, cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" };
                       default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
@@ -705,8 +705,8 @@ const AgentDashboard = () => {
 const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[]; systemAlerts: { id: string; text: string; time: string }[]; onClose: () => void; onViewTxn: (tx: any) => void }>(({ notifications, systemAlerts, onClose, onViewTxn }, ref) => {
   const getTxnIcon = (type: string) => {
     switch (type) {
-      case "cashin": case "receive": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
-      case "cashout": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+      case "cashin": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+      case "cashout": case "receive": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
       case "banktransfer": return { Icon: Landmark, cls: "bg-accent/10 text-accent" };
       case "paybill": return { Icon: FileText, cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" };
       default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
