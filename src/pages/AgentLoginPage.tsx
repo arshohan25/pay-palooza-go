@@ -190,26 +190,37 @@ const AgentLoginPage = () => {
         </div>
       </header>
 
-      <div className="flex-1 px-5 pt-5">
+      <div className="flex-1 px-5 pt-6 pb-6">
+        <AnimatePresence mode="wait" initial={false}>
         {otpMode ? (
-          <DeviceOtpStep
-            phone={phone}
-            portalLabel="Agent"
-            resendIn={otp.resendIn}
-            loading={otp.status === "verifying" || otp.status === "sending" || finalizing}
-            error={otp.error}
-            devOtp={otp.devOtp}
-            onVerify={handleVerify}
-            onResend={() => otp.sendOtp(phone)}
-            onCancel={handleCancelOtp}
-          />
+          <motion.div
+            key="otp"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+          >
+            <DeviceOtpStep
+              phone={phone}
+              portalLabel="Agent"
+              resendIn={otp.resendIn}
+              loading={otp.status === "verifying" || otp.status === "sending" || finalizing}
+              error={otp.error}
+              devOtp={otp.devOtp}
+              onVerify={handleVerify}
+              onResend={() => otp.sendOtp(phone)}
+              onCancel={handleCancelOtp}
+            />
+          </motion.div>
         ) : (
           <motion.form
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.35 }}
+            key="login"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
             onSubmit={handleSubmit}
-            className="bg-[#111d1a] border border-white/10 rounded-[22px] p-5 space-y-4 shadow-2xl"
+            className="bg-[#111d1a] border border-white/10 rounded-[22px] p-6 space-y-5 shadow-2xl"
           >
             <div className="space-y-1">
               <label htmlFor="agent-phone" className="text-xs font-semibold text-white/70 uppercase tracking-wider">
