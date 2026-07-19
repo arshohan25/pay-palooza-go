@@ -51,6 +51,7 @@ export default function LoyaltyBadge({
 }: LoyaltyBadgeProps) {
   const { data: tiers } = useLoyaltyTiers();
   const { data: loyalty } = useMyLoyalty();
+  const isTouch = useIsTouchDevice();
 
   const sortedTiers = useMemo(
     () => (tiers ?? []).filter((t) => t.is_active).slice().sort((a, b) => a.rank - b.rank),
