@@ -311,11 +311,13 @@ export default function AdminMerchantManagement() {
   // ─── MDR save ───
   const saveMdr = async () => {
     if (!editingMdr) return;
+    const v = validateMdrInput(editingMdr.mdr);
+    if (!v.ok) { toast.error(v.error ?? "Invalid MDR"); return; }
     setSavingMdr(true);
     const { error } = await supabase.from("merchants")
-      .update({ mdr_rate: parseFloat(editingMdr.mdr), settlement_frequency: editingMdr.settlement } as any)
+      .update({ mdr_rate: v.value, settlement_frequency: editingMdr.settlement } as any)
       .eq("id", editingMdr.id);
-    if (error) { toast.error("Failed to update"); }
+    if (error) { toast.error("Failed to update: " + error.message); }
     else {
       toast.success("MDR & settlement updated");
       const { data: { session } } = await supabase.auth.getSession();
