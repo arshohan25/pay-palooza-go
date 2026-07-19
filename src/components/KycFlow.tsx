@@ -674,7 +674,7 @@ const CameraBox = ({ label, preview, onCapture, onClose, icon: Icon, gradient, g
 
             {/* NID card frame overlay */}
             {isNidCard && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+              <div className="absolute inset-0 flex items-start justify-center pointer-events-none z-10 pt-[18vh]">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
