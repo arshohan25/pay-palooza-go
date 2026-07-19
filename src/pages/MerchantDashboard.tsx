@@ -1957,7 +1957,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
               { label: "Merchant ID", value: qrPayload },
               { label: "Business", value: merchant?.business_name || "—" },
               { label: "Category", value: merchant?.category || "—" },
-              { label: "MDR Rate", value: `${((merchant?.mdr_rate ?? 0.015) * 100).toFixed(2)}%` },
+              { label: "MDR Rate", value: formatMdrPercent(merchant?.mdr_rate) },
               { label: "Trade License", value: merchant?.trade_license || "—" },
             ].map(r => (
               <div key={r.label} className="flex justify-between py-2 border-b border-border/50 last:border-0">
