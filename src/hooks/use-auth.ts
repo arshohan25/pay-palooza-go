@@ -142,10 +142,13 @@ function _patchFetchForAuthRecovery() {
     const isSupabaseCall = !!supabaseUrl && url.startsWith(supabaseUrl);
     // Don't retry auth endpoints themselves (avoid loops).
     const isAuthEndpoint = isSupabaseCall && url.includes("/auth/v1/");
+    // Edge Functions use 401/403 for business logic (e.g. "not a merchant account").
+    // Don't silently refresh + replay those — let the caller handle the response.
+    const isEdgeFunction = isSupabaseCall && url.includes("/functions/v1/");
 
     const response = await originalFetch(input as any, init);
 
-    if (!isSupabaseCall || isAuthEndpoint) return response;
+    if (!isSupabaseCall || isAuthEndpoint || isEdgeFunction) return response;
     if (response.status !== 401 && response.status !== 403) return response;
 
     // Try one silent refresh; if it succeeds, replay the request with the
