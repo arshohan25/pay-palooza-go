@@ -853,7 +853,7 @@ export default function AdminMerchantManagement() {
             <AlertDialogDescription className="space-y-2">
               <div className="grid grid-cols-2 gap-2 text-sm mt-2">
                 <div><span className="text-muted-foreground">Category:</span> <span className="capitalize font-medium">{approvalTarget?.category}</span></div>
-                <div><span className="text-muted-foreground">MDR:</span> <span className="font-medium">{approvalTarget ? Number(approvalTarget.mdr_rate ?? 0) : 0}%</span></div>
+                <div><span className="text-muted-foreground">MDR:</span> <span className="font-medium">{approvalTarget ? formatMdrPercent(approvalTarget.mdr_rate) : "0%"}</span></div>
                 {approvalTarget?.trade_license && <div className="col-span-2"><span className="text-muted-foreground">Trade License:</span> <span className="font-mono text-xs">{approvalTarget.trade_license}</span></div>}
                 {approvalTarget?.bank_name && <div className="col-span-2"><span className="text-muted-foreground">Bank:</span> {approvalTarget.bank_name} - {approvalTarget.bank_account_number}</div>}
               </div>
