@@ -609,7 +609,7 @@ const CameraBox = ({ label, preview, onCapture, onClose, icon: Icon, gradient, g
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
-              className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[hsl(340,80%,55%)] to-[hsl(280,70%,50%)] flex items-center justify-center shadow-[0_0_40px_rgba(220,50,100,0.4)]"
+              className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-[0_0_40px_hsl(var(--primary)/0.4)]"
             >
               <AlertCircle size={36} className="text-white" />
             </motion.div>
@@ -697,7 +697,7 @@ const CameraBox = ({ label, preview, onCapture, onClose, icon: Icon, gradient, g
                     transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                     className="absolute left-2 right-2 h-[2px] rounded-full"
                     style={{
-                      background: "linear-gradient(90deg, transparent, hsl(340,80%,55%), hsl(280,70%,60%), transparent)",
+                      background: "linear-gradient(90deg, transparent, hsl(var(--primary)), hsl(var(--primary)/0.6), transparent)",
                       boxShadow: "0 0 12px 3px hsla(340,80%,55%,0.5)"
                     }}
                   />
@@ -1368,7 +1368,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                       </div>
                       {/* Pink badge */}
                       <motion.div
-                        className="absolute -top-2 -right-2 w-9 h-9 rounded-full bg-gradient-to-br from-[hsl(340,80%,58%)] to-[hsl(330,75%,48%)] flex items-center justify-center shadow-[0_3px_12px_rgba(220,40,80,0.35)] ring-2 ring-white"
+                        className="absolute -top-2 -right-2 w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-[0_3px_12px_hsl(var(--primary)/0.35)] ring-2 ring-background"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
@@ -1426,7 +1426,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-md">
                             <CreditCard size={22} />
                           </div>
-                          <div className="w-0.5 h-8 bg-gradient-to-b from-[hsl(330,80%,55%)/40] to-transparent mt-1" />
+                          <div className="w-0.5 h-8 bg-gradient-to-b from-primary/40 to-transparent mt-1" />
                         </div>
                         <div className="flex-1 pt-1">
                           <p className="text-sm font-bold text-foreground">আপনার NID এর ছবি তুলুন</p>
