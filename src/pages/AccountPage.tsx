@@ -303,7 +303,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
             <div className="flex-1 min-w-0 pr-20">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[17px] font-bold truncate">{displayName}</p>
-                <KycBadge status={kycStatus} loading={kycLoading} />
+                {kycStatus !== "verified" && <KycBadge status={kycStatus} loading={kycLoading} />}
               </div>
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+88 ${registeredPhone}` : "—"}</p>
               {userEmail && (

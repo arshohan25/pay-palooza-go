@@ -1,8 +1,22 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as Icons from "lucide-react";
 import { useLoyaltyTiers, useMyLoyalty, type LoyaltyTier } from "@/hooks/use-loyalty";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+
+/** True on devices whose primary input cannot hover (phones/tablets). */
+function useIsTouchDevice() {
+  const [touch, setTouch] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(hover: none), (pointer: coarse)");
+    const update = () => setTouch(mq.matches);
+    update();
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
+  }, []);
+  return touch;
+}
 
 interface LoyaltyBadgeProps {
   size?: "sm" | "md" | "lg";
@@ -37,6 +51,7 @@ export default function LoyaltyBadge({
 }: LoyaltyBadgeProps) {
   const { data: tiers } = useLoyaltyTiers();
   const { data: loyalty } = useMyLoyalty();
+  const isTouch = useIsTouchDevice();
 
   const sortedTiers = useMemo(
     () => (tiers ?? []).filter((t) => t.is_active).slice().sort((a, b) => a.rank - b.rank),
@@ -110,13 +125,16 @@ export default function LoyaltyBadge({
     </Wrapper>
   );
 
-  if (disableTooltip) return badge;
+  // On touch devices the tap is reserved for opening the full perks sheet
+  // (Radix tooltip on tap is unreliable and can cover profile actions).
+  if (disableTooltip || isTouch) return badge;
 
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>{badge}</TooltipTrigger>
-        <TooltipContent side="bottom" className="px-3 py-2 max-w-[220px]">
+        <TooltipContent side="bottom" align="end" sideOffset={8} collisionPadding={12} className="px-3 py-2 max-w-[220px] z-50">
+
           <div className="flex items-center gap-2 mb-1">
             <Icon size={12} aria-hidden="true" style={{ color: tier.gradient_from ?? tier.badge_color }} />
             <span className="text-xs font-bold">{tier.name}</span>
