@@ -2585,9 +2585,9 @@ const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | nul
 
 /* ── MDR Analytics Tab ── */
 const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
-  const mdrRate = merchant?.mdr_rate ?? 0.015;
+  const mdrFrac = mdrFraction(merchant?.mdr_rate);
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
-  const totalMDR = Math.round(totalRevenue * mdrRate);
+  const totalMDR = Math.round(totalRevenue * mdrFrac);
   const avgTxnSize = paymentTxns.length > 0 ? Math.round(totalRevenue / paymentTxns.length) : 0;
   const avgMDRPerTxn = paymentTxns.length > 0 ? Math.round(totalMDR / paymentTxns.length) : 0;
 
