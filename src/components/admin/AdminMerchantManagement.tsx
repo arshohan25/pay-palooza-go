@@ -790,7 +790,7 @@ export default function AdminMerchantManagement() {
                     <td className="px-4 py-3">
                       <KycRowBadge status={kycRowStatus(m)} onClick={() => openDetail(m, "profile")} />
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{Number(m.mdr_rate ?? 0)}%</td>
+                    <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{formatMdrPercent(m.mdr_rate)}</td>
                     <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{m.settlement_frequency}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
                       {new Date(m.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
