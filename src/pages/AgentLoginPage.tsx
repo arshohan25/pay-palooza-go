@@ -200,17 +200,45 @@ const AgentLoginPage = () => {
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
           >
-            <DeviceOtpStep
-              phone={phone}
-              portalLabel="Agent"
-              resendIn={otp.resendIn}
-              loading={otp.status === "verifying" || otp.status === "sending" || finalizing}
-              error={otp.error}
-              devOtp={otp.devOtp}
-              onVerify={handleVerify}
-              onResend={() => otp.sendOtp(phone)}
-              onCancel={handleCancelOtp}
-            />
+            {otp.status === "sending" && !otp.devOtp ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="rounded-[19px] border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur-2xl space-y-4"
+              >
+                <div className="mx-auto h-14 w-14 rounded-2xl bg-white/5 animate-pulse" />
+                <div className="mx-auto h-3 w-40 rounded bg-white/10 animate-pulse" />
+                <div className="mx-auto h-5 w-56 rounded bg-white/10 animate-pulse" />
+                <div className="flex justify-center gap-2 pt-2">
+                  {[0,1,2,3,4,5].map(i => (
+                    <div key={i} className="h-12 w-10 rounded-xl bg-white/5 animate-pulse" />
+                  ))}
+                </div>
+                <div className="h-12 w-full rounded-2xl bg-white/5 animate-pulse" />
+                <p className="text-center text-[12px] text-white/60 flex items-center justify-center gap-2">
+                  <Loader2 size={13} className="animate-spin" />
+                  Sending verification code…
+                </p>
+              </div>
+            ) : (
+              <DeviceOtpStep
+                phone={phone}
+                portalLabel="Agent"
+                resendIn={otp.resendIn}
+                loading={otp.status === "verifying" || otp.status === "sending" || finalizing}
+                error={otp.error}
+                devOtp={otp.devOtp}
+                onVerify={handleVerify}
+                onResend={() => otp.sendOtp(phone)}
+                onCancel={handleCancelOtp}
+              />
+            )}
+            {finalizing && (
+              <p className="mt-3 text-center text-[12px] text-white/70 flex items-center justify-center gap-2">
+                <Loader2 size={13} className="animate-spin" />
+                Trusting this device…
+              </p>
+            )}
           </motion.div>
         ) : (
           <motion.form
@@ -222,6 +250,7 @@ const AgentLoginPage = () => {
             onSubmit={handleSubmit}
             className="bg-[#111d1a] border border-white/10 rounded-[22px] p-6 space-y-5 shadow-2xl"
           >
+            <fieldset disabled={submitting} className="space-y-5 disabled:opacity-70">
             <div className="space-y-1">
               <label htmlFor="agent-phone" className="text-xs font-semibold text-white/70 uppercase tracking-wider">
                 Agent mobile number
@@ -242,7 +271,7 @@ const AgentLoginPage = () => {
                     setError(null);
                     setPhone(e.target.value.replace(/[^\d]/g, "").slice(0, 11));
                   }}
-                  className={`w-full h-12 px-3 rounded-xl bg-black/30 border text-white text-base tracking-[0.3em] text-center placeholder:text-white/30 placeholder:tracking-wider focus:outline-none transition-colors ${
+                  className={`w-full h-12 px-3 rounded-xl bg-black/30 border text-white text-base tracking-[0.3em] text-center placeholder:text-white/30 placeholder:tracking-wider focus:outline-none transition-colors disabled:cursor-not-allowed ${
                     phoneVal.showError
                       ? "border-red-500/70 focus:border-red-400"
                       : "border-white/10 focus:border-orange-400"
@@ -286,7 +315,7 @@ const AgentLoginPage = () => {
                     if (v.length > pin.length) haptics.light();
                     setPin(v);
                   }}
-                  className="w-full h-12 pl-10 pr-3 rounded-xl bg-black/30 border border-white/10 text-white text-2xl text-center tracking-[0.8rem] focus:outline-none focus:border-orange-400"
+                  className="w-full h-12 pl-10 pr-3 rounded-xl bg-black/30 border border-white/10 text-white text-2xl text-center tracking-[0.8rem] focus:outline-none focus:border-orange-400 disabled:cursor-not-allowed"
                   placeholder="••••"
                 />
               </div>
@@ -304,8 +333,9 @@ const AgentLoginPage = () => {
 
             <button
               type="submit"
-              disabled={submitting}
-              className="w-full h-12 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30 disabled:opacity-60"
+              disabled={submitting || phone.length !== 11 || pin.length !== 4 || phoneVal.showError}
+              aria-busy={submitting}
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
               {submitting ? (
                 <>
@@ -322,12 +352,13 @@ const AgentLoginPage = () => {
               <button
                 type="button"
                 onClick={() => navigate("/forgot-pin")}
-                className="text-orange-400 font-semibold hover:underline"
+                className="text-orange-400 font-semibold hover:underline disabled:opacity-50"
               >
                 Forgot PIN?
               </button>
               <span className="text-white/40">Agents only</span>
             </div>
+            </fieldset>
           </motion.form>
         )}
         </AnimatePresence>
