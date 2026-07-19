@@ -523,6 +523,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         />
       )}
       <MerchantApplicationFlow open={showMerchantApp} onOpenChange={setShowMerchantApp} />
+      <LoyaltyPerksPopup open={showLoyaltyPerks} onOpenChange={setShowLoyaltyPerks} />
 
       {/* Live Chat Sheet */}
       <Sheet open={showSupport} onOpenChange={setShowSupport}>
