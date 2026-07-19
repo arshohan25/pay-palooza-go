@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Loader2, Star, Copy, ArrowUpFromLine, Navigation } from "lucide-react";
+import { MapPin, Loader2, Star, Copy, ArrowDownToLine, Navigation } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import FlowHeader from "@/components/FlowHeader";
