@@ -296,7 +296,7 @@ const TransactionDetailSheet = ({ tx: initialTx, onClose }: { tx: DbTransaction;
             </div>
           )}
 
-          {(tx.status === "completed" || tx.status === "success") && (
+          {tx.status === "completed" && (
             <button
               onClick={() =>
                 downloadTxnReceiptPdf({
@@ -317,7 +317,7 @@ const TransactionDetailSheet = ({ tx: initialTx, onClose }: { tx: DbTransaction;
               }
               className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl h-11 border border-border/60 bg-card hover:bg-muted/40 active:bg-muted/60 text-[13px] font-bold text-foreground tap-target"
             >
-              <Download size={14} /> {t("downloadReceipt") !== "downloadReceipt" ? t("downloadReceipt") : "Download Receipt (PDF)"}
+              <Download size={14} /> Download Receipt (PDF)
             </button>
           )}
         </div>
