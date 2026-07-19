@@ -10,12 +10,17 @@ import { useUserRoles } from "@/hooks/use-user-roles";
 import { APP_ROLE_HOME, APP_ROLE_LABEL, isRoleAllowedForApp } from "@/lib/appRole";
 import { haptics } from "@/lib/haptics";
 
+const DIST_LAST_PHONE_KEY = "easypay_distributor_last_phone";
+
 const DistributorLoginPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
 
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(DIST_LAST_PHONE_KEY) || "";
+  });
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
