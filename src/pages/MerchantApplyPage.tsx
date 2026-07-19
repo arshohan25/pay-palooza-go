@@ -29,7 +29,7 @@ export default function MerchantApplyPage() {
 
   const handleClose = (next: boolean) => {
     setOpen(next);
-    if (!next) nav("/merchant-login", { replace: true });
+    if (!next) nav("/merchant", { replace: true });
   };
 
   if (!ready) {
