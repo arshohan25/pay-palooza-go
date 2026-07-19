@@ -202,6 +202,31 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // Fetch agent's own rating stats and subscribe to updates.
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    const load = async () => {
+      const { data } = await supabase
+        .from("agents")
+        .select("avg_rating, total_ratings")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (alive && data) {
+        setAgentRating({
+          avg: (data as any).avg_rating ?? null,
+          total: Number((data as any).total_ratings ?? 0),
+        });
+      }
+    };
+    load();
+    const ch = supabase
+      .channel(`agent-rating-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "agent_ratings" }, () => load())
+      .subscribe();
+    return () => { alive = false; supabase.removeChannel(ch); };
+  }, [user]);
+
   useEffect(() => {
     if (kycSheetOpen) fetchKycAudit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
