@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import {
   CheckCircle2, Clock, XCircle, Users, ArrowUpRight, AlertTriangle,
   AlertCircle, RefreshCw,
 } from "lucide-react";
+import { trackKycEvent } from "@/lib/kycAnalytics";
 
 /**
  * Dev-only harness that renders the exact "Customer KYC" sheet content used
