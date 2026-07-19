@@ -705,8 +705,8 @@ const AgentDashboard = () => {
 const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[]; systemAlerts: { id: string; text: string; time: string }[]; onClose: () => void; onViewTxn: (tx: any) => void }>(({ notifications, systemAlerts, onClose, onViewTxn }, ref) => {
   const getTxnIcon = (type: string) => {
     switch (type) {
-      case "cashin": case "receive": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
-      case "cashout": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+      case "cashin": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+      case "cashout": case "receive": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
       case "banktransfer": return { Icon: Landmark, cls: "bg-accent/10 text-accent" };
       case "paybill": return { Icon: FileText, cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" };
       default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
