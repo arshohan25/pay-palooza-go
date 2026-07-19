@@ -231,6 +231,22 @@ input[type="number"] {
   .gradient-addmoney { background: var(--gradient-addmoney); }
   .gradient-glass    { background: var(--gradient-glass); }
 
+  /* ── Agent app scoped theme: orange/amber to match the Agent login ── */
+  .agent-theme {
+    --gradient-primary: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(38 92% 50%) 100%);
+    --gradient-hero: radial-gradient(130% 150% at 0% 0%, hsl(24 95% 53%) 0%, hsl(32 94% 48%) 55%, hsl(38 92% 42%) 100%);
+    --gradient-send: linear-gradient(135deg, hsl(24 95% 53%), hsl(38 92% 50%));
+    --gradient-cashout: linear-gradient(135deg, hsl(24 95% 53%), hsl(38 92% 50%));
+    --gradient-payment: linear-gradient(135deg, hsl(24 95% 53%), hsl(38 92% 50%));
+    --gradient-addmoney: linear-gradient(135deg, hsl(24 95% 53%), hsl(38 92% 50%));
+    --gradient-accent: linear-gradient(135deg, hsl(38 92% 50%), hsl(45 93% 47%));
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 20 30% 12%;
+    --ring: 24 95% 53%;
+  }
+
   /* ── Shadow classes ── */
   .shadow-xs       { box-shadow: var(--shadow-xs); }
   .shadow-card     { box-shadow: var(--shadow-card); }
