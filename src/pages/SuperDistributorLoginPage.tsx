@@ -10,12 +10,17 @@ import { useUserRoles } from "@/hooks/use-user-roles";
 import { APP_ROLE_HOME, APP_ROLE_LABEL, isRoleAllowedForApp } from "@/lib/appRole";
 import { haptics } from "@/lib/haptics";
 
+const SD_LAST_PHONE_KEY = "easypay_super_distributor_last_phone";
+
 const SuperDistributorLoginPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
 
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(SD_LAST_PHONE_KEY) || "";
+  });
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -41,6 +46,7 @@ const SuperDistributorLoginPage = () => {
     setSubmitting(true);
     try {
       await signIn(phone, pin);
+      try { localStorage.setItem(SD_LAST_PHONE_KEY, phone); } catch {}
       localStorage.setItem("mfs_has_authenticated", "1");
       haptics.success();
       toast.success("Signed in");
@@ -97,7 +103,6 @@ const SuperDistributorLoginPage = () => {
               Mobile number
             </label>
             <div className="relative">
-              <Smartphone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-300" />
               <input
                 type="tel"
                 inputMode="numeric"
@@ -109,7 +114,7 @@ const SuperDistributorLoginPage = () => {
                   setError(null);
                   setPhone(e.target.value.replace(/\D/g, "").slice(0, 11));
                 }}
-                className="w-full h-12 pl-10 pr-3 rounded-xl bg-black/30 border border-white/10 text-white text-base tracking-wider placeholder:text-white/30 focus:outline-none focus:border-violet-400"
+                className="w-full h-12 px-3 rounded-xl bg-black/30 border border-white/10 text-white text-base tracking-[0.3em] text-center placeholder:text-white/30 placeholder:tracking-wider focus:outline-none focus:border-violet-400"
               />
             </div>
           </div>
