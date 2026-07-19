@@ -132,7 +132,7 @@ const AgentCashOut = () => {
           </button>
           <div className="flex items-center gap-2.5 flex-1">
             <div className="w-9 h-9 rounded-xl glass-hero flex items-center justify-center">
-              <ArrowUpFromLine size={16} className="text-primary-foreground" />
+              <ArrowDownToLine size={16} className="text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-sm font-bold text-primary-foreground">Cash Out</h1>
