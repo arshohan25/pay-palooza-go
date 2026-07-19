@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowUpFromLine, CheckCircle2, Home, ScanLine, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowDownToLine, CheckCircle2, Home, ScanLine, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
