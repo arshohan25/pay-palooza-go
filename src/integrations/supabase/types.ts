@@ -8363,6 +8363,7 @@ export type Database = {
           total_amount: number
         }[]
       }
+      expire_loyalty_overrides: { Args: never; Returns: number }
       expire_payment_links: { Args: never; Returns: undefined }
       expire_stale_payment_sessions: { Args: never; Returns: number }
       expire_stale_permission_requests: { Args: never; Returns: number }

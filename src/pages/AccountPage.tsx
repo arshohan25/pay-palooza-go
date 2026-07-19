@@ -34,6 +34,9 @@ import { useKycStatus, KycStatus } from "@/hooks/use-kyc-status";
 import { supabase } from "@/integrations/supabase/client";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { useMerchantApplyAccess } from "@/hooks/use-merchant-apply-access";
+import LoyaltyBadge from "@/components/LoyaltyBadge";
+import LoyaltyPerksPopup from "@/components/LoyaltyPerksPopup";
+import { Sparkles } from "lucide-react";
 
 const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   customer:          { label: "Customer",          bg: "bg-primary/10",      text: "text-primary" },
@@ -167,6 +170,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [myRewards, setMyRewards] = useState<{ id: string; reward_type: string; reward_value: any; reason: string | null; status: string }[]>([]);
   const [chatDraft, setChatDraft] = useState<string | undefined>(undefined);
   const [chatContext, setChatContext] = useState<{ title: string; body: string } | null>(null);
+  const [showLoyaltyPerks, setShowLoyaltyPerks] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -295,6 +299,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[17px] font-bold">{displayName}</p>
                 <KycBadge status={kycStatus} loading={kycLoading} />
+                <LoyaltyBadge size="sm" onClick={() => setShowLoyaltyPerks(true)} />
               </div>
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+88 ${registeredPhone}` : "—"}</p>
               {userEmail && (
@@ -447,7 +452,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         <Section title={t("sectionInsightsLimits")}>
           {!isDisabled("account_spending_insights") && <MenuRow icon={BarChart3}  iconClass="gradient-payment"  label={t("spendingInsights")} sub={t("insightsSub")}        onClick={() => setSubPage("insights")} />}
           {!isDisabled("account_limits_charges") && <MenuRow icon={CreditCard} iconClass="gradient-cashout"  label={t("limitsCharges")}  sub={t("limitsSub")}   onClick={() => setSubPage("limits")} />}
-          
+          <MenuRow icon={Sparkles} iconClass="gradient-accent" label="EasyPay Club" sub="See your tier, perks & next-level progress" onClick={() => navigate("/loyalty")} />
         </Section>
 
         {/* ── Notifications ── */}
@@ -518,6 +523,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         />
       )}
       <MerchantApplicationFlow open={showMerchantApp} onOpenChange={setShowMerchantApp} />
+      <LoyaltyPerksPopup open={showLoyaltyPerks} onOpenChange={setShowLoyaltyPerks} />
 
       {/* Live Chat Sheet */}
       <Sheet open={showSupport} onOpenChange={setShowSupport}>

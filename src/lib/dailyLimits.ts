@@ -3,6 +3,36 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Loyalty perks tune the effective daily limit for the user. We fetch a light
+ * snapshot from `user_loyalty` + `loyalty_tiers` and multiply the final limit
+ * by the tier's `limit_multiplier`. Falls back to 1× on any error.
+ */
+async function getLoyaltyLimitMultiplier(userId: string): Promise<number> {
+  try {
+    const { data: l } = await supabase
+      .from("user_loyalty" as any)
+      .select("current_tier_id, override_tier_id, override_until")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!l) return 1;
+    const overrideActive =
+      (l as any).override_tier_id &&
+      (!(l as any).override_until || new Date((l as any).override_until) > new Date());
+    const tierId = overrideActive ? (l as any).override_tier_id : (l as any).current_tier_id;
+    if (!tierId) return 1;
+    const { data: t } = await supabase
+      .from("loyalty_tiers" as any)
+      .select("limit_multiplier")
+      .eq("id", tierId)
+      .maybeSingle();
+    const m = Number((t as any)?.limit_multiplier ?? 1);
+    return Number.isFinite(m) && m > 0 ? m : 1;
+  } catch {
+    return 1;
+  }
+}
+
 interface DailyLimitConfig {
   type: string;
   maxDaily: number;
@@ -76,7 +106,9 @@ export async function checkDailyLimit(
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return { allowed: false, remaining: 0, used: 0, limit: config.maxDaily };
 
-  const effectiveLimit = await getEffectiveLimit(session.user.id, txnType);
+  const baseLimit = await getEffectiveLimit(session.user.id, txnType);
+  const multiplier = await getLoyaltyLimitMultiplier(session.user.id);
+  const effectiveLimit = baseLimit > 0 ? baseLimit * multiplier : baseLimit;
 
   // No limit (0 means unlimited in the system)
   if (effectiveLimit <= 0) return { allowed: true, remaining: Infinity, used: 0, limit: 0 };

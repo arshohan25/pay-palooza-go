@@ -77,6 +77,7 @@ const InsurancePage = lazy(() => retryLazyImport(() => import("./pages/Insurance
 const GiftCardsPage = lazy(() => import("./pages/GiftCardsPage"));
 const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
+const LoyaltyProgressPage = lazy(() => import("./pages/LoyaltyProgressPage"));
 const SavingsPage = lazy(() => import("./pages/SavingsPage"));
 const InstallmentJourneyPage = lazy(() => import("./pages/InstallmentJourneyPage"));
 const RecipientHarness = lazy(() => import("./pages/RecipientHarness"));
@@ -157,6 +158,7 @@ const App = () => (
                       <Route path="insurance" element={<InsurancePage />} />
                       <Route path="giftcards" element={<GiftCardsPage />} />
                       <Route path="account" element={<AccountPage />} />
+                      <Route path="loyalty" element={<LoyaltyProgressPage />} />
                       <Route path="savings" element={<SavingsPage />} />
                       <Route path="savings/journey" element={<InstallmentJourneyPage />} />
                       <Route path="payment-requests" element={<PaymentRequestsPage />} />
