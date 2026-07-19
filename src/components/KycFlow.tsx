@@ -1978,11 +1978,12 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
                   {!ocrLoading && (
                     <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
                       <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
-                      <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
+                      <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" confidence={bnNameConfidence} confidenceTestId="ocr-conf-bn-name" fieldTestId="kyc-field-bn-name" />
                       <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
                       <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01/01/1990" />
-                      <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} placeholder="Father's name" />
-                      <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} placeholder="Mother's name" />
+                      <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} placeholder="Father's name" confidence={fatherConfidence} confidenceTestId="ocr-conf-father" fieldTestId="kyc-field-father" />
+                      <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} placeholder="Mother's name" confidence={motherConfidence} confidenceTestId="ocr-conf-mother" fieldTestId="kyc-field-mother" />
+
                     </div>
                   )}
 
