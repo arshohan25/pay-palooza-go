@@ -89,10 +89,12 @@ export default function MerchantLoginPage() {
   } | null>(null);
   const otp = useDeviceOtpVerification("merchant");
 
-  // Restore device-bound phone + persisted lockout
+  // Restore last-used merchant phone + persisted lockout.
+  // IMPORTANT: use a merchant-scoped key so customer/agent/other-role numbers
+  // signed in on the same device don't leak into the Merchant portal prefill.
   useEffect(() => {
     const bound = typeof window !== "undefined"
-      ? localStorage.getItem("mfs_device_phone")
+      ? localStorage.getItem("easypay_merchant_last_phone")
       : null;
     if (bound) {
       const cleaned = bound.replace(/^88/, "").replace(/\D/g, "");
