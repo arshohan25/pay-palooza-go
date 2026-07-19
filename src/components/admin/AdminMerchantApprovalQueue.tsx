@@ -42,13 +42,14 @@ export default function AdminMerchantApprovalQueue() {
 
   const submit = async () => {
     if (!target) return;
-    if (!reason.trim()) { toast.error("Reason is required for audit log"); return; }
+    // Admin override: reason is optional. Reject still recommends a reason but is not enforced.
     setSaving(true);
     const newStatus = decision === "approve" ? "active" : "suspended";
     const { data: { session } } = await supabase.auth.getSession();
+    const note = reason.trim() || (decision === "approve" ? "Admin approved (no note)" : "Admin rejected (no note)");
 
     const { error } = await supabase.from("merchants")
-      .update({ status: newStatus as any, admin_notes: reason.trim() })
+      .update({ status: newStatus as any, admin_notes: note })
       .eq("id", target.id);
     if (error) { toast.error("Failed: " + error.message); setSaving(false); return; }
 
@@ -58,7 +59,7 @@ export default function AdminMerchantApprovalQueue() {
       merchant_user_id: target.user_id,
       actor_id: session?.user?.id,
       event_type: decision === "approve" ? "approval" : "rejection",
-      reason: reason.trim(),
+      reason: note,
       to_value: { status: newStatus },
     });
 
@@ -69,7 +70,7 @@ export default function AdminMerchantApprovalQueue() {
           user_id: target.user_id,
           merchant_id: target.id,
           status: decision === "approve" ? "approved" : "rejected",
-          reason: reason.trim(),
+          reason: note,
           business_name: target.business_name,
         },
       });
@@ -82,7 +83,7 @@ export default function AdminMerchantApprovalQueue() {
       title: decision === "approve" ? "Merchant Approved" : "Merchant Application Rejected",
       body: decision === "approve"
         ? `Your merchant "${target.business_name}" is now active.`
-        : `Reason: ${reason.trim()}`,
+        : `Reason: ${note}`,
       category: "merchant_ops",
     });
 
@@ -165,9 +166,9 @@ export default function AdminMerchantApprovalQueue() {
               </div>
             </RadioGroup>
             <div>
-              <Label className="text-xs">Reason / audit note *</Label>
+              <Label className="text-xs">Reason / audit note <span className="text-muted-foreground">(optional for admin)</span></Label>
               <Textarea value={reason} onChange={e => setReason(e.target.value)} rows={3}
-                placeholder="e.g. All documents verified, MDR aligned with tier." />
+                placeholder="Optional. Leave blank to approve with no note." />
             </div>
           </div>
           <AlertDialogFooter>

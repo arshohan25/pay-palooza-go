@@ -423,8 +423,8 @@ export default function AdminMerchantManagement() {
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Phone must be a valid 11-digit BD number (01XXXXXXXXX)"); return; }
     const mdr = Number(createForm.mdr_rate);
     const commission = Number(createForm.commission_rate);
-    if (!Number.isFinite(mdr) || mdr < 0 || mdr > 10) { toast.error("MDR rate must be between 0 and 10 (%)"); return; }
-    if (!Number.isFinite(commission) || commission < 0 || commission > 100) { toast.error("Commission rate must be between 0 and 100 (%)"); return; }
+    if (!Number.isFinite(mdr) || mdr < 0) { toast.error("MDR rate must be zero or greater"); return; }
+    if (!Number.isFinite(commission) || commission < 0) { toast.error("Commission rate must be zero or greater"); return; }
     if (createForm.contact_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.contact_email.trim())) { toast.error("Contact email is not valid"); return; }
     if (createForm.kyc_status === "verified") {
       if (!createForm.trade_license.trim()) { toast.error("Trade license number is required to mark KYC verified"); return; }
@@ -786,7 +786,7 @@ export default function AdminMerchantManagement() {
                     <td className="px-4 py-3">
                       <KycRowBadge status={kycRowStatus(m)} onClick={() => openDetail(m, "profile")} />
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{(Number(m.mdr_rate) * 100).toFixed(2)}%</td>
+                    <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{Number(m.mdr_rate ?? 0)}%</td>
                     <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{m.settlement_frequency}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
                       {new Date(m.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
@@ -849,7 +849,7 @@ export default function AdminMerchantManagement() {
             <AlertDialogDescription className="space-y-2">
               <div className="grid grid-cols-2 gap-2 text-sm mt-2">
                 <div><span className="text-muted-foreground">Category:</span> <span className="capitalize font-medium">{approvalTarget?.category}</span></div>
-                <div><span className="text-muted-foreground">MDR:</span> <span className="font-medium">{approvalTarget ? (Number(approvalTarget.mdr_rate) * 100).toFixed(2) : 0}%</span></div>
+                <div><span className="text-muted-foreground">MDR:</span> <span className="font-medium">{approvalTarget ? Number(approvalTarget.mdr_rate ?? 0) : 0}%</span></div>
                 {approvalTarget?.trade_license && <div className="col-span-2"><span className="text-muted-foreground">Trade License:</span> <span className="font-mono text-xs">{approvalTarget.trade_license}</span></div>}
                 {approvalTarget?.bank_name && <div className="col-span-2"><span className="text-muted-foreground">Bank:</span> {approvalTarget.bank_name} - {approvalTarget.bank_account_number}</div>}
               </div>
@@ -932,7 +932,7 @@ export default function AdminMerchantManagement() {
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <InfoCell label="Business Name" value={detail.merchant.business_name} />
                     <InfoCell label="Category" value={detail.merchant.category} className="capitalize" />
-                    <InfoCell label="MDR Rate" value={`${(Number(detail.merchant.mdr_rate) * 100).toFixed(2)}%`} />
+                    <InfoCell label="MDR Rate" value={`${Number(detail.merchant.mdr_rate ?? 0)}%`} />
                     <InfoCell label="Settlement" value={detail.merchant.settlement_frequency} />
                     <InfoCell label="Trade License" value={detail.merchant.trade_license || "—"} />
                     <InfoCell label="QR Code" value={detail.merchant.qr_code_data ? "Generated" : "—"} />
@@ -1180,7 +1180,8 @@ export default function AdminMerchantManagement() {
                           <label className="text-xs text-muted-foreground">MDR Rate (%)</label>
                           <Input
                             type="number"
-                            step="0.01"
+                            step="0.001"
+                            min="0"
                             value={editingMdr.mdr}
                             onChange={e => setEditingMdr({ ...editingMdr, mdr: e.target.value })}
                             className="mt-1"
@@ -1207,7 +1208,7 @@ export default function AdminMerchantManagement() {
                         <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
                           <div>
                             <p className="text-xs text-muted-foreground">MDR Rate</p>
-                            <p className="font-semibold text-foreground">{(Number(detail.merchant.mdr_rate) * 100).toFixed(2)}%</p>
+                            <p className="font-semibold text-foreground">{Number(detail.merchant.mdr_rate ?? 0)}%</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Settlement</p>
@@ -1219,7 +1220,7 @@ export default function AdminMerchantManagement() {
                             className="gap-1"
                             onClick={() => setEditingMdr({
                               id: detail.merchant.id,
-                              mdr: (Number(detail.merchant.mdr_rate) * 100).toFixed(2),
+                              mdr: String(detail.merchant.mdr_rate ?? 0),
                               settlement: detail.merchant.settlement_frequency,
                             })}
                           >
@@ -1324,11 +1325,11 @@ export default function AdminMerchantManagement() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>MDR Rate (%)</Label>
-                  <Input type="number" step="0.01" min="0" max="10" value={createForm.mdr_rate} onChange={e => setCreateForm(f => ({ ...f, mdr_rate: e.target.value }))} />
+                  <Input type="number" step="0.001" min="0" value={createForm.mdr_rate} onChange={e => setCreateForm(f => ({ ...f, mdr_rate: e.target.value }))} />
                 </div>
                 <div>
                   <Label>Commission (%)</Label>
-                  <Input type="number" step="0.01" min="0" max="100" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} />
+                  <Input type="number" step="0.001" min="0" value={createForm.commission_rate} onChange={e => setCreateForm(f => ({ ...f, commission_rate: e.target.value }))} />
                 </div>
                 <div>
                   <Label>Settlement</Label>
