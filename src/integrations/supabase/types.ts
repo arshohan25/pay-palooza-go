@@ -3199,6 +3199,135 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_tier_audit: {
+        Row: {
+          change_type: string
+          changed_by: string | null
+          created_at: string
+          from_tier_id: string | null
+          id: string
+          reason: string | null
+          snapshot: Json | null
+          to_tier_id: string | null
+          user_id: string
+        }
+        Insert: {
+          change_type: string
+          changed_by?: string | null
+          created_at?: string
+          from_tier_id?: string | null
+          id?: string
+          reason?: string | null
+          snapshot?: Json | null
+          to_tier_id?: string | null
+          user_id: string
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string | null
+          created_at?: string
+          from_tier_id?: string | null
+          id?: string
+          reason?: string | null
+          snapshot?: Json | null
+          to_tier_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_tier_audit_from_tier_id_fkey"
+            columns: ["from_tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_tier_audit_to_tier_id_fkey"
+            columns: ["to_tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_tiers: {
+        Row: {
+          badge_color: string
+          badge_icon: string
+          cashback_bonus_pct: number
+          code: string
+          created_at: string
+          description: string | null
+          fee_discount_pct: number
+          gradient_from: string | null
+          gradient_to: string | null
+          id: string
+          is_active: boolean
+          limit_multiplier: number
+          min_addmoney_lifetime: number | null
+          min_combined_score: number | null
+          min_lifetime_txn_count: number | null
+          min_savings_balance: number | null
+          min_volume_30d: number | null
+          min_wallet_balance: number | null
+          name: string
+          name_bn: string | null
+          priority_support: boolean
+          rank: number
+          updated_at: string
+        }
+        Insert: {
+          badge_color?: string
+          badge_icon?: string
+          cashback_bonus_pct?: number
+          code: string
+          created_at?: string
+          description?: string | null
+          fee_discount_pct?: number
+          gradient_from?: string | null
+          gradient_to?: string | null
+          id?: string
+          is_active?: boolean
+          limit_multiplier?: number
+          min_addmoney_lifetime?: number | null
+          min_combined_score?: number | null
+          min_lifetime_txn_count?: number | null
+          min_savings_balance?: number | null
+          min_volume_30d?: number | null
+          min_wallet_balance?: number | null
+          name: string
+          name_bn?: string | null
+          priority_support?: boolean
+          rank: number
+          updated_at?: string
+        }
+        Update: {
+          badge_color?: string
+          badge_icon?: string
+          cashback_bonus_pct?: number
+          code?: string
+          created_at?: string
+          description?: string | null
+          fee_discount_pct?: number
+          gradient_from?: string | null
+          gradient_to?: string | null
+          id?: string
+          is_active?: boolean
+          limit_multiplier?: number
+          min_addmoney_lifetime?: number | null
+          min_combined_score?: number | null
+          min_lifetime_txn_count?: number | null
+          min_savings_balance?: number | null
+          min_volume_30d?: number | null
+          min_wallet_balance?: number | null
+          name?: string
+          name_bn?: string | null
+          priority_support?: boolean
+          rank?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mcp_tool_call_logs: {
         Row: {
           arguments: Json | null
@@ -7482,6 +7611,75 @@ export type Database = {
         }
         Relationships: []
       }
+      user_loyalty: {
+        Row: {
+          addmoney_lifetime: number
+          created_at: string
+          current_tier_id: string | null
+          last_recalculated_at: string
+          lifetime_txn_count: number
+          override_by: string | null
+          override_reason: string | null
+          override_tier_id: string | null
+          override_until: string | null
+          savings_balance: number
+          score: number
+          updated_at: string
+          user_id: string
+          volume_30d: number
+          wallet_balance: number
+        }
+        Insert: {
+          addmoney_lifetime?: number
+          created_at?: string
+          current_tier_id?: string | null
+          last_recalculated_at?: string
+          lifetime_txn_count?: number
+          override_by?: string | null
+          override_reason?: string | null
+          override_tier_id?: string | null
+          override_until?: string | null
+          savings_balance?: number
+          score?: number
+          updated_at?: string
+          user_id: string
+          volume_30d?: number
+          wallet_balance?: number
+        }
+        Update: {
+          addmoney_lifetime?: number
+          created_at?: string
+          current_tier_id?: string | null
+          last_recalculated_at?: string
+          lifetime_txn_count?: number
+          override_by?: string | null
+          override_reason?: string | null
+          override_tier_id?: string | null
+          override_until?: string | null
+          savings_balance?: number
+          score?: number
+          updated_at?: string
+          user_id?: string
+          volume_30d?: number
+          wallet_balance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_loyalty_current_tier_id_fkey"
+            columns: ["current_tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_loyalty_override_tier_id_fkey"
+            columns: ["override_tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notification_settings: {
         Row: {
           created_at: string
@@ -7949,6 +8147,15 @@ export type Database = {
       admin_reverse_chargeback: {
         Args: { p_chargeback_txn_id: string; p_reason: string }
         Returns: Json
+      }
+      admin_set_loyalty_override: {
+        Args: {
+          _reason?: string
+          _target_user_id: string
+          _tier_id: string
+          _until?: string
+        }
+        Returns: undefined
       }
       admin_set_merchant_category_active: {
         Args: { _active: boolean; _name: string }
@@ -8502,6 +8709,7 @@ export type Database = {
         Returns: Json
       }
       purge_old_merchant_login_attempts: { Args: never; Returns: undefined }
+      recalculate_user_loyalty: { Args: { _user_id: string }; Returns: string }
       reconcile_txn_treasury: { Args: { p_txn_id: string }; Returns: Json }
       record_coupon_redemption: {
         Args: {

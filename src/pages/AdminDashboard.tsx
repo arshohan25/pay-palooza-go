@@ -108,6 +108,7 @@ import AdminSuperDistributorHub from "@/components/admin/AdminSuperDistributorHu
 import AdminSuperDistributorOverview from "@/components/admin/AdminSuperDistributorOverview";
 import AdminRolesPermissions from "@/components/admin/AdminRolesPermissions";
 import AdminUserRoleAssignments from "@/components/admin/AdminUserRoleAssignments";
+import AdminLoyaltyTiers from "@/components/admin/AdminLoyaltyTiers";
 import AdminPermissionAuditLog from "@/components/admin/AdminPermissionAuditLog";
 import AdminPermissionApprovals from "@/components/admin/AdminPermissionApprovals";
 import AdminApprovalsInbox from "@/components/admin/AdminApprovalsInbox";
@@ -300,6 +301,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "sd_overview", label: "SD Overview", icon: Building2 },
       { id: "roles_perms", label: "Roles & Permissions", icon: Building2 },
       { id: "user_roles", label: "User Role Assignments", icon: Building2 },
+      { id: "loyalty_tiers", label: "EasyPay Club (Loyalty)", icon: Award },
       { id: "perm_audit", label: "Permission Audit Log", icon: Building2 },
       { id: "perm_approvals", label: "Permission Approvals", icon: ShieldCheck },
       { id: "perm_inbox", label: "Approvals Inbox", icon: Bell },
@@ -2119,6 +2121,7 @@ export default function AdminDashboard() {
         {activeTab === "sd_overview" && <AdminSuperDistributorOverview />}
         {activeTab === "roles_perms" && <AdminRolesPermissions />}
         {activeTab === "user_roles" && <AdminUserRoleAssignments />}
+        {activeTab === "loyalty_tiers" && <AdminLoyaltyTiers />}
         {activeTab === "perm_audit" && <AdminPermissionAuditLog />}
         {activeTab === "perm_approvals" && <AdminPermissionApprovals />}
         {activeTab === "perm_inbox" && (
