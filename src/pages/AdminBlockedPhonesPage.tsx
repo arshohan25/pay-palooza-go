@@ -676,6 +676,138 @@ export default function AdminBlockedPhonesPage() {
         )}
       </Card>
 
+      {/* Bulk job timeline */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <History className="h-4 w-4 text-muted-foreground" />
+            <h2 className="font-semibold">Bulk unblock jobs</h2>
+          </div>
+          {jobs.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setJobs([])}
+            >
+              Clear history
+            </Button>
+          )}
+        </div>
+        {jobs.length === 0 ? (
+          <div className="py-4 text-center text-xs text-muted-foreground">
+            No bulk unblock jobs recorded on this device yet.
+          </div>
+        ) : (
+          <ol className="relative border-l border-border/60 ml-2 space-y-3">
+            {jobs.map((j) => {
+              const dot =
+                j.status === "success"
+                  ? "bg-emerald-500"
+                  : j.status === "partial"
+                  ? "bg-amber-500"
+                  : "bg-destructive";
+              const label =
+                j.status === "success" ? "Success" : j.status === "partial" ? "Partial" : "Failed";
+              return (
+                <li key={j.id} className="pl-4 relative">
+                  <span className={`absolute -left-[7px] top-1.5 h-3 w-3 rounded-full ring-2 ring-background ${dot}`} />
+                  <button
+                    onClick={() => setOpenJob(j)}
+                    className="w-full text-left rounded-md border border-border/60 hover:bg-muted/30 p-2 transition"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-medium">
+                        {label} · {j.unblocked}/{j.requested} unblocked
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {new Date(j.at).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      Operator: {j.operator_name ?? j.operator_id?.slice(0, 8) ?? "unknown"}
+                    </div>
+                    <div className="text-[10px] font-mono text-muted-foreground">
+                      hash: {j.payload_hash}
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </Card>
+
+      {/* Bulk job detail drawer */}
+      <Sheet open={!!openJob} onOpenChange={(o) => !o && setOpenJob(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Bulk job details</SheetTitle>
+            <SheetDescription>Per-phone outcomes for this run.</SheetDescription>
+          </SheetHeader>
+          {openJob && (
+            <div className="mt-6 space-y-4 text-sm">
+              <Field label="Job time" value={new Date(openJob.at).toLocaleString()} />
+              <Field
+                label="Status"
+                value={`${openJob.status.toUpperCase()} · ${openJob.unblocked}/${openJob.requested} unblocked`}
+              />
+              <Field
+                label="Operator"
+                value={
+                  openJob.operator_id
+                    ? `${openJob.operator_name ?? "Unknown"} (${openJob.operator_id})`
+                    : "Unknown"
+                }
+                mono={!!openJob.operator_id}
+              />
+              <Field label="Payload hash" value={openJob.payload_hash} mono />
+              <Field label="Reason" value={openJob.reason} />
+              {openJob.error && <Field label="Error" value={openJob.error} />}
+
+              <div className="pt-2 border-t border-border/60">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
+                  Per-phone outcomes ({openJob.phones.length})
+                </div>
+                <div className="space-y-1">
+                  {openJob.phones.map((p) => {
+                    const err = openJob.failed.find((f) => f.phone === p)?.error;
+                    return (
+                      <div
+                        key={p}
+                        className="flex items-start justify-between gap-2 rounded-md border border-border/60 p-2 text-xs"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-mono">{p}</div>
+                          {err && <div className="text-destructive truncate">{err}</div>}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {err ? (
+                            <span className="text-destructive font-medium">Failed</span>
+                          ) : (
+                            <span className="text-emerald-500 font-medium">Unblocked</span>
+                          )}
+                          <button
+                            className="ml-2 text-muted-foreground hover:text-foreground underline"
+                            onClick={() => {
+                              setQ(p);
+                              setOpenJob(null);
+                            }}
+                          >
+                            Find
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+
       {/* Single unblock */}
       <Dialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
         <DialogContent>
