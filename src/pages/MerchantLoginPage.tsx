@@ -710,54 +710,6 @@ export default function MerchantLoginPage() {
           </form>
           )}
 
-          {/* Footer: forgot PIN (compact) + apply button + manager toggle */}
-          <div className="mt-3 flex flex-col items-center gap-2 text-center">
-            <button
-              type="button"
-              onClick={() => setForgotOpen(true)}
-              className="group inline-flex items-center gap-1.5 rounded-full border border-amber-200/30 bg-white/[0.04] px-3.5 py-1.5 text-[12px] font-medium text-amber-100/90 backdrop-blur-md transition-all hover:border-amber-200/60 hover:bg-amber-300/[0.08] hover:text-amber-50"
-            >
-              <KeyRound className="h-3 w-3" />
-              Forgot PIN?
-              <span className="text-amber-200/70 group-hover:text-amber-100">Reset securely</span>
-              <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-            </button>
-
-            {!boundPhone && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    activityTracker.track({
-                      event_type: "tap",
-                      event_name: "merchant_apply_open",
-                      target: "apply_as_merchant",
-                    });
-                    setApplyOpen(true);
-                  }}
-                  className="group relative h-12 w-full overflow-hidden rounded-2xl border border-amber-300/25 bg-gradient-to-b from-amber-400/10 via-amber-500/5 to-transparent shadow-[0_8px_24px_-12px_rgba(251,191,36,0.35),inset_0_1px_0_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-all duration-300 hover:border-amber-300/50 hover:shadow-[0_12px_32px_-10px_rgba(251,191,36,0.5),inset_0_1px_0_0_rgba(255,255,255,0.15)] active:scale-[0.98]"
-                >
-                  <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                  <span className="pointer-events-none absolute -inset-x-full -top-px h-px bg-gradient-to-r from-transparent via-amber-200/80 to-transparent transition-all duration-700 group-hover:inset-x-0" />
-                  <span className="relative flex items-center justify-center gap-2.5 text-sm">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/70">New</span>
-                    <span className="h-3 w-px bg-amber-200/25" />
-                    <span className="font-semibold tracking-tight text-amber-50">Apply as a merchant</span>
-                    <ArrowRight className="h-4 w-4 text-amber-200 transition-transform duration-300 group-hover:translate-x-1" />
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/merchant-manager-login")}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/60 transition-colors hover:text-amber-100"
-                >
-                  <UserCog className="h-3 w-3" />
-                  Manage a store as staff? Manager login
-                  <ArrowRight className="h-3 w-3" />
-                </button>
-              </>
-            )}
-          </div>
         </div>
       </div>
 
