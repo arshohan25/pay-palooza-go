@@ -1042,6 +1042,8 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
       setMotherName("");
       setRawOcr(null);
     }
+    const startedAt = Date.now();
+    trackKycEvent("kyc_ocr_run_start", { side: "front", reset: !!opts?.reset });
     try {
       const base64 = imageData.replace(/^data:image\/[a-z]+;base64,/, "");
       const { data, error } = await supabase.functions.invoke("kyc-ocr", {
@@ -1066,14 +1068,46 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
       if (motherNameValue) setMotherName(motherNameValue);
 
       const hasFrontData = [fullName, nidNumberValue, dateOfBirth, fatherNameValue, motherNameValue].some(Boolean);
+
+      // Confidence snapshot — computed against freshly extracted values.
+      const raw = extracted as Record<string, unknown>;
+      const bnPicked = pickFirstWithSiblingConfidence(raw, ["full_name_bn", "name_bn", "bangla_name"]);
+      const fatherPicked = pickFirstWithSiblingConfidence(raw, ["father_name", "father", "fatherName"]);
+      const motherPicked = pickFirstWithSiblingConfidence(raw, ["mother_name", "mother", "motherName"]);
+      const bnLevel = resolveConfidence("name_bn", { value: fullNameBn, confidence: bnPicked.confidence });
+      const fatherLevel = resolveConfidence("father", { value: fatherNameValue, confidence: fatherPicked.confidence });
+      const motherLevel = resolveConfidence("mother", { value: motherNameValue, confidence: motherPicked.confidence });
+      const confidences = { bn_name: bnLevel, father: fatherLevel, mother: motherLevel };
+
+      trackKycEvent("kyc_ocr_confidence", { side: "front", field: "bn_name", level: bnLevel });
+      trackKycEvent("kyc_ocr_confidence", { side: "front", field: "father", level: fatherLevel });
+      trackKycEvent("kyc_ocr_confidence", { side: "front", field: "mother", level: motherLevel });
+
       if (hasFrontData) {
         setOcrDone(true);
+        trackKycEvent("kyc_ocr_run_end", {
+          side: "front",
+          status: "success",
+          duration_ms: Date.now() - startedAt,
+          confidences,
+        });
       } else {
         toast.error("NID তথ্য পড়া যায়নি, আবার পরিষ্কার ছবি তুলুন");
+        trackKycEvent("kyc_ocr_run_end", {
+          side: "front",
+          status: "empty",
+          duration_ms: Date.now() - startedAt,
+        });
       }
     } catch (err: any) {
       console.error("OCR error:", err);
       toast.error(t("ocrFailed"));
+      trackKycEvent("kyc_ocr_run_end", {
+        side: "front",
+        status: "error",
+        duration_ms: Date.now() - startedAt,
+        error: err?.message ?? String(err),
+      });
     } finally {
       setOcrLoading(false);
     }
@@ -1084,7 +1118,11 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
     const ok = typeof window !== "undefined"
       ? window.confirm("Rescan NID? This will clear the current extracted fields and re-run OCR.")
       : true;
-    if (!ok) return;
+    if (!ok) {
+      trackKycEvent("kyc_ocr_rescan_cancelled", { side: "front" });
+      return;
+    }
+    trackKycEvent("kyc_ocr_rescan_confirmed", { side: "front" });
     haptics.medium();
     runOcr(nidFront, { reset: true });
   }, [nidFront, ocrLoading, runOcr]);
