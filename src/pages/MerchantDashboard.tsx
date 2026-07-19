@@ -1983,20 +1983,33 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
       <motion.div variants={stagger.item}>
         <Card className="p-0 border-0 shadow-elevated relative overflow-hidden rounded-3xl">
-          {/* Premium gradient band */}
+          {/* Premium gradient band (dynamic colors) */}
           <div className="relative px-6 pt-6 pb-4 text-center overflow-hidden"
-            style={{ background: "linear-gradient(135deg, hsl(24 95% 55%) 0%, hsl(350 75% 45%) 100%)" }}>
+            style={{ background: `linear-gradient(135deg, ${bandStart} 0%, ${bandEnd} 100%)` }}>
             <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute -bottom-20 -left-16 w-56 h-56 rounded-full bg-white/10 blur-2xl" />
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-[10px] font-semibold tracking-wide transition-colors"
+              aria-label="Customise QR card"
+            >
+              <Settings size={11} /> Customise
+            </button>
             <div className="relative">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm mb-2">
-                <Sparkles size={11} className="text-white" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">EasyPay Accepted</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm mb-2">
+                <img src={EASYPAY_LOGO_URL} alt="EasyPay" className="h-3.5 w-auto object-contain brightness-0 invert" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">Accepted Here</span>
               </div>
-              <h3 className="text-lg font-black text-white tracking-tight">{shopName}</h3>
+              <div className="flex items-center justify-center gap-2">
+                {shopLogo && (
+                  <img src={shopLogo} alt="" className="h-6 w-6 rounded-md object-contain bg-white/90 p-0.5" />
+                )}
+                <h3 className="text-lg font-black text-white tracking-tight">{shopName}</h3>
+              </div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/90 mt-0.5">{tagline}</p>
             </div>
           </div>
+
 
           {/* QR Body */}
           <div className="px-6 pt-6 pb-6 text-center bg-card">
