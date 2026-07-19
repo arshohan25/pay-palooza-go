@@ -423,8 +423,8 @@ export default function AdminMerchantManagement() {
     if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Phone must be a valid 11-digit BD number (01XXXXXXXXX)"); return; }
     const mdr = Number(createForm.mdr_rate);
     const commission = Number(createForm.commission_rate);
-    if (!Number.isFinite(mdr) || mdr < 0 || mdr > 10) { toast.error("MDR rate must be between 0 and 10 (%)"); return; }
-    if (!Number.isFinite(commission) || commission < 0 || commission > 100) { toast.error("Commission rate must be between 0 and 100 (%)"); return; }
+    if (!Number.isFinite(mdr) || mdr < 0) { toast.error("MDR rate must be zero or greater"); return; }
+    if (!Number.isFinite(commission) || commission < 0) { toast.error("Commission rate must be zero or greater"); return; }
     if (createForm.contact_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.contact_email.trim())) { toast.error("Contact email is not valid"); return; }
     if (createForm.kyc_status === "verified") {
       if (!createForm.trade_license.trim()) { toast.error("Trade license number is required to mark KYC verified"); return; }
