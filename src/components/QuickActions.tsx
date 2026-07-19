@@ -271,6 +271,118 @@ const SortableActionItem = ({
   );
 };
 
+/* ─── Sortable More Service Item ─── */
+interface SortableMoreItemProps {
+  item: any;
+  index: number;
+  isDraggable: boolean;
+  iconSizePx: number;
+  moreGlobalOff: boolean;
+  longPressId: string | null;
+  hoveredMoreId: string | null;
+  justDropped: boolean;
+  tLabel: string;
+  onClick: () => void;
+  onStartLongPress: (id: string) => void;
+  onCancelLongPress: () => void;
+  onHoverStart: (id: string) => void;
+  onHoverEnd: () => void;
+  didLongPressRef: React.MutableRefObject<boolean>;
+  tSoon: string;
+}
+
+const SortableMoreItem = ({
+  item, index, isDraggable, iconSizePx, moreGlobalOff, longPressId, hoveredMoreId,
+  justDropped, tLabel, onClick, onStartLongPress, onCancelLongPress,
+  onHoverStart, onHoverEnd, didLongPressRef, tSoon,
+}: SortableMoreItemProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({
+    id: item.id,
+    disabled: !isDraggable,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? (isDragging ? "transform 200ms ease" : undefined),
+    zIndex: isDragging ? 50 : undefined,
+    scale: isDragging ? 1.12 : 1,
+  };
+
+  if (isDragging) {
+    return (
+      <div ref={setNodeRef} style={style} className="relative">
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="rounded-full border-2 border-dashed border-primary/40 bg-primary/5 animate-pulse" style={{ width: iconSizePx, height: iconSizePx }} />
+          <span className="text-[10px] font-semibold text-transparent select-none px-0.5">{tLabel}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className={`relative transition-[scale,opacity] duration-200 ${isOver && isDraggable ? "scale-95 opacity-60" : ""} ${justDropped ? "animate-[drop-bounce_0.4s_ease-out]" : ""}`}>
+      <motion.button
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "spring", stiffness: 450, damping: 26, delay: 0.03 * index }}
+        whileTap={{ scale: 0.90 }}
+        onClick={() => { if (didLongPressRef.current) { didLongPressRef.current = false; return; } onClick(); }}
+        onPointerDown={() => onStartLongPress(item.id)}
+        onPointerUp={onCancelLongPress}
+        onPointerLeave={onCancelLongPress}
+        onMouseEnter={() => onHoverStart(item.id)}
+        onMouseLeave={onHoverEnd}
+        className="flex flex-col items-center gap-2.5 group outline-none relative w-full"
+      >
+        {isDraggable && (
+          <div
+            {...attributes}
+            {...listeners}
+            className="absolute -top-1 -right-0.5 z-20 w-5 h-5 rounded-full bg-muted/80 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch-none"
+            style={{ touchAction: "none" }}
+          >
+            <GripVertical className="w-3 h-3 text-muted-foreground" />
+          </div>
+        )}
+        <motion.div
+          whileHover={{ scale: 1.06, y: -2 }}
+          transition={{ type: "spring", stiffness: 380, damping: 22 }}
+          className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden"
+          style={{ width: iconSizePx, height: iconSizePx, filter: moreGlobalOff ? "grayscale(1)" : "none", opacity: moreGlobalOff ? 0.5 : 1 }}
+        >
+          <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-[0.14]`} />
+          {item.soon && <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-20 animate-pulse`} />}
+          <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
+            <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
+          </div>
+          <item.Icon isHovered={hoveredMoreId === item.id} />
+        </motion.div>
+        {item.soon && (
+          <motion.div className="absolute -top-1 right-0 z-10" animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
+            <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>{tSoon}</span>
+          </motion.div>
+        )}
+        <AnimatePresence>
+          {longPressId === item.id && (
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.18 }}
+              className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 whitespace-nowrap rounded-lg bg-popover border border-border px-2.5 py-1 text-[10px] font-medium text-popover-foreground shadow-lg pointer-events-none"
+            >
+              {item.desc}
+              <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-popover border-r border-b border-border" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${moreGlobalOff ? "opacity-50 grayscale" : ""}`}>
+          {tLabel}
+        </span>
+      </motion.button>
+    </div>
+  );
+};
+
 /* ─── Main Component ─── */
 interface QuickActionsProps {
   onSendMoney: () => void;
