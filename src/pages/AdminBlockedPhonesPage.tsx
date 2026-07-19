@@ -50,6 +50,36 @@ type BulkResult = {
   at: string;
 };
 
+type BulkJob = {
+  id: string;
+  at: string;
+  operator_id: string | null;
+  operator_name: string | null;
+  payload_hash: string;
+  reason: string;
+  phones: string[];
+  status: "success" | "partial" | "failed";
+  requested: number;
+  unblocked: number;
+  failed: Array<{ phone: string; error: string }>;
+  error?: string;
+};
+
+const JOBS_STORAGE_KEY = "admin_bulk_unblock_jobs_v1";
+
+async function sha256Hex(input: string): Promise<string> {
+  try {
+    const buf = new TextEncoder().encode(input);
+    const digest = await crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .slice(0, 16);
+  } catch {
+    return Math.random().toString(36).slice(2, 18);
+  }
+}
+
 // Cooldown after a successful/failed bulk submit before another can fire (ms)
 const BULK_COOLDOWN_MS = 15_000;
 // Window during which the exact same payload is treated as a duplicate (ms)
@@ -71,12 +101,40 @@ export default function AdminBlockedPhonesPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [contextFilter, setContextFilter] = useState<"all" | "admin" | "system" | string>("all");
+  const [sortBy, setSortBy] = useState<"deleted_desc" | "deleted_asc" | "phone_asc" | "phone_desc">("deleted_desc");
 
   // Anti-spam state
   const lastSubmitRef = useRef<{ hash: string; at: number } | null>(null);
   const [cooldownUntil, setCooldownUntil] = useState<number>(0);
   const [nowTick, setNowTick] = useState(Date.now());
   const [lastResult, setLastResult] = useState<BulkResult | null>(null);
+
+  // Bulk job timeline
+  const [jobs, setJobs] = useState<BulkJob[]>(() => {
+    try {
+      const raw = localStorage.getItem(JOBS_STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as BulkJob[]) : [];
+    } catch { return []; }
+  });
+  const [openJob, setOpenJob] = useState<BulkJob | null>(null);
+
+  useEffect(() => {
+    try { localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobs.slice(0, 50))); } catch {}
+  }, [jobs]);
+
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-admin-profile"],
+    queryFn: async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, name")
+        .eq("user_id", auth.user.id)
+        .maybeSingle();
+      return { id: auth.user.id, name: (data as any)?.name ?? null };
+    },
+  });
 
   useEffect(() => {
     if (cooldownUntil <= Date.now()) return;
@@ -201,6 +259,24 @@ export default function AdminBlockedPhonesPage() {
       setCooldownUntil(Date.now() + BULK_COOLDOWN_MS);
       setNowTick(Date.now());
 
+      sha256Hex(`${[...res.phones].sort().join(",")}|${res.reason}`).then((hash) => {
+        const status: BulkJob["status"] = allOk ? "success" : noneOk ? "failed" : "partial";
+        const job: BulkJob = {
+          id: `${res.at}-${hash}`,
+          at: res.at,
+          operator_id: currentUser?.id ?? null,
+          operator_name: currentUser?.name ?? null,
+          payload_hash: hash,
+          reason: res.reason,
+          phones: res.phones,
+          status,
+          requested: res.requested,
+          unblocked: res.unblocked,
+          failed: res.failed,
+        };
+        setJobs((prev) => [job, ...prev].slice(0, 50));
+      });
+
       toast({
         title: allOk
           ? `Unblocked ${unblocked}/${requested}`
@@ -229,10 +305,27 @@ export default function AdminBlockedPhonesPage() {
       }
       invalidate();
     },
-    onError: (e: any) => {
+    onError: (e: any, vars) => {
       const msg = e?.message ?? String(e);
       setCooldownUntil(Date.now() + BULK_COOLDOWN_MS);
       setNowTick(Date.now());
+      const at = new Date().toISOString();
+      sha256Hex(`${[...vars.phones].sort().join(",")}|${vars.reason}`).then((hash) => {
+        setJobs((prev) => [{
+          id: `${at}-${hash}`,
+          at,
+          operator_id: currentUser?.id ?? null,
+          operator_name: currentUser?.name ?? null,
+          payload_hash: hash,
+          reason: vars.reason,
+          phones: vars.phones,
+          status: "failed" as const,
+          requested: vars.phones.length,
+          unblocked: 0,
+          failed: vars.phones.map((p) => ({ phone: p, error: msg })),
+          error: msg,
+        }, ...prev].slice(0, 50));
+      });
       toast({
         title: "Bulk unblock failed",
         description: msg.includes("reason_too_short")
@@ -260,9 +353,13 @@ export default function AdminBlockedPhonesPage() {
     const term = q.trim().toLowerCase();
     const fromTs = dateFrom ? new Date(dateFrom).getTime() : null;
     const toTs = dateTo ? new Date(dateTo).getTime() + 24 * 3600 * 1000 - 1 : null;
-    return blocked.filter((b) => {
+    const list = blocked.filter((b) => {
       if (term) {
-        const hit = (b.phone ?? "").includes(term) || (b.name ?? "").toLowerCase().includes(term);
+        const hit =
+          (b.phone ?? "").toLowerCase().includes(term) ||
+          (b.name ?? "").toLowerCase().includes(term) ||
+          (b.original_user_id ?? "").toLowerCase().includes(term) ||
+          (b.deleted_user_id ?? "").toLowerCase().includes(term);
         if (!hit) return false;
       }
       const ts = new Date(b.deleted_at).getTime();
@@ -275,7 +372,21 @@ export default function AdminBlockedPhonesPage() {
       }
       return true;
     });
-  }, [blocked, q, dateFrom, dateTo, contextFilter]);
+    const sorted = [...list].sort((a, b) => {
+      switch (sortBy) {
+        case "deleted_asc":
+          return new Date(a.deleted_at).getTime() - new Date(b.deleted_at).getTime();
+        case "phone_asc":
+          return (a.phone ?? "").localeCompare(b.phone ?? "");
+        case "phone_desc":
+          return (b.phone ?? "").localeCompare(a.phone ?? "");
+        case "deleted_desc":
+        default:
+          return new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime();
+      }
+    });
+    return sorted;
+  }, [blocked, q, dateFrom, dateTo, contextFilter, sortBy]);
 
   const activeFilterCount =
     (dateFrom ? 1 : 0) + (dateTo ? 1 : 0) + (contextFilter !== "all" ? 1 : 0);
@@ -375,19 +486,31 @@ export default function AdminBlockedPhonesPage() {
       </div>
 
       <Card className="p-4 space-y-3">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search by phone or name…"
+              placeholder="Search by phone, name, or deleted account ID…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
+          <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="deleted_desc">Newest deleted</SelectItem>
+              <SelectItem value="deleted_asc">Oldest deleted</SelectItem>
+              <SelectItem value="phone_asc">Phone A→Z</SelectItem>
+              <SelectItem value="phone_desc">Phone Z→A</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             variant={showFilters ? "default" : "outline"}
             size="icon"
+            className="relative"
             onClick={() => setShowFilters((v) => !v)}
             title="Advanced filters"
           >
@@ -399,6 +522,7 @@ export default function AdminBlockedPhonesPage() {
             )}
           </Button>
         </div>
+
 
         {showFilters && (
           <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
@@ -551,6 +675,138 @@ export default function AdminBlockedPhonesPage() {
           </div>
         )}
       </Card>
+
+      {/* Bulk job timeline */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <History className="h-4 w-4 text-muted-foreground" />
+            <h2 className="font-semibold">Bulk unblock jobs</h2>
+          </div>
+          {jobs.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setJobs([])}
+            >
+              Clear history
+            </Button>
+          )}
+        </div>
+        {jobs.length === 0 ? (
+          <div className="py-4 text-center text-xs text-muted-foreground">
+            No bulk unblock jobs recorded on this device yet.
+          </div>
+        ) : (
+          <ol className="relative border-l border-border/60 ml-2 space-y-3">
+            {jobs.map((j) => {
+              const dot =
+                j.status === "success"
+                  ? "bg-emerald-500"
+                  : j.status === "partial"
+                  ? "bg-amber-500"
+                  : "bg-destructive";
+              const label =
+                j.status === "success" ? "Success" : j.status === "partial" ? "Partial" : "Failed";
+              return (
+                <li key={j.id} className="pl-4 relative">
+                  <span className={`absolute -left-[7px] top-1.5 h-3 w-3 rounded-full ring-2 ring-background ${dot}`} />
+                  <button
+                    onClick={() => setOpenJob(j)}
+                    className="w-full text-left rounded-md border border-border/60 hover:bg-muted/30 p-2 transition"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-medium">
+                        {label} · {j.unblocked}/{j.requested} unblocked
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {new Date(j.at).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      Operator: {j.operator_name ?? j.operator_id?.slice(0, 8) ?? "unknown"}
+                    </div>
+                    <div className="text-[10px] font-mono text-muted-foreground">
+                      hash: {j.payload_hash}
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </Card>
+
+      {/* Bulk job detail drawer */}
+      <Sheet open={!!openJob} onOpenChange={(o) => !o && setOpenJob(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Bulk job details</SheetTitle>
+            <SheetDescription>Per-phone outcomes for this run.</SheetDescription>
+          </SheetHeader>
+          {openJob && (
+            <div className="mt-6 space-y-4 text-sm">
+              <Field label="Job time" value={new Date(openJob.at).toLocaleString()} />
+              <Field
+                label="Status"
+                value={`${openJob.status.toUpperCase()} · ${openJob.unblocked}/${openJob.requested} unblocked`}
+              />
+              <Field
+                label="Operator"
+                value={
+                  openJob.operator_id
+                    ? `${openJob.operator_name ?? "Unknown"} (${openJob.operator_id})`
+                    : "Unknown"
+                }
+                mono={!!openJob.operator_id}
+              />
+              <Field label="Payload hash" value={openJob.payload_hash} mono />
+              <Field label="Reason" value={openJob.reason} />
+              {openJob.error && <Field label="Error" value={openJob.error} />}
+
+              <div className="pt-2 border-t border-border/60">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
+                  Per-phone outcomes ({openJob.phones.length})
+                </div>
+                <div className="space-y-1">
+                  {openJob.phones.map((p) => {
+                    const err = openJob.failed.find((f) => f.phone === p)?.error;
+                    return (
+                      <div
+                        key={p}
+                        className="flex items-start justify-between gap-2 rounded-md border border-border/60 p-2 text-xs"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-mono">{p}</div>
+                          {err && <div className="text-destructive truncate">{err}</div>}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {err ? (
+                            <span className="text-destructive font-medium">Failed</span>
+                          ) : (
+                            <span className="text-emerald-500 font-medium">Unblocked</span>
+                          )}
+                          <button
+                            className="ml-2 text-muted-foreground hover:text-foreground underline"
+                            onClick={() => {
+                              setQ(p);
+                              setOpenJob(null);
+                            }}
+                          >
+                            Find
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
 
       {/* Single unblock */}
       <Dialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
