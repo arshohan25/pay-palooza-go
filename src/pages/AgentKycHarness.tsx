@@ -176,6 +176,10 @@ export default function AgentKycHarness() {
         new?: KycCustomer;
         old?: { user_id: string };
       };
+      trackKycEvent("kyc_sheet_realtime", {
+        event_type: detail.eventType,
+        source: "realtime",
+      });
       setCustomers((prev) => {
         if (detail.eventType === "INSERT" && detail.new) {
           if (prev.some((c) => c.user_id === detail.new!.user_id)) return prev;
