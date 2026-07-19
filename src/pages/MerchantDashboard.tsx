@@ -1790,96 +1790,161 @@ const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null
 
 const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const qrPayload = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
+  const rawPayload = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
+  const qrPayload = rawPayload.toUpperCase();
+  const shopName = merchant?.business_name || "Merchant";
+  const tagline = "Scan • Pay • Done";
 
   useEffect(() => {
     QRCode.toDataURL(qrPayload, {
-      width: 280,
+      width: 480,
       margin: 2,
-      color: { dark: "#1a1a2e", light: "#ffffff" },
+      color: { dark: "#0b0b1f", light: "#ffffff" },
       errorCorrectionLevel: "H",
     }).then(setQrDataUrl).catch(() => {});
   }, [qrPayload]);
 
   const copyCode = () => {
     navigator.clipboard.writeText(qrPayload);
-    toast({ title: "Copied!", description: "Merchant QR code copied to clipboard" });
+    toast({ title: "Copied!", description: "Merchant ID copied to clipboard" });
+  };
+
+  const handlePrint = () => {
+    if (!qrDataUrl) return;
+    const w = window.open("", "_blank", "width=800,height=1000");
+    if (!w) return;
+    w.document.write(`<!doctype html><html><head><title>${shopName} — Payment QR</title>
+      <style>
+        @page { size: A6; margin: 8mm; }
+        *{box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff}
+        .card{width:340px;border-radius:24px;padding:22px 20px;text-align:center;
+          background:linear-gradient(160deg,#fff 0%,#fff 55%,#fff5ee 100%);
+          border:2px solid #0b0b1f;position:relative;overflow:hidden}
+        .band{position:absolute;top:0;left:0;right:0;height:56px;background:linear-gradient(135deg,#ff6a1a,#c02a55);color:#fff;
+          display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:1.5px;font-size:12px;text-transform:uppercase}
+        .body{margin-top:64px}
+        h1{margin:0 0 2px;font-size:20px;color:#0b0b1f;letter-spacing:.3px}
+        .tag{margin:0 0 14px;font-size:11px;color:#c02a55;font-weight:700;letter-spacing:2px;text-transform:uppercase}
+        .qr{padding:14px;border-radius:20px;background:#fff;border:1.5px dashed #0b0b1f33;display:inline-block}
+        .qr img{width:230px;height:230px;display:block}
+        .mid{margin:14px auto 6px;display:inline-block;padding:8px 16px;border-radius:999px;
+          background:#0b0b1f;color:#fff;font-family:'SFMono-Regular',Menlo,monospace;font-weight:700;letter-spacing:2px;font-size:13px}
+        .foot{margin-top:8px;font-size:10px;color:#6b6b7b;letter-spacing:1px;text-transform:uppercase}
+        .brand{margin-top:4px;font-size:11px;color:#0b0b1f;font-weight:800;letter-spacing:2px}
+      </style></head><body>
+      <div class="card">
+        <div class="band">EasyPay • Accepted Here</div>
+        <div class="body">
+          <h1>${shopName}</h1>
+          <p class="tag">${tagline}</p>
+          <div class="qr"><img src="${qrDataUrl}" alt="QR"/></div>
+          <div class="mid">${qrPayload}</div>
+          <div class="foot">Scan with any EasyPay app</div>
+          <div class="brand">— powered by EasyPay —</div>
+        </div>
+      </div>
+      <script>window.onload=()=>{setTimeout(()=>{window.print();},250)}</script>
+      </body></html>`);
+    w.document.close();
   };
 
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
       <motion.div variants={stagger.item}>
-        <Card className="p-6 border-0 shadow-elevated text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-32 h-32 rounded-full opacity-5" style={{
-            background: "radial-gradient(circle, hsl(24 90% 50%) 0%, transparent 70%)"
-          }} />
-          <h3 className="text-base font-bold text-foreground mb-0.5">Your Payment QR Code</h3>
-          <p className="text-[11px] text-muted-foreground mb-5">Customers scan this to pay you instantly</p>
-
-          {qrDataUrl ? (
-            <div className="inline-block p-5 bg-white rounded-3xl shadow-elevated mb-5 ring-1 ring-border/20">
-              <img src={qrDataUrl} alt="Merchant QR" className="w-56 h-56" />
+        <Card className="p-0 border-0 shadow-elevated relative overflow-hidden rounded-3xl">
+          {/* Premium gradient band */}
+          <div className="relative px-6 pt-6 pb-4 text-center overflow-hidden"
+            style={{ background: "linear-gradient(135deg, hsl(24 95% 55%) 0%, hsl(350 75% 45%) 100%)" }}>
+            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-20 -left-16 w-56 h-56 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm mb-2">
+                <Sparkles size={11} className="text-white" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">EasyPay Accepted</span>
+              </div>
+              <h3 className="text-lg font-black text-white tracking-tight">{shopName}</h3>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/90 mt-0.5">{tagline}</p>
             </div>
-          ) : (
-            <div className="w-56 h-56 mx-auto bg-muted rounded-3xl flex items-center justify-center mb-5">
-              <QrCode size={48} className="text-muted-foreground" />
-            </div>
-          )}
-
-          <p className="text-sm font-bold text-foreground mb-1">{merchant?.business_name}</p>
-          <div className="flex items-center justify-center gap-2 mb-5">
-            <code className="text-xs bg-muted px-4 py-2 rounded-xl text-foreground font-mono">{qrPayload}</code>
-            <button onClick={copyCode} className="tap-target text-muted-foreground hover:text-foreground transition-colors">
-              <Copy size={14} />
-            </button>
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1 rounded-xl h-11" onClick={() => {
-              if (!qrDataUrl) return;
-              const link = document.createElement("a");
-              link.download = `${merchant?.business_name || "merchant"}-qr.png`;
-              link.href = qrDataUrl;
-              link.click();
-            }}>
-              <Download size={14} className="mr-1.5" /> Download
-            </Button>
-            <Button variant="outline" className="flex-1 rounded-xl h-11" onClick={copyCode}>
-              <Copy size={14} className="mr-1.5" /> Copy Code
+          {/* QR Body */}
+          <div className="px-6 pt-6 pb-6 text-center bg-card">
+            {qrDataUrl ? (
+              <div className="relative inline-block mb-5">
+                <div className="absolute inset-0 rounded-3xl blur-xl opacity-30"
+                  style={{ background: "linear-gradient(135deg, hsl(24 95% 55%), hsl(350 75% 45%))" }} />
+                <div className="relative p-4 bg-white rounded-3xl shadow-elevated ring-1 ring-border/20">
+                  <img src={qrDataUrl} alt="Merchant QR" className="w-52 h-52" />
+                  {/* Corner brackets */}
+                  <span className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-primary rounded-tl-lg" />
+                  <span className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-primary rounded-tr-lg" />
+                  <span className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-primary rounded-bl-lg" />
+                  <span className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-primary rounded-br-lg" />
+                </div>
+              </div>
+            ) : (
+              <div className="w-56 h-56 mx-auto bg-muted rounded-3xl flex items-center justify-center mb-5">
+                <QrCode size={48} className="text-muted-foreground" />
+              </div>
+            )}
+
+            <div className="flex items-center justify-center gap-2 mb-5">
+              <code className="text-xs font-mono font-bold tracking-[0.2em] px-4 py-2 rounded-xl text-foreground uppercase"
+                style={{ background: "linear-gradient(135deg, hsl(var(--muted)), hsl(var(--muted)/0.6))" }}>
+                {qrPayload}
+              </code>
+              <button onClick={copyCode} className="tap-target text-muted-foreground hover:text-primary transition-colors">
+                <Copy size={14} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <Button variant="outline" className="rounded-xl h-11" onClick={() => {
+                if (!qrDataUrl) return;
+                const link = document.createElement("a");
+                link.download = `${shopName}-qr.png`;
+                link.href = qrDataUrl;
+                link.click();
+              }}>
+                <Download size={14} className="mr-1" /> <span className="text-xs">Save</span>
+              </Button>
+              <Button variant="outline" className="rounded-xl h-11" onClick={handlePrint}>
+                <Receipt size={14} className="mr-1" /> <span className="text-xs">Print</span>
+              </Button>
+              <Button variant="outline" className="rounded-xl h-11" onClick={copyCode}>
+                <Copy size={14} className="mr-1" /> <span className="text-xs">Copy</span>
+              </Button>
+            </div>
+
+            <Button
+              className="w-full h-12 rounded-xl text-sm font-bold mt-3 shadow-glow text-white"
+              style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
+              onClick={async () => {
+                const shareText = `Pay ${shopName} via EasyPay. Merchant ID: ${qrPayload}`;
+                const shareUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(qrPayload)}`;
+                if (navigator.share) {
+                  try {
+                    const shareData: ShareData = { title: `Pay ${shopName}`, text: shareText, url: shareUrl };
+                    if (qrDataUrl) {
+                      try {
+                        const res = await fetch(qrDataUrl);
+                        const blob = await res.blob();
+                        const file = new File([blob], "payment-qr.png", { type: "image/png" });
+                        if (navigator.canShare?.({ files: [file] })) shareData.files = [file];
+                      } catch {}
+                    }
+                    await navigator.share(shareData);
+                  } catch {}
+                } else {
+                  navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+                  toast({ title: "Copied!", description: "Payment QR details copied to clipboard" });
+                }
+              }}
+            >
+              <Share2 size={16} className="mr-2" /> Share QR to Get Payment
             </Button>
           </div>
-
-          {/* Share QR to get payment */}
-          <Button
-            className="w-full h-12 rounded-xl text-sm font-bold mt-3 shadow-glow"
-            style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
-            onClick={async () => {
-              const shareText = `Pay ${merchant?.business_name || "merchant"} via QR. Merchant Code: ${qrPayload}`;
-              const shareUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(qrPayload)}`;
-              if (navigator.share) {
-                try {
-                  const shareData: ShareData = { title: `Pay ${merchant?.business_name}`, text: shareText, url: shareUrl };
-                  // Try sharing QR image if possible
-                  if (qrDataUrl) {
-                    try {
-                      const res = await fetch(qrDataUrl);
-                      const blob = await res.blob();
-                      const file = new File([blob], "payment-qr.png", { type: "image/png" });
-                      if (navigator.canShare?.({ files: [file] })) {
-                        shareData.files = [file];
-                      }
-                    } catch {}
-                  }
-                  await navigator.share(shareData);
-                } catch {}
-              } else {
-                navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-                toast({ title: "Copied!", description: "Payment QR details copied to clipboard" });
-              }
-            }}
-          >
-            <Share2 size={16} className="mr-2" /> Share QR to Get Payment
-          </Button>
         </Card>
       </motion.div>
 
