@@ -68,7 +68,40 @@ export default function AdminBlockedPhonesPage() {
     },
   });
 
-  const invalidate = () => {
+  const { data: phoneHistory = [], isLoading: phoneHistoryLoading } = useQuery({
+    queryKey: ["phone-unblock-history", details?.phone],
+    enabled: !!details?.phone,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("phone_unblock_audit")
+        .select("id, phone, admin_id, reason, created_at")
+        .eq("phone", details!.phone)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as AuditRow[];
+    },
+  });
+
+  const adminIds = useMemo(
+    () => Array.from(new Set(phoneHistory.map((h) => h.admin_id))),
+    [phoneHistory]
+  );
+
+  const { data: adminNames = {} } = useQuery({
+    queryKey: ["phone-unblock-admin-names", adminIds],
+    enabled: adminIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, name")
+        .in("user_id", adminIds);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((p: any) => { map[p.user_id] = p.name ?? "Unknown"; });
+      return map;
+    },
+  });
+
     qc.invalidateQueries({ queryKey: ["admin-blocked-phones"] });
     qc.invalidateQueries({ queryKey: ["phone-unblock-audit"] });
   };
