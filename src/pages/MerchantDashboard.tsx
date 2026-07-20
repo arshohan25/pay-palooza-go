@@ -760,7 +760,7 @@ const MerchantDashboard = () => {
                   <ArrowLeft size={16} className="text-foreground" />
                 </button>
                 <h2 className="text-sm font-bold text-foreground">
-                  {[...mainTabs, ...menuItems].find(t => t.id === activeTab)?.label || "Back"}
+                  {[...mainTabs, ...menuItems].find(tab => tab.id === activeTab)?.label || t("mdBack")}
                 </h2>
               </div>
             )}
