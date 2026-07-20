@@ -1263,10 +1263,10 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   };
 
   const quickActions = [
-    { icon: Send, label: "Send Money", permission: "payouts", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
-    { icon: HandCoins, label: "Cash Out", permission: "payouts", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
-    { icon: Landmark, label: "Add Bank", permission: "add_bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
-    { icon: CalendarClock, label: "Settlement", permission: "settlements", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
+    { icon: Send, label: t("mdSendMoney"), permission: "payouts", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
+    { icon: HandCoins, label: t("mdCashOut"), permission: "payouts", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
+    { icon: Landmark, label: t("mdAddBank"), permission: "add_bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
+    { icon: CalendarClock, label: t("mdSettlement"), permission: "settlements", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
     
   ];
 
