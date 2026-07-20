@@ -15,6 +15,7 @@ import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
 import PaymentLinkTimeline, { LinkPaymentRow } from "@/components/PaymentLinkTimeline";
+import { useI18n } from "@/lib/i18n";
 
 type Link = {
   id: string;
@@ -32,6 +33,7 @@ type Link = {
 };
 
 const PayLinkPage = () => {
+  const { t } = useI18n();
   const { shortCode } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -72,7 +74,7 @@ const PayLinkPage = () => {
         .eq("short_code", shortCode)
         .maybeSingle();
       if (error) setError(error.message);
-      else if (!data) setError("This payment link doesn't exist.");
+      else if (!data) setError(t("plLinkNotExist"));
       else {
         setLink(data as Link);
         loadPayments(data.id);
@@ -140,10 +142,10 @@ const PayLinkPage = () => {
     }
     if (!link) return;
     if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
-      return toast.error("Enter a valid amount");
+      return toast.error(t("plEnterValidAmount"));
     }
     if (remaining !== null && finalAmount > remaining) {
-      return toast.error(`Only ৳${remaining} remaining`);
+      return toast.error(t("plOnlyRemaining").replace("{amount}", String(remaining)));
     }
     setPaying(true);
     try {
@@ -158,11 +160,11 @@ const PayLinkPage = () => {
         try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
         throw new Error(msg);
       }
-      if (!data?.success) throw new Error(data?.error ?? "Payment failed");
+      if (!data?.success) throw new Error(data?.error ?? t("plPaymentFailed"));
       haptics.success?.();
       fireSuccessConfetti();
       playPaymentSuccess();
-      setSuccess({ amount: data.amount, reference: data.reference, payee: data.payee_name ?? payeeName ?? "recipient" });
+      setSuccess({ amount: data.amount, reference: data.reference, payee: data.payee_name ?? payeeName ?? t("plRecipientFallback") });
       setIdemKey(crypto.randomUUID());
 
     } catch (e) {
@@ -180,10 +182,10 @@ const PayLinkPage = () => {
     }
     if (!link) return;
     if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
-      return toast.error("Enter a valid amount");
+      return toast.error(t("plEnterValidAmount"));
     }
     if (remaining !== null && finalAmount > remaining) {
-      return toast.error(`Only ৳${remaining} remaining`);
+      return toast.error(t("plOnlyRemaining").replace("{amount}", String(remaining)));
     }
     setPayingUp(true);
     try {
@@ -201,7 +203,7 @@ const PayLinkPage = () => {
         try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
         throw new Error(msg);
       }
-      if (!data?.payment_url) throw new Error("No checkout URL returned");
+      if (!data?.payment_url) throw new Error(t("plNoCheckoutUrl"));
       window.location.href = data.payment_url as string;
     } catch (e) {
       toast.error((e as Error).message);
@@ -214,10 +216,10 @@ const PayLinkPage = () => {
     const up = searchParams.get("up");
     if (!up) return;
     if (up === "success") {
-      toast.success("Payment received — updating…");
+      toast.success(t("plPaymentReceived"));
       if (link?.id) loadPayments(link.id);
     } else if (up === "cancel") {
-      toast.error("Payment cancelled");
+      toast.error(t("plPaymentCancelled"));
     }
     searchParams.delete("up");
     setSearchParams(searchParams, { replace: true });
@@ -226,7 +228,7 @@ const PayLinkPage = () => {
 
 
   if (loading || authLoading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t("plLoading")}</div>;
   }
 
   if (error || !link) {
@@ -235,9 +237,9 @@ const PayLinkPage = () => {
         <Card className="max-w-sm w-full">
           <CardContent className="p-6 text-center space-y-3">
             <XCircle className="w-10 h-10 text-destructive mx-auto" />
-            <p className="font-semibold text-foreground">Link unavailable</p>
-            <p className="text-sm text-muted-foreground">{error ?? "This payment link doesn't exist."}</p>
-            <Button variant="outline" onClick={() => navigate("/")}>Go home</Button>
+            <p className="font-semibold text-foreground">{t("plLinkUnavailable")}</p>
+            <p className="text-sm text-muted-foreground">{error ?? t("plLinkNotExist")}</p>
+            <Button variant="outline" onClick={() => navigate("/")}>{t("plGoHome")}</Button>
           </CardContent>
         </Card>
       </div>
@@ -246,12 +248,12 @@ const PayLinkPage = () => {
 
   const statusPill = () => {
     const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
-      active: { label: "Active", cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> },
-      processing: { label: "Processing", cls: "bg-amber-500/10 text-amber-600 border-amber-500/30", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
-      paid: { label: "Paid", cls: "bg-primary/10 text-primary border-primary/30", icon: <CheckCircle2 className="w-3 h-3" /> },
-      expired: { label: "Expired", cls: "bg-muted text-muted-foreground border-border", icon: <XCircle className="w-3 h-3" /> },
-      exhausted: { label: "Fully paid", cls: "bg-primary/10 text-primary border-primary/30", icon: <CheckCircle2 className="w-3 h-3" /> },
-      inactive: { label: "Inactive", cls: "bg-muted text-muted-foreground border-border", icon: <XCircle className="w-3 h-3" /> },
+      active: { label: t("plStatusActive"), cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> },
+      processing: { label: t("plStatusProcessing"), cls: "bg-amber-500/10 text-amber-600 border-amber-500/30", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+      paid: { label: t("plStatusPaid"), cls: "bg-primary/10 text-primary border-primary/30", icon: <CheckCircle2 className="w-3 h-3" /> },
+      expired: { label: t("plStatusExpired"), cls: "bg-muted text-muted-foreground border-border", icon: <XCircle className="w-3 h-3" /> },
+      exhausted: { label: t("plStatusFullyPaid"), cls: "bg-primary/10 text-primary border-primary/30", icon: <CheckCircle2 className="w-3 h-3" /> },
+      inactive: { label: t("plStatusInactive"), cls: "bg-muted text-muted-foreground border-border", icon: <XCircle className="w-3 h-3" /> },
     };
     const cfg = map[status] ?? map.inactive;
     return (
@@ -263,7 +265,7 @@ const PayLinkPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background flex items-start justify-center p-4 py-8">
-      <Seo title={`Pay: ${link.title}`} description={`Pay ${link.title} securely from your wallet.`} path={`/r/${link.short_code}`} />
+      <Seo title={t("plSeoTitle").replace("{title}", link.title)} description={t("plSeoDesc").replace("{title}", link.title)} path={`/r/${link.short_code}`} />
       <AnimatePresence mode="wait">
         {success ? (
           <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="w-full max-w-sm">
@@ -274,13 +276,13 @@ const PayLinkPage = () => {
                 </motion.div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">৳{success.amount.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground mt-1">paid to {success.payee}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{t("plPaidTo").replace("{payee}", success.payee)}</p>
                 </div>
                 <div className="bg-muted rounded-xl p-3 text-xs text-muted-foreground">
-                  Reference: <span className="font-mono text-foreground">{success.reference}</span>
+                  {t("plReference")} <span className="font-mono text-foreground">{success.reference}</span>
                 </div>
                 <Button className="w-full rounded-xl h-11" onClick={() => navigate("/")}>
-                  <Home className="w-4 h-4 mr-2" /> Back to app
+                  <Home className="w-4 h-4 mr-2" /> {t("plBackToApp")}
                 </Button>
               </CardContent>
             </Card>
@@ -293,9 +295,9 @@ const PayLinkPage = () => {
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
                     <Wallet className="w-6 h-6 text-primary" />
                   </div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Payment request</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("plPaymentRequest")}</p>
                   <h1 className="text-lg font-bold text-foreground">{link.title}</h1>
-                  {payeeName && <p className="text-sm text-muted-foreground">from {payeeName}</p>}
+                  {payeeName && <p className="text-sm text-muted-foreground">{t("plFrom").replace("{name}", payeeName)}</p>}
                   <div className="pt-2 flex justify-center">{statusPill()}</div>
                 </div>
 
@@ -305,28 +307,28 @@ const PayLinkPage = () => {
 
                 {link.amount != null && (
                   <div className="bg-muted/40 rounded-xl p-3 text-center space-y-1">
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Requested / Paid</p>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("plRequestedPaid")}</p>
                     <p className="text-sm font-medium text-foreground">
-                      ৳{Number(link.amount).toLocaleString()} · paid ৳{Number(link.amount_paid ?? 0).toLocaleString()}
+                      {t("plPaidSummary").replace("{req}", Number(link.amount).toLocaleString()).replace("{paid}", Number(link.amount_paid ?? 0).toLocaleString())}
                     </p>
                     {remaining !== null && remaining > 0 && (
-                      <p className="text-xs text-primary font-semibold">৳{remaining.toLocaleString()} remaining</p>
+                      <p className="text-xs text-primary font-semibold">{t("plRemaining").replace("{amount}", remaining.toLocaleString())}</p>
                     )}
                   </div>
                 )}
 
                 {!canPay ? (
                   <div className="bg-muted rounded-xl p-4 text-sm text-center text-muted-foreground">
-                    {status === "expired" && "This link has expired."}
-                    {status === "exhausted" && "This link reached its use limit."}
-                    {status === "paid" && "This request has been fully paid."}
-                    {status === "inactive" && "This link is no longer active."}
+                    {status === "expired" && t("plLinkExpired")}
+                    {status === "exhausted" && t("plLinkExhausted")}
+                    {status === "paid" && t("plRequestFullyPaid")}
+                    {status === "inactive" && t("plLinkInactive")}
                   </div>
                 ) : (
                   <>
                     {link.amount != null ? (
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Pay amount (BDT)</label>
+                        <label className="text-sm font-medium">{t("plPayAmountBDT")}</label>
                         <Input
                           type="number" min="1" step="1" inputMode="numeric"
                           value={customAmount}
@@ -335,12 +337,12 @@ const PayLinkPage = () => {
                           placeholder={remaining ? String(remaining) : ""}
                         />
                         <p className="text-[11px] text-muted-foreground text-center">
-                          Leave blank to pay the full remaining ৳{remaining?.toLocaleString()}
+                          {t("plLeaveBlankFull").replace("{amount}", remaining?.toLocaleString() ?? "")}
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Enter amount (BDT)</label>
+                        <label className="text-sm font-medium">{t("plEnterAmountBDT")}</label>
                         <Input
                           type="number" min="1" step="1" inputMode="numeric"
                           value={customAmount}
@@ -356,15 +358,15 @@ const PayLinkPage = () => {
                       onClick={pay}
                       disabled={paying || payingUp || !(finalAmount > 0)}
                     >
-                      {paying ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing…</>)
-                        : user ? (<>Pay ৳{finalAmount > 0 ? finalAmount.toLocaleString() : ""} from wallet <ArrowRight className="w-4 h-4 ml-2" /></>)
-                        : (<>Sign in to pay <ArrowRight className="w-4 h-4 ml-2" /></>)}
+                      {paying ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("plProcessing")}</>)
+                        : user ? (<>{t("plPayFromWallet").replace("{amount}", finalAmount > 0 ? finalAmount.toLocaleString() : "")} <ArrowRight className="w-4 h-4 ml-2" /></>)
+                        : (<>{t("plSignInToPay")} <ArrowRight className="w-4 h-4 ml-2" /></>)}
                     </Button>
 
                     <div className="relative py-1">
                       <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/60" /></div>
                       <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
-                        <span className="bg-card px-2 text-muted-foreground">or</span>
+                        <span className="bg-card px-2 text-muted-foreground">{t("plOr")}</span>
                       </div>
                     </div>
 
@@ -374,8 +376,8 @@ const PayLinkPage = () => {
                       onClick={payWithUddoktapay}
                       disabled={paying || payingUp || !(finalAmount > 0)}
                     >
-                      {payingUp ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Redirecting…</>)
-                        : (<>Pay with bKash / Nagad / Card <ArrowRight className="w-4 h-4 ml-2" /></>)}
+                      {payingUp ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("plRedirecting")}</>)
+                        : (<>{t("plPayWithGateway")} <ArrowRight className="w-4 h-4 ml-2" /></>)}
                     </Button>
                   </>
                 )}
@@ -386,10 +388,10 @@ const PayLinkPage = () => {
             <Card className="border-border/40">
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-foreground">Payment timeline</h3>
-                  <span className="text-[11px] text-muted-foreground">Live · {payments.length}</span>
+                  <h3 className="text-sm font-semibold text-foreground">{t("plPaymentTimeline")}</h3>
+                  <span className="text-[11px] text-muted-foreground">{t("plLive")} · {payments.length}</span>
                 </div>
-                <PaymentLinkTimeline payments={payments} emptyLabel="No payments recorded yet." />
+                <PaymentLinkTimeline payments={payments} emptyLabel={t("plNoPaymentsYet")} />
               </CardContent>
             </Card>
           </motion.div>
