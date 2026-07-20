@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle2, XCircle, Loader2, RefreshCw, ExternalLink, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 type RoleKey = "customer" | "agent" | "merchant" | "distributor" | "super-distributor" | "admin";
 
 interface RoleCheck {
   role: RoleKey;
-  label: string;
+  labelKey: TranslationKey;
   installPath: string;
   manifestPath: string | null;
   expectedManifestName: RegExp;
@@ -15,12 +16,12 @@ interface RoleCheck {
 }
 
 const CHECKS: RoleCheck[] = [
-  { role: "customer", label: "Customer", installPath: "/customer/install", manifestPath: "/manifest.json", expectedManifestName: /EasyPay/i, expectedScope: "/customer/" },
-  { role: "agent", label: "Agent", installPath: "/agent/install", manifestPath: "/manifest-agent.json", expectedManifestName: /Agent/i, expectedScope: "/agent/" },
-  { role: "merchant", label: "Merchant", installPath: "/merchant/install", manifestPath: "/manifest-merchant.json", expectedManifestName: /Merchant/i, expectedScope: "/merchant/" },
-  { role: "distributor", label: "Distributor", installPath: "/distributor/install", manifestPath: "/manifest-distributor.json", expectedManifestName: /Distributor/i, expectedScope: "/distributor/" },
-  { role: "super-distributor", label: "Super Distributor", installPath: "/super-distributor/install", manifestPath: "/manifest-super-distributor.json", expectedManifestName: /Super Distributor/i, expectedScope: "/super-distributor/" },
-  { role: "admin", label: "Admin", installPath: "/admin/install", manifestPath: "/manifest-admin.json", expectedManifestName: /Admin/i, expectedScope: "/admin/" },
+  { role: "customer", labelKey: "ispRoleCustomer", installPath: "/customer/install", manifestPath: "/manifest.json", expectedManifestName: /EasyPay/i, expectedScope: "/customer/" },
+  { role: "agent", labelKey: "ispRoleAgent", installPath: "/agent/install", manifestPath: "/manifest-agent.json", expectedManifestName: /Agent/i, expectedScope: "/agent/" },
+  { role: "merchant", labelKey: "ispRoleMerchant", installPath: "/merchant/install", manifestPath: "/manifest-merchant.json", expectedManifestName: /Merchant/i, expectedScope: "/merchant/" },
+  { role: "distributor", labelKey: "ispRoleDistributor", installPath: "/distributor/install", manifestPath: "/manifest-distributor.json", expectedManifestName: /Distributor/i, expectedScope: "/distributor/" },
+  { role: "super-distributor", labelKey: "ispRoleSD", installPath: "/super-distributor/install", manifestPath: "/manifest-super-distributor.json", expectedManifestName: /Super Distributor/i, expectedScope: "/super-distributor/" },
+  { role: "admin", labelKey: "ispRoleAdmin", installPath: "/admin/install", manifestPath: "/manifest-admin.json", expectedManifestName: /Admin/i, expectedScope: "/admin/" },
 ];
 
 type Status = "idle" | "checking" | "ok" | "fail";
@@ -39,6 +40,7 @@ interface Result {
 }
 
 const InstallStatusPage = () => {
+  const { t } = useI18n();
   const [results, setResults] = useState<Record<string, Result>>({});
   const [running, setRunning] = useState(false);
   const [target, setTarget] = useState<"published" | "current">("current");
@@ -54,7 +56,6 @@ const InstallStatusPage = () => {
     async (c: RoleCheck): Promise<Result> => {
       const t0 = performance.now();
       try {
-        // HEAD/GET the install page (no-cors fallback for cross-origin)
         const pageUrl = `${origin}${c.installPath}`;
         const pageRes = await fetch(pageUrl, { method: "GET", cache: "no-store", mode: "cors" }).catch(
           () => null,
@@ -124,9 +125,9 @@ const InstallStatusPage = () => {
     setResults(Object.fromEntries(entries));
     setRunning(false);
     const failed = entries.filter(([, r]) => r.status === "fail").length;
-    if (failed === 0) toast.success("All install links verified working");
-    else toast.error(`${failed} of ${entries.length} install link(s) failing`);
-  }, [runCheck]);
+    if (failed === 0) toast.success(t("ispAllOk"));
+    else toast.error(t("ispSomeFail").replace("{failed}", String(failed)).replace("{total}", String(entries.length)));
+  }, [runCheck, t]);
 
   useEffect(() => {
     runAll();
@@ -143,11 +144,10 @@ const InstallStatusPage = () => {
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                Install Link Status
+                {t("ispTitle")}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Live check that every <code className="font-mono">/install/&lt;role&gt;</code>{" "}
-                route and its PWA manifest are reachable after deployment.
+                {t("ispSubtitle")}
               </p>
             </div>
             <button
@@ -157,31 +157,31 @@ const InstallStatusPage = () => {
               className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
             >
               {running ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-              Re-run checks
+              {t("ispRerun")}
             </button>
           </div>
 
           <div className="mt-4 flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Target:</span>
-            {(["current", "published"] as const).map((t) => (
+            <span className="text-muted-foreground">{t("ispTarget")}</span>
+            {(["current", "published"] as const).map((tg) => (
               <button
-                key={t}
-                onClick={() => setTarget(t)}
+                key={tg}
+                onClick={() => setTarget(tg)}
                 className={`px-2.5 py-1 rounded-full border ${
-                  target === t
+                  target === tg
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-background border-border text-foreground"
                 }`}
               >
-                {t === "current" ? "This origin" : "Published (pay-palooza-go)"}
+                {tg === "current" ? t("ispThisOrigin") : t("ispPublished")}
               </button>
             ))}
             <span className="ml-auto flex items-center gap-3">
               <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 size={14} /> {okCount} OK
+                <CheckCircle2 size={14} /> {t("ispOk").replace("{count}", String(okCount))}
               </span>
               <span className="flex items-center gap-1 text-destructive">
-                <XCircle size={14} /> {failCount} failing
+                <XCircle size={14} /> {t("ispFailing").replace("{count}", String(failCount))}
               </span>
             </span>
           </div>
@@ -199,7 +199,7 @@ const InstallStatusPage = () => {
                 <div className="flex items-center gap-3">
                   <StatusDot status={r.status} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground">{c.label}</p>
+                    <p className="text-sm font-semibold text-foreground">{t(c.labelKey)}</p>
                     <p className="text-[11px] text-muted-foreground font-mono truncate">{url}</p>
                   </div>
                   <a
@@ -215,9 +215,9 @@ const InstallStatusPage = () => {
                     onClick={async () => {
                       try {
                         await navigator.clipboard.writeText(url);
-                        toast.success("Copied");
+                        toast.success(t("ispCopied"));
                       } catch {
-                        toast.error("Copy failed");
+                        toast.error(t("ispCopyFail"));
                       }
                     }}
                     className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-accent"
@@ -230,18 +230,18 @@ const InstallStatusPage = () => {
                 {r.status !== "idle" && r.status !== "checking" && (
                   <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
                     <Metric
-                      label="Page"
+                      label={t("ispMetricPage")}
                       ok={r.pageOk}
-                      value={r.pageStatus ? `HTTP ${r.pageStatus}` : r.error ? "Unreachable" : "—"}
+                      value={r.pageStatus ? `HTTP ${r.pageStatus}` : r.error ? t("ispUnreachable") : "—"}
                     />
                     <Metric
-                      label="Manifest"
+                      label={t("ispMetricManifest")}
                       ok={r.manifestOk}
-                      value={r.manifestName ?? (c.manifestPath ? "Missing" : "N/A")}
+                      value={r.manifestName ?? (c.manifestPath ? t("ispMissing") : "N/A")}
                     />
-                    <Metric label="Latency" ok={r.latencyMs != null && r.latencyMs < 2000} value={`${r.latencyMs ?? 0} ms`} />
+                    <Metric label={t("ispMetricLatency")} ok={r.latencyMs != null && r.latencyMs < 2000} value={`${r.latencyMs ?? 0} ms`} />
                     <Metric
-                      label="Checked"
+                      label={t("ispMetricChecked")}
                       ok
                       value={r.checkedAt ? new Date(r.checkedAt).toLocaleTimeString() : "—"}
                     />
@@ -263,9 +263,9 @@ const InstallStatusPage = () => {
         </ul>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Also see the{" "}
+          {t("ispSeeLanding")}{" "}
           <Link to="/install" className="underline">
-            install landing page
+            {t("ispInstallLandingLink")}
           </Link>
           .
         </p>
