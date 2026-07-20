@@ -221,6 +221,28 @@ const MerchantDashboard = () => {
   const [loggingOut, setLoggingOut] = useState(false);
   const logoutTriggerRef = useRef<HTMLButtonElement>(null);
   const balanceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [kycStatus, setKycStatus] = useState<"none" | "pending" | "approved" | "rejected">("none");
+
+  useEffect(() => {
+    if (!merchant?.id) return;
+    let cancelled = false;
+    const loadKyc = async () => {
+      const { data } = await (supabase as any)
+        .from("merchant_applications")
+        .select("business_kyc_status")
+        .eq("merchant_id", merchant.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      const raw = (data?.business_kyc_status as string) || "";
+      if (raw === "approved" || raw === "pending" || raw === "rejected") setKycStatus(raw);
+      else if (merchant.status === "active") setKycStatus("approved");
+      else setKycStatus("none");
+    };
+    loadKyc();
+    return () => { cancelled = true; };
+  }, [merchant?.id, merchant?.status]);
 
   const toggleBalance = () => {
     setShowBalance(v => {
