@@ -19,6 +19,7 @@ const fmt = (n: number) => new Intl.NumberFormat("en-BD", { maximumFractionDigit
 
 export default function MerchantTodaySnapshot({ merchantId }: { merchantId: string }) {
   const [snap, setSnap] = useState<Snapshot | null>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     let alive = true;
@@ -45,33 +46,33 @@ export default function MerchantTodaySnapshot({ merchantId }: { merchantId: stri
             <Sparkles size={14} className="text-primary" />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Today</p>
-            <p className="text-xs font-bold text-foreground">Snapshot</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t("mdSnapToday")}</p>
+            <p className="text-xs font-bold text-foreground">{t("mdSnapSnapshot")}</p>
           </div>
         </div>
         <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
           up ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"
         }`}>
           {up ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-          {Math.abs(snap.delta_pct).toFixed(0)}% vs yesterday
+          {Math.abs(snap.delta_pct).toFixed(0)}% {t("mdSnapVsYesterday")}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-background/60 rounded-xl p-2.5">
-          <p className="text-[9px] font-bold text-muted-foreground uppercase">Sales</p>
+          <p className="text-[9px] font-bold text-muted-foreground uppercase">{t("mdSnapSales")}</p>
           <p className="text-lg font-extrabold text-foreground">৳{fmt(snap.today_revenue)}</p>
         </div>
         <div className="bg-background/60 rounded-xl p-2.5">
-          <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1"><ShoppingBag size={9} /> Orders</p>
+          <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1"><ShoppingBag size={9} /> {t("mdSnapOrders")}</p>
           <p className="text-lg font-extrabold text-foreground">{fmt(snap.today_orders)}</p>
         </div>
         <div className="bg-background/60 rounded-xl p-2.5">
-          <p className="text-[9px] font-bold text-muted-foreground uppercase">Avg ticket</p>
+          <p className="text-[9px] font-bold text-muted-foreground uppercase">{t("mdSnapAvgTicket")}</p>
           <p className="text-lg font-extrabold text-foreground">৳{fmt(snap.avg_ticket)}</p>
         </div>
         <div className="bg-background/60 rounded-xl p-2.5">
-          <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1"><Users size={9} /> New / Return</p>
+          <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1"><Users size={9} /> {t("mdSnapNewReturn")}</p>
           <p className="text-lg font-extrabold text-foreground">{fmt(snap.new_customers)}<span className="text-muted-foreground text-sm"> / {fmt(snap.returning_customers)}</span></p>
         </div>
       </div>
@@ -80,7 +81,7 @@ export default function MerchantTodaySnapshot({ merchantId }: { merchantId: stri
         <div className="mt-2 flex items-center gap-2 bg-primary/10 rounded-xl p-2">
           <Award size={12} className="text-primary shrink-0" />
           <p className="text-[10px] text-foreground min-w-0">
-            <span className="font-bold">Top today:</span> <span className="truncate">{snap.top_product}</span>
+            <span className="font-bold">{t("mdSnapTopToday")}</span> <span className="truncate">{snap.top_product}</span>
           </p>
         </div>
       )}
