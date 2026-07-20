@@ -328,7 +328,7 @@ const PayLinkPage = () => {
                   <>
                     {link.amount != null ? (
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Pay amount (BDT)</label>
+                        <label className="text-sm font-medium">{t("plPayAmountBDT")}</label>
                         <Input
                           type="number" min="1" step="1" inputMode="numeric"
                           value={customAmount}
@@ -337,7 +337,7 @@ const PayLinkPage = () => {
                           placeholder={remaining ? String(remaining) : ""}
                         />
                         <p className="text-[11px] text-muted-foreground text-center">
-                          Leave blank to pay the full remaining ৳{remaining?.toLocaleString()}
+                          {t("plLeaveBlankFull").replace("{amount}", remaining?.toLocaleString() ?? "")}
                         </p>
                       </div>
                     ) : (
