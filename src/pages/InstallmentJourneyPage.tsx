@@ -108,7 +108,7 @@ function Ring({ value, size = 120, stroke = 10 }: { value: number; size?: number
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-bold text-white tabular-nums">{Math.round(value)}%</span>
-        <span className="text-[10px] uppercase tracking-widest text-white/60">complete</span>
+        <span className="text-[10px] uppercase tracking-widest text-white/60">{t("ijComplete")}</span>
       </div>
     </div>
   );
