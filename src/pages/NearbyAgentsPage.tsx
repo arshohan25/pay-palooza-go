@@ -178,14 +178,14 @@ const NearbyAgentsPage = () => {
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Search by shop, name, address or ID"
+              placeholder={t("naSearchPlaceholder")}
               className="w-full h-11 pl-9 pr-9 rounded-2xl bg-card border border-border/60 text-sm focus:outline-none focus:border-primary"
             />
             {query && (
               <button
                 onClick={() => setQuery("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full hover:bg-muted flex items-center justify-center"
-                aria-label="Clear search"
+                aria-label={t("naClearSearch")}
               >
                 <X size={14} className="text-muted-foreground" />
               </button>
