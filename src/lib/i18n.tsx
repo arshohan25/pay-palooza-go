@@ -4565,7 +4565,7 @@ const translations = {
   savUpcoming: { en: "Upcoming", bn: "আসন্ন" },
   savManual: { en: "Manual", bn: "ম্যানুয়াল" },
   savCollected: { en: "Collected", bn: "সংগৃহীত" },
-  savDue: { en: "Due", bn: "বাকি" },
+  
   savSettled: { en: "Settled", bn: "নিষ্পন্ন" },
   savSkipped: { en: "Skipped", bn: "বাদ" },
   savNoInstallments: { en: "No installments yet.", bn: "এখনো কোনো কিস্তি নেই।" },
