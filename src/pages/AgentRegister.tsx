@@ -131,7 +131,7 @@ const AgentRegister = () => {
             goTo("approved");
           } else if (data[0].status === "rejected") {
             setKycStatus("rejected");
-            setRejectionReason(data[0].reviewer_notes || "No reason provided.");
+            setRejectionReason(data[0].reviewer_notes || t("argNoReason"));
             goTo("rejected");
           }
         }
@@ -156,7 +156,7 @@ const AgentRegister = () => {
             goTo("approved");
           } else if (newStatus === "rejected") {
             setKycStatus("rejected");
-            setRejectionReason(payload.new?.reviewer_notes || "No reason provided.");
+            setRejectionReason(payload.new?.reviewer_notes || t("argNoReason"));
             goTo("rejected");
           }
         }
