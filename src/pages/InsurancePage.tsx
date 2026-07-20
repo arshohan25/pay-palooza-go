@@ -20,23 +20,32 @@ const PLAN_CATEGORIES: { key: string; labelKey: TranslationKey; icon: any; color
   { key: "device", labelKey: "ipCatDevice", icon: Smartphone, color: "text-blue-500" },
 ];
 
-const PLANS: Record<string, { name: string; coverage: number; premium: number; duration: number; benefits: string[] }[]> = {
+type PlanDef = { id: string; nameKey: TranslationKey; coverage: number; premium: number; duration: number; benefitKeys: TranslationKey[] };
+
+const PLANS: Record<string, PlanDef[]> = {
   life: [
-    { name: "Basic Life Cover", coverage: 100000, premium: 150, duration: 12, benefits: ["Death benefit ৳1,00,000", "Accident cover included", "No medical exam required"] },
-    { name: "Premium Life Cover", coverage: 500000, premium: 500, duration: 12, benefits: ["Death benefit ৳5,00,000", "Critical illness rider", "Family coverage", "24/7 claim support"] },
+    { id: "basicLife", nameKey: "ipPlanBasicLife", coverage: 100000, premium: 150, duration: 12, benefitKeys: ["ipBenBasicLife1", "ipBenBasicLife2", "ipBenBasicLife3"] },
+    { id: "premiumLife", nameKey: "ipPlanPremiumLife", coverage: 500000, premium: 500, duration: 12, benefitKeys: ["ipBenPremiumLife1", "ipBenPremiumLife2", "ipBenPremiumLife3", "ipBenPremiumLife4"] },
   ],
   health: [
-    { name: "Essential Health", coverage: 50000, premium: 200, duration: 12, benefits: ["Hospitalization cover", "Medicine reimbursement", "Lab test coverage"] },
-    { name: "Complete Health", coverage: 200000, premium: 600, duration: 12, benefits: ["Full hospitalization", "Surgery cover", "OPD benefits", "Dental & vision"] },
+    { id: "essentialHealth", nameKey: "ipPlanEssentialHealth", coverage: 50000, premium: 200, duration: 12, benefitKeys: ["ipBenEssentialHealth1", "ipBenEssentialHealth2", "ipBenEssentialHealth3"] },
+    { id: "completeHealth", nameKey: "ipPlanCompleteHealth", coverage: 200000, premium: 600, duration: 12, benefitKeys: ["ipBenCompleteHealth1", "ipBenCompleteHealth2", "ipBenCompleteHealth3", "ipBenCompleteHealth4"] },
   ],
   accident: [
-    { name: "Personal Accident", coverage: 100000, premium: 100, duration: 12, benefits: ["Accidental death benefit", "Disability cover", "Medical expenses"] },
-    { name: "Family Accident", coverage: 300000, premium: 250, duration: 12, benefits: ["Family coverage up to 4", "Accidental death benefit", "Hospital cash", "Ambulance charges"] },
+    { id: "personalAccident", nameKey: "ipPlanPersonalAccident", coverage: 100000, premium: 100, duration: 12, benefitKeys: ["ipBenPersonalAccident1", "ipBenPersonalAccident2", "ipBenPersonalAccident3"] },
+    { id: "familyAccident", nameKey: "ipPlanFamilyAccident", coverage: 300000, premium: 250, duration: 12, benefitKeys: ["ipBenFamilyAccident1", "ipBenFamilyAccident2", "ipBenFamilyAccident3", "ipBenFamilyAccident4"] },
   ],
   device: [
-    { name: "Phone Protection", coverage: 15000, premium: 50, duration: 6, benefits: ["Screen damage", "Water damage", "Theft protection"] },
-    { name: "Gadget Shield", coverage: 50000, premium: 120, duration: 12, benefits: ["Covers phone + laptop", "Accidental damage", "Theft & loss", "Worldwide coverage"] },
+    { id: "phoneProtection", nameKey: "ipPlanPhoneProtection", coverage: 15000, premium: 50, duration: 6, benefitKeys: ["ipBenPhoneProtection1", "ipBenPhoneProtection2", "ipBenPhoneProtection3"] },
+    { id: "gadgetShield", nameKey: "ipPlanGadgetShield", coverage: 50000, premium: 120, duration: 12, benefitKeys: ["ipBenGadgetShield1", "ipBenGadgetShield2", "ipBenGadgetShield3", "ipBenGadgetShield4"] },
   ],
+};
+
+const STATUS_KEY: Record<string, TranslationKey> = {
+  active: "ipPolStatusActive",
+  expired: "ipPolStatusExpired",
+  cancelled: "ipPolStatusCancelled",
+  pending: "ipPolStatusPending",
 };
 
 const InsurancePage = () => {
