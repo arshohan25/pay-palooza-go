@@ -4949,6 +4949,18 @@ const translations = {
   argEnterInApp: { en: "Customer enters this number in the app to login", bn: "গ্রাহক লগইন করতে অ্যাপে এই নম্বরটি প্রবেশ করাবেন" },
   argOtpAutoDetect: { en: "OTP Auto-Detection", bn: "ওটিপি স্বয়ংক্রিয় সনাক্তকরণ" },
   argNextSetPin: { en: "Next: Set PIN", bn: "পরবর্তী: পিন সেট করুন" },
+  ppSessionMissing: { en: "Checkout session is missing.", bn: "চেকআউট সেশন অনুপস্থিত।" },
+  ppInvalidLink: { en: "Checkout link is invalid. Please start again from EasyPay.", bn: "চেকআউট লিঙ্ক অবৈধ। অনুগ্রহ করে EasyPay থেকে আবার শুরু করুন।" },
+  ppTookLong: { en: "Checkout took too long to prepare. Please close this popup and try again.", bn: "চেকআউট প্রস্তুত হতে অনেক সময় নিয়েছে। এই পপআপ বন্ধ করে আবার চেষ্টা করুন।" },
+  ppUnavailable: { en: "Checkout unavailable", bn: "চেকআউট অনুপলব্ধ" },
+  ppOpening: { en: "Opening secure checkout", bn: "নিরাপদ চেকআউট খোলা হচ্ছে" },
+  ppPreparing: { en: "Preparing secure checkout", bn: "নিরাপদ চেকআউট প্রস্তুত হচ্ছে" },
+  ppKeepOpen: { en: "Keep this popup open. You will return to EasyPay Home with the transaction status.", bn: "এই পপআপ খোলা রাখুন। লেনদেনের অবস্থা নিয়ে আপনি EasyPay হোমে ফিরে আসবেন।" },
+  ppProvider: { en: "Provider", bn: "প্রদানকারী" },
+  ppAmount: { en: "Amount", bn: "পরিমাণ" },
+  ppRedirecting: { en: "Redirecting…", bn: "পুনঃনির্দেশিত হচ্ছে…" },
+  ppWaiting: { en: "Waiting for checkout…", bn: "চেকআউটের জন্য অপেক্ষমাণ…" },
+  ppClosePopup: { en: "Close popup", bn: "পপআপ বন্ধ করুন" },
 } as const;
 
 
