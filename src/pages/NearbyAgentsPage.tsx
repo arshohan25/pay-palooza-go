@@ -204,7 +204,7 @@ const NearbyAgentsPage = () => {
                     : "border-border text-muted-foreground bg-card"
                 }`}
               >
-                {c.label}
+                {t(c.labelKey)}
               </button>
             ))}
           </div>
