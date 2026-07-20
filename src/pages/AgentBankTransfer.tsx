@@ -162,9 +162,9 @@ const AgentBankTransfer = () => {
               <Landmark size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">Bank Transfer</h1>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("agBtTitle")}</h1>
               <p className="text-[9px] text-primary-foreground/60">
-                {mode === "send" ? "Send to Bank" : "Receive from Bank"}
+                {mode === "send" ? t("agBtSendMode") : t("agBtReceiveMode")}
               </p>
             </div>
           </div>
@@ -189,7 +189,7 @@ const AgentBankTransfer = () => {
                 }`}
               >
                 {m === "send" ? <Send size={14} /> : <ArrowDownToLine size={14} />}
-                {m === "send" ? "Send to Bank" : "Receive from Bank"}
+                {m === "send" ? t("agBtSendMode") : t("agBtReceiveMode")}
               </button>
             ))}
           </div>
@@ -200,18 +200,18 @@ const AgentBankTransfer = () => {
           {step === "select" && (
             <motion.div key="select" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-bold text-foreground">Saved Accounts</p>
+                <p className="text-sm font-bold text-foreground">{t("agBtSavedAccounts")}</p>
                 <Button size="sm" variant="outline" onClick={() => setShowAddBank(true)} className="text-xs gap-1.5 rounded-xl h-8">
-                  <Plus size={14} /> Add Bank
+                  <Plus size={14} /> {t("agBtAddBank")}
                 </Button>
               </div>
 
               {accounts.length === 0 ? (
                 <Card className="p-8 border-0 shadow-card rounded-2xl text-center space-y-3">
                   <Landmark size={36} className="mx-auto text-muted-foreground/40" />
-                  <p className="text-sm text-muted-foreground">No saved bank accounts</p>
+                  <p className="text-sm text-muted-foreground">{t("agBtNoAccounts")}</p>
                   <Button onClick={() => setShowAddBank(true)} className="gradient-primary text-primary-foreground rounded-xl h-10 text-xs font-bold gap-1.5">
-                    <Plus size={14} /> Add Your First Bank
+                    <Plus size={14} /> {t("agBtAddFirst")}
                   </Button>
                 </Card>
               ) : (
