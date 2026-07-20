@@ -202,6 +202,17 @@ export default function AdminSettlements() {
     load();
   };
 
+  const openDetail = async (s: Settlement) => {
+    setDetail(s);
+    setDetailSc(null);
+    if (s.entity_type === "merchant" && s.entity_id) {
+      const { data } = await supabase.from("merchants")
+        .select("service_charge_enabled, service_charge_rate, service_charge_absorb")
+        .eq("id", s.entity_id).maybeSingle();
+      if (data) setDetailSc({ enabled: !!(data as any).service_charge_enabled, rate: Number((data as any).service_charge_rate || 0), absorb: !!(data as any).service_charge_absorb });
+    }
+  };
+
   const exportCSV = () => {
     const headers = ["Ref", "Type", "Name", "Phone", "Gross", "Fees", "Commission", "Net", "Txns", "Status", "Period", "Created"];
     const rows = filtered.map(s => [
