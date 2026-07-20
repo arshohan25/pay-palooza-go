@@ -4,12 +4,13 @@ import { Download, Shield, BarChart3, Users, Smartphone, ShoppingBag, User, Arro
 import { toast } from "sonner";
 import { getRoleInstallUrl } from "@/lib/rolePwaOrigins";
 import type { InstallableRoleKey } from "@/lib/appRole";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 type RoleEntry = {
   key: string;
-  name: string;
-  short: string;
-  description: string;
+  nameKey: TranslationKey;
+  shortKey: TranslationKey;
+  descKey: TranslationKey;
   icon: string;
   color: string;
   Icon: typeof Shield;
@@ -19,9 +20,9 @@ type RoleEntry = {
 const ROLES: RoleEntry[] = [
   {
     key: "customer",
-    name: "EasyPay",
-    short: "Customer",
-    description: "Send money, pay bills, shop, and manage your wallet.",
+    nameKey: "ilpRoleCustomerName",
+    shortKey: "ilpRoleCustomerShort",
+    descKey: "ilpRoleCustomerDesc",
     icon: "/icons/icon-512.png",
     color: "from-emerald-500 to-teal-500",
     Icon: User,
@@ -29,9 +30,9 @@ const ROLES: RoleEntry[] = [
   },
   {
     key: "agent",
-    name: "EasyPay Agent",
-    short: "Agent",
-    description: "Cash-in, cash-out, bill pay, and customer onboarding.",
+    nameKey: "ilpRoleAgentName",
+    shortKey: "ilpRoleAgentShort",
+    descKey: "ilpRoleAgentDesc",
     icon: "/icons/role-agent.png",
     color: "from-orange-500 to-amber-500",
     Icon: Smartphone,
@@ -39,9 +40,9 @@ const ROLES: RoleEntry[] = [
   },
   {
     key: "merchant",
-    name: "EasyPay Merchant",
-    short: "Merchant",
-    description: "Accept payments, manage products, and track analytics.",
+    nameKey: "ilpRoleMerchantName",
+    shortKey: "ilpRoleMerchantShort",
+    descKey: "ilpRoleMerchantDesc",
     icon: "/icons/role-merchant.png",
     color: "from-rose-500 to-pink-500",
     Icon: ShoppingBag,
@@ -49,9 +50,9 @@ const ROLES: RoleEntry[] = [
   },
   {
     key: "distributor",
-    name: "EasyPay Distributor",
-    short: "Distributor",
-    description: "Create agents, manage float, and track commissions.",
+    nameKey: "ilpRoleDistributorName",
+    shortKey: "ilpRoleDistributorShort",
+    descKey: "ilpRoleDistributorDesc",
     icon: "/icons/role-distributor.png",
     color: "from-blue-600 to-cyan-500",
     Icon: Users,
@@ -59,9 +60,9 @@ const ROLES: RoleEntry[] = [
   },
   {
     key: "super-distributor",
-    name: "EasyPay Super Distributor",
-    short: "Super Distributor",
-    description: "Manage distributors, float allocation, and commission networks.",
+    nameKey: "ilpRoleSDName",
+    shortKey: "ilpRoleSDShort",
+    descKey: "ilpRoleSDDesc",
     icon: "/icons/role-super-distributor.png",
     color: "from-violet-600 to-purple-500",
     Icon: BarChart3,
@@ -69,9 +70,9 @@ const ROLES: RoleEntry[] = [
   },
   {
     key: "admin",
-    name: "EasyPay Admin",
-    short: "Admin",
-    description: "Manage users, transactions, fraud alerts and settings.",
+    nameKey: "ilpRoleAdminName",
+    shortKey: "ilpRoleAdminShort",
+    descKey: "ilpRoleAdminDesc",
     icon: "/icons/role-admin.png",
     color: "from-emerald-600 to-teal-500",
     Icon: Shield,
@@ -81,12 +82,13 @@ const ROLES: RoleEntry[] = [
 
 const InstallLandingPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const copy = async (url: string, label: string) => {
     try {
       await navigator.clipboard.writeText(url);
-      toast.success(`${label} link copied`);
+      toast.success(t("ilpLinkCopied").replace("{label}", label));
     } catch {
-      toast.error("Could not copy — long-press the link to copy manually");
+      toast.error(t("ilpCopyFail"));
     }
   };
 
@@ -100,14 +102,13 @@ const InstallLandingPage = () => {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary mb-4">
             <Download size={12} />
-            Install EasyPay
+            {t("ilpBadge")}
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
-            Get the right app for your role
+            {t("ilpHeading")}
           </h1>
           <p className="mt-3 text-sm sm:text-base text-muted-foreground max-w-lg mx-auto">
-            Each installer opens a role-specific PWA that binds to your account
-            type and launches straight into the correct dashboard.
+            {t("ilpSubheading")}
           </p>
           <div className="mt-5 flex items-center justify-center gap-2 flex-wrap">
             <button
@@ -116,7 +117,7 @@ const InstallLandingPage = () => {
               className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-md hover:opacity-95 active:scale-[0.98] transition"
             >
               <Download size={15} />
-              Install all roles (guided)
+              {t("ilpInstallAllGuided")}
               <ArrowRight size={14} />
             </button>
             <button
@@ -124,7 +125,7 @@ const InstallLandingPage = () => {
               onClick={() => navigate("/install/status")}
               className="inline-flex items-center gap-2 h-11 px-4 rounded-xl border border-border bg-background text-sm font-semibold text-foreground hover:bg-accent transition"
             >
-              Install status
+              {t("ilpInstallStatus")}
             </button>
           </div>
         </motion.div>
@@ -135,6 +136,9 @@ const InstallLandingPage = () => {
           {ROLES.map((role, i) => {
             const url = getRoleInstallUrl(role.key as InstallableRoleKey);
             const Icon = role.Icon;
+            const name = t(role.nameKey);
+            const short = t(role.shortKey);
+            const description = t(role.descKey);
             return (
               <motion.article
                 key={role.key}
@@ -155,10 +159,10 @@ const InstallLandingPage = () => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <h2 className="text-sm font-bold text-foreground truncate">
-                      {role.name}
+                      {name}
                     </h2>
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                      {role.description}
+                      {description}
                     </p>
                   </div>
                 </div>
@@ -175,16 +179,16 @@ const InstallLandingPage = () => {
                       }
                     }}
                     className={`flex-1 h-10 rounded-xl bg-gradient-to-r ${role.color} text-white text-sm font-semibold shadow-sm flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition`}
-                    aria-label={`Install ${role.name}`}
+                    aria-label={t("ilpInstallShort").replace("{short}", name)}
                   >
                     <Download size={14} />
-                    Install {role.short}
+                    {t("ilpInstallShort").replace("{short}", short)}
                     <ArrowRight size={14} className="opacity-80" />
                   </button>
                   <button
                     type="button"
-                    aria-label={`Copy ${role.short} install link`}
-                    onClick={() => copy(url, role.short)}
+                    aria-label={t("ilpCopyLinkAria").replace("{short}", short)}
+                    onClick={() => copy(url, short)}
                     className="h-10 w-10 rounded-xl border border-border bg-background hover:bg-accent transition-colors flex items-center justify-center"
                   >
                     <Copy size={14} className="text-foreground" />
@@ -200,8 +204,7 @@ const InstallLandingPage = () => {
         </div>
 
         <p className="mt-8 text-center text-xs text-muted-foreground">
-          Already installed? Just launch the app from your home screen — it will
-          route to the right login automatically.
+          {t("ilpAlreadyInstalled")}
         </p>
       </main>
     </div>
