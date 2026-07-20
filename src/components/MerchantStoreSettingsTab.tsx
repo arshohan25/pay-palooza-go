@@ -113,6 +113,11 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
     if (!form.slug.trim()) { toast({ title: t("mssSlugRequired"), variant: "destructive" }); return; }
     setSaving(true);
 
+    // Optimistic UI: broadcast the pending name so the dashboard header updates immediately
+    const optimisticName = form.store_name.trim();
+    const previousName = store?.store_name || "";
+    window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: optimisticName } }));
+
     const payload = {
       merchant_id: merchantId,
       store_name: form.store_name.trim(),
