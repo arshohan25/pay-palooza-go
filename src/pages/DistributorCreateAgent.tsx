@@ -14,11 +14,13 @@ import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from
 import LocationMismatchAlert from "@/components/LocationMismatchAlert";
 import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
 import { districtToRouteCode } from "@/lib/districtRouteCode";
+import { useI18n } from "@/lib/i18n";
 
 const DistributorCreateAgent = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
