@@ -376,15 +376,15 @@ export default function CouponsPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <Seo
-        title="Coupons & Promotions – EasyPay"
-        description="Browse the latest EasyPay coupons, cashback offers and discount codes across shopping, recharge, bills and more."
+        title={t("cpSeoTitle")}
+        description={t("cpSeoDesc")}
         path="/coupons"
       />
 
       {/* ── Unified EasyPay flow header ─────────────────────── */}
       <FlowHeader
         title={t("coupons")}
-        tagline={loading ? "…" : `${coupons.length} live offers • refreshed in real-time`}
+        tagline={loading ? "…" : t("cpTaglineLive").replace("{n}", String(coupons.length))}
         icon={Ticket}
       />
 
