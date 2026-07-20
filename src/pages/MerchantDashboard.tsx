@@ -2584,7 +2584,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search..."
+                placeholder={t("mhSearchPh")}
                 className="pl-8 h-8 text-xs rounded-full bg-background"
               />
             </div>
