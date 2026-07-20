@@ -529,7 +529,7 @@ const AgentRegister = () => {
                           />
                         </motion.svg>
                       </motion.div>
-                      <p className="text-sm font-semibold text-foreground">Verified successfully</p>
+                      <p className="text-sm font-semibold text-foreground">{t("argVerifiedOk")}</p>
                       <div className="h-1 w-40 overflow-hidden rounded-full bg-muted">
                         <motion.div
                           initial={{ width: "0%" }}
@@ -538,7 +538,7 @@ const AgentRegister = () => {
                           className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
                         />
                       </div>
-                      <p className="text-[11px] text-muted-foreground">Moving to next step…</p>
+                      <p className="text-[11px] text-muted-foreground">{t("argMovingNext")}</p>
                     </motion.div>
                   ) : otpError ? (
                     <motion.div
