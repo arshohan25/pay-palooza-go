@@ -1272,7 +1272,8 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       setShowQrPopup(true);
       setShowQrGenerate(false);
       navigator.clipboard.writeText(fullUrl).then(() => {
-        toast({ title: "Link copied!", description: "Payment link copied to clipboard." });
+        toast({ title: t("mqrLinkCopied"), description: t("mqrLinkCopiedDesc") });
+
       }).catch(() => {});
       setQrAmount("");
       setQrReference("");
