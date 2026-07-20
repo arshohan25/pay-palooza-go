@@ -1192,6 +1192,9 @@ const translations = {
   giftCardsShareTitle: { en: "EasyPay Gift Card", bn: "ইজিপে গিফট কার্ড" },
   giftCardsShareTextPrefix: { en: "Here's a", bn: "এটি একটি" },
   giftCardsShareTextSuffix: { en: "gift card! Code:", bn: "গিফট কার্ড! কোড:" },
+  giftCardsSeoTitle: { en: "Gift Cards – EasyPay", bn: "গিফট কার্ড – ইজিপে" },
+  giftCardsSeoDesc: { en: "Buy and send digital gift cards across 17 categories – fashion, food, gaming, travel and more – instantly with EasyPay.", bn: "ফ্যাশন, খাবার, গেমিং, ভ্রমণসহ ১৭টি ক্যাটাগরিতে ডিজিটাল গিফট কার্ড কিনুন ও পাঠান ইজিপে দিয়ে তাৎক্ষণিকভাবে।" },
+  giftCardsPinTitle: { en: "Confirm gift card purchase", bn: "গিফট কার্ড কেনা নিশ্চিত করুন" },
   // Brand names
   gcAll: { en: "All Categories", bn: "সকল ক্যাটাগরি" },
   gcShopping: { en: "Shopping", bn: "শপিং" },
