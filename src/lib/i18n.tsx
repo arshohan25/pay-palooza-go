@@ -3465,6 +3465,8 @@ const translations = {
   agBtBank: { en: "Bank", bn: "ব্যাংক" },
   agBtAccount: { en: "Account", bn: "অ্যাকাউন্ট" },
   agBtHolder: { en: "Holder", bn: "ধারক" },
+  agBtSentTo: { en: "sent to", bn: "পাঠানো হয়েছে" },
+  agBtReceivedFrom: { en: "received from", bn: "গ্রহণ করা হয়েছে" },
 
   // Analytics
   agAnaTitle: { en: "Analytics", bn: "বিশ্লেষণ" },
