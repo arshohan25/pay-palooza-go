@@ -1117,7 +1117,7 @@ const translations = {
   cpEndingSoon: { en: "Ending soon", bn: "শীঘ্রই শেষ" },
   cpAllOffers: { en: "All offers", bn: "সকল অফার" },
   cpFooterNote: { en: "Coupons refresh in real-time. Tap any card for details.", bn: "কুপন রিয়েল-টাইমে হালনাগাদ হয়। বিস্তারিতর জন্য যেকোনো কার্ডে ট্যাপ করুন।" },
-  redeem: { en: "Redeem", bn: "ব্যবহার" },
+  
   // ─── Coupon Detail Page ───
   cdHeaderTitle: { en: "Coupon details", bn: "কুপনের বিস্তারিত" },
   cdNotFound: { en: "Coupon not found", bn: "কুপন পাওয়া যায়নি" },
