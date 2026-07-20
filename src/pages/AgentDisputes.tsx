@@ -289,12 +289,12 @@ const AgentDisputes = () => {
               <AlertCircle size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">Disputes</h1>
-              <p className="text-[9px] text-primary-foreground/60">Report transaction issues</p>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("agDispTitle")}</h1>
+              <p className="text-[9px] text-primary-foreground/60">{t("agDispTagline")}</p>
             </div>
           </div>
           <Button size="sm" onClick={() => setOpen(true)} className="h-8 rounded-lg bg-white/20 hover:bg-white/30 text-primary-foreground border-0 gap-1 text-[11px]">
-            <Plus size={12} /> New
+            <Plus size={12} /> {t("agDispNew")}
           </Button>
         </div>
       </motion.header>
@@ -302,37 +302,37 @@ const AgentDisputes = () => {
       <div className="max-w-xl mx-auto px-4 py-5 space-y-3">
         {loading ? (
           <p className="text-xs text-muted-foreground py-8 text-center flex items-center justify-center gap-2">
-            <Loader2 size={14} className="animate-spin" /> Loading…
+            <Loader2 size={14} className="animate-spin" /> {t("agComLoading")}
           </p>
         ) : rows.length === 0 ? (
           <Card className="p-6 border-0 shadow-elevated rounded-2xl text-center space-y-2">
             <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
               <AlertCircle size={20} className="text-muted-foreground" />
             </div>
-            <p className="text-sm font-bold text-foreground">No disputes filed</p>
-            <p className="text-[11px] text-muted-foreground">Report any transaction issue and support will follow up.</p>
+            <p className="text-sm font-bold text-foreground">{t("agDispEmpty")}</p>
+            <p className="text-[11px] text-muted-foreground">{t("agDispEmptyDesc")}</p>
             <Button onClick={() => setOpen(true)} className="mt-2 rounded-xl gap-1 text-xs h-9">
-              <Plus size={12} /> File a dispute
+              <Plus size={12} /> {t("agDispFile")}
             </Button>
           </Card>
         ) : (
           rows.map(d => (
             <Card key={d.id} className="p-4 border-0 shadow-elevated rounded-2xl space-y-2">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-bold text-foreground flex-1">{d.subject}</p>
+                <p className="text-sm font-bold text-foreground flex-1">{subjectLabel(d.subject)}</p>
                 <StatusPill s={d.status} />
               </div>
               {d.description && <p className="text-[11px] text-muted-foreground line-clamp-3">{d.description}</p>}
 
               <div className="flex items-center flex-wrap gap-2 text-[10px] text-muted-foreground">
-                <span>Filed: {new Date(d.created_at).toLocaleDateString()}</span>
+                <span>{t("agDispFiled")}: {new Date(d.created_at).toLocaleDateString()}</span>
                 {d.transaction_id && <span className="font-mono">TX: {d.transaction_id.slice(0, 8)}…</span>}
                 {d.evidence_url && (
                   <button
                     onClick={() => openEvidence(d.evidence_url!)}
                     className="inline-flex items-center gap-1 text-primary hover:underline"
                   >
-                    <Paperclip size={10} /> Evidence
+                    <Paperclip size={10} /> {t("agDispEvidence")}
                   </button>
                 )}
               </div>
@@ -341,7 +341,7 @@ const AgentDisputes = () => {
 
               {d.resolution_notes && (
                 <div className="mt-1 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                  <p className="text-[10px] font-bold text-emerald-600 mb-0.5">Resolution</p>
+                  <p className="text-[10px] font-bold text-emerald-600 mb-0.5">{t("agDispResolution")}</p>
                   <p className="text-[11px] text-foreground">{d.resolution_notes}</p>
                 </div>
               )}
@@ -352,7 +352,7 @@ const AgentDisputes = () => {
                   onClick={() => { setDetail(d as unknown as DisputeDetail); setDetailOpen(true); }}
                   className="h-7 text-[10px] rounded-lg gap-1"
                 >
-                  <MessageSquare size={11} /> View details
+                  <MessageSquare size={11} /> {t("agDispViewDetails")}
                 </Button>
                 {d.status === "open" && (
                   <Button
@@ -360,7 +360,7 @@ const AgentDisputes = () => {
                     onClick={() => cancelDispute(d)}
                     className="h-7 text-[10px] text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 rounded-lg ml-auto"
                   >
-                    Cancel dispute
+                    {t("agDispCancel")}
                   </Button>
                 )}
               </div>
