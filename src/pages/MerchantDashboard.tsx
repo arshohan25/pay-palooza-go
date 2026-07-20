@@ -2252,7 +2252,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
                     file = new File([blob], "payment-qr.png", { type: "image/png" });
                   } catch {}
                 }
-                const baseData: ShareData = { title: `Pay ${shopName}`, text: shareText, url: shareUrl };
+                const baseData: ShareData = { title: t("mqrPayTitle").replace("{name}", shopName), text: shareText, url: shareUrl };
                 const withFile: ShareData = file ? { ...baseData, files: [file] } : baseData;
                 // iOS Safari: canShare must be called with the FULL payload (files+text+url together)
                 try {
