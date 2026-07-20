@@ -74,7 +74,7 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
       if (mode === "print") await printInvoice(toInvoice(o));
       else await downloadInvoice(toInvoice(o));
     } catch {
-      toast({ title: "Invoice failed", variant: "destructive" });
+      toast({ title: t("moInvoiceFailed"), variant: "destructive" });
     } finally {
       setInvoiceBusy(null);
     }
