@@ -203,7 +203,7 @@ const PayLinkPage = () => {
         try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
         throw new Error(msg);
       }
-      if (!data?.payment_url) throw new Error("No checkout URL returned");
+      if (!data?.payment_url) throw new Error(t("plNoCheckoutUrl"));
       window.location.href = data.payment_url as string;
     } catch (e) {
       toast.error((e as Error).message);
