@@ -1922,6 +1922,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
             <div>
               <div class="shop-row">${shopLogoImg}<h1>${shopName}</h1></div>
               <p class="tag">${tagline}</p>
+              <p class="tag" style="font-size:2.4mm;letter-spacing:1.2mm;opacity:.7;margin-top:1mm">${QR_SUB_TAGLINE}</p>
             </div>
             <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR"/></div>
             <div>
