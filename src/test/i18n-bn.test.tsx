@@ -95,7 +95,15 @@ describe("i18n — translation table integrity", () => {
 
   it("bn values for non-symbol keys actually contain Bangla characters", () => {
     // Allow a small allowlist of intentionally non-Bangla bn values (e.g. brand or toggle label).
-    const allowNonBangla = new Set<string>(["langToggle"]); // "English" in bn mode
+    // Allowlist: brand labels, placeholders, and punctuation-only values that legitimately
+    // don't contain Bangla script.
+    const allowNonBangla = new Set<string>([
+      "langToggle",           // "English" in bn mode
+      "mssYourSlug",          // URL slug placeholder (must be ASCII)
+      "mfpDescVerifySuffix",  // Bangla danda "।" — punctuation, no letters
+      "mbuUploadHint",        // CSV header names (must be ASCII for parsing)
+      "mafContactEmailPh",    // email placeholder (must be ASCII)
+    ]);
     const offenders: string[] = [];
     for (const [key, entry] of Object.entries(translationsMap)) {
       if (allowNonBangla.has(key)) continue;
