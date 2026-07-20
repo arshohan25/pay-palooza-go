@@ -74,6 +74,7 @@ import MerchantTodaySnapshot from "@/components/merchant/MerchantTodaySnapshot";
 import MerchantInventoryAlerts from "@/components/MerchantInventoryAlerts";
 import MerchantPayoutEtaCard from "@/components/merchant/MerchantPayoutEtaCard";
 import MerchantDisputesTile from "@/components/merchant/MerchantDisputesTile";
+import MerchantWeeklyDigestCard from "@/components/merchant/MerchantWeeklyDigestCard";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 import RequestAccessSheet from "@/components/merchant/RequestAccessSheet";
@@ -1266,6 +1267,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
             <MerchantDisputesTile merchantId={merchant.id} />
           </div>
           <MerchantInventoryAlerts merchantId={merchant.id} threshold={5} />
+          <MerchantWeeklyDigestCard merchantId={merchant.id} />
         </motion.div>
       )}
       {/* Quick Actions Grid */}

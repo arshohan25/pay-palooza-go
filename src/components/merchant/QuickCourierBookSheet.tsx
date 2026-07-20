@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Truck, Loader2, Package } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Truck, Loader2, Package, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const COURIERS = ["Pathao", "Steadfast", "RedX", "Sundarban", "Paperfly", "eCourier", "Other"];
@@ -15,19 +16,23 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onBooked?: () => void;
+  merchantId?: string;
 }
+
+interface CourierStat { provider: string; shipped: number; delivered: number; avgHours: number | null; score: number; }
 
 /**
  * Quickly book one courier for every remaining item on an order.
  * Creates one fulfillment row per item using the same tracking number,
  * then marks the order as `shipped`.
  */
-export default function QuickCourierBookSheet({ orderId, orderNum, items, open, onOpenChange, onBooked }: Props) {
+export default function QuickCourierBookSheet({ orderId, orderNum, items, open, onOpenChange, onBooked, merchantId }: Props) {
   const { toast } = useToast();
   const [courier, setCourier] = useState("Pathao");
   const [tracking, setTracking] = useState("");
   const [busy, setBusy] = useState(false);
   const [existingByIdx, setExistingByIdx] = useState<Record<number, number>>({});
+  const [stats, setStats] = useState<CourierStat[] | null>(null);
 
   useEffect(() => {
     if (!open || !orderId) return;
@@ -44,6 +49,57 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
       setExistingByIdx(map);
     })();
   }, [open, orderId]);
+
+  // Smart courier scoring: pull last 90 days of merchant fulfillments,
+  // compute per-provider success rate + avg delivery time.
+  useEffect(() => {
+    if (!open || !merchantId) return;
+    (async () => {
+      const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: mOrders } = await (supabase as any)
+        .from("orders").select("id").eq("merchant_id", merchantId).gte("created_at", since).limit(1000);
+      const ids = (mOrders ?? []).map((o: any) => o.id);
+      if (ids.length === 0) { setStats([]); return; }
+      const { data: fs } = await (supabase as any)
+        .from("order_item_fulfillments")
+        .select("courier_provider, status, shipped_at, delivered_at")
+        .in("order_id", ids);
+      const agg = new Map<string, { shipped: number; delivered: number; hours: number[] }>();
+      (fs ?? []).forEach((f: any) => {
+        const p = f.courier_provider || "Other";
+        if (!agg.has(p)) agg.set(p, { shipped: 0, delivered: 0, hours: [] });
+        const a = agg.get(p)!;
+        a.shipped += 1;
+        if (f.status === "delivered" || f.delivered_at) {
+          a.delivered += 1;
+          if (f.shipped_at && f.delivered_at) {
+            a.hours.push((new Date(f.delivered_at).getTime() - new Date(f.shipped_at).getTime()) / 3600000);
+          }
+        }
+      });
+      const out: CourierStat[] = [...agg.entries()].map(([provider, a]) => {
+        const rate = a.shipped > 0 ? a.delivered / a.shipped : 0;
+        const avgHours = a.hours.length ? a.hours.reduce((s, x) => s + x, 0) / a.hours.length : null;
+        // Score: 70% success rate + 30% speed (normalized, faster = better, cap 96h)
+        const speedScore = avgHours == null ? 0.5 : Math.max(0, 1 - Math.min(avgHours, 96) / 96);
+        const score = rate * 0.7 + speedScore * 0.3;
+        return { provider, shipped: a.shipped, delivered: a.delivered, avgHours, score };
+      }).sort((a, b) => b.score - a.score);
+      setStats(out);
+    })();
+  }, [open, merchantId]);
+
+  const recommended = useMemo(() => {
+    if (!stats || stats.length === 0) return null;
+    const top = stats[0];
+    if (top.shipped < 3) return null; // need enough signal
+    return top;
+  }, [stats]);
+
+  useEffect(() => {
+    if (recommended && open) setCourier(recommended.provider);
+  }, [recommended, open]);
+
 
   const pending = items.map((it, idx) => {
     const remaining = Math.max(0, Number(it.qty || 0) - (existingByIdx[idx] || 0));
@@ -125,13 +181,37 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
             </p>
           </div>
 
+          {recommended && (
+            <div className="rounded-2xl p-3 bg-gradient-to-br from-primary/10 via-background to-accent/10 border border-primary/20">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Sparkles size={12} className="text-primary" />
+                <span className="text-[11px] font-bold text-primary uppercase tracking-wide">Smart pick</span>
+                <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                  {Math.round((recommended.delivered / recommended.shipped) * 100)}% delivered
+                </Badge>
+              </div>
+              <p className="text-[12px] text-foreground">
+                <b>{recommended.provider}</b> performs best for your shop
+                {recommended.avgHours != null && <> · avg {Math.round(recommended.avgHours)}h delivery</>}
+                {" "}({recommended.shipped} past shipments)
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground">Courier</label>
             <select value={courier} onChange={(e) => setCourier(e.target.value)}
               className="mt-1 w-full h-10 text-[13px] rounded-md border border-input bg-background px-2">
-              {COURIERS.map(c => <option key={c} value={c}>{c}</option>)}
+              {COURIERS.map(c => {
+                const s = stats?.find(x => x.provider === c);
+                const label = s && s.shipped >= 3
+                  ? `${c} · ${Math.round((s.delivered / s.shipped) * 100)}% success`
+                  : c;
+                return <option key={c} value={c}>{label}</option>;
+              })}
             </select>
           </div>
+
 
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground">Tracking / Consignment No.</label>
