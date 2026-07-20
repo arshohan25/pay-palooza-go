@@ -424,7 +424,7 @@ export default function CouponsPage() {
                   value={redeemCode}
                   onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === "Enter" && !redeeming && handleRedeemByCode()}
-                  placeholder="ENTER CODE"
+                  placeholder={t("cpEnterCodePlaceholder")}
                   maxLength={20}
                   className="w-full h-11 px-3 rounded-xl bg-muted/50 border-2 border-dashed border-border/60 focus:border-primary/40 focus:bg-card focus:outline-none text-[13px] font-black tracking-[0.18em] text-foreground placeholder:text-muted-foreground/50 placeholder:tracking-widest placeholder:font-bold uppercase transition-all"
                 />
