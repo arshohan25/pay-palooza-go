@@ -5,6 +5,7 @@ import { Trophy, Medal, Award, Loader2 } from "lucide-react";
 import FlowHeader from "@/components/FlowHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 
 interface Row {
   rank: number;
@@ -28,6 +29,7 @@ const rankBadge = (rank: number) => {
 const AgentLeaderboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [rows, setRows] = useState<Row[]>([]);
   const [territory, setTerritory] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -51,8 +53,8 @@ const AgentLeaderboard = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       <FlowHeader
-        title="District Leaderboard"
-        tagline={territory ? `Top agents · ${territory} · last 30 days` : "Last 30 days"}
+        title={t("agLbLeaderboard")}
+        tagline={territory ? t("agLbTopAgentsTerritory").replace("{code}", territory) : t("agLbLast30")}
         icon={Trophy}
         onBack={() => navigate("/agent")}
       />
@@ -64,7 +66,7 @@ const AgentLeaderboard = () => {
           </div>
         ) : rows.length === 0 ? (
           <div className="text-center py-16 text-sm text-muted-foreground">
-            No leaderboard data yet.
+            {t("agLbNoData")}
           </div>
         ) : (
           rows.slice(0, 20).map((r, i) => {
@@ -82,13 +84,13 @@ const AgentLeaderboard = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-foreground truncate">
                     {r.display_name} <span className="text-[10px] font-mono text-muted-foreground">{r.masked_uid}</span>
-                    {r.is_me && <span className="ml-2 text-[10px] font-semibold text-primary">YOU</span>}
+                    {r.is_me && <span className="ml-2 text-[10px] font-semibold text-primary">{t("agLbYou")}</span>}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">{fmt(Number(r.txn_count))} txns</p>
+                  <p className="text-[11px] text-muted-foreground">{t("agLbTxns").replace("{count}", fmt(Number(r.txn_count)))}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-foreground">৳{fmt(Number(r.txn_volume))}</p>
-                  <p className="text-[10px] text-muted-foreground">volume</p>
+                  <p className="text-[10px] text-muted-foreground">{t("agLbVolume")}</p>
                 </div>
               </motion.div>
             );
@@ -103,8 +105,8 @@ const AgentLeaderboard = () => {
               #{me.rank}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground">You are #{me.rank} of {rows.length}</p>
-              <p className="text-[11px] text-muted-foreground">{fmt(Number(me.txn_count))} txns · ৳{fmt(Number(me.txn_volume))}</p>
+              <p className="text-sm font-bold text-foreground">{t("agLbYouRank").replace("{rank}", String(me.rank)).replace("{total}", String(rows.length))}</p>
+              <p className="text-[11px] text-muted-foreground">{t("agLbTxns").replace("{count}", fmt(Number(me.txn_count)))} · ৳{fmt(Number(me.txn_volume))}</p>
             </div>
           </div>
         </div>
