@@ -439,10 +439,10 @@ function DpsPlanDetailsSheet({
   };
 
   const outcomeBadge = (o: string) => {
-    if (o === "collected") return { color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20", Icon: CheckCircle2, label: "Collected" };
-    if (o === "missed") return { color: "text-amber-600 bg-amber-500/10 border-amber-500/20", Icon: AlertCircle, label: "Missed" };
-    if (o === "settled") return { color: "text-blue-600 bg-blue-500/10 border-blue-500/20", Icon: CheckCircle2, label: "Settled" };
-    if (o === "dedup_skipped") return { color: "text-muted-foreground bg-muted border-border", Icon: CircleDot, label: "Skipped" };
+    if (o === "collected") return { color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20", Icon: CheckCircle2, label: t("savCollected") };
+    if (o === "missed") return { color: "text-amber-600 bg-amber-500/10 border-amber-500/20", Icon: AlertCircle, label: t("savMissed") };
+    if (o === "settled") return { color: "text-blue-600 bg-blue-500/10 border-blue-500/20", Icon: CheckCircle2, label: t("savSettled") };
+    if (o === "dedup_skipped") return { color: "text-muted-foreground bg-muted border-border", Icon: CircleDot, label: t("savSkipped") };
     return { color: "text-muted-foreground bg-muted border-border", Icon: XCircle, label: o };
   };
 
