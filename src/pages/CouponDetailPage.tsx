@@ -150,16 +150,17 @@ export default function CouponDetailPage() {
   };
 
   const share = async () => {
-    const text = `Use ${coupon.code} on EasyPay for ${isPct ? `${coupon.discount_value}% off` : `৳${coupon.discount_value} off`}`;
+    const offText = isPct ? `${coupon.discount_value}${t("cdShareTextPctOff")}` : `৳${coupon.discount_value} ${t("cdShareTextFlatOff")}`;
+    const text = `${t("cdShareTextPrefix")} ${coupon.code} ${t("cdShareTextOn")} ${offText}`;
     try {
-      if (navigator.share) await navigator.share({ title: "EasyPay Coupon", text });
-      else { navigator.clipboard.writeText(text); toast.success("Copied share text"); }
+      if (navigator.share) await navigator.share({ title: t("cdShareTitle"), text });
+      else { navigator.clipboard.writeText(text); toast.success(t("cdCopiedShareText")); }
     } catch { /* user cancelled */ }
   };
 
   const redeem = () => {
     if (!eligibility?.eligible) {
-      toast.error("This coupon isn't eligible right now.");
+      toast.error(t("cdNotEligibleToast"));
       return;
     }
     navigator.clipboard.writeText(coupon.code);
