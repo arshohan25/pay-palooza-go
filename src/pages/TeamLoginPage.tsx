@@ -36,6 +36,7 @@ async function getRedirectByRole(user: AuthUser): Promise<string> {
 
 export default function TeamLoginPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
