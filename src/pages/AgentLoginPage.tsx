@@ -357,9 +357,9 @@ const AgentLoginPage = () => {
                 onClick={() => navigate("/forgot-pin")}
                 className="text-orange-400 font-semibold hover:underline disabled:opacity-50"
               >
-                Forgot PIN?
+                {t("alpForgotPin")}
               </button>
-              <span className="text-white/40">Agents only</span>
+              <span className="text-white/40">{t("alpAgentsOnly")}</span>
             </div>
             </fieldset>
           </motion.form>
