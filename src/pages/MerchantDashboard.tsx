@@ -1251,7 +1251,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
           action: "create_session",
           amount: amt,
           reference: qrReference.trim() || `QR-${Date.now().toString(36).toUpperCase()}`,
-          description: `Payment of ৳${amt}`,
+          description: `${t("mqrPayOf")} ৳${amt}`,
         }),
       });
 
