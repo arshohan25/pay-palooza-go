@@ -295,9 +295,9 @@ const PayLinkPage = () => {
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
                     <Wallet className="w-6 h-6 text-primary" />
                   </div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Payment request</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("plPaymentRequest")}</p>
                   <h1 className="text-lg font-bold text-foreground">{link.title}</h1>
-                  {payeeName && <p className="text-sm text-muted-foreground">from {payeeName}</p>}
+                  {payeeName && <p className="text-sm text-muted-foreground">{t("plFrom").replace("{name}", payeeName)}</p>}
                   <div className="pt-2 flex justify-center">{statusPill()}</div>
                 </div>
 
