@@ -428,17 +428,18 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
         <div className="flex-1 relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search products..."
+            placeholder={t("mprSearch")}
             value={search} onChange={e => setSearch(e.target.value)}
             className="pl-9 h-10 rounded-xl"
           />
         </div>
         <Button onClick={() => setShowBulkUpload(true)} variant="outline" className="shrink-0 rounded-xl gap-1.5 h-10" size="sm">
-          <Upload size={14} /> CSV
+          <Upload size={14} /> {t("mprCsv")}
         </Button>
         <Button onClick={openAdd} className="shrink-0 rounded-xl gap-1.5 h-10" size="sm">
-          <Plus size={15} /> Add
+          <Plus size={15} /> {t("mprAdd")}
         </Button>
+
       </div>
 
       {/* Bulk Upload Sheet */}
