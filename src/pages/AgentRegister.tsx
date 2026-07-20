@@ -413,11 +413,11 @@ const AgentRegister = () => {
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto shadow-glow">
                     <Phone size={28} className="text-primary-foreground" />
                   </motion.div>
-                  <h2 className="text-lg font-bold text-foreground">Customer Phone</h2>
-                  <p className="text-xs text-muted-foreground">Enter the customer's mobile number to begin registration</p>
+                  <h2 className="text-lg font-bold text-foreground">{t("argCustomerPhone")}</h2>
+                  <p className="text-xs text-muted-foreground">{t("argCustomerPhoneDesc")}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Phone Number</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("argPhoneLabel")}</Label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">+88</span>
                     <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-12 pl-12 text-lg font-semibold tracking-wider ${phoneValidation.inputClassName}`} />
@@ -427,11 +427,11 @@ const AgentRegister = () => {
                   )}
                 </div>
                 <Button onClick={handleSendOtp} disabled={!phoneValidation.isValid || sendingOtp} className="w-full gradient-primary text-primary-foreground rounded-xl h-12 text-sm font-bold shadow-glow gap-2">
-                  {sendingOtp ? <><Loader2 size={16} className="animate-spin" /> Sending OTP...</> : <><Send size={16} /> Send OTP</>}
+                  {sendingOtp ? <><Loader2 size={16} className="animate-spin" /> {t("argSendingOtp")}</> : <><Send size={16} /> {t("argSendOtp")}</>}
                 </Button>
                 <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
                   <ShieldCheck size={12} className="text-primary" />
-                  <span>OTP will be sent to the customer's phone</span>
+                  <span>{t("argOtpNote")}</span>
                 </div>
               </Card>
             </motion.div>
