@@ -555,12 +555,12 @@ export default function MerchantLoginPage() {
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <div className="space-y-0.5">
                   <p className="text-xs font-semibold uppercase tracking-wider">
-                    Incorrect PIN
+                    {t("mlIncorrectPin")}
                   </p>
                   <p className="text-[13px] leading-snug text-rose-100/85">
                     {attemptsRemaining != null
-                      ? `${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} remaining before this account is temporarily locked.`
-                      : "Please double-check your PIN and try again."}
+                      ? (attemptsRemaining === 1 ? t("mlAttemptsRemainingOne") : t("mlAttemptsRemainingOther")).replace("{n}", String(attemptsRemaining))
+                      : t("mlPleaseDoubleCheck")}
                   </p>
                 </div>
               </div>
