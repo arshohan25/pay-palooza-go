@@ -1796,30 +1796,14 @@ const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null
 
 
 const EASYPAY_LOGO_URL = "/icons/easypay-logo.webp";
-const DEFAULT_QR_TAGLINE = "Scan to Pay for good";
+const DEFAULT_QR_TAGLINE = "Pay Smart · Live Easy";
+const QR_SUB_TAGLINE = "Instant • Secure • Rewarding";
 const DEFAULT_BAND_START = "#ff6a1a";
 const DEFAULT_BAND_END = "#c02a55";
 
 const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    qr_card_tagline: merchant?.qr_card_tagline || DEFAULT_QR_TAGLINE,
-    qr_card_band_color_start: merchant?.qr_card_band_color_start || DEFAULT_BAND_START,
-    qr_card_band_color_end: merchant?.qr_card_band_color_end || DEFAULT_BAND_END,
-    qr_card_logo_url: merchant?.qr_card_logo_url || "",
-  });
-
-  useEffect(() => {
-    setForm({
-      qr_card_tagline: merchant?.qr_card_tagline || DEFAULT_QR_TAGLINE,
-      qr_card_band_color_start: merchant?.qr_card_band_color_start || DEFAULT_BAND_START,
-      qr_card_band_color_end: merchant?.qr_card_band_color_end || DEFAULT_BAND_END,
-      qr_card_logo_url: merchant?.qr_card_logo_url || "",
-    });
-  }, [merchant?.id, merchant?.qr_card_tagline, merchant?.qr_card_band_color_start, merchant?.qr_card_band_color_end, merchant?.qr_card_logo_url]);
 
   const rawPayload = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
   const qrPayload = rawPayload.toUpperCase();
@@ -1857,24 +1841,6 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
     toast({ title: "Copied!", description: "Merchant ID copied to clipboard" });
   };
 
-  const saveSettings = async () => {
-    if (!merchant?.id) return;
-    setSaving(true);
-    const patch = {
-      qr_card_tagline: form.qr_card_tagline.trim() || null,
-      qr_card_band_color_start: form.qr_card_band_color_start || null,
-      qr_card_band_color_end: form.qr_card_band_color_end || null,
-      qr_card_logo_url: form.qr_card_logo_url.trim() || null,
-    };
-    const { error } = await supabase.from("merchants").update(patch as any).eq("id", merchant.id);
-    setSaving(false);
-    if (error) {
-      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
-      return;
-    }
-    toast({ title: "Saved", description: "QR card branding updated" });
-    setSettingsOpen(false);
-  };
 
   const handlePrint = () => {
     if (!qrDataUrl) return;
@@ -1956,6 +1922,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
             <div>
               <div class="shop-row">${shopLogoImg}<h1>${shopName}</h1></div>
               <p class="tag">${tagline}</p>
+              <p class="tag" style="font-size:2.4mm;letter-spacing:1.2mm;opacity:.7;margin-top:1mm">${QR_SUB_TAGLINE}</p>
             </div>
             <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR"/></div>
             <div>
@@ -1990,13 +1957,6 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
             style={{ background: `linear-gradient(135deg, ${bandStart} 0%, ${bandEnd} 100%)` }}>
             <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute -bottom-20 -left-16 w-56 h-56 rounded-full bg-white/10 blur-2xl" />
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-[10px] font-semibold tracking-wide transition-colors"
-              aria-label="Customise QR card"
-            >
-              <Settings size={11} /> Customise
-            </button>
             <div className="relative">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm mb-2">
                 <img src={EASYPAY_LOGO_URL} alt="EasyPay" className="h-3.5 w-auto object-contain brightness-0 invert" />
@@ -2008,7 +1968,8 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
                 )}
                 <h3 className="text-lg font-black text-white tracking-tight">{shopName}</h3>
               </div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/90 mt-0.5">{tagline}</p>
+              <p className="text-[13px] font-bold text-white mt-1 tracking-tight">{tagline}</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-white/80 mt-0.5">{QR_SUB_TAGLINE}</p>
             </div>
           </div>
 
@@ -2113,86 +2074,6 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
         </Card>
       </motion.div>
 
-      {/* Customise QR card dialog */}
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Customise QR Card</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-xs">Tagline</Label>
-              <Input
-                value={form.qr_card_tagline}
-                onChange={e => setForm(f => ({ ...f, qr_card_tagline: e.target.value.slice(0, 60) }))}
-                placeholder={DEFAULT_QR_TAGLINE}
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">Up to 60 characters. Shown on-screen & in print.</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Band start</Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={form.qr_card_band_color_start}
-                    onChange={e => setForm(f => ({ ...f, qr_card_band_color_start: e.target.value }))}
-                    className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent"
-                    aria-label="Band start color"
-                  />
-                  <Input
-                    value={form.qr_card_band_color_start}
-                    onChange={e => setForm(f => ({ ...f, qr_card_band_color_start: e.target.value }))}
-                    className="font-mono text-xs"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Band end</Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={form.qr_card_band_color_end}
-                    onChange={e => setForm(f => ({ ...f, qr_card_band_color_end: e.target.value }))}
-                    className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent"
-                    aria-label="Band end color"
-                  />
-                  <Input
-                    value={form.qr_card_band_color_end}
-                    onChange={e => setForm(f => ({ ...f, qr_card_band_color_end: e.target.value }))}
-                    className="font-mono text-xs"
-                  />
-                </div>
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs">Shop logo URL <span className="text-muted-foreground">(optional)</span></Label>
-              <Input
-                value={form.qr_card_logo_url}
-                onChange={e => setForm(f => ({ ...f, qr_card_logo_url: e.target.value }))}
-                placeholder="https://…/logo.png"
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">Square image works best. EasyPay logo is always shown alongside.</p>
-            </div>
-            <div className="rounded-xl overflow-hidden border border-border">
-              <div className="px-4 py-3 text-center text-white"
-                style={{ background: `linear-gradient(135deg, ${form.qr_card_band_color_start}, ${form.qr_card_band_color_end})` }}>
-                <div className="inline-flex items-center gap-2">
-                  <img src={EASYPAY_LOGO_URL} alt="EasyPay" className="h-3 w-auto object-contain brightness-0 invert" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Accepted Here</span>
-                </div>
-                <p className="text-[10px] uppercase tracking-[0.25em] mt-1 opacity-90">
-                  {form.qr_card_tagline || DEFAULT_QR_TAGLINE}
-                </p>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSettingsOpen(false)} disabled={saving}>Cancel</Button>
-            <Button onClick={saveSettings} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </motion.div>
   );
 };
