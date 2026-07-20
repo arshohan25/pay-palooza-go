@@ -381,6 +381,7 @@ function DpsPlanDetailsSheet({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useI18n();
   const [history, setHistory] = useState<RunLogEntry[]>([]);
   const [loadingHist, setLoadingHist] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -438,10 +439,10 @@ function DpsPlanDetailsSheet({
   };
 
   const outcomeBadge = (o: string) => {
-    if (o === "collected") return { color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20", Icon: CheckCircle2, label: "Collected" };
-    if (o === "missed") return { color: "text-amber-600 bg-amber-500/10 border-amber-500/20", Icon: AlertCircle, label: "Missed" };
-    if (o === "settled") return { color: "text-blue-600 bg-blue-500/10 border-blue-500/20", Icon: CheckCircle2, label: "Settled" };
-    if (o === "dedup_skipped") return { color: "text-muted-foreground bg-muted border-border", Icon: CircleDot, label: "Skipped" };
+    if (o === "collected") return { color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20", Icon: CheckCircle2, label: t("savCollected") };
+    if (o === "missed") return { color: "text-amber-600 bg-amber-500/10 border-amber-500/20", Icon: AlertCircle, label: t("savMissed") };
+    if (o === "settled") return { color: "text-blue-600 bg-blue-500/10 border-blue-500/20", Icon: CheckCircle2, label: t("savSettled") };
+    if (o === "dedup_skipped") return { color: "text-muted-foreground bg-muted border-border", Icon: CircleDot, label: t("savSkipped") };
     return { color: "text-muted-foreground bg-muted border-border", Icon: XCircle, label: o };
   };
 
@@ -467,14 +468,14 @@ function DpsPlanDetailsSheet({
                   {goal?.emoji ?? "💼"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] uppercase tracking-[0.14em] text-primary-foreground/70">DPS Plan</div>
+                  <div className="text-[11px] uppercase tracking-[0.14em] text-primary-foreground/70">{t("savDpsPlan")}</div>
                   <div className="text-lg font-bold truncate leading-tight">{goal?.name ?? "—"}</div>
                   <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px]">
                     <span className="px-2 py-0.5 rounded-full bg-white/15 border border-white/20 font-semibold uppercase tracking-wide">{freqLabel}</span>
                     <span className="px-2 py-0.5 rounded-full bg-white/15 border border-white/20 font-medium">৳{Number(plan.amount).toLocaleString()}/cycle</span>
                     {plan.strategy && <span className="px-2 py-0.5 rounded-full bg-amber-300/25 border border-amber-200/40 text-amber-50 font-medium capitalize">{plan.strategy}</span>}
                     <span className={`px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide border ${plan.is_active ? "bg-emerald-400/25 border-emerald-200/40 text-emerald-50" : "bg-white/15 border-white/20 text-primary-foreground/80"}`}>
-                      {plan.is_active ? "Active" : "Paused"}
+                      {plan.is_active ? t("savActive") : t("savPaused")}
                     </span>
                   </div>
                 </div>
@@ -482,7 +483,7 @@ function DpsPlanDetailsSheet({
               {/* Progress */}
               <div className="relative mt-4">
                 <div className="flex items-baseline justify-between text-sm">
-                  <div className="text-primary-foreground/80">Progress</div>
+                  <div className="text-primary-foreground/80">{t("savProgress")}</div>
                   <div className="tabular-nums font-semibold">{paid}<span className="opacity-70">/{total || "∞"}</span> · {pct.toFixed(0)}%</div>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-white/15 overflow-hidden">
@@ -495,10 +496,10 @@ function DpsPlanDetailsSheet({
             {/* Financial summary */}
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "Deposited", value: `৳${totalDeposited.toLocaleString()}`, tone: "text-foreground" },
-                { label: "Outstanding", value: `৳${outstanding.toLocaleString()}`, tone: "text-primary" },
-                { label: "Remaining installments", value: `${remaining}`, tone: "text-foreground" },
-                { label: "Missed", value: `${plan.missed_count ?? 0}`, tone: (plan.missed_count ?? 0) > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground" },
+                { label: t("savDepositedLabel"), value: `৳${totalDeposited.toLocaleString()}`, tone: "text-foreground" },
+                { label: t("savOutstanding"), value: `৳${outstanding.toLocaleString()}`, tone: "text-primary" },
+                { label: t("savRemainingInstallments"), value: `${remaining}`, tone: "text-foreground" },
+                { label: t("savMissed"), value: `${plan.missed_count ?? 0}`, tone: (plan.missed_count ?? 0) > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground" },
               ].map((s) => (
                 <div key={s.label} className="rounded-[14px] bg-card border border-border/70 p-3">
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{s.label}</div>
@@ -509,19 +510,19 @@ function DpsPlanDetailsSheet({
 
             {/* Plan meta */}
             <div className="rounded-[16px] bg-muted/40 border border-border/60 divide-y divide-border/60 text-sm">
-              <div className="flex justify-between p-3"><span className="text-muted-foreground">Started</span><span className="font-medium">{created.toLocaleDateString()}</span></div>
-              <div className="flex justify-between p-3"><span className="text-muted-foreground">Last collection</span><span className="font-medium">{lastRun ? lastRun.toLocaleDateString() : "—"}</span></div>
-              <div className="flex justify-between p-3"><span className="text-muted-foreground">Next collection</span><span className="font-semibold text-primary">{nextRun.toLocaleDateString()}</span></div>
-              <div className="flex justify-between p-3"><span className="text-muted-foreground">Ends</span><span className="font-medium">{endsAt ? endsAt.toLocaleDateString() : "—"}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">{t("savStarted")}</span><span className="font-medium">{created.toLocaleDateString()}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">{t("savLastCollection")}</span><span className="font-medium">{lastRun ? lastRun.toLocaleDateString() : "—"}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">{t("savNextCollection")}</span><span className="font-semibold text-primary">{nextRun.toLocaleDateString()}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">{t("savEnds")}</span><span className="font-medium">{endsAt ? endsAt.toLocaleDateString() : "—"}</span></div>
             </div>
 
             {/* Installment timeline — professional tree view */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <CalendarClock className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold">Installment timeline</h3>
+                <h3 className="text-sm font-semibold">{t("savInstallmentTimeline")}</h3>
                 <span className="text-[10px] text-muted-foreground ml-auto tabular-nums">
-                  {paid} paid · {remaining} upcoming
+                  {paid} {t("savPaidCount")} · {remaining} {t("savUpcomingCount")}
                 </span>
               </div>
 
@@ -573,7 +574,7 @@ function DpsPlanDetailsSheet({
                               <div className="text-sm font-bold tabular-nums text-foreground">
                                 ৳{Number(plan.amount).toLocaleString()}
                               </div>
-                              <div className="text-[9px] text-muted-foreground uppercase tracking-wide">Upcoming</div>
+                              <div className="text-[9px] text-muted-foreground uppercase tracking-wide">{t("savUpcoming")}</div>
                             </div>
                           </div>
                         </div>
@@ -617,7 +618,7 @@ function DpsPlanDetailsSheet({
                             <div className="min-w-0">
                               <div className="text-sm font-semibold text-foreground leading-tight">
                                 {b.label}
-                                {h.triggered_by === "manual" && <span className="ml-1.5 text-[9px] font-medium text-muted-foreground uppercase tracking-wide">Manual</span>}
+                                {h.triggered_by === "manual" && <span className="ml-1.5 text-[9px] font-medium text-muted-foreground uppercase tracking-wide">{t("savManual")}</span>}
                               </div>
                               {h.tx_reference && (
                                 <div className="text-[10px] text-muted-foreground truncate mt-0.5 font-mono">
@@ -637,7 +638,7 @@ function DpsPlanDetailsSheet({
                                   {isCollected ? "+" : isMissed ? "" : ""}৳{Number(h.amount).toLocaleString()}
                                 </div>
                                 <div className="text-[9px] text-muted-foreground uppercase tracking-wide">
-                                  {isCollected ? "Collected" : isMissed ? "Due" : "—"}
+                                  {isCollected ? t("savCollected") : isMissed ? t("savDue") : "—"}
                                 </div>
                               </div>
                             )}
@@ -648,7 +649,7 @@ function DpsPlanDetailsSheet({
 
                     {upcoming.length === 0 && history.length === 0 && (
                       <div className="text-xs text-muted-foreground text-center py-6">
-                        No installments yet.
+                        {t("savNoInstallments")}
                       </div>
                     )}
                   </div>
@@ -659,7 +660,7 @@ function DpsPlanDetailsSheet({
             {/* Actions */}
             <div className="pt-1">
               <Button variant="outline" className="rounded-[14px] h-11" disabled={busy} onClick={togglePause}>
-                {plan.is_active ? <><Pause className="w-4 h-4 mr-1.5" />Pause plan</> : <><Play className="w-4 h-4 mr-1.5" />Resume plan</>}
+                {plan.is_active ? <><Pause className="w-4 h-4 mr-1.5" />{t("savPausePlan")}</> : <><Play className="w-4 h-4 mr-1.5" />{t("savResumePlan")}</>}
               </Button>
             </div>
           </div>
@@ -809,7 +810,7 @@ function DpsTab() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <div className="text-[15px] font-semibold truncate">{goal?.name ?? "—"}</div>
-                  {!p.is_active && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wide">Paused</span>}
+                  {!p.is_active && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wide">{t("savPaused")}</span>}
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
                   <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wide">{freqLabel}</span>
@@ -1224,7 +1225,7 @@ const SavingsPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Seo title="Islamic Savings & DPS" description="Sharia-compliant savings, DPS, gold, and stocks." path="/savings" />
+      <Seo title={t("savPageTitle")} description={t("savPageDesc")} path="/savings" />
 
       {/* Header */}
       <div className="sticky top-0 z-10 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow">
