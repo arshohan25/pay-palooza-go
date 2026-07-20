@@ -19,6 +19,7 @@ import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import { useDeviceOtpVerification } from "@/hooks/use-device-otp-verification";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import DeviceOtpStep from "@/components/DeviceOtpStep";
+import { useI18n } from "@/lib/i18n";
 
 const AGENT_LAST_PHONE_KEY = "easypay_agent_last_phone";
 
