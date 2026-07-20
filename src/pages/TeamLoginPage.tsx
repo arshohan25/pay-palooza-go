@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Lock, User, Eye, EyeOff, ShieldCheck, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as AuthUser } from "@supabase/supabase-js";
+import { useI18n } from "@/lib/i18n";
 
 const TEAM_ROLES = ["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"];
 
