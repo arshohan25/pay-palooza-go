@@ -537,7 +537,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                     </span>
                     <button onClick={() => updateStock(p, 1)}
                       className="w-5 h-5 rounded bg-muted flex items-center justify-center text-[10px] font-bold text-foreground">+</button>
-                    <span className="text-[9px] text-muted-foreground">stock</span>
+                    <span className="text-[9px] text-muted-foreground">{t("mprStock")}</span>
                   </div>
                 </div>
               </div>
@@ -546,9 +546,10 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                   {p.is_active ? <Eye size={13} className="text-green-600" /> : <EyeOff size={13} className="text-muted-foreground" />}
                 </button>
                 <button onClick={() => { setVariantsProductId(p.id); setVariantsProductName(p.name); }}
-                  className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center" title="Variants">
+                  className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center" title={t("mprVariants")}>
                   <Layers size={12} className="text-primary" />
                 </button>
+
                 <button onClick={() => openEdit(p)} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                   <Pencil size={12} className="text-muted-foreground" />
                 </button>
