@@ -1265,7 +1265,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
             <Zap size={14} className="text-primary" /> Merchant Services
           </h3>
         </div>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
           {quickActions.map(a => {
             const locked = isStaff && !can(a.permission);
             return (
@@ -1276,9 +1276,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
                   ? setRequestSheet({ label: a.label })
                   : a.onClick()}
                 aria-disabled={locked}
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-card shadow-card border border-border/40 transition-all ${locked ? "opacity-50 cursor-not-allowed" : "hover:shadow-elevated press-effect"}`}>
+                className={`flex flex-col items-center gap-1.5 p-2 sm:p-3 rounded-2xl bg-card shadow-card border border-border/40 transition-all min-w-0 ${locked ? "opacity-50 cursor-not-allowed" : "hover:shadow-elevated press-effect"}`}>
                 <div className="relative">
-                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shadow-sm`}>
+                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shadow-sm`}>
                     <a.icon size={18} className="text-white" />
                   </div>
                   {locked && (
@@ -1287,7 +1287,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] font-bold text-foreground leading-tight text-center">{a.label}</span>
+                <span className="text-[10px] font-bold text-foreground leading-tight text-center break-words w-full">{a.label}</span>
               </motion.button>
             );
           })}
