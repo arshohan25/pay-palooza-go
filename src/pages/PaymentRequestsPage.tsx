@@ -66,6 +66,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const PaymentRequestsPage = () => {
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [links, setLinks] = useState<PaymentLink[]>([]);
   const [payments, setPayments] = useState<ReceivedPayment[]>([]);
