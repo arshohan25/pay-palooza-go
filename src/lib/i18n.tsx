@@ -3944,6 +3944,7 @@ const translations = {
   mlPillPayouts: { en: "Payouts", bn: "পেআউট" },
   mlPillQR: { en: "QR", bn: "কিউআর" },
   mlPillInsights: { en: "Insights", bn: "ইনসাইট" },
+  mlSessionExpired: { en: "Your session has expired. Please sign in again.", bn: "আপনার সেশন শেষ হয়ে গেছে। আবার সাইন ইন করুন।" },
 } as const;
 
 

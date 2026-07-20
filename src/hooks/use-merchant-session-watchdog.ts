@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 
 const POLL_MS = 30_000;
 const REFRESH_LEAD_S = 60;
@@ -20,6 +21,7 @@ const REFRESH_LEAD_S = 60;
 export function useMerchantSessionWatchdog() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useI18n();
   const firedRef = useRef(false);
   const pathRef = useRef(location.pathname + location.search);
 
@@ -51,7 +53,7 @@ export function useMerchantSessionWatchdog() {
       try { isStaff = localStorage.getItem("mfs_is_merchant_staff") === "1"; } catch {}
       // Keep the staff flag so the login pages can route the user to the manager portal.
       const loginPath = isStaff ? "/merchant-manager-login" : "/merchant-login";
-      toast.error("Your session has expired. Please sign in again.");
+      toast.error(t("mlSessionExpired"));
       navigate(
         `${loginPath}?redirect=${encodeURIComponent(redirectTarget)}`,
         { replace: true }
