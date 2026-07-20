@@ -357,14 +357,14 @@ const AgentRegister = () => {
               <UserPlus size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">Register Customer</h1>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("argTitle")}</h1>
               <p className="text-[9px] text-primary-foreground/60">
                 {isPostKyc
-                  ? currentStep === "kyc_waiting" ? "Awaiting KYC Review"
-                  : currentStep === "approved" ? "KYC Approved"
-                  : currentStep === "rejected" ? "KYC Rejected"
-                  : "Customer Setup"
-                  : `Step ${stepIndex + 1} of ${STEPS.length}`}
+                  ? currentStep === "kyc_waiting" ? t("argAwaitingReview")
+                  : currentStep === "approved" ? t("argApprovedSub")
+                  : currentStep === "rejected" ? t("argRejectedSub")
+                  : t("argCustomerSetup")
+                  : t("argStepOf").replace("{n}", String(stepIndex + 1)).replace("{total}", String(STEPS.length))}
               </p>
             </div>
           </div>
