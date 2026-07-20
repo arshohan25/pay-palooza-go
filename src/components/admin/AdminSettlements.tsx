@@ -258,7 +258,7 @@ export default function AdminSettlements() {
       {/* Filters */}
       <div className="flex gap-2 flex-wrap items-center">
         <Select value={filter} onValueChange={(v: any) => setFilter(v)}>
-          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[140px] flex-1 sm:flex-none min-w-0"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="merchant">Merchant</SelectItem>
@@ -266,7 +266,7 @@ export default function AdminSettlements() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[140px] flex-1 sm:flex-none min-w-0"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
@@ -275,10 +275,73 @@ export default function AdminSettlements() {
             <SelectItem value="failed">Failed</SelectItem>
           </SelectContent>
         </Select>
-        <div className="relative flex-1 max-w-xs">
+        <div className="relative w-full sm:flex-1 sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search name, phone, ref…" className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-2">
+        {loading ? (
+          <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        ) : filtered.length === 0 ? (
+          <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">No settlements found</CardContent></Card>
+        ) : filtered.map(s => (
+          <Card key={s.id}>
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground truncate">{s.entity_name || "—"}</p>
+                  <p className="text-xs text-muted-foreground truncate">{s.entity_phone}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground mt-1 truncate">{s.settlement_ref || s.id.slice(0, 8)}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <Badge className={`text-[10px] ${STATUS_COLORS[s.status] ?? ""}`}>{s.status}</Badge>
+                  <Badge variant="outline" className="text-[10px] capitalize">{s.entity_type}</Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs pt-2 border-t border-border/60">
+                <div><p className="text-muted-foreground text-[10px]">Gross</p><p className="font-mono">৳{Number(s.gross_amount).toLocaleString()}</p></div>
+                <div><p className="text-muted-foreground text-[10px]">Net</p><p className="font-mono font-bold">৳{Number(s.net_amount).toLocaleString()}</p></div>
+                <div><p className="text-muted-foreground text-[10px]">Txns</p><p className="font-mono">{s.txn_count}</p></div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">{s.period_start?.slice(0, 10)} → {s.period_end?.slice(0, 10)}</p>
+              <div className="flex gap-1 flex-wrap pt-1">
+                <Button size="sm" variant="ghost" className="h-7 text-xs flex-1 min-w-[60px]" onClick={() => openDetail(s)}>View</Button>
+                {s.status === "pending" && (
+                  <>
+                    <Button size="sm" variant="outline" className="h-7 text-xs flex-1 min-w-[70px]" onClick={() => updateStatus(s.id, "processing")}>Process</Button>
+                    <Button size="sm" variant="destructive" className="h-7 text-xs flex-1 min-w-[60px]" onClick={() => updateStatus(s.id, "failed")}>Fail</Button>
+                  </>
+                )}
+                {s.status === "processing" && (
+                  <Button size="sm" className="h-7 text-xs flex-1 min-w-[90px]" onClick={() => updateStatus(s.id, "completed")}><CheckCircle className="w-3 h-3 mr-1" /> Complete</Button>
+                )}
+                {s.status === "completed" && s.settled_at && (
+                  <span className="text-[10px] text-muted-foreground self-center px-2">{formatDistanceToNow(new Date(s.settled_at), { addSuffix: true })}</span>
+                )}
+                {s.status === "failed" && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive flex-1 min-w-[70px]"><Trash2 className="w-3 h-3 mr-1" />Delete</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Settlement</AlertDialogTitle>
+                        <AlertDialogDescription>Delete this failed settlement? This cannot be undone.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteSettlement(s.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Table */}
