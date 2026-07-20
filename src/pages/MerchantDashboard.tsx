@@ -1841,24 +1841,6 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
     toast({ title: "Copied!", description: "Merchant ID copied to clipboard" });
   };
 
-  const saveSettings = async () => {
-    if (!merchant?.id) return;
-    setSaving(true);
-    const patch = {
-      qr_card_tagline: form.qr_card_tagline.trim() || null,
-      qr_card_band_color_start: form.qr_card_band_color_start || null,
-      qr_card_band_color_end: form.qr_card_band_color_end || null,
-      qr_card_logo_url: form.qr_card_logo_url.trim() || null,
-    };
-    const { error } = await supabase.from("merchants").update(patch as any).eq("id", merchant.id);
-    setSaving(false);
-    if (error) {
-      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
-      return;
-    }
-    toast({ title: "Saved", description: "QR card branding updated" });
-    setSettingsOpen(false);
-  };
 
   const handlePrint = () => {
     if (!qrDataUrl) return;
