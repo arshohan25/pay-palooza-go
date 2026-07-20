@@ -184,11 +184,11 @@ const PaymentRequestsPage = () => {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return toast.error("Please sign in first");
-    if (!title.trim()) return toast.error("Title is required");
+    if (!user) return toast.error(t("prSignInFirst"));
+    if (!title.trim()) return toast.error(t("prTitleRequired"));
     const amt = amount.trim() ? parseFloat(amount) : null;
     if (amt != null && (!Number.isFinite(amt) || amt <= 0)) {
-      return toast.error("Amount must be a positive number");
+      return toast.error(t("prAmountPositive"));
     }
     setCreating(true);
     const short_code = randomCode();
@@ -203,14 +203,14 @@ const PaymentRequestsPage = () => {
     });
     setCreating(false);
     if (error) return toast.error(error.message);
-    toast.success("Payment link created");
+    toast.success(t("prLinkCreated"));
     setTitle(""); setAmount(""); setDescription("");
     load();
   };
 
   const copy = async (code: string) => {
-    try { await navigator.clipboard.writeText(linkUrl(code)); toast.success("Link copied"); }
-    catch { toast.error("Could not copy"); }
+    try { await navigator.clipboard.writeText(linkUrl(code)); toast.success(t("prLinkCopied")); }
+    catch { toast.error(t("prCouldNotCopy")); }
   };
 
   const toggleActive = async (l: PaymentLink) => {
