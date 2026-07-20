@@ -191,6 +191,7 @@ const MerchantDashboard = () => {
   const navigate = useNavigate();
   useUserSessionTimeout("merchant");
   const { toast } = useToast();
+  const { lang, toggleLang } = useI18n();
   const { isDisabled } = useGlobalToggles();
   const futureFeatures = useFutureFeatures();
   void futureFeatures.visibility.future_merchant_growth_os;
