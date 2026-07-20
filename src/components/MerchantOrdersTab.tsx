@@ -21,6 +21,12 @@ interface MerchantOrder {
   shipping_city: string | null;
   payment_method: string;
   created_at: string;
+  courier_provider?: string | null;
+  tracking_number?: string | null;
+  courier_booking_ref?: string | null;
+  courier_last_status?: string | null;
+  courier_last_scan_at?: string | null;
+  courier_eta?: string | null;
 }
 
 const STATUS_FLOW = ["processing", "confirmed", "shipped", "out_for_delivery", "delivered"];
