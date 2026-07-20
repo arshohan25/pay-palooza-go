@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Landmark, CalendarClock } from "lucide-react";
+import { useUserRoles } from "@/hooks/use-user-roles";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(Math.round(n));
 
@@ -25,6 +26,8 @@ function computeNextPayout(freq: string | null | undefined): { label: string; da
 }
 
 export default function MerchantPayoutEtaCard({ merchantId, frequency }: { merchantId: string; frequency: string | null }) {
+  const { roles } = useUserRoles();
+  const isMerchantOnly = roles.includes("merchant" as any) && !roles.includes("admin" as any);
   const [pending, setPending] = useState(0);
   const [available, setAvailable] = useState(0);
 
@@ -49,6 +52,8 @@ export default function MerchantPayoutEtaCard({ merchantId, frequency }: { merch
   }, [merchantId, load]);
 
   const next = computeNextPayout(frequency);
+
+  if (isMerchantOnly) return null;
 
   return (
     <Card className="p-3 border-0 shadow-elevated bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent">
