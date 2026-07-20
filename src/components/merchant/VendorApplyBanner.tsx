@@ -4,6 +4,8 @@ import { Store, ArrowRight, Clock, XCircle, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
+
 
 type VendorStatus = "none" | "draft" | "pending" | "under_review" | "rejected" | "approved";
 
