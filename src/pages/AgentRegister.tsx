@@ -564,17 +564,17 @@ const AgentRegister = () => {
                       className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
                     >
                       <Loader2 size={16} className="animate-spin text-primary" />
-                      <span>Verifying...</span>
+                      <span>{t("argVerifying")}</span>
                     </motion.div>
                   ) : null}
                 </AnimatePresence>
 
                 <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                   {resendTimer > 0 ? (
-                    <span>Resend available in <span className="font-semibold text-foreground">{resendTimer}s</span></span>
+                    <span>{t("argResendIn")} <span className="font-semibold text-foreground">{resendTimer}s</span></span>
                   ) : (
                     <button onClick={handleResendOtp} disabled={sendingOtp} className="inline-flex items-center gap-1.5 font-semibold text-primary active:scale-95 transition-transform disabled:opacity-60">
-                      <RefreshCw size={12} className={sendingOtp ? "animate-spin" : ""} /> Resend code
+                      <RefreshCw size={12} className={sendingOtp ? "animate-spin" : ""} /> {t("argResendCode")}
                     </button>
                   )}
                 </div>
