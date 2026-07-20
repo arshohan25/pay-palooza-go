@@ -332,10 +332,10 @@ export default function TeamLoginPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MailCheck className="w-5 h-5 text-primary" />
-              Two-Factor Authentication
+              {t("tlp2fa")}
             </DialogTitle>
             <DialogDescription>
-              Enter the 6-digit code sent to <strong>{teamEmail}</strong>
+              {t("tlp2faDescBefore")} <strong>{teamEmail}</strong>
             </DialogDescription>
           </DialogHeader>
 
@@ -362,7 +362,7 @@ export default function TeamLoginPage() {
               disabled={resendCooldown > 0}
               onClick={resendOtp}
             >
-              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+              {resendCooldown > 0 ? `${t("tlpResendIn")} ${resendCooldown}s` : t("tlpResendCode")}
             </button>
           </div>
 
@@ -372,7 +372,7 @@ export default function TeamLoginPage() {
               disabled={verifying2fa || otpCode.length !== 6}
               className="w-full"
             >
-              {verifying2fa ? "Verifying..." : "Verify & Continue"}
+              {verifying2fa ? t("tlpVerifying") : t("tlpVerifyContinue")}
             </Button>
           </DialogFooter>
         </DialogContent>
