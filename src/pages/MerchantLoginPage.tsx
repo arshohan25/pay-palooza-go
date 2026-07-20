@@ -583,7 +583,7 @@ export default function MerchantLoginPage() {
             {/* Phone — masked chip if device is bound, otherwise editable input */}
             <div className="space-y-1.5">
               <Label htmlFor="merchant-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                {boundPhone ? "Signed in as" : "Mobile number"}
+                {boundPhone ? t("mlSignedInAs") : t("mlMobileNumber")}
               </Label>
               {boundPhone ? (
                 <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-200/25 bg-amber-300/[0.06] px-3 py-2.5">
