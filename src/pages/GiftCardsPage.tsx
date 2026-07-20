@@ -148,8 +148,8 @@ const GiftCardsPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Seo
-        title="Gift Cards – EasyPay"
-        description="Buy and send digital gift cards across 17 categories – fashion, food, gaming, travel and more – instantly with EasyPay."
+        title={t("giftCardsSeoTitle")}
+        description={t("giftCardsSeoDesc")}
         path="/giftcards"
       />
       <FlowHeader
