@@ -53,6 +53,8 @@ export default function MerchantPayoutEtaCard({ merchantId, frequency }: { merch
 
   const next = computeNextPayout(frequency);
 
+  if (isMerchantOnly) return null;
+
   return (
     <Card className="p-3 border-0 shadow-elevated bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent">
       <div className="flex items-center gap-3">
