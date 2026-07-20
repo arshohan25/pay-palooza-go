@@ -1398,16 +1398,16 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-foreground">Recent Activity</h3>
-            <button onClick={onSeeAll} className="text-[10px] font-semibold text-primary hover:underline">See All</button>
+            <h3 className="text-sm font-bold text-foreground">{t("mdRecentActivity")}</h3>
+            <button onClick={onSeeAll} className="text-[10px] font-semibold text-primary hover:underline">{t("mdSeeAllShort")}</button>
           </div>
           {allTxns.length === 0 ? (
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
               <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
                 <CreditCard className="w-7 h-7 text-muted-foreground" />
               </motion.div>
-              <p className="text-sm font-semibold text-foreground">No activity yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Transactions will appear here</p>
+              <p className="text-sm font-semibold text-foreground">{t("mdNoActivity")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("mdTxWillAppear")}</p>
             </motion.div>
           ) : (
             <div className="space-y-1">
