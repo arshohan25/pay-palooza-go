@@ -1956,13 +1956,6 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
             style={{ background: `linear-gradient(135deg, ${bandStart} 0%, ${bandEnd} 100%)` }}>
             <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute -bottom-20 -left-16 w-56 h-56 rounded-full bg-white/10 blur-2xl" />
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-[10px] font-semibold tracking-wide transition-colors"
-              aria-label="Customise QR card"
-            >
-              <Settings size={11} /> Customise
-            </button>
             <div className="relative">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm mb-2">
                 <img src={EASYPAY_LOGO_URL} alt="EasyPay" className="h-3.5 w-auto object-contain brightness-0 invert" />
@@ -1974,7 +1967,8 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
                 )}
                 <h3 className="text-lg font-black text-white tracking-tight">{shopName}</h3>
               </div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/90 mt-0.5">{tagline}</p>
+              <p className="text-[13px] font-bold text-white mt-1 tracking-tight">{tagline}</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-white/80 mt-0.5">{QR_SUB_TAGLINE}</p>
             </div>
           </div>
 
