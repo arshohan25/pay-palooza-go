@@ -227,7 +227,7 @@ const AgentRegister = () => {
       }, 1100);
       return;
     } catch (err: any) {
-      setOtpError({ kind: "network", message: err.message || "Couldn't verify right now. Please try again." });
+      setOtpError({ kind: "network", message: err.message || t("argOtpNetwork") });
       haptics.error();
     } finally {
       setVerifyingOtp(false);
