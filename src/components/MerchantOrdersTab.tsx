@@ -193,15 +193,41 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
                   </div>
                 )}
 
-                {/* Fulfill button */}
-                {order.status !== "cancelled" && order.status !== "delivered" && (
+                {/* Action row */}
+                <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => setFulfillOrder(order)}
-                    className="w-full py-2.5 rounded-xl text-white text-[12px] font-bold flex items-center justify-center gap-1.5"
-                    style={{ background: "#0288D1" }}
+                    onClick={() => handleInvoice(order, "print")}
+                    disabled={invoiceBusy === order.id + "print"}
+                    className="py-2.5 rounded-xl border border-border/70 bg-background text-[12px] font-bold text-foreground flex items-center justify-center gap-1.5 disabled:opacity-60"
                   >
-                    <Truck size={13} /> {t("moFulfill")}
+                    <Printer size={13} /> {invoiceBusy === order.id + "print" ? "…" : "Print Invoice"}
                   </button>
+                  <button
+                    onClick={() => handleInvoice(order, "download")}
+                    disabled={invoiceBusy === order.id + "download"}
+                    className="py-2.5 rounded-xl border border-border/70 bg-background text-[12px] font-bold text-foreground flex items-center justify-center gap-1.5 disabled:opacity-60"
+                  >
+                    <Download size={13} /> {invoiceBusy === order.id + "download" ? "…" : "Download PDF"}
+                  </button>
+                </div>
+
+                {order.status !== "cancelled" && order.status !== "delivered" && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setCourierOrder(order)}
+                      className="py-2.5 rounded-xl text-white text-[12px] font-bold flex items-center justify-center gap-1.5"
+                      style={{ background: "#0EA564" }}
+                    >
+                      <Truck size={13} /> Book Courier
+                    </button>
+                    <button
+                      onClick={() => setFulfillOrder(order)}
+                      className="py-2.5 rounded-xl text-white text-[12px] font-bold flex items-center justify-center gap-1.5"
+                      style={{ background: "#0288D1" }}
+                    >
+                      <Package size={13} /> {t("moFulfill")}
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -215,6 +241,15 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
         open={!!fulfillOrder}
         onOpenChange={(o) => { if (!o) setFulfillOrder(null); }}
         onUpdated={load}
+      />
+
+      <QuickCourierBookSheet
+        orderId={courierOrder?.id ?? null}
+        orderNum={courierOrder?.order_num}
+        items={Array.isArray(courierOrder?.items) ? courierOrder!.items : []}
+        open={!!courierOrder}
+        onOpenChange={(o) => { if (!o) setCourierOrder(null); }}
+        onBooked={load}
       />
     </div>
   );
