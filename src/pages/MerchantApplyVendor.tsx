@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +13,9 @@ import { ArrowLeft, Store, CheckCircle2, Clock, XCircle, Camera, Upload, Loader2
 import { toast } from "sonner";
 
 type PhotoKey = "shop_front" | "shop_inside";
-const PHOTOS: { key: PhotoKey; slot: "front" | "inside"; urlField: "shop_front_photo_url" | "shop_inside_photo_url"; metaField: "shop_front_photo_meta" | "shop_inside_photo_meta"; label: string; hint: string }[] = [
-  { key: "shop_front",  slot: "front",  urlField: "shop_front_photo_url",  metaField: "shop_front_photo_meta",  label: "Shop front photo",  hint: "Exterior with signboard. Min 640×480, JPG/PNG/WEBP, ≤8MB." },
-  { key: "shop_inside", slot: "inside", urlField: "shop_inside_photo_url", metaField: "shop_inside_photo_meta", label: "Shop inside photo", hint: "Interior showing products / counter." },
+const PHOTOS: { key: PhotoKey; slot: "front" | "inside"; urlField: "shop_front_photo_url" | "shop_inside_photo_url"; metaField: "shop_front_photo_meta" | "shop_inside_photo_meta"; labelKey: TranslationKey; hintKey: TranslationKey }[] = [
+  { key: "shop_front",  slot: "front",  urlField: "shop_front_photo_url",  metaField: "shop_front_photo_meta",  labelKey: "mavShopFrontLabel",  hintKey: "mavShopFrontHint" },
+  { key: "shop_inside", slot: "inside", urlField: "shop_inside_photo_url", metaField: "shop_inside_photo_meta", labelKey: "mavShopInsideLabel", hintKey: "mavShopInsideHint" },
 ];
 
 const MAX_MB = 8;
@@ -24,6 +25,7 @@ export default function MerchantApplyVendor() {
   const nav = useNavigate();
   const [sp] = useSearchParams();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [merchant, setMerchant] = useState<any>(null);
   const [existing, setExisting] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -118,20 +120,20 @@ export default function MerchantApplyVendor() {
     if (!user) return;
     // ---- Pre-upload client-side checks with exact reasons ----
     if (!ALLOWED.includes(file.type)) {
-      const msg = `Unsupported file type "${file.type || "unknown"}". Use JPG, PNG or WEBP.`;
+      const msg = t("mavErrUnsupportedType").replace("{type}", file.type || "unknown");
       toast.error(msg);
       setPhotos(p => ({ ...p, [key]: { ...p[key], error: msg } }));
       return;
     }
     if (file.size > MAX_MB * 1024 * 1024) {
-      const msg = `File is ${(file.size / 1048576).toFixed(2)} MB — exceeds the ${MAX_MB} MB limit.`;
+      const msg = t("mavErrTooLarge").replace("{mb}", (file.size / 1048576).toFixed(2)).replace("{max}", String(MAX_MB));
       toast.error(msg);
       setPhotos(p => ({ ...p, [key]: { ...p[key], error: msg } }));
       return;
     }
     const dims = await preflight(file);
     if (dims && (dims.width < 640 || dims.height < 480)) {
-      const msg = `Photo resolution ${dims.width}×${dims.height} is below the required 640×480.`;
+      const msg = t("mavErrLowRes").replace("{w}", String(dims.width)).replace("{h}", String(dims.height));
       toast.error(msg);
       setPhotos(p => ({ ...p, [key]: { ...p[key], error: msg } }));
       return;
@@ -143,7 +145,7 @@ export default function MerchantApplyVendor() {
 
     const { error: upErr } = await supabase.storage.from("vendor-kyc").upload(path, file, { upsert: true, contentType: file.type });
     if (upErr) {
-      toast.error("Upload failed: " + upErr.message);
+      toast.error(t("mavUploadFail").replace("{msg}", upErr.message));
       setPhotos(p => ({ ...p, [key]: { ...p[key], uploading: false, error: upErr.message } }));
       return;
     }
@@ -154,7 +156,8 @@ export default function MerchantApplyVendor() {
       try {
         const out = await validateOnServer(existing.id, slot, path, captureDate, form.resubmit_note || undefined);
         setPhotos(p => ({ ...p, [key]: { file, url: path, meta: out?.meta ?? null, uploading: false, validating: false, error: null } }));
-        toast.success(`${key === "shop_front" ? "Shop front" : "Shop inside"} photo validated (${out?.meta?.width}×${out?.meta?.height})`);
+        const label = key === "shop_front" ? t("mavShopFrontLabel") : t("mavShopInsideLabel");
+        toast.success(t("mavPhotoValidated").replace("{label}", label).replace("{w}", String(out?.meta?.width)).replace("{h}", String(out?.meta?.height)));
       } catch (e: any) {
         setPhotos(p => ({ ...p, [key]: { ...p[key], uploading: false, validating: false, error: e.message } }));
         toast.error(e.message, { duration: 6000 });
@@ -169,7 +172,7 @@ export default function MerchantApplyVendor() {
     if (!user || !merchant) return;
     // Client-side guard: merchant + business KYC MUST be approved before any submit.
     if (merchant.status !== "approved" || merchant.business_kyc_status !== "approved") {
-      toast.error(`Vendor application blocked — merchant status: ${merchant.status}, business KYC: ${merchant.business_kyc_status}. Both must be "approved".`, { duration: 6000 });
+      toast.error(t("mavErrBlocked").replace("{status}", merchant.status).replace("{kyc}", merchant.business_kyc_status), { duration: 6000 });
       return;
     }
     // Re-verify against the database in case status changed since the page loaded.
@@ -178,18 +181,18 @@ export default function MerchantApplyVendor() {
       .select("status,business_kyc_status,admin_notes")
       .eq("user_id", user.id)
       .maybeSingle();
-    if (freshErr) { toast.error("Could not verify merchant status: " + freshErr.message); return; }
-    if (!fresh) { toast.error("Merchant profile not found. Please complete the merchant application first."); nav("/merchant/apply"); return; }
+    if (freshErr) { toast.error(t("mavErrVerify").replace("{msg}", freshErr.message)); return; }
+    if (!fresh) { toast.error(t("mavErrNoProfile")); nav("/merchant/apply"); return; }
     if (fresh.status !== "approved" || fresh.business_kyc_status !== "approved") {
       setMerchant((m: any) => ({ ...(m ?? {}), ...fresh }));
-      toast.error(`Vendor application blocked — merchant status is now "${fresh.status}" and business KYC is "${fresh.business_kyc_status}". Both must be "approved".`, { duration: 6000 });
+      toast.error(t("mavErrBlocked").replace("{status}", fresh.status).replace("{kyc}", fresh.business_kyc_status), { duration: 6000 });
       return;
     }
-    if (!form.store_name.trim()) { toast.error("Store name is required"); return; }
-    if (!form.pickup_address.trim()) { toast.error("Pickup address is required"); return; }
-    if (!photos.shop_front.url)  { toast.error("Shop front photo is required"); return; }
-    if (!photos.shop_inside.url) { toast.error("Shop inside photo is required"); return; }
-    if (photos.shop_front.error || photos.shop_inside.error) { toast.error("Fix photo validation errors first"); return; }
+    if (!form.store_name.trim()) { toast.error(t("mavErrStoreNameReq")); return; }
+    if (!form.pickup_address.trim()) { toast.error(t("mavErrPickupReq")); return; }
+    if (!photos.shop_front.url)  { toast.error(t("mavErrShopFrontReq")); return; }
+    if (!photos.shop_inside.url) { toast.error(t("mavErrShopInsideReq")); return; }
+    if (photos.shop_front.error || photos.shop_inside.error) { toast.error(t("mavErrPhotoFix")); return; }
     setSubmitting(true);
     const payload: any = {
       merchant_id: merchant.id,
@@ -211,10 +214,10 @@ export default function MerchantApplyVendor() {
     let appId = existing?.id as string | undefined;
     if (existing && existing.status !== "approved") {
       const { error } = await (supabase as any).from("merchant_vendor_applications").update(payload).eq("id", existing.id);
-      if (error) { setSubmitting(false); toast.error("Failed to submit: " + error.message); return; }
+      if (error) { setSubmitting(false); toast.error(t("mavSubmitFail").replace("{msg}", error.message)); return; }
     } else {
       const { data, error } = await (supabase as any).from("merchant_vendor_applications").insert(payload).select("id").single();
-      if (error) { setSubmitting(false); toast.error("Failed to submit: " + error.message); return; }
+      if (error) { setSubmitting(false); toast.error(t("mavSubmitFail").replace("{msg}", error.message)); return; }
       appId = data?.id;
     }
 
@@ -230,7 +233,7 @@ export default function MerchantApplyVendor() {
       }
     } catch (e: any) {
       setSubmitting(false);
-      toast.error("Server photo validation failed: " + e.message + " — application NOT queued.");
+      toast.error(t("mavServerValFail").replace("{msg}", e.message));
       // Force back to draft
       if (appId) await (supabase as any).from("merchant_vendor_applications").update({ status: "draft" }).eq("id", appId);
       return;
@@ -256,31 +259,28 @@ export default function MerchantApplyVendor() {
     });
 
     setSubmitting(false);
-    toast.success(resubmitMode ? "Resubmitted for admin review" : "Vendor application submitted");
+    toast.success(resubmitMode ? t("mavSubmittedResubmit") : t("mavSubmittedNew"));
     nav("/merchant");
   };
 
-  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading…</div>;
+  if (loading) return <div className="p-10 text-center text-muted-foreground">{t("mavLoading")}</div>;
   if (!merchant) return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <Card className="max-w-md w-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Store className="w-5 h-5 text-primary" /> Finish your merchant setup
+            <Store className="w-5 h-5 text-primary" /> {t("mavFinishSetup")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Your account has the merchant role, but the merchant business profile
-            (business name, KYC, bank details) hasn't been submitted yet. Complete
-            the merchant application first — vendor / EasyPay Shop upgrade unlocks
-            right after your merchant profile is approved.
+            {t("mavFinishDesc")}
           </p>
           <div className="flex gap-2">
             <Button className="flex-1" onClick={() => nav("/merchant/apply")}>
-              Start merchant application
+              {t("mavStartApp")}
             </Button>
-            <Button variant="outline" onClick={() => nav("/merchant")}>Back</Button>
+            <Button variant="outline" onClick={() => nav("/merchant")}>{t("mavBack")}</Button>
           </div>
         </CardContent>
       </Card>
@@ -295,36 +295,34 @@ export default function MerchantApplyVendor() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <Store className="w-5 h-5 text-primary" /> Merchant approval required
+                <Store className="w-5 h-5 text-primary" /> {t("mavApprovalReq")}
               </CardTitle>
               <Badge className={isRejected
                 ? "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30"
                 : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"}>
-                {isRejected ? <><XCircle className="w-3 h-3 mr-1" /> Rejected</> : <><Clock className="w-3 h-3 mr-1" /> Pending review</>}
+                {isRejected ? <><XCircle className="w-3 h-3 mr-1" /> {t("mavStatusRejected")}</> : <><Clock className="w-3 h-3 mr-1" /> {t("mavStatusPending")}</>}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {isRejected
-                ? "Your merchant profile was rejected. Please resolve the admin feedback and get your merchant profile approved first — vendor / EasyPay Shop upgrade unlocks after that."
-                : "Your merchant profile is still awaiting admin approval. Vendor / EasyPay Shop upgrade opens automatically once your merchant profile is approved."}
+              {isRejected ? t("mavRejectedDesc") : t("mavPendingDesc")}
             </p>
             <div className="text-xs text-muted-foreground grid gap-1">
-              <div className="flex justify-between"><span>Business status</span><span className="font-medium capitalize">{merchant.status}</span></div>
-              <div className="flex justify-between"><span>Business KYC</span><span className="font-medium capitalize">{merchant.business_kyc_status}</span></div>
+              <div className="flex justify-between"><span>{t("mavBusinessStatus")}</span><span className="font-medium capitalize">{merchant.status}</span></div>
+              <div className="flex justify-between"><span>{t("mavBusinessKyc")}</span><span className="font-medium capitalize">{merchant.business_kyc_status}</span></div>
             </div>
             {isRejected && merchant.admin_notes && (
               <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/30 text-xs">
-                <p className="font-semibold text-red-700 dark:text-red-300 mb-1">Admin feedback</p>
+                <p className="font-semibold text-red-700 dark:text-red-300 mb-1">{t("mavAdminFeedback")}</p>
                 <p className="text-muted-foreground">{merchant.admin_notes}</p>
               </div>
             )}
             <div className="flex gap-2">
               {isRejected && (
-                <Button className="flex-1" onClick={() => nav("/merchant/apply")}>Update merchant profile</Button>
+                <Button className="flex-1" onClick={() => nav("/merchant/apply")}>{t("mavUpdateProfile")}</Button>
               )}
-              <Button variant="outline" className={isRejected ? "" : "flex-1"} onClick={() => nav("/merchant")}>Back to merchant</Button>
+              <Button variant="outline" className={isRejected ? "" : "flex-1"} onClick={() => nav("/merchant")}>{t("mavBackToMerchant")}</Button>
             </div>
           </CardContent>
         </Card>
@@ -338,9 +336,9 @@ export default function MerchantApplyVendor() {
       existing.status === "rejected" ? "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30" :
       "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
     }>
-      {existing.status === "approved" ? <><CheckCircle2 className="w-3 h-3 mr-1" /> Approved</> :
-       existing.status === "rejected" ? <><XCircle className="w-3 h-3 mr-1" /> Rejected</> :
-       <><Clock className="w-3 h-3 mr-1" /> Pending review</>}
+      {existing.status === "approved" ? <><CheckCircle2 className="w-3 h-3 mr-1" /> {t("mavStatusApproved")}</> :
+       existing.status === "rejected" ? <><XCircle className="w-3 h-3 mr-1" /> {t("mavStatusRejected")}</> :
+       <><Clock className="w-3 h-3 mr-1" /> {t("mavStatusPending")}</>}
     </Badge>
   );
 
@@ -351,72 +349,72 @@ export default function MerchantApplyVendor() {
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-4">
         <Button variant="ghost" onClick={() => nav("/merchant")} className="mb-3">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Merchant
+          <ArrowLeft className="w-4 h-4 mr-2" /> {t("mavBackToMerchantBtn")}
         </Button>
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <Store className="w-5 h-5 text-primary" /> Apply for Vendor Access
+                <Store className="w-5 h-5 text-primary" /> {t("mavTitle")}
               </CardTitle>
               {statusBadge}
             </div>
             <p className="text-sm text-muted-foreground mt-2">
-              Your merchant account handles payments. To list products on EasyPay Shop, admins must approve a separate vendor upgrade.
+              {t("mavSubtitle")}
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             {isRejected && existing.admin_notes && (
               <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/30 text-sm space-y-2">
-                <p className="font-semibold text-red-700 dark:text-red-300">Admin feedback</p>
+                <p className="font-semibold text-red-700 dark:text-red-300">{t("mavAdminFeedback")}</p>
                 <p className="text-muted-foreground">{existing.admin_notes}</p>
                 {!resubmitMode && (
                   <Button size="sm" onClick={() => setResubmitMode(true)}>
-                    <RefreshCw className="w-3.5 h-3.5 mr-1" /> One-click resubmit
+                    <RefreshCw className="w-3.5 h-3.5 mr-1" /> {t("mavResubmitBtn")}
                   </Button>
                 )}
               </div>
             )}
             {resubmitMode && (
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/30 text-xs space-y-2">
-                <Label className="text-xs">Optional note back to the admin</Label>
+                <Label className="text-xs">{t("mavResubmitNoteLabel")}</Label>
                 <Textarea rows={2} maxLength={500} value={form.resubmit_note} onChange={e => setForm({ ...form, resubmit_note: e.target.value })}
-                  placeholder="e.g. Uploaded higher-quality photos of the shopfront." />
-                <p className="text-[10px] text-muted-foreground">Just re-upload the corrected shop front and inside photos below and press Resubmit.</p>
+                  placeholder={t("mavResubmitPh")} />
+                <p className="text-[10px] text-muted-foreground">{t("mavResubmitHint")}</p>
               </div>
             )}
             <div className="grid gap-3">
               <div>
-                <Label>Store name *</Label>
+                <Label>{t("mavStoreName")}</Label>
                 <Input value={form.store_name} onChange={e => setForm({ ...form, store_name: e.target.value })} disabled={readOnly} />
               </div>
               <div>
-                <Label>Description</Label>
+                <Label>{t("mavDescription")}</Label>
                 <Textarea value={form.store_description} onChange={e => setForm({ ...form, store_description: e.target.value })} rows={3} disabled={readOnly} />
               </div>
               <div>
-                <Label>Product categories (comma separated)</Label>
-                <Input value={form.product_categories} onChange={e => setForm({ ...form, product_categories: e.target.value })} placeholder="fashion, electronics" disabled={readOnly} />
+                <Label>{t("mavCategories")}</Label>
+                <Input value={form.product_categories} onChange={e => setForm({ ...form, product_categories: e.target.value })} placeholder={t("mavCategoriesPh")} disabled={readOnly} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Expected monthly orders</Label>
+                  <Label>{t("mavExpectedOrders")}</Label>
                   <Input type="number" min="0" value={form.expected_monthly_orders} onChange={e => setForm({ ...form, expected_monthly_orders: e.target.value })} disabled={readOnly} />
                 </div>
                 <div>
-                  <Label>Contact number</Label>
+                  <Label>{t("mavContact")}</Label>
                   <Input value={form.contact_number} onChange={e => setForm({ ...form, contact_number: e.target.value })} disabled={readOnly} />
                 </div>
               </div>
               <div>
-                <Label>Pickup address *</Label>
+                <Label>{t("mavPickup")}</Label>
                 <Textarea value={form.pickup_address} onChange={e => setForm({ ...form, pickup_address: e.target.value })} rows={2} disabled={readOnly} />
               </div>
 
               <div className="pt-2">
-                <Label className="flex items-center gap-1"><Camera className="w-3.5 h-3.5" /> Shop photos <span className="text-red-500">*</span></Label>
+                <Label className="flex items-center gap-1"><Camera className="w-3.5 h-3.5" /> {t("mavShopPhotos")} <span className="text-red-500">*</span></Label>
                 <p className="text-[11px] text-muted-foreground mb-2 flex items-center gap-1">
-                  <Info className="w-3 h-3" /> Server checks type, size (≤{MAX_MB}MB) and minimum 640×480 resolution before your application enters the queue.
+                  <Info className="w-3 h-3" /> {t("mavShopPhotosHint").replace("{max}", String(MAX_MB))}
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   {PHOTOS.map(p => {
@@ -424,8 +422,8 @@ export default function MerchantApplyVendor() {
                     return (
                       <PhotoTile
                         key={p.key}
-                        label={p.label}
-                        hint={p.hint}
+                        label={t(p.labelKey)}
+                        hint={t(p.hintKey)}
                         state={st}
                         readOnly={readOnly}
                         onPick={file => pickPhoto(p.key, p.slot, file)}
@@ -438,7 +436,7 @@ export default function MerchantApplyVendor() {
             {!readOnly && (
               <Button className="w-full" onClick={submit}
                 disabled={submitting || photos.shop_front.uploading || photos.shop_inside.uploading || photos.shop_front.validating || photos.shop_inside.validating}>
-                {submitting ? "Submitting…" : existing ? (isRejected ? "Resubmit application" : "Update application") : "Submit application"}
+                {submitting ? t("mavSubmitting") : existing ? (isRejected ? t("mavBtnResubmit") : t("mavBtnUpdate")) : t("mavBtnSubmit")}
               </Button>
             )}
           </CardContent>
@@ -456,6 +454,7 @@ function PhotoTile({
   readOnly: boolean;
   onPick: (file: File) => void;
 }) {
+  const { t } = useI18n();
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
@@ -486,7 +485,7 @@ function PhotoTile({
         {(state.uploading || state.validating) && (
           <div className="absolute inset-0 bg-background/70 flex flex-col items-center justify-center gap-1">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
-            <p className="text-[10px] text-muted-foreground">{state.uploading ? "Uploading…" : "Validating…"}</p>
+            <p className="text-[10px] text-muted-foreground">{state.uploading ? t("mavUploading") : t("mavValidating")}</p>
           </div>
         )}
       </div>
@@ -495,10 +494,10 @@ function PhotoTile({
         <p className="text-[10px] text-muted-foreground mb-1.5">{hint}</p>
         {state.error && (() => {
           const m = state.error.toLowerCase();
-          const cat = m.includes("file type") || m.includes("mime") || m.includes("jpg") || m.includes("png") || m.includes("webp") ? "Wrong format"
-                    : m.includes("mb") || m.includes("exceeds") || m.includes("size") ? "File too large"
-                    : m.includes("resolution") || m.includes("×") || m.includes("dimensions") ? "Resolution too low"
-                    : "Validation failed";
+          const cat = m.includes("file type") || m.includes("mime") || m.includes("jpg") || m.includes("png") || m.includes("webp") ? t("mavErrCatFormat")
+                    : m.includes("mb") || m.includes("exceeds") || m.includes("size") ? t("mavErrCatSize")
+                    : m.includes("resolution") || m.includes("×") || m.includes("dimensions") ? t("mavErrCatRes")
+                    : t("mavErrCatOther");
           return (
             <div className="mb-1 rounded-md border border-red-500/40 bg-red-500/5 p-1.5">
               <p className="text-[10px] font-semibold text-red-700 dark:text-red-300">✕ {cat}</p>
@@ -512,7 +511,7 @@ function PhotoTile({
         {!readOnly && (
           <label className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-primary text-primary-foreground cursor-pointer">
             <Upload className="w-3 h-3" />
-            {state.url ? "Replace" : "Upload"}
+            {state.url ? t("mavReplace") : t("mavUpload")}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
