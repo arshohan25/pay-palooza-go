@@ -2374,7 +2374,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     return { count: filtered.length, incoming, outgoing };
   }, [filtered]);
 
-  const monthLabel = targetMonth.toLocaleDateString("en-BD", { month: "long", year: "numeric" });
+  const monthLabel = targetMonth.toLocaleDateString(localeTag, { month: "long", year: "numeric" });
 
   const exportLabel = filterMode === "range" && dateRange.from && dateRange.to
     ? `Statement_${format(dateRange.from, "yyyy-MM-dd")}_to_${format(dateRange.to, "yyyy-MM-dd")}`
