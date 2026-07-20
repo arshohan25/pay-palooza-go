@@ -201,8 +201,8 @@ export default function TeamLoginPage() {
         <div className="flex flex-col items-center gap-3">
           <img src="/icons/easypay-logo.webp" alt="EasyPay" className="w-16 h-16 rounded-2xl" />
           <div className="text-center">
-            <h1 className="text-xl font-bold text-foreground">Team Login</h1>
-            <p className="text-sm text-muted-foreground">Sign in with your team credentials</p>
+            <h1 className="text-xl font-bold text-foreground">{t("tlpTitle")}</h1>
+            <p className="text-sm text-muted-foreground">{t("tlpSubtitle")}</p>
           </div>
         </div>
 
@@ -210,7 +210,7 @@ export default function TeamLoginPage() {
           <CardContent className="pt-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">{t("tlpUsername")}</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -225,7 +225,7 @@ export default function TeamLoginPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("tlpPassword")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -240,14 +240,14 @@ export default function TeamLoginPage() {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? t("tlpSigningIn") : t("tlpSignIn")}
               </Button>
             </form>
           </CardContent>
         </Card>
 
         <p className="text-xs text-center text-muted-foreground">
-          Contact your administrator if you need credentials.
+          {t("tlpContactAdmin")}
         </p>
       </div>
 
