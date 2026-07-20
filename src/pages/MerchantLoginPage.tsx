@@ -488,15 +488,15 @@ export default function MerchantLoginPage() {
             </div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/30 bg-amber-300/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-amber-100">
               <Sparkles className="h-3 w-3" />
-              {loginMode === "manager" ? "Store Manager" : "Merchant Portal"}
+              {loginMode === "manager" ? t("mlStoreManager") : t("mlMerchantPortal")}
             </span>
             <h1 className="mt-2 text-xl font-semibold leading-tight tracking-tight">
-              {loginMode === "manager" ? "Manager sign-in" : "Welcome back"}
+              {loginMode === "manager" ? t("mlManagerSignIn") : t("mlWelcomeBack")}
             </h1>
             <p className="mt-1 text-[12px] text-white/60">
               {loginMode === "manager"
-                ? "Access the store you manage."
-                : "Manage your store, orders, payouts and QR."}
+                ? t("mlManagerDesc")
+                : t("mlMerchantDesc")}
             </p>
           </div>
 
