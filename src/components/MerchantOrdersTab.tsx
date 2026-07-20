@@ -239,7 +239,7 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
                       className="py-2.5 rounded-xl text-white text-[12px] font-bold flex items-center justify-center gap-1.5"
                       style={{ background: "#0EA564" }}
                     >
-                      <Truck size={13} /> Book Courier
+                      <Truck size={13} /> {t("moBookCourier")}
                     </button>
                     <button
                       onClick={() => setFulfillOrder(order)}
