@@ -2777,39 +2777,40 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
 
                 <div className="bg-muted/40 rounded-2xl p-4 space-y-2.5 text-xs">
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Transaction ID</span>
+                    <span className="text-muted-foreground">{t("mhTxnId")}</span>
                     <button onClick={() => copyId(selectedTx.short_id || selectedTx.id)} className="flex items-center gap-1 font-mono font-semibold text-foreground">
                       {txId} {copied ? <CheckCircle2 size={11} className="text-primary" /> : <Copy size={11} className="text-muted-foreground" />}
                     </button>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Type</span>
+                    <span className="text-muted-foreground">{t("mhType")}</span>
                     <span className="font-semibold text-foreground">{cfg.label}</span>
                   </div>
                   {selectedTx.recipient_name && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">{isIncoming ? "From" : "To"}</span>
+                      <span className="text-muted-foreground">{isIncoming ? t("mhFrom") : t("mhTo")}</span>
                       <span className="font-semibold text-foreground">{selectedTx.recipient_name}</span>
                     </div>
                   )}
                   {selectedTx.recipient_phone && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Phone</span>
+                      <span className="text-muted-foreground">{t("mhPhone")}</span>
                       <span className="font-semibold text-foreground">{selectedTx.recipient_phone}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date</span>
-                    <span className="font-semibold text-foreground">{new Date(selectedTx.created_at).toLocaleString("en-BD", { dateStyle: "medium", timeStyle: "short" })}</span>
+                    <span className="text-muted-foreground">{t("mhDate")}</span>
+                    <span className="font-semibold text-foreground">{new Date(selectedTx.created_at).toLocaleString(localeTag, { dateStyle: "medium", timeStyle: "short" })}</span>
                   </div>
                   {selectedTx.reference && (
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Reference</span>
+                      <span className="text-muted-foreground">{t("mhReference")}</span>
                       <button onClick={() => copyId(selectedTx.reference!)} className="flex items-center gap-1 font-mono font-semibold text-foreground">
                         {selectedTx.reference} <Copy size={11} className="text-muted-foreground" />
                       </button>
                     </div>
                   )}
+
                 </div>
 
                 {selectedTx.fee > 0 && (
