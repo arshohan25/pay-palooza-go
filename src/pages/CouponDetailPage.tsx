@@ -349,32 +349,32 @@ export default function CouponDetailPage() {
             <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
               <Info className="w-3 h-3 text-primary" />
             </div>
-            <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">Offer details</h3>
+            <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">{t("cdOfferDetails")}</h3>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             <DetailTile
               icon={Tag}
               tint={flowInfo.tint}
-              label="Min. order"
-              value={coupon.min_order_amount ? `৳${coupon.min_order_amount}` : "None"}
+              label={t("cdMinOrder")}
+              value={coupon.min_order_amount ? `৳${coupon.min_order_amount}` : t("cdNone")}
             />
             <DetailTile
               icon={Sparkles}
               tint="hsl(var(--shariah-gold-700))"
-              label="Max. discount"
-              value={coupon.max_discount ? `৳${coupon.max_discount}` : "Unlimited"}
+              label={t("cdMaxDiscount")}
+              value={coupon.max_discount ? `৳${coupon.max_discount}` : t("cdUnlimited")}
             />
             <DetailTile
               icon={CalendarClock}
               tint="hsl(190 75% 50%)"
-              label="Valid till"
-              value={coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString() : "No expiry"}
+              label={t("cdValidTill")}
+              value={coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString() : t("cdNoExpiryShort")}
             />
             <DetailTile
               icon={Users}
               tint="hsl(280 65% 60%)"
-              label="Per user"
-              value={coupon.per_user_limit ? `${coupon.per_user_limit}x` : "Unlimited"}
+              label={t("cdPerUser")}
+              value={coupon.per_user_limit ? `${coupon.per_user_limit}x` : t("cdUnlimited")}
             />
           </div>
         </section>
