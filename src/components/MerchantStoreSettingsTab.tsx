@@ -155,6 +155,8 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
     }
 
     if (error) {
+      // Roll back optimistic header update on failure
+      window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: previousName } }));
       toast({ title: t("mssSaveFailed"), description: error.message, variant: "destructive" });
     } else {
       toast({ title: t("mssSaved") });
