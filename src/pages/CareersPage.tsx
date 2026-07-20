@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 interface Job {
   id: string;
@@ -23,6 +24,7 @@ interface Job {
 }
 
 export default function CareersPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -48,10 +50,10 @@ export default function CareersPage() {
 
   const handleApply = async () => {
     if (!form.name.trim() || !form.phone.trim()) {
-      toast.error("Name and phone are required");
+      toast.error(t("crNamePhoneRequired"));
       return;
     }
-    if (!user) { toast.error("Please sign in to apply"); return; }
+    if (!user) { toast.error(t("crSignInToApply")); return; }
     setApplying(true);
     const { error } = await supabase.from("job_applications").insert({
       job_id: selectedJob!.id,
@@ -84,22 +86,22 @@ export default function CareersPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-base font-bold text-foreground">Careers</h1>
+        <h1 className="text-base font-bold text-foreground">{t("crHeader")}</h1>
       </div>
 
       <div className="px-4 pt-4 pb-20 space-y-4">
         <div className="text-center py-4">
-          <h2 className="text-xl font-extrabold text-foreground">Join Our Team</h2>
-          <p className="text-sm text-muted-foreground mt-1">Help us build the future of digital finance in Bangladesh</p>
+          <h2 className="text-xl font-extrabold text-foreground">{t("crJoinTeam")}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{t("crJoinSub")}</p>
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Loading openings…</div>
+          <div className="text-center py-12 text-muted-foreground">{t("crLoadingOpenings")}</div>
         ) : jobs.length === 0 ? (
           <div className="text-center py-12">
             <Briefcase className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-muted-foreground">No open positions right now</p>
-            <p className="text-xs text-muted-foreground mt-1">Check back later for new opportunities</p>
+            <p className="text-muted-foreground">{t("crNoOpenings")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("crCheckBack")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -115,7 +117,7 @@ export default function CareersPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-bold text-foreground">{job.title}</p>
-                    <p className="text-xs text-muted-foreground">{job.department || "General"}</p>
+                    <p className="text-xs text-muted-foreground">{job.department || t("crGeneral")}</p>
                   </div>
                   <Badge className={`text-[10px] shrink-0 ${TYPE_COLORS[job.type] || ""}`}>{job.type}</Badge>
                 </div>
@@ -163,42 +165,42 @@ export default function CareersPage() {
 
                 {selectedJob.description && (
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Description</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">{t("crDescription")}</p>
                     <p className="text-sm text-foreground whitespace-pre-line">{selectedJob.description}</p>
                   </div>
                 )}
 
                 {selectedJob.requirements && (
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Requirements</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">{t("crRequirements")}</p>
                     <p className="text-sm text-foreground whitespace-pre-line">{selectedJob.requirements}</p>
                   </div>
                 )}
 
                 {!showApply && !applied && (
                   <Button className="w-full h-12" onClick={() => setShowApply(true)}>
-                    <Send className="w-4 h-4 mr-2" /> Apply Now
+                    <Send className="w-4 h-4 mr-2" /> {t("crApplyNow")}
                   </Button>
                 )}
 
                 {applied && (
                   <div className="text-center py-4 space-y-2">
                     <CheckCircle2 className="w-10 h-10 text-primary mx-auto" />
-                    <p className="font-bold text-foreground">Application Submitted!</p>
-                    <p className="text-xs text-muted-foreground">We'll review your application and get back to you.</p>
+                    <p className="font-bold text-foreground">{t("crApplicationSubmitted")}</p>
+                    <p className="text-xs text-muted-foreground">{t("crApplicationReview")}</p>
                   </div>
                 )}
 
                 {showApply && !applied && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3 border-t border-border pt-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Your Application</p>
-                    <Input placeholder="Full name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-                    <Input placeholder="Phone number *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
-                    <Input placeholder="Email (optional)" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-                    <Textarea placeholder="Cover note (optional)" value={form.cover_note} onChange={e => setForm({ ...form, cover_note: e.target.value })} rows={3} />
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t("crYourApplication")}</p>
+                    <Input placeholder={t("crFullNameReq")} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                    <Input placeholder={t("crPhoneReq")} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                    <Input placeholder={t("crEmailOpt")} value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                    <Textarea placeholder={t("crCoverNoteOpt")} value={form.cover_note} onChange={e => setForm({ ...form, cover_note: e.target.value })} rows={3} />
                     <Button className="w-full h-12" onClick={handleApply} disabled={applying}>
                       {applying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                      Submit Application
+                      {t("crSubmitApp")}
                     </Button>
                   </motion.div>
                 )}
