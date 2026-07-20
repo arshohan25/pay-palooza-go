@@ -2613,7 +2613,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={`w-full justify-start text-left text-xs font-normal h-9 ${!dateRange.from && "text-muted-foreground"}`}>
                     <Calendar size={13} className="mr-1.5 shrink-0" />
-                    {dateRange.from ? format(dateRange.from, "dd MMM yyyy") : "From date"}
+                    {dateRange.from ? format(dateRange.from, "dd MMM yyyy") : t("mhFromDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-[100]" align="start">
