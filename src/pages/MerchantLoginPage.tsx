@@ -46,6 +46,7 @@ function formatCountdown(seconds: number) {
 
 export default function MerchantLoginPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const redirectTarget = useMemo(() => {
     const raw = searchParams.get("redirect");
