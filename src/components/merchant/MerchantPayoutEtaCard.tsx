@@ -65,9 +65,6 @@ export default function MerchantPayoutEtaCard({ merchantId, frequency }: { merch
             ৳{fmt(available)} available · ৳{fmt(pending)} pending
           </p>
         </div>
-        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-500/15 px-2 py-1 rounded-lg shrink-0">
-          {(frequency || "T+1").toUpperCase()}
-        </span>
       </div>
     </Card>
   );
