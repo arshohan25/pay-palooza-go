@@ -2162,9 +2162,10 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 
       const safeName = shopName.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "merchant";
       doc.save(`${safeName}-qr-a6.pdf`);
-      toast({ title: "Downloaded", description: "QR card saved as PDF (A6)." });
+      toast({ title: t("mqrDownloaded"), description: t("mqrDownloadedDesc") });
     } catch (e: any) {
-      toast({ title: "PDF failed", description: e?.message || "Could not generate PDF", variant: "destructive" });
+      toast({ title: t("mqrPdfFailed"), description: e?.message || t("mqrPdfFailedDesc"), variant: "destructive" });
+
     } finally {
       setPdfBusy(false);
     }
