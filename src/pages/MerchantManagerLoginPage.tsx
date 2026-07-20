@@ -28,6 +28,7 @@ import {
   Fingerprint,
   Info,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
 const LS_MANAGER_PHONE = "mfs_merchant_manager_phone";
@@ -41,6 +42,7 @@ function formatCountdown(seconds: number) {
 
 export default function MerchantManagerLoginPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const redirectTarget = useMemo(() => {
     const raw = searchParams.get("redirect");
@@ -175,7 +177,7 @@ export default function MerchantManagerLoginPage() {
     if (body?.ok === true && body?.requires_device_verification) return { kind: "otp_required" };
     if (body?.ok === true && body?.session) return { kind: "session", body };
     if (body?.ok === false && status === 403) {
-      return { kind: "not_manager", message: body?.message || "This account isn't an active store manager" };
+      return { kind: "not_manager", message: body?.message || t("mmLoginToastNotMgr") };
     }
     if (body?.ok === false) {
       return {
@@ -184,7 +186,7 @@ export default function MerchantManagerLoginPage() {
         message: body.message,
       };
     }
-    return { kind: "error", message: error?.message || "Sign-in failed" };
+    return { kind: "error", message: error?.message || t("mmLoginToastFail") };
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -196,11 +198,11 @@ export default function MerchantManagerLoginPage() {
 
     const cleanedPhone = phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(cleanedPhone)) {
-      toast.error("Enter your own 11-digit Bangladeshi mobile number");
+      toast.error(t("mmLoginToastPhone"));
       return;
     }
     if (!/^\d{4}$/.test(pin)) {
-      toast.error("Enter your 4-digit PIN");
+      toast.error(t("mmLoginToastPin"));
       return;
     }
 
@@ -212,12 +214,12 @@ export default function MerchantManagerLoginPage() {
       if (result.kind === "locked") {
         applyLockout(result.retry);
         setPin("");
-        toast.error(result.message || "Too many failed attempts. Please wait.");
+        toast.error(result.message || t("mmLoginToastLocked"));
         return;
       }
       if (result.kind === "not_manager") {
         toast.error(result.message, {
-          description: "Ask the store owner to add your number as a Manager from Staff settings.",
+          description: t("mmLoginToastNotMgrDesc"),
         });
         setPin("");
         return;
@@ -226,8 +228,8 @@ export default function MerchantManagerLoginPage() {
         if (result.attempts_remaining != null) setAttemptsRemaining(result.attempts_remaining);
         setWrongPin(true);
         const msg = result.attempts_remaining != null && result.message === "Wrong phone or PIN"
-          ? `Incorrect PIN — ${result.attempts_remaining} attempt${result.attempts_remaining === 1 ? "" : "s"} left`
-          : result.message || "Incorrect PIN";
+          ? `${t("mmLoginToastWrong")} — ${result.attempts_remaining} ${result.attempts_remaining === 1 ? t("mmLoginAttemptsSingular").replace(/ before .*/, "") : t("mmLoginAttemptsPlural").replace(/ before .*/, "")}`
+          : result.message || t("mmLoginToastWrong");
         toast.error(msg);
         setPin("");
         return;
@@ -255,10 +257,10 @@ export default function MerchantManagerLoginPage() {
         pendingSessionRef.current = { cleanedPhone };
         setStep("otp");
       } catch (sendErr: any) {
-        toast.error(sendErr?.message || "Couldn't send verification code");
+        toast.error(sendErr?.message || t("mmLoginToastCodeFail"));
       }
     } catch (err: any) {
-      toast.error(err?.message || "Sign-in failed");
+      toast.error(err?.message || t("mmLoginToastFail"));
     } finally {
       setLoading(false);
     }
@@ -267,7 +269,7 @@ export default function MerchantManagerLoginPage() {
   const handleVerifyOtp = async (code: string) => {
     const cleanedPhone = pendingSessionRef.current?.cleanedPhone;
     if (!cleanedPhone) {
-      toast.error("Session expired. Please sign in again.");
+      toast.error(t("mmLoginToastSessionExpired"));
       setStep("signin");
       return;
     }
@@ -276,7 +278,7 @@ export default function MerchantManagerLoginPage() {
 
     const result = await callMerchantLogin(cleanedPhone, pin, { otp_ticket: ticket });
     if (result.kind !== "session") {
-      const msg = (result as any).message || "Verification didn't unlock the session.";
+      const msg = (result as any).message || t("mmLoginToastVerifyFail");
       toast.error(msg);
       return;
     }
@@ -293,7 +295,7 @@ export default function MerchantManagerLoginPage() {
   const handleResendOtp = async () => {
     const phoneForVerify = pendingSessionRef.current?.cleanedPhone;
     if (!phoneForVerify) return;
-    try { await otp.sendOtp(phoneForVerify); toast.success("New code sent"); } catch {}
+    try { await otp.sendOtp(phoneForVerify); toast.success(t("mmLoginToastCodeSent")); } catch {}
   };
 
   const finalizeSession = async (pending: { access_token: string; refresh_token: string; cleanedPhone: string }) => {
@@ -307,10 +309,10 @@ export default function MerchantManagerLoginPage() {
       // owner/wallet returning-user keys.
       try { localStorage.setItem(LS_MANAGER_PHONE, pending.cleanedPhone); } catch {}
       pendingSessionRef.current = null;
-      toast.success("Welcome back, Manager!");
+      toast.success(t("mmLoginWelcome"));
       navigate(redirectTarget, { replace: true });
     } catch (err: any) {
-      toast.error(err?.message || "Failed to start session");
+      toast.error(err?.message || t("mmLoginToastSessionStart"));
     }
   };
 
@@ -352,10 +354,10 @@ export default function MerchantManagerLoginPage() {
             </div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200/30 bg-sky-300/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-sky-100">
               <Sparkles className="h-3 w-3" />
-              Store Manager Access
+              {t("mmLoginBadge")}
             </span>
-            <h1 className="mt-2 text-xl font-semibold leading-tight tracking-tight">Manager sign-in</h1>
-            <p className="mt-1 text-[12px] text-white/60">Access the store you've been added to.</p>
+            <h1 className="mt-2 text-xl font-semibold leading-tight tracking-tight">{t("mmLoginTitle")}</h1>
+            <p className="mt-1 text-[12px] text-white/60">{t("mmLoginTagline")}</p>
           </div>
 
           {step === "otp" && (
@@ -383,17 +385,17 @@ export default function MerchantManagerLoginPage() {
                   <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-sky-200/25 bg-sky-300/[0.06] p-3 text-sky-50">
                     <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-200" />
                     <div className="space-y-0.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-100">Use your own phone & PIN</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-100">{t("mmLoginFirstVisitTitle")}</p>
                       <p className="text-[12.5px] leading-snug text-white/80">
-                        Sign in with the EasyPay account the store owner invited — not the owner's number. New here?{" "}
+                        {t("mmLoginFirstVisitBefore")}{" "}
                         <button
                           type="button"
                           onClick={() => navigate("/?signup=1")}
                           className="font-semibold text-sky-100 underline underline-offset-2 hover:text-white"
                         >
-                          Sign up first
+                          {t("mmLoginSignUpFirst")}
                         </button>
-                        , then ask the owner to add you.
+                        {t("mmLoginFirstVisitAfter")}
                       </p>
                     </div>
                   </div>
@@ -405,9 +407,9 @@ export default function MerchantManagerLoginPage() {
                   >
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                     <div className="space-y-0.5">
-                      <p className="text-xs font-semibold uppercase tracking-wider">Account temporarily locked</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider">{t("mmLoginLockedTitle")}</p>
                       <p className="text-[13px] leading-snug text-rose-100/85">
-                        Too many failed sign-in attempts. Try again in{" "}
+                        {t("mmLoginLockedBefore")}{" "}
                         <span className="font-semibold tabular-nums">{formatCountdown(remainingSeconds)}</span>.
                       </p>
                     </div>
@@ -422,11 +424,11 @@ export default function MerchantManagerLoginPage() {
                   >
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                     <div className="space-y-0.5">
-                      <p className="text-xs font-semibold uppercase tracking-wider">Incorrect PIN</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider">{t("mmLoginWrongPinTitle")}</p>
                       <p className="text-[13px] leading-snug text-rose-100/85">
                         {attemptsRemaining != null
-                          ? `${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} remaining before this account is temporarily locked.`
-                          : "Please double-check your PIN and try again."}
+                          ? `${attemptsRemaining} ${attemptsRemaining === 1 ? t("mmLoginAttemptsSingular") : t("mmLoginAttemptsPlural")}`
+                          : t("mmLoginWrongPinRetry")}
                       </p>
                     </div>
                   </div>
@@ -436,7 +438,7 @@ export default function MerchantManagerLoginPage() {
                   <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-amber-100">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
                     <p className="text-[13px] leading-snug">
-                      {attemptsRemaining} attempt{attemptsRemaining === 1 ? "" : "s"} remaining before this account is temporarily locked.
+                      {attemptsRemaining} {attemptsRemaining === 1 ? t("mmLoginAttemptsSingular") : t("mmLoginAttemptsPlural")}
                     </p>
                   </div>
                 )}
@@ -444,7 +446,7 @@ export default function MerchantManagerLoginPage() {
                 {/* Phone */}
                 <div className="space-y-1.5">
                   <Label htmlFor="manager-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                    Your mobile number
+                    {t("mmLoginPhoneLabel")}
                   </Label>
                   <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-1 transition-colors focus-within:border-sky-200/50 focus-within:bg-white/[0.06]">
                     <div className="flex items-center gap-1.5 border-r border-white/10 pr-2.5 text-sm text-white/70">
@@ -468,7 +470,7 @@ export default function MerchantManagerLoginPage() {
                 {/* PIN */}
                 <div className="mt-3 space-y-1.5">
                   <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                    Your 4-digit PIN
+                    {t("mmLoginPinLabel")}
                   </Label>
                   <div className={`rounded-2xl border p-2 transition-colors focus-within:border-sky-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
                     <InputOTP maxLength={4} value={pin} onChange={(v) => { setPin(v); if (wrongPin) setWrongPin(false); }} disabled={isLocked} containerClassName="justify-center">
@@ -492,24 +494,24 @@ export default function MerchantManagerLoginPage() {
                   className="mt-3 h-11 w-full rounded-2xl bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-600 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.7)] transition-transform hover:scale-[1.01] hover:from-sky-400 hover:via-indigo-400 hover:to-violet-500 disabled:opacity-70"
                 >
                   {isLocked ? (
-                    <><Lock className="h-4 w-4" />Locked — try again in {formatCountdown(remainingSeconds)}</>
+                    <><Lock className="h-4 w-4" />{t("mmLoginLockedBtn")} {formatCountdown(remainingSeconds)}</>
                   ) : loading ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" />Signing in...</>
+                    <><Loader2 className="h-4 w-4 animate-spin" />{t("mmLoginSubmitting")}</>
                   ) : (
-                    <>Sign in as Manager<ArrowRight className="h-4 w-4" /></>
+                    <>{t("mmLoginSubmit")}<ArrowRight className="h-4 w-4" /></>
                   )}
                 </Button>
 
                 {isFirstVisit && (
                   <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
                     <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10.5px] font-medium text-white/75">
-                      <Lock className="h-3 w-3 text-sky-200" /> Secure PIN
+                      <Lock className="h-3 w-3 text-sky-200" /> {t("mmLoginTrustSecure")}
                     </span>
                     <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10.5px] font-medium text-white/75">
-                      <ShieldCheck className="h-3 w-3 text-emerald-200" /> Encrypted
+                      <ShieldCheck className="h-3 w-3 text-emerald-200" /> {t("mmLoginTrustEncrypted")}
                     </span>
                     <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10.5px] font-medium text-white/75">
-                      <Sparkles className="h-3 w-3 text-violet-200" /> Bank-grade
+                      <Sparkles className="h-3 w-3 text-violet-200" /> {t("mmLoginTrustBank")}
                     </span>
                   </div>
                 )}
@@ -526,8 +528,8 @@ export default function MerchantManagerLoginPage() {
               className="group inline-flex items-center gap-1.5 rounded-full border border-sky-200/30 bg-white/[0.04] px-3.5 py-1.5 text-[12px] font-medium text-sky-100/90 backdrop-blur-md transition-all hover:border-sky-200/60 hover:bg-sky-300/[0.08] hover:text-sky-50"
             >
               <KeyRound className="h-3 w-3" />
-              Forgot PIN?
-              <span className="text-sky-200/70 group-hover:text-sky-100">Reset securely</span>
+              {t("mmLoginForgot")}
+              <span className="text-sky-200/70 group-hover:text-sky-100">{t("mmLoginResetSecurely")}</span>
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
             </button>
 

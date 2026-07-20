@@ -25,6 +25,7 @@ import NotificationPreferences from "@/components/NotificationPreferences";
 import TransactionHistory from "./TransactionHistory";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
+import { useI18n } from "@/lib/i18n";
 
 /* ─── Types ─── */
 interface DistRow {
@@ -79,6 +80,7 @@ const stagger = {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const SuperDistributorDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   useUserSessionTimeout("super_distributor");
   const { toast } = useToast();
@@ -278,16 +280,16 @@ const SuperDistributorDashboard = () => {
 
 
   const quickActions = [
-    { icon: UserPlus, label: "Create Dist.", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/super-distributor/create-distributor", toggleKey: "super_distributor_create" },
-    { icon: Send, label: "Float Send", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", action: "float" as const, toggleKey: "super_distributor_float_send" },
-    { icon: Network, label: "Distributors", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "distributors" as const, toggleKey: "super_distributor_distributors" },
-    { icon: ListChecks, label: "Dist Txns", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "distTxns" as const, toggleKey: "super_distributor_dist_txns" },
-    { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const, toggleKey: "super_distributor_settle" },
-    { icon: FileBarChart, label: "Reconcile", bg: "rgba(255,152,0,0.12)", ring: "1px solid rgba(255,152,0,0.25)", action: "reconcile" as const, toggleKey: "super_distributor_reconcile" },
-    { icon: BarChart3, label: "Analytics", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "analytics" as const, toggleKey: "super_distributor_analytics" },
-    { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", action: "history" as const, toggleKey: "super_distributor_history" },
-    { icon: AlertTriangle, label: "Alerts", bg: "rgba(244,67,54,0.12)", ring: "1px solid rgba(244,67,54,0.25)", action: "alerts" as const, toggleKey: "super_distributor_alerts" },
-    { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const, toggleKey: "super_distributor_support" },
+    { icon: UserPlus, label: t("sdDashQaCreateDist"), bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/super-distributor/create-distributor", toggleKey: "super_distributor_create" },
+    { icon: Send, label: t("sdDashQaFloatSend"), bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", action: "float" as const, toggleKey: "super_distributor_float_send" },
+    { icon: Network, label: t("sdDashQaDistributors"), bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "distributors" as const, toggleKey: "super_distributor_distributors" },
+    { icon: ListChecks, label: t("sdDashQaDistTxns"), bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "distTxns" as const, toggleKey: "super_distributor_dist_txns" },
+    { icon: Banknote, label: t("sdDashQaSettle"), bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const, toggleKey: "super_distributor_settle" },
+    { icon: FileBarChart, label: t("sdDashQaReconcile"), bg: "rgba(255,152,0,0.12)", ring: "1px solid rgba(255,152,0,0.25)", action: "reconcile" as const, toggleKey: "super_distributor_reconcile" },
+    { icon: BarChart3, label: t("sdDashQaAnalytics"), bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "analytics" as const, toggleKey: "super_distributor_analytics" },
+    { icon: History, label: t("sdDashQaHistory"), bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", action: "history" as const, toggleKey: "super_distributor_history" },
+    { icon: AlertTriangle, label: t("sdDashQaAlerts"), bg: "rgba(244,67,54,0.12)", ring: "1px solid rgba(244,67,54,0.25)", action: "alerts" as const, toggleKey: "super_distributor_alerts" },
+    { icon: Headphones, label: t("sdDashQaSupport"), bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const, toggleKey: "super_distributor_support" },
   ].filter(a => !a.toggleKey || !isDisabled(a.toggleKey));
 
   const handleQuickAction = (item: typeof quickActions[0]) => {
@@ -368,9 +370,9 @@ const SuperDistributorDashboard = () => {
                 <Crown size={22} className="text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-base font-bold text-primary-foreground truncate">Super Distributor</h1>
+                <h1 className="text-base font-bold text-primary-foreground truncate">{t("sdDashTitle")}</h1>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] text-primary-foreground/70">{distributors.length} distributors · {agents.length} agents · {txnCount} txns today</span>
+                  <span className="text-[10px] text-primary-foreground/70">{distributors.length} {t("sdDashQaDistributors").toLowerCase()} · {agents.length} {t("sdDashAgents").toLowerCase()} · {txnCount} {t("distDashTxnsToday")}</span>
                 </div>
               </div>
             </div>
@@ -383,7 +385,7 @@ const SuperDistributorDashboard = () => {
         <Card className="p-5 border-0 shadow-elevated bg-card rounded-2xl">
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Master Float Pool</p>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{t("sdDashMasterFloatPool")}</p>
               <motion.button onClick={toggleBalance} whileTap={{ scale: 0.97 }} className="flex items-center mt-1">
                 {showBalance ? (
                   <motion.span key="bal" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="text-2xl font-extrabold text-foreground tracking-tight">৳{fmt(balance)}</motion.span>
