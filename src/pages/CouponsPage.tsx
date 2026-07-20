@@ -435,7 +435,7 @@ export default function CouponsPage() {
                 className="h-11 px-4 rounded-xl bg-primary text-primary-foreground text-[12px] font-black flex items-center gap-1 shadow-[0_4px_14px_-4px_hsl(var(--shariah-green-600)/0.6)] disabled:opacity-40 disabled:shadow-none active:scale-95 transition-all"
               >
                 {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Apply
+                {t("cpApply")}
               </button>
             </div>
           </div>
