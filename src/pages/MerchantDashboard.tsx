@@ -2660,11 +2660,12 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
           {/* Export buttons */}
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" onClick={exportPDF}>
-              <Download size={13} /> PDF Statement
+              <Download size={13} /> {t("mhPdfStatement")}
             </Button>
             <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" onClick={exportCSV}>
-              <Download size={13} /> CSV Export
+              <Download size={13} /> {t("mhCsvExport")}
             </Button>
+
           </div>
         </Card>
       </motion.div>
