@@ -75,9 +75,9 @@ export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
       <Card className="border-0 shadow-elevated bg-gradient-to-br from-accent/10 via-background to-primary/5 p-4">
         <div className="flex items-center gap-2 mb-1">
           <Sparkles className="w-4 h-4 text-accent" />
-          <span className="text-sm font-semibold">Weekly insights</span>
+          <span className="text-sm font-semibold">{t("mdWklyInsights")}</span>
         </div>
-        <p className="text-xs text-muted-foreground">Ship a few orders to unlock trend insights.</p>
+        <p className="text-xs text-muted-foreground">{t("mdWklyShipToUnlock")}</p>
       </Card>
     );
   }
