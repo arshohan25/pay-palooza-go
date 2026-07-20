@@ -2231,7 +2231,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 
             <div className="grid grid-cols-3 gap-2">
               <Button variant="outline" className="rounded-xl h-11" onClick={async () => {
-                const shareText = `Pay ${shopName} via EasyPay. Merchant ID: ${qrPayload}`;
+                const shareText = t("mqrPayVia").replace("{name}", shopName).replace("{id}", qrPayload);
                 const shareUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(qrPayload)}`;
                 let file: File | null = null;
                 // Snapshot the full branded card (matches what the merchant sees)
