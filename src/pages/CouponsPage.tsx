@@ -96,7 +96,7 @@ function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[hsl(var(--shariah-gold-500)/0.18)] border border-[hsl(var(--shariah-gold-300)/0.4)]">
             <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-300))]" />
             <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[hsl(var(--shariah-gold-300))]">
-              Featured
+              {t("cpFeatured")}
             </span>
           </div>
           {dLeft != null && dLeft <= 7 && dLeft > 0 && (
@@ -132,7 +132,7 @@ function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
           {coupon.min_order_amount ? (
             <>
               <span className="opacity-40">•</span>
-              <span className="text-[11px] font-semibold">Min ৳{coupon.min_order_amount}</span>
+              <span className="text-[11px] font-semibold">{t("cpMinPrefix")} ৳{coupon.min_order_amount}</span>
             </>
           ) : null}
         </div>
@@ -148,7 +148,7 @@ function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
             }`}
           >
             <div>
-              <p className="text-[8px] font-bold uppercase tracking-widest text-white/60">Code</p>
+              <p className="text-[8px] font-bold uppercase tracking-widest text-white/60">{t("cpCodeLabel")}</p>
               <p className="text-[13px] font-black tracking-[0.18em] text-white -mt-0.5">{coupon.code}</p>
             </div>
             {copied
@@ -328,7 +328,7 @@ export default function CouponsPage() {
   const handleRedeemByCode = async () => {
     const code = redeemCode.trim().toUpperCase();
     if (code.length < 3) {
-      toast.error("Enter a valid coupon code");
+      toast.error(t("cpEnterValidCode"));
       return;
     }
     setRedeeming(true);
@@ -342,15 +342,15 @@ export default function CouponsPage() {
         .maybeSingle();
 
       if (error || !data) {
-        toast.error("Coupon not found");
+        toast.error(t("cpNotFound"));
         return;
       }
       if (data.expires_at && data.expires_at < now) {
-        toast.error("This coupon has expired");
+        toast.error(t("cpExpired"));
         return;
       }
       if (data.usage_limit != null && (data.used_count ?? 0) >= data.usage_limit) {
-        toast.error("This coupon is fully redeemed");
+        toast.error(t("cpFullyRedeemed"));
         return;
       }
 
@@ -358,7 +358,7 @@ export default function CouponsPage() {
       if (!existing) {
         setCoupons((prev) => [data as Coupon, ...prev]);
       }
-      toast.success(`Coupon ${code} added`);
+      toast.success(t("cpAddedToast").replace("{code}", code));
       setRedeemCode("");
       navigate(`/coupons/${data.id}`);
     } finally {
@@ -376,15 +376,15 @@ export default function CouponsPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <Seo
-        title="Coupons & Promotions – EasyPay"
-        description="Browse the latest EasyPay coupons, cashback offers and discount codes across shopping, recharge, bills and more."
+        title={t("cpSeoTitle")}
+        description={t("cpSeoDesc")}
         path="/coupons"
       />
 
       {/* ── Unified EasyPay flow header ─────────────────────── */}
       <FlowHeader
         title={t("coupons")}
-        tagline={loading ? "…" : `${coupons.length} live offers • refreshed in real-time`}
+        tagline={loading ? "…" : t("cpTaglineLive").replace("{n}", String(coupons.length))}
         icon={Ticket}
       />
 
@@ -410,10 +410,10 @@ export default function CouponsPage() {
               </div>
               <div className="flex-1">
                 <p className="text-[11.5px] font-black uppercase tracking-wider text-foreground">
-                  Have a code?
+                  {t("cpHaveCode")}
                 </p>
                 <p className="text-[10px] text-muted-foreground -mt-0.5">
-                  Enter a valid promo code to unlock
+                  {t("cpHaveCodeDesc")}
                 </p>
               </div>
             </div>
@@ -424,7 +424,7 @@ export default function CouponsPage() {
                   value={redeemCode}
                   onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === "Enter" && !redeeming && handleRedeemByCode()}
-                  placeholder="ENTER CODE"
+                  placeholder={t("cpEnterCodePlaceholder")}
                   maxLength={20}
                   className="w-full h-11 px-3 rounded-xl bg-muted/50 border-2 border-dashed border-border/60 focus:border-primary/40 focus:bg-card focus:outline-none text-[13px] font-black tracking-[0.18em] text-foreground placeholder:text-muted-foreground/50 placeholder:tracking-widest placeholder:font-bold uppercase transition-all"
                 />
@@ -435,7 +435,7 @@ export default function CouponsPage() {
                 className="h-11 px-4 rounded-xl bg-primary text-primary-foreground text-[12px] font-black flex items-center gap-1 shadow-[0_4px_14px_-4px_hsl(var(--shariah-green-600)/0.6)] disabled:opacity-40 disabled:shadow-none active:scale-95 transition-all"
               >
                 {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Apply
+                {t("cpApply")}
               </button>
             </div>
           </div>
@@ -504,7 +504,7 @@ export default function CouponsPage() {
                       <Flame className="w-3 h-3 text-destructive" />
                     </div>
                     <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">
-                      Ending soon
+                      {t("cpEndingSoon")}
                     </h3>
                   </div>
                   <span className="text-[10px] font-semibold text-muted-foreground">{endingSoon.length}</span>
@@ -535,7 +535,7 @@ export default function CouponsPage() {
                       <Tag className="w-3 h-3 text-primary" />
                     </div>
                     <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">
-                      All offers
+                      {t("cpAllOffers")}
                     </h3>
                   </div>
                   <span className="text-[10px] font-semibold text-muted-foreground">{everythingElse.length}</span>
@@ -563,7 +563,7 @@ export default function CouponsPage() {
         {!loading && filtered.length > 0 && (
           <p className="text-center text-[10.5px] text-muted-foreground/60 pt-2 flex items-center justify-center gap-1">
             <Clock className="w-2.5 h-2.5" />
-            Coupons refresh in real-time. Tap any card for details.
+            {t("cpFooterNote")}
           </p>
         )}
       </div>
