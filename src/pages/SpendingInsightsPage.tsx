@@ -56,9 +56,11 @@ function getMonthKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function getMonthLabel(d: Date) {
-  return d.toLocaleString("en", { month: "short" });
+const MONTH_KEYS = ["siMonJan","siMonFeb","siMonMar","siMonApr","siMonMay","siMonJun","siMonJul","siMonAug","siMonSep","siMonOct","siMonNov","siMonDec"] as const;
+function getMonthLabel(d: Date, t: (k: string) => string) {
+  return t(MONTH_KEYS[d.getMonth()]);
 }
+
 
 /* ── Presets ── */
 type PresetKey = "1M" | "3M" | "6M" | "1Y" | "custom";
