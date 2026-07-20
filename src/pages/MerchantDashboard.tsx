@@ -1804,23 +1804,6 @@ const DEFAULT_BAND_END = "#c02a55";
 const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    qr_card_tagline: merchant?.qr_card_tagline || DEFAULT_QR_TAGLINE,
-    qr_card_band_color_start: merchant?.qr_card_band_color_start || DEFAULT_BAND_START,
-    qr_card_band_color_end: merchant?.qr_card_band_color_end || DEFAULT_BAND_END,
-    qr_card_logo_url: merchant?.qr_card_logo_url || "",
-  });
-
-  useEffect(() => {
-    setForm({
-      qr_card_tagline: merchant?.qr_card_tagline || DEFAULT_QR_TAGLINE,
-      qr_card_band_color_start: merchant?.qr_card_band_color_start || DEFAULT_BAND_START,
-      qr_card_band_color_end: merchant?.qr_card_band_color_end || DEFAULT_BAND_END,
-      qr_card_logo_url: merchant?.qr_card_logo_url || "",
-    });
-  }, [merchant?.id, merchant?.qr_card_tagline, merchant?.qr_card_band_color_start, merchant?.qr_card_band_color_end, merchant?.qr_card_logo_url]);
 
   const rawPayload = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
   const qrPayload = rawPayload.toUpperCase();
