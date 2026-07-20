@@ -8661,6 +8661,10 @@ export type Database = {
           state: string
         }[]
       }
+      merchant_update_business_name: {
+        Args: { p_name: string }
+        Returns: undefined
+      }
       nearby_agents: {
         Args: { _lat: number; _lng: number; _radius_km?: number }
         Returns: {
