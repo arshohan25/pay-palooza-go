@@ -410,10 +410,10 @@ export default function CouponsPage() {
               </div>
               <div className="flex-1">
                 <p className="text-[11.5px] font-black uppercase tracking-wider text-foreground">
-                  Have a code?
+                  {t("cpHaveCode")}
                 </p>
                 <p className="text-[10px] text-muted-foreground -mt-0.5">
-                  Enter a valid promo code to unlock
+                  {t("cpHaveCodeDesc")}
                 </p>
               </div>
             </div>
