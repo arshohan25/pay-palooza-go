@@ -157,28 +157,28 @@ function getMerchTxHeadline(tx: TxnRow): string {
 /* ─── Helpers ─── */
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
-const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string; toggleKey?: string }[] = [
-  { id: "overview",     icon: BarChart3,    label: "Overview" },
-  { id: "products",     icon: Package,      label: "Products",  toggleKey: "merchant_products" },
-  { id: "orders",       icon: Receipt,      label: "Orders",    toggleKey: "merchant_orders" },
+const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string; labelKey: string; toggleKey?: string }[] = [
+  { id: "overview",     icon: BarChart3,    label: "Overview", labelKey: "mdTabOverview" },
+  { id: "products",     icon: Package,      label: "Products", labelKey: "mdTabProducts", toggleKey: "merchant_products" },
+  { id: "orders",       icon: Receipt,      label: "Orders",   labelKey: "mdTabOrders",   toggleKey: "merchant_orders" },
 ];
 
-const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string; toggleKey?: string }[] = [
-  { id: "store",        icon: Store,        label: "Store Settings",   desc: "Customize your storefront",      toggleKey: "merchant_store_settings" },
-  { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers",  toggleKey: "merchant_analytics" },
-  { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions",          toggleKey: "merchant_transactions" },
-  { id: "qr",           icon: QrCode,       label: "QR Code",          desc: "Your merchant QR code",          toggleKey: "merchant_qr" },
-  { id: "api",          icon: Globe,        label: "API Integration",  desc: "API keys, webhooks & docs",      toggleKey: "merchant_api" },
-  { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links",   toggleKey: "merchant_paylinks" },
-  { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule",        toggleKey: "merchant_settlements" },
-  { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown",      toggleKey: "merchant_mdr" },
-  { id: "refunds",      icon: Undo2,        label: "Refunds",          desc: "Issue & track customer refunds", toggleKey: "merchant_refunds" },
-  { id: "staff",        icon: Users,        label: "Staff",            desc: "Manage employee access",         toggleKey: "merchant_staff" },
-  { id: "customers",    icon: Users,        label: "Customers",        desc: "Customer directory & insights",  toggleKey: "merchant_customers" },
-  { id: "broadcast",    icon: Megaphone,    label: "Broadcast",        desc: "Message your customers"                                        },
-  { id: "coupons",      icon: Ticket,       label: "Coupons",          desc: "Create store discount codes",    toggleKey: "merchant_coupons" },
-  { id: "payouts",      icon: Landmark,     label: "Payouts",          desc: "Request bank withdrawals",       toggleKey: "merchant_payouts" },
-  { id: "notifications",icon: Bell,         label: "Notifications",    desc: "Push alerts & preferences" },
+const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string; labelKey: string; descKey: string; toggleKey?: string }[] = [
+  { id: "store",        icon: Store,        label: "Store Settings",   desc: "Customize your storefront",      labelKey: "mdMenuStore",         descKey: "mdMenuStoreDesc",         toggleKey: "merchant_store_settings" },
+  { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers",  labelKey: "mdMenuAnalytics",     descKey: "mdMenuAnalyticsDesc",     toggleKey: "merchant_analytics" },
+  { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions",          labelKey: "mdMenuHistory",       descKey: "mdMenuHistoryDesc",       toggleKey: "merchant_transactions" },
+  { id: "qr",           icon: QrCode,       label: "QR Code",          desc: "Your merchant QR code",          labelKey: "mdMenuQr",            descKey: "mdMenuQrDesc",            toggleKey: "merchant_qr" },
+  { id: "api",          icon: Globe,        label: "API Integration",  desc: "API keys, webhooks & docs",      labelKey: "mdMenuApi",           descKey: "mdMenuApiDesc",           toggleKey: "merchant_api" },
+  { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links",   labelKey: "mdMenuPaylinks",      descKey: "mdMenuPaylinksDesc",      toggleKey: "merchant_paylinks" },
+  { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule",        labelKey: "mdMenuSettlement",    descKey: "mdMenuSettlementDesc",    toggleKey: "merchant_settlements" },
+  { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown",      labelKey: "mdMenuFees",          descKey: "mdMenuFeesDesc",          toggleKey: "merchant_mdr" },
+  { id: "refunds",      icon: Undo2,        label: "Refunds",          desc: "Issue & track customer refunds", labelKey: "mdMenuRefunds",       descKey: "mdMenuRefundsDesc",       toggleKey: "merchant_refunds" },
+  { id: "staff",        icon: Users,        label: "Staff",            desc: "Manage employee access",         labelKey: "mdMenuStaff",         descKey: "mdMenuStaffDesc",         toggleKey: "merchant_staff" },
+  { id: "customers",    icon: Users,        label: "Customers",        desc: "Customer directory & insights",  labelKey: "mdMenuCustomers",     descKey: "mdMenuCustomersDesc",     toggleKey: "merchant_customers" },
+  { id: "broadcast",    icon: Megaphone,    label: "Broadcast",        desc: "Message your customers",         labelKey: "mdMenuBroadcast",     descKey: "mdMenuBroadcastDesc" },
+  { id: "coupons",      icon: Ticket,       label: "Coupons",          desc: "Create store discount codes",    labelKey: "mdMenuCoupons",       descKey: "mdMenuCouponsDesc",       toggleKey: "merchant_coupons" },
+  { id: "payouts",      icon: Landmark,     label: "Payouts",          desc: "Request bank withdrawals",       labelKey: "mdMenuPayouts",       descKey: "mdMenuPayoutsDesc",       toggleKey: "merchant_payouts" },
+  { id: "notifications",icon: Bell,         label: "Notifications",    desc: "Push alerts & preferences",      labelKey: "mdMenuNotifications", descKey: "mdMenuNotificationsDesc" },
 ];
 
 const stagger = {
@@ -561,7 +561,13 @@ const MerchantDashboard = () => {
                   <Zap size={8} className="mr-0.5" />{merchant?.settlement_frequency || "T+1"}
                 </Badge>
                 <Badge className={`text-[9px] border-0 backdrop-blur-sm ${merchant?.status === "active" ? "bg-green-500/30 text-green-100" : "bg-yellow-500/30 text-yellow-100"}`}>
-                  {merchant?.status || t("mdStatusActive")}
+                  {merchant?.status === "active"
+                    ? t("mdStatusActive")
+                    : merchant?.status === "pending"
+                      ? t("mdStatusPending")
+                      : merchant?.status === "suspended"
+                        ? t("mdStatusSuspended")
+                        : (merchant?.status || t("mdStatusActive"))}
                 </Badge>
               </div>
             </div>
@@ -770,7 +776,11 @@ const MerchantDashboard = () => {
                   <ArrowLeft size={16} className="text-foreground" />
                 </button>
                 <h2 className="text-sm font-bold text-foreground">
-                  {[...mainTabs, ...menuItems].find(tab => tab.id === activeTab)?.label || t("mdBack")}
+                  {(() => {
+                    const tab = [...mainTabs, ...menuItems].find(x => x.id === activeTab);
+                    if (!tab) return t("mdBack");
+                    return t(tab.labelKey as any);
+                  })()}
                 </h2>
               </div>
             )}
@@ -818,7 +828,7 @@ const MerchantDashboard = () => {
               className="fixed top-0 right-0 bottom-0 z-50 w-72 bg-card shadow-2xl flex flex-col"
             >
               <div className="flex items-center justify-between p-4 border-b border-border/50">
-                <h3 className="text-sm font-bold text-foreground">More Options</h3>
+                <h3 className="text-sm font-bold text-foreground">{t("mdMoreOptions")}</h3>
                 <button onClick={() => setShowMenu(false)} className="tap-target w-9 h-9 rounded-xl bg-muted/50 flex items-center justify-center">
                   <X size={16} className="text-muted-foreground" />
                 </button>
@@ -838,8 +848,8 @@ const MerchantDashboard = () => {
                       <item.icon size={18} className={activeTab === item.id ? "text-primary" : "text-muted-foreground"} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-bold ${activeTab === item.id ? "text-primary" : "text-foreground"}`}>{item.label}</p>
-                      <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                      <p className={`text-xs font-bold ${activeTab === item.id ? "text-primary" : "text-foreground"}`}>{t(item.labelKey as any)}</p>
+                      <p className="text-[10px] text-muted-foreground">{t(item.descKey as any)}</p>
                     </div>
                     <ChevronRight size={14} className="text-muted-foreground" />
                   </button>
