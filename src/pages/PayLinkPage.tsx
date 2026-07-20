@@ -358,9 +358,9 @@ const PayLinkPage = () => {
                       onClick={pay}
                       disabled={paying || payingUp || !(finalAmount > 0)}
                     >
-                      {paying ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing…</>)
-                        : user ? (<>Pay ৳{finalAmount > 0 ? finalAmount.toLocaleString() : ""} from wallet <ArrowRight className="w-4 h-4 ml-2" /></>)
-                        : (<>Sign in to pay <ArrowRight className="w-4 h-4 ml-2" /></>)}
+                      {paying ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("plProcessing")}</>)
+                        : user ? (<>{t("plPayFromWallet").replace("{amount}", finalAmount > 0 ? finalAmount.toLocaleString() : "")} <ArrowRight className="w-4 h-4 ml-2" /></>)
+                        : (<>{t("plSignInToPay")} <ArrowRight className="w-4 h-4 ml-2" /></>)}
                     </Button>
 
                     <div className="relative py-1">
