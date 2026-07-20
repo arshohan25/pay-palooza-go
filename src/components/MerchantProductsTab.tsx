@@ -343,8 +343,9 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast({ title: "Name required", variant: "destructive" }); return; }
-    if (!form.price || Number(form.price) <= 0) { toast({ title: "Valid price required", variant: "destructive" }); return; }
+    if (!form.name.trim()) { toast({ title: t("mprToastNameReq"), variant: "destructive" }); return; }
+    if (!form.price || Number(form.price) <= 0) { toast({ title: t("mprToastPriceReq"), variant: "destructive" }); return; }
+
     setSaving(true);
     if (!editing && businessName) {
       await ensureVendorStore(merchantId, businessName);
