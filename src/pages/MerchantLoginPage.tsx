@@ -596,7 +596,7 @@ export default function MerchantLoginPage() {
                     </div>
                   </div>
                   <div
-                    aria-label="Device locked to this merchant account"
+                    aria-label={t("mlDeviceLockedAria")}
                     className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/10 text-amber-200"
                   >
                     <Lock className="h-3.5 w-3.5" />
