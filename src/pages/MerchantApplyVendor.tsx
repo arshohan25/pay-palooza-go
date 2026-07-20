@@ -172,7 +172,7 @@ export default function MerchantApplyVendor() {
     if (!user || !merchant) return;
     // Client-side guard: merchant + business KYC MUST be approved before any submit.
     if (merchant.status !== "approved" || merchant.business_kyc_status !== "approved") {
-      toast.error(`Vendor application blocked — merchant status: ${merchant.status}, business KYC: ${merchant.business_kyc_status}. Both must be "approved".`, { duration: 6000 });
+      toast.error(t("mavErrBlocked").replace("{status}", merchant.status).replace("{kyc}", merchant.business_kyc_status), { duration: 6000 });
       return;
     }
     // Re-verify against the database in case status changed since the page loaded.
@@ -181,18 +181,18 @@ export default function MerchantApplyVendor() {
       .select("status,business_kyc_status,admin_notes")
       .eq("user_id", user.id)
       .maybeSingle();
-    if (freshErr) { toast.error("Could not verify merchant status: " + freshErr.message); return; }
-    if (!fresh) { toast.error("Merchant profile not found. Please complete the merchant application first."); nav("/merchant/apply"); return; }
+    if (freshErr) { toast.error(t("mavErrVerify").replace("{msg}", freshErr.message)); return; }
+    if (!fresh) { toast.error(t("mavErrNoProfile")); nav("/merchant/apply"); return; }
     if (fresh.status !== "approved" || fresh.business_kyc_status !== "approved") {
       setMerchant((m: any) => ({ ...(m ?? {}), ...fresh }));
-      toast.error(`Vendor application blocked — merchant status is now "${fresh.status}" and business KYC is "${fresh.business_kyc_status}". Both must be "approved".`, { duration: 6000 });
+      toast.error(t("mavErrBlocked").replace("{status}", fresh.status).replace("{kyc}", fresh.business_kyc_status), { duration: 6000 });
       return;
     }
-    if (!form.store_name.trim()) { toast.error("Store name is required"); return; }
-    if (!form.pickup_address.trim()) { toast.error("Pickup address is required"); return; }
-    if (!photos.shop_front.url)  { toast.error("Shop front photo is required"); return; }
-    if (!photos.shop_inside.url) { toast.error("Shop inside photo is required"); return; }
-    if (photos.shop_front.error || photos.shop_inside.error) { toast.error("Fix photo validation errors first"); return; }
+    if (!form.store_name.trim()) { toast.error(t("mavErrStoreNameReq")); return; }
+    if (!form.pickup_address.trim()) { toast.error(t("mavErrPickupReq")); return; }
+    if (!photos.shop_front.url)  { toast.error(t("mavErrShopFrontReq")); return; }
+    if (!photos.shop_inside.url) { toast.error(t("mavErrShopInsideReq")); return; }
+    if (photos.shop_front.error || photos.shop_inside.error) { toast.error(t("mavErrPhotoFix")); return; }
     setSubmitting(true);
     const payload: any = {
       merchant_id: merchant.id,
@@ -214,10 +214,10 @@ export default function MerchantApplyVendor() {
     let appId = existing?.id as string | undefined;
     if (existing && existing.status !== "approved") {
       const { error } = await (supabase as any).from("merchant_vendor_applications").update(payload).eq("id", existing.id);
-      if (error) { setSubmitting(false); toast.error("Failed to submit: " + error.message); return; }
+      if (error) { setSubmitting(false); toast.error(t("mavSubmitFail").replace("{msg}", error.message)); return; }
     } else {
       const { data, error } = await (supabase as any).from("merchant_vendor_applications").insert(payload).select("id").single();
-      if (error) { setSubmitting(false); toast.error("Failed to submit: " + error.message); return; }
+      if (error) { setSubmitting(false); toast.error(t("mavSubmitFail").replace("{msg}", error.message)); return; }
       appId = data?.id;
     }
 
@@ -233,7 +233,7 @@ export default function MerchantApplyVendor() {
       }
     } catch (e: any) {
       setSubmitting(false);
-      toast.error("Server photo validation failed: " + e.message + " — application NOT queued.");
+      toast.error(t("mavServerValFail").replace("{msg}", e.message));
       // Force back to draft
       if (appId) await (supabase as any).from("merchant_vendor_applications").update({ status: "draft" }).eq("id", appId);
       return;
@@ -259,11 +259,11 @@ export default function MerchantApplyVendor() {
     });
 
     setSubmitting(false);
-    toast.success(resubmitMode ? "Resubmitted for admin review" : "Vendor application submitted");
+    toast.success(resubmitMode ? t("mavSubmittedResubmit") : t("mavSubmittedNew"));
     nav("/merchant");
   };
 
-  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading…</div>;
+  if (loading) return <div className="p-10 text-center text-muted-foreground">{t("mavLoading")}</div>;
   if (!merchant) return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <Card className="max-w-md w-full">
