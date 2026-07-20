@@ -14,6 +14,9 @@ import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import QrScannerModal from "@/components/QrScannerModal";
 import { parseQrData } from "@/lib/qrParser";
 import { verifyPin } from "@/lib/verifyPin";
+import { useI18n } from "@/lib/i18n";
+
+
 
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
