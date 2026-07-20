@@ -4156,6 +4156,50 @@ const translations = {
   qcbBookingRefNote: { en: "Booking Ref: {ref}", bn: "বুকিং রেফ: {ref}" },
   qcbAwaitingScan: { en: "Awaiting first scan", bn: "প্রথম স্ক্যানের অপেক্ষায়" },
 
+  // Loyalty Progress page (lp*)
+  lpEasypayClub: { en: "EasyPay Club", bn: "ইজিপে ক্লাব" },
+  lpSubtitle: { en: "Track your loyalty progress", bn: "আপনার লয়্যালটি অগ্রগতি দেখুন" },
+  lpCurrentTier: { en: "Current tier", bn: "বর্তমান টায়ার" },
+  lpNotEnrolled: { en: "Not enrolled", bn: "নথিভুক্ত নন" },
+  lpFeeMinus: { en: "Fee −{n}%", bn: "ফি −{n}%" },
+  lpLimitsX: { en: "Limits ×{n}", bn: "লিমিট ×{n}" },
+  lpCashbackPlus: { en: "Cashback +{n}%", bn: "ক্যাশব্যাক +{n}%" },
+  lpPrioritySupport: { en: "Priority support", bn: "অগ্রাধিকার সহায়তা" },
+  lpStandardSupport: { en: "Standard support", bn: "স্ট্যান্ডার্ড সহায়তা" },
+  lpNextTier: { en: "Next tier", bn: "পরবর্তী টায়ার" },
+  lpOverall: { en: "Overall", bn: "সামগ্রিক" },
+  lpAveragedReqs: { en: "Averaged across {n} requirements.", bn: "{n}টি শর্তের গড়।" },
+  lpAveragedReq: { en: "Averaged across {n} requirement.", bn: "{n}টি শর্তের গড়।" },
+  lpOf: { en: "of", bn: "এর মধ্যে" },
+  lpToGo: { en: "{amt} to go", bn: "আরও {amt}" },
+  lpDone: { en: "DONE", bn: "সম্পন্ন" },
+  lpAllMet: { en: "You already meet every requirement — your tier will update on next recalculation.", bn: "আপনি সব শর্ত পূরণ করেছেন — পরবর্তী গণনায় টায়ার আপডেট হবে।" },
+  lpTopReached: { en: "You've reached the top!", bn: "আপনি সর্বোচ্চ পৌঁছেছেন!" },
+  lpTopDesc: { en: "You are enjoying the highest EasyPay Club tier available.", bn: "আপনি সর্বোচ্চ ইজিপে ক্লাব টায়ার উপভোগ করছেন।" },
+  lpScoreBreakdown: { en: "Combined score breakdown", bn: "সম্মিলিত স্কোর বিশ্লেষণ" },
+  lpScoreToward: { en: "Score toward {tier}", bn: "{tier}-এর জন্য স্কোর" },
+  lpPoints: { en: "+{n} pts", bn: "+{n} পয়েন্ট" },
+  lpPartInfo: { en: "{metric} × {weight} weight · contributes {pct} of your score", bn: "{metric} × {weight} ওজন · আপনার স্কোরের {pct} অবদান" },
+  lpWeightsFootnote: {
+    en: "Weights: volume ×{v}, txn count ×{t}, wallet ×{w}, add-money ×{a}, savings ×{s}. The bigger the contribution bar, the more that metric moves your tier.",
+    bn: "ওজন: ভলিউম ×{v}, লেনদেন সংখ্যা ×{t}, ওয়ালেট ×{w}, অ্যাড-মানি ×{a}, সেভিংস ×{s}। কন্ট্রিবিউশন বার যত বড়, সেই মেট্রিক তত বেশি টায়ার এগিয়ে নেয়।"
+  },
+  lpAllTiers: { en: "All tiers", bn: "সব টায়ার" },
+  lpCurrentBadge: { en: "CURRENT", bn: "বর্তমান" },
+  lpTierPerks: { en: "Limits ×{lm} · Fee −{fd}% · Cashback +{cb}%", bn: "লিমিট ×{lm} · ফি −{fd}% · ক্যাশব্যাক +{cb}%" },
+  lpLoadingProgress: { en: "Loading your progress…", bn: "অগ্রগতি লোড হচ্ছে…" },
+  lpMetricVolume: { en: "30-day volume", bn: "৩০ দিনের ভলিউম" },
+  lpMetricTxnCount: { en: "Lifetime transactions", bn: "মোট লেনদেন সংখ্যা" },
+  lpMetricWallet: { en: "Wallet balance", bn: "ওয়ালেট ব্যালেন্স" },
+  lpMetricAddMoney: { en: "Add-money lifetime", bn: "মোট অ্যাড-মানি" },
+  lpMetricSavings: { en: "Savings balance", bn: "সেভিংস ব্যালেন্স" },
+  lpActionSend: { en: "Send money", bn: "টাকা পাঠান" },
+  lpActionTxn: { en: "More transactions", bn: "আরও লেনদেন" },
+  lpActionAddMoney: { en: "Add money", bn: "টাকা যোগ" },
+  lpActionTopUp: { en: "Top up", bn: "টপ আপ" },
+  lpActionGrow: { en: "Grow savings", bn: "সেভিংস বাড়ান" },
+
+
 
 
 
