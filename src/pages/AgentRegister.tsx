@@ -591,21 +591,21 @@ const AgentRegister = () => {
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center mx-auto shadow-glow">
                     <User size={28} className="text-primary-foreground" />
                   </motion.div>
-                  <h2 className="text-lg font-bold text-foreground">Customer Details</h2>
-                  <p className="text-xs text-muted-foreground">Provide basic information to create the account</p>
+                  <h2 className="text-lg font-bold text-foreground">{t("argCustDetails")}</h2>
+                  <p className="text-xs text-muted-foreground">{t("argCustDetailsDesc")}</p>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Full Name *</Label>
-                    <Input placeholder="Customer's full name" value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-12 text-sm font-medium" />
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("argFullName")}</Label>
+                    <Input placeholder={t("argFullNamePh")} value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-12 text-sm font-medium" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">NID Number (Optional)</Label>
-                    <Input type="text" inputMode="numeric" placeholder="National ID number" value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-12 text-sm font-medium" />
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("argNidOptional")}</Label>
+                    <Input type="text" inputMode="numeric" placeholder={t("argNidPh")} value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-12 text-sm font-medium" />
                   </div>
                 </div>
                 <Button onClick={handleCreateAccount} disabled={!name.trim() || creatingAccount} className="w-full gradient-primary text-primary-foreground rounded-xl h-12 text-sm font-bold shadow-glow gap-2">
-                  {creatingAccount ? <><Loader2 size={16} className="animate-spin" /> Creating Account...</> : <><UserPlus size={16} /> Create & Start KYC</>}
+                  {creatingAccount ? <><Loader2 size={16} className="animate-spin" /> {t("argCreating")}</> : <><UserPlus size={16} /> {t("argCreateKyc")}</>}
                 </Button>
               </Card>
             </motion.div>
