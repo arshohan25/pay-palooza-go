@@ -531,7 +531,7 @@ const MerchantDashboard = () => {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-extrabold tracking-tight truncate">{merchant?.business_name || "Merchant"}</h1>
+                <h1 className="text-xl font-extrabold tracking-tight truncate">{(lang === "bn" && merchant?.business_name_bn) ? merchant.business_name_bn : (merchant?.business_name || "Merchant")}</h1>
                 {kycStatus === "approved" ? (
                   <span title="KYC verified" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-emerald-400/25 border border-emerald-200/40 text-emerald-50 text-[9px] font-bold backdrop-blur-sm">
                     <BadgeCheck size={11} /> {t("mdKyc")}
