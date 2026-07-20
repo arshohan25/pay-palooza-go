@@ -52,6 +52,8 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
 
   const totalRemaining = pending.reduce((s, p) => s + p.remaining, 0);
 
+  const [bookingRef, setBookingRef] = useState("");
+
   const book = async () => {
     if (!orderId || pending.length === 0) return;
     if (!tracking.trim()) {
@@ -59,11 +61,13 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
       return;
     }
     setBusy(true);
+    const trk = tracking.trim();
+    const ref = bookingRef.trim() || null;
     const rows = pending.map(p => ({
       order_id: orderId,
       order_item_index: p.idx,
       qty_shipped: p.remaining,
-      tracking_number: tracking.trim(),
+      tracking_number: trk,
       courier_provider: courier,
       status: "shipped",
     }));
@@ -71,8 +75,24 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
     if (!error) {
       await (supabase as any)
         .from("orders")
-        .update({ status: "shipped", updated_at: new Date().toISOString() })
+        .update({
+          status: "shipped",
+          courier_provider: courier,
+          tracking_number: trk,
+          courier_booking_ref: ref,
+          courier_booked_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", orderId);
+      // Seed first tracking event so live timeline has a starting point
+      await (supabase as any).from("courier_tracking_events").insert({
+        order_id: orderId,
+        courier_provider: courier,
+        tracking_number: trk,
+        status: "booked",
+        status_label: "Courier Booked",
+        note: ref ? `Booking Ref: ${ref}` : "Awaiting first scan",
+      });
     }
     setBusy(false);
     if (error) {
