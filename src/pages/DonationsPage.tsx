@@ -537,7 +537,7 @@ const DonationsPage = () => {
                       )}
                       {isRecurring && (
                         <span className="text-xs ring-1 ring-primary/30 text-primary px-3 py-1.5 rounded-full flex items-center gap-1 font-medium">
-                          <RefreshCw size={11} /> {frequency === "weekly" ? t("donWeekly") : t("donMonthly")}
+                          <RefreshCw size={11} /> {frequency === "weekly" ? t("donWeekly") : frequency === "yearly" ? t("donYearly") : t("donMonthly")}
                         </span>
                       )}
                     </div>
