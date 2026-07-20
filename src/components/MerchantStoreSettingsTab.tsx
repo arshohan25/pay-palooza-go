@@ -36,6 +36,51 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
   const logoRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
 
+  // Service-charge settings (persisted on the merchant row via a security-definer RPC)
+  const [svc, setSvc] = useState({ enabled: false, rate: 0, absorb: false });
+  const [svcLoaded, setSvcLoaded] = useState(false);
+  const [svcSaving, setSvcSaving] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("merchants")
+        .select("service_charge_enabled, service_charge_rate, service_charge_absorb")
+        .eq("id", merchantId)
+        .maybeSingle();
+      if (alive && data) {
+        setSvc({
+          enabled: !!data.service_charge_enabled,
+          rate: Number(data.service_charge_rate || 0),
+          absorb: !!data.service_charge_absorb,
+        });
+      }
+      if (alive) setSvcLoaded(true);
+    })();
+    return () => { alive = false; };
+  }, [merchantId]);
+
+  const saveServiceCharge = async () => {
+    if (svc.rate < 0 || svc.rate > 20) {
+      toast({ title: "Invalid rate", description: "Service charge must be between 0% and 20%.", variant: "destructive" });
+      return;
+    }
+    setSvcSaving(true);
+    const { error } = await (supabase as any).rpc("merchant_update_service_charge", {
+      p_enabled: svc.enabled,
+      p_rate: svc.rate,
+      p_absorb: svc.absorb,
+    });
+    setSvcSaving(false);
+    if (error) {
+      toast({ title: "Save failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Service charge updated" });
+    }
+  };
+
+
   const [form, setForm] = useState({
     store_name: "",
     slug: "",
