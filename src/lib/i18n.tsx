@@ -3913,6 +3913,30 @@ const translations = {
   mdAddBank: { en: "Add Bank", bn: "ব্যাংক যোগ" },
   mdSettlement: { en: "Settlement", bn: "সেটেলমেন্ট" },
 
+  // Settlement Config Sheet
+  mscTitle: { en: "Settlement Schedule", bn: "সেটেলমেন্ট সময়সূচি" },
+  mscSubtitle: { en: "Configure when you receive payouts", bn: "কখন পেআউট পাবেন তা নির্ধারণ করুন" },
+  mscFreqT1Label: { en: "T+1 (Next Day)", bn: "T+1 (পরদিন)" },
+  mscFreqT1Desc: { en: "Settle next business day — Default", bn: "পরবর্তী কর্মদিবসে সেটেল — ডিফল্ট" },
+  mscFreqT2Label: { en: "T+2 (2 Days)", bn: "T+2 (২ দিন)" },
+  mscFreqT2Desc: { en: "Settle every 2 business days", bn: "প্রতি ২ কর্মদিবসে সেটেল" },
+  mscFreqWeeklyLabel: { en: "Weekly", bn: "সাপ্তাহিক" },
+  mscFreqWeeklyDesc: { en: "Settle once per week (Sunday)", bn: "সপ্তাহে একবার সেটেল (রবিবার)" },
+  mscFreqMonthlyLabel: { en: "Monthly", bn: "মাসিক" },
+  mscFreqMonthlyDesc: { en: "Settle on 1st of each month", bn: "প্রতি মাসের ১ তারিখে সেটেল" },
+  mscTimeLabel: { en: "Settlement Time", bn: "সেটেলমেন্টের সময়" },
+  mscTimeHelp: { en: "When the settlement batch processes each cycle", bn: "প্রতিটি চক্রে সেটেলমেন্ট ব্যাচ যখন প্রসেস হবে" },
+  mscBankLinked: { en: "Settling to {bank} · ****{last4}", bn: "সেটেল হবে {bank} · ****{last4} এ" },
+  mscBankMissing: { en: "Add a bank account first to enable auto-settlement", bn: "অটো-সেটেলমেন্ট চালু করতে আগে একটি ব্যাংক অ্যাকাউন্ট যোগ করুন" },
+  mscSaving: { en: "Saving...", bn: "সংরক্ষণ হচ্ছে..." },
+  mscSaveBtn: { en: "Save Settlement Schedule", bn: "সেটেলমেন্ট সময়সূচি সংরক্ষণ" },
+  mscToastUpdated: { en: "Settlement Updated!", bn: "সেটেলমেন্ট আপডেট হয়েছে!" },
+  mscToastUpdatedDesc: { en: "Frequency set to {freq} · Time: {time}", bn: "ফ্রিকোয়েন্সি: {freq} · সময়: {time}" },
+  mscToastFailed: { en: "Failed", bn: "ব্যর্থ হয়েছে" },
+  mscToastFailedDesc: { en: "Could not update", bn: "আপডেট করা যায়নি" },
+
+
+
   // Dynamic QR card
   mdDynamicQR: { en: "Dynamic QR", bn: "ডাইনামিক কিউআর" },
   mdDynamicQRDesc: { en: "Generate a QR code that customers scan to pay instantly", bn: "একটি কিউআর কোড তৈরি করুন যা গ্রাহকরা স্ক্যান করে তাৎক্ষণিক পেমেন্ট করবে" },

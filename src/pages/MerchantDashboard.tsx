@@ -4075,15 +4075,16 @@ const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onCl
 /* ── Merchant Settlement Config Sheet ── */
 const MerchantSettlementConfigSheet = ({ open, onClose, merchant }: { open: boolean; onClose: () => void; merchant: MerchantInfo | null }) => {
   const { toast } = useToast();
+  const { t } = useI18n();
   const [frequency, setFrequency] = useState(merchant?.settlement_frequency || "T+1");
   const [customTime, setCustomTime] = useState("09:00");
   const [saving, setSaving] = useState(false);
 
   const freqOptions = [
-    { id: "T+1", label: "T+1 (Next Day)", desc: "Settle next business day — Default", icon: Zap },
-    { id: "T+2", label: "T+2 (2 Days)", desc: "Settle every 2 business days", icon: Calendar },
-    { id: "Weekly", label: "Weekly", desc: "Settle once per week (Sunday)", icon: Repeat },
-    { id: "Monthly", label: "Monthly", desc: "Settle on 1st of each month", icon: CalendarClock },
+    { id: "T+1", label: t("mscFreqT1Label"), desc: t("mscFreqT1Desc"), icon: Zap },
+    { id: "T+2", label: t("mscFreqT2Label"), desc: t("mscFreqT2Desc"), icon: Calendar },
+    { id: "Weekly", label: t("mscFreqWeeklyLabel"), desc: t("mscFreqWeeklyDesc"), icon: Repeat },
+    { id: "Monthly", label: t("mscFreqMonthlyLabel"), desc: t("mscFreqMonthlyDesc"), icon: CalendarClock },
   ];
 
   const handleSave = async () => {
@@ -4093,10 +4094,10 @@ const MerchantSettlementConfigSheet = ({ open, onClose, merchant }: { open: bool
         settlement_frequency: frequency,
       }).eq("id", merchant?.id || "");
       if (error) throw error;
-      toast({ title: "Settlement Updated!", description: `Frequency set to ${frequency} · Time: ${customTime}` });
+      toast({ title: t("mscToastUpdated"), description: t("mscToastUpdatedDesc").replace("{freq}", frequency).replace("{time}", customTime) });
       onClose();
     } catch (e: any) {
-      toast({ title: "Failed", description: e.message || "Could not update", variant: "destructive" });
+      toast({ title: t("mscToastFailed"), description: e.message || t("mscToastFailedDesc"), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -4113,8 +4114,8 @@ const MerchantSettlementConfigSheet = ({ open, onClose, merchant }: { open: bool
             <CalendarClock size={18} className="text-white" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-foreground">Settlement Schedule</h3>
-            <p className="text-[11px] text-muted-foreground">Configure when you receive payouts</p>
+            <h3 className="text-base font-bold text-foreground">{t("mscTitle")}</h3>
+            <p className="text-[11px] text-muted-foreground">{t("mscSubtitle")}</p>
           </div>
         </div>
 
@@ -4135,32 +4136,33 @@ const MerchantSettlementConfigSheet = ({ open, onClose, merchant }: { open: bool
         </div>
 
         <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Settlement Time</label>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">{t("mscTimeLabel")}</label>
           <Input type="time" value={customTime} onChange={e => setCustomTime(e.target.value)} className="h-12 rounded-xl" />
-          <p className="text-[9px] text-muted-foreground mt-1">When the settlement batch processes each cycle</p>
+          <p className="text-[9px] text-muted-foreground mt-1">{t("mscTimeHelp")}</p>
         </div>
 
         {merchant?.bank_name ? (
           <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
             <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-2">
-              <CheckCircle2 size={12} /> Settling to {merchant.bank_name} · ****{merchant.bank_account_number?.slice(-4)}
+              <CheckCircle2 size={12} /> {t("mscBankLinked").replace("{bank}", merchant.bank_name).replace("{last4}", merchant.bank_account_number?.slice(-4) || "")}
             </p>
           </div>
         ) : (
           <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium flex items-center gap-2">
-              <Shield size={12} /> Add a bank account first to enable auto-settlement
+              <Shield size={12} /> {t("mscBankMissing")}
             </p>
           </div>
         )}
 
         <Button onClick={handleSave} disabled={saving} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(270 60% 50%), hsl(280 55% 40%))" }}>
-          {saving ? "Saving..." : "Save Settlement Schedule"}
+          {saving ? t("mscSaving") : t("mscSaveBtn")}
         </Button>
       </motion.div>
     </div>
   );
 };
+
 
 /* ── Merchant Floating Chat FAB ── */
 const MerchantChatFAB = ({ userId, onOpenInbox }: { userId: string | null; onOpenInbox: () => void }) => {
