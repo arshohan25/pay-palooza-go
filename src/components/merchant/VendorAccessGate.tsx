@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Clock, XCircle, Store, CheckCircle2, ArrowRight } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+
 
 /**
  * Blocks rendering of vendor-only features until the current merchant has an
@@ -15,7 +17,9 @@ import { Loader2, Clock, XCircle, Store, CheckCircle2, ArrowRight } from "lucide
 export default function VendorAccessGate({ children }: { children: ReactNode }) {
   const nav = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [state, setState] = useState<"loading" | "approved" | "pending" | "rejected" | "none">("loading");
+
   const [app, setApp] = useState<any>(null);
 
   useEffect(() => {
@@ -51,14 +55,14 @@ export default function VendorAccessGate({ children }: { children: ReactNode }) 
 
   const meta = {
     pending:  { icon: Clock,     tone: "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300",
-                title: "Vendor application under review",
-                desc: "An admin is reviewing your shop details and photos. Vendor features unlock as soon as it's approved — we'll notify you." },
+                title: t("vagPendingTitle"),
+                desc: t("vagPendingDesc") },
     rejected: { icon: XCircle,   tone: "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300",
-                title: "Vendor application was rejected",
-                desc: "Please review the admin feedback and resubmit updated shop photos to try again." },
+                title: t("vagRejectedTitle"),
+                desc: t("vagRejectedDesc") },
     none:     { icon: Store,     tone: "bg-primary/10 border-primary/30 text-primary",
-                title: "Vendor access required",
-                desc: "This section is only available to approved vendors. Apply for vendor access to start selling products." },
+                title: t("vagNoneTitle"),
+                desc: t("vagNoneDesc") },
   }[state] as { icon: any; tone: string; title: string; desc: string };
   const Icon = meta.icon;
 
@@ -74,19 +78,19 @@ export default function VendorAccessGate({ children }: { children: ReactNode }) 
             </div>
             {app?.admin_notes && state === "rejected" && (
               <div className="text-xs bg-background/60 border border-border rounded-md p-3 text-left">
-                <p className="font-semibold mb-1">Admin feedback</p>
+                <p className="font-semibold mb-1">{t("vagAdminFeedback")}</p>
                 <p className="text-muted-foreground">{app.admin_notes}</p>
               </div>
             )}
             {app?.status && (
               <Badge className="text-[10px]">
-                {app.status} · submitted {new Date(app.created_at).toLocaleDateString()}
+                {t("vagStatusSubmitted").replace("{status}", app.status).replace("{date}", new Date(app.created_at).toLocaleDateString())}
               </Badge>
             )}
             <div className="flex gap-2 justify-center pt-2">
-              <Button variant="outline" onClick={() => nav("/merchant")}>Back to Merchant</Button>
+              <Button variant="outline" onClick={() => nav("/merchant")}>{t("vagBack")}</Button>
               <Button onClick={() => nav("/merchant/apply-vendor")}>
-                {state === "rejected" ? "Resubmit application" : state === "pending" ? "View application" : "Apply now"}
+                {state === "rejected" ? t("vagResubmit") : state === "pending" ? t("vagView") : t("vagApply")}
                 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
@@ -94,10 +98,11 @@ export default function VendorAccessGate({ children }: { children: ReactNode }) 
         </Card>
         {state === "pending" && (
           <p className="text-[11px] text-center text-muted-foreground">
-            <CheckCircle2 className="w-3 h-3 inline mr-1" /> You can keep using your merchant account normally while you wait.
+            <CheckCircle2 className="w-3 h-3 inline mr-1" /> {t("vagKeepUsing")}
           </p>
         )}
       </div>
     </div>
   );
 }
+
