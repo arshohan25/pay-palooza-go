@@ -385,30 +385,30 @@ export default function CouponDetailPage() {
             <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
               <FileText className="w-3 h-3 text-primary" />
             </div>
-            <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">Terms & conditions</h3>
+            <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">{t("cdTerms")}</h3>
           </div>
           <ul className="rounded-2xl bg-card border border-border/50 p-4 space-y-2 text-[12px] text-muted-foreground leading-relaxed">
             <TermLine>
-              Applies to <span className="font-semibold text-foreground/85">{t(flowInfo.labelKey)}</span> transactions only.
+              {t("cdTermApplies1")} <span className="font-semibold text-foreground/85">{t(flowInfo.labelKey)}</span> {t("cdTermApplies2")}
             </TermLine>
             {coupon.min_order_amount && (
-              <TermLine>Minimum transaction amount of ৳{coupon.min_order_amount} required.</TermLine>
+              <TermLine>{t("cdTermMinOrder").replace("{amount}", String(coupon.min_order_amount))}</TermLine>
             )}
             {isPct && coupon.max_discount && (
-              <TermLine>Percentage discount is capped at ৳{coupon.max_discount} per transaction.</TermLine>
+              <TermLine>{t("cdTermMaxCap").replace("{amount}", String(coupon.max_discount))}</TermLine>
             )}
             {coupon.per_user_limit && (
-              <TermLine>Each user can redeem this coupon up to {coupon.per_user_limit} time(s).</TermLine>
+              <TermLine>{t("cdTermPerUser").replace("{n}", String(coupon.per_user_limit))}</TermLine>
             )}
-            <TermLine>Cannot be combined with other coupons or cashback offers on the same transaction.</TermLine>
-            <TermLine>EasyPay may withdraw or amend this offer at any time without prior notice.</TermLine>
-            <TermLine>Refunded transactions will reverse the coupon usage.</TermLine>
+            <TermLine>{t("cdTermCombine")}</TermLine>
+            <TermLine>{t("cdTermAmend")}</TermLine>
+            <TermLine>{t("cdTermRefund")}</TermLine>
           </ul>
         </section>
 
         <p className="text-center text-[10.5px] text-muted-foreground/60 pt-1 flex items-center justify-center gap-1">
           <Clock className="w-2.5 h-2.5" />
-          Terms subject to EasyPay policy
+          {t("cdTermsPolicy")}
         </p>
       </div>
 
