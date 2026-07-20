@@ -132,20 +132,20 @@ const AgentLoginPage = () => {
       if (mintErr) throw mintErr;
       const token = (data as any)?.device_token;
       const expires_at = (data as any)?.device_token_expires_at;
-      if (!token || !expires_at) throw new Error("Could not trust this device. Please try again.");
+      if (!token || !expires_at) throw new Error(t("alpTrustFail"));
       otp.saveTrustToken(phone, token, expires_at);
       finishLogin();
     } catch (err: any) {
       const raw = err?.message || String(err ?? "");
-      let msg = "Verification failed. Please try again.";
+      let msg = t("alpVerifyFail");
       if (/Failed to fetch|NetworkError|network/i.test(raw) || !navigator.onLine) {
-        msg = "Network error. Please check your connection and retry.";
+        msg = t("alpVerifyNetwork");
       } else if (/expired/i.test(raw)) {
-        msg = "This code has expired. Tap Resend to get a new one.";
+        msg = t("alpVerifyExpired");
       } else if (/invalid|incorrect|mismatch/i.test(raw)) {
-        msg = "Incorrect code. Please double-check and try again.";
+        msg = t("alpVerifyIncorrect");
       } else if (/too many|rate/i.test(raw)) {
-        msg = "Too many attempts. Please wait before retrying.";
+        msg = t("alpVerifyRate");
       } else if (raw) {
         msg = raw;
       }
