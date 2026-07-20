@@ -23,6 +23,7 @@ import { useSavings, type SavingsGoal, type AutoSavePlan } from "@/hooks/use-sav
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 type Status = "paid" | "upcoming" | "due" | "overdue" | "completed";
 
@@ -37,37 +38,37 @@ interface Installment {
 
 const bdt = (n: number) => `৳${Math.round(n).toLocaleString("en-BD")}`;
 
-const STATUS_META: Record<Status, { label: string; ring: string; dot: string; glow: string; icon: typeof Check }> = {
+const STATUS_META: Record<Status, { labelKey: string; ring: string; dot: string; glow: string; icon: typeof Check }> = {
   paid: {
-    label: "Paid",
+    labelKey: "ijStatusPaid",
     ring: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
     dot: "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_0_20px_rgba(34,197,94,0.55)]",
     glow: "",
     icon: Check,
   },
   upcoming: {
-    label: "Upcoming",
+    labelKey: "ijStatusUpcoming",
     ring: "border-sky-500/40 bg-sky-500/10 text-sky-300",
     dot: "bg-gradient-to-br from-sky-400 to-sky-600",
     glow: "animate-pulse",
     icon: Clock,
   },
   due: {
-    label: "Due Today",
+    labelKey: "ijStatusDueToday",
     ring: "border-amber-500/40 bg-amber-500/10 text-amber-300",
     dot: "bg-gradient-to-br from-amber-400 to-orange-500 shadow-[0_0_28px_rgba(245,158,11,0.75)]",
     glow: "animate-pulse",
     icon: Bell,
   },
   overdue: {
-    label: "Overdue",
+    labelKey: "ijStatusOverdue",
     ring: "border-red-500/40 bg-red-500/10 text-red-300",
     dot: "bg-gradient-to-br from-red-500 to-rose-600 shadow-[0_0_24px_rgba(239,68,68,0.7)]",
     glow: "",
     icon: AlertTriangle,
   },
   completed: {
-    label: "Completed",
+    labelKey: "ijStatusCompleted",
     ring: "border-[#F4C542]/50 bg-[#F4C542]/10 text-[#F4C542]",
     dot: "bg-gradient-to-br from-[#F4C542] to-orange-500 shadow-[0_0_32px_rgba(244,197,66,0.85)]",
     glow: "",
@@ -76,6 +77,7 @@ const STATUS_META: Record<Status, { label: string; ring: string; dot: string; gl
 };
 
 function Ring({ value, size = 120, stroke = 10 }: { value: number; size?: number; stroke?: number }) {
+  const { t } = useI18n();
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const offset = c - (Math.min(100, Math.max(0, value)) / 100) * c;
@@ -106,13 +108,14 @@ function Ring({ value, size = 120, stroke = 10 }: { value: number; size?: number
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-bold text-white tabular-nums">{Math.round(value)}%</span>
-        <span className="text-[10px] uppercase tracking-widest text-white/60">complete</span>
+        <span className="text-[10px] uppercase tracking-widest text-white/60">{t("ijComplete")}</span>
       </div>
     </div>
   );
 }
 
 function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" | "right"; isLast: boolean }) {
+  const { t } = useI18n();
   const meta = STATUS_META[item.status];
   const Icon = meta.icon;
 
@@ -125,12 +128,12 @@ function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" 
       className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-3"
     >
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wider text-white/50">Installment</span>
+        <span className="text-[10px] uppercase tracking-wider text-white/50">{t("ijInstallment")}</span>
         <span className="text-[10px] font-semibold text-white/70">#{item.n}</span>
       </div>
       <div className="mt-1 text-lg font-bold tabular-nums text-white">{bdt(item.amount)}</div>
       <div className="mt-1 text-[10px] text-white/50">
-        Remaining <span className="tabular-nums text-white/80">{bdt(item.remaining)}</span>
+        {t("ijRemaining")} <span className="tabular-nums text-white/80">{bdt(item.remaining)}</span>
       </div>
     </motion.div>
   );
@@ -145,12 +148,12 @@ function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" 
     >
       <div className="flex items-center gap-1.5 text-[10px] text-white/50">
         <Calendar size={10} />
-        Due {item.dueDate}
+        {t("ijDue")} {item.dueDate}
       </div>
-      {item.paidDate && <div className="mt-1 text-[10px] text-emerald-300/80">Paid · {item.paidDate}</div>}
+      {item.paidDate && <div className="mt-1 text-[10px] text-emerald-300/80">{t("ijPaid")} · {item.paidDate}</div>}
       <div className={cn("mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold", meta.ring)}>
         <Icon size={10} />
-        {meta.label}
+        {t(meta.labelKey as any)}
       </div>
     </motion.div>
   );
@@ -255,6 +258,7 @@ function buildFromGoal(goal: SavingsGoal, plan?: AutoSavePlan): Installment[] {
 }
 
 export default function InstallmentJourneyPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { user } = useAuth();
@@ -328,7 +332,7 @@ export default function InstallmentJourneyPage() {
   const loadingState = loading && !goal && !plan;
   const notFound = !loadingState && !goal && !plan;
 
-  const displayName = goal?.name ?? (plan ? "DPS Plan" : "");
+  const displayName = goal?.name ?? (plan ? t("ijDpsPlan") : "");
   const emoji = goal?.emoji ?? "💼";
   const planTotalInst = Number(plan?.total_installments) || 0;
   const target = Number(
@@ -348,7 +352,7 @@ export default function InstallmentJourneyPage() {
   const tint = plan ? "from-[#0EA5E9] to-[#009688]" : "from-[#009688] to-[#2ECC71]";
   const HeaderIcon = plan ? Landmark : Target;
 
-  const primaryLabel = plan ? "Pay Installment" : "Add Deposit";
+  const primaryLabel = plan ? t("ijPayInstallment") : t("ijAddDeposit");
   const primaryKey: "deposit" | "installment" = plan ? "installment" : "deposit";
 
   async function confirmAction() {
@@ -379,12 +383,12 @@ export default function InstallmentJourneyPage() {
           .eq("id", plan.id);
         if (error) throw error;
       }
-      toast.success(actionSheet === "installment" ? "Installment recorded" : "Deposit added");
+      toast.success(actionSheet === "installment" ? t("ijInstallmentRecorded") : t("ijDepositAdded"));
       setActionSheet(null);
       setAmt("");
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Something went wrong");
+      toast.error(e?.message ?? t("ijSomethingWrong"));
     } finally {
       setSubmitting(false);
     }
@@ -406,14 +410,14 @@ export default function InstallmentJourneyPage() {
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            aria-label="Back"
+            aria-label={t("ijBack")}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur"
           >
             <ArrowLeft size={18} />
           </button>
           <div className="text-center">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">Journey</div>
-            <div className="text-sm font-semibold">Installment Timeline</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">{t("ijJourney")}</div>
+            <div className="text-sm font-semibold">{t("ijInstallmentTimeline")}</div>
           </div>
           <div className="h-10 w-10" aria-hidden />
         </div>
@@ -421,22 +425,22 @@ export default function InstallmentJourneyPage() {
         {loadingState && (
           <div className="mt-16 flex flex-col items-center gap-3 text-white/60">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-            <div className="text-sm">Loading timeline…</div>
+            <div className="text-sm">{t("ijLoadingTimeline")}</div>
           </div>
         )}
 
         {notFound && (
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center">
             <AlertTriangle size={22} className="mx-auto text-amber-400" />
-            <div className="mt-2 text-base font-semibold">Not found</div>
+            <div className="mt-2 text-base font-semibold">{t("ijNotFound")}</div>
             <p className="mt-1 text-sm text-white/60">
-              This {type === "dps" ? "DPS plan" : "goal"} could not be located.
+              {type === "dps" ? t("ijNotFoundDps") : t("ijNotFoundGoal")}
             </p>
             <button
               onClick={() => navigate("/savings")}
               className="mt-4 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold"
             >
-              Back to Savings
+              {t("ijBackToSavings")}
             </button>
           </div>
         )}
@@ -464,10 +468,10 @@ export default function InstallmentJourneyPage() {
                       </div>
                     </div>
                     <div className="mt-4">
-                      <div className="text-[11px] text-white/60">Current Balance</div>
+                      <div className="text-[11px] text-white/60">{t("ijCurrentBalance")}</div>
                       <div className="text-3xl font-bold tabular-nums">{bdt(balance)}</div>
                       <div className="mt-1 text-[11px] text-white/60">
-                        of <span className="tabular-nums text-white/80">{bdt(target)}</span> target
+                        {t("ijOfTarget").replace("{target}", bdt(target))}
                       </div>
                     </div>
                   </div>
@@ -476,9 +480,9 @@ export default function InstallmentJourneyPage() {
 
                 <div className="mt-5 grid grid-cols-3 gap-2">
                   {[
-                    { label: "Outstanding", value: bdt(outstanding) },
-                    { label: "Next Amt", value: nextAmount > 0 ? bdt(nextAmount) : "—" },
-                    { label: "Due", value: nextDate },
+                    { label: t("ijOutstanding"), value: bdt(outstanding) },
+                    { label: t("ijNextAmt"), value: nextAmount > 0 ? bdt(nextAmount) : "—" },
+                    { label: t("ijDue"), value: nextDate },
                   ].map((s) => (
                     <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.06] p-2.5">
                       <div className="text-[9px] uppercase tracking-wider text-white/50">{s.label}</div>
@@ -491,12 +495,12 @@ export default function InstallmentJourneyPage() {
                   <div className="flex items-center gap-2">
                     <TrendingUp size={16} className="text-emerald-400" />
                     <div>
-                      <div className="text-[10px] uppercase tracking-widest text-white/50">Progress</div>
-                      <div className="text-sm font-semibold">{Math.round(pct)}% complete</div>
+                      <div className="text-[10px] uppercase tracking-widest text-white/50">{t("ijProgress")}</div>
+                      <div className="text-sm font-semibold">{t("ijPctComplete").replace("{pct}", String(Math.round(pct)))}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 rounded-full bg-gradient-to-r from-[#F4C542] to-amber-500 px-2.5 py-1 text-[10px] font-bold text-black">
-                    <Trophy size={11} /> Streak {paidCount}
+                    <Trophy size={11} /> {t("ijStreak")} {paidCount}
                   </div>
                 </div>
               </div>
@@ -505,11 +509,11 @@ export default function InstallmentJourneyPage() {
             {/* Section title */}
             <div className="mt-6 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">Timeline</div>
-                <div className="text-lg font-bold">Milestones</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">{t("ijTimeline")}</div>
+                <div className="text-lg font-bold">{t("ijMilestones")}</div>
               </div>
               <div className="text-[11px] text-white/60">
-                {paidCount}/{installments.length} paid
+                {t("ijPaidCount").replace("{paid}", String(paidCount)).replace("{total}", String(installments.length))}
               </div>
             </div>
 
@@ -525,7 +529,7 @@ export default function InstallmentJourneyPage() {
               ))}
               {installments.length === 0 && (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center text-sm text-white/60">
-                  No installments yet.
+                  {t("ijNoInstallments")}
                 </div>
               )}
             </div>
@@ -539,11 +543,12 @@ export default function InstallmentJourneyPage() {
                 className="mt-8 rounded-[22px] border border-[#F4C542]/30 bg-gradient-to-br from-[#F4C542]/10 to-transparent p-4 backdrop-blur"
               >
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#F4C542]">
-                  <Sparkles size={12} /> AI Insight
+                  <Sparkles size={12} /> {t("ijAiInsight")}
                 </div>
                 <p className="mt-1.5 text-sm leading-relaxed text-white/85">
-                  Add <span className="font-bold text-[#F4C542]">{bdt(Math.round(nextAmount * 0.2))}</span> extra per
-                  cycle to finish <span className="font-semibold">{displayName}</span> faster.
+                  {t("ijAiInsightBody")
+                    .replace("{extra}", bdt(Math.round(nextAmount * 0.2)))
+                    .replace("{name}", displayName)}
                 </p>
               </motion.div>
             )}
@@ -564,7 +569,7 @@ export default function InstallmentJourneyPage() {
             {plan && (
               <button
                 onClick={() => { setAmt(""); setActionSheet("deposit"); }}
-                aria-label="Extra deposit"
+                aria-label={t("ijExtraDeposit")}
                 className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white active:scale-95"
               >
                 <Plus size={18} />
@@ -594,9 +599,9 @@ export default function InstallmentJourneyPage() {
               <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
               <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/50">{displayName}</div>
               <div className="mb-4 text-lg font-bold">
-                {actionSheet === "installment" ? "Pay Installment" : "Add Deposit"}
+                {actionSheet === "installment" ? t("ijPayInstallment") : t("ijAddDeposit")}
               </div>
-              <label className="text-[11px] text-white/60">Amount (৳)</label>
+              <label className="text-[11px] text-white/60">{t("ijAmountLabel")}</label>
               <input
                 autoFocus
                 type="number"
@@ -624,14 +629,14 @@ export default function InstallmentJourneyPage() {
                 onClick={confirmAction}
                 className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#009688] to-[#2ECC71] py-3 text-sm font-semibold text-white disabled:opacity-40"
               >
-                {submitting ? "Processing…" : `Confirm ${actionSheet === "installment" ? "Installment" : "Deposit"}`}
+                {submitting ? t("ijProcessing") : (actionSheet === "installment" ? t("ijConfirmInstallment") : t("ijConfirmDeposit"))}
               </button>
               <button
                 disabled={submitting}
                 onClick={() => setActionSheet(null)}
                 className="mt-2 w-full py-2 text-xs font-medium text-white/50"
               >
-                Cancel
+                {t("ijCancel")}
               </button>
             </motion.div>
           </motion.div>
