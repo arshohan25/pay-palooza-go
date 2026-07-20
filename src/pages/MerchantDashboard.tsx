@@ -1514,15 +1514,15 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
         <SheetContent side="bottom" className="z-[80] rounded-t-2xl" overlayClassName="z-[80]">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <QrCode size={18} className="text-primary" /> Generate Payment QR
+              <QrCode size={18} className="text-primary" /> {t("mqrSheetTitle")}
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4">
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Amount (৳) *</label>
+              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">{t("mqrAmountLabel")}</label>
               <Input
                 type="number"
-                placeholder="e.g. 500"
+                placeholder={t("mqrAmountPh")}
                 value={qrAmount}
                 onChange={e => setQrAmount(e.target.value)}
                 min={1}
@@ -1531,9 +1531,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Reference (optional)</label>
+              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">{t("mqrRefLabel")}</label>
               <Input
-                placeholder="e.g. INV-001"
+                placeholder={t("mqrRefPh")}
                 value={qrReference}
                 onChange={e => setQrReference(e.target.value)}
                 maxLength={100}
@@ -1545,10 +1545,11 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               disabled={qrGenerateLoading || !qrAmount || parseFloat(qrAmount) < 1}
             >
               {qrGenerateLoading ? <RefreshCw size={15} className="animate-spin" /> : <ScanLine size={15} />}
-              Generate QR
+              {t("mqrGenerateBtn")}
             </Button>
           </div>
         </SheetContent>
+
       </Sheet>
 
       {/* QR Code Popup */}
