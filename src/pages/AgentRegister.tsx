@@ -640,9 +640,9 @@ const AgentRegister = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <h2 className="text-lg font-bold text-foreground">KYC Under Review</h2>
+                  <h2 className="text-lg font-bold text-foreground">{t("argKycReview")}</h2>
                   <p className="text-xs text-muted-foreground">
-                    Waiting for admin approval
+                    {t("argWaitingAdmin")}
                     <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>...</motion.span>
                   </p>
                 </div>
@@ -652,33 +652,33 @@ const AgentRegister = () => {
                   <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}>
                     <Loader2 size={14} className="text-amber-500" />
                   </motion.div>
-                  <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Pending Review</span>
+                  <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">{t("argPendingReview")}</span>
                 </div>
 
                 {/* Elapsed time */}
                 <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                   <Clock size={12} />
-                  <span>Elapsed: {formatElapsed(waitingElapsed)}</span>
+                  <span>{t("argElapsed")} {formatElapsed(waitingElapsed)}</span>
                 </div>
 
                 {/* Customer info summary */}
                 <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-left">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Name</span>
+                    <span className="text-muted-foreground">{t("argName")}</span>
                     <span className="font-semibold text-foreground">{name}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Phone</span>
+                    <span className="text-muted-foreground">{t("argPhone")}</span>
                     <span className="font-semibold text-foreground">+88{phone}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Status</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">PENDING</span>
+                    <span className="text-muted-foreground">{t("argStatus")}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">{t("argPending")}</span>
                   </div>
                 </div>
 
                 <p className="text-[10px] text-muted-foreground">
-                  This page updates automatically when admin reviews the KYC
+                  {t("argAutoUpdate")}
                 </p>
               </Card>
             </motion.div>
