@@ -848,8 +848,8 @@ const MerchantDashboard = () => {
                       <item.icon size={18} className={activeTab === item.id ? "text-primary" : "text-muted-foreground"} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-bold ${activeTab === item.id ? "text-primary" : "text-foreground"}`}>{item.label}</p>
-                      <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                      <p className={`text-xs font-bold ${activeTab === item.id ? "text-primary" : "text-foreground"}`}>{t(item.labelKey as any)}</p>
+                      <p className="text-[10px] text-muted-foreground">{t(item.descKey as any)}</p>
                     </div>
                     <ChevronRight size={14} className="text-muted-foreground" />
                   </button>
