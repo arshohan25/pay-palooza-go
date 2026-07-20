@@ -618,7 +618,7 @@ function DpsPlanDetailsSheet({
                             <div className="min-w-0">
                               <div className="text-sm font-semibold text-foreground leading-tight">
                                 {b.label}
-                                {h.triggered_by === "manual" && <span className="ml-1.5 text-[9px] font-medium text-muted-foreground uppercase tracking-wide">Manual</span>}
+                                {h.triggered_by === "manual" && <span className="ml-1.5 text-[9px] font-medium text-muted-foreground uppercase tracking-wide">{t("savManual")}</span>}
                               </div>
                               {h.tx_reference && (
                                 <div className="text-[10px] text-muted-foreground truncate mt-0.5 font-mono">
