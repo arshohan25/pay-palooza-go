@@ -706,6 +706,7 @@ const AgentDashboard = () => {
 
 /* ── Notification Panel ── */
 const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[]; systemAlerts: { id: string; text: string; time: string }[]; onClose: () => void; onViewTxn: (tx: any) => void }>(({ notifications, systemAlerts, onClose, onViewTxn }, ref) => {
+  const { t } = useI18n();
   const getTxnIcon = (type: string) => {
     switch (type) {
       case "cashin": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
@@ -721,27 +722,28 @@ const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[
       <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 340, damping: 34 }} className="fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm z-[71] bg-card shadow-float overflow-y-auto">
         <div className="px-5 py-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-extrabold text-foreground">Notifications</h3>
+            <h3 className="text-base font-extrabold text-foreground">{t("agdNotifications")}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground"><X size={15} /></button>
           </div>
           {systemAlerts.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">System Alerts</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t("agdSystemAlerts")}</p>
               {systemAlerts.map(a => (
                 <Card key={a.id} className="p-3 border-0 shadow-card rounded-xl bg-destructive/5 border-l-2 border-l-destructive">
                   <p className="text-xs font-semibold text-foreground">{a.text}</p>
-                  <p className="text-[9px] text-muted-foreground mt-1">Just now</p>
+                  <p className="text-[9px] text-muted-foreground mt-1">{t("agdJustNow")}</p>
                 </Card>
               ))}
             </div>
           )}
           <div className="space-y-2">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Transactions</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t("agdTransactions")}</p>
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center py-10 text-muted-foreground">
                 <Bell size={28} className="mb-2 opacity-40" />
-                <p className="text-xs">No new notifications</p>
+                <p className="text-xs">{t("agdNoNewNotifs")}</p>
               </div>
+
             ) : (
               notifications.slice(0, 20).map(n => {
                 const displayType = getAgentDisplayType(n);
