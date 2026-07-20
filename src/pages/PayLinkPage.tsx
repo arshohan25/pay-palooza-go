@@ -248,12 +248,12 @@ const PayLinkPage = () => {
 
   const statusPill = () => {
     const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
-      active: { label: "Active", cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> },
-      processing: { label: "Processing", cls: "bg-amber-500/10 text-amber-600 border-amber-500/30", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
-      paid: { label: "Paid", cls: "bg-primary/10 text-primary border-primary/30", icon: <CheckCircle2 className="w-3 h-3" /> },
-      expired: { label: "Expired", cls: "bg-muted text-muted-foreground border-border", icon: <XCircle className="w-3 h-3" /> },
-      exhausted: { label: "Fully paid", cls: "bg-primary/10 text-primary border-primary/30", icon: <CheckCircle2 className="w-3 h-3" /> },
-      inactive: { label: "Inactive", cls: "bg-muted text-muted-foreground border-border", icon: <XCircle className="w-3 h-3" /> },
+      active: { label: t("plStatusActive"), cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> },
+      processing: { label: t("plStatusProcessing"), cls: "bg-amber-500/10 text-amber-600 border-amber-500/30", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+      paid: { label: t("plStatusPaid"), cls: "bg-primary/10 text-primary border-primary/30", icon: <CheckCircle2 className="w-3 h-3" /> },
+      expired: { label: t("plStatusExpired"), cls: "bg-muted text-muted-foreground border-border", icon: <XCircle className="w-3 h-3" /> },
+      exhausted: { label: t("plStatusFullyPaid"), cls: "bg-primary/10 text-primary border-primary/30", icon: <CheckCircle2 className="w-3 h-3" /> },
+      inactive: { label: t("plStatusInactive"), cls: "bg-muted text-muted-foreground border-border", icon: <XCircle className="w-3 h-3" /> },
     };
     const cfg = map[status] ?? map.inactive;
     return (
