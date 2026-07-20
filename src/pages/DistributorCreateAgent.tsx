@@ -162,51 +162,51 @@ const DistributorCreateAgent = () => {
             <Card className="p-5 border-0 shadow-elevated rounded-2xl space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <Shield size={14} className="text-primary" />
-                <p className="text-xs font-semibold text-foreground">Agent Registration</p>
+                <p className="text-xs font-semibold text-foreground">{t("distCASectionTitle")}</p>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Phone Number *</Label>
+                <Label className="text-xs font-semibold">{t("distCAPhone")}</Label>
                 <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 mt-1 ${phoneValidation.inputClassName}`} />
                 {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Full Name *</Label>
-                <Input placeholder="Agent's full name" value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-11 mt-1" />
+                <Label className="text-xs font-semibold">{t("distCAFullName")}</Label>
+                <Input placeholder={t("distCAFullNamePh")} value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-11 mt-1" />
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Business Name</Label>
-                <Input placeholder="Shop or business name" value={businessName} onChange={e => setBusinessName(e.target.value)} className="rounded-xl h-11 mt-1" />
+                <Label className="text-xs font-semibold">{t("distCABusinessName")}</Label>
+                <Input placeholder={t("distCABusinessNamePh")} value={businessName} onChange={e => setBusinessName(e.target.value)} className="rounded-xl h-11 mt-1" />
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">NID Number</Label>
-                <Input type="text" inputMode="numeric" placeholder="NID" value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
+                <Label className="text-xs font-semibold">{t("distCANid")}</Label>
+                <Input type="text" inputMode="numeric" placeholder={t("distCANidPh")} value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Location *</Label>
-                <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
+                <Label className="text-xs font-semibold">{t("distCALocation")}</Label>
+                <p className="text-[10px] text-muted-foreground">{t("distCALocHint")}</p>
                 <DivisionDistrictUpazilaPicker value={location} onChange={setLocation} required showLabels={false} />
                 <LocationMismatchAlert mismatch={locError} />
-                <p className="text-[10px] text-muted-foreground">Route code (RR) is auto-derived from the district for the agent's wallet ID.</p>
+                <p className="text-[10px] text-muted-foreground">{t("distCARouteHint")}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs font-semibold">Trade License</Label>
-                  <Input placeholder="License #" value={tradeLicense} onChange={e => setTradeLicense(e.target.value)} className="rounded-xl h-11 mt-1" />
+                  <Label className="text-xs font-semibold">{t("distCATradeLicense")}</Label>
+                  <Input placeholder={t("distCATradeLicensePh")} value={tradeLicense} onChange={e => setTradeLicense(e.target.value)} className="rounded-xl h-11 mt-1" />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">Max Float (৳)</Label>
+                  <Label className="text-xs font-semibold">{t("distCAMaxFloat")}</Label>
                   <Input type="text" inputMode="numeric" placeholder="500000" value={maxFloat} onChange={e => setMaxFloat(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
                 </div>
               </div>
 
               <Button onClick={handleCreate} disabled={!phoneValidation.isValid || !name || processing || !location.division || !location.district || !location.upazila} className="w-full rounded-xl h-11 text-sm font-bold text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
-                {processing ? "Creating Agent…" : "Create Agent Account"}
+                {processing ? t("distCASubmitting") : t("distCASubmit")}
               </Button>
             </Card>
           </motion.div>
