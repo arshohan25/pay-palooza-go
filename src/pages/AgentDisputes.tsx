@@ -68,16 +68,17 @@ const StatusPill = ({ s }: { s: DisputeStatus }) => {
 };
 
 const Timeline = ({ d }: { d: Dispute }) => {
+  const { t } = useI18n();
   const submittedAt = d.created_at;
   const reviewingAt = d.status === "under_review" || d.status === "resolved" || d.status === "rejected" ? d.updated_at : null;
   const closedAt = d.status === "resolved" || d.status === "rejected" ? (d.resolved_at ?? d.updated_at) : null;
 
   const steps = [
-    { key: "submitted", label: "Submitted", at: submittedAt, done: true, icon: FileCheck2 },
-    { key: "review", label: "Under review", at: reviewingAt, done: !!reviewingAt, icon: Search },
+    { key: "submitted", label: t("agDispStOpen"), at: submittedAt, done: true, icon: FileCheck2 },
+    { key: "review", label: t("agDispStReview"), at: reviewingAt, done: !!reviewingAt, icon: Search },
     {
       key: "closed",
-      label: d.status === "rejected" ? "Rejected" : "Resolved",
+      label: d.status === "rejected" ? t("agDispStRejected") : t("agDispStResolved"),
       at: closedAt,
       done: !!closedAt,
       icon: d.status === "rejected" ? XCircle : CheckCircle2,
@@ -110,8 +111,13 @@ const Timeline = ({ d }: { d: Dispute }) => {
 const AgentDisputes = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const { t } = useI18n();
   const { toast } = useToast();
   const { transactions } = useTransactions();
+  const subjectLabel = (key: string) => {
+    const found = SUBJECT_KEYS.find(s => s.key === key);
+    return found ? t(found.i18n) : key;
+  };
 
   const [rows, setRows] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(false);
