@@ -2834,7 +2834,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
 
                 {selectedTx.balance_after !== null && (
                   <div className="text-center text-[11px] text-muted-foreground">
-                    Balance after: <span className="font-bold text-foreground">৳{fmt(selectedTx.balance_after)}</span>
+                    {t("mhBalanceAfter")} <span className="font-bold text-foreground">৳{fmt(selectedTx.balance_after)}</span>
                   </div>
                 )}
               </div>
