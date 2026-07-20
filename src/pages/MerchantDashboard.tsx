@@ -1600,11 +1600,11 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
                 className="w-full gap-2 text-xs font-bold"
                 onClick={() => {
                   navigator.clipboard.writeText(generatedQrLink).then(() => {
-                    toast({ title: "Link copied!", description: "Payment link copied to clipboard." });
+                    toast({ title: t("mqrLinkCopied"), description: t("mqrLinkCopiedDesc") });
                   }).catch(() => {});
                 }}
               >
-                <Copy size={13} /> Copy Payment Link
+                <Copy size={13} /> {t("mqrCopyLinkBtn")}
               </Button>
 
               {/* Open in new tab */}
@@ -1614,8 +1614,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
                 className="w-full gap-2 text-xs text-muted-foreground"
                 onClick={() => window.open(generatedQrLink, "_blank")}
               >
-                <ExternalLink size={13} /> Open in New Tab
+                <ExternalLink size={13} /> {t("mqrOpenNewTab")}
               </Button>
+
             </motion.div>
           </motion.div>
         )}
