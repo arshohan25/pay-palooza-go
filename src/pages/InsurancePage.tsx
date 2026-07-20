@@ -86,7 +86,7 @@ const InsurancePage = () => {
       const { error } = await supabase.from("insurance_policies").insert({
         user_id: user.id,
         plan_type: category,
-        plan_name: t(plan.nameKey, "en" as any) ?? plan.id,
+        plan_name: EN_PLAN_NAMES[plan.id] ?? plan.id,
         coverage_amount: plan.coverage,
         premium: plan.premium,
         duration_months: plan.duration,
