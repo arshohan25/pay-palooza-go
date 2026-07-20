@@ -265,14 +265,14 @@ const AgentBankTransfer = () => {
                 </div>
 
                 <div>
-                  <Label className="text-xs font-semibold">Amount (৳)</Label>
+                  <Label className="text-xs font-semibold">{t("agComAmountLbl")} (৳)</Label>
                   <Input
-                    type="text" inputMode="numeric" placeholder="Enter amount"
+                    type="text" inputMode="numeric" placeholder={t("agComEnterAmt")}
                     value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))}
                     className="rounded-xl h-12 mt-1 text-lg font-bold"
                   />
                   {mode === "send" && fee > 0 && (
-                    <p className="text-[10px] text-muted-foreground mt-1.5">Fee: ৳{fmt(fee)} ({getFeeLabel("banktransfer")})</p>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">{t("agComFee")}: ৳{fmt(fee)} ({getFeeLabel("banktransfer")})</p>
                   )}
                 </div>
 
@@ -289,7 +289,7 @@ const AgentBankTransfer = () => {
                     onClick={() => setStep("pin")}
                     className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in"
                   >
-                    Continue
+                    {t("agComContinue")}
                   </Button>
                 )}
               </Card>
@@ -305,9 +305,9 @@ const AgentBankTransfer = () => {
                     <ShieldCheck size={32} className="text-primary" />
                   </div>
                   <div className="text-center space-y-1">
-                    <h2 className="text-lg font-bold text-foreground">Enter Your PIN</h2>
+                    <h2 className="text-lg font-bold text-foreground">{t("agBtEnterYourPin")}</h2>
                     <p className="text-sm text-muted-foreground">
-                      Confirm {mode === "send" ? "transfer" : "deposit"} of ৳{fmt(Number(amount) + fee)}
+                      {(mode === "send" ? t("agBtConfirmTransfer") : t("agBtConfirmDeposit")).replace("{amount}", fmt(Number(amount) + fee))}
                     </p>
                   </div>
                   <div className="flex gap-3">
