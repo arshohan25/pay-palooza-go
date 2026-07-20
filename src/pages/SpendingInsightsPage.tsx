@@ -185,7 +185,8 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
       months.push({ key: getMonthKey(d), label: getMonthLabel(d, t) });
     }
     return months;
-  }, [dateRange]);
+  }, [dateRange, t]);
+
 
   const currentMonthKey = monthsMeta[monthsMeta.length - 1]?.key ?? "";
   const prevMonthKey = monthsMeta.length >= 2 ? monthsMeta[monthsMeta.length - 2].key : null;
