@@ -849,7 +849,7 @@ const MerchantDashboard = () => {
                 <div className="p-3 rounded-xl bg-muted/30 text-center">
                   <p className="text-[10px] text-muted-foreground">
                     <Store size={12} className="inline mr-1" />
-                    {merchant?.business_name || "Merchant"} · {merchant?.category || "retail"}
+                    {((lang === "bn" && merchant?.business_name_bn) ? merchant.business_name_bn : (merchant?.business_name || "Merchant"))} · {lang === "bn" ? bnCategoryLabel(merchant?.category, t("mdCategoryRetail")) : (merchant?.category || "retail")}
                   </p>
                 </div>
               </div>
