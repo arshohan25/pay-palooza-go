@@ -239,7 +239,7 @@ const AgentLoginPage = () => {
             {finalizing && (
               <p className="mt-3 text-center text-[12px] text-white/70 flex items-center justify-center gap-2">
                 <Loader2 size={13} className="animate-spin" />
-                Trusting this device…
+                {t("alpTrustingDevice")}
               </p>
             )}
           </motion.div>
