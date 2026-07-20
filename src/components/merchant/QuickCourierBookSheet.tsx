@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Truck, Loader2, Package, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 
 const COURIERS = ["Pathao", "Steadfast", "RedX", "Sundarban", "Paperfly", "eCourier", "Other"];
 
@@ -28,6 +29,8 @@ interface CourierStat { provider: string; shipped: number; delivered: number; av
  */
 export default function QuickCourierBookSheet({ orderId, orderNum, items, open, onOpenChange, onBooked, merchantId }: Props) {
   const { toast } = useToast();
+  const { t, lang } = useI18n();
+  const fmt = (n: number) => n.toLocaleString(lang === "bn" ? "bn-BD" : "en-US");
   const [courier, setCourier] = useState("Pathao");
   const [tracking, setTracking] = useState("");
   const [busy, setBusy] = useState(false);
