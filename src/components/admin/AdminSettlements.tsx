@@ -67,6 +67,8 @@ export default function AdminSettlements() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ entityType: "merchant", entityPhone: "", periodStart: "", periodEnd: "", bankName: "", bankAccount: "", notes: "" });
+  const [detail, setDetail] = useState<Settlement | null>(null);
+  const [detailSc, setDetailSc] = useState<MerchantSc | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
