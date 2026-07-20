@@ -281,28 +281,21 @@ const PaymentRequestsPage = () => {
 
 
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
-  if (!user) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Sign in to create payment requests.</div>;
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t("prLoadingDots")}</div>;
+  if (!user) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t("prSignInToCreate")}</div>;
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Seo title="Payment Requests" description="Create shareable payment request links and track their status." path="/payment-requests" />
-      <FlowHeader title="Payment Requests" tagline="Share a link to get paid" />
+      <Seo title={t("prSeoTitle")} description={t("prSeoDesc")} path="/payment-requests" />
+      <FlowHeader title={t("prSeoTitle")} tagline={t("prTagline")} />
 
       <div className="max-w-md mx-auto px-4 pt-4 space-y-6">
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-4 text-xs text-muted-foreground space-y-1">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <span aria-hidden>🤖</span> Agent tools (MCP)
+              <span aria-hidden>🤖</span> {t("prAgentToolsTitle")}
             </div>
-            <p>
-              The <strong>create request</strong> form below and the live status list share the same
-              operations exposed to AI assistants over MCP:
-              <code className="mx-1">create_payment_request</code>,
-              <code className="mx-1">get_payment_status</code>,
-              <code className="mx-1">list_payment_requests</code>. Anything created here — or via an
-              assistant — appears here in real time.
-            </p>
+            <p>{t("prAgentToolsBody")}</p>
           </CardContent>
         </Card>
 
