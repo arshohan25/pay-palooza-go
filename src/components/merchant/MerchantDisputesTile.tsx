@@ -9,7 +9,7 @@ export default function MerchantDisputesTile({ merchantId, onOpen }: { merchantI
 
   const load = useCallback(async () => {
     // Find transactions belonging to this merchant, then count linked disputes.
-    const { data: txns } = await supabase
+    const { data: txns } = await (supabase as any)
       .from("transactions")
       .select("id")
       .eq("merchant_id", merchantId)
