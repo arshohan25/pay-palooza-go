@@ -383,12 +383,12 @@ export default function InstallmentJourneyPage() {
           .eq("id", plan.id);
         if (error) throw error;
       }
-      toast.success(actionSheet === "installment" ? "Installment recorded" : "Deposit added");
+      toast.success(actionSheet === "installment" ? t("ijInstallmentRecorded") : t("ijDepositAdded"));
       setActionSheet(null);
       setAmt("");
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Something went wrong");
+      toast.error(e?.message ?? t("ijSomethingWrong"));
     } finally {
       setSubmitting(false);
     }
