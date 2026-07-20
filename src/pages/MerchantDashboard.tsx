@@ -88,6 +88,7 @@ type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "se
 interface MerchantInfo {
   id: string;
   business_name: string;
+  business_name_bn?: string | null;
   category: string;
   status: string;
   mdr_rate: number;
