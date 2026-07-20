@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Lock, User, Eye, EyeOff, ShieldCheck, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as AuthUser } from "@supabase/supabase-js";
+import { useI18n } from "@/lib/i18n";
 
 const TEAM_ROLES = ["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"];
 
@@ -35,6 +36,7 @@ async function getRedirectByRole(user: AuthUser): Promise<string> {
 
 export default function TeamLoginPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -96,11 +98,11 @@ export default function TeamLoginPage() {
         }
       }
 
-      toast.success("Welcome back!");
+      toast.success(t("tlpWelcomeBack"));
       setShow2fa(false);
       await proceedToRedirect();
     } catch (err: any) {
-      toast.error(err.message || "Invalid or expired code");
+      toast.error(err.message || t("tlpInvalidCode"));
       setOtpCode("");
     }
     setVerifying2fa(false);
@@ -118,7 +120,7 @@ export default function TeamLoginPage() {
       if (result?.error) throw new Error(result.error);
       setPreAuthToken(result.preAuthToken);
       setTeamEmail(result.emailMasked);
-      toast.info("New code sent");
+      toast.info(t("tlpNewCodeSent"));
       setResendCooldown(30);
       const interval = setInterval(() => {
         setResendCooldown(prev => {
@@ -127,14 +129,14 @@ export default function TeamLoginPage() {
         });
       }, 1000);
     } catch (err: any) {
-      toast.error(err.message || "Failed to resend code");
+      toast.error(err.message || t("tlpResendFailed"));
     }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      toast.error("Please enter both username and password");
+      toast.error(t("tlpEnterBoth"));
       return;
     }
     setLoading(true);
@@ -147,25 +149,25 @@ export default function TeamLoginPage() {
       if (error) throw error;
       const result = typeof data === "string" ? JSON.parse(data) : data;
       if (result?.error) throw new Error(result.error);
-      if (!result?.preAuthToken) throw new Error("Login failed");
+      if (!result?.preAuthToken) throw new Error(t("tlpLoginFailed"));
 
       setPreAuthToken(result.preAuthToken);
       setTeamEmail(result.emailMasked || "");
       setShow2fa(true);
-      toast.info(`Verification code sent to ${result.emailMasked || "your email"}`);
+      toast.info(`${t("tlpCodeSentToEmail")} ${result.emailMasked || t("tlpYourEmail")}`);
     } catch (err: any) {
-      toast.error(err.message || "Invalid credentials");
+      toast.error(err.message || t("tlpInvalidCreds"));
     }
     setLoading(false);
   };
 
   const handlePasswordChange = async () => {
     if (newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error(t("tlpPwdMin8"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match");
+      toast.error(t("tlpPwdNoMatch"));
       return;
     }
     setChangingPassword(true);
@@ -183,11 +185,11 @@ export default function TeamLoginPage() {
           .eq("user_id", user.id);
       }
 
-      toast.success("Password changed successfully!");
+      toast.success(t("tlpPwdChanged"));
       setShowPasswordChange(false);
       await proceedToRedirect();
     } catch (err: any) {
-      toast.error(err.message || "Failed to change password");
+      toast.error(err.message || t("tlpPwdChangeFailed"));
     }
     setChangingPassword(false);
   };
@@ -199,8 +201,8 @@ export default function TeamLoginPage() {
         <div className="flex flex-col items-center gap-3">
           <img src="/icons/easypay-logo.webp" alt="EasyPay" className="w-16 h-16 rounded-2xl" />
           <div className="text-center">
-            <h1 className="text-xl font-bold text-foreground">Team Login</h1>
-            <p className="text-sm text-muted-foreground">Sign in with your team credentials</p>
+            <h1 className="text-xl font-bold text-foreground">{t("tlpTitle")}</h1>
+            <p className="text-sm text-muted-foreground">{t("tlpSubtitle")}</p>
           </div>
         </div>
 
@@ -208,7 +210,7 @@ export default function TeamLoginPage() {
           <CardContent className="pt-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">{t("tlpUsername")}</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -223,7 +225,7 @@ export default function TeamLoginPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("tlpPassword")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -238,14 +240,14 @@ export default function TeamLoginPage() {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? t("tlpSigningIn") : t("tlpSignIn")}
               </Button>
             </form>
           </CardContent>
         </Card>
 
         <p className="text-xs text-center text-muted-foreground">
-          Contact your administrator if you need credentials.
+          {t("tlpContactAdmin")}
         </p>
       </div>
 
@@ -255,21 +257,21 @@ export default function TeamLoginPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-primary" />
-              Change Your Password
+              {t("tlpChangePassword")}
             </DialogTitle>
             <DialogDescription>
-              For security, you must change your temporary password before continuing.
+              {t("tlpChangePasswordDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <Label htmlFor="new-password">{t("tlpNewPassword")}</Label>
               <div className="relative">
                 <Input
                   id="new-password"
                   type={showNew ? "text" : "password"}
-                  placeholder="Min 8 characters"
+                  placeholder={t("tlpNewPwdPlaceholder")}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="pr-10"
@@ -283,17 +285,17 @@ export default function TeamLoginPage() {
                 </button>
               </div>
               {newPassword.length > 0 && newPassword.length < 8 && (
-                <p className="text-xs text-destructive">Must be at least 8 characters</p>
+                <p className="text-xs text-destructive">{t("tlpMin8")}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Label htmlFor="confirm-password">{t("tlpConfirmPassword")}</Label>
               <div className="relative">
                 <Input
                   id="confirm-password"
                   type={showConfirm ? "text" : "password"}
-                  placeholder="Re-enter password"
+                  placeholder={t("tlpConfirmPlaceholder")}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pr-10"
@@ -307,7 +309,7 @@ export default function TeamLoginPage() {
                 </button>
               </div>
               {confirmPassword.length > 0 && newPassword !== confirmPassword && (
-                <p className="text-xs text-destructive">Passwords do not match</p>
+                <p className="text-xs text-destructive">{t("tlpNoMatch")}</p>
               )}
             </div>
           </div>
@@ -318,7 +320,7 @@ export default function TeamLoginPage() {
               disabled={changingPassword || newPassword.length < 8 || newPassword !== confirmPassword}
               className="w-full"
             >
-              {changingPassword ? "Changing..." : "Change Password & Continue"}
+              {changingPassword ? t("tlpChanging") : t("tlpChangeContinue")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -330,10 +332,10 @@ export default function TeamLoginPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MailCheck className="w-5 h-5 text-primary" />
-              Two-Factor Authentication
+              {t("tlp2fa")}
             </DialogTitle>
             <DialogDescription>
-              Enter the 6-digit code sent to <strong>{teamEmail}</strong>
+              {t("tlp2faDescBefore")} <strong>{teamEmail}</strong>
             </DialogDescription>
           </DialogHeader>
 
@@ -360,7 +362,7 @@ export default function TeamLoginPage() {
               disabled={resendCooldown > 0}
               onClick={resendOtp}
             >
-              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+              {resendCooldown > 0 ? `${t("tlpResendIn")} ${resendCooldown}s` : t("tlpResendCode")}
             </button>
           </div>
 
@@ -370,7 +372,7 @@ export default function TeamLoginPage() {
               disabled={verifying2fa || otpCode.length !== 6}
               className="w-full"
             >
-              {verifying2fa ? "Verifying..." : "Verify & Continue"}
+              {verifying2fa ? t("tlpVerifying") : t("tlpVerifyContinue")}
             </Button>
           </DialogFooter>
         </DialogContent>
