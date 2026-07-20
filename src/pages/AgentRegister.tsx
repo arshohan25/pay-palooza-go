@@ -210,9 +210,7 @@ const AgentRegister = () => {
         const kind: "invalid" | "expired" = raw.includes("expired") || raw.includes("no pending") ? "expired" : "invalid";
         setOtpError({
           kind,
-          message: kind === "expired"
-            ? "This code has expired. Tap Resend to get a new one."
-            : "Incorrect code. Please double-check and try again.",
+          message: kind === "expired" ? t("argOtpExpired") : t("argOtpInvalid"),
         });
         setOtpAttempts(a => a + 1);
         setOtpValue("");
