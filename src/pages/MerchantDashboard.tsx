@@ -828,7 +828,7 @@ const MerchantDashboard = () => {
               className="fixed top-0 right-0 bottom-0 z-50 w-72 bg-card shadow-2xl flex flex-col"
             >
               <div className="flex items-center justify-between p-4 border-b border-border/50">
-                <h3 className="text-sm font-bold text-foreground">More Options</h3>
+                <h3 className="text-sm font-bold text-foreground">{t("mdMoreOptions")}</h3>
                 <button onClick={() => setShowMenu(false)} className="tap-target w-9 h-9 rounded-xl bg-muted/50 flex items-center justify-center">
                   <X size={16} className="text-muted-foreground" />
                 </button>
