@@ -199,15 +199,15 @@ const AgentB2B = () => {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="p-5 border-0 shadow-elevated rounded-2xl space-y-4">
               <div className="grid grid-cols-2 gap-2">
-                {(["agent", "distributor"] as const).map(t => (
-                  <button key={t} onClick={() => setTransferType(t)} className={`py-3 rounded-xl text-xs font-bold transition-all ${transferType === t ? "bg-primary/10 text-primary ring-1 ring-primary/20" : "bg-muted text-muted-foreground"}`}>
-                    {t === "agent" ? (useI18n as any) && "" : ""}{t === "agent" ? "🏪 " : "🏢 "}{t === "agent" ? "Agent" : "Distributor"}
+                {(["agent", "distributor"] as const).map(tp => (
+                  <button key={tp} onClick={() => setTransferType(tp)} className={`py-3 rounded-xl text-xs font-bold transition-all ${transferType === tp ? "bg-primary/10 text-primary ring-1 ring-primary/20" : "bg-muted text-muted-foreground"}`}>
+                    {tp === "agent" ? t("agB2bAgent") : t("agB2bDistributor")}
                   </button>
                 ))}
               </div>
               {transferType === "distributor" ? (
                 <div>
-                  <Label className="text-xs font-semibold">Linked Distributor</Label>
+                  <Label className="text-xs font-semibold">{t("agB2bLinkedDist")}</Label>
                   {loadingDistributor ? (
                     <div className="mt-1 p-3 bg-muted rounded-xl animate-pulse h-14" />
                   ) : distributorInfo ? (
@@ -219,13 +219,13 @@ const AgentB2B = () => {
                     </div>
                   ) : (
                     <div className="mt-1 p-3 bg-destructive/5 rounded-xl border border-destructive/20">
-                      <p className="text-xs text-destructive font-medium">No distributor linked to your agent account.</p>
+                      <p className="text-xs text-destructive font-medium">{t("agB2bNoDist")}</p>
                     </div>
                   )}
                 </div>
               ) : (
                 <div>
-                  <Label className="text-xs font-semibold">Agent Phone</Label>
+                  <Label className="text-xs font-semibold">{t("agB2bAgentPhone")}</Label>
                   <div className="relative mt-1">
                     <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, "")); setResolvedName(""); }} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
                     <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
@@ -237,13 +237,13 @@ const AgentB2B = () => {
                 </div>
               )}
               <div>
-                <Label className="text-xs font-semibold">Amount (৳)</Label>
-                <Input type="text" inputMode="numeric" placeholder="Enter amount" value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
+                <Label className="text-xs font-semibold">{t("agComAmountLbl")}</Label>
+                <Input type="text" inputMode="numeric" placeholder={t("agComEnterAmt")} value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Note (Optional)</Label>
-                <Input placeholder="e.g. Float repayment" value={note} onChange={e => setNote(e.target.value)} maxLength={50} className="rounded-xl h-11 mt-1" />
+                <Label className="text-xs font-semibold">{t("agComNote")}</Label>
+                <Input placeholder={t("agB2bNotePh")} value={note} onChange={e => setNote(e.target.value)} maxLength={50} className="rounded-xl h-11 mt-1" />
               </div>
               <div className="flex gap-2 flex-wrap">
                 {[5000, 10000, 25000, 50000].map(a => (
@@ -251,7 +251,7 @@ const AgentB2B = () => {
                 ))}
               </div>
               {((transferType === "agent" ? phoneValidation.isValid : !!distributorInfo) && !!amount && Number(amount) >= 10) && (
-                <Button onClick={() => { if (transferType === "agent" && phoneValidation.triggerShake()) return; setStep("confirm"); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in">Continue</Button>
+                <Button onClick={() => { if (transferType === "agent" && phoneValidation.triggerShake()) return; setStep("confirm"); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in">{t("agComContinue")}</Button>
               )}
             </Card>
           </motion.div>
@@ -260,7 +260,7 @@ const AgentB2B = () => {
       <QrScannerModal
         open={showQr}
         onClose={() => setShowQr(false)}
-        title={`Scan ${transferType === "agent" ? "Agent" : "Distributor"} QR`}
+        title={t("agB2bScanQr").replace("{type}", transferType === "agent" ? t("agB2bAgent") : t("agB2bDistributor"))}
         onScan={async (result) => {
           setShowQr(false);
           const parsed = parseQrData(result);
