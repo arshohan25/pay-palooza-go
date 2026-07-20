@@ -59,7 +59,7 @@ const AgentLoginPage = () => {
     localStorage.setItem(AGENT_LAST_PHONE_KEY, phone);
     localStorage.setItem("mfs_has_authenticated", "1");
     haptics.success();
-    toast.success("Signed in");
+    toast.success(t("alpSignedIn"));
     navigate(APP_ROLE_HOME.agent, { replace: true });
   };
 
