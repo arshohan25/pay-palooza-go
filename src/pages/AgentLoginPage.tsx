@@ -86,7 +86,7 @@ const AgentLoginPage = () => {
         const st = Array.isArray(statusRows) ? statusRows[0] : statusRows;
         if (st?.state === "expired") {
           await supabase.auth.signOut();
-          throw new Error("Your temporary PIN has expired. Please ask your admin to resend a new one.");
+          throw new Error(t("alpErrTempExpired"));
         }
       }
 
