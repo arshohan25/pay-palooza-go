@@ -88,6 +88,7 @@ type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "se
 interface MerchantInfo {
   id: string;
   business_name: string;
+  business_name_bn?: string | null;
   category: string;
   status: string;
   mdr_rate: number;
@@ -424,9 +425,17 @@ const MerchantDashboard = () => {
   // Optimistic header update when Store Settings save begins
   useEffect(() => {
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { merchantId?: string; name?: string } | undefined;
-      if (!detail?.name) return;
-      setMerchant(prev => (prev && (!detail.merchantId || prev.id === detail.merchantId) ? { ...prev, business_name: detail.name! } : prev));
+      const detail = (e as CustomEvent).detail as { merchantId?: string; name?: string; nameBn?: string | null } | undefined;
+      if (!detail?.name && detail?.nameBn === undefined) return;
+      setMerchant(prev => {
+        if (!prev) return prev;
+        if (detail.merchantId && prev.id !== detail.merchantId) return prev;
+        return {
+          ...prev,
+          ...(detail.name ? { business_name: detail.name } : {}),
+          ...(detail.nameBn !== undefined ? { business_name_bn: detail.nameBn } : {}),
+        };
+      });
     };
     window.addEventListener("merchant:business-name-preview", handler as EventListener);
     return () => window.removeEventListener("merchant:business-name-preview", handler as EventListener);
@@ -522,7 +531,7 @@ const MerchantDashboard = () => {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-extrabold tracking-tight truncate">{merchant?.business_name || "Merchant"}</h1>
+                <h1 className="text-xl font-extrabold tracking-tight truncate">{(lang === "bn" && merchant?.business_name_bn) ? merchant.business_name_bn : (merchant?.business_name || "Merchant")}</h1>
                 {kycStatus === "approved" ? (
                   <span title="KYC verified" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-emerald-400/25 border border-emerald-200/40 text-emerald-50 text-[9px] font-bold backdrop-blur-sm">
                     <BadgeCheck size={11} /> {t("mdKyc")}
@@ -840,7 +849,7 @@ const MerchantDashboard = () => {
                 <div className="p-3 rounded-xl bg-muted/30 text-center">
                   <p className="text-[10px] text-muted-foreground">
                     <Store size={12} className="inline mr-1" />
-                    {merchant?.business_name || "Merchant"} · {merchant?.category || "retail"}
+                    {((lang === "bn" && merchant?.business_name_bn) ? merchant.business_name_bn : (merchant?.business_name || "Merchant"))} · {lang === "bn" ? bnCategoryLabel(merchant?.category, t("mdCategoryRetail")) : (merchant?.category || "retail")}
                   </p>
                 </div>
               </div>

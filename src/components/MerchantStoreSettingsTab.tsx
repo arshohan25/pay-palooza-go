@@ -83,6 +83,7 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
 
   const [form, setForm] = useState({
     store_name: "",
+    store_name_bn: "",
     slug: "",
     description: "",
     logo_url: "" as string | null,
@@ -95,17 +96,18 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await (supabase as any)
-      .from("vendor_stores")
-      .select("*")
-      .eq("merchant_id", merchantId)
-      .maybeSingle();
+    const [{ data }, { data: merchRow }] = await Promise.all([
+      (supabase as any).from("vendor_stores").select("*").eq("merchant_id", merchantId).maybeSingle(),
+      (supabase as any).from("merchants").select("business_name_bn").eq("id", merchantId).maybeSingle(),
+    ]);
+    const bnName = (merchRow?.business_name_bn as string | null) || "";
 
     if (data) {
       setStore(data);
       const sl = (data.social_links || {}) as any;
       setForm({
         store_name: data.store_name || "",
+        store_name_bn: bnName,
         slug: data.slug || "",
         description: data.description || "",
         logo_url: data.logo_url,
@@ -118,7 +120,7 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
     } else {
       // Pre-fill defaults
       const defaultSlug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-      setForm(f => ({ ...f, store_name: businessName, slug: defaultSlug }));
+      setForm(f => ({ ...f, store_name: businessName, store_name_bn: bnName, slug: defaultSlug }));
     }
     setLoading(false);
   }, [merchantId, businessName]);
@@ -160,8 +162,9 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
 
     // Optimistic UI: broadcast the pending name so the dashboard header updates immediately
     const optimisticName = form.store_name.trim();
+    const optimisticNameBn = form.store_name_bn.trim() || null;
     const previousName = store?.store_name || "";
-    window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: optimisticName } }));
+    window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: optimisticName, nameBn: optimisticNameBn } }));
 
     const payload = {
       merchant_id: merchantId,
@@ -186,15 +189,15 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       ({ error } = await (supabase as any).from("vendor_stores").insert(payload));
     }
 
-    // Also sync the merchant's business_name so the dashboard header reflects
-    // the new name. Merchants cannot UPDATE public.merchants directly (admin-only
-    // RLS), so we call a scoped SECURITY DEFINER RPC that only lets the caller
-    // rename their own record.
+    // Also sync the merchant's business_name (+ optional Bangla name) so the
+    // dashboard header reflects the new name. Merchants cannot UPDATE
+    // public.merchants directly (admin-only RLS), so we call a scoped
+    // SECURITY DEFINER RPC that only lets the caller rename their own record.
     if (!error && payload.store_name) {
       const { error: mErr } = await (supabase as any)
-        .rpc("merchant_update_business_name", { p_name: payload.store_name });
+        .rpc("merchant_update_business_name", { p_name: payload.store_name, p_name_bn: optimisticNameBn });
       if (mErr) {
-        window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: previousName } }));
+        window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: previousName, nameBn: null } }));
         toast({ title: t("mssSaveFailed"), description: mErr.message, variant: "destructive" });
         setSaving(false);
         return;
@@ -260,6 +263,18 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
         <div>
           <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssStoreName")}</label>
           <Input value={form.store_name} onChange={e => setForm(f => ({ ...f, store_name: e.target.value }))} className="mt-1 rounded-xl" />
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssStoreNameBn")}</label>
+          <Input
+            value={form.store_name_bn}
+            onChange={e => setForm(f => ({ ...f, store_name_bn: e.target.value }))}
+            placeholder={t("mssStoreNameBnPh")}
+            maxLength={120}
+            className="mt-1 rounded-xl"
+            lang="bn"
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">{t("mssStoreNameBnHelp")}</p>
         </div>
         <div>
           <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssUrlSlug")}</label>
