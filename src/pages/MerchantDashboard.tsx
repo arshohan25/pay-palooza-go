@@ -1913,7 +1913,9 @@ const DEFAULT_BAND_START = "#ff6a1a";
 const DEFAULT_BAND_END = "#c02a55";
 
 const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
+  const { t } = useI18n();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
 
   const rawPayload = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
