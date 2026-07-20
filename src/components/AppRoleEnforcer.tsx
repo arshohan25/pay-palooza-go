@@ -130,7 +130,7 @@ const AppRoleEnforcer = () => {
     loggedElevatedRef.current = true;
     void supabase.auth.getUser().then(({ data }) => {
       logRoleRedirect({
-        attemptedAppRole: null,
+        attemptedAppRole: null as any,
         path,
         reason: "role_mismatch",
         isAuthenticated: true,
