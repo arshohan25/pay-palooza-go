@@ -96,7 +96,7 @@ function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[hsl(var(--shariah-gold-500)/0.18)] border border-[hsl(var(--shariah-gold-300)/0.4)]">
             <Sparkles className="w-3 h-3 text-[hsl(var(--shariah-gold-300))]" />
             <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[hsl(var(--shariah-gold-300))]">
-              Featured
+              {t("cpFeatured")}
             </span>
           </div>
           {dLeft != null && dLeft <= 7 && dLeft > 0 && (
