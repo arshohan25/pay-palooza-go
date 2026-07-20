@@ -566,9 +566,9 @@ const MerchantDashboard = () => {
                   whileTap={{ scale: 0.98 }}
                   onClick={toggleBalance}
                   className="w-fit max-w-full text-left"
-                  aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
+                  aria-label={showBalance ? t("mdHideBalance") : t("mdTapToSeeBalance")}
                 >
-                  <p className="text-[11px] font-medium text-white/60 uppercase tracking-wider">Available Balance</p>
+                  <p className="text-[11px] font-medium text-white/60 uppercase tracking-wider">{t("mdAvailableBalance")}</p>
                   <AnimatePresence mode="wait">
                     {showBalance ? (
                       <motion.p key="bal" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-3xl font-black tracking-tight mt-0.5 flex items-center gap-2">
@@ -578,7 +578,7 @@ const MerchantDashboard = () => {
                     ) : (
                       <motion.div key="hidden" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="flex items-center gap-2 mt-1.5 bg-white/10 rounded-xl px-3 py-1.5 w-fit">
                         <Eye size={13} className="opacity-80" />
-                        <span className="text-[12px] font-semibold opacity-90">Tap to see balance</span>
+                        <span className="text-[12px] font-semibold opacity-90">{t("mdTapToSeeBalance")}</span>
                       </motion.div>
                     )}
                   </AnimatePresence>
