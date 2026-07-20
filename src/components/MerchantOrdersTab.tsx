@@ -200,6 +200,19 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
                   </div>
                 )}
 
+                {/* Live courier tracking */}
+                {order.tracking_number && (
+                  <CourierTrackingTimeline
+                    orderId={order.id}
+                    courierProvider={order.courier_provider}
+                    trackingNumber={order.tracking_number}
+                    bookingRef={order.courier_booking_ref}
+                    eta={order.courier_eta}
+                  />
+                )}
+
+
+
                 {/* Action row */}
                 <div className="grid grid-cols-2 gap-2">
                   <button
