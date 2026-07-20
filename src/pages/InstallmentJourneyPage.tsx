@@ -23,6 +23,7 @@ import { useSavings, type SavingsGoal, type AutoSavePlan } from "@/hooks/use-sav
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 type Status = "paid" | "upcoming" | "due" | "overdue" | "completed";
 
