@@ -242,8 +242,8 @@ const PaymentRequestsPage = () => {
         try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
         throw new Error(msg);
       }
-      if (!data?.success) throw new Error(data?.error ?? "Refund failed");
-      toast.success(data.fully_refunded ? `Refunded ৳${data.amount}` : `Partial refund of ৳${data.amount} issued`);
+      if (!data?.success) throw new Error(data?.error ?? t("prRefundFailed"));
+      toast.success(data.fully_refunded ? `${t("prRefundedAmount")} ৳${data.amount}` : `${t("prPartialRefundIssued")} ৳${data.amount}`);
       load();
     } catch (e) {
       toast.error((e as Error).message);
