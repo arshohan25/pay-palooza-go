@@ -1279,7 +1279,7 @@ export default function AdminDashboard() {
                           wsStatus === "connected" ? "bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.9)]" : wsStatus === "connecting" ? "bg-amber-300" : "bg-red-300"
                         }`} />
                       </span>
-                      {wsStatus === "connected" ? "Live" : wsStatus === "connecting" ? "Connecting…" : "Offline"}
+                      {wsStatus === "connected" ? t("admStatusLive") : wsStatus === "connecting" ? t("admStatusConnecting") : t("admStatusOffline")}
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs space-y-1">
