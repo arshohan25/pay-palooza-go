@@ -271,9 +271,9 @@ export default function CouponDetailPage() {
 
             {/* Meta line */}
             <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-white/70 text-[11px] font-semibold">
-              {coupon.min_order_amount ? <span>Min ৳{coupon.min_order_amount}</span> : null}
+              {coupon.min_order_amount ? <span>{t("cdMinPrefix")}{coupon.min_order_amount}</span> : null}
               {coupon.min_order_amount && coupon.max_discount && isPct ? <span className="opacity-40">•</span> : null}
-              {isPct && coupon.max_discount ? <span>Up to ৳{coupon.max_discount}</span> : null}
+              {isPct && coupon.max_discount ? <span>{t("cdUpToPrefix")}{coupon.max_discount}</span> : null}
             </div>
 
             {/* Code chip (large) */}
