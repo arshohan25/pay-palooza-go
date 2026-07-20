@@ -220,7 +220,7 @@ const AgentLoginPage = () => {
                 <div className="h-12 w-full rounded-2xl bg-white/5 animate-pulse" />
                 <p className="text-center text-[12px] text-white/60 flex items-center justify-center gap-2">
                   <Loader2 size={13} className="animate-spin" />
-                  Sending verification code…
+                  {t("alpSendingCode")}
                 </p>
               </div>
             ) : (
