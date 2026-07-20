@@ -1298,7 +1298,7 @@ export default function AdminDashboard() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowActivityFeed(v => !v)}
-                title="Activity Feed"
+                title={t("admActivityFeed")}
                 className={`h-9 w-9 rounded-full border backdrop-blur-md text-primary-foreground transition-all hover:scale-105 ${showActivityFeed ? "bg-white/30 border-white/40 shadow-glow" : "bg-white/10 hover:bg-white/20 border-white/20"}`}
               >
                 <Radio className="w-4 h-4" />
