@@ -1216,6 +1216,12 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
 
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
+      {/* Today snapshot */}
+      {merchant && (
+        <motion.div variants={stagger.item}>
+          <MerchantTodaySnapshot merchantId={merchant.id} />
+        </motion.div>
+      )}
       {/* Quick Actions Grid */}
       <motion.div variants={stagger.item}>
         <div className="flex items-center justify-between mb-2.5 px-1">
