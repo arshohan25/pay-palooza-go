@@ -1634,6 +1634,38 @@ const translations = {
   mrtPinTitle: { en: "Confirm refund", bn: "রিফান্ড নিশ্চিত করুন" },
   mrtPinDesc: { en: "Enter your PIN to authorize this refund.", bn: "এই রিফান্ড অনুমোদনের জন্য আপনার পিন লিখুন।" },
 
+  // VendorApplyBanner
+  vabPendingTitle: { en: "Vendor application under review", bn: "ভেন্ডর আবেদন পর্যালোচনায়" },
+  vabPendingDesc: { en: "Admins are reviewing your EasyPay Shop upgrade. You'll be notified once approved.", bn: "অ্যাডমিন আপনার EasyPay Shop আপগ্রেড পর্যালোচনা করছেন। অনুমোদিত হলে আপনাকে জানানো হবে।" },
+  vabPendingCta: { en: "View status", bn: "স্ট্যাটাস দেখুন" },
+  vabRejectedTitle: { en: "Vendor application needs changes", bn: "ভেন্ডর আবেদনে পরিবর্তন প্রয়োজন" },
+  vabRejectedDesc: { en: "Please resolve admin feedback and resubmit.", bn: "অ্যাডমিন ফিডব্যাক সমাধান করে পুনরায় জমা দিন।" },
+  vabRejectedFeedback: { en: "Admin feedback: {note}", bn: "অ্যাডমিন ফিডব্যাক: {note}" },
+  vabRejectedCta: { en: "Resubmit", bn: "পুনরায় জমা দিন" },
+  vabDraftTitle: { en: "Finish your vendor application", bn: "আপনার ভেন্ডর আবেদন সম্পূর্ণ করুন" },
+  vabDraftDesc: { en: "Complete your EasyPay Shop upgrade to publish products and receive orders.", bn: "প্রোডাক্ট প্রকাশ ও অর্ডার নিতে আপনার EasyPay Shop আপগ্রেড সম্পূর্ণ করুন।" },
+  vabDraftCta: { en: "Continue", bn: "চালিয়ে যান" },
+  vabApplyTitle: { en: "Apply as an EasyPay Shop vendor", bn: "EasyPay Shop ভেন্ডর হিসেবে আবেদন করুন" },
+  vabApplyDesc: { en: "Products and orders unlock once your vendor upgrade is approved by admins.", bn: "অ্যাডমিন অনুমোদনের পরে প্রোডাক্ট ও অর্ডার আনলক হবে।" },
+  vabApplyCta: { en: "Apply now", bn: "এখনই আবেদন" },
+
+  // VendorAccessGate
+  vagPendingTitle: { en: "Vendor application under review", bn: "ভেন্ডর আবেদন পর্যালোচনায়" },
+  vagPendingDesc: { en: "An admin is reviewing your shop details and photos. Vendor features unlock as soon as it's approved — we'll notify you.", bn: "একজন অ্যাডমিন আপনার দোকানের বিবরণ ও ছবি পর্যালোচনা করছেন। অনুমোদিত হলেই ভেন্ডর সুবিধা আনলক হবে — আমরা আপনাকে জানাবো।" },
+  vagRejectedTitle: { en: "Vendor application was rejected", bn: "ভেন্ডর আবেদন প্রত্যাখ্যাত" },
+  vagRejectedDesc: { en: "Please review the admin feedback and resubmit updated shop photos to try again.", bn: "অ্যাডমিন ফিডব্যাক দেখে হালনাগাদ ছবিসহ পুনরায় জমা দিন।" },
+  vagNoneTitle: { en: "Vendor access required", bn: "ভেন্ডর অ্যাক্সেস প্রয়োজন" },
+  vagNoneDesc: { en: "This section is only available to approved vendors. Apply for vendor access to start selling products.", bn: "এই অংশ শুধুমাত্র অনুমোদিত ভেন্ডরদের জন্য। প্রোডাক্ট বিক্রি শুরু করতে ভেন্ডর অ্যাক্সেসের আবেদন করুন।" },
+  vagAdminFeedback: { en: "Admin feedback", bn: "অ্যাডমিন ফিডব্যাক" },
+  vagStatusSubmitted: { en: "{status} · submitted {date}", bn: "{status} · জমা {date}" },
+  vagBack: { en: "Back to Merchant", bn: "মার্চেন্টে ফিরুন" },
+  vagResubmit: { en: "Resubmit application", bn: "পুনরায় আবেদন জমা" },
+  vagView: { en: "View application", bn: "আবেদন দেখুন" },
+  vagApply: { en: "Apply now", bn: "এখনই আবেদন" },
+  vagKeepUsing: { en: "You can keep using your merchant account normally while you wait.", bn: "অপেক্ষার সময় আপনি স্বাভাবিকভাবে মার্চেন্ট অ্যাকাউন্ট ব্যবহার চালিয়ে যেতে পারেন।" },
+
+
+
 
 
   // MerchantStoreSettingsTab
