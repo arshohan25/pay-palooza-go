@@ -497,14 +497,7 @@ const MerchantDashboard = () => {
             </motion.button>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => {
-                  const next = lang === "en" ? "bn" : "en";
-                  toggleLang();
-                  toast({
-                    title: next === "bn" ? "ভাষা পরিবর্তিত" : "Language changed",
-                    description: next === "bn" ? "অ্যাপ এখন বাংলায় দেখানো হচ্ছে" : "App is now shown in English",
-                  });
-                }}
+                onClick={toggleLang}
                 className="tap-target h-10 px-3 rounded-xl glass-hero flex items-center gap-1 text-[12px] font-bold"
                 aria-label="Switch language"
                 title="Switch language"
