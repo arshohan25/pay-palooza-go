@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
+import { useI18n } from "@/lib/i18n";
 
 interface AgentRow {
   is_available: boolean;
@@ -17,20 +18,21 @@ interface AgentRow {
   address: string | null;
 }
 
-const timeAgo = (iso: string | null) => {
-  if (!iso) return "never";
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-};
-
 const AvailabilityCard = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [row, setRow] = useState<AgentRow | null>(null);
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
+
+  const timeAgo = (iso: string | null) => {
+    if (!iso) return t("avNever");
+    const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 60) return t("avSecAgo").replace("{n}", String(s));
+    if (s < 3600) return t("avMinAgo").replace("{n}", String(Math.floor(s / 60)));
+    if (s < 86400) return t("avHourAgo").replace("{n}", String(Math.floor(s / 3600)));
+    return t("avDayAgo").replace("{n}", String(Math.floor(s / 86400)));
+  };
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -47,7 +49,7 @@ const AvailabilityCard = () => {
   const toggle = async (next: boolean) => {
     if (!user?.id) return;
     if (next && (!row?.latitude || !row?.longitude)) {
-      toast.error("Set your shop location first");
+      toast.error(t("avSetLocFirst"));
       return;
     }
     haptics.light();
@@ -55,13 +57,13 @@ const AvailabilityCard = () => {
     const { error } = await (supabase as any).from("agents")
       .update({ is_available: next }).eq("user_id", user.id);
     setSaving(false);
-    if (error) { toast.error("Could not update status"); return; }
+    if (error) { toast.error(t("avCantUpdate")); return; }
     setRow(r => r ? { ...r, is_available: next } : r);
-    toast.success(next ? "You're online" : "You're offline");
+    toast.success(next ? t("avOnline") : t("avOffline"));
   };
 
   const captureLocation = () => {
-    if (!navigator.geolocation) { toast.error("Geolocation not supported"); return; }
+    if (!navigator.geolocation) { toast.error(t("avGeoUnsupported")); return; }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -72,11 +74,11 @@ const AvailabilityCard = () => {
           latitude: lat, longitude: lng, location_updated_at: new Date().toISOString(),
         }).eq("user_id", user.id);
         setLocating(false);
-        if (error) { toast.error("Could not save location"); return; }
+        if (error) { toast.error(t("avCantSaveLoc")); return; }
         setRow(r => r ? { ...r, latitude: lat, longitude: lng, location_updated_at: new Date().toISOString() } : r);
-        toast.success("Shop location saved");
+        toast.success(t("avLocSaved"));
       },
-      (err) => { setLocating(false); toast.error(err.message || "Location denied"); },
+      (err) => { setLocating(false); toast.error(err.message || t("avLocDenied")); },
       { enableHighAccuracy: true, timeout: 12000 },
     );
   };
@@ -97,10 +99,10 @@ const AvailabilityCard = () => {
           </div>
           <div>
             <p className="text-sm font-bold text-foreground">
-              {online ? "Open for customers" : "Closed"}
+              {online ? t("avOpen") : t("avClosed")}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {online ? "Visible on nearby-agent map" : "Not shown to customers"}
+              {online ? t("avVisibleMap") : t("avNotShown")}
             </p>
           </div>
         </div>
@@ -109,12 +111,12 @@ const AvailabilityCard = () => {
 
       <div className="mt-3 pt-3 border-t border-border/60 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-0.5">Shop location</p>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-0.5">{t("avShopLocation")}</p>
           <p className="text-[12px] text-foreground truncate">
-            {hasLoc ? `${row!.latitude!.toFixed(4)}, ${row!.longitude!.toFixed(4)}` : "Not set"}
+            {hasLoc ? `${row!.latitude!.toFixed(4)}, ${row!.longitude!.toFixed(4)}` : t("avNotSet")}
           </p>
           {hasLoc && (
-            <p className="text-[10px] text-muted-foreground">Updated {timeAgo(row?.location_updated_at ?? null)}</p>
+            <p className="text-[10px] text-muted-foreground">{t("avUpdatedAt").replace("{when}", timeAgo(row?.location_updated_at ?? null))}</p>
           )}
         </div>
         <Button
@@ -122,7 +124,7 @@ const AvailabilityCard = () => {
           className="rounded-xl shrink-0"
         >
           {locating ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <MapPin size={14} className="mr-1.5" />}
-          {hasLoc ? "Update" : "Set"}
+          {hasLoc ? t("avUpdate") : t("avSet")}
         </Button>
       </div>
     </motion.div>
