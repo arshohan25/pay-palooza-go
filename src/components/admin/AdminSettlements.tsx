@@ -345,7 +345,9 @@ export default function AdminSettlements() {
       </div>
 
       {/* Table */}
-      <Card>
+      <Card className="hidden md:block">
+        <CardContent className="p-0">
+          <ScrollArea className="max-h-[500px] w-full overflow-x-auto">
         <CardContent className="p-0">
           <ScrollArea className="max-h-[500px]">
             <Table>
