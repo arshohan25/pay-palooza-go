@@ -89,7 +89,7 @@ export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-accent" />
-          <span className="text-sm font-semibold">Weekly insights</span>
+          <span className="text-sm font-semibold">{t("mdWklyInsights")}</span>
         </div>
         <div className={`flex items-center gap-1 text-xs font-semibold ${up ? "text-emerald-500" : "text-rose-500"}`}>
           {up ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
@@ -98,23 +98,23 @@ export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">This week</div>
+          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("mdWklyThisWeek")}</div>
           <div className="text-lg font-bold">৳{fmt(insight.thisRev)}</div>
-          <div className="text-[11px] text-muted-foreground">{insight.thisOrders} items</div>
+          <div className="text-[11px] text-muted-foreground">{insight.thisOrders} {t("mdWklyItems")}</div>
         </div>
         <div>
-          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">Last week</div>
+          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("mdWklyLastWeek")}</div>
           <div className="text-lg font-semibold text-muted-foreground">৳{fmt(insight.lastRev)}</div>
-          <div className="text-[11px] text-muted-foreground">{insight.lastOrders} items</div>
+          <div className="text-[11px] text-muted-foreground">{insight.lastOrders} {t("mdWklyItems")}</div>
         </div>
       </div>
       {(insight.topProduct || insight.bestDay) && (
         <div className="mt-3 pt-3 border-t border-border/40 space-y-1">
           {insight.topProduct && (
-            <div className="text-xs"><span className="text-muted-foreground">Top seller: </span><span className="font-medium truncate">{insight.topProduct}</span></div>
+            <div className="text-xs"><span className="text-muted-foreground">{t("mdWklyTopSeller")}</span><span className="font-medium truncate">{insight.topProduct}</span></div>
           )}
           {insight.bestDay && (
-            <div className="text-xs"><span className="text-muted-foreground">Busiest day: </span><span className="font-medium">{insight.bestDay}</span></div>
+            <div className="text-xs"><span className="text-muted-foreground">{t("mdWklyBusiestDay")}</span><span className="font-medium">{insight.bestDay}</span></div>
           )}
         </div>
       )}
