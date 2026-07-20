@@ -318,6 +318,7 @@ export default function AdminSettlements() {
                     <TableCell className="text-xs text-muted-foreground">{s.period_start?.slice(0, 10)} → {s.period_end?.slice(0, 10)}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => openDetail(s)}>View</Button>
                         {s.status === "pending" && (
                           <>
                             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => updateStatus(s.id, "processing")}>Process</Button>
