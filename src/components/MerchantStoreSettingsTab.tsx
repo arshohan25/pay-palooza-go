@@ -141,18 +141,21 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       ({ error } = await (supabase as any).from("vendor_stores").insert(payload));
     }
 
-    // Also sync the merchant's business_name so the dashboard header reflects the new name
+    // Also sync the merchant's business_name so the dashboard header reflects
+    // the new name. Merchants cannot UPDATE public.merchants directly (admin-only
+    // RLS), so we call a scoped SECURITY DEFINER RPC that only lets the caller
+    // rename their own record.
     if (!error && payload.store_name) {
       const { error: mErr } = await (supabase as any)
-        .from("merchants")
-        .update({ business_name: payload.store_name, updated_at: new Date().toISOString() })
-        .eq("id", merchantId);
+        .rpc("merchant_update_business_name", { p_name: payload.store_name });
       if (mErr) {
+        window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: previousName } }));
         toast({ title: t("mssSaveFailed"), description: mErr.message, variant: "destructive" });
         setSaving(false);
         return;
       }
     }
+
 
     if (error) {
       // Roll back optimistic header update on failure
