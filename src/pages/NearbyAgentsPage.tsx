@@ -281,29 +281,29 @@ const NearbyAgentsPage = () => {
           {selected && (
             <div className="pt-2">
               <p className="text-base font-bold text-foreground">{selected.shop_name || selected.display_name}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{selected.address || "No address"}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{selected.address || t("naNoAddress")}</p>
               <div className="mt-3 grid grid-cols-2 gap-2 text-center">
                 <div className="rounded-xl bg-muted/60 p-2.5">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Distance</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{t("naDistance")}</p>
                   <p className="text-sm font-bold text-foreground">{selected.distance_km.toFixed(2)} km</p>
                 </div>
                 <div className="rounded-xl bg-muted/60 p-2.5">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Agent ID</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{t("naAgentId")}</p>
                   <p className="text-sm font-bold text-foreground font-mono truncate">{selected.easypay_uid || "—"}</p>
                 </div>
               </div>
               <div className="mt-3 flex gap-2">
                 <Button variant="outline" className="flex-1 rounded-xl h-11" onClick={() => copyId(selected.easypay_uid)}>
-                  <Copy size={14} className="mr-1.5" /> Copy ID
+                  <Copy size={14} className="mr-1.5" /> {t("naCopyId")}
                 </Button>
                 <Button variant="outline" className="flex-1 rounded-xl h-11"
                   onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${selected.latitude},${selected.longitude}`, "_blank")}>
-                  <Navigation size={14} className="mr-1.5" /> Directions
+                  <Navigation size={14} className="mr-1.5" /> {t("naDirections")}
                 </Button>
               </div>
               <Button className="w-full rounded-xl h-11 mt-2"
                 onClick={() => { const uid = selected.easypay_uid ?? ""; navigate(`/agent/cashout?agent=${encodeURIComponent(uid)}`); }}>
-                <ArrowDownToLine size={14} className="mr-1.5" /> Cash out here
+                <ArrowDownToLine size={14} className="mr-1.5" /> {t("naCashoutHere")}
               </Button>
             </div>
           )}
