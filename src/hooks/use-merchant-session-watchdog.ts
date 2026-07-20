@@ -53,7 +53,7 @@ export function useMerchantSessionWatchdog() {
       try { isStaff = localStorage.getItem("mfs_is_merchant_staff") === "1"; } catch {}
       // Keep the staff flag so the login pages can route the user to the manager portal.
       const loginPath = isStaff ? "/merchant-manager-login" : "/merchant-login";
-      toast.error("Your session has expired. Please sign in again.");
+      toast.error(t("mlSessionExpired"));
       navigate(
         `${loginPath}?redirect=${encodeURIComponent(redirectTarget)}`,
         { replace: true }
