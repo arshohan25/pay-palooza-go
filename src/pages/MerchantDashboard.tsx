@@ -157,28 +157,28 @@ function getMerchTxHeadline(tx: TxnRow): string {
 /* ─── Helpers ─── */
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
-const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string; toggleKey?: string }[] = [
-  { id: "overview",     icon: BarChart3,    label: "Overview" },
-  { id: "products",     icon: Package,      label: "Products",  toggleKey: "merchant_products" },
-  { id: "orders",       icon: Receipt,      label: "Orders",    toggleKey: "merchant_orders" },
+const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string; labelKey: string; toggleKey?: string }[] = [
+  { id: "overview",     icon: BarChart3,    label: "Overview", labelKey: "mdTabOverview" },
+  { id: "products",     icon: Package,      label: "Products", labelKey: "mdTabProducts", toggleKey: "merchant_products" },
+  { id: "orders",       icon: Receipt,      label: "Orders",   labelKey: "mdTabOrders",   toggleKey: "merchant_orders" },
 ];
 
-const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string; toggleKey?: string }[] = [
-  { id: "store",        icon: Store,        label: "Store Settings",   desc: "Customize your storefront",      toggleKey: "merchant_store_settings" },
-  { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers",  toggleKey: "merchant_analytics" },
-  { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions",          toggleKey: "merchant_transactions" },
-  { id: "qr",           icon: QrCode,       label: "QR Code",          desc: "Your merchant QR code",          toggleKey: "merchant_qr" },
-  { id: "api",          icon: Globe,        label: "API Integration",  desc: "API keys, webhooks & docs",      toggleKey: "merchant_api" },
-  { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links",   toggleKey: "merchant_paylinks" },
-  { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule",        toggleKey: "merchant_settlements" },
-  { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown",      toggleKey: "merchant_mdr" },
-  { id: "refunds",      icon: Undo2,        label: "Refunds",          desc: "Issue & track customer refunds", toggleKey: "merchant_refunds" },
-  { id: "staff",        icon: Users,        label: "Staff",            desc: "Manage employee access",         toggleKey: "merchant_staff" },
-  { id: "customers",    icon: Users,        label: "Customers",        desc: "Customer directory & insights",  toggleKey: "merchant_customers" },
-  { id: "broadcast",    icon: Megaphone,    label: "Broadcast",        desc: "Message your customers"                                        },
-  { id: "coupons",      icon: Ticket,       label: "Coupons",          desc: "Create store discount codes",    toggleKey: "merchant_coupons" },
-  { id: "payouts",      icon: Landmark,     label: "Payouts",          desc: "Request bank withdrawals",       toggleKey: "merchant_payouts" },
-  { id: "notifications",icon: Bell,         label: "Notifications",    desc: "Push alerts & preferences" },
+const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string; labelKey: string; descKey: string; toggleKey?: string }[] = [
+  { id: "store",        icon: Store,        label: "Store Settings",   desc: "Customize your storefront",      labelKey: "mdMenuStore",         descKey: "mdMenuStoreDesc",         toggleKey: "merchant_store_settings" },
+  { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers",  labelKey: "mdMenuAnalytics",     descKey: "mdMenuAnalyticsDesc",     toggleKey: "merchant_analytics" },
+  { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions",          labelKey: "mdMenuHistory",       descKey: "mdMenuHistoryDesc",       toggleKey: "merchant_transactions" },
+  { id: "qr",           icon: QrCode,       label: "QR Code",          desc: "Your merchant QR code",          labelKey: "mdMenuQr",            descKey: "mdMenuQrDesc",            toggleKey: "merchant_qr" },
+  { id: "api",          icon: Globe,        label: "API Integration",  desc: "API keys, webhooks & docs",      labelKey: "mdMenuApi",           descKey: "mdMenuApiDesc",           toggleKey: "merchant_api" },
+  { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links",   labelKey: "mdMenuPaylinks",      descKey: "mdMenuPaylinksDesc",      toggleKey: "merchant_paylinks" },
+  { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule",        labelKey: "mdMenuSettlement",    descKey: "mdMenuSettlementDesc",    toggleKey: "merchant_settlements" },
+  { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown",      labelKey: "mdMenuFees",          descKey: "mdMenuFeesDesc",          toggleKey: "merchant_mdr" },
+  { id: "refunds",      icon: Undo2,        label: "Refunds",          desc: "Issue & track customer refunds", labelKey: "mdMenuRefunds",       descKey: "mdMenuRefundsDesc",       toggleKey: "merchant_refunds" },
+  { id: "staff",        icon: Users,        label: "Staff",            desc: "Manage employee access",         labelKey: "mdMenuStaff",         descKey: "mdMenuStaffDesc",         toggleKey: "merchant_staff" },
+  { id: "customers",    icon: Users,        label: "Customers",        desc: "Customer directory & insights",  labelKey: "mdMenuCustomers",     descKey: "mdMenuCustomersDesc",     toggleKey: "merchant_customers" },
+  { id: "broadcast",    icon: Megaphone,    label: "Broadcast",        desc: "Message your customers",         labelKey: "mdMenuBroadcast",     descKey: "mdMenuBroadcastDesc" },
+  { id: "coupons",      icon: Ticket,       label: "Coupons",          desc: "Create store discount codes",    labelKey: "mdMenuCoupons",       descKey: "mdMenuCouponsDesc",       toggleKey: "merchant_coupons" },
+  { id: "payouts",      icon: Landmark,     label: "Payouts",          desc: "Request bank withdrawals",       labelKey: "mdMenuPayouts",       descKey: "mdMenuPayoutsDesc",       toggleKey: "merchant_payouts" },
+  { id: "notifications",icon: Bell,         label: "Notifications",    desc: "Push alerts & preferences",      labelKey: "mdMenuNotifications", descKey: "mdMenuNotificationsDesc" },
 ];
 
 const stagger = {
