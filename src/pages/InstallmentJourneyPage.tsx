@@ -332,7 +332,7 @@ export default function InstallmentJourneyPage() {
   const loadingState = loading && !goal && !plan;
   const notFound = !loadingState && !goal && !plan;
 
-  const displayName = goal?.name ?? (plan ? "DPS Plan" : "");
+  const displayName = goal?.name ?? (plan ? t("ijDpsPlan") : "");
   const emoji = goal?.emoji ?? "💼";
   const planTotalInst = Number(plan?.total_installments) || 0;
   const target = Number(
@@ -352,7 +352,7 @@ export default function InstallmentJourneyPage() {
   const tint = plan ? "from-[#0EA5E9] to-[#009688]" : "from-[#009688] to-[#2ECC71]";
   const HeaderIcon = plan ? Landmark : Target;
 
-  const primaryLabel = plan ? "Pay Installment" : "Add Deposit";
+  const primaryLabel = plan ? t("ijPayInstallment") : t("ijAddDeposit");
   const primaryKey: "deposit" | "installment" = plan ? "installment" : "deposit";
 
   async function confirmAction() {
