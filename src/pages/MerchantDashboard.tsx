@@ -2060,7 +2060,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
       <motion.div variants={stagger.item}>
-        <Card className="p-0 border-0 shadow-elevated relative overflow-hidden rounded-3xl">
+        <Card id="merchant-qr-card" className="p-0 border-0 shadow-elevated relative overflow-hidden rounded-3xl">
           {/* Premium gradient band (dynamic colors) */}
           <div className="relative px-6 pt-6 pb-4 text-center overflow-hidden"
             style={{ background: `linear-gradient(135deg, ${bandStart} 0%, ${bandEnd} 100%)` }}>
@@ -2118,22 +2118,49 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
               <Button variant="outline" className="rounded-xl h-11" onClick={async () => {
                 const shareText = `Pay ${shopName} via EasyPay. Merchant ID: ${qrPayload}`;
                 const shareUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(qrPayload)}`;
-                if (navigator.share) {
+                let file: File | null = null;
+                // Snapshot the full branded card (matches what the merchant sees)
+                try {
+                  const card = document.getElementById("merchant-qr-card");
+                  if (card) {
+                    const { default: html2canvas } = await import("html2canvas");
+                    const canvas = await html2canvas(card, { backgroundColor: "#ffffff", scale: 3, useCORS: true, logging: false });
+                    const blob: Blob | null = await new Promise((r) => canvas.toBlob((b) => r(b), "image/png", 1));
+                    if (blob) file = new File([blob], `${shopName.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "merchant"}-qr.png`, { type: "image/png" });
+                  }
+                } catch {}
+                // Fallback to raw QR if card capture failed
+                if (!file && qrDataUrl) {
                   try {
-                    const shareData: ShareData = { title: `Pay ${shopName}`, text: shareText, url: shareUrl };
-                    if (qrDataUrl) {
-                      try {
-                        const res = await fetch(qrDataUrl);
-                        const blob = await res.blob();
-                        const file = new File([blob], "payment-qr.png", { type: "image/png" });
-                        if (navigator.canShare?.({ files: [file] })) shareData.files = [file];
-                      } catch {}
-                    }
-                    await navigator.share(shareData);
+                    const res = await fetch(qrDataUrl);
+                    const blob = await res.blob();
+                    file = new File([blob], "payment-qr.png", { type: "image/png" });
                   } catch {}
-                } else {
-                  navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+                }
+                const baseData: ShareData = { title: `Pay ${shopName}`, text: shareText, url: shareUrl };
+                const withFile: ShareData = file ? { ...baseData, files: [file] } : baseData;
+                // iOS Safari: canShare must be called with the FULL payload (files+text+url together)
+                try {
+                  if (navigator.share && file && navigator.canShare?.(withFile)) {
+                    await navigator.share(withFile);
+                    return;
+                  }
+                  if (navigator.share && navigator.canShare?.(baseData)) {
+                    await navigator.share(baseData);
+                    return;
+                  }
+                  if (navigator.share) {
+                    await navigator.share(baseData);
+                    return;
+                  }
+                } catch (e: any) {
+                  if (e?.name === "AbortError") return;
+                }
+                try {
+                  await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
                   toast({ title: "Copied!", description: "Payment QR details copied to clipboard" });
+                } catch {
+                  toast({ title: "Share unavailable", description: "Sharing isn't supported on this browser.", variant: "destructive" });
                 }
               }}>
                 <Share2 size={14} className="mr-1" /> <span className="text-xs">Share</span>
