@@ -712,8 +712,9 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
                             />
                           </div>
                           <span className="text-[10px] text-muted-foreground w-12 text-right shrink-0">
-                            #{i + 1} · {m.category}
+                            #{i + 1} · {t(`siCat${m.category}` as any)}
                           </span>
+
                         </div>
                       </div>
                     </div>
