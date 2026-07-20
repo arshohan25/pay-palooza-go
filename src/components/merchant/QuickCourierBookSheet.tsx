@@ -32,6 +32,7 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
   const [tracking, setTracking] = useState("");
   const [busy, setBusy] = useState(false);
   const [existingByIdx, setExistingByIdx] = useState<Record<number, number>>({});
+  const [stats, setStats] = useState<CourierStat[] | null>(null);
 
   useEffect(() => {
     if (!open || !orderId) return;
@@ -48,6 +49,57 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
       setExistingByIdx(map);
     })();
   }, [open, orderId]);
+
+  // Smart courier scoring: pull last 90 days of merchant fulfillments,
+  // compute per-provider success rate + avg delivery time.
+  useEffect(() => {
+    if (!open || !merchantId) return;
+    (async () => {
+      const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: mOrders } = await (supabase as any)
+        .from("orders").select("id").eq("merchant_id", merchantId).gte("created_at", since).limit(1000);
+      const ids = (mOrders ?? []).map((o: any) => o.id);
+      if (ids.length === 0) { setStats([]); return; }
+      const { data: fs } = await (supabase as any)
+        .from("order_item_fulfillments")
+        .select("courier_provider, status, shipped_at, delivered_at")
+        .in("order_id", ids);
+      const agg = new Map<string, { shipped: number; delivered: number; hours: number[] }>();
+      (fs ?? []).forEach((f: any) => {
+        const p = f.courier_provider || "Other";
+        if (!agg.has(p)) agg.set(p, { shipped: 0, delivered: 0, hours: [] });
+        const a = agg.get(p)!;
+        a.shipped += 1;
+        if (f.status === "delivered" || f.delivered_at) {
+          a.delivered += 1;
+          if (f.shipped_at && f.delivered_at) {
+            a.hours.push((new Date(f.delivered_at).getTime() - new Date(f.shipped_at).getTime()) / 3600000);
+          }
+        }
+      });
+      const out: CourierStat[] = [...agg.entries()].map(([provider, a]) => {
+        const rate = a.shipped > 0 ? a.delivered / a.shipped : 0;
+        const avgHours = a.hours.length ? a.hours.reduce((s, x) => s + x, 0) / a.hours.length : null;
+        // Score: 70% success rate + 30% speed (normalized, faster = better, cap 96h)
+        const speedScore = avgHours == null ? 0.5 : Math.max(0, 1 - Math.min(avgHours, 96) / 96);
+        const score = rate * 0.7 + speedScore * 0.3;
+        return { provider, shipped: a.shipped, delivered: a.delivered, avgHours, score };
+      }).sort((a, b) => b.score - a.score);
+      setStats(out);
+    })();
+  }, [open, merchantId]);
+
+  const recommended = useMemo(() => {
+    if (!stats || stats.length === 0) return null;
+    const top = stats[0];
+    if (top.shipped < 3) return null; // need enough signal
+    return top;
+  }, [stats]);
+
+  useEffect(() => {
+    if (recommended && open) setCourier(recommended.provider);
+  }, [recommended, open]);
+
 
   const pending = items.map((it, idx) => {
     const remaining = Math.max(0, Number(it.qty || 0) - (existingByIdx[idx] || 0));
