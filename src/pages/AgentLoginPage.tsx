@@ -101,15 +101,15 @@ const AgentLoginPage = () => {
     } catch (err) {
       haptics.error();
       const raw = err instanceof Error ? err.message : String(err ?? "");
-      let msg = "Unable to sign in right now. Please try again.";
+      let msg = t("alpErrGeneric");
       if (/Failed to fetch|NetworkError|network|ECONN/i.test(raw) || !navigator.onLine) {
-        msg = "You appear to be offline. Check your connection and try again.";
+        msg = t("alpErrOffline");
       } else if (/Invalid login credentials/i.test(raw)) {
-        msg = "Incorrect phone number or PIN.";
-      } else if (/temporary PIN has expired/i.test(raw)) {
+        msg = t("alpErrIncorrect");
+      } else if (/temporary PIN has expired/i.test(raw) || raw === t("alpErrTempExpired")) {
         msg = raw;
       } else if (/rate|too many/i.test(raw)) {
-        msg = "Too many attempts. Please wait a moment and try again.";
+        msg = t("alpErrRate");
       } else if (raw) {
         msg = raw;
       }
