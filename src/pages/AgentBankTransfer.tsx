@@ -322,7 +322,7 @@ const AgentBankTransfer = () => {
                       type="password"
                       inputMode="numeric"
                       maxLength={4}
-                      placeholder="Enter 4-digit PIN"
+                      placeholder={t("agComEnterPin")}
                       value={pin}
                       onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
                       className="text-center text-lg tracking-[0.5em] rounded-xl h-12"
@@ -335,9 +335,9 @@ const AgentBankTransfer = () => {
                     onClick={handlePinSubmit}
                     disabled={processing || pin.length !== 4}
                   >
-                    {processing ? "Verifying…" : "Verify PIN"}
+                    {processing ? t("agBtVerifying") : t("agBtVerifyPin")}
                   </Button>
-                  <Button variant="ghost" onClick={() => { setStep("form"); setPin(""); setPinError(""); }} className="w-full text-muted-foreground">Back</Button>
+                  <Button variant="ghost" onClick={() => { setStep("form"); setPin(""); setPinError(""); }} className="w-full text-muted-foreground">{t("agComBack")}</Button>
                 </div>
               </Card>
             </motion.div>
@@ -348,26 +348,26 @@ const AgentBankTransfer = () => {
             <motion.div key="confirm" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
               <Card className="p-5 border-0 shadow-elevated rounded-2xl space-y-4">
                 <h3 className="text-base font-extrabold text-foreground text-center">
-                  Confirm Bank {mode === "send" ? "Transfer" : "Deposit"}
+                  {mode === "send" ? t("agBtConfirmSend") : t("agBtConfirmReceive")}
                 </h3>
                 <div className="space-y-2.5 bg-muted/50 rounded-xl p-4">
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Bank</span><span className="font-bold text-foreground">{selectedAccount.bank_name}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Account</span><span className="font-bold text-foreground">****{selectedAccount.account_number.slice(-4)}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Holder</span><span className="font-bold text-foreground">{selectedAccount.account_holder}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
-                  {fee > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">৳{fmt(fee)}</span></div>}
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agBtBank")}</span><span className="font-bold text-foreground">{selectedAccount.bank_name}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agBtAccount")}</span><span className="font-bold text-foreground">****{selectedAccount.account_number.slice(-4)}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agBtHolder")}</span><span className="font-bold text-foreground">{selectedAccount.account_holder}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComAmountLbl")}</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
+                  {fee > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComFee")}</span><span className="font-bold text-foreground">৳{fmt(fee)}</span></div>}
                   <div className="flex justify-between text-sm font-bold border-t border-border/40 pt-2">
-                    <span className="text-muted-foreground">Total</span>
+                    <span className="text-muted-foreground">{t("agComTotal")}</span>
                     <span className="text-foreground">৳{fmt(Number(amount) + fee)}</span>
                   </div>
                 </div>
                 <SlideToConfirm
                   onConfirm={handleSlideConfirm}
                   disabled={processing}
-                  label={processing ? "Processing…" : `Slide to ${mode === "send" ? "Send" : "Receive"}`}
+                  label={processing ? t("agComProcessing") : (mode === "send" ? t("agBtSlideSend") : t("agBtSlideReceive"))}
                   icon={Building2}
                 />
-                <Button variant="ghost" onClick={() => { setStep("pin"); setPin(""); setPinError(""); setPinVerified(false); }} className="w-full text-muted-foreground">Cancel</Button>
+                <Button variant="ghost" onClick={() => { setStep("pin"); setPin(""); setPinError(""); setPinVerified(false); }} className="w-full text-muted-foreground">{t("agComCancel")}</Button>
               </Card>
             </motion.div>
           )}
@@ -381,23 +381,23 @@ const AgentBankTransfer = () => {
                 </motion.div>
                 <div>
                   <p className="text-lg font-extrabold text-foreground">
-                    {mode === "send" ? "Transfer Successful" : "Deposit Successful"}
+                    {mode === "send" ? t("agBtTransferSuccess") : t("agBtDepositSuccess")}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    ৳{fmt(Number(amount))} {mode === "send" ? "sent to" : "received from"} {selectedAccount.bank_name}
+                    ৳{fmt(Number(amount))} {mode === "send" ? t("agBtSentTo") : t("agBtReceivedFrom")} {selectedAccount.bank_name}
                   </p>
                 </div>
                 {fee > 0 && (
                   <div className="bg-muted/50 rounded-xl p-3">
-                    <p className="text-[10px] text-muted-foreground">Fee charged</p>
+                    <p className="text-[10px] text-muted-foreground">{t("agBtFeeCharged")}</p>
                     <p className="text-sm font-bold text-foreground">৳{fmt(fee)}</p>
                   </div>
                 )}
                 <Button onClick={reset} className="w-full gradient-primary text-primary-foreground rounded-xl h-11">
-                  New Transfer
+                  {t("agBtNewTransfer")}
                 </Button>
                 <Button onClick={() => navigate("/agent")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2">
-                  <Home size={16} /> Back to Dashboard
+                  <Home size={16} /> {t("agComBackToDash")}
                 </Button>
               </Card>
             </motion.div>
