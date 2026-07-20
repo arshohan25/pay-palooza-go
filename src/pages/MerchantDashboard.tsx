@@ -1220,7 +1220,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const handleGenerateQR = async () => {
     const amt = parseFloat(qrAmount);
     if (!merchant || !amt || amt < 1 || amt > 1000000) {
-      toast({ title: "Invalid Amount", description: "Enter an amount between ৳1 and ৳10,00,000.", variant: "destructive" });
+      toast({ title: t("mqrInvalidAmount"), description: t("mqrInvalidAmountDesc"), variant: "destructive" });
       return;
     }
     setQrGenerateLoading(true);
