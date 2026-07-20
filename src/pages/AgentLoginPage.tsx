@@ -29,6 +29,7 @@ const AGENT_LAST_PHONE_KEY = "easypay_agent_last_phone";
  */
 const AgentLoginPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
 
