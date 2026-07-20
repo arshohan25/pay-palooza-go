@@ -14,6 +14,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Skeleton } from "@/components/ui/skeleton";
 import MerchantBulkUploadSheet from "@/components/MerchantBulkUploadSheet";
 import MerchantInventoryAlerts from "@/components/MerchantInventoryAlerts";
+import { useI18n } from "@/lib/i18n";
+
 
 interface Product {
   id: string;
@@ -61,16 +63,19 @@ const CATEGORIES = [
   "Watches", "Water", "Wedding", "Wellness", "Women's Fashion", "Woodwork", "Yoga",
 ];
 const EMOJIS = ["📦", "🎧", "⌚", "👕", "🍔", "💊", "🏠", "📱", "💻", "🎮", "☕", "🎁", "👟", "🔧", "📷", "💡", "🧴", "🎂"];
-const BADGES = [
-  { label: "None", value: "", color: "" },
-  { label: "NEW", value: "NEW", color: "#9C27B0" },
-  { label: "HOT", value: "HOT", color: "#FF5722" },
-  { label: "SALE", value: "SALE", color: "#FF9800" },
-  { label: "TOP PICK", value: "TOP PICK", color: "#00BCD4" },
+const BADGES: { labelKey: string; value: string; color: string }[] = [
+  { labelKey: "mprBadgeNone", value: "", color: "" },
+  { labelKey: "", value: "NEW", color: "#9C27B0" },
+  { labelKey: "", value: "HOT", color: "#FF5722" },
+  { labelKey: "", value: "SALE", color: "#FF9800" },
+  { labelKey: "", value: "TOP PICK", color: "#00BCD4" },
 ];
 const MAX_IMAGES = 4;
 
+
 function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useI18n();
+
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [customMode, setCustomMode] = useState(false);
@@ -97,14 +102,14 @@ function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v
         onClick={() => { setOpen(!open); setSearch(""); setCustomMode(false); }}
         className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm text-left flex items-center justify-between"
       >
-        <span className={value ? "text-foreground" : "text-muted-foreground"}>{value || "Select category"}</span>
+        <span className={value ? "text-foreground" : "text-muted-foreground"}>{value || t("mprCategorySelect")}</span>
         <Search className="w-3.5 h-3.5 text-muted-foreground" />
       </button>
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-[90] overflow-hidden">
           <div className="p-2 border-b border-border">
             <Input
-              placeholder="Search categories..."
+              placeholder={t("mprCategorySearch")}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="h-8 text-sm rounded-lg"
@@ -123,7 +128,7 @@ function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v
               </button>
             ))}
             {filtered.length === 0 && !customMode && (
-              <p className="px-3 py-2 text-xs text-muted-foreground">No match found</p>
+              <p className="px-3 py-2 text-xs text-muted-foreground">{t("mprCategoryNoMatch")}</p>
             )}
             {!customMode ? (
               <button
@@ -131,12 +136,12 @@ function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v
                 className="w-full px-3 py-2 text-sm text-left text-primary font-medium hover:bg-muted/50 border-t border-border"
                 onClick={() => { setCustomMode(true); setCustomValue(search); }}
               >
-                ＋ Add Custom Category
+                {t("mprCategoryAddCustom")}
               </button>
             ) : (
               <div className="p-2 border-t border-border flex gap-2">
                 <Input
-                  placeholder="Custom category name"
+                  placeholder={t("mprCategoryCustomPh")}
                   value={customValue}
                   onChange={e => setCustomValue(e.target.value)}
                   className="h-8 text-sm rounded-lg flex-1"
@@ -149,8 +154,9 @@ function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v
                   disabled={!customValue.trim()}
                   onClick={() => { onChange(customValue.trim()); setOpen(false); setCustomMode(false); }}
                 >
-                  Add
+                  {t("mprCategoryAdd")}
                 </Button>
+
               </div>
             )}
           </div>
@@ -201,6 +207,8 @@ const ensureVendorStore = async (merchantId: string, businessName: string) => {
 
 const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const { toast } = useToast();
+  const { t } = useI18n();
+
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -270,7 +278,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
       .upload(path, file, { contentType: file.type, upsert: false });
 
     if (error) {
-      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+      toast({ title: t("mprToastUploadFail"), description: error.message, variant: "destructive" });
       return null;
     }
 
@@ -283,12 +291,13 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast({ title: "Invalid file", description: "Please select an image file", variant: "destructive" });
+      toast({ title: t("mprToastInvalidFile"), description: t("mprToastInvalidFileDesc"), variant: "destructive" });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Max 5MB allowed", variant: "destructive" });
+      toast({ title: t("mprToastTooLarge"), description: t("mprToastTooLargeDesc"), variant: "destructive" });
       return;
+
     }
 
     setUploadingSlot(slotIndex);
@@ -334,8 +343,9 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast({ title: "Name required", variant: "destructive" }); return; }
-    if (!form.price || Number(form.price) <= 0) { toast({ title: "Valid price required", variant: "destructive" }); return; }
+    if (!form.name.trim()) { toast({ title: t("mprToastNameReq"), variant: "destructive" }); return; }
+    if (!form.price || Number(form.price) <= 0) { toast({ title: t("mprToastPriceReq"), variant: "destructive" }); return; }
+
     setSaving(true);
     if (!editing && businessName) {
       await ensureVendorStore(merchantId, businessName);
@@ -363,13 +373,13 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
     if (editing) {
       const { error } = await (supabase as any)
         .from("merchant_products").update(payload).eq("id", editing.id);
-      if (error) { toast({ title: "Update failed", description: error.message, variant: "destructive" }); }
-      else { toast({ title: "Product updated ✓" }); setShowSheet(false); loadProducts(); }
+      if (error) { toast({ title: t("mprToastUpdateFail"), description: error.message, variant: "destructive" }); }
+      else { toast({ title: t("mprToastUpdated") }); setShowSheet(false); loadProducts(); }
     } else {
       const { error } = await (supabase as any)
         .from("merchant_products").insert(payload);
-      if (error) { toast({ title: "Create failed", description: error.message, variant: "destructive" }); }
-      else { toast({ title: "Product added ✓" }); setShowSheet(false); loadProducts(); }
+      if (error) { toast({ title: t("mprToastCreateFail"), description: error.message, variant: "destructive" }); }
+      else { toast({ title: t("mprToastAdded") }); setShowSheet(false); loadProducts(); }
     }
     setSaving(false);
   };
@@ -377,8 +387,9 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const handleDelete = async (id: string) => {
     setDeleting(id);
     const { error } = await (supabase as any).from("merchant_products").delete().eq("id", id);
-    if (error) { toast({ title: "Delete failed", variant: "destructive" }); }
-    else { toast({ title: "Product deleted" }); loadProducts(); }
+    if (error) { toast({ title: t("mprToastDeleteFail"), variant: "destructive" }); }
+    else { toast({ title: t("mprToastDeleted") }); loadProducts(); }
+
     setDeleting(null);
   };
 
@@ -417,17 +428,18 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
         <div className="flex-1 relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search products..."
+            placeholder={t("mprSearch")}
             value={search} onChange={e => setSearch(e.target.value)}
             className="pl-9 h-10 rounded-xl"
           />
         </div>
         <Button onClick={() => setShowBulkUpload(true)} variant="outline" className="shrink-0 rounded-xl gap-1.5 h-10" size="sm">
-          <Upload size={14} /> CSV
+          <Upload size={14} /> {t("mprCsv")}
         </Button>
         <Button onClick={openAdd} className="shrink-0 rounded-xl gap-1.5 h-10" size="sm">
-          <Plus size={15} /> Add
+          <Plus size={15} /> {t("mprAdd")}
         </Button>
+
       </div>
 
       {/* Bulk Upload Sheet */}
@@ -442,9 +454,10 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: "Total", value: products.length, emoji: "📦" },
-          { label: "Active", value: products.filter(p => p.is_active).length, emoji: "✅" },
-          { label: "Out of Stock", value: products.filter(p => p.stock === 0).length, emoji: "⚠️" },
+          { label: t("mprTotal"), value: products.length, emoji: "📦" },
+          { label: t("mprActive"), value: products.filter(p => p.is_active).length, emoji: "✅" },
+          { label: t("mprOutOfStock"), value: products.filter(p => p.stock === 0).length, emoji: "⚠️" },
+
         ].map(s => (
           <div key={s.label} className="bg-card border border-border/60 rounded-2xl p-3 text-center">
             <p className="text-lg">{s.emoji}</p>
@@ -463,14 +476,15 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
         <div className="text-center py-16 space-y-3">
           <p className="text-5xl">🏪</p>
           <p className="text-[15px] font-bold text-foreground">
-            {products.length === 0 ? "No products yet" : "No results"}
+            {products.length === 0 ? t("mprEmptyTitle") : t("mprEmptyResults")}
           </p>
           <p className="text-[13px] text-muted-foreground">
-            {products.length === 0 ? "Add your first product to start selling" : "Try a different search"}
+            {products.length === 0 ? t("mprEmptyDesc") : t("mprEmptyTrySearch")}
           </p>
           {products.length === 0 && (
             <Button onClick={openAdd} className="rounded-xl gap-1.5 mt-2">
-              <Plus size={15} /> Add First Product
+              <Plus size={15} /> {t("mprAddFirst")}
+
             </Button>
           )}
         </div>
@@ -523,7 +537,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                     </span>
                     <button onClick={() => updateStock(p, 1)}
                       className="w-5 h-5 rounded bg-muted flex items-center justify-center text-[10px] font-bold text-foreground">+</button>
-                    <span className="text-[9px] text-muted-foreground">stock</span>
+                    <span className="text-[9px] text-muted-foreground">{t("mprStock")}</span>
                   </div>
                 </div>
               </div>
@@ -532,9 +546,10 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                   {p.is_active ? <Eye size={13} className="text-green-600" /> : <EyeOff size={13} className="text-muted-foreground" />}
                 </button>
                 <button onClick={() => { setVariantsProductId(p.id); setVariantsProductName(p.name); }}
-                  className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center" title="Variants">
+                  className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center" title={t("mprVariants")}>
                   <Layers size={12} className="text-primary" />
                 </button>
+
                 <button onClick={() => openEdit(p)} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                   <Pencil size={12} className="text-muted-foreground" />
                 </button>
@@ -552,13 +567,13 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
       <Sheet open={showSheet} onOpenChange={setShowSheet}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto z-[80]" overlayClassName="z-[80]">
           <SheetHeader>
-            <SheetTitle>{editing ? "Edit Product" : "Add Product"}</SheetTitle>
+            <SheetTitle>{editing ? t("mprEditTitle") : t("mprAddTitle")}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 pt-4 pb-8">
             {/* Multi-Image Upload Grid */}
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                Product Photos (up to {MAX_IMAGES})
+                {t("mprPhotos").replace("{n}", String(MAX_IMAGES))}
               </label>
               <div className="grid grid-cols-4 gap-2 mt-1.5">
                 {Array.from({ length: MAX_IMAGES }).map((_, idx) => {
@@ -572,7 +587,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                           <img src={imageUrl} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
                           {idx === 0 && (
                             <span className="absolute top-1 left-1 text-[8px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
-                              Primary
+                              {t("mprPrimary")}
                             </span>
                           )}
                           <button
@@ -593,7 +608,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                           ) : (
                             <>
                               <ImagePlus size={16} className="text-muted-foreground" />
-                              <span className="text-[9px] text-muted-foreground">{idx === 0 ? "Primary" : `#${idx + 1}`}</span>
+                              <span className="text-[9px] text-muted-foreground">{idx === 0 ? t("mprPrimary") : `#${idx + 1}`}</span>
                             </>
                           )}
                         </button>
@@ -609,18 +624,18 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                   );
                 })}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1.5">First image will be shown in product cards. Max 5MB each.</p>
+              <p className="text-[10px] text-muted-foreground mt-1.5">{t("mprPhotosHelp")}</p>
             </div>
 
             {/* Video URL Input */}
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <Video size={12} /> Product Video (optional)
+                <Video size={12} /> {t("mprVideo")}
               </label>
               <Input
                 value={form.video_url}
                 onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))}
-                placeholder="Paste YouTube or Vimeo link..."
+                placeholder={t("mprVideoPh")}
                 className="mt-1.5 rounded-xl"
               />
               {videoThumbnail && hasValidVideo && (
@@ -634,14 +649,14 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                 </div>
               )}
               {form.video_url && !hasValidVideo && (
-                <p className="text-[10px] text-destructive mt-1">Invalid video URL. Supports YouTube & Vimeo.</p>
+                <p className="text-[10px] text-destructive mt-1">{t("mprVideoInvalid")}</p>
               )}
             </div>
 
             {/* Emoji picker */}
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                Emoji Icon {form.images.length > 0 && <span className="text-muted-foreground/60">(fallback)</span>}
+                {t("mprEmoji")} {form.images.length > 0 && <span className="text-muted-foreground/60">{t("mprEmojiFallback")}</span>}
               </label>
               <div className="flex gap-2 flex-wrap mt-1.5">
                 {EMOJIS.map(e => (
@@ -654,51 +669,51 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Name (English) *</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprNameEn")}</label>
               <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Product name" className="mt-1.5 rounded-xl" />
+                placeholder={t("mprNamePh")} className="mt-1.5 rounded-xl" />
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Name (বাংলা)</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprNameBn")}</label>
               <Input value={form.name_bn} onChange={e => setForm(f => ({ ...f, name_bn: e.target.value }))}
-                placeholder="বাংলা নাম (ঐচ্ছিক)" className="mt-1.5 rounded-xl" />
-              <p className="text-[10px] text-muted-foreground mt-1">Shown to buyers who use the app in Bangla. Leave blank to fall back to English.</p>
+                placeholder={t("mprNameBnPh")} className="mt-1.5 rounded-xl" />
+              <p className="text-[10px] text-muted-foreground mt-1">{t("mprNameBnHelp")}</p>
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Description (English)</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprDescEn")}</label>
               <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Optional description" rows={2} className="mt-1.5 rounded-xl" />
+                placeholder={t("mprDescPh")} rows={2} className="mt-1.5 rounded-xl" />
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Description (বাংলা)</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprDescBn")}</label>
               <Textarea value={form.description_bn} onChange={e => setForm(f => ({ ...f, description_bn: e.target.value }))}
-                placeholder="বাংলা বিবরণ (ঐচ্ছিক)" rows={2} className="mt-1.5 rounded-xl" />
+                placeholder={t("mprDescBnPh")} rows={2} className="mt-1.5 rounded-xl" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Price (৳) *</label>
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprPrice")}</label>
                 <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
                   placeholder="0" className="mt-1.5 rounded-xl" />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Original Price</label>
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprOriginalPrice")}</label>
                 <Input type="number" value={form.original_price} onChange={e => setForm(f => ({ ...f, original_price: e.target.value }))}
-                  placeholder="For sale badge" className="mt-1.5 rounded-xl" />
+                  placeholder={t("mprOriginalPricePh")} className="mt-1.5 rounded-xl" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Stock</label>
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprStockLabel")}</label>
                 <Input type="number" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
                   className="mt-1.5 rounded-xl" />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Category</label>
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprCategory")}</label>
                 <CategorySearchSelect
                   value={form.category}
                   onChange={(val) => setForm(f => ({ ...f, category: val }))}
@@ -708,13 +723,13 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
 
             {/* Badge */}
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Badge</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprBadge")}</label>
               <div className="flex gap-2 flex-wrap mt-1.5">
                 {BADGES.map(b => (
                   <button key={b.value} onClick={() => setForm(f => ({ ...f, badge: b.value, badge_color: b.color }))}
                     className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${form.badge === b.value ? "text-white border-transparent" : "bg-muted text-muted-foreground border-border"}`}
                     style={form.badge === b.value && b.color ? { background: b.color } : {}}>
-                    {b.label}
+                    {b.labelKey ? t(b.labelKey as any) : b.value}
                   </button>
                 ))}
               </div>
@@ -722,7 +737,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
 
             {/* Active toggle */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">
-              <span className="text-[13px] font-semibold text-foreground">Listed (visible in shop)</span>
+              <span className="text-[13px] font-semibold text-foreground">{t("mprListed")}</span>
               <button onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}>
                 {form.is_active
                   ? <ToggleRight size={28} className="text-green-600" />
@@ -731,8 +746,9 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
             </div>
 
             <Button onClick={handleSave} disabled={saving || uploadingSlot !== null} className="w-full h-12 rounded-xl text-[14px] font-bold">
-              {saving ? "Saving..." : uploadingSlot !== null ? "Uploading..." : editing ? "Update Product" : "Add Product"}
+              {saving ? t("mprSaving") : uploadingSlot !== null ? t("mprUploading") : editing ? t("mprUpdate") : t("mprCreate")}
             </Button>
+
           </div>
         </SheetContent>
       </Sheet>
