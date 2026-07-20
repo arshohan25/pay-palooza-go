@@ -25,6 +25,7 @@ import {
   Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package, MessageCircle, Search,
   Undo2, Ticket, XCircle, Loader2, LogOut, Megaphone
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 import MerchantBusinessKycFlow from "@/components/MerchantBusinessKycFlow";
 import VendorOnboardingChecklist from "@/components/VendorOnboardingChecklist";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
