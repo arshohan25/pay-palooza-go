@@ -1625,6 +1625,16 @@ const translations = {
   moItems: { en: "items", bn: "আইটেম" },
   moQty: { en: "Qty:", bn: "পরিমাণ:" },
   moFulfill: { en: "Fulfill / Update Shipment", bn: "পূরণ / শিপমেন্ট আপডেট" },
+  moInvoiceFailed: { en: "Invoice failed", bn: "ইনভয়েস ব্যর্থ" },
+  moPrintInvoice: { en: "Print Invoice", bn: "ইনভয়েস প্রিন্ট" },
+  moDownloadPdf: { en: "Download PDF", bn: "পিডিএফ ডাউনলোড" },
+  moBookCourier: { en: "Book Courier", bn: "কুরিয়ার বুক" },
+
+  // MerchantRefundsTab PIN prompt
+  mrtPinTitle: { en: "Confirm refund", bn: "রিফান্ড নিশ্চিত করুন" },
+  mrtPinDesc: { en: "Enter your PIN to authorize this refund.", bn: "এই রিফান্ড অনুমোদনের জন্য আপনার পিন লিখুন।" },
+
+
 
   // MerchantStoreSettingsTab
   mssUploadFailed: { en: "Upload failed", bn: "আপলোড ব্যর্থ" },
