@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTransactions } from "@/hooks/use-transactions";
 import DisputeDetailsDrawer, { type DisputeDetail } from "@/components/DisputeDetailsDrawer";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 type DisputeStatus = "open" | "under_review" | "resolved" | "rejected";
 
@@ -34,24 +35,29 @@ type Dispute = {
   updated_at: string;
 };
 
-const SUBJECTS = [
-  "Cash-in not credited",
-  "Cash-out amount mismatch",
-  "Wrong customer debited",
-  "Duplicate transaction",
-  "Commission not credited",
-  "Bill payment failed but debited",
-  "Other",
+const SUBJECT_KEYS: Array<{ key: string; i18n: TranslationKey }> = [
+  { key: "Cash-in not credited",          i18n: "agDispSubjCashinNotCred" },
+  { key: "Cash-out amount mismatch",      i18n: "agDispSubjCashoutMismatch" },
+  { key: "Wrong customer debited",        i18n: "agDispSubjWrongDebit" },
+  { key: "Duplicate transaction",         i18n: "agDispSubjDuplicate" },
+  { key: "Commission not credited",       i18n: "agDispSubjCommNotCred" },
+  { key: "Bill payment failed but debited", i18n: "agDispSubjBillFailed" },
+  { key: "Other",                         i18n: "agDispSubjOther" },
 ];
+const SUBJECTS = SUBJECT_KEYS.map(s => s.key);
 
-const STATUS_META: Record<DisputeStatus, { cls: string; icon: any; label: string }> = {
-  open: { cls: "bg-amber-500/15 text-amber-600 border-amber-500/30", icon: Clock, label: "Submitted" },
-  under_review: { cls: "bg-blue-500/15 text-blue-600 border-blue-500/30", icon: Search, label: "Under review" },
-  resolved: { cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", icon: CheckCircle2, label: "Resolved" },
-  rejected: { cls: "bg-rose-500/15 text-rose-600 border-rose-500/30", icon: XCircle, label: "Rejected" },
+const useStatusMeta = () => {
+  const { t } = useI18n();
+  return {
+    open: { cls: "bg-amber-500/15 text-amber-600 border-amber-500/30", icon: Clock, label: t("agDispStOpen") },
+    under_review: { cls: "bg-blue-500/15 text-blue-600 border-blue-500/30", icon: Search, label: t("agDispStReview") },
+    resolved: { cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", icon: CheckCircle2, label: t("agDispStResolved") },
+    rejected: { cls: "bg-rose-500/15 text-rose-600 border-rose-500/30", icon: XCircle, label: t("agDispStRejected") },
+  } as Record<DisputeStatus, { cls: string; icon: any; label: string }>;
 };
 
 const StatusPill = ({ s }: { s: DisputeStatus }) => {
+  const STATUS_META = useStatusMeta();
   const m = STATUS_META[s] || STATUS_META.open;
   const Icon = m.icon;
   return (
