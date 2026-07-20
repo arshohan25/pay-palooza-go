@@ -182,10 +182,10 @@ const PayLinkPage = () => {
     }
     if (!link) return;
     if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
-      return toast.error("Enter a valid amount");
+      return toast.error(t("plEnterValidAmount"));
     }
     if (remaining !== null && finalAmount > remaining) {
-      return toast.error(`Only ৳${remaining} remaining`);
+      return toast.error(t("plOnlyRemaining").replace("{amount}", String(remaining)));
     }
     setPayingUp(true);
     try {
