@@ -234,16 +234,16 @@ export default function AdminSettlements() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Landmark className="w-5 h-5 text-primary" /> Settlement System
+            <Landmark className="w-5 h-5 text-primary shrink-0" /> Settlement System
           </h3>
           <p className="text-sm text-muted-foreground">Manage merchant & agent batch settlements</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={exportCSV}><Download className="w-4 h-4 mr-1" /> Export</Button>
-          <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-1" /> New Settlement</Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={exportCSV} className="flex-1 sm:flex-none"><Download className="w-4 h-4 mr-1" /> Export</Button>
+          <Button size="sm" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none"><Plus className="w-4 h-4 mr-1" /> New</Button>
         </div>
       </div>
 
