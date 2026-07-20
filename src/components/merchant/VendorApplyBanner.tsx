@@ -15,6 +15,8 @@ type VendorStatus = "none" | "draft" | "pending" | "under_review" | "rejected" |
  */
 const VendorApplyBanner = (_props: { userId?: string } = {}) => {
   const { user } = useAuth();
+  const { t } = useI18n();
+
   const navigate = useNavigate();
   const [status, setStatus] = useState<VendorStatus | null>(null);
   const [adminNotes, setAdminNotes] = useState<string | null>(null);
