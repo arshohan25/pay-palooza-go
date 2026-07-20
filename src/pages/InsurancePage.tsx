@@ -48,6 +48,17 @@ const STATUS_KEY: Record<string, TranslationKey> = {
   pending: "ipPolStatusPending",
 };
 
+const EN_PLAN_NAMES: Record<string, string> = {
+  basicLife: "Basic Life Cover",
+  premiumLife: "Premium Life Cover",
+  essentialHealth: "Essential Health",
+  completeHealth: "Complete Health",
+  personalAccident: "Personal Accident",
+  familyAccident: "Family Accident",
+  phoneProtection: "Phone Protection",
+  gadgetShield: "Gadget Shield",
+};
+
 const InsurancePage = () => {
   const navigate = useNavigate();
   const { t, lang } = useI18n();
