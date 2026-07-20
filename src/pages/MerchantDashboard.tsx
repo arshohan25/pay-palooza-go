@@ -2115,37 +2115,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <Button variant="outline" className="rounded-xl h-11" onClick={() => {
-                if (!qrDataUrl) return;
-                const link = document.createElement("a");
-                link.download = `${shopName}-qr.png`;
-                link.href = qrDataUrl;
-                link.click();
-              }}>
-                <Download size={14} className="mr-1" /> <span className="text-xs">Save</span>
-              </Button>
-              <Button variant="outline" className="rounded-xl h-11" onClick={handlePrint}>
-                <Receipt size={14} className="mr-1" /> <span className="text-xs">Print</span>
-              </Button>
-              <Button variant="outline" className="rounded-xl h-11" onClick={copyCode}>
-                <Copy size={14} className="mr-1" /> <span className="text-xs">Copy</span>
-              </Button>
-            </div>
-
-            <Button
-              variant="outline"
-              className="w-full h-11 rounded-xl mt-2 text-xs font-semibold"
-              onClick={handleDownloadPdf}
-              disabled={pdfBusy || !qrDataUrl}
-            >
-              <Download size={14} className="mr-1.5" />
-              {pdfBusy ? "Preparing PDF…" : "Download PDF (A6)"}
-            </Button>
-
-            <Button
-              className="w-full h-12 rounded-xl text-sm font-bold mt-3 shadow-glow text-white"
-              style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
-              onClick={async () => {
+              <Button variant="outline" className="rounded-xl h-11" onClick={async () => {
                 const shareText = `Pay ${shopName} via EasyPay. Merchant ID: ${qrPayload}`;
                 const shareUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(qrPayload)}`;
                 if (navigator.share) {
@@ -2165,10 +2135,17 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
                   navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
                   toast({ title: "Copied!", description: "Payment QR details copied to clipboard" });
                 }
-              }}
-            >
-              <Share2 size={16} className="mr-2" /> Share QR to Get Payment
-            </Button>
+              }}>
+                <Share2 size={14} className="mr-1" /> <span className="text-xs">Share</span>
+              </Button>
+              <Button variant="outline" className="rounded-xl h-11" onClick={handlePrint}>
+                <Receipt size={14} className="mr-1" /> <span className="text-xs">Print</span>
+              </Button>
+              <Button variant="outline" className="rounded-xl h-11" onClick={copyCode}>
+                <Copy size={14} className="mr-1" /> <span className="text-xs">Copy</span>
+              </Button>
+            </div>
+
           </div>
         </Card>
       </motion.div>
