@@ -510,10 +510,10 @@ function DpsPlanDetailsSheet({
 
             {/* Plan meta */}
             <div className="rounded-[16px] bg-muted/40 border border-border/60 divide-y divide-border/60 text-sm">
-              <div className="flex justify-between p-3"><span className="text-muted-foreground">Started</span><span className="font-medium">{created.toLocaleDateString()}</span></div>
-              <div className="flex justify-between p-3"><span className="text-muted-foreground">Last collection</span><span className="font-medium">{lastRun ? lastRun.toLocaleDateString() : "—"}</span></div>
-              <div className="flex justify-between p-3"><span className="text-muted-foreground">Next collection</span><span className="font-semibold text-primary">{nextRun.toLocaleDateString()}</span></div>
-              <div className="flex justify-between p-3"><span className="text-muted-foreground">Ends</span><span className="font-medium">{endsAt ? endsAt.toLocaleDateString() : "—"}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">{t("savStarted")}</span><span className="font-medium">{created.toLocaleDateString()}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">{t("savLastCollection")}</span><span className="font-medium">{lastRun ? lastRun.toLocaleDateString() : "—"}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">{t("savNextCollection")}</span><span className="font-semibold text-primary">{nextRun.toLocaleDateString()}</span></div>
+              <div className="flex justify-between p-3"><span className="text-muted-foreground">{t("savEnds")}</span><span className="font-medium">{endsAt ? endsAt.toLocaleDateString() : "—"}</span></div>
             </div>
 
             {/* Installment timeline — professional tree view */}
