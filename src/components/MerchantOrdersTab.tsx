@@ -220,15 +220,16 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
                     disabled={invoiceBusy === order.id + "print"}
                     className="py-2.5 rounded-xl border border-border/70 bg-background text-[12px] font-bold text-foreground flex items-center justify-center gap-1.5 disabled:opacity-60"
                   >
-                    <Printer size={13} /> {invoiceBusy === order.id + "print" ? "…" : "Print Invoice"}
+                    <Printer size={13} /> {invoiceBusy === order.id + "print" ? "…" : t("moPrintInvoice")}
                   </button>
                   <button
                     onClick={() => handleInvoice(order, "download")}
                     disabled={invoiceBusy === order.id + "download"}
                     className="py-2.5 rounded-xl border border-border/70 bg-background text-[12px] font-bold text-foreground flex items-center justify-center gap-1.5 disabled:opacity-60"
                   >
-                    <Download size={13} /> {invoiceBusy === order.id + "download" ? "…" : "Download PDF"}
+                    <Download size={13} /> {invoiceBusy === order.id + "download" ? "…" : t("moDownloadPdf")}
                   </button>
+
                 </div>
 
                 {order.status !== "cancelled" && order.status !== "delivered" && (
