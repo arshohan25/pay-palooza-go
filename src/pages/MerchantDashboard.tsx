@@ -2295,14 +2295,15 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
-          <h3 className="text-sm font-bold text-foreground mb-3">Merchant Details</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("mqrDetails")}</h3>
           <div className="space-y-2 text-xs">
             {[
-              { label: "Merchant ID", value: qrPayload },
-              { label: "Business", value: merchant?.business_name || "—" },
-              { label: "Category", value: merchant?.category || "—" },
-              { label: "MDR Rate", value: formatMdrPercent(merchant?.mdr_rate) },
-              { label: "Trade License", value: merchant?.trade_license || "—" },
+              { label: t("mqrRowMerchantId"), value: qrPayload },
+              { label: t("mqrRowBusiness"), value: merchant?.business_name || "—" },
+              { label: t("mqrRowCategory"), value: merchant?.category || "—" },
+              { label: t("mqrRowMdr"), value: formatMdrPercent(merchant?.mdr_rate) },
+              { label: t("mqrRowTradeLicense"), value: merchant?.trade_license || "—" },
+
             ].map(r => (
               <div key={r.label} className="flex justify-between py-2 border-b border-border/50 last:border-0">
                 <span className="text-muted-foreground">{r.label}</span>
