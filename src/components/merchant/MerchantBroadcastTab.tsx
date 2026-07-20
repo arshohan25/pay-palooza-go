@@ -8,15 +8,17 @@ import { Megaphone, Send, Users, Loader2, CheckCircle2, AlertCircle } from "luci
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 const AUDIENCES = [
-  { id: "all", label: "All customers" },
-  { id: "recent_30d", label: "Recent (30d)" },
-  { id: "inactive_60d", label: "Inactive (60d+)" },
-  { id: "gold_silver", label: "Gold + Silver" },
+  { id: "all", labelKey: "mbrAudAll" as TranslationKey },
+  { id: "recent_30d", labelKey: "mbrAudRecent" as TranslationKey },
+  { id: "inactive_60d", labelKey: "mbrAudInactive" as TranslationKey },
+  { id: "gold_silver", labelKey: "mbrAudGoldSilver" as TranslationKey },
 ] as const;
 
 type Audience = typeof AUDIENCES[number]["id"];
+
 
 interface Broadcast {
   id: string;
