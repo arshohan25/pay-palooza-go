@@ -688,10 +688,11 @@ const MerchantDashboard = () => {
             {/* Sticky tab header */}
             <div className="shrink-0 bg-background border-b border-border/50 px-4 pt-3 pb-2">
               <div className="flex gap-1.5 bg-muted/50 rounded-2xl p-1.5">
-                {visibleMainTabs.map(t => {
-                  const active = activeTab === t.id;
+                {visibleMainTabs.map(tab => {
+                  const active = activeTab === tab.id;
+                  const label = tab.id === "overview" ? t("mdTabOverview") : tab.id === "products" ? t("mdTabProducts") : tab.id === "orders" ? t("mdTabOrders") : tab.label;
                   return (
-                    <button key={t.id} onClick={() => setActiveTab(t.id)}
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                       className={`relative flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all press-effect flex-1 justify-center ${
                         active ? "text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
                       }`}
@@ -705,7 +706,7 @@ const MerchantDashboard = () => {
                         />
                       )}
                       <span className="relative z-10 flex items-center gap-1.5">
-                        <t.icon size={13} />{t.label}
+                        <tab.icon size={13} />{label}
                       </span>
                     </button>
                   );
