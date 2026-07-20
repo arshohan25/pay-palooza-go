@@ -309,8 +309,8 @@ const AgentDisputes = () => {
             <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
               <AlertCircle size={20} className="text-muted-foreground" />
             </div>
-            <p className="text-sm font-bold text-foreground">{t("agDispEmpty")}</p>
-            <p className="text-[11px] text-muted-foreground">{t("agDispEmptyDesc")}</p>
+            <p className="text-sm font-bold text-foreground">{t("agDispNoDisputes")}</p>
+            <p className="text-[11px] text-muted-foreground">{t("agDispNoDisputesDesc")}</p>
             <Button onClick={() => setOpen(true)} className="mt-2 rounded-xl gap-1 text-xs h-9">
               <Plus size={12} /> {t("agDispFile")}
             </Button>
