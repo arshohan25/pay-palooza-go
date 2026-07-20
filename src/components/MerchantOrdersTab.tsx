@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Package, Clock, CheckCircle2, Truck, CircleCheck, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Package, Clock, CheckCircle2, Truck, CircleCheck, X, ChevronDown, ChevronUp, Printer, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import FulfillmentSheet from "@/components/merchant/FulfillmentSheet";
+import QuickCourierBookSheet from "@/components/merchant/QuickCourierBookSheet";
+import { downloadInvoice, printInvoice, type InvoiceOrder } from "@/components/InvoiceGenerator";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface MerchantOrder {
@@ -42,7 +44,34 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [fulfillOrder, setFulfillOrder] = useState<MerchantOrder | null>(null);
 
+  const [courierOrder, setCourierOrder] = useState<MerchantOrder | null>(null);
+  const [invoiceBusy, setInvoiceBusy] = useState<string | null>(null);
+
   const fmt = (n: number) => n.toLocaleString(lang === "bn" ? "bn-BD" : "en-US");
+
+  const toInvoice = (o: MerchantOrder): InvoiceOrder => ({
+    order_num: o.order_num,
+    created_at: o.created_at,
+    shipping_name: o.shipping_name,
+    shipping_phone: o.shipping_phone,
+    shipping_address: o.shipping_address,
+    shipping_city: o.shipping_city,
+    payment_method: o.payment_method,
+    total: Number(o.total),
+    items: Array.isArray(o.items) ? o.items : [],
+  });
+
+  const handleInvoice = async (o: MerchantOrder, mode: "print" | "download") => {
+    try {
+      setInvoiceBusy(o.id + mode);
+      if (mode === "print") await printInvoice(toInvoice(o));
+      else await downloadInvoice(toInvoice(o));
+    } catch {
+      toast({ title: "Invoice failed", variant: "destructive" });
+    } finally {
+      setInvoiceBusy(null);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -164,15 +193,41 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
                   </div>
                 )}
 
-                {/* Fulfill button */}
-                {order.status !== "cancelled" && order.status !== "delivered" && (
+                {/* Action row */}
+                <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => setFulfillOrder(order)}
-                    className="w-full py-2.5 rounded-xl text-white text-[12px] font-bold flex items-center justify-center gap-1.5"
-                    style={{ background: "#0288D1" }}
+                    onClick={() => handleInvoice(order, "print")}
+                    disabled={invoiceBusy === order.id + "print"}
+                    className="py-2.5 rounded-xl border border-border/70 bg-background text-[12px] font-bold text-foreground flex items-center justify-center gap-1.5 disabled:opacity-60"
                   >
-                    <Truck size={13} /> {t("moFulfill")}
+                    <Printer size={13} /> {invoiceBusy === order.id + "print" ? "…" : "Print Invoice"}
                   </button>
+                  <button
+                    onClick={() => handleInvoice(order, "download")}
+                    disabled={invoiceBusy === order.id + "download"}
+                    className="py-2.5 rounded-xl border border-border/70 bg-background text-[12px] font-bold text-foreground flex items-center justify-center gap-1.5 disabled:opacity-60"
+                  >
+                    <Download size={13} /> {invoiceBusy === order.id + "download" ? "…" : "Download PDF"}
+                  </button>
+                </div>
+
+                {order.status !== "cancelled" && order.status !== "delivered" && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setCourierOrder(order)}
+                      className="py-2.5 rounded-xl text-white text-[12px] font-bold flex items-center justify-center gap-1.5"
+                      style={{ background: "#0EA564" }}
+                    >
+                      <Truck size={13} /> Book Courier
+                    </button>
+                    <button
+                      onClick={() => setFulfillOrder(order)}
+                      className="py-2.5 rounded-xl text-white text-[12px] font-bold flex items-center justify-center gap-1.5"
+                      style={{ background: "#0288D1" }}
+                    >
+                      <Package size={13} /> {t("moFulfill")}
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -186,6 +241,15 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
         open={!!fulfillOrder}
         onOpenChange={(o) => { if (!o) setFulfillOrder(null); }}
         onUpdated={load}
+      />
+
+      <QuickCourierBookSheet
+        orderId={courierOrder?.id ?? null}
+        orderNum={courierOrder?.order_num}
+        items={Array.isArray(courierOrder?.items) ? courierOrder!.items : []}
+        open={!!courierOrder}
+        onOpenChange={(o) => { if (!o) setCourierOrder(null); }}
+        onBooked={load}
       />
     </div>
   );
