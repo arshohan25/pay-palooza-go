@@ -1468,6 +1468,11 @@ const translations = {
   smFeeBreakdown: { en: "৳{amt} + ৳{fee} fee ({source})", bn: "৳{amt} + ৳{fee} ফি ({source})" },
   smFromBalanceShort: { en: "from balance", bn: "ব্যালেন্স থেকে" },
   smBalancePlusAmtShort: { en: "balance + amount", bn: "ব্যালেন্স + পরিমাণ" },
+  smCashOutSummaryAria: { en: "Cash out charge summary", bn: "ক্যাশ আউট চার্জের সারসংক্ষেপ" },
+  smRecipientGets: { en: "Recipient gets", bn: "প্রাপক পাবেন" },
+  smCashOutChargeLine: { en: "Cash-out charge", bn: "ক্যাশ-আউট চার্জ" },
+  smYouPay: { en: "You pay", bn: "আপনি দেবেন" },
+  smUnknownContact: { en: "Unknown", bn: "অজানা" },
   smFromAmountShort: { en: "from amount", bn: "পরিমাণ থেকে" },
   smWalletPrefix: { en: "Wallet", bn: "ওয়ালেট" },
 
