@@ -23,7 +23,7 @@ import {
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
   ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine,
   Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package, MessageCircle, Search,
-  Undo2, Ticket, XCircle, Loader2, LogOut
+  Undo2, Ticket, XCircle, Loader2, LogOut, Megaphone
 } from "lucide-react";
 import MerchantBusinessKycFlow from "@/components/MerchantBusinessKycFlow";
 import VendorOnboardingChecklist from "@/components/VendorOnboardingChecklist";
@@ -69,13 +69,15 @@ import MerchantStaffTab from "@/components/merchant/MerchantStaffTab";
 import MerchantCustomersTab from "@/components/merchant/MerchantCustomersTab";
 import MerchantCouponsTab from "@/components/merchant/MerchantCouponsTab";
 import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
+import MerchantBroadcastTab from "@/components/merchant/MerchantBroadcastTab";
+import MerchantTodaySnapshot from "@/components/merchant/MerchantTodaySnapshot";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 import RequestAccessSheet from "@/components/merchant/RequestAccessSheet";
 import VendorApplyBanner from "@/components/merchant/VendorApplyBanner";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts" | "notifications";
+type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts" | "notifications" | "broadcast";
 
 interface MerchantInfo {
   id: string;
@@ -166,6 +168,7 @@ const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: strin
   { id: "refunds",      icon: Undo2,        label: "Refunds",          desc: "Issue & track customer refunds", toggleKey: "merchant_refunds" },
   { id: "staff",        icon: Users,        label: "Staff",            desc: "Manage employee access",         toggleKey: "merchant_staff" },
   { id: "customers",    icon: Users,        label: "Customers",        desc: "Customer directory & insights",  toggleKey: "merchant_customers" },
+  { id: "broadcast",    icon: Megaphone,    label: "Broadcast",        desc: "Message your customers"                                        },
   { id: "coupons",      icon: Ticket,       label: "Coupons",          desc: "Create store discount codes",    toggleKey: "merchant_coupons" },
   { id: "payouts",      icon: Landmark,     label: "Payouts",          desc: "Request bank withdrawals",       toggleKey: "merchant_payouts" },
   { id: "notifications",icon: Bell,         label: "Notifications",    desc: "Push alerts & preferences" },
@@ -728,6 +731,7 @@ const MerchantDashboard = () => {
               {activeTab === "customers"    && merchant && <div className="px-4 py-4"><MerchantCustomersTab merchantId={merchant.id} /></div>}
               {activeTab === "coupons"      && merchant && <div className="px-4 py-4"><MerchantCouponsTab merchantId={merchant.id} /></div>}
               {activeTab === "payouts"      && merchant && <div className="px-4 py-4"><MerchantPayoutsTab merchantId={merchant.id} /></div>}
+              {activeTab === "broadcast"    && merchant && <div className="px-4 py-4"><MerchantBroadcastTab merchantId={merchant.id} /></div>}
               {activeTab === "notifications" && <div className="px-4 py-4"><NotificationPreferences scope="merchant" /></div>}
             </div>
           </motion.div>
