@@ -226,7 +226,7 @@ const AgentLoginPage = () => {
             ) : (
               <DeviceOtpStep
                 phone={phone}
-                portalLabel="Agent"
+                portalLabel={t("alpPortalAgent")}
                 resendIn={otp.resendIn}
                 loading={otp.status === "verifying" || otp.status === "sending" || finalizing}
                 error={otp.error}
