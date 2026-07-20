@@ -1202,8 +1202,8 @@ export default function AdminDashboard() {
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
             <ShieldAlert className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
-          <h1 className="font-bold text-foreground text-sm">Admin</h1>
-          <Button variant="ghost" size="icon" className="ml-auto shrink-0 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowReorder(true)} title="Rearrange navigation">
+          <h1 className="font-bold text-foreground text-sm">{t("admTitle")}</h1>
+          <Button variant="ghost" size="icon" className="ml-auto shrink-0 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowReorder(true)} title={t("admRearrangeNav")}>
             <GripVertical className="w-4 h-4" />
           </Button>
         </div>
@@ -1212,7 +1212,7 @@ export default function AdminDashboard() {
         </div>
         <div className="px-3 pb-3">
           <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => signOut()}>
-            <LogOut className="w-4 h-4" /> Sign out
+            <LogOut className="w-4 h-4" /> {t("admSignOut")}
           </Button>
         </div>
       </aside>
