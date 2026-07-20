@@ -1220,7 +1220,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const handleGenerateQR = async () => {
     const amt = parseFloat(qrAmount);
     if (!merchant || !amt || amt < 1 || amt > 1000000) {
-      toast({ title: "Invalid Amount", description: "Enter an amount between ৳1 and ৳10,00,000.", variant: "destructive" });
+      toast({ title: t("mqrInvalidAmount"), description: t("mqrInvalidAmountDesc"), variant: "destructive" });
       return;
     }
     setQrGenerateLoading(true);
@@ -1234,7 +1234,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
         .single();
 
       if (!keyData) {
-        toast({ title: "No API Key", description: "Request API access from the API tab first.", variant: "destructive" });
+        toast({ title: t("mqrNoApiKey"), description: t("mqrNoApiKeyDesc"), variant: "destructive" });
         setQrGenerateLoading(false);
         return;
       }
@@ -1251,7 +1251,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
           action: "create_session",
           amount: amt,
           reference: qrReference.trim() || `QR-${Date.now().toString(36).toUpperCase()}`,
-          description: `Payment of ৳${amt}`,
+          description: `${t("mqrPayOf")} ৳${amt}`,
         }),
       });
 
@@ -1272,12 +1272,13 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       setShowQrPopup(true);
       setShowQrGenerate(false);
       navigator.clipboard.writeText(fullUrl).then(() => {
-        toast({ title: "Link copied!", description: "Payment link copied to clipboard." });
+        toast({ title: t("mqrLinkCopied"), description: t("mqrLinkCopiedDesc") });
+
       }).catch(() => {});
       setQrAmount("");
       setQrReference("");
     } catch (err: any) {
-      toast({ title: "Generation Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("mqrGenerationFailed"), description: err.message, variant: "destructive" });
     } finally {
       setQrGenerateLoading(false);
     }
@@ -1513,15 +1514,15 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
         <SheetContent side="bottom" className="z-[80] rounded-t-2xl" overlayClassName="z-[80]">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <QrCode size={18} className="text-primary" /> Generate Payment QR
+              <QrCode size={18} className="text-primary" /> {t("mqrSheetTitle")}
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4">
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Amount (৳) *</label>
+              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">{t("mqrAmountLabel")}</label>
               <Input
                 type="number"
-                placeholder="e.g. 500"
+                placeholder={t("mqrAmountPh")}
                 value={qrAmount}
                 onChange={e => setQrAmount(e.target.value)}
                 min={1}
@@ -1530,9 +1531,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Reference (optional)</label>
+              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">{t("mqrRefLabel")}</label>
               <Input
-                placeholder="e.g. INV-001"
+                placeholder={t("mqrRefPh")}
                 value={qrReference}
                 onChange={e => setQrReference(e.target.value)}
                 maxLength={100}
@@ -1544,10 +1545,11 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               disabled={qrGenerateLoading || !qrAmount || parseFloat(qrAmount) < 1}
             >
               {qrGenerateLoading ? <RefreshCw size={15} className="animate-spin" /> : <ScanLine size={15} />}
-              Generate QR
+              {t("mqrGenerateBtn")}
             </Button>
           </div>
         </SheetContent>
+
       </Sheet>
 
       {/* QR Code Popup */}
@@ -1571,8 +1573,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               {/* Header */}
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-primary" /> Payment QR Ready
+                  <CheckCircle2 size={16} className="text-primary" /> {t("mqrPopupTitle")}
                 </h3>
+
                 <button onClick={() => setShowQrPopup(false)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
                   <X size={14} className="text-muted-foreground" />
                 </button>
@@ -1588,7 +1591,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               {/* Amount & Reference */}
               <div className="text-center space-y-1">
                 <p className="text-2xl font-extrabold text-foreground tracking-tight">{generatedQrAmount}</p>
-                {generatedQrRef && <p className="text-xs text-muted-foreground font-medium">Ref: {generatedQrRef}</p>}
+                {generatedQrRef && <p className="text-xs text-muted-foreground font-medium">{t("mqrRefPrefix")} {generatedQrRef}</p>}
               </div>
 
               {/* Copy Link Button */}
@@ -1597,11 +1600,11 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
                 className="w-full gap-2 text-xs font-bold"
                 onClick={() => {
                   navigator.clipboard.writeText(generatedQrLink).then(() => {
-                    toast({ title: "Link copied!", description: "Payment link copied to clipboard." });
+                    toast({ title: t("mqrLinkCopied"), description: t("mqrLinkCopiedDesc") });
                   }).catch(() => {});
                 }}
               >
-                <Copy size={13} /> Copy Payment Link
+                <Copy size={13} /> {t("mqrCopyLinkBtn")}
               </Button>
 
               {/* Open in new tab */}
@@ -1611,8 +1614,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
                 className="w-full gap-2 text-xs text-muted-foreground"
                 onClick={() => window.open(generatedQrLink, "_blank")}
               >
-                <ExternalLink size={13} /> Open in New Tab
+                <ExternalLink size={13} /> {t("mqrOpenNewTab")}
               </Button>
+
             </motion.div>
           </motion.div>
         )}
@@ -1909,7 +1913,9 @@ const DEFAULT_BAND_START = "#ff6a1a";
 const DEFAULT_BAND_END = "#c02a55";
 
 const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
+  const { t } = useI18n();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
 
   const rawPayload = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
@@ -1945,8 +1951,9 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 
   const copyCode = () => {
     navigator.clipboard.writeText(qrPayload);
-    toast({ title: "Copied!", description: "Merchant ID copied to clipboard" });
+    toast({ title: t("mqrCopied"), description: t("mqrCopiedDesc") });
   };
+
 
 
   const handlePrint = () => {
@@ -2155,9 +2162,10 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 
       const safeName = shopName.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "merchant";
       doc.save(`${safeName}-qr-a6.pdf`);
-      toast({ title: "Downloaded", description: "QR card saved as PDF (A6)." });
+      toast({ title: t("mqrDownloaded"), description: t("mqrDownloadedDesc") });
     } catch (e: any) {
-      toast({ title: "PDF failed", description: e?.message || "Could not generate PDF", variant: "destructive" });
+      toast({ title: t("mqrPdfFailed"), description: e?.message || t("mqrPdfFailedDesc"), variant: "destructive" });
+
     } finally {
       setPdfBusy(false);
     }
@@ -2176,7 +2184,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
             <div className="relative">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm mb-2">
                 <img src={EASYPAY_LOGO_URL} alt="EasyPay" className="h-3.5 w-auto object-contain brightness-0 invert" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">Accepted Here</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">{t("mqrAcceptedHere")}</span>
               </div>
               <div className="flex items-center justify-center gap-2">
                 {shopLogo && (
@@ -2223,7 +2231,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 
             <div className="grid grid-cols-3 gap-2">
               <Button variant="outline" className="rounded-xl h-11" onClick={async () => {
-                const shareText = `Pay ${shopName} via EasyPay. Merchant ID: ${qrPayload}`;
+                const shareText = t("mqrPayVia").replace("{name}", shopName).replace("{id}", qrPayload);
                 const shareUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(qrPayload)}`;
                 let file: File | null = null;
                 // Snapshot the full branded card (matches what the merchant sees)
@@ -2244,7 +2252,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
                     file = new File([blob], "payment-qr.png", { type: "image/png" });
                   } catch {}
                 }
-                const baseData: ShareData = { title: `Pay ${shopName}`, text: shareText, url: shareUrl };
+                const baseData: ShareData = { title: t("mqrPayTitle").replace("{name}", shopName), text: shareText, url: shareUrl };
                 const withFile: ShareData = file ? { ...baseData, files: [file] } : baseData;
                 // iOS Safari: canShare must be called with the FULL payload (files+text+url together)
                 try {
@@ -2265,19 +2273,20 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
                 }
                 try {
                   await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-                  toast({ title: "Copied!", description: "Payment QR details copied to clipboard" });
+                  toast({ title: t("mqrCopied"), description: t("mqrShareCopiedDesc") });
                 } catch {
-                  toast({ title: "Share unavailable", description: "Sharing isn't supported on this browser.", variant: "destructive" });
+                  toast({ title: t("mqrShareUnavailable"), description: t("mqrShareUnavailableDesc"), variant: "destructive" });
                 }
               }}>
-                <Share2 size={14} className="mr-1" /> <span className="text-xs">Share</span>
+                <Share2 size={14} className="mr-1" /> <span className="text-xs">{t("mqrShare")}</span>
               </Button>
               <Button variant="outline" className="rounded-xl h-11" onClick={handlePrint}>
-                <Receipt size={14} className="mr-1" /> <span className="text-xs">Print</span>
+                <Receipt size={14} className="mr-1" /> <span className="text-xs">{t("mqrPrint")}</span>
               </Button>
               <Button variant="outline" className="rounded-xl h-11" onClick={copyCode}>
-                <Copy size={14} className="mr-1" /> <span className="text-xs">Copy</span>
+                <Copy size={14} className="mr-1" /> <span className="text-xs">{t("mqrCopy")}</span>
               </Button>
+
             </div>
 
           </div>
@@ -2286,14 +2295,15 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
-          <h3 className="text-sm font-bold text-foreground mb-3">Merchant Details</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("mqrDetails")}</h3>
           <div className="space-y-2 text-xs">
             {[
-              { label: "Merchant ID", value: qrPayload },
-              { label: "Business", value: merchant?.business_name || "—" },
-              { label: "Category", value: merchant?.category || "—" },
-              { label: "MDR Rate", value: formatMdrPercent(merchant?.mdr_rate) },
-              { label: "Trade License", value: merchant?.trade_license || "—" },
+              { label: t("mqrRowMerchantId"), value: qrPayload },
+              { label: t("mqrRowBusiness"), value: merchant?.business_name || "—" },
+              { label: t("mqrRowCategory"), value: merchant?.category || "—" },
+              { label: t("mqrRowMdr"), value: formatMdrPercent(merchant?.mdr_rate) },
+              { label: t("mqrRowTradeLicense"), value: merchant?.trade_license || "—" },
+
             ].map(r => (
               <div key={r.label} className="flex justify-between py-2 border-b border-border/50 last:border-0">
                 <span className="text-muted-foreground">{r.label}</span>
