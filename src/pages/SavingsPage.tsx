@@ -649,7 +649,7 @@ function DpsPlanDetailsSheet({
 
                     {upcoming.length === 0 && history.length === 0 && (
                       <div className="text-xs text-muted-foreground text-center py-6">
-                        No installments yet.
+                        {t("savNoInstallments")}
                       </div>
                     )}
                   </div>
