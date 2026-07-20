@@ -183,6 +183,43 @@ input[type="number"] {
     max-width: 100vw;
   }
 
+  /* Bangla-optimized typography — activated by <html lang="bn"> */
+  html[lang="bn"] body,
+  html[lang="bn"] button,
+  html[lang="bn"] input,
+  html[lang="bn"] textarea,
+  html[lang="bn"] select {
+    font-family: 'Anek Bangla', 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-feature-settings: "kern", "liga";
+    /* Bangla conjuncts need extra vertical breathing room */
+    line-height: 1.65;
+    letter-spacing: 0;
+  }
+  html[lang="bn"] h1,
+  html[lang="bn"] h2,
+  html[lang="bn"] h3,
+  html[lang="bn"] h4,
+  html[lang="bn"] h5,
+  html[lang="bn"] h6 {
+    font-family: 'Anek Bangla', 'Plus Jakarta Sans', system-ui, sans-serif;
+    line-height: 1.35;
+    letter-spacing: -0.005em;
+    font-weight: 700;
+  }
+  /* Slightly larger base size — Bangla glyphs read smaller at the same px */
+  html[lang="bn"] {
+    font-size: 16.5px;
+  }
+  html[lang="bn"].compact-mode {
+    font-size: 14.5px;
+  }
+  /* Tabular numerals still use Jakarta for consistent digit alignment */
+  html[lang="bn"] .font-tabular,
+  html[lang="bn"] [data-numeric] {
+    font-family: 'Plus Jakarta Sans', 'Anek Bangla', system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Compact mode */
   html.compact-mode {
     font-size: 14px;

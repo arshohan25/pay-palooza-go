@@ -3927,6 +3927,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     localStorage.setItem(LANG_KEY, lang);
+    // Sync <html lang> so Bangla-optimized CSS (font, line-height, size) activates.
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("lang", lang);
+    }
   }, [lang]);
 
   // Hydrate from profile on sign-in; persist changes back to profile.
