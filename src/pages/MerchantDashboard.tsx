@@ -1276,7 +1276,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       <motion.div variants={stagger.item}>
         <div className="flex items-center justify-between mb-2.5 px-1">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Zap size={14} className="text-primary" /> Merchant Services
+            <Zap size={14} className="text-primary" /> {t("mdMerchantServices")}
           </h3>
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
