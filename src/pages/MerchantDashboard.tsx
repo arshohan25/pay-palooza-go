@@ -425,9 +425,17 @@ const MerchantDashboard = () => {
   // Optimistic header update when Store Settings save begins
   useEffect(() => {
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { merchantId?: string; name?: string } | undefined;
-      if (!detail?.name) return;
-      setMerchant(prev => (prev && (!detail.merchantId || prev.id === detail.merchantId) ? { ...prev, business_name: detail.name! } : prev));
+      const detail = (e as CustomEvent).detail as { merchantId?: string; name?: string; nameBn?: string | null } | undefined;
+      if (!detail?.name && detail?.nameBn === undefined) return;
+      setMerchant(prev => {
+        if (!prev) return prev;
+        if (detail.merchantId && prev.id !== detail.merchantId) return prev;
+        return {
+          ...prev,
+          ...(detail.name ? { business_name: detail.name } : {}),
+          ...(detail.nameBn !== undefined ? { business_name_bn: detail.nameBn } : {}),
+        };
+      });
     };
     window.addEventListener("merchant:business-name-preview", handler as EventListener);
     return () => window.removeEventListener("merchant:business-name-preview", handler as EventListener);
