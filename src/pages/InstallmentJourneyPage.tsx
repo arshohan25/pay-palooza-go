@@ -114,6 +114,7 @@ function Ring({ value, size = 120, stroke = 10 }: { value: number; size?: number
 }
 
 function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" | "right"; isLast: boolean }) {
+  const { t } = useI18n();
   const meta = STATUS_META[item.status];
   const Icon = meta.icon;
 
