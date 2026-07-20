@@ -237,9 +237,9 @@ const PayLinkPage = () => {
         <Card className="max-w-sm w-full">
           <CardContent className="p-6 text-center space-y-3">
             <XCircle className="w-10 h-10 text-destructive mx-auto" />
-            <p className="font-semibold text-foreground">Link unavailable</p>
-            <p className="text-sm text-muted-foreground">{error ?? "This payment link doesn't exist."}</p>
-            <Button variant="outline" onClick={() => navigate("/")}>Go home</Button>
+            <p className="font-semibold text-foreground">{t("plLinkUnavailable")}</p>
+            <p className="text-sm text-muted-foreground">{error ?? t("plLinkNotExist")}</p>
+            <Button variant="outline" onClick={() => navigate("/")}>{t("plGoHome")}</Button>
           </CardContent>
         </Card>
       </div>
