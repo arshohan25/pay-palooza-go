@@ -535,7 +535,7 @@ export default function CouponsPage() {
                       <Tag className="w-3 h-3 text-primary" />
                     </div>
                     <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">
-                      All offers
+                      {t("cpAllOffers")}
                     </h3>
                   </div>
                   <span className="text-[10px] font-semibold text-muted-foreground">{everythingElse.length}</span>
