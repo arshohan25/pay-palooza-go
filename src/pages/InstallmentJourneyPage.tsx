@@ -569,7 +569,7 @@ export default function InstallmentJourneyPage() {
             {plan && (
               <button
                 onClick={() => { setAmt(""); setActionSheet("deposit"); }}
-                aria-label="Extra deposit"
+                aria-label={t("ijExtraDeposit")}
                 className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white active:scale-95"
               >
                 <Plus size={18} />
@@ -599,9 +599,9 @@ export default function InstallmentJourneyPage() {
               <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
               <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/50">{displayName}</div>
               <div className="mb-4 text-lg font-bold">
-                {actionSheet === "installment" ? "Pay Installment" : "Add Deposit"}
+                {actionSheet === "installment" ? t("ijPayInstallment") : t("ijAddDeposit")}
               </div>
-              <label className="text-[11px] text-white/60">Amount (৳)</label>
+              <label className="text-[11px] text-white/60">{t("ijAmountLabel")}</label>
               <input
                 autoFocus
                 type="number"
@@ -629,14 +629,14 @@ export default function InstallmentJourneyPage() {
                 onClick={confirmAction}
                 className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#009688] to-[#2ECC71] py-3 text-sm font-semibold text-white disabled:opacity-40"
               >
-                {submitting ? "Processing…" : `Confirm ${actionSheet === "installment" ? "Installment" : "Deposit"}`}
+                {submitting ? t("ijProcessing") : (actionSheet === "installment" ? t("ijConfirmInstallment") : t("ijConfirmDeposit"))}
               </button>
               <button
                 disabled={submitting}
                 onClick={() => setActionSheet(null)}
                 className="mt-2 w-full py-2 text-xs font-medium text-white/50"
               >
-                Cancel
+                {t("ijCancel")}
               </button>
             </motion.div>
           </motion.div>
