@@ -381,6 +381,7 @@ function DpsPlanDetailsSheet({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useI18n();
   const [history, setHistory] = useState<RunLogEntry[]>([]);
   const [loadingHist, setLoadingHist] = useState(false);
   const [busy, setBusy] = useState(false);
