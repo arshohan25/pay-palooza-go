@@ -476,14 +476,15 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
         <div className="text-center py-16 space-y-3">
           <p className="text-5xl">🏪</p>
           <p className="text-[15px] font-bold text-foreground">
-            {products.length === 0 ? "No products yet" : "No results"}
+            {products.length === 0 ? t("mprEmptyTitle") : t("mprEmptyResults")}
           </p>
           <p className="text-[13px] text-muted-foreground">
-            {products.length === 0 ? "Add your first product to start selling" : "Try a different search"}
+            {products.length === 0 ? t("mprEmptyDesc") : t("mprEmptyTrySearch")}
           </p>
           {products.length === 0 && (
             <Button onClick={openAdd} className="rounded-xl gap-1.5 mt-2">
-              <Plus size={15} /> Add First Product
+              <Plus size={15} /> {t("mprAddFirst")}
+
             </Button>
           )}
         </div>
