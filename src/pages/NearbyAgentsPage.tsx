@@ -248,7 +248,7 @@ const NearbyAgentsPage = () => {
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`inline-flex items-center gap-1 text-[10px] font-semibold ${open ? "text-emerald-500" : "text-muted-foreground"}`}>
                           <CircleDot size={10} />
-                          {open ? "Available" : "Closed"}
+                          {open ? t("naAvailable") : t("naClosed")}
                         </span>
                         <span className="text-[10px] text-muted-foreground">·</span>
                         <span className="text-[11px] text-muted-foreground font-semibold">{a.distance_km.toFixed(2)} km</span>
