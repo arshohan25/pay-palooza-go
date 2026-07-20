@@ -34,6 +34,7 @@ import {
   HelpCircle,
   KeyRound,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const LS_LOCKED_UNTIL = "mfs_merchant_login_locked_until";
 
@@ -45,6 +46,7 @@ function formatCountdown(seconds: number) {
 
 export default function MerchantLoginPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const redirectTarget = useMemo(() => {
     const raw = searchParams.get("redirect");
@@ -486,15 +488,15 @@ export default function MerchantLoginPage() {
             </div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/30 bg-amber-300/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-amber-100">
               <Sparkles className="h-3 w-3" />
-              {loginMode === "manager" ? "Store Manager" : "Merchant Portal"}
+              {loginMode === "manager" ? t("mlStoreManager") : t("mlMerchantPortal")}
             </span>
             <h1 className="mt-2 text-xl font-semibold leading-tight tracking-tight">
-              {loginMode === "manager" ? "Manager sign-in" : "Welcome back"}
+              {loginMode === "manager" ? t("mlManagerSignIn") : t("mlWelcomeBack")}
             </h1>
             <p className="mt-1 text-[12px] text-white/60">
               {loginMode === "manager"
-                ? "Access the store you manage."
-                : "Manage your store, orders, payouts and QR."}
+                ? t("mlManagerDesc")
+                : t("mlMerchantDesc")}
             </p>
           </div>
 
@@ -530,14 +532,14 @@ export default function MerchantLoginPage() {
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <div className="space-y-0.5">
                   <p className="text-xs font-semibold uppercase tracking-wider">
-                    Account temporarily locked
+                    {t("mlLockedTitle")}
                   </p>
                   <p className="text-[13px] leading-snug text-rose-100/85">
-                    Too many failed sign-in attempts. Try again in{" "}
+                    {t("mlLockedDescPrefix")}
                     <span className="font-semibold tabular-nums">
                       {formatCountdown(remainingSeconds)}
                     </span>
-                    .
+                    {t("mlLockedDescSuffix")}
                   </p>
                 </div>
               </div>
@@ -553,12 +555,12 @@ export default function MerchantLoginPage() {
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <div className="space-y-0.5">
                   <p className="text-xs font-semibold uppercase tracking-wider">
-                    Incorrect PIN
+                    {t("mlIncorrectPin")}
                   </p>
                   <p className="text-[13px] leading-snug text-rose-100/85">
                     {attemptsRemaining != null
-                      ? `${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} remaining before this account is temporarily locked.`
-                      : "Please double-check your PIN and try again."}
+                      ? (attemptsRemaining === 1 ? t("mlAttemptsRemainingOne") : t("mlAttemptsRemainingOther")).replace("{n}", String(attemptsRemaining))
+                      : t("mlPleaseDoubleCheck")}
                   </p>
                 </div>
               </div>
@@ -573,8 +575,7 @@ export default function MerchantLoginPage() {
                 <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-amber-100">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
                   <p className="text-[13px] leading-snug">
-                    {attemptsRemaining} attempt{attemptsRemaining === 1 ? "" : "s"} remaining
-                    before this account is temporarily locked.
+                    {(attemptsRemaining === 1 ? t("mlAttemptsRemainingOne") : t("mlAttemptsRemainingOther")).replace("{n}", String(attemptsRemaining))}
                   </p>
                 </div>
               )}
@@ -582,7 +583,7 @@ export default function MerchantLoginPage() {
             {/* Phone — masked chip if device is bound, otherwise editable input */}
             <div className="space-y-1.5">
               <Label htmlFor="merchant-phone" className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                {boundPhone ? "Signed in as" : "Mobile number"}
+                {boundPhone ? t("mlSignedInAs") : t("mlMobileNumber")}
               </Label>
               {boundPhone ? (
                 <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-200/25 bg-amber-300/[0.06] px-3 py-2.5">
@@ -595,7 +596,7 @@ export default function MerchantLoginPage() {
                     </div>
                   </div>
                   <div
-                    aria-label="Device locked to this merchant account"
+                    aria-label={t("mlDeviceLockedAria")}
                     className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200/30 bg-amber-300/10 text-amber-200"
                   >
                     <Lock className="h-3.5 w-3.5" />
@@ -625,7 +626,7 @@ export default function MerchantLoginPage() {
             {/* PIN — auto-masked, no show/hide toggle */}
             <div className="mt-3 space-y-1.5">
               <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                4-digit PIN
+                {t("mlPin4Digit")}
               </Label>
               <div className={`rounded-2xl border p-2 transition-colors focus-within:border-amber-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
                 <InputOTP
@@ -658,16 +659,16 @@ export default function MerchantLoginPage() {
               {isLocked ? (
                 <>
                   <Lock className="h-4 w-4" />
-                  Locked — try again in {formatCountdown(remainingSeconds)}
+                  {t("mlLockedButton").replace("{time}", formatCountdown(remainingSeconds))}
                 </>
               ) : loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Signing in...
+                  {t("mlSigningIn")}
                 </>
               ) : (
                 <>
-                  {loginMode === "manager" ? "Sign in as Manager" : "Sign in to dashboard"}
+                  {loginMode === "manager" ? t("mlSignInAsManager") : t("mlSignInToDashboard")}
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
@@ -678,9 +679,9 @@ export default function MerchantLoginPage() {
               <>
                 <div className="mt-3 grid grid-cols-3 gap-1.5">
                   {[
-                    { icon: Lock, label: "Secure PIN" },
-                    { icon: ShieldCheck, label: "Encrypted" },
-                    { icon: Sparkles, label: "Bank-grade" },
+                    { icon: Lock, label: t("mlTrustSecurePin") },
+                    { icon: ShieldCheck, label: t("mlTrustEncrypted") },
+                    { icon: Sparkles, label: t("mlTrustBankGrade") },
                   ].map(({ icon: Icon, label }) => (
                     <div
                       key={label}
@@ -694,10 +695,10 @@ export default function MerchantLoginPage() {
 
                 <div className="mt-2.5 flex items-center justify-between rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.03] to-white/[0.06] px-3 py-1.5">
                   {[
-                    { icon: ShoppingBag, label: "Orders" },
-                    { icon: Wallet, label: "Payouts" },
-                    { icon: QrCode, label: "QR" },
-                    { icon: BarChart3, label: "Insights" },
+                    { icon: ShoppingBag, label: t("mlPillOrders") },
+                    { icon: Wallet, label: t("mlPillPayouts") },
+                    { icon: QrCode, label: t("mlPillQR") },
+                    { icon: BarChart3, label: t("mlPillInsights") },
                   ].map(({ icon: Icon, label }) => (
                     <div key={label} className="flex flex-col items-center gap-0.5 text-white/70">
                       <Icon className="h-3.5 w-3.5 text-amber-200" />

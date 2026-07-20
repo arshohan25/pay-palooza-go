@@ -3839,6 +3839,111 @@ const translations = {
   distFRToastRejectedDesc: { en: "Request from {name} rejected", bn: "{name}-এর অনুরোধ প্রত্যাখ্যাত" },
   distFRToastFailed: { en: "Failed", bn: "ব্যর্থ" },
   distFRToastFailedDesc: { en: "Could not process", bn: "প্রক্রিয়া করা যায়নি" },
+
+  // ── Merchant Dashboard header/hero ──
+  mdHideBalance: { en: "Hide balance", bn: "ব্যালেন্স লুকান" },
+  mdTapToSeeBalance: { en: "Tap to see balance", bn: "ব্যালেন্স দেখতে ট্যাপ করুন" },
+  mdAvailableBalance: { en: "Available Balance", bn: "উপলব্ধ ব্যালেন্স" },
+  mdKyc: { en: "KYC", bn: "কেওয়াইসি" },
+  mdStatusActive: { en: "active", bn: "সক্রিয়" },
+  mdCategoryRetail: { en: "retail", bn: "খুচরা" },
+
+  // Merchant snapshot tiles
+  mdTodaySales: { en: "Today's Sales", bn: "আজকের বিক্রি" },
+  mdTransactions: { en: "Transactions", bn: "লেনদেন" },
+  mdCustomers: { en: "Customers", bn: "গ্রাহক" },
+
+  // Merchant tabs
+  mdTabOverview: { en: "Overview", bn: "সারসংক্ষেপ" },
+  mdTabProducts: { en: "Products", bn: "পণ্য" },
+  mdTabOrders: { en: "Orders", bn: "অর্ডার" },
+  mdBack: { en: "Back", bn: "ফিরে যান" },
+
+  // Merchant Services grid
+  mdMerchantServices: { en: "Merchant Services", bn: "মার্চেন্ট সেবা" },
+  mdSendMoney: { en: "Send Money", bn: "টাকা পাঠান" },
+  mdCashOut: { en: "Cash Out", bn: "ক্যাশ আউট" },
+  mdAddBank: { en: "Add Bank", bn: "ব্যাংক যোগ" },
+  mdSettlement: { en: "Settlement", bn: "সেটেলমেন্ট" },
+
+  // Dynamic QR card
+  mdDynamicQR: { en: "Dynamic QR", bn: "ডাইনামিক কিউআর" },
+  mdDynamicQRDesc: { en: "Generate a QR code that customers scan to pay instantly", bn: "একটি কিউআর কোড তৈরি করুন যা গ্রাহকরা স্ক্যান করে তাৎক্ষণিক পেমেন্ট করবে" },
+  mdGenerateQR: { en: "Generate QR", bn: "কিউআর তৈরি" },
+
+  // Last 7 Days card
+  mdLast7Days: { en: "Last 7 Days", bn: "গত ৭ দিন" },
+  mdUniqueCustomers: { en: "{n} unique customers", bn: "{n} জন গ্রাহক" },
+  mdUniqueCustomer: { en: "{n} unique customer", bn: "{n} জন গ্রাহক" },
+  mdDowSun: { en: "Sun", bn: "রবি" },
+  mdDowMon: { en: "Mon", bn: "সোম" },
+  mdDowTue: { en: "Tue", bn: "মঙ্গল" },
+  mdDowWed: { en: "Wed", bn: "বুধ" },
+  mdDowThu: { en: "Thu", bn: "বৃহ" },
+  mdDowFri: { en: "Fri", bn: "শুক্র" },
+  mdDowSat: { en: "Sat", bn: "শনি" },
+
+  // Revenue stats
+  mdTotalRevenue: { en: "Total Revenue", bn: "মোট আয়" },
+  mdMdrDeducted: { en: "MDR Deducted", bn: "এমডিআর কর্তন" },
+  mdNetEarnings: { en: "Net Earnings", bn: "নেট আয়" },
+  mdAvgTransaction: { en: "Avg Transaction", bn: "গড় লেনদেন" },
+
+  // Recent activity
+  mdRecentActivity: { en: "Recent Activity", bn: "সাম্প্রতিক কার্যক্রম" },
+  mdSeeAllShort: { en: "See All", bn: "সব দেখুন" },
+  mdNoActivity: { en: "No activity yet", bn: "এখনো কোনো কার্যক্রম নেই" },
+  mdTxWillAppear: { en: "Transactions will appear here", bn: "লেনদেন এখানে দেখা যাবে" },
+
+  // Today snapshot component
+  mdSnapToday: { en: "Today", bn: "আজ" },
+  mdSnapSnapshot: { en: "Snapshot", bn: "স্ন্যাপশট" },
+  mdSnapVsYesterday: { en: "vs yesterday", bn: "গতকালের তুলনায়" },
+  mdSnapSales: { en: "Sales", bn: "বিক্রি" },
+  mdSnapOrders: { en: "Orders", bn: "অর্ডার" },
+  mdSnapAvgTicket: { en: "Avg ticket", bn: "গড় টিকিট" },
+  mdSnapNewReturn: { en: "New / Return", bn: "নতুন / পুনরায়" },
+  mdSnapTopToday: { en: "Top today:", bn: "আজকের সেরা:" },
+
+  // Weekly digest
+  mdWklyInsights: { en: "Weekly insights", bn: "সাপ্তাহিক অন্তর্দৃষ্টি" },
+  mdWklyShipToUnlock: { en: "Ship a few orders to unlock trend insights.", bn: "প্রবণতা দেখতে কয়েকটি অর্ডার ডেলিভারি করুন।" },
+  mdWklyLoading: { en: "Loading weekly insights…", bn: "সাপ্তাহিক অন্তর্দৃষ্টি লোড হচ্ছে…" },
+  mdWklyThisWeek: { en: "This week", bn: "এই সপ্তাহ" },
+  mdWklyLastWeek: { en: "Last week", bn: "গত সপ্তাহ" },
+  mdWklyItems: { en: "items", bn: "আইটেম" },
+  mdWklyTopSeller: { en: "Top seller: ", bn: "সেরা বিক্রেতা: " },
+  mdWklyBusiestDay: { en: "Busiest day: ", bn: "ব্যস্ততম দিন: " },
+
+  // ── Merchant Login page ──
+  mlStoreManager: { en: "Store Manager", bn: "স্টোর ম্যানেজার" },
+  mlMerchantPortal: { en: "Merchant Portal", bn: "মার্চেন্ট পোর্টাল" },
+  mlManagerSignIn: { en: "Manager sign-in", bn: "ম্যানেজার সাইন-ইন" },
+  mlWelcomeBack: { en: "Welcome back", bn: "স্বাগতম" },
+  mlManagerDesc: { en: "Access the store you manage.", bn: "আপনার পরিচালিত দোকানে প্রবেশ করুন।" },
+  mlMerchantDesc: { en: "Manage your store, orders, payouts and QR.", bn: "আপনার দোকান, অর্ডার, পেআউট ও কিউআর পরিচালনা করুন।" },
+  mlLockedTitle: { en: "Account temporarily locked", bn: "অ্যাকাউন্ট সাময়িক লক" },
+  mlLockedDescPrefix: { en: "Too many failed sign-in attempts. Try again in ", bn: "অনেকবার ব্যর্থ চেষ্টা হয়েছে। আবার চেষ্টা করুন " },
+  mlLockedDescSuffix: { en: ".", bn: "-এ।" },
+  mlIncorrectPin: { en: "Incorrect PIN", bn: "ভুল পিন" },
+  mlAttemptsRemainingOne: { en: "{n} attempt remaining before this account is temporarily locked.", bn: "সাময়িক লক হওয়ার আগে {n}টি চেষ্টা বাকি।" },
+  mlAttemptsRemainingOther: { en: "{n} attempts remaining before this account is temporarily locked.", bn: "সাময়িক লক হওয়ার আগে {n}টি চেষ্টা বাকি।" },
+  mlPleaseDoubleCheck: { en: "Please double-check your PIN and try again.", bn: "পিন যাচাই করে আবার চেষ্টা করুন।" },
+  mlSignedInAs: { en: "Signed in as", bn: "সাইন-ইন হিসেবে" },
+  mlMobileNumber: { en: "Mobile number", bn: "মোবাইল নম্বর" },
+  mlPin4Digit: { en: "4-digit PIN", bn: "৪-সংখ্যার পিন" },
+  mlSigningIn: { en: "Signing in...", bn: "সাইন ইন হচ্ছে..." },
+  mlSignInAsManager: { en: "Sign in as Manager", bn: "ম্যানেজার হিসেবে সাইন ইন" },
+  mlSignInToDashboard: { en: "Sign in to dashboard", bn: "ড্যাশবোর্ডে সাইন ইন" },
+  mlLockedButton: { en: "Locked — try again in {time}", bn: "লক — আবার চেষ্টা {time}-এ" },
+  mlDeviceLockedAria: { en: "Device locked to this merchant account", bn: "এই মার্চেন্ট অ্যাকাউন্টে ডিভাইস লক" },
+  mlTrustSecurePin: { en: "Secure PIN", bn: "নিরাপদ পিন" },
+  mlTrustEncrypted: { en: "Encrypted", bn: "এনক্রিপ্টেড" },
+  mlTrustBankGrade: { en: "Bank-grade", bn: "ব্যাংক-গ্রেড" },
+  mlPillOrders: { en: "Orders", bn: "অর্ডার" },
+  mlPillPayouts: { en: "Payouts", bn: "পেআউট" },
+  mlPillQR: { en: "QR", bn: "কিউআর" },
+  mlPillInsights: { en: "Insights", bn: "ইনসাইট" },
 } as const;
 
 

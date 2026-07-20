@@ -191,7 +191,7 @@ const MerchantDashboard = () => {
   const navigate = useNavigate();
   useUserSessionTimeout("merchant");
   const { toast } = useToast();
-  const { lang, toggleLang } = useI18n();
+  const { lang, toggleLang, t } = useI18n();
   const { isDisabled } = useGlobalToggles();
   const futureFeatures = useFutureFeatures();
   void futureFeatures.visibility.future_merchant_growth_os;
@@ -524,19 +524,19 @@ const MerchantDashboard = () => {
                 <h1 className="text-xl font-extrabold tracking-tight truncate">{merchant?.business_name || "Merchant"}</h1>
                 {kycStatus === "approved" ? (
                   <span title="KYC verified" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-emerald-400/25 border border-emerald-200/40 text-emerald-50 text-[9px] font-bold backdrop-blur-sm">
-                    <BadgeCheck size={11} /> KYC
+                    <BadgeCheck size={11} /> {t("mdKyc")}
                   </span>
                 ) : kycStatus === "pending" ? (
                   <span title="KYC under review" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-yellow-400/25 border border-yellow-200/40 text-yellow-50 text-[9px] font-bold backdrop-blur-sm">
-                    <Clock size={10} /> KYC
+                    <Clock size={10} /> {t("mdKyc")}
                   </span>
                 ) : kycStatus === "rejected" ? (
                   <span title="KYC rejected" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-red-400/25 border border-red-200/40 text-red-50 text-[9px] font-bold backdrop-blur-sm">
-                    <AlertTriangle size={10} /> KYC
+                    <AlertTriangle size={10} /> {t("mdKyc")}
                   </span>
                 ) : (
                   <span title="KYC not started" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-white/90 text-[9px] font-bold backdrop-blur-sm">
-                    <Shield size={10} /> KYC
+                    <Shield size={10} /> {t("mdKyc")}
                   </span>
                 )}
               </div>
@@ -546,12 +546,12 @@ const MerchantDashboard = () => {
                     <Users size={8} className="mr-0.5" />Staff · {staffRole}
                   </Badge>
                 )}
-                <Badge className="text-[9px] bg-white/15 border-white/20 text-white capitalize backdrop-blur-sm">{merchant?.category || "retail"}</Badge>
+                <Badge className="text-[9px] bg-white/15 border-white/20 text-white capitalize backdrop-blur-sm">{merchant?.category || t("mdCategoryRetail")}</Badge>
                 <Badge className="text-[9px] bg-white/15 border-white/20 text-white backdrop-blur-sm">
                   <Zap size={8} className="mr-0.5" />{merchant?.settlement_frequency || "T+1"}
                 </Badge>
                 <Badge className={`text-[9px] border-0 backdrop-blur-sm ${merchant?.status === "active" ? "bg-green-500/30 text-green-100" : "bg-yellow-500/30 text-yellow-100"}`}>
-                  {merchant?.status || "active"}
+                  {merchant?.status || t("mdStatusActive")}
                 </Badge>
               </div>
             </div>
@@ -566,9 +566,9 @@ const MerchantDashboard = () => {
                   whileTap={{ scale: 0.98 }}
                   onClick={toggleBalance}
                   className="w-fit max-w-full text-left"
-                  aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
+                  aria-label={showBalance ? t("mdHideBalance") : t("mdTapToSeeBalance")}
                 >
-                  <p className="text-[11px] font-medium text-white/60 uppercase tracking-wider">Available Balance</p>
+                  <p className="text-[11px] font-medium text-white/60 uppercase tracking-wider">{t("mdAvailableBalance")}</p>
                   <AnimatePresence mode="wait">
                     {showBalance ? (
                       <motion.p key="bal" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-3xl font-black tracking-tight mt-0.5 flex items-center gap-2">
@@ -578,7 +578,7 @@ const MerchantDashboard = () => {
                     ) : (
                       <motion.div key="hidden" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="flex items-center gap-2 mt-1.5 bg-white/10 rounded-xl px-3 py-1.5 w-fit">
                         <Eye size={13} className="opacity-80" />
-                        <span className="text-[12px] font-semibold opacity-90">Tap to see balance</span>
+                        <span className="text-[12px] font-semibold opacity-90">{t("mdTapToSeeBalance")}</span>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -613,9 +613,9 @@ const MerchantDashboard = () => {
             const salesGrowth = yesterdaySales > 0 ? ((todaySales - yesterdaySales) / yesterdaySales * 100) : 0;
 
             return [
-              { label: "Today's Sales", value: `৳${fmt(todaySales)}`, icon: TrendingUp, trend: salesGrowth, gradient: "from-emerald-500/10 to-emerald-600/5" },
-              { label: "Transactions", value: todayTxns.length.toString(), icon: Receipt, trend: null, gradient: "from-blue-500/10 to-blue-600/5" },
-              { label: "Customers", value: new Set(paymentTxns.map(t => t.recipient_phone)).size.toString(), icon: Users, trend: null, gradient: "from-purple-500/10 to-purple-600/5" },
+              { label: t("mdTodaySales"), value: `৳${fmt(todaySales)}`, icon: TrendingUp, trend: salesGrowth, gradient: "from-emerald-500/10 to-emerald-600/5" },
+              { label: t("mdTransactions"), value: todayTxns.length.toString(), icon: Receipt, trend: null, gradient: "from-blue-500/10 to-blue-600/5" },
+              { label: t("mdCustomers"), value: new Set(paymentTxns.map(t => t.recipient_phone)).size.toString(), icon: Users, trend: null, gradient: "from-purple-500/10 to-purple-600/5" },
             ].map((s, i) => (
               <motion.div key={s.label} variants={stagger.item}>
                 <Card className={`p-3 border-0 shadow-elevated bg-gradient-to-br ${s.gradient} backdrop-blur-sm`}>
@@ -640,10 +640,11 @@ const MerchantDashboard = () => {
       {/* ── Tab strip ── */}
       <div className=" px-4 mt-3">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 bg-muted/50 rounded-2xl p-1.5">
-          {visibleMainTabs.map(t => {
-            const active = activeTab === t.id;
+          {visibleMainTabs.map(tab => {
+            const active = activeTab === tab.id;
+            const label = tab.id === "overview" ? t("mdTabOverview") : tab.id === "products" ? t("mdTabProducts") : tab.id === "orders" ? t("mdTabOrders") : tab.label;
             return (
-              <button key={t.id} onClick={() => setActiveTab(t.id)}
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`relative flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all press-effect flex-1 justify-center ${
                   active ? "text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -657,7 +658,7 @@ const MerchantDashboard = () => {
                   />
                 )}
                 <span className="relative z-10 flex items-center gap-1.5">
-                  <t.icon size={13} />{t.label}
+                  <tab.icon size={13} />{label}
                 </span>
               </button>
             );
@@ -687,10 +688,11 @@ const MerchantDashboard = () => {
             {/* Sticky tab header */}
             <div className="shrink-0 bg-background border-b border-border/50 px-4 pt-3 pb-2">
               <div className="flex gap-1.5 bg-muted/50 rounded-2xl p-1.5">
-                {visibleMainTabs.map(t => {
-                  const active = activeTab === t.id;
+                {visibleMainTabs.map(tab => {
+                  const active = activeTab === tab.id;
+                  const label = tab.id === "overview" ? t("mdTabOverview") : tab.id === "products" ? t("mdTabProducts") : tab.id === "orders" ? t("mdTabOrders") : tab.label;
                   return (
-                    <button key={t.id} onClick={() => setActiveTab(t.id)}
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                       className={`relative flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all press-effect flex-1 justify-center ${
                         active ? "text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
                       }`}
@@ -704,7 +706,7 @@ const MerchantDashboard = () => {
                         />
                       )}
                       <span className="relative z-10 flex items-center gap-1.5">
-                        <t.icon size={13} />{t.label}
+                        <tab.icon size={13} />{label}
                       </span>
                     </button>
                   );
@@ -758,7 +760,7 @@ const MerchantDashboard = () => {
                   <ArrowLeft size={16} className="text-foreground" />
                 </button>
                 <h2 className="text-sm font-bold text-foreground">
-                  {[...mainTabs, ...menuItems].find(t => t.id === activeTab)?.label || "Back"}
+                  {[...mainTabs, ...menuItems].find(tab => tab.id === activeTab)?.label || t("mdBack")}
                 </h2>
               </div>
             )}
@@ -1148,6 +1150,7 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
 /* ── Overview Tab ── */
 const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onSeeAll, onOpenInbox, isStaff, can, staffId }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; allTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void; onOpenInbox: () => void; isStaff: boolean; can: (key: string) => boolean; staffId: string | null }) => {
   const { toast } = useToast();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { totalUnread } = useChat();
   const [showSendMoney, setShowSendMoney] = useState(false);
@@ -1170,11 +1173,12 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const yesterdayRevenue = yesterdayTxns.reduce((s, t) => s + t.amount, 0);
   const revenueDelta = yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100) : (todayRevenue > 0 ? 100 : 0);
 
+  const dowKeys = ["mdDowSun","mdDowMon","mdDowTue","mdDowWed","mdDowThu","mdDowFri","mdDowSat"] as const;
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i));
     const dayStr = d.toDateString();
     const dayTxns = paymentTxns.filter(t => new Date(t.created_at).toDateString() === dayStr);
-    return { day: d.toLocaleDateString("en-BD", { weekday: "short" }), amount: dayTxns.reduce((s, t) => s + t.amount, 0), count: dayTxns.length };
+    return { day: t(dowKeys[d.getDay()]), amount: dayTxns.reduce((s, t) => s + t.amount, 0), count: dayTxns.length };
   });
   const maxDay = Math.max(...last7.map(d => d.amount), 1);
 
@@ -1260,10 +1264,10 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   };
 
   const quickActions = [
-    { icon: Send, label: "Send Money", permission: "payouts", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
-    { icon: HandCoins, label: "Cash Out", permission: "payouts", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
-    { icon: Landmark, label: "Add Bank", permission: "add_bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
-    { icon: CalendarClock, label: "Settlement", permission: "settlements", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
+    { icon: Send, label: t("mdSendMoney"), permission: "payouts", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
+    { icon: HandCoins, label: t("mdCashOut"), permission: "payouts", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
+    { icon: Landmark, label: t("mdAddBank"), permission: "add_bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
+    { icon: CalendarClock, label: t("mdSettlement"), permission: "settlements", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
     
   ];
 
@@ -1273,7 +1277,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       <motion.div variants={stagger.item}>
         <div className="flex items-center justify-between mb-2.5 px-1">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Zap size={14} className="text-primary" /> Merchant Services
+            <Zap size={14} className="text-primary" /> {t("mdMerchantServices")}
           </h3>
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
@@ -1323,8 +1327,8 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               <QrCode size={18} className="text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-[15px] font-bold text-foreground leading-tight">Dynamic QR</h4>
-              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">Generate a QR code that customers<br />scan to pay instantly</p>
+              <h4 className="text-[15px] font-bold text-foreground leading-tight">{t("mdDynamicQR")}</h4>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{t("mdDynamicQRDesc")}</p>
             </div>
             <Button
               size="sm"
@@ -1332,7 +1336,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               onClick={() => setShowQrGenerate(true)}
             >
               <ScanLine size={14} />
-              Generate QR
+              {t("mdGenerateQR")}
             </Button>
           </div>
         </Card>
@@ -1345,9 +1349,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <BarChart3 size={15} className="text-primary" />
               </div>
-              <h3 className="text-sm font-bold text-foreground">Last 7 Days</h3>
+              <h3 className="text-sm font-bold text-foreground">{t("mdLast7Days")}</h3>
             </div>
-            <p className="text-[10px] text-muted-foreground font-medium">{uniqueCustomers} unique customer{uniqueCustomers !== 1 ? "s" : ""}</p>
+            <p className="text-[10px] text-muted-foreground font-medium">{(uniqueCustomers === 1 ? t("mdUniqueCustomer") : t("mdUniqueCustomers")).replace("{n}", String(uniqueCustomers))}</p>
           </div>
           <div className="flex items-end gap-1.5 h-20">
             {last7.map((d, i) => {
@@ -1374,10 +1378,10 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
 
       <motion.div variants={stagger.item} className="grid grid-cols-2 gap-3">
         {[
-          { label: "Total Revenue", value: `৳${fmt(totalRevenue)}`, icon: DollarSign, iconBg: "bg-emerald-500/10", iconColor: "text-emerald-600" },
-          { label: "MDR Deducted", value: `৳${fmt(mdrDeducted)}`, icon: Percent, iconBg: "bg-red-500/10", iconColor: "text-red-500" },
-          { label: "Net Earnings", value: `৳${fmt(totalRevenue - mdrDeducted)}`, icon: TrendingUp, iconBg: "bg-amber-500/10", iconColor: "text-amber-600" },
-          { label: "Avg Transaction", value: `৳${fmt(avgTxn)}`, icon: Receipt, iconBg: "bg-blue-500/10", iconColor: "text-blue-600" },
+          { label: t("mdTotalRevenue"), value: `৳${fmt(totalRevenue)}`, icon: DollarSign, iconBg: "bg-emerald-500/10", iconColor: "text-emerald-600" },
+          { label: t("mdMdrDeducted"), value: `৳${fmt(mdrDeducted)}`, icon: Percent, iconBg: "bg-red-500/10", iconColor: "text-red-500" },
+          { label: t("mdNetEarnings"), value: `৳${fmt(totalRevenue - mdrDeducted)}`, icon: TrendingUp, iconBg: "bg-amber-500/10", iconColor: "text-amber-600" },
+          { label: t("mdAvgTransaction"), value: `৳${fmt(avgTxn)}`, icon: Receipt, iconBg: "bg-blue-500/10", iconColor: "text-blue-600" },
         ].map(s => (
           <Card key={s.label} className="p-3.5 border-0 shadow-card hover:shadow-elevated transition-shadow">
             <div className={`w-9 h-9 rounded-xl ${s.iconBg} flex items-center justify-center mb-2.5`}>
@@ -1394,16 +1398,16 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-foreground">Recent Activity</h3>
-            <button onClick={onSeeAll} className="text-[10px] font-semibold text-primary hover:underline">See All</button>
+            <h3 className="text-sm font-bold text-foreground">{t("mdRecentActivity")}</h3>
+            <button onClick={onSeeAll} className="text-[10px] font-semibold text-primary hover:underline">{t("mdSeeAllShort")}</button>
           </div>
           {allTxns.length === 0 ? (
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
               <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
                 <CreditCard className="w-7 h-7 text-muted-foreground" />
               </motion.div>
-              <p className="text-sm font-semibold text-foreground">No activity yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Transactions will appear here</p>
+              <p className="text-sm font-semibold text-foreground">{t("mdNoActivity")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("mdTxWillAppear")}</p>
             </motion.div>
           ) : (
             <div className="space-y-1">

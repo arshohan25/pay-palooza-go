@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, TrendingDown, Sparkles, Loader2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface Props { merchantId: string }
 
@@ -11,6 +12,8 @@ const fmt = (n: number) => new Intl.NumberFormat("en-BD", { maximumFractionDigit
 
 export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
   const [rows, setRows] = useState<Row[] | null>(null);
+  const { t } = useI18n();
+  const dowKeys = ["mdDowSun","mdDowMon","mdDowTue","mdDowWed","mdDowThu","mdDowFri","mdDowSat"] as const;
 
   useEffect(() => {
     let alive = true;
@@ -54,15 +57,15 @@ export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
     const delta = lastRev > 0 ? ((thisRev - lastRev) / lastRev) * 100 : (thisRev > 0 ? 100 : 0);
     const topProduct = [...productTotals.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
     const bestDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
-    const bestDay = dayCounts[bestDayIdx] > 0 ? ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][bestDayIdx] : null;
+    const bestDay = dayCounts[bestDayIdx] > 0 ? t(dowKeys[bestDayIdx]) : null;
     return { thisRev, lastRev, thisOrders, lastOrders, delta, topProduct, bestDay };
-  }, [rows]);
+  }, [rows, t]);
 
   if (!rows) {
     return (
       <Card className="border-0 shadow-elevated bg-gradient-to-br from-accent/10 via-background to-primary/5 p-4 flex items-center gap-2">
         <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Loading weekly insights…</span>
+        <span className="text-sm text-muted-foreground">{t("mdWklyLoading")}</span>
       </Card>
     );
   }
@@ -72,9 +75,9 @@ export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
       <Card className="border-0 shadow-elevated bg-gradient-to-br from-accent/10 via-background to-primary/5 p-4">
         <div className="flex items-center gap-2 mb-1">
           <Sparkles className="w-4 h-4 text-accent" />
-          <span className="text-sm font-semibold">Weekly insights</span>
+          <span className="text-sm font-semibold">{t("mdWklyInsights")}</span>
         </div>
-        <p className="text-xs text-muted-foreground">Ship a few orders to unlock trend insights.</p>
+        <p className="text-xs text-muted-foreground">{t("mdWklyShipToUnlock")}</p>
       </Card>
     );
   }
@@ -86,7 +89,7 @@ export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-accent" />
-          <span className="text-sm font-semibold">Weekly insights</span>
+          <span className="text-sm font-semibold">{t("mdWklyInsights")}</span>
         </div>
         <div className={`flex items-center gap-1 text-xs font-semibold ${up ? "text-emerald-500" : "text-rose-500"}`}>
           {up ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
@@ -95,23 +98,23 @@ export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">This week</div>
+          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("mdWklyThisWeek")}</div>
           <div className="text-lg font-bold">৳{fmt(insight.thisRev)}</div>
-          <div className="text-[11px] text-muted-foreground">{insight.thisOrders} items</div>
+          <div className="text-[11px] text-muted-foreground">{insight.thisOrders} {t("mdWklyItems")}</div>
         </div>
         <div>
-          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">Last week</div>
+          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("mdWklyLastWeek")}</div>
           <div className="text-lg font-semibold text-muted-foreground">৳{fmt(insight.lastRev)}</div>
-          <div className="text-[11px] text-muted-foreground">{insight.lastOrders} items</div>
+          <div className="text-[11px] text-muted-foreground">{insight.lastOrders} {t("mdWklyItems")}</div>
         </div>
       </div>
       {(insight.topProduct || insight.bestDay) && (
         <div className="mt-3 pt-3 border-t border-border/40 space-y-1">
           {insight.topProduct && (
-            <div className="text-xs"><span className="text-muted-foreground">Top seller: </span><span className="font-medium truncate">{insight.topProduct}</span></div>
+            <div className="text-xs"><span className="text-muted-foreground">{t("mdWklyTopSeller")}</span><span className="font-medium truncate">{insight.topProduct}</span></div>
           )}
           {insight.bestDay && (
-            <div className="text-xs"><span className="text-muted-foreground">Busiest day: </span><span className="font-medium">{insight.bestDay}</span></div>
+            <div className="text-xs"><span className="text-muted-foreground">{t("mdWklyBusiestDay")}</span><span className="font-medium">{insight.bestDay}</span></div>
           )}
         </div>
       )}
