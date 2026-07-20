@@ -380,6 +380,11 @@ const MerchantDashboard = () => {
         }
         knownTxnIdsRef.current.add(newTxn.id);
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'merchants', filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.new) {
+          setMerchant(prev => (prev ? { ...prev, ...(payload.new as Partial<MerchantInfo>) } : (payload.new as MerchantInfo)));
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user, playPaymentSound, toast]);
