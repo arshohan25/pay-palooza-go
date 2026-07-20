@@ -224,13 +224,13 @@ const NearbyAgentsPage = () => {
               className="h-7 px-2.5 rounded-full text-[11px] font-semibold border border-border text-foreground bg-card inline-flex items-center gap-1"
             >
               <SlidersHorizontal size={11} />
-              {sort === "nearest" ? "Nearest first" : "Top rated"}
+              {sort === "nearest" ? t("naSortNearest") : t("naSortTop")}
             </button>
           </div>
 
           {filtered.length === 0 && !loading ? (
             <p className="text-center text-sm text-muted-foreground py-8">
-              {query || category !== "all" ? "No agents match your filters." : "No open agents in this area."}
+              {query || category !== "all" ? t("naNoMatch") : t("naNoOpen")}
             </p>
           ) : (
             <div className="space-y-2">
