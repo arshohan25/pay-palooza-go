@@ -278,7 +278,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
       .upload(path, file, { contentType: file.type, upsert: false });
 
     if (error) {
-      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+      toast({ title: t("mprToastUploadFail"), description: error.message, variant: "destructive" });
       return null;
     }
 
