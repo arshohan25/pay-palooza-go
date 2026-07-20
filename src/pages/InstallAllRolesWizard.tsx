@@ -20,15 +20,16 @@ import {
 import { toast } from "sonner";
 import { getRoleInstallUrl } from "@/lib/rolePwaOrigins";
 import type { InstallableRoleKey } from "@/lib/appRole";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 const INSTALLED_ROLES_KEY = "mfs_pwa_installed_roles";
 const WIZARD_PROGRESS_KEY = "mfs_pwa_wizard_progress";
 
 type WizardRole = {
   key: Exclude<InstallableRoleKey, "customer">;
-  name: string;
-  short: string;
-  why: string;
+  nameKey: TranslationKey;
+  shortKey: TranslationKey;
+  whyKey: TranslationKey;
   Icon: typeof Shield;
   gradient: string;
 };
@@ -38,41 +39,41 @@ type WizardRole = {
 const STEPS: WizardRole[] = [
   {
     key: "agent",
-    name: "EasyPay Agent",
-    short: "Agent",
-    why: "Front-line cash-in, cash-out and customer onboarding.",
+    nameKey: "iarRoleAgentName",
+    shortKey: "iarRoleAgentShort",
+    whyKey: "iarRoleAgentWhy",
     Icon: Smartphone,
     gradient: "from-orange-500 to-amber-500",
   },
   {
     key: "merchant",
-    name: "EasyPay Merchant",
-    short: "Merchant",
-    why: "Accept payments, manage products and track sales.",
+    nameKey: "iarRoleMerchantName",
+    shortKey: "iarRoleMerchantShort",
+    whyKey: "iarRoleMerchantWhy",
     Icon: ShoppingBag,
     gradient: "from-rose-500 to-pink-500",
   },
   {
     key: "distributor",
-    name: "EasyPay Distributor",
-    short: "Distributor",
-    why: "Create agents, manage float and commissions.",
+    nameKey: "iarRoleDistributorName",
+    shortKey: "iarRoleDistributorShort",
+    whyKey: "iarRoleDistributorWhy",
     Icon: Users,
     gradient: "from-blue-600 to-cyan-500",
   },
   {
     key: "super-distributor",
-    name: "EasyPay Super Distributor",
-    short: "Super Distributor",
-    why: "Oversee distributors and network-wide allocation.",
+    nameKey: "iarRoleSDName",
+    shortKey: "iarRoleSDShort",
+    whyKey: "iarRoleSDWhy",
     Icon: BarChart3,
     gradient: "from-violet-600 to-purple-500",
   },
   {
     key: "admin",
-    name: "EasyPay Admin",
-    short: "Admin",
-    why: "Manage users, transactions and platform settings.",
+    nameKey: "iarRoleAdminName",
+    shortKey: "iarRoleAdminShort",
+    whyKey: "iarRoleAdminWhy",
     Icon: Shield,
     gradient: "from-emerald-600 to-teal-500",
   },
@@ -93,6 +94,7 @@ const readProgress = (): number => {
 
 const InstallAllRolesWizard = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [stepIndex, setStepIndex] = useState(readProgress);
   const [installed, setInstalled] = useState<Record<string, boolean>>(readInstalled);
 
@@ -117,6 +119,9 @@ const InstallAllRolesWizard = () => {
   const installUrl = useMemo(() => getRoleInstallUrl(current.key), [current.key]);
   const allDone = STEPS.every((s) => installed[s.key]);
   const completedCount = STEPS.filter((s) => installed[s.key]).length;
+  const currentShort = t(current.shortKey);
+  const currentName = t(current.nameKey);
+  const currentWhy = t(current.whyKey);
 
   const openInstaller = useCallback(() => {
     if (installUrl.startsWith(window.location.origin)) {
@@ -129,9 +134,9 @@ const InstallAllRolesWizard = () => {
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(installUrl);
-      toast.success(`${current.short} install link copied`);
+      toast.success(t("iarLinkCopied").replace("{short}", currentShort));
     } catch {
-      toast.error("Copy failed — long-press the link to copy manually");
+      toast.error(t("iarCopyFail"));
     }
   };
 
@@ -139,7 +144,7 @@ const InstallAllRolesWizard = () => {
     const next = { ...readInstalled(), [current.key]: true };
     localStorage.setItem(INSTALLED_ROLES_KEY, JSON.stringify(next));
     setInstalled(next);
-    toast.success(`${current.short} marked installed`);
+    toast.success(t("iarMarkedInstalled").replace("{short}", currentShort));
     if (stepIndex < STEPS.length - 1) setStepIndex(stepIndex + 1);
   };
 
@@ -150,10 +155,11 @@ const InstallAllRolesWizard = () => {
   const restart = () => {
     localStorage.removeItem(WIZARD_PROGRESS_KEY);
     setStepIndex(0);
-    toast.info("Wizard restarted");
+    toast.info(t("iarRestarted"));
   };
 
   const progressPct = Math.round((completedCount / STEPS.length) * 100);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -164,31 +170,30 @@ const InstallAllRolesWizard = () => {
               onClick={() => navigate("/install")}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft size={14} /> All installers
+              <ArrowLeft size={14} /> {t("iarAllInstallers")}
             </button>
             <button
               onClick={restart}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
-              <RotateCcw size={12} /> Restart
+              <RotateCcw size={12} /> {t("iarRestart")}
             </button>
           </div>
 
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary mb-3">
             <Download size={12} />
-            Install all roles · wizard
+            {t("iarBadge")}
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-            Install every EasyPay role app in order
+            {t("iarHeading")}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-xl">
-            Each role installs as its own PWA. Follow these {STEPS.length} steps —
-            we'll track progress and open the correct installer for you.
+            {t("iarSubheading").replace("{count}", String(STEPS.length))}
           </p>
 
           <div className="mt-5">
             <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground mb-1.5">
-              <span>{completedCount} of {STEPS.length} installed</span>
+              <span>{t("iarInstalledCount").replace("{done}", String(completedCount)).replace("{total}", String(STEPS.length))}</span>
               <span className="tabular-nums">{progressPct}%</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -234,7 +239,7 @@ const InstallAllRolesWizard = () => {
                       active ? "text-foreground" : "text-muted-foreground"
                     }`}
                   >
-                    {s.short}
+                    {t(s.shortKey)}
                   </span>
                 </button>
               </li>
@@ -266,24 +271,24 @@ const InstallAllRolesWizard = () => {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11px] font-bold text-muted-foreground">
-                    STEP {stepIndex + 1} / {STEPS.length}
+                    {t("iarStepOf").replace("{n}", String(stepIndex + 1)).replace("{total}", String(STEPS.length))}
                   </span>
                   {currentInstalled && (
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 size={12} /> Installed
+                      <CheckCircle2 size={12} /> {t("iarInstalled")}
                     </span>
                   )}
                 </div>
                 <h2 className="text-xl font-extrabold text-foreground mt-0.5">
-                  {current.name}
+                  {currentName}
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">{current.why}</p>
+                <p className="text-sm text-muted-foreground mt-1">{currentWhy}</p>
               </div>
             </div>
 
             <div className="mt-5 rounded-2xl bg-muted/50 border border-border p-3">
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                Installer link
+                {t("iarInstallerLink")}
               </p>
               <p className="text-xs font-mono text-foreground break-all">{installUrl}</p>
             </div>
@@ -294,24 +299,24 @@ const InstallAllRolesWizard = () => {
                 className={`h-11 rounded-xl bg-gradient-to-r ${current.gradient} text-white text-sm font-semibold shadow-sm flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition`}
               >
                 <ExternalLink size={15} />
-                Open {current.short} installer
+                {t("iarOpenInstaller").replace("{short}", currentShort)}
               </button>
               <button
                 onClick={copyLink}
                 className="h-11 rounded-xl border border-border bg-background hover:bg-accent text-sm font-semibold text-foreground flex items-center justify-center gap-2 transition"
               >
-                <Copy size={14} /> Copy link
+                <Copy size={14} /> {t("iarCopyLink")}
               </button>
             </div>
 
             <div className="mt-4 rounded-2xl bg-background border border-border p-4">
               <p className="text-xs font-bold text-foreground mb-2">
-                What to do on this step
+                {t("iarWhatToDo")}
               </p>
               <ol className="space-y-1.5 text-xs text-muted-foreground list-decimal list-inside">
-                <li>Tap <b>Open {current.short} installer</b>.</li>
-                <li>On the installer page, tap <b>Install</b> and confirm in your browser.</li>
-                <li>Return here and tap <b>Mark installed &amp; continue</b>.</li>
+                <li>{t("iarStep1").replace("{short}", currentShort)}</li>
+                <li>{t("iarStep2")}</li>
+                <li>{t("iarStep3")}</li>
               </ol>
             </div>
 
@@ -321,7 +326,7 @@ const InstallAllRolesWizard = () => {
                 disabled={stepIndex === 0}
                 className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground disabled:opacity-40"
               >
-                <ArrowLeft size={14} /> Back
+                <ArrowLeft size={14} /> {t("iarBack")}
               </button>
 
               <div className="flex items-center gap-2">
@@ -330,7 +335,7 @@ const InstallAllRolesWizard = () => {
                     onClick={skip}
                     className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground"
                   >
-                    <SkipForward size={14} /> Skip
+                    <SkipForward size={14} /> {t("iarSkip")}
                   </button>
                 )}
                 <button
@@ -339,11 +344,11 @@ const InstallAllRolesWizard = () => {
                 >
                   {stepIndex === STEPS.length - 1 ? (
                     <>
-                      <CheckCircle2 size={15} /> Mark installed &amp; finish
+                      <CheckCircle2 size={15} /> {t("iarMarkFinish")}
                     </>
                   ) : (
                     <>
-                      Mark installed &amp; continue <ArrowRight size={14} />
+                      {t("iarMarkContinue")} <ArrowRight size={14} />
                     </>
                   )}
                 </button>
@@ -355,7 +360,7 @@ const InstallAllRolesWizard = () => {
         {/* Overview list */}
         <section className="mt-8">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
-            Overview
+            {t("iarOverview")}
           </h3>
           <ul className="rounded-2xl border border-border bg-card divide-y divide-border overflow-hidden">
             {STEPS.map((s, i) => {
@@ -375,10 +380,10 @@ const InstallAllRolesWizard = () => {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">
-                      {i + 1}. {s.name}
+                      {i + 1}. {t(s.nameKey)}
                     </p>
                     <p className="text-[11px] text-muted-foreground truncate">
-                      {s.why}
+                      {t(s.whyKey)}
                     </p>
                   </div>
                   <button
@@ -386,7 +391,7 @@ const InstallAllRolesWizard = () => {
                     onClick={() => setStepIndex(i)}
                     className="text-[11px] font-semibold text-primary hover:underline shrink-0"
                   >
-                    {active ? "Current" : "Go"}
+                    {active ? t("iarCurrent") : t("iarGo")}
                   </button>
                 </li>
               );
@@ -402,24 +407,23 @@ const InstallAllRolesWizard = () => {
           >
             <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-2" />
             <p className="text-base font-bold text-foreground">
-              All role apps installed 🎉
+              {t("iarAllDone")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Launch any role from your home screen — each app logs you into its
-              own dashboard.
+              {t("iarAllDoneDesc")}
             </p>
             <div className="mt-4 flex items-center justify-center gap-2">
               <button
                 onClick={() => navigate("/install/status")}
                 className="h-10 px-4 rounded-xl border border-border bg-background text-sm font-semibold hover:bg-accent"
               >
-                View install status
+                {t("iarViewStatus")}
               </button>
               <button
                 onClick={() => navigate("/install")}
                 className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
               >
-                Done
+                {t("iarDone")}
               </button>
             </div>
           </motion.div>
