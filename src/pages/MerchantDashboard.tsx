@@ -547,7 +547,7 @@ const MerchantDashboard = () => {
                     <Users size={8} className="mr-0.5" />Staff · {staffRole}
                   </Badge>
                 )}
-                <Badge className="text-[9px] bg-white/15 border-white/20 text-white capitalize backdrop-blur-sm">{merchant?.category || t("mdCategoryRetail")}</Badge>
+                <Badge className="text-[9px] bg-white/15 border-white/20 text-white capitalize backdrop-blur-sm">{lang === "bn" ? bnCategoryLabel(merchant?.category, t("mdCategoryRetail")) : (merchant?.category || t("mdCategoryRetail"))}</Badge>
                 <Badge className="text-[9px] bg-white/15 border-white/20 text-white backdrop-blur-sm">
                   <Zap size={8} className="mr-0.5" />{merchant?.settlement_frequency || "T+1"}
                 </Badge>
