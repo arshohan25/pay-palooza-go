@@ -74,6 +74,7 @@ import MerchantTodaySnapshot from "@/components/merchant/MerchantTodaySnapshot";
 import MerchantInventoryAlerts from "@/components/MerchantInventoryAlerts";
 import MerchantPayoutEtaCard from "@/components/merchant/MerchantPayoutEtaCard";
 import MerchantDisputesTile from "@/components/merchant/MerchantDisputesTile";
+import MerchantWeeklyDigestCard from "@/components/merchant/MerchantWeeklyDigestCard";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 import RequestAccessSheet from "@/components/merchant/RequestAccessSheet";
