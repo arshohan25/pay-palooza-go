@@ -16,6 +16,7 @@ import DistrictMultiSelect from "@/components/DistrictMultiSelect";
 import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
 import LocationMismatchAlert from "@/components/LocationMismatchAlert";
 import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
+import { useI18n } from "@/lib/i18n";
 
 
 
@@ -23,6 +24,7 @@ const SuperDistributorCreateDistributor = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const LOC_KEY = "sd:create-distributor:location:v1";
   const TERR_KEY = "sd:create-distributor:territories";
