@@ -160,11 +160,11 @@ const PayLinkPage = () => {
         try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
         throw new Error(msg);
       }
-      if (!data?.success) throw new Error(data?.error ?? "Payment failed");
+      if (!data?.success) throw new Error(data?.error ?? t("plPaymentFailed"));
       haptics.success?.();
       fireSuccessConfetti();
       playPaymentSuccess();
-      setSuccess({ amount: data.amount, reference: data.reference, payee: data.payee_name ?? payeeName ?? "recipient" });
+      setSuccess({ amount: data.amount, reference: data.reference, payee: data.payee_name ?? payeeName ?? t("plRecipientFallback") });
       setIdemKey(crypto.randomUUID());
 
     } catch (e) {
