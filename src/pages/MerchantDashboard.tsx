@@ -2733,9 +2733,10 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
                           {isIncoming ? "+" : "−"}৳{fmt(tx.amount)}
                         </p>
                         <p className="text-[9px] text-muted-foreground">
-                          {new Date(tx.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric" })}
+                          {new Date(tx.created_at).toLocaleDateString(localeTag, { month: "short", day: "numeric" })}
                           {" "}
-                          {new Date(tx.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
+                          {new Date(tx.created_at).toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit" })}
+
                         </p>
                       </div>
                       <ChevronRight size={14} className="text-muted-foreground" />
