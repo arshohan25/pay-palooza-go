@@ -258,7 +258,7 @@ const AgentRegister = () => {
 
   const handleCreateAccount = async () => {
     if (!name.trim()) {
-      toast({ title: "Name Required", description: "Please enter the customer's name.", variant: "destructive" });
+      toast({ title: t("argNameReq"), description: t("argNameReqDesc"), variant: "destructive" });
       return;
     }
     setCreatingAccount(true);
