@@ -1326,7 +1326,7 @@ export default function AdminDashboard() {
               <Menu className="w-4 h-4" />
             </Button>
             <span className="text-sm font-semibold text-primary-foreground tracking-tight truncate">
-              {activeTab === "overview" ? `${getGreeting()}, ${displayName || "Admin"}` : (ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview")}
+              {headerLabel()}
             </span>
           </div>
         </header>
