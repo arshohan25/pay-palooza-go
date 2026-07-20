@@ -490,10 +490,10 @@ const MerchantDashboard = () => {
               whileTap={{ scale: 0.92 }}
               onClick={() => setShowLogoutConfirm(true)}
               className="tap-target h-10 px-3 rounded-xl glass-hero flex items-center gap-1.5 text-[12px] font-semibold"
-              aria-label="Logout"
+              aria-label={t("logout")}
             >
               <LogOut size={15} />
-              <span>Logout</span>
+              <span>{t("logout")}</span>
             </motion.button>
             <div className="flex items-center gap-3">
               <button
