@@ -445,12 +445,12 @@ const AgentRegister = () => {
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-16 h-16 rounded-2xl gradient-accent flex items-center justify-center mx-auto shadow-glow">
                     <ShieldCheck size={28} className="text-primary-foreground" />
                   </motion.div>
-                  <h2 className="text-lg font-bold text-foreground">Verify OTP</h2>
-                  <p className="text-xs text-muted-foreground">Enter the 6-digit code sent to <span className="font-bold text-foreground">+88{phone}</span></p>
+                  <h2 className="text-lg font-bold text-foreground">{t("argVerifyOtp")}</h2>
+                  <p className="text-xs text-muted-foreground">{t("argVerifyOtpDesc")} <span className="font-bold text-foreground">+88{phone}</span></p>
                 </div>
                 {devOtp && (
                   <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="text-center px-3 py-2 rounded-xl bg-accent/10 border border-accent/20">
-                    <p className="text-[10px] text-accent font-bold uppercase tracking-wider">Dev Mode OTP</p>
+                    <p className="text-[10px] text-accent font-bold uppercase tracking-wider">{t("argDevOtp")}</p>
                     <p className="text-lg font-mono font-bold text-accent tracking-[0.3em]">{devOtp}</p>
                   </motion.div>
                 )}
