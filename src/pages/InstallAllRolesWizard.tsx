@@ -94,6 +94,7 @@ const readProgress = (): number => {
 
 const InstallAllRolesWizard = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [stepIndex, setStepIndex] = useState(readProgress);
   const [installed, setInstalled] = useState<Record<string, boolean>>(readInstalled);
 
@@ -118,6 +119,9 @@ const InstallAllRolesWizard = () => {
   const installUrl = useMemo(() => getRoleInstallUrl(current.key), [current.key]);
   const allDone = STEPS.every((s) => installed[s.key]);
   const completedCount = STEPS.filter((s) => installed[s.key]).length;
+  const currentShort = t(current.shortKey);
+  const currentName = t(current.nameKey);
+  const currentWhy = t(current.whyKey);
 
   const openInstaller = useCallback(() => {
     if (installUrl.startsWith(window.location.origin)) {
@@ -130,9 +134,9 @@ const InstallAllRolesWizard = () => {
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(installUrl);
-      toast.success(`${current.short} install link copied`);
+      toast.success(t("iarLinkCopied").replace("{short}", currentShort));
     } catch {
-      toast.error("Copy failed — long-press the link to copy manually");
+      toast.error(t("iarCopyFail"));
     }
   };
 
@@ -140,7 +144,7 @@ const InstallAllRolesWizard = () => {
     const next = { ...readInstalled(), [current.key]: true };
     localStorage.setItem(INSTALLED_ROLES_KEY, JSON.stringify(next));
     setInstalled(next);
-    toast.success(`${current.short} marked installed`);
+    toast.success(t("iarMarkedInstalled").replace("{short}", currentShort));
     if (stepIndex < STEPS.length - 1) setStepIndex(stepIndex + 1);
   };
 
@@ -151,10 +155,11 @@ const InstallAllRolesWizard = () => {
   const restart = () => {
     localStorage.removeItem(WIZARD_PROGRESS_KEY);
     setStepIndex(0);
-    toast.info("Wizard restarted");
+    toast.info(t("iarRestarted"));
   };
 
   const progressPct = Math.round((completedCount / STEPS.length) * 100);
+
 
   return (
     <div className="min-h-screen bg-background">
