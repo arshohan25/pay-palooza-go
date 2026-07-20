@@ -315,8 +315,9 @@ export default function MerchantRefundsTab({ merchantId }: { merchantId: string 
       <PinConfirmSheet
         open={pinOpen}
         onClose={() => setPinOpen(false)}
-        title="Confirm refund"
-        description="Enter your PIN to authorize this refund."
+        title={t("mrtPinTitle")}
+        description={t("mrtPinDesc")}
+
         onConfirmed={async () => { await handleSubmitRefund(); }}
       />
     </div>
