@@ -19,15 +19,10 @@ import { isWeakPin } from "@/lib/pinValidation";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import KycFlow from "@/components/KycFlow";
+import { useI18n } from "@/lib/i18n";
 
 type FlowStep = "phone" | "otp" | "info" | "kyc" | "kyc_waiting" | "approved" | "rejected" | "customer_login";
 
-const STEPS: { key: FlowStep; label: string; icon: React.ElementType }[] = [
-  { key: "phone", label: "Phone", icon: Phone },
-  { key: "otp", label: "Verify", icon: ShieldCheck },
-  { key: "info", label: "Info", icon: User },
-  { key: "kyc", label: "KYC", icon: FileCheck },
-];
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? "40%" : "-40%", opacity: 0, scale: 0.97 }),
