@@ -270,11 +270,11 @@ export default function MerchantLoginPage() {
 
     const cleanedPhone = phone.replace(/\D/g, "").replace(/^88/, "");
     if (!/^01[3-9]\d{8}$/.test(cleanedPhone)) {
-      toast.error("Enter a valid 11-digit Bangladeshi mobile number");
+      toast.error(t("mfpErrInvalidPhone"));
       return;
     }
     if (!/^\d{4}$/.test(pin)) {
-      toast.error("Enter your 4-digit PIN");
+      toast.error(t("enterPin"));
       return;
     }
 
