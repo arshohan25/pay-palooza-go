@@ -1378,10 +1378,10 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
 
       <motion.div variants={stagger.item} className="grid grid-cols-2 gap-3">
         {[
-          { label: "Total Revenue", value: `৳${fmt(totalRevenue)}`, icon: DollarSign, iconBg: "bg-emerald-500/10", iconColor: "text-emerald-600" },
-          { label: "MDR Deducted", value: `৳${fmt(mdrDeducted)}`, icon: Percent, iconBg: "bg-red-500/10", iconColor: "text-red-500" },
-          { label: "Net Earnings", value: `৳${fmt(totalRevenue - mdrDeducted)}`, icon: TrendingUp, iconBg: "bg-amber-500/10", iconColor: "text-amber-600" },
-          { label: "Avg Transaction", value: `৳${fmt(avgTxn)}`, icon: Receipt, iconBg: "bg-blue-500/10", iconColor: "text-blue-600" },
+          { label: t("mdTotalRevenue"), value: `৳${fmt(totalRevenue)}`, icon: DollarSign, iconBg: "bg-emerald-500/10", iconColor: "text-emerald-600" },
+          { label: t("mdMdrDeducted"), value: `৳${fmt(mdrDeducted)}`, icon: Percent, iconBg: "bg-red-500/10", iconColor: "text-red-500" },
+          { label: t("mdNetEarnings"), value: `৳${fmt(totalRevenue - mdrDeducted)}`, icon: TrendingUp, iconBg: "bg-amber-500/10", iconColor: "text-amber-600" },
+          { label: t("mdAvgTransaction"), value: `৳${fmt(avgTxn)}`, icon: Receipt, iconBg: "bg-blue-500/10", iconColor: "text-blue-600" },
         ].map(s => (
           <Card key={s.label} className="p-3.5 border-0 shadow-card hover:shadow-elevated transition-shadow">
             <div className={`w-9 h-9 rounded-xl ${s.iconBg} flex items-center justify-center mb-2.5`}>
