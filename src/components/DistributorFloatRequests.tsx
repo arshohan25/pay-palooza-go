@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { CircleDollarSign, Check, X, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PinConfirmSheet from "@/components/PinConfirmSheet";
+import { useI18n } from "@/lib/i18n";
 
 interface FloatReq {
   id: string;
@@ -28,6 +29,7 @@ interface Props {
 
 const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
   const { toast } = useToast();
+  const { t } = useI18n();
   const [rows, setRows] = useState<FloatReq[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -79,7 +81,7 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
 
   const approve = async (row: FloatReq) => {
     if (!row.agent_phone) {
-      toast({ title: "Missing phone", description: "Agent phone not found", variant: "destructive" });
+      toast({ title: t("distFRToastMissingPhone"), description: t("distFRToastMissingPhoneDesc"), variant: "destructive" });
       return;
     }
     setProcessingId(row.id);
@@ -105,11 +107,11 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
         })
         .eq("id", row.id);
       if (updErr) throw updErr;
-      toast({ title: "Approved", description: `৳${fmt(row.amount)} sent to ${row.agent_name || "agent"}` });
+      toast({ title: t("distFRToastApproved"), description: t("distFRToastApprovedDesc").replace("{amount}", fmt(row.amount)).replace("{name}", row.agent_name || t("distFRAgent")) });
       onProcessed?.();
       load();
     } catch (e: any) {
-      toast({ title: "Failed", description: e?.message || "Could not process", variant: "destructive" });
+      toast({ title: t("distFRToastFailed"), description: e?.message || t("distFRToastFailedDesc"), variant: "destructive" });
     } finally {
       setProcessingId(null);
     }
@@ -128,10 +130,10 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
         })
         .eq("id", row.id);
       if (error) throw error;
-      toast({ title: "Rejected", description: `Request from ${row.agent_name || "agent"} rejected` });
+      toast({ title: t("distFRToastRejected"), description: t("distFRToastRejectedDesc").replace("{name}", row.agent_name || t("distFRAgent")) });
       load();
     } catch (e: any) {
-      toast({ title: "Failed", description: e?.message, variant: "destructive" });
+      toast({ title: t("distFRToastFailed"), description: e?.message, variant: "destructive" });
     } finally {
       setProcessingId(null);
     }
@@ -141,7 +143,7 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
     <Card className="p-4 border-0 shadow-card mb-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-          <CircleDollarSign size={14} className="text-primary" /> Float Requests
+          <CircleDollarSign size={14} className="text-primary" /> {t("distFRTitle")}
           {rows.length > 0 && (
             <Badge className="bg-primary/10 text-primary border-0 text-[10px] ml-1">{rows.length}</Badge>
           )}
@@ -152,9 +154,9 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
       </div>
 
       {loading ? (
-        <p className="text-xs text-muted-foreground text-center py-4">Loading…</p>
+        <p className="text-xs text-muted-foreground text-center py-4">{t("distFRLoading")}</p>
       ) : rows.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-4">No pending requests</p>
+        <p className="text-xs text-muted-foreground text-center py-4">{t("distFREmpty")}</p>
       ) : (
         <div className="space-y-2">
           {rows.map((r) => (
@@ -162,7 +164,7 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-foreground truncate">
-                    {r.agent_name || "Agent"} <span className="text-muted-foreground font-normal">· {r.agent_phone || "—"}</span>
+                    {r.agent_name || t("distFRAgent")} <span className="text-muted-foreground font-normal">· {r.agent_phone || "—"}</span>
                   </p>
                   <p className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</p>
                 </div>
@@ -177,7 +179,7 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
                   onClick={() => reject(r)}
                   className="flex-1 h-8 text-[11px]"
                 >
-                  <X size={12} className="mr-1" /> Reject
+                  <X size={12} className="mr-1" /> {t("distFRReject")}
                 </Button>
                 <Button
                   size="sm"
@@ -186,7 +188,7 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
                   className="flex-1 h-8 text-[11px] gradient-primary text-primary-foreground"
                 >
                   <Check size={12} className="mr-1" />
-                  {processingId === r.id ? "…" : "Approve & Send"}
+                  {processingId === r.id ? "…" : t("distFRApprove")}
                 </Button>
               </div>
             </div>
@@ -196,8 +198,8 @@ const DistributorFloatRequests = ({ distributorId, onProcessed }: Props) => {
       <PinConfirmSheet
         open={!!pinTarget}
         onClose={() => setPinTarget(null)}
-        title="Confirm float approval"
-        description={pinTarget ? `Approve ৳${fmt(pinTarget.amount)} to ${pinTarget.agent_name || "agent"}? Enter your PIN to send funds.` : undefined}
+        title={t("distFRConfirmTitle")}
+        description={pinTarget ? t("distFRConfirmDesc").replace("{amount}", fmt(pinTarget.amount)).replace("{name}", pinTarget.agent_name || t("distFRAgent")) : undefined}
         onConfirmed={async () => { if (pinTarget) { const r = pinTarget; setPinTarget(null); await approve(r); } }}
       />
     </Card>

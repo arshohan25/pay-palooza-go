@@ -14,11 +14,13 @@ import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from
 import LocationMismatchAlert from "@/components/LocationMismatchAlert";
 import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
 import { districtToRouteCode } from "@/lib/districtRouteCode";
+import { useI18n } from "@/lib/i18n";
 
 const DistributorCreateAgent = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
@@ -43,7 +45,7 @@ const DistributorCreateAgent = () => {
     if (!location.division || !location.district || !location.upazila) {
       const mismatch = await detectLocationMismatch({ ...location, area_type: (location.area_type as any) ?? null });
       setLocError(mismatch);
-      toast({ title: "Location required", description: mismatch?.message || "Pick Division → District → Upazila.", variant: "destructive" });
+      toast({ title: t("distCAToastLocReq"), description: mismatch?.message || t("distCAToastLocReqDesc"), variant: "destructive" });
       return;
     }
     setProcessing(true);
@@ -88,9 +90,9 @@ const DistributorCreateAgent = () => {
       }
 
       setDone(true);
-      toast({ title: "Agent Created", description: `${businessName || name || phone} has been registered as an agent` });
+      toast({ title: t("distCAToastCreated"), description: t("distCAToastCreatedDesc").replace("{name}", businessName || name || phone) });
     } catch (err: any) {
-      toast({ title: "Creation Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("distCAToastFailed"), description: err.message, variant: "destructive" });
     } finally {
       setProcessing(false);
     }
@@ -126,8 +128,8 @@ const DistributorCreateAgent = () => {
               <UserPlus size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">Create Agent Account</h1>
-              <p className="text-[9px] text-primary-foreground/60">Register new agent in your network</p>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("distCATitle")}</h1>
+              <p className="text-[9px] text-primary-foreground/60">{t("distCASubtitle")}</p>
             </div>
           </div>
         </div>
@@ -140,18 +142,18 @@ const DistributorCreateAgent = () => {
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
                 <UserPlus size={32} className="text-primary-foreground" />
               </motion.div>
-              <p className="text-lg font-extrabold text-foreground">Agent Created!</p>
-              <p className="text-sm text-muted-foreground">{businessName || name || phone} is now part of your network</p>
+              <p className="text-lg font-extrabold text-foreground">{t("distCASuccess")}</p>
+              <p className="text-sm text-muted-foreground">{t("distCASuccessBody").replace("{name}", businessName || name || phone)}</p>
               <div className="p-3 rounded-xl bg-muted/50 text-left space-y-1">
-                <p className="text-[10px] text-muted-foreground">Account Created</p>
-                <p className="text-xs text-foreground">A random PIN has been generated. The agent must use "Forgot PIN" to set their own PIN.</p>
+                <p className="text-[10px] text-muted-foreground">{t("distCAAccountCreated")}</p>
+                <p className="text-xs text-foreground">{t("distCAPinNote")}</p>
               </div>
               <Button onClick={resetForm} className="w-full rounded-xl h-11 text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
                 <UserPlus size={16} className="mr-2 text-primary-foreground" />
-                <span className="text-primary-foreground">Create Another Agent</span>
+                <span className="text-primary-foreground">{t("distCACreateAnother")}</span>
               </Button>
               <Button onClick={() => navigate("/distributor")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2">
-                <Home size={16} /> Back to Dashboard
+                <Home size={16} /> {t("distCABackDash")}
               </Button>
             </Card>
           </motion.div>
@@ -160,51 +162,51 @@ const DistributorCreateAgent = () => {
             <Card className="p-5 border-0 shadow-elevated rounded-2xl space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <Shield size={14} className="text-primary" />
-                <p className="text-xs font-semibold text-foreground">Agent Registration</p>
+                <p className="text-xs font-semibold text-foreground">{t("distCASectionTitle")}</p>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Phone Number *</Label>
+                <Label className="text-xs font-semibold">{t("distCAPhone")}</Label>
                 <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 mt-1 ${phoneValidation.inputClassName}`} />
                 {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Full Name *</Label>
-                <Input placeholder="Agent's full name" value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-11 mt-1" />
+                <Label className="text-xs font-semibold">{t("distCAFullName")}</Label>
+                <Input placeholder={t("distCAFullNamePh")} value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-11 mt-1" />
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Business Name</Label>
-                <Input placeholder="Shop or business name" value={businessName} onChange={e => setBusinessName(e.target.value)} className="rounded-xl h-11 mt-1" />
+                <Label className="text-xs font-semibold">{t("distCABusinessName")}</Label>
+                <Input placeholder={t("distCABusinessNamePh")} value={businessName} onChange={e => setBusinessName(e.target.value)} className="rounded-xl h-11 mt-1" />
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">NID Number</Label>
-                <Input type="text" inputMode="numeric" placeholder="NID" value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
+                <Label className="text-xs font-semibold">{t("distCANid")}</Label>
+                <Input type="text" inputMode="numeric" placeholder={t("distCANidPh")} value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Location *</Label>
-                <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
+                <Label className="text-xs font-semibold">{t("distCALocation")}</Label>
+                <p className="text-[10px] text-muted-foreground">{t("distCALocHint")}</p>
                 <DivisionDistrictUpazilaPicker value={location} onChange={setLocation} required showLabels={false} />
                 <LocationMismatchAlert mismatch={locError} />
-                <p className="text-[10px] text-muted-foreground">Route code (RR) is auto-derived from the district for the agent's wallet ID.</p>
+                <p className="text-[10px] text-muted-foreground">{t("distCARouteHint")}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs font-semibold">Trade License</Label>
-                  <Input placeholder="License #" value={tradeLicense} onChange={e => setTradeLicense(e.target.value)} className="rounded-xl h-11 mt-1" />
+                  <Label className="text-xs font-semibold">{t("distCATradeLicense")}</Label>
+                  <Input placeholder={t("distCATradeLicensePh")} value={tradeLicense} onChange={e => setTradeLicense(e.target.value)} className="rounded-xl h-11 mt-1" />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">Max Float (৳)</Label>
+                  <Label className="text-xs font-semibold">{t("distCAMaxFloat")}</Label>
                   <Input type="text" inputMode="numeric" placeholder="500000" value={maxFloat} onChange={e => setMaxFloat(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
                 </div>
               </div>
 
               <Button onClick={handleCreate} disabled={!phoneValidation.isValid || !name || processing || !location.division || !location.district || !location.upazila} className="w-full rounded-xl h-11 text-sm font-bold text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
-                {processing ? "Creating Agent…" : "Create Agent Account"}
+                {processing ? t("distCASubmitting") : t("distCASubmit")}
               </Button>
             </Card>
           </motion.div>

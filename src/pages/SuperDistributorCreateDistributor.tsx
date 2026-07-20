@@ -16,6 +16,7 @@ import DistrictMultiSelect from "@/components/DistrictMultiSelect";
 import DivisionDistrictUpazilaPicker, { type DivisionDistrictUpazilaValue } from "@/components/DivisionDistrictUpazilaPicker";
 import LocationMismatchAlert from "@/components/LocationMismatchAlert";
 import { detectLocationMismatch, type LocationMismatch } from "@/lib/detectLocationMismatch";
+import { useI18n } from "@/lib/i18n";
 
 
 
@@ -23,6 +24,7 @@ const SuperDistributorCreateDistributor = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const LOC_KEY = "sd:create-distributor:location:v1";
   const TERR_KEY = "sd:create-distributor:territories";
@@ -82,21 +84,21 @@ const SuperDistributorCreateDistributor = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6">
         <Shield size={48} className="text-muted-foreground" />
-        <p className="text-lg font-semibold text-foreground">Login required</p>
-        <Button onClick={() => navigate("/")} variant="outline">Go to Login</Button>
+        <p className="text-lg font-semibold text-foreground">{t("sdCDLoginReq")}</p>
+        <Button onClick={() => navigate("/")} variant="outline">{t("sdCDGoLogin")}</Button>
       </div>
     );
   }
 
   const handleCreate = async () => {
     if (!phone || !businessName) {
-      toast({ title: "Missing fields", description: "Phone and business name are required", variant: "destructive" });
+      toast({ title: t("sdCDToastMissing"), description: t("sdCDToastMissingDesc"), variant: "destructive" });
       return;
     }
     if (!location.division || !location.district || !location.upazila) {
       const mismatch = await detectLocationMismatch(location);
       setLocError(mismatch);
-      toast({ title: "Location required", description: mismatch?.message || "Pick Division → District → Upazila.", variant: "destructive" });
+      toast({ title: t("sdCDToastLocReq"), description: mismatch?.message || t("sdCDToastLocReqDesc"), variant: "destructive" });
       return;
     }
     setProcessing(true);
@@ -139,9 +141,9 @@ const SuperDistributorCreateDistributor = () => {
 
       clearPersisted();
       setSuccess(true);
-      toast({ title: "Distributor Created", description: `${businessName} account created successfully` });
+      toast({ title: t("sdCDToastCreated"), description: t("sdCDToastCreatedDesc").replace("{name}", businessName) });
     } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("sdCDToastFailed"), description: err.message, variant: "destructive" });
     } finally {
       setProcessing(false);
     }
@@ -157,16 +159,16 @@ const SuperDistributorCreateDistributor = () => {
           </div>
         </motion.div>
         <div className="text-center">
-          <h2 className="text-lg font-bold text-foreground">Distributor Created!</h2>
-          <p className="text-sm text-muted-foreground mt-1">{businessName} is now active</p>
-          <p className="text-xs text-muted-foreground mt-2">A random PIN was generated. They should use "Forgot PIN" to set their own.</p>
+          <h2 className="text-lg font-bold text-foreground">{t("sdCDSuccessTitle")}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{t("sdCDSuccessActive").replace("{name}", businessName)}</p>
+          <p className="text-xs text-muted-foreground mt-2">{t("sdCDPinNote")}</p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => { clearPersisted(); setSuccess(false); setPhone(""); setName(""); setBusinessName(""); setTerritories([]); setLocation({ division: null, district: null, upazila: null, union_parishad: null, area_type: null }); setLocError(null); setMaxFloat("10000000"); setCommissionRate("0.20"); }}>
-            <UserPlus size={14} className="mr-1.5" /> Create Another
+            <UserPlus size={14} className="mr-1.5" /> {t("sdCDCreateAnother")}
           </Button>
           <Button onClick={() => navigate("/super-distributor")} className="text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(270 60% 45%), hsl(285 55% 35%))" }}>
-            Back to Dashboard
+            {t("sdCDBackDash")}
           </Button>
         </div>
       </div>
@@ -182,7 +184,7 @@ const SuperDistributorCreateDistributor = () => {
           </button>
           <div className="flex items-center gap-2">
             <Crown size={16} className="text-primary-foreground" />
-            <h1 className="text-base font-bold text-primary-foreground">Create Distributor</h1>
+            <h1 className="text-base font-bold text-primary-foreground">{t("sdCDTitle")}</h1>
           </div>
         </div>
       </header>
@@ -194,54 +196,54 @@ const SuperDistributorCreateDistributor = () => {
               <Network size={20} className="text-foreground" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-foreground">New Distributor Account</h2>
-              <p className="text-[10px] text-muted-foreground">Create a new distribution hub in your network</p>
+              <h2 className="text-sm font-bold text-foreground">{t("sdCDCardTitle")}</h2>
+              <p className="text-[10px] text-muted-foreground">{t("sdCDCardSubtitle")}</p>
             </div>
           </div>
 
           <div className="space-y-3">
             <div>
-              <Label className="text-xs">Phone Number *</Label>
+              <Label className="text-xs">{t("sdCDPhone")}</Label>
               <Input type="tel" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(normalizeBDPhoneInput(e.target.value))} />
             </div>
             <div>
-              <Label className="text-xs">Full Name</Label>
-              <Input placeholder="Owner's full name" value={name} onChange={e => setName(e.target.value)} />
+              <Label className="text-xs">{t("sdCDName")}</Label>
+              <Input placeholder={t("sdCDNamePh")} value={name} onChange={e => setName(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">Business Name *</Label>
-              <Input placeholder="Distribution hub name" value={businessName} onChange={e => setBusinessName(e.target.value)} />
+              <Label className="text-xs">{t("sdCDBusiness")}</Label>
+              <Input placeholder={t("sdCDBusinessPh")} value={businessName} onChange={e => setBusinessName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Primary Location *</Label>
-              <p className="text-[10px] text-muted-foreground">Division › District › Upazila / Thana › Union / Powrashava</p>
+              <Label className="text-xs">{t("sdCDPrimaryLoc")}</Label>
+              <p className="text-[10px] text-muted-foreground">{t("sdCDLocHint")}</p>
               <DivisionDistrictUpazilaPicker value={location} onChange={setLocation} required showLabels={false} />
               <LocationMismatchAlert mismatch={locError} />
             </div>
             <div>
-              <Label className="text-xs">Operating Territories</Label>
-              <DistrictMultiSelect value={territories} onChange={setTerritories} placeholder="Select districts" persistKey={TERR_KEY} />
-              <p className="text-[10px] text-muted-foreground mt-1">Multi-district territory arrays are still 2-letter route codes for wallet ID routing.</p>
+              <Label className="text-xs">{t("sdCDTerritories")}</Label>
+              <DistrictMultiSelect value={territories} onChange={setTerritories} placeholder={t("sdCDTerritoriesPh")} persistKey={TERR_KEY} />
+              <p className="text-[10px] text-muted-foreground mt-1">{t("sdCDTerritoriesHint")}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Max Float (৳)</Label>
+                <Label className="text-xs">{t("sdCDMaxFloat")}</Label>
                 <Input type="text" inputMode="numeric" value={maxFloat} onChange={e => setMaxFloat(e.target.value.replace(/\D/g, ""))} />
               </div>
               <div>
-                <Label className="text-xs">Commission Rate (%)</Label>
+                <Label className="text-xs">{t("sdCDCommission")}</Label>
                 <Input type="text" inputMode="decimal" value={commissionRate} onChange={e => setCommissionRate(e.target.value)} />
               </div>
             </div>
           </div>
 
           <Button onClick={handleCreate} disabled={processing || !phone || !businessName} className="w-full text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(270 60% 45%), hsl(285 55% 35%))" }}>
-            {processing ? "Creating…" : "Create Distributor Account"}
+            {processing ? t("sdCDSubmitting") : t("sdCDSubmit")}
           </Button>
         </Card>
 
         <p className="text-[10px] text-muted-foreground text-center">
-          The distributor will receive a random PIN and can reset it via "Forgot PIN".
+          {t("sdCDFooterNote")}
         </p>
       </div>
     </div>
