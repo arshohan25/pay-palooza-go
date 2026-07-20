@@ -50,11 +50,11 @@ const loadMapsScript = () => new Promise<void>((resolve, reject) => {
   document.head.appendChild(s);
 });
 
-const CATEGORIES: { key: CategoryKey; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "open", label: "Available now" },
-  { key: "top", label: "Top rated 4★+" },
-  { key: "verified", label: "Rated only" },
+const CATEGORIES: { key: CategoryKey; labelKey: TranslationKey }[] = [
+  { key: "all", labelKey: "naCatAll" },
+  { key: "open", labelKey: "naCatOpen" },
+  { key: "top", labelKey: "naCatTop" },
+  { key: "verified", labelKey: "naCatVerified" },
 ];
 
 const NearbyAgentsPage = () => {
