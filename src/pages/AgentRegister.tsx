@@ -35,8 +35,16 @@ const POST_KYC_STEPS = ["kyc_waiting", "approved", "rejected", "customer_login"]
 const AgentRegister = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useI18n();
+  const STEPS: { key: FlowStep; label: string; icon: React.ElementType }[] = [
+    { key: "phone", label: t("argStepPhone"), icon: Phone },
+    { key: "otp", label: t("argStepVerify"), icon: ShieldCheck },
+    { key: "info", label: t("argStepInfo"), icon: User },
+    { key: "kyc", label: t("argStepKyc"), icon: FileCheck },
+  ];
   const [currentStep, setCurrentStep] = useState<FlowStep>("phone");
   const [direction, setDirection] = useState(1);
+
 
   // Phone step
   const [phone, setPhone] = useState("");
