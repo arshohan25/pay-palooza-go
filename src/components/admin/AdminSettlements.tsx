@@ -49,6 +49,13 @@ interface Settlement {
   notes: string | null;
   settled_at: string | null;
   created_at: string;
+  service_charge_amount: number | null;
+}
+
+interface MerchantSc {
+  enabled: boolean;
+  rate: number;
+  absorb: boolean;
 }
 
 export default function AdminSettlements() {
