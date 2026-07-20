@@ -1235,11 +1235,11 @@ export default function AdminDashboard() {
                 <div className="w-8 h-8 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
                   <ShieldAlert className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <h1 className="font-bold text-primary-foreground text-base tracking-tight">Admin</h1>
+                <h1 className="font-bold text-primary-foreground text-base tracking-tight">{t("admTitle")}</h1>
               </div>
               {/* Desktop: section label */}
               <span className="hidden lg:block text-lg font-bold text-primary-foreground tracking-tight truncate">
-                {activeTab === "overview" ? `${getGreeting()}, ${displayName || "Admin"}` : (ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview")}
+                {headerLabel()}
               </span>
             </div>
             <div className="flex items-center gap-2">
