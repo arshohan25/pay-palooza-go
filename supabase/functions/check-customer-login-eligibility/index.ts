@@ -43,15 +43,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: profile, error: pErr } = await admin
-      .from("profiles")
-      .select("user_id")
-      .eq("phone", normalized)
-      .maybeSingle();
-    if (pErr) throw pErr;
+    // Look up any auth user IDs tied to this phone. Match both the profile
+    // row (phone column) AND the phone-as-email convention used at signup
+    // (`<phone>@easypay.app`), because merchant/agent/etc. accounts often
+    // exist only in auth.users without a corresponding profiles row.
+    const emailAlias = `${normalized}@easypay.app`;
 
-    // No profile — allow: signIn itself will surface "not found".
-    if (!profile) {
+    const [{ data: profile, error: pErr }, { data: authList, error: aErr }] =
+      await Promise.all([
+        admin.from("profiles").select("id").eq("phone", normalized).maybeSingle(),
+        admin.auth.admin.listUsers({ page: 1, perPage: 200 }),
+      ]);
+    if (pErr) throw pErr;
+    if (aErr) throw aErr;
+
+    const userIds = new Set<string>();
+    if (profile?.id) userIds.add(profile.id);
+    for (const u of authList?.users ?? []) {
+      if (u.email?.toLowerCase() === emailAlias) userIds.add(u.id);
+    }
+
+    if (userIds.size === 0) {
       return new Response(
         JSON.stringify({ ok: true, allowed: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -61,8 +73,21 @@ Deno.serve(async (req) => {
     const { data: roles, error: rErr } = await admin
       .from("user_roles")
       .select("role")
-      .eq("user_id", profile.user_id);
+      .in("user_id", Array.from(userIds));
     if (rErr) throw rErr;
+
+    // Also treat existence of a merchant/distributor row as elevated, in case
+    // user_roles wasn't backfilled for legacy accounts.
+    const [{ data: mRows }, { data: dRows }] = await Promise.all([
+      admin.from("merchants").select("id").in("user_id", Array.from(userIds)).limit(1),
+      admin.from("distributors").select("id, role").in("user_id", Array.from(userIds)).limit(1),
+    ]);
+    const inferred: string[] = [];
+    if ((mRows ?? []).length) inferred.push("merchant");
+    for (const d of dRows ?? []) {
+      inferred.push((d as any).role === "super_distributor" ? "super_distributor" : "distributor");
+    }
+    const allRoles = [...(roles ?? []).map((r) => r.role as string), ...inferred];
 
     const elevated = (roles ?? [])
       .map((r) => r.role as string)
