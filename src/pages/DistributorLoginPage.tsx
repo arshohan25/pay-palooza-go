@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-roles";
 import { APP_ROLE_HOME, APP_ROLE_LABEL, isRoleAllowedForApp } from "@/lib/appRole";
 import { haptics } from "@/lib/haptics";
+import { useI18n } from "@/lib/i18n";
 
 const DIST_LAST_PHONE_KEY = "easypay_distributor_last_phone";
 
