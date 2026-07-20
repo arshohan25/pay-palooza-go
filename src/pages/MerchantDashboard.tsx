@@ -389,6 +389,17 @@ const MerchantDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, playPaymentSound, toast]);
 
+  // Optimistic header update when Store Settings save begins
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { merchantId?: string; name?: string } | undefined;
+      if (!detail?.name) return;
+      setMerchant(prev => (prev && (!detail.merchantId || prev.id === detail.merchantId) ? { ...prev, business_name: detail.name! } : prev));
+    };
+    window.addEventListener("merchant:business-name-preview", handler as EventListener);
+    return () => window.removeEventListener("merchant:business-name-preview", handler as EventListener);
+  }, []);
+
   // Request notification permission on mount
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
