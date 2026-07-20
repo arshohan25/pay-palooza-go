@@ -55,11 +55,12 @@ export default function MerchantDisputesTile({ merchantId, onOpen }: { merchantI
           {hasOpen ? <AlertOctagon size={18} className="text-red-600" /> : <Shield size={18} className="text-blue-600" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-semibold text-muted-foreground">Dispute inbox</p>
+          <p className="text-[10px] font-semibold text-muted-foreground">{t("mdtInbox")}</p>
           <p className="text-base font-extrabold text-foreground">
-            {hasOpen ? `${openCount} open` : "All clear"}
+            {hasOpen ? t("mdtOpen").replace("{n}", String(openCount)) : t("mdtAllClear")}
           </p>
-          <p className="text-[10px] text-muted-foreground">{total} total disputes</p>
+          <p className="text-[10px] text-muted-foreground">{t("mdtTotal").replace("{n}", String(total))}</p>
+
         </div>
       </div>
     </Card>
