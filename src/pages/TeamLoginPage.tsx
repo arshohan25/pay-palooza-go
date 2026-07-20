@@ -163,11 +163,11 @@ export default function TeamLoginPage() {
 
   const handlePasswordChange = async () => {
     if (newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error(t("tlpPwdMin8"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match");
+      toast.error(t("tlpPwdNoMatch"));
       return;
     }
     setChangingPassword(true);
@@ -185,11 +185,11 @@ export default function TeamLoginPage() {
           .eq("user_id", user.id);
       }
 
-      toast.success("Password changed successfully!");
+      toast.success(t("tlpPwdChanged"));
       setShowPasswordChange(false);
       await proceedToRedirect();
     } catch (err: any) {
-      toast.error(err.message || "Failed to change password");
+      toast.error(err.message || t("tlpPwdChangeFailed"));
     }
     setChangingPassword(false);
   };
