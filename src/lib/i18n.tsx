@@ -3289,15 +3289,70 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>(() => (localStorage.getItem(LANG_KEY) as Lang) ?? "en");
+  const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem(LANG_KEY) as Lang) ?? "en");
+  // Track which user's preference we've hydrated so we don't overwrite mid-toggle.
+  const hydratedForUserRef = (globalThis as any).__i18nHydratedRef ||= { current: null as string | null };
 
   useEffect(() => {
     localStorage.setItem(LANG_KEY, lang);
   }, [lang]);
 
-  const toggleLang = useCallback(() => {
-    setLang((prev) => (prev === "en" ? "bn" : "en"));
+  // Hydrate from profile on sign-in; persist changes back to profile.
+  useEffect(() => {
+    let cancelled = false;
+    // Lazy import to avoid circular deps at module init.
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      const applyForUser = async (userId: string | null) => {
+        if (!userId) {
+          hydratedForUserRef.current = null;
+          return;
+        }
+        if (hydratedForUserRef.current === userId) return;
+        const { data } = await supabase
+          .from("profiles")
+          .select("lang_pref")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (cancelled) return;
+        hydratedForUserRef.current = userId;
+        const remote = (data?.lang_pref as Lang | undefined) ?? null;
+        if (remote === "en" || remote === "bn") {
+          setLangState(remote);
+          localStorage.setItem(LANG_KEY, remote);
+        }
+      };
+
+      supabase.auth.getSession().then(({ data }) => {
+        applyForUser(data.session?.user?.id ?? null);
+      });
+      const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+        applyForUser(session?.user?.id ?? null);
+      });
+      (globalThis as any).__i18nAuthSub = sub;
+    });
+    return () => {
+      cancelled = true;
+      const sub = (globalThis as any).__i18nAuthSub;
+      sub?.subscription?.unsubscribe?.();
+    };
   }, []);
+
+  const setLang = useCallback((next: Lang) => {
+    setLangState(next);
+    // Fire-and-forget persist to profile if signed in.
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.auth.getSession().then(({ data }) => {
+        const uid = data.session?.user?.id;
+        if (!uid) return;
+        supabase.from("profiles").update({ lang_pref: next }).eq("user_id", uid).then(() => {});
+      });
+    });
+  }, []);
+
+  const toggleLang = useCallback(() => {
+    setLang(lang === "en" ? "bn" : "en");
+  }, [lang, setLang]);
+
 
   const t = useCallback(
     (key: TranslationKey) => {
