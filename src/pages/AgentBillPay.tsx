@@ -12,21 +12,24 @@ import SlideToConfirm from "@/components/SlideToConfirm";
 import { supabase } from "@/integrations/supabase/client";
 import { verifyPin } from "@/lib/verifyPin";
 import QrScannerModal from "@/components/QrScannerModal";
+import { useI18n } from "@/lib/i18n";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
-
-const providers = [
-  { name: "DESCO", category: "Electricity", icon: "⚡" },
-  { name: "DPDC", category: "Electricity", icon: "⚡" },
-  { name: "Titas Gas", category: "Gas", icon: "🔥" },
-  { name: "WASA", category: "Water", icon: "💧" },
-  { name: "Link3", category: "Internet", icon: "🌐" },
-  { name: "Carnival", category: "Internet", icon: "🌐" },
-];
 
 const AgentBillPay = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useI18n();
+
+  const providers = [
+    { name: "DESCO", category: t("agBillCatElectricity"), icon: "⚡" },
+    { name: "DPDC", category: t("agBillCatElectricity"), icon: "⚡" },
+    { name: "Titas Gas", category: t("agBillCatGas"), icon: "🔥" },
+    { name: "WASA", category: t("agBillCatWater"), icon: "💧" },
+    { name: "Link3", category: t("agBillCatInternet"), icon: "🌐" },
+    { name: "Carnival", category: t("agBillCatInternet"), icon: "🌐" },
+  ];
+
   const [selected, setSelected] = useState<string | null>(null);
   const [accountNo, setAccountNo] = useState("");
   const [amount, setAmount] = useState("");
@@ -40,7 +43,7 @@ const AgentBillPay = () => {
     setProcessing(true);
     try {
       const pinValid = await verifyPin(pin);
-      if (!pinValid) { toast({ title: "Wrong PIN", description: "Incorrect PIN. Please try again.", variant: "destructive" }); setPin(""); setProcessing(false); return; }
+      if (!pinValid) { toast({ title: t("agBillWrongPin"), description: t("agBillWrongPinDesc"), variant: "destructive" }); setPin(""); setProcessing(false); return; }
       const { error } = await supabase.rpc("record_transaction", {
         p_type: "paybill" as any,
         p_amount: Number(amount),
@@ -51,9 +54,9 @@ const AgentBillPay = () => {
       });
       if (error) throw error;
       setStep("done");
-      toast({ title: "Bill Paid", description: `৳${amount} paid to ${selected}` });
+      toast({ title: t("agBillPaid"), description: `৳${amount} → ${selected}` });
     } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("agBillFailed"), description: err.message, variant: "destructive" });
     } finally {
       setProcessing(false);
     }
@@ -76,8 +79,8 @@ const AgentBillPay = () => {
               <Receipt size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">Bill Pay</h1>
-              <p className="text-[9px] text-primary-foreground/60">Utility bill payments</p>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("agBillPay")}</h1>
+              <p className="text-[9px] text-primary-foreground/60">{t("agBillPayTagline")}</p>
             </div>
           </div>
         </div>
@@ -90,10 +93,12 @@ const AgentBillPay = () => {
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                 <CheckCircle2 size={32} className="text-primary" />
               </motion.div>
-              <p className="text-lg font-extrabold text-foreground">Bill Paid Successfully</p>
-              <p className="text-sm text-muted-foreground">৳{fmt(Number(amount))} paid to {selected}</p>
-              <Button onClick={() => { setStep("select"); setSelected(null); setAccountNo(""); setAmount(""); setPin(""); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11">Pay Another Bill</Button>
-              <Button onClick={() => navigate("/agent")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2"><Home size={16} /> Back to Dashboard</Button>
+              <p className="text-lg font-extrabold text-foreground">{t("agBillPaidTitle")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("agBillPaidDesc").replace("{amount}", fmt(Number(amount))).replace("{name}", selected ?? "")}
+              </p>
+              <Button onClick={() => { setStep("select"); setSelected(null); setAccountNo(""); setAmount(""); setPin(""); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11">{t("agBillPayAnother")}</Button>
+              <Button onClick={() => navigate("/agent")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2"><Home size={16} /> {t("agBillBackToDash")}</Button>
             </Card>
           </motion.div>
         ) : step === "form" ? (
@@ -104,24 +109,24 @@ const AgentBillPay = () => {
                 <h3 className="text-base font-extrabold text-foreground">{selected}</h3>
               </div>
               <div>
-                <Label className="text-xs font-semibold">Account / Meter No</Label>
+                <Label className="text-xs font-semibold">{t("agBillAccountLabel")}</Label>
                 <div className="relative mt-1">
-                  <Input placeholder="Enter account number" value={accountNo} onChange={e => setAccountNo(e.target.value)} className="rounded-xl h-11 pr-11" />
+                  <Input placeholder={t("agBillAccountPh")} value={accountNo} onChange={e => setAccountNo(e.target.value)} className="rounded-xl h-11 pr-11" />
                   <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
                     <ScanLine size={16} />
                   </button>
                 </div>
               </div>
               <div>
-                <Label className="text-xs font-semibold">Amount (৳)</Label>
-                <Input type="text" inputMode="numeric" placeholder="Enter amount" value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
+                <Label className="text-xs font-semibold">{t("agBillAmountLabel")}</Label>
+                <Input type="text" inputMode="numeric" placeholder={t("agBillAmountPh")} value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
               </div>
               <div>
-                <Label className="text-xs font-semibold">Enter PIN</Label>
+                <Label className="text-xs font-semibold">{t("agBillEnterPin")}</Label>
                 <Input type="password" inputMode="numeric" maxLength={4} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" className="text-center text-lg tracking-[0.5em] rounded-xl h-12 mt-1" />
               </div>
-              <SlideToConfirm onConfirm={handlePay} disabled={!accountNo || !amount || pin.length < 4 || processing} label={processing ? "Processing…" : "Slide to Pay"} icon={Receipt} />
-              <Button variant="ghost" onClick={() => { setPin(""); setStep("select"); }} className="w-full text-muted-foreground">Back</Button>
+              <SlideToConfirm onConfirm={handlePay} disabled={!accountNo || !amount || pin.length < 4 || processing} label={processing ? t("agBillProcessing") : t("agBillSlideToPay")} icon={Receipt} />
+              <Button variant="ghost" onClick={() => { setPin(""); setStep("select"); }} className="w-full text-muted-foreground">{t("agBillBack")}</Button>
             </Card>
           </motion.div>
         ) : (
@@ -146,7 +151,7 @@ const AgentBillPay = () => {
       <QrScannerModal
         open={showQr}
         onClose={() => setShowQr(false)}
-        title="Scan Account QR"
+        title={t("agBillScanQr")}
         onScan={(result) => {
           setShowQr(false);
           setAccountNo(result.trim());

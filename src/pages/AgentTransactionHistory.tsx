@@ -9,11 +9,13 @@ import { getAgentDisplayType } from "@/lib/agentTransactions";
 import TransactionHistory from "./TransactionHistory";
 import FlowHeader from "@/components/FlowHeader";
 import FlagSuspiciousSheet from "@/components/agent/FlagSuspiciousSheet";
+import { useI18n } from "@/lib/i18n";
 
 const fmt = (n: number) => n.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const AgentTransactionHistory = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { transactions } = useTransactions();
   const [flagOpen, setFlagOpen] = useState(false);
@@ -43,24 +45,24 @@ const AgentTransactionHistory = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6">
         <Shield size={48} className="text-muted-foreground" />
-        <p className="text-lg font-semibold text-foreground">Login required</p>
-        <Button onClick={() => navigate("/")} variant="outline">Go to Login</Button>
+        <p className="text-lg font-semibold text-foreground">{t("agHistLoginRequired")}</p>
+        <Button onClick={() => navigate("/")} variant="outline">{t("agHistGoToLogin")}</Button>
       </div>
     );
   }
 
   const statItems = [
-    { icon: TrendingUp, label: "Commission", value: `৳${fmt(summary.totalCommission)}`, accent: true },
-    { icon: Banknote, label: "Volume", value: `৳${fmt(summary.totalVolume)}`, accent: false },
-    { icon: ArrowDownToLine, label: "Cash Out", value: String(summary.cashOutCount), accent: false },
-    { icon: ArrowUpFromLine, label: "Cash In", value: String(summary.cashInCount), accent: false },
+    { icon: TrendingUp, label: t("agHistCommission"), value: `৳${fmt(summary.totalCommission)}`, accent: true },
+    { icon: Banknote, label: t("agHistVolume"), value: `৳${fmt(summary.totalVolume)}`, accent: false },
+    { icon: ArrowDownToLine, label: t("agHistCashOut"), value: String(summary.cashOutCount), accent: false },
+    { icon: ArrowUpFromLine, label: t("agHistCashIn"), value: String(summary.cashInCount), accent: false },
   ];
 
   return (
     <div className="min-h-screen bg-background pb-6">
       <FlowHeader
-        title="Agent Transactions"
-        tagline={`৳${fmt(summary.totalCommission)} earned`}
+        title={t("agHistTitle")}
+        tagline={t("agHistEarned").replace("{amount}", fmt(summary.totalCommission))}
         icon={Building2}
         onBack={() => navigate("/agent")}
       />
@@ -72,7 +74,7 @@ const AgentTransactionHistory = () => {
           className="bg-card border border-border/60 rounded-2xl p-4 mb-4 shadow-card"
         >
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Earnings Summary</p>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("agHistEarningsSummary")}</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {statItems.map(({ icon: Icon, label, value, accent }) => (
@@ -95,7 +97,7 @@ const AgentTransactionHistory = () => {
           onClick={() => setFlagOpen(true)}
         >
           <AlertOctagon size={16} className="mr-2" />
-          Flag suspicious activity
+          {t("agHistFlagSuspicious")}
         </Button>
 
         {/* Transaction list */}
