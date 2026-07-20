@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import FlowHeader from "@/components/FlowHeader";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface NearbyAgent {
   agent_id: string;
@@ -49,14 +50,15 @@ const loadMapsScript = () => new Promise<void>((resolve, reject) => {
   document.head.appendChild(s);
 });
 
-const CATEGORIES: { key: CategoryKey; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "open", label: "Available now" },
-  { key: "top", label: "Top rated 4★+" },
-  { key: "verified", label: "Rated only" },
+const CATEGORIES: { key: CategoryKey; labelKey: TranslationKey }[] = [
+  { key: "all", labelKey: "naCatAll" },
+  { key: "open", labelKey: "naCatOpen" },
+  { key: "top", labelKey: "naCatTop" },
+  { key: "verified", labelKey: "naCatVerified" },
 ];
 
 const NearbyAgentsPage = () => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -71,10 +73,10 @@ const NearbyAgentsPage = () => {
   const [sort, setSort] = useState<SortKey>("nearest");
 
   useEffect(() => {
-    if (!navigator.geolocation) { toast.error("Geolocation unavailable"); setLoading(false); return; }
+    if (!navigator.geolocation) { toast.error(t("naGeoUnavailable")); setLoading(false); return; }
     navigator.geolocation.getCurrentPosition(
       p => setLoc({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      err => { toast.error(err.message || "Location denied"); setLoading(false); },
+      err => { toast.error(err.message || t("naLocationDenied")); setLoading(false); },
       { enableHighAccuracy: true, timeout: 12000 },
     );
   }, []);
@@ -86,7 +88,7 @@ const NearbyAgentsPage = () => {
       const { data, error } = await (supabase as any).rpc("nearby_agents", {
         _lat: loc.lat, _lng: loc.lng, _radius_km: radius,
       });
-      if (error) toast.error("Could not load agents");
+      if (error) toast.error(t("naLoadFailed"));
       setAgents((data as NearbyAgent[]) ?? []);
       setLoading(false);
     })();
@@ -126,7 +128,7 @@ const NearbyAgentsPage = () => {
         icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#3b82f6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 },
         title: "You",
       });
-    }).catch(e => toast.error(e.message));
+    }).catch(e => toast.error(e.message || t("naMapFailed")));
     return () => { cancelled = true; };
   }, [loc]);
 
@@ -147,17 +149,18 @@ const NearbyAgentsPage = () => {
   const copyId = (uid?: string | null) => {
     if (!uid) return;
     navigator.clipboard.writeText(uid);
-    toast.success("Agent ID copied");
+    toast.success(t("naIdCopied"));
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <FlowHeader
-        title="Nearby Agents"
-        tagline={loc ? `${filtered.length} of ${agents.length} within ${radius} km` : "Locating you…"}
+        title={t("naTitle")}
+        tagline={loc ? t("naTaglineWithin").replace("{shown}", String(filtered.length)).replace("{total}", String(agents.length)).replace("{radius}", String(radius)) : t("naLocating")}
         icon={MapPin}
         onBack={() => navigate(-1)}
       />
+
 
       <div className="relative flex-1">
         {loading && (
@@ -175,14 +178,14 @@ const NearbyAgentsPage = () => {
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Search by shop, name, address or ID"
+              placeholder={t("naSearchPlaceholder")}
               className="w-full h-11 pl-9 pr-9 rounded-2xl bg-card border border-border/60 text-sm focus:outline-none focus:border-primary"
             />
             {query && (
               <button
                 onClick={() => setQuery("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full hover:bg-muted flex items-center justify-center"
-                aria-label="Clear search"
+                aria-label={t("naClearSearch")}
               >
                 <X size={14} className="text-muted-foreground" />
               </button>
@@ -201,7 +204,7 @@ const NearbyAgentsPage = () => {
                     : "border-border text-muted-foreground bg-card"
                 }`}
               >
-                {c.label}
+                {t(c.labelKey)}
               </button>
             ))}
           </div>
@@ -221,13 +224,13 @@ const NearbyAgentsPage = () => {
               className="h-7 px-2.5 rounded-full text-[11px] font-semibold border border-border text-foreground bg-card inline-flex items-center gap-1"
             >
               <SlidersHorizontal size={11} />
-              {sort === "nearest" ? "Nearest first" : "Top rated"}
+              {sort === "nearest" ? t("naSortNearest") : t("naSortTop")}
             </button>
           </div>
 
           {filtered.length === 0 && !loading ? (
             <p className="text-center text-sm text-muted-foreground py-8">
-              {query || category !== "all" ? "No agents match your filters." : "No open agents in this area."}
+              {query || category !== "all" ? t("naNoMatch") : t("naNoOpen")}
             </p>
           ) : (
             <div className="space-y-2">
@@ -245,7 +248,7 @@ const NearbyAgentsPage = () => {
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`inline-flex items-center gap-1 text-[10px] font-semibold ${open ? "text-emerald-500" : "text-muted-foreground"}`}>
                           <CircleDot size={10} />
-                          {open ? "Available" : "Closed"}
+                          {open ? t("naAvailable") : t("naClosed")}
                         </span>
                         <span className="text-[10px] text-muted-foreground">·</span>
                         <span className="text-[11px] text-muted-foreground font-semibold">{a.distance_km.toFixed(2)} km</span>
@@ -263,7 +266,7 @@ const NearbyAgentsPage = () => {
                         ) : null}
                       </div>
                     ) : (
-                      <span className="text-[10px] text-muted-foreground shrink-0">New</span>
+                      <span className="text-[10px] text-muted-foreground shrink-0">{t("naNew")}</span>
                     )}
                   </button>
                 );
@@ -278,29 +281,29 @@ const NearbyAgentsPage = () => {
           {selected && (
             <div className="pt-2">
               <p className="text-base font-bold text-foreground">{selected.shop_name || selected.display_name}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{selected.address || "No address"}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{selected.address || t("naNoAddress")}</p>
               <div className="mt-3 grid grid-cols-2 gap-2 text-center">
                 <div className="rounded-xl bg-muted/60 p-2.5">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Distance</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{t("naDistance")}</p>
                   <p className="text-sm font-bold text-foreground">{selected.distance_km.toFixed(2)} km</p>
                 </div>
                 <div className="rounded-xl bg-muted/60 p-2.5">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Agent ID</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{t("naAgentId")}</p>
                   <p className="text-sm font-bold text-foreground font-mono truncate">{selected.easypay_uid || "—"}</p>
                 </div>
               </div>
               <div className="mt-3 flex gap-2">
                 <Button variant="outline" className="flex-1 rounded-xl h-11" onClick={() => copyId(selected.easypay_uid)}>
-                  <Copy size={14} className="mr-1.5" /> Copy ID
+                  <Copy size={14} className="mr-1.5" /> {t("naCopyId")}
                 </Button>
                 <Button variant="outline" className="flex-1 rounded-xl h-11"
                   onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${selected.latitude},${selected.longitude}`, "_blank")}>
-                  <Navigation size={14} className="mr-1.5" /> Directions
+                  <Navigation size={14} className="mr-1.5" /> {t("naDirections")}
                 </Button>
               </div>
               <Button className="w-full rounded-xl h-11 mt-2"
                 onClick={() => { const uid = selected.easypay_uid ?? ""; navigate(`/agent/cashout?agent=${encodeURIComponent(uid)}`); }}>
-                <ArrowDownToLine size={14} className="mr-1.5" /> Cash out here
+                <ArrowDownToLine size={14} className="mr-1.5" /> {t("naCashoutHere")}
               </Button>
             </div>
           )}
