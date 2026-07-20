@@ -1255,7 +1255,7 @@ export default function AdminDashboard() {
               <div className="relative lg:hidden flex-1 max-w-[160px]">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary-foreground/60 z-10" />
                 <Input
-                  placeholder="Search…"
+                  placeholder={t("admSearchShort")}
                   className="pl-8 h-8 text-xs rounded-full bg-white/95 dark:bg-white/10 backdrop-blur-md border-white/30 text-foreground dark:text-primary-foreground placeholder:text-muted-foreground/70"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
