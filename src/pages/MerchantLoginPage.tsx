@@ -532,14 +532,14 @@ export default function MerchantLoginPage() {
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <div className="space-y-0.5">
                   <p className="text-xs font-semibold uppercase tracking-wider">
-                    Account temporarily locked
+                    {t("mlLockedTitle")}
                   </p>
                   <p className="text-[13px] leading-snug text-rose-100/85">
-                    Too many failed sign-in attempts. Try again in{" "}
+                    {t("mlLockedDescPrefix")}
                     <span className="font-semibold tabular-nums">
                       {formatCountdown(remainingSeconds)}
                     </span>
-                    .
+                    {t("mlLockedDescSuffix")}
                   </p>
                 </div>
               </div>
