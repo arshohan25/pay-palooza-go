@@ -64,37 +64,38 @@ const VendorApplyBanner = (_props: { userId?: string } = {}) => {
       case "under_review":
         return {
           icon: Clock,
-          title: "Vendor application under review",
-          desc: "Admins are reviewing your EasyPay Shop upgrade. You'll be notified once approved.",
-          cta: "View status",
+          title: t("vabPendingTitle"),
+          desc: t("vabPendingDesc"),
+          cta: t("vabPendingCta"),
           tone: "from-amber-500/15 to-orange-500/10 border-amber-400/30 text-amber-100",
         };
       case "rejected":
         return {
           icon: XCircle,
-          title: "Vendor application needs changes",
-          desc: adminNotes ? `Admin feedback: ${adminNotes}` : "Please resolve admin feedback and resubmit.",
-          cta: "Resubmit",
+          title: t("vabRejectedTitle"),
+          desc: adminNotes ? t("vabRejectedFeedback").replace("{note}", adminNotes) : t("vabRejectedDesc"),
+          cta: t("vabRejectedCta"),
           tone: "from-rose-500/15 to-red-500/10 border-rose-400/30 text-rose-100",
         };
       case "draft":
         return {
           icon: Store,
-          title: "Finish your vendor application",
-          desc: "Complete your EasyPay Shop upgrade to publish products and receive orders.",
-          cta: "Continue",
+          title: t("vabDraftTitle"),
+          desc: t("vabDraftDesc"),
+          cta: t("vabDraftCta"),
           tone: "from-emerald-500/15 to-teal-500/10 border-emerald-400/30 text-emerald-100",
         };
       default:
         return {
           icon: ShieldCheck,
-          title: "Apply as an EasyPay Shop vendor",
-          desc: "Products and orders unlock once your vendor upgrade is approved by admins.",
-          cta: "Apply now",
+          title: t("vabApplyTitle"),
+          desc: t("vabApplyDesc"),
+          cta: t("vabApplyCta"),
           tone: "from-primary/20 to-accent/10 border-primary/30 text-foreground",
         };
     }
   })();
+
 
   const Icon = meta.icon;
 
