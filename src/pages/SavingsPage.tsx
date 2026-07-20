@@ -1225,7 +1225,7 @@ const SavingsPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Seo title="Islamic Savings & DPS" description="Sharia-compliant savings, DPS, gold, and stocks." path="/savings" />
+      <Seo title={t("savPageTitle")} description={t("savPageDesc")} path="/savings" />
 
       {/* Header */}
       <div className="sticky top-0 z-10 gradient-hero text-primary-foreground border-b border-primary/30 shadow-glow">
