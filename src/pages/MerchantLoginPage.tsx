@@ -659,16 +659,16 @@ export default function MerchantLoginPage() {
               {isLocked ? (
                 <>
                   <Lock className="h-4 w-4" />
-                  Locked — try again in {formatCountdown(remainingSeconds)}
+                  {t("mlLockedButton").replace("{time}", formatCountdown(remainingSeconds))}
                 </>
               ) : loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Signing in...
+                  {t("mlSigningIn")}
                 </>
               ) : (
                 <>
-                  {loginMode === "manager" ? "Sign in as Manager" : "Sign in to dashboard"}
+                  {loginMode === "manager" ? t("mlSignInAsManager") : t("mlSignInToDashboard")}
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
