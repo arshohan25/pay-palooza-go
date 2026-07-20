@@ -16,6 +16,7 @@ const DIST_LAST_PHONE_KEY = "easypay_distributor_last_phone";
 
 const DistributorLoginPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
 
@@ -38,11 +39,11 @@ const DistributorLoginPage = () => {
     e.preventDefault();
     setError(null);
     if (!/^01[3-9]\d{8}$/.test(phone)) {
-      setError("Enter a valid 11-digit distributor mobile number.");
+      setError(t("distLoginInvalidPhone"));
       return;
     }
     if (pin.length !== 4) {
-      setError("Enter your 4-digit PIN.");
+      setError(t("distLoginInvalidPin"));
       return;
     }
     setSubmitting(true);
@@ -51,15 +52,15 @@ const DistributorLoginPage = () => {
       try { localStorage.setItem(DIST_LAST_PHONE_KEY, phone); } catch {}
       localStorage.setItem("mfs_has_authenticated", "1");
       haptics.success();
-      toast.success("Signed in");
+      toast.success(t("distLoginSignedIn"));
     } catch (err) {
       haptics.error();
       const msg =
         err instanceof Error && err.message.includes("Invalid login credentials")
-          ? "Incorrect phone number or PIN."
+          ? t("distLoginInvalidCreds")
           : err instanceof Error
             ? err.message
-            : "Unable to sign in right now.";
+            : t("distLoginGenericErr");
       setError(msg);
       setPin("");
     } finally {
@@ -67,7 +68,7 @@ const DistributorLoginPage = () => {
     }
   };
 
-  const title = `${APP_ROLE_LABEL.distributor} — Sign in`;
+  const title = `${APP_ROLE_LABEL.distributor} — ${t("distLoginSignInSuffix")}`;
 
   return (
     <div className="min-h-screen bg-[#0b1220] text-white flex flex-col">
