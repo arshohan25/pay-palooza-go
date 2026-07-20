@@ -626,7 +626,7 @@ export default function MerchantLoginPage() {
             {/* PIN — auto-masked, no show/hide toggle */}
             <div className="mt-3 space-y-1.5">
               <Label className="text-[10px] font-medium uppercase tracking-wider text-white/60">
-                4-digit PIN
+                {t("mlPin4Digit")}
               </Label>
               <div className={`rounded-2xl border p-2 transition-colors focus-within:border-amber-200/50 ${wrongPin ? "border-rose-400/50 bg-rose-500/5" : "border-white/10 bg-white/[0.04]"}`}>
                 <InputOTP
