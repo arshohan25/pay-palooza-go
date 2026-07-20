@@ -468,7 +468,7 @@ function DpsPlanDetailsSheet({
                   {goal?.emoji ?? "💼"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] uppercase tracking-[0.14em] text-primary-foreground/70">DPS Plan</div>
+                  <div className="text-[11px] uppercase tracking-[0.14em] text-primary-foreground/70">{t("savDpsPlan")}</div>
                   <div className="text-lg font-bold truncate leading-tight">{goal?.name ?? "—"}</div>
                   <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px]">
                     <span className="px-2 py-0.5 rounded-full bg-white/15 border border-white/20 font-semibold uppercase tracking-wide">{freqLabel}</span>
