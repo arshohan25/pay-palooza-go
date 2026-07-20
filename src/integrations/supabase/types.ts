@@ -4874,6 +4874,9 @@ export type Database = {
           qr_card_logo_url: string | null
           qr_card_tagline: string | null
           qr_code_data: string | null
+          service_charge_absorb: boolean
+          service_charge_enabled: boolean
+          service_charge_rate: number
           settlement_frequency: string
           status: Database["public"]["Enums"]["agent_status"]
           trade_license: string | null
@@ -4910,6 +4913,9 @@ export type Database = {
           qr_card_logo_url?: string | null
           qr_card_tagline?: string | null
           qr_code_data?: string | null
+          service_charge_absorb?: boolean
+          service_charge_enabled?: boolean
+          service_charge_rate?: number
           settlement_frequency?: string
           status?: Database["public"]["Enums"]["agent_status"]
           trade_license?: string | null
@@ -4946,6 +4952,9 @@ export type Database = {
           qr_card_logo_url?: string | null
           qr_card_tagline?: string | null
           qr_code_data?: string | null
+          service_charge_absorb?: boolean
+          service_charge_enabled?: boolean
+          service_charge_rate?: number
           settlement_frequency?: string
           status?: Database["public"]["Enums"]["agent_status"]
           trade_license?: string | null
@@ -5263,6 +5272,7 @@ export type Database = {
           notes: string | null
           order_num: string
           payment_method: string
+          service_charge: number
           shipping_address: string | null
           shipping_city: string | null
           shipping_name: string | null
@@ -5297,6 +5307,7 @@ export type Database = {
           notes?: string | null
           order_num?: string
           payment_method?: string
+          service_charge?: number
           shipping_address?: string | null
           shipping_city?: string | null
           shipping_name?: string | null
@@ -5331,6 +5342,7 @@ export type Database = {
           notes?: string | null
           order_num?: string
           payment_method?: string
+          service_charge?: number
           shipping_address?: string | null
           shipping_city?: string | null
           shipping_name?: string | null
@@ -6917,6 +6929,7 @@ export type Database = {
           notes: string | null
           period_end: string
           period_start: string
+          service_charge_amount: number
           settled_at: string | null
           settled_by: string | null
           settlement_ref: string | null
@@ -6940,6 +6953,7 @@ export type Database = {
           notes?: string | null
           period_end: string
           period_start: string
+          service_charge_amount?: number
           settled_at?: string | null
           settled_by?: string | null
           settlement_ref?: string | null
@@ -6963,6 +6977,7 @@ export type Database = {
           notes?: string | null
           period_end?: string
           period_start?: string
+          service_charge_amount?: number
           settled_at?: string | null
           settled_by?: string | null
           settlement_ref?: string | null
@@ -8869,6 +8884,10 @@ export type Database = {
       }
       merchant_update_business_name: {
         Args: { p_name: string }
+        Returns: undefined
+      }
+      merchant_update_service_charge: {
+        Args: { p_absorb: boolean; p_enabled: boolean; p_rate: number }
         Returns: undefined
       }
       nearby_agents: {

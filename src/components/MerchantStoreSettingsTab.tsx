@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Store, ImagePlus, Globe, Loader2, Check, Eye } from "lucide-react";
+import { Store, ImagePlus, Globe, Loader2, Check, Eye, Percent } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 interface StoreData {
@@ -35,6 +35,51 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
+
+  // Service-charge settings (persisted on the merchant row via a security-definer RPC)
+  const [svc, setSvc] = useState({ enabled: false, rate: 0, absorb: false });
+  const [svcLoaded, setSvcLoaded] = useState(false);
+  const [svcSaving, setSvcSaving] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("merchants")
+        .select("service_charge_enabled, service_charge_rate, service_charge_absorb")
+        .eq("id", merchantId)
+        .maybeSingle();
+      if (alive && data) {
+        setSvc({
+          enabled: !!data.service_charge_enabled,
+          rate: Number(data.service_charge_rate || 0),
+          absorb: !!data.service_charge_absorb,
+        });
+      }
+      if (alive) setSvcLoaded(true);
+    })();
+    return () => { alive = false; };
+  }, [merchantId]);
+
+  const saveServiceCharge = async () => {
+    if (svc.rate < 0 || svc.rate > 20) {
+      toast({ title: "Invalid rate", description: "Service charge must be between 0% and 20%.", variant: "destructive" });
+      return;
+    }
+    setSvcSaving(true);
+    const { error } = await (supabase as any).rpc("merchant_update_service_charge", {
+      p_enabled: svc.enabled,
+      p_rate: svc.rate,
+      p_absorb: svc.absorb,
+    });
+    setSvcSaving(false);
+    if (error) {
+      toast({ title: "Save failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Service charge updated" });
+    }
+  };
+
 
   const [form, setForm] = useState({
     store_name: "",
@@ -248,6 +293,73 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
           </div>
         ))}
       </Card>
+
+      {/* Service charge */}
+      {svcLoaded && (
+        <Card className="p-4 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                <Percent size={13} className="text-primary" /> Service Charge
+              </h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Apply an additional charge on top of order subtotals. Applied at checkout and audited on every settlement.
+              </p>
+            </div>
+            <button onClick={() => setSvc(s => ({ ...s, enabled: !s.enabled }))}
+              className={`w-12 h-7 rounded-full transition-colors relative shrink-0 ${svc.enabled ? "bg-primary" : "bg-muted"}`}>
+              <div className={`absolute top-1 w-5 h-5 rounded-full bg-background shadow-sm transition-transform ${svc.enabled ? "left-6" : "left-1"}`} />
+            </button>
+          </div>
+
+          {svc.enabled && (
+            <>
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Rate (%)</label>
+                <Input
+                  type="number" min={0} max={20} step={0.5}
+                  value={svc.rate}
+                  onChange={e => setSvc(s => ({ ...s, rate: Number(e.target.value) || 0 }))}
+                  className="mt-1 h-10 rounded-xl text-sm"
+                  placeholder="e.g. 5"
+                />
+                <p className="text-[10.5px] text-muted-foreground mt-1">Max 20%. Applied to order subtotal.</p>
+              </div>
+
+              <div className="rounded-2xl border border-border/60 p-3 space-y-2">
+                <p className="text-[11px] font-semibold text-foreground">Who pays this charge?</p>
+                {[
+                  { key: false, title: "Add to customer total", desc: "Charge appears as a line item; you receive the full amount at settlement." },
+                  { key: true,  title: "Absorb from settlement", desc: "Customer pays the same total; charge is deducted from your net payout." },
+                ].map(opt => (
+                  <button
+                    key={String(opt.key)}
+                    onClick={() => setSvc(s => ({ ...s, absorb: opt.key }))}
+                    className={`w-full text-left p-2.5 rounded-xl border transition-colors ${svc.absorb === opt.key ? "border-primary bg-primary/5" : "border-border/50 hover:bg-muted/40"}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 ${svc.absorb === opt.key ? "border-primary bg-primary" : "border-muted-foreground/40"}`} />
+                      <span className="text-[12px] font-semibold">{opt.title}</span>
+                    </div>
+                    <p className="text-[10.5px] text-muted-foreground mt-0.5 ml-5">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+
+              <div className="rounded-xl bg-muted/40 p-2.5 text-[11px] text-muted-foreground">
+                Preview on a ৳1,000 order: charge&nbsp;=&nbsp;<b className="text-foreground">৳{(1000 * svc.rate / 100).toFixed(2)}</b>
+                {" · "}{svc.absorb ? "deducted from your payout" : "added to customer total"}
+              </div>
+            </>
+          )}
+
+          <Button onClick={saveServiceCharge} disabled={svcSaving} variant="outline" size="sm"
+            className="w-full rounded-xl h-9 gap-1.5 text-[12px] font-bold">
+            {svcSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+            Save service-charge settings
+          </Button>
+        </Card>
+      )}
 
       {/* Active toggle */}
       <div className="flex items-center justify-between bg-card border border-border/60 rounded-2xl p-4">
