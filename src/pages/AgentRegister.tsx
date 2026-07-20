@@ -820,14 +820,14 @@ const AgentRegister = () => {
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center mx-auto shadow-glow">
                     <Smartphone size={24} className="text-primary-foreground" />
                   </motion.div>
-                  <h2 className="text-base font-bold text-foreground">Customer Login Guide</h2>
-                  <p className="text-[11px] text-muted-foreground">Walk the customer through their first login</p>
+                  <h2 className="text-base font-bold text-foreground">{t("argLoginGuide")}</h2>
+                  <p className="text-[11px] text-muted-foreground">{t("argLoginGuideDesc")}</p>
                 </div>
 
                 {/* Mini step indicators */}
                 <div className="flex items-center justify-center gap-3">
                   {(["phone_confirm", "otp_verify", "set_pin"] as const).map((s, i) => {
-                    const labels = ["Phone", "OTP", "PIN"];
+                    const labels = [t("argPhone"), t("argOtp"), t("argPin")];
                     const icons = [Phone, ShieldCheck, Lock];
                     const Icon = icons[i];
                     const isActive = s === loginStep;
@@ -852,15 +852,15 @@ const AgentRegister = () => {
                 {loginStep === "phone_confirm" && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                     <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Customer Phone</Label>
+                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t("argCustomerPhoneLabel")}</Label>
                       <div className="flex items-center gap-2 bg-background rounded-xl border border-border px-3 py-3">
                         <Phone size={14} className="text-primary" />
                         <span className="text-sm font-bold text-foreground tracking-wider">+88{phone}</span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">Customer enters this number in the app to login</p>
+                      <p className="text-[10px] text-muted-foreground">{t("argEnterInApp")}</p>
                     </div>
                     <Button onClick={() => setLoginStep("otp_verify")} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold gap-2">
-                      Next: OTP Verification <ArrowLeft size={14} className="rotate-180" />
+                      {t("argNextOtp")} <ArrowLeft size={14} className="rotate-180" />
                     </Button>
                   </motion.div>
                 )}
@@ -873,10 +873,10 @@ const AgentRegister = () => {
                         <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
                           <ShieldCheck size={12} className="text-primary" />
                         </div>
-                        <span className="text-xs font-bold text-foreground">OTP Auto-Detection</span>
+                        <span className="text-xs font-bold text-foreground">{t("argOtpAutoDetect")}</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        On Android Chrome, the OTP will be automatically detected from SMS. Customer just needs to tap "Auto-fill" when the prompt appears.
+                        {t("argOtpAutoDesc")}
                       </p>
                       <div className="flex justify-center">
                         <InputOTP maxLength={6} value={customerOtp} onChange={setCustomerOtp}>
@@ -889,7 +889,7 @@ const AgentRegister = () => {
                       </div>
                     </div>
                     <Button onClick={() => setLoginStep("set_pin")} disabled={customerOtp.length !== 6} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold gap-2">
-                      Next: Set PIN <ArrowLeft size={14} className="rotate-180" />
+                      {t("argNextSetPin")} <ArrowLeft size={14} className="rotate-180" />
                     </Button>
                   </motion.div>
                 )}
@@ -902,12 +902,12 @@ const AgentRegister = () => {
                         <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
                           <Lock size={12} className="text-primary" />
                         </div>
-                        <span className="text-xs font-bold text-foreground">Set 4-Digit PIN</span>
+                        <span className="text-xs font-bold text-foreground">{t("argSet4Pin")}</span>
                       </div>
 
                       <div className="space-y-3">
                         <div className="space-y-1.5">
-                          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">New PIN</Label>
+                          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{t("argNewPin")}</Label>
                           <div className="relative">
                             <Input
                               type={showPin ? "text" : "password"}
@@ -924,7 +924,7 @@ const AgentRegister = () => {
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Confirm PIN</Label>
+                          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{t("argConfirmPin")}</Label>
                           <Input
                             type={showPin ? "text" : "password"}
                             inputMode="numeric"
@@ -939,12 +939,12 @@ const AgentRegister = () => {
 
                       {newPin.length === 4 && isWeakPin(newPin) && (
                         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-destructive font-medium flex items-center gap-1">
-                          <AlertTriangle size={10} /> Weak PIN — avoid sequential or repeated digits
+                          <AlertTriangle size={10} /> {t("argWeakPin")}
                         </motion.p>
                       )}
                       {newPin.length === 4 && confirmPin.length === 4 && newPin !== confirmPin && (
                         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-destructive font-medium">
-                          PINs do not match
+                          {t("argPinMismatch")}
                         </motion.p>
                       )}
                     </div>
@@ -954,13 +954,13 @@ const AgentRegister = () => {
                       disabled={newPin.length !== 4 || confirmPin.length !== 4 || newPin !== confirmPin || isWeakPin(newPin) || settingPin}
                       className="w-full gradient-primary text-primary-foreground rounded-xl h-12 text-sm font-bold shadow-glow gap-2"
                     >
-                      {settingPin ? <><Loader2 size={16} className="animate-spin" /> Setting up...</> : <><CheckCircle2 size={16} /> Complete Setup</>}
+                      {settingPin ? <><Loader2 size={16} className="animate-spin" /> {t("argSettingUp")}</> : <><CheckCircle2 size={16} /> {t("argCompleteSetup")}</>}
                     </Button>
                   </motion.div>
                 )}
 
                 <Button onClick={() => goTo("approved", -1)} variant="ghost" className="w-full text-xs text-muted-foreground gap-1.5">
-                  <ArrowLeft size={12} /> Back to Approval
+                  <ArrowLeft size={12} /> {t("argBackApproval")}
                 </Button>
               </Card>
             </motion.div>
