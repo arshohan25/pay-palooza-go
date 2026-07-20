@@ -160,7 +160,7 @@ export default function MerchantBroadcastTab({ merchantId }: { merchantId: strin
 
       {history.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-bold text-foreground">Recent broadcasts</h4>
+          <h4 className="text-xs font-bold text-foreground">{t("mbrRecent")}</h4>
           {history.map(b => (
             <Card key={b.id} className="border-0 shadow-elevated">
               <CardContent className="p-3">
