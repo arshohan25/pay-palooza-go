@@ -613,9 +613,9 @@ const MerchantDashboard = () => {
             const salesGrowth = yesterdaySales > 0 ? ((todaySales - yesterdaySales) / yesterdaySales * 100) : 0;
 
             return [
-              { label: "Today's Sales", value: `৳${fmt(todaySales)}`, icon: TrendingUp, trend: salesGrowth, gradient: "from-emerald-500/10 to-emerald-600/5" },
-              { label: "Transactions", value: todayTxns.length.toString(), icon: Receipt, trend: null, gradient: "from-blue-500/10 to-blue-600/5" },
-              { label: "Customers", value: new Set(paymentTxns.map(t => t.recipient_phone)).size.toString(), icon: Users, trend: null, gradient: "from-purple-500/10 to-purple-600/5" },
+              { label: t("mdTodaySales"), value: `৳${fmt(todaySales)}`, icon: TrendingUp, trend: salesGrowth, gradient: "from-emerald-500/10 to-emerald-600/5" },
+              { label: t("mdTransactions"), value: todayTxns.length.toString(), icon: Receipt, trend: null, gradient: "from-blue-500/10 to-blue-600/5" },
+              { label: t("mdCustomers"), value: new Set(paymentTxns.map(t => t.recipient_phone)).size.toString(), icon: Users, trend: null, gradient: "from-purple-500/10 to-purple-600/5" },
             ].map((s, i) => (
               <motion.div key={s.label} variants={stagger.item}>
                 <Card className={`p-3 border-0 shadow-elevated bg-gradient-to-br ${s.gradient} backdrop-blur-sm`}>
