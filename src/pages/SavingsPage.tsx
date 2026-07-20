@@ -475,7 +475,7 @@ function DpsPlanDetailsSheet({
                     <span className="px-2 py-0.5 rounded-full bg-white/15 border border-white/20 font-medium">৳{Number(plan.amount).toLocaleString()}/cycle</span>
                     {plan.strategy && <span className="px-2 py-0.5 rounded-full bg-amber-300/25 border border-amber-200/40 text-amber-50 font-medium capitalize">{plan.strategy}</span>}
                     <span className={`px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide border ${plan.is_active ? "bg-emerald-400/25 border-emerald-200/40 text-emerald-50" : "bg-white/15 border-white/20 text-primary-foreground/80"}`}>
-                      {plan.is_active ? "Active" : "Paused"}
+                      {plan.is_active ? t("savActive") : t("savPaused")}
                     </span>
                   </div>
                 </div>
