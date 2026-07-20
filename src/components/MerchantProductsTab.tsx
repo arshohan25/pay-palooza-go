@@ -14,6 +14,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Skeleton } from "@/components/ui/skeleton";
 import MerchantBulkUploadSheet from "@/components/MerchantBulkUploadSheet";
 import MerchantInventoryAlerts from "@/components/MerchantInventoryAlerts";
+import { useI18n } from "@/lib/i18n";
+
 
 interface Product {
   id: string;
