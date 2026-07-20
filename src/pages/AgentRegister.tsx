@@ -289,15 +289,15 @@ const AgentRegister = () => {
 
   const handleSetPin = async () => {
     if (newPin.length !== 4) {
-      toast({ title: "Invalid PIN", description: "PIN must be 4 digits.", variant: "destructive" });
+      toast({ title: t("argInvalidPin"), description: t("argInvalidPinDesc"), variant: "destructive" });
       return;
     }
     if (newPin !== confirmPin) {
-      toast({ title: "PIN Mismatch", description: "PINs do not match.", variant: "destructive" });
+      toast({ title: t("argPinMismatch"), description: t("argPinMismatchDesc"), variant: "destructive" });
       return;
     }
     if (isWeakPin(newPin)) {
-      toast({ title: "Weak PIN", description: "Please choose a stronger PIN.", variant: "destructive" });
+      toast({ title: t("argWeakPinTitle"), description: t("argWeakPinDesc"), variant: "destructive" });
       return;
     }
     setSettingPin(true);
@@ -305,11 +305,11 @@ const AgentRegister = () => {
       // Note: PIN setup would normally be done by the customer on their device
       // Here we show a guide for the agent to walk through with the customer
       haptics.success();
-      toast({ title: "Setup Complete!", description: "Customer can now login with their PIN." });
+      toast({ title: t("argSetupComplete"), description: t("argSetupCompleteDesc") });
       // Reset and go back
       resetFlow();
     } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("argFailed"), description: err.message, variant: "destructive" });
     } finally {
       setSettingPin(false);
     }
