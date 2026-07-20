@@ -127,12 +127,12 @@ function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" 
       className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-3"
     >
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wider text-white/50">Installment</span>
+        <span className="text-[10px] uppercase tracking-wider text-white/50">{t("ijInstallment")}</span>
         <span className="text-[10px] font-semibold text-white/70">#{item.n}</span>
       </div>
       <div className="mt-1 text-lg font-bold tabular-nums text-white">{bdt(item.amount)}</div>
       <div className="mt-1 text-[10px] text-white/50">
-        Remaining <span className="tabular-nums text-white/80">{bdt(item.remaining)}</span>
+        {t("ijRemaining")} <span className="tabular-nums text-white/80">{bdt(item.remaining)}</span>
       </div>
     </motion.div>
   );
@@ -147,12 +147,12 @@ function MilestoneRow({ item, side, isLast }: { item: Installment; side: "left" 
     >
       <div className="flex items-center gap-1.5 text-[10px] text-white/50">
         <Calendar size={10} />
-        Due {item.dueDate}
+        {t("ijDue")} {item.dueDate}
       </div>
-      {item.paidDate && <div className="mt-1 text-[10px] text-emerald-300/80">Paid · {item.paidDate}</div>}
+      {item.paidDate && <div className="mt-1 text-[10px] text-emerald-300/80">{t("ijPaid")} · {item.paidDate}</div>}
       <div className={cn("mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold", meta.ring)}>
         <Icon size={10} />
-        {meta.label}
+        {t(meta.labelKey as any)}
       </div>
     </motion.div>
   );
