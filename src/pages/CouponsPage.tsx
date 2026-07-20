@@ -148,7 +148,7 @@ function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
             }`}
           >
             <div>
-              <p className="text-[8px] font-bold uppercase tracking-widest text-white/60">Code</p>
+              <p className="text-[8px] font-bold uppercase tracking-widest text-white/60">{t("cpCodeLabel")}</p>
               <p className="text-[13px] font-black tracking-[0.18em] text-white -mt-0.5">{coupon.code}</p>
             </div>
             {copied
