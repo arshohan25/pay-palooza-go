@@ -303,23 +303,23 @@ const PaymentRequestsPage = () => {
           <CardContent className="p-5">
             <form onSubmit={submit} className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Plus className="w-4 h-4 text-primary" /> New request
+                <Plus className="w-4 h-4 text-primary" /> {t("prNewRequest")}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pr-title">What's it for?</Label>
-                <Input id="pr-title" placeholder="e.g. Rent for July" value={title} onChange={e => setTitle(e.target.value)} required />
+                <Label htmlFor="pr-title">{t("prWhatsItFor")}</Label>
+                <Input id="pr-title" placeholder={t("prTitlePlaceholder")} value={title} onChange={e => setTitle(e.target.value)} required />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pr-amount">Amount (BDT) <span className="text-muted-foreground font-normal">— leave blank for payer to choose</span></Label>
+                <Label htmlFor="pr-amount">{t("prAmountLabel")} <span className="text-muted-foreground font-normal">— {t("prAmountHint")}</span></Label>
                 <Input id="pr-amount" type="number" min="1" step="1" placeholder="1000" value={amount} onChange={e => setAmount(e.target.value)} />
-                <p className="text-[11px] text-muted-foreground">Payers can settle it in one go or in partial payments.</p>
+                <p className="text-[11px] text-muted-foreground">{t("prPartialHint")}</p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pr-desc">Note (optional)</Label>
+                <Label htmlFor="pr-desc">{t("prNoteOptional")}</Label>
                 <Textarea id="pr-desc" rows={2} value={description} onChange={e => setDescription(e.target.value)} />
               </div>
               <Button type="submit" className="w-full rounded-xl h-11" disabled={creating}>
-                {creating ? "Creating…" : "Create payment link"}
+                {creating ? t("prCreating") : t("prCreateLink")}
               </Button>
             </form>
           </CardContent>
