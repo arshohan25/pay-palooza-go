@@ -2753,7 +2753,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
       <Sheet open={!!selectedTx} onOpenChange={o => { if (!o) setSelectedTx(null); }}>
         <SheetContent side="bottom" className="z-[80] rounded-t-3xl px-5 pb-8 pt-2 max-h-[85vh] overflow-y-auto">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-base font-bold text-foreground">Transaction Details</SheetTitle>
+            <SheetTitle className="text-base font-bold text-foreground">{t("mhTxnDetails")}</SheetTitle>
           </SheetHeader>
           {selectedTx && (() => {
             const isIncoming = MERCHANT_INCOMING_TYPES.has(selectedTx.type);
