@@ -1256,8 +1256,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
       {/* Today snapshot */}
       {merchant && (
-        <motion.div variants={stagger.item}>
+        <motion.div variants={stagger.item} className="space-y-3">
           <MerchantTodaySnapshot merchantId={merchant.id} />
+          <MerchantInventoryAlerts merchantId={merchant.id} threshold={5} />
         </motion.div>
       )}
       {/* Quick Actions Grid */}
