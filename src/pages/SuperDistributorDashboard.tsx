@@ -25,6 +25,7 @@ import NotificationPreferences from "@/components/NotificationPreferences";
 import TransactionHistory from "./TransactionHistory";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
+import { useI18n } from "@/lib/i18n";
 
 /* ─── Types ─── */
 interface DistRow {
