@@ -38,37 +38,37 @@ interface Installment {
 
 const bdt = (n: number) => `৳${Math.round(n).toLocaleString("en-BD")}`;
 
-const STATUS_META: Record<Status, { label: string; ring: string; dot: string; glow: string; icon: typeof Check }> = {
+const STATUS_META: Record<Status, { labelKey: string; ring: string; dot: string; glow: string; icon: typeof Check }> = {
   paid: {
-    label: "Paid",
+    labelKey: "ijStatusPaid",
     ring: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
     dot: "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_0_20px_rgba(34,197,94,0.55)]",
     glow: "",
     icon: Check,
   },
   upcoming: {
-    label: "Upcoming",
+    labelKey: "ijStatusUpcoming",
     ring: "border-sky-500/40 bg-sky-500/10 text-sky-300",
     dot: "bg-gradient-to-br from-sky-400 to-sky-600",
     glow: "animate-pulse",
     icon: Clock,
   },
   due: {
-    label: "Due Today",
+    labelKey: "ijStatusDueToday",
     ring: "border-amber-500/40 bg-amber-500/10 text-amber-300",
     dot: "bg-gradient-to-br from-amber-400 to-orange-500 shadow-[0_0_28px_rgba(245,158,11,0.75)]",
     glow: "animate-pulse",
     icon: Bell,
   },
   overdue: {
-    label: "Overdue",
+    labelKey: "ijStatusOverdue",
     ring: "border-red-500/40 bg-red-500/10 text-red-300",
     dot: "bg-gradient-to-br from-red-500 to-rose-600 shadow-[0_0_24px_rgba(239,68,68,0.7)]",
     glow: "",
     icon: AlertTriangle,
   },
   completed: {
-    label: "Completed",
+    labelKey: "ijStatusCompleted",
     ring: "border-[#F4C542]/50 bg-[#F4C542]/10 text-[#F4C542]",
     dot: "bg-gradient-to-br from-[#F4C542] to-orange-500 shadow-[0_0_32px_rgba(244,197,66,0.85)]",
     glow: "",
