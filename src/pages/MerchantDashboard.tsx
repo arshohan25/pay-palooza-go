@@ -1951,8 +1951,9 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 
   const copyCode = () => {
     navigator.clipboard.writeText(qrPayload);
-    toast({ title: "Copied!", description: "Merchant ID copied to clipboard" });
+    toast({ title: t("mqrCopied"), description: t("mqrCopiedDesc") });
   };
+
 
 
   const handlePrint = () => {
