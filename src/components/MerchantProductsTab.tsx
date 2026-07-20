@@ -102,14 +102,14 @@ function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v
         onClick={() => { setOpen(!open); setSearch(""); setCustomMode(false); }}
         className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm text-left flex items-center justify-between"
       >
-        <span className={value ? "text-foreground" : "text-muted-foreground"}>{value || "Select category"}</span>
+        <span className={value ? "text-foreground" : "text-muted-foreground"}>{value || t("mprCategorySelect")}</span>
         <Search className="w-3.5 h-3.5 text-muted-foreground" />
       </button>
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-[90] overflow-hidden">
           <div className="p-2 border-b border-border">
             <Input
-              placeholder="Search categories..."
+              placeholder={t("mprCategorySearch")}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="h-8 text-sm rounded-lg"
@@ -128,7 +128,7 @@ function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v
               </button>
             ))}
             {filtered.length === 0 && !customMode && (
-              <p className="px-3 py-2 text-xs text-muted-foreground">No match found</p>
+              <p className="px-3 py-2 text-xs text-muted-foreground">{t("mprCategoryNoMatch")}</p>
             )}
             {!customMode ? (
               <button
@@ -136,12 +136,12 @@ function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v
                 className="w-full px-3 py-2 text-sm text-left text-primary font-medium hover:bg-muted/50 border-t border-border"
                 onClick={() => { setCustomMode(true); setCustomValue(search); }}
               >
-                ＋ Add Custom Category
+                {t("mprCategoryAddCustom")}
               </button>
             ) : (
               <div className="p-2 border-t border-border flex gap-2">
                 <Input
-                  placeholder="Custom category name"
+                  placeholder={t("mprCategoryCustomPh")}
                   value={customValue}
                   onChange={e => setCustomValue(e.target.value)}
                   className="h-8 text-sm rounded-lg flex-1"
@@ -154,8 +154,9 @@ function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v
                   disabled={!customValue.trim()}
                   onClick={() => { onChange(customValue.trim()); setOpen(false); setCustomMode(false); }}
                 >
-                  Add
+                  {t("mprCategoryAdd")}
                 </Button>
+
               </div>
             )}
           </div>
