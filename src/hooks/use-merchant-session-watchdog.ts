@@ -21,6 +21,7 @@ const REFRESH_LEAD_S = 60;
 export function useMerchantSessionWatchdog() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useI18n();
   const firedRef = useRef(false);
   const pathRef = useRef(location.pathname + location.search);
 
