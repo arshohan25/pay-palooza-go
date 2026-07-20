@@ -417,12 +417,12 @@ const PaymentRequestsPage = () => {
         {/* Links list */}
         <div>
           <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-            <Link2 className="w-4 h-4" /> Your links
+            <Link2 className="w-4 h-4" /> {t("prYourLinks")}
           </h3>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <p className="text-sm text-muted-foreground">{t("prLoadingDots")}</p>
           ) : links.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No payment links yet. Create your first one above.</p>
+            <p className="text-sm text-muted-foreground">{t("prNoLinksYet")}</p>
           ) : (
             <ul className="space-y-3">
               {links.map((l) => {
@@ -438,8 +438,8 @@ const PaymentRequestsPage = () => {
                         <p className="text-sm text-muted-foreground">
                           {l.amount != null
                             ? <>৳{Number(l.amount_paid ?? 0).toLocaleString()} / ৳{Number(l.amount).toLocaleString()}
-                              {remaining != null && remaining > 0 && <span className="text-primary"> · ৳{remaining.toLocaleString()} left</span>}</>
-                            : `${l.used_count} payments · payer chooses`}
+                              {remaining != null && remaining > 0 && <span className="text-primary"> · ৳{remaining.toLocaleString()} {t("prLeftSuffix")}</span>}</>
+                            : `${l.used_count} ${t("prPaymentsSuffix")} · ${t("prPayerChooses")}`}
                         </p>
                       </div>
                       <StatusBadge status={s} />
@@ -456,8 +456,8 @@ const PaymentRequestsPage = () => {
 
                     <div className="mt-3 flex items-center gap-2">
                       <code className="flex-1 text-xs bg-muted rounded-lg px-2 py-1.5 truncate">{linkUrl(l.short_code)}</code>
-                      <Button size="icon" variant="outline" onClick={() => copy(l.short_code)} title="Copy"><Copy className="w-4 h-4" /></Button>
-                      <Button size="icon" variant="outline" onClick={() => window.open(linkUrl(l.short_code), "_blank")} title="Open"><ExternalLink className="w-4 h-4" /></Button>
+                      <Button size="icon" variant="outline" onClick={() => copy(l.short_code)} title={t("prCopy")}><Copy className="w-4 h-4" /></Button>
+                      <Button size="icon" variant="outline" onClick={() => window.open(linkUrl(l.short_code), "_blank")} title={t("prOpen")}><ExternalLink className="w-4 h-4" /></Button>
                     </div>
 
                     <div className="mt-2 flex items-center justify-between">
@@ -466,13 +466,13 @@ const PaymentRequestsPage = () => {
                         className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                       >
                         {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                        Timeline ({linkPays.length})
+                        {t("prTimeline")} ({linkPays.length})
                       </button>
                       <button
                         onClick={() => toggleActive(l)}
                         className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
                       >
-                        {l.is_active ? "Deactivate" : "Reactivate"}
+                        {l.is_active ? t("prDeactivate") : t("prReactivate")}
                       </button>
                     </div>
 
@@ -481,12 +481,12 @@ const PaymentRequestsPage = () => {
                         {l.source === "mcp" && (
                           <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5 text-[11px] space-y-1">
                             <div className="flex items-center gap-1.5 text-foreground font-medium">
-                              <span aria-hidden>🤖</span> Created via AI assistant (MCP)
+                              <span aria-hidden>🤖</span> {t("prCreatedViaAI")}
                             </div>
                             {(mcpLogsByLink[l.id] ?? []).slice(0, 1).map(log => (
                               <div key={log.correlation_id} className="flex items-center justify-between gap-2 flex-wrap">
                                 <span className="text-muted-foreground">
-                                  correlation: <code className="font-mono text-foreground">{log.correlation_id.slice(0, 8)}…</code>
+                                  {t("prCorrelation")}: <code className="font-mono text-foreground">{log.correlation_id.slice(0, 8)}…</code>
                                 </span>
                                 <div className="flex items-center gap-2">
                                   <button
@@ -494,33 +494,33 @@ const PaymentRequestsPage = () => {
                                     onClick={async () => {
                                       try {
                                         await navigator.clipboard.writeText(log.correlation_id);
-                                        toast.success("Correlation ID copied");
+                                        toast.success(t("prCorrelationCopied"));
                                       } catch {
-                                        toast.error("Failed to copy");
+                                        toast.error(t("prCopyFailed"));
                                       }
                                     }}
                                     className="text-primary hover:underline inline-flex items-center gap-1"
-                                    aria-label="Copy correlation ID"
+                                    aria-label={t("prCopyId")}
                                   >
-                                    <Copy className="w-3 h-3" /> Copy ID
+                                    <Copy className="w-3 h-3" /> {t("prCopyId")}
                                   </button>
                                   <a
                                     href={`/admin/mcp-activity?cid=${log.correlation_id}`}
                                     onClick={(e) => { e.preventDefault(); window.open(`/admin/mcp-activity?cid=${log.correlation_id}`, "_blank"); }}
                                     className="text-primary hover:underline inline-flex items-center gap-1"
                                   >
-                                    View in Admin Activity Log <ExternalLink className="w-3 h-3" />
+                                    {t("prViewAdminLog")} <ExternalLink className="w-3 h-3" />
                                   </a>
                                 </div>
                               </div>
                             ))}
 
                             {!(mcpLogsByLink[l.id]?.length) && (
-                              <p className="text-muted-foreground">No correlation ID recorded for this link.</p>
+                              <p className="text-muted-foreground">{t("prNoCorrelation")}</p>
                             )}
                           </div>
                         )}
-                        <PaymentLinkTimeline payments={linkPays} emptyLabel="No payments on this link yet." onRefund={refund} refundingId={refundingId} />
+                        <PaymentLinkTimeline payments={linkPays} emptyLabel={t("prNoLinkPayments")} onRefund={refund} refundingId={refundingId} />
                       </div>
                     )}
                   </motion.li>
