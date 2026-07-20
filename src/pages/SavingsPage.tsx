@@ -520,9 +520,9 @@ function DpsPlanDetailsSheet({
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <CalendarClock className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold">Installment timeline</h3>
+                <h3 className="text-sm font-semibold">{t("savInstallmentTimeline")}</h3>
                 <span className="text-[10px] text-muted-foreground ml-auto tabular-nums">
-                  {paid} paid · {remaining} upcoming
+                  {paid} {t("savPaidCount")} · {remaining} {t("savUpcomingCount")}
                 </span>
               </div>
 
