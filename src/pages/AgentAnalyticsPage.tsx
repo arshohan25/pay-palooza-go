@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer,
@@ -16,12 +17,15 @@ import {
 
 const AGENT_TYPES = ["cashin", "cashout", "b2b", "banktransfer", "paybill"];
 
-const TYPE_META: Record<string, { label: string; icon: any; accent: string }> = {
-  cashin:       { label: "Cash In",       icon: ArrowUpFromLine, accent: "hsl(var(--primary))" },
-  cashout:      { label: "Cash Out",      icon: ArrowDownToLine, accent: "hsl(var(--accent))" },
-  b2b:          { label: "B2B Transfer",  icon: ArrowRightLeft,  accent: "hsl(262 83% 58%)" },
-  banktransfer: { label: "Bank Transfer", icon: Building2,       accent: "hsl(221 83% 53%)" },
-  paybill:      { label: "Bill Pay",      icon: Receipt,         accent: "hsl(25 95% 53%)" },
+const useTypeMeta = () => {
+  const { t } = useI18n();
+  return {
+    cashin:       { label: t("agAnaCashIn"),  icon: ArrowUpFromLine, accent: "hsl(var(--primary))" },
+    cashout:      { label: t("agAnaCashOut"), icon: ArrowDownToLine, accent: "hsl(var(--accent))" },
+    b2b:          { label: t("agAnaB2b"),     icon: ArrowRightLeft,  accent: "hsl(262 83% 58%)" },
+    banktransfer: { label: t("agAnaBank"),    icon: Building2,       accent: "hsl(221 83% 53%)" },
+    paybill:      { label: t("agAnaBill"),    icon: Receipt,         accent: "hsl(25 95% 53%)" },
+  } as Record<string, { label: string; icon: any; accent: string }>;
 };
 
 type View = "daily" | "weekly" | "monthly";
@@ -31,6 +35,8 @@ const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(Math.round(n));
 const AgentAnalyticsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
+  const TYPE_META = useTypeMeta();
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>("daily");
@@ -117,9 +123,9 @@ const AgentAnalyticsPage = () => {
   }, [filtered]);
 
   const views: { key: View; label: string }[] = [
-    { key: "daily", label: "Daily" },
-    { key: "weekly", label: "Weekly" },
-    { key: "monthly", label: "Monthly" },
+    { key: "daily", label: t("agAnaDaily") },
+    { key: "weekly", label: t("agAnaWeekly") },
+    { key: "monthly", label: t("agAnaMonthly") },
   ];
 
   const tooltipStyle = { borderRadius: 10, fontSize: 11, border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" };
@@ -132,7 +138,7 @@ const AgentAnalyticsPage = () => {
           <Button variant="ghost" size="icon" className="shrink-0 rounded-xl" onClick={() => navigate("/agent")}>
             <ArrowLeft size={18} />
           </Button>
-          <h1 className="text-sm font-bold text-foreground tracking-tight">Analytics</h1>
+          <h1 className="text-sm font-bold text-foreground tracking-tight">{t("agAnaTitle")}</h1>
         </div>
       </div>
 
@@ -168,9 +174,9 @@ const AgentAnalyticsPage = () => {
         {/* Summary */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: "Transactions", value: loading ? "—" : String(summary.count) },
-            { label: "Volume", value: loading ? "—" : `৳${fmt(summary.volume)}` },
-            { label: "Commission", value: loading ? "—" : `৳${fmt(summary.commission)}`, highlight: true },
+            { label: t("agAnaTxns"), value: loading ? "—" : String(summary.count) },
+            { label: t("agAnaVolume"), value: loading ? "—" : `৳${fmt(summary.volume)}` },
+            { label: t("agAnaCommission"), value: loading ? "—" : `৳${fmt(summary.commission)}`, highlight: true },
           ].map(c => (
             <Card key={c.label} className="p-3 border-0 shadow-sm rounded-xl text-center">
               <p className={`text-sm font-bold ${c.highlight ? "text-primary" : "text-foreground"}`}>{c.value}</p>
@@ -181,9 +187,9 @@ const AgentAnalyticsPage = () => {
 
         {/* Trend */}
         <Card className="p-4 border-0 shadow-sm rounded-2xl">
-          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">Trend</h3>
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t("agAnaTrend")}</h3>
           {trendData.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-8">No data</p>
+            <p className="text-xs text-muted-foreground text-center py-8">{t("agAnaNoData")}</p>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={trendData}>
@@ -209,9 +215,9 @@ const AgentAnalyticsPage = () => {
 
         {/* Commission by Type */}
         <Card className="p-4 border-0 shadow-sm rounded-2xl">
-          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">Commission by Type</h3>
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t("agAnaCommByType")}</h3>
           {commissionByType.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-8">No commission data</p>
+            <p className="text-xs text-muted-foreground text-center py-8">{t("agAnaNoComm")}</p>
           ) : (
             <ResponsiveContainer width="100%" height={Math.max(100, commissionByType.length * 36)}>
               <BarChart data={commissionByType} layout="vertical" margin={{ left: 4 }}>
@@ -230,7 +236,7 @@ const AgentAnalyticsPage = () => {
 
         {/* Peak Hours */}
         <Card className="p-4 border-0 shadow-sm rounded-2xl">
-          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">Peak Hours</h3>
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t("agAnaPeakHours")}</h3>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={peakHours}>
               <XAxis dataKey="hour" tick={{ fontSize: 8 }} interval={2} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
@@ -243,10 +249,10 @@ const AgentAnalyticsPage = () => {
 
         {/* Breakdown */}
         <div>
-          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Breakdown</h3>
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t("agAnaBreakdown")}</h3>
           <div className="space-y-1.5">
             {typeDistribution.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">No transactions</p>
+              <p className="text-xs text-muted-foreground text-center py-6">{t("agAnaNoTxns")}</p>
             ) : (
               typeDistribution.map(([type, data]) => {
                 const meta = TYPE_META[type];
@@ -254,7 +260,7 @@ const AgentAnalyticsPage = () => {
                   <Card key={type} className="p-3 border-0 shadow-sm rounded-xl flex items-center gap-3 overflow-hidden" style={{ borderLeft: `3px solid ${meta?.accent || "hsl(var(--primary))"}` }}>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-foreground">{meta?.label || type}</p>
-                      <p className="text-[10px] text-muted-foreground">{data.count} txns</p>
+                      <p className="text-[10px] text-muted-foreground">{t("agAnaTxnCount").replace("{count}", String(data.count))}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xs font-bold text-foreground">৳{fmt(data.volume)}</p>
