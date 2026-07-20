@@ -228,7 +228,7 @@ const PayLinkPage = () => {
 
 
   if (loading || authLoading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t("plLoading")}</div>;
   }
 
   if (error || !link) {
