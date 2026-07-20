@@ -15,7 +15,7 @@ import { Copy, Link2, Plus, ExternalLink, CheckCircle2, Clock, XCircle, ChevronD
 import { motion } from "framer-motion";
 import PaymentLinkTimeline, { LinkPaymentRow } from "@/components/PaymentLinkTimeline";
 import { format, subDays } from "date-fns";
-import { useT } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 
 type PaymentLink = {
   id: string;
