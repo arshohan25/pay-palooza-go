@@ -2273,19 +2273,20 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
                 }
                 try {
                   await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-                  toast({ title: "Copied!", description: "Payment QR details copied to clipboard" });
+                  toast({ title: t("mqrCopied"), description: t("mqrShareCopiedDesc") });
                 } catch {
-                  toast({ title: "Share unavailable", description: "Sharing isn't supported on this browser.", variant: "destructive" });
+                  toast({ title: t("mqrShareUnavailable"), description: t("mqrShareUnavailableDesc"), variant: "destructive" });
                 }
               }}>
-                <Share2 size={14} className="mr-1" /> <span className="text-xs">Share</span>
+                <Share2 size={14} className="mr-1" /> <span className="text-xs">{t("mqrShare")}</span>
               </Button>
               <Button variant="outline" className="rounded-xl h-11" onClick={handlePrint}>
-                <Receipt size={14} className="mr-1" /> <span className="text-xs">Print</span>
+                <Receipt size={14} className="mr-1" /> <span className="text-xs">{t("mqrPrint")}</span>
               </Button>
               <Button variant="outline" className="rounded-xl h-11" onClick={copyCode}>
-                <Copy size={14} className="mr-1" /> <span className="text-xs">Copy</span>
+                <Copy size={14} className="mr-1" /> <span className="text-xs">{t("mqrCopy")}</span>
               </Button>
+
             </div>
 
           </div>
