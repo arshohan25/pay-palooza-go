@@ -19,6 +19,7 @@ interface FundRow {
 }
 
 export default function AddMoneyStatusPage() {
+  const { t } = useI18n();
   const [params] = useSearchParams();
   const requestId = params.get("request_id");
   const [row, setRow] = useState<FundRow | null>(null);
@@ -51,12 +52,12 @@ export default function AddMoneyStatusPage() {
       if (res?.gateway_trx_id) setGatewayTrxId(res.gateway_trx_id);
       if (res?.error === "amount_mismatch") {
         setMismatch({ paid: Number(res.paid), expected: Number(res.expected) });
-        toast.error(`Amount mismatch — paid ৳${res.paid}, expected ৳${res.expected}`);
-      } else if (res?.credited) toast.success("Balance credited");
-      else if (res?.status && res.status !== "COMPLETED") toast.info(`Payment status: ${res.status}`);
+        toast.error(`${t("amsVerifyFailed")} — ৳${res.paid} / ৳${res.expected}`);
+      } else if (res?.credited) toast.success(t("amsCredited"));
+      else if (res?.status && res.status !== "COMPLETED") toast.info(`${t("amsPaymentStatus")}: ${res.status}`);
       await load();
     } catch (e: any) {
-      toast.error(e.message || "Verification failed");
+      toast.error(e.message || t("amsVerifyFailed"));
     } finally {
       setVerifying(false);
     }
@@ -85,8 +86,8 @@ export default function AddMoneyStatusPage() {
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>;
   if (!requestId || !row) return (
     <div className="p-6 text-center space-y-3">
-      <p className="text-sm text-muted-foreground">No add-money request found.</p>
-      <Button asChild variant="outline"><Link to="/"><ArrowLeft size={14} className="mr-1" /> Home</Link></Button>
+      <p className="text-sm text-muted-foreground">{t("amsNoRequest")}</p>
+      <Button asChild variant="outline"><Link to="/"><ArrowLeft size={14} className="mr-1" /> {t("amsHome")}</Link></Button>
     </div>
   );
 
@@ -94,13 +95,13 @@ export default function AddMoneyStatusPage() {
   const isRejected = row.status === "rejected";
   const Icon = isApproved ? CheckCircle2 : isRejected ? XCircle : Clock;
   const color = isApproved ? "text-emerald-500" : isRejected ? "text-red-500" : "text-amber-500";
-  const label = isApproved ? "Balance credited" : isRejected ? "Rejected" : "Pending verification";
+  const label = isApproved ? t("amsCredited") : isRejected ? t("amsRejected") : t("amsPending");
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-4" data-testid="addmoney-status-page">
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="icon"><Link to="/"><ArrowLeft size={18} /></Link></Button>
-        <h1 className="text-lg font-bold">Add Money Status</h1>
+        <h1 className="text-lg font-bold">{t("amsTitle")}</h1>
       </div>
 
       <Card>
@@ -110,7 +111,7 @@ export default function AddMoneyStatusPage() {
           <p className="text-3xl font-bold">৳{Number(row.amount).toLocaleString()}</p>
           {isApproved && row.reviewed_at && (
             <p className="text-xs text-muted-foreground" data-testid="approved-at">
-              Approved at {new Date(row.reviewed_at).toLocaleString()}
+              {t("amsApprovedAt")} {new Date(row.reviewed_at).toLocaleString()}
             </p>
           )}
           {row.admin_note && <p className="text-xs text-muted-foreground italic">{row.admin_note}</p>}
@@ -119,7 +120,7 @@ export default function AddMoneyStatusPage() {
 
       <div className="text-xs text-muted-foreground space-y-1 px-2">
         <div className="flex justify-between items-center gap-2">
-          <span>Gateway Txn ID</span>
+          <span>{t("amsGatewayTrxId")}</span>
           {(() => {
             const trx = gatewayTrxId || row.transaction_id_proof;
             return trx ? (
@@ -134,8 +135,8 @@ export default function AddMoneyStatusPage() {
             ) : <span className="font-mono" data-testid="gateway-trx-id">—</span>;
           })()}
         </div>
-        <div className="flex justify-between"><span>Method</span><span>{row.source_method || "—"}</span></div>
-        <div className="flex justify-between"><span>Created</span><span>{new Date(row.created_at).toLocaleString()}</span></div>
+        <div className="flex justify-between"><span>{t("amsMethod")}</span><span>{row.source_method || "—"}</span></div>
+        <div className="flex justify-between"><span>{t("amsCreated")}</span><span>{new Date(row.created_at).toLocaleString()}</span></div>
       </div>
 
       {mismatch && (
@@ -147,10 +148,10 @@ export default function AddMoneyStatusPage() {
       {!isApproved && !isRejected && (
         <Button className="w-full" onClick={verify} disabled={verifying} data-testid="verify-btn">
           {verifying ? <Loader2 size={16} className="animate-spin mr-1" /> : <RefreshCw size={16} className="mr-1" />}
-          {verifying ? "Verifying with UddoktaPay…" : "Verify payment now"}
+          {verifying ? t("amsVerifyingUp") : t("amsVerifyBtn")}
         </Button>
       )}
-      <Button asChild variant="outline" className="w-full"><Link to="/">Back to home</Link></Button>
+      <Button asChild variant="outline" className="w-full"><Link to="/">{t("amsBackHome")}</Link></Button>
     </div>
   );
 }

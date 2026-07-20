@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const RETURN_STORAGE_KEY = "easypay_addmoney_return";
 
@@ -14,6 +15,7 @@ type AddMoneyReturnDetail = {
 const cleanHomeUrl = () => `${window.location.origin}/`;
 
 export default function PaymentReturnPage() {
+  const { t } = useI18n();
   const detail = useMemo<AddMoneyReturnDetail>(() => {
     const params = new URLSearchParams(window.location.search);
     const status = params.get("addmoney") || params.get("status") || "success";
@@ -64,12 +66,12 @@ export default function PaymentReturnPage() {
         </div>
         <div className="space-y-2">
           <h1 className="text-xl font-extrabold tracking-tight">
-            {isSuccess ? "Payment received" : "Payment not completed"}
+            {isSuccess ? t("prPaymentReceived") : t("prPaymentFailed")}
           </h1>
-          <p className="text-sm text-muted-foreground">Returning to EasyPay Home with your transaction status.</p>
+          <p className="text-sm text-muted-foreground">{t("prReturning")}</p>
         </div>
         <div className="flex items-center justify-center gap-2 text-sm font-medium text-primary">
-          <Loader2 className="h-4 w-4 animate-spin" /> Redirecting…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t("prRedirecting")}
         </div>
       </section>
     </main>
