@@ -574,7 +574,7 @@ function DpsPlanDetailsSheet({
                               <div className="text-sm font-bold tabular-nums text-foreground">
                                 ৳{Number(plan.amount).toLocaleString()}
                               </div>
-                              <div className="text-[9px] text-muted-foreground uppercase tracking-wide">Upcoming</div>
+                              <div className="text-[9px] text-muted-foreground uppercase tracking-wide">{t("savUpcoming")}</div>
                             </div>
                           </div>
                         </div>
