@@ -425,7 +425,7 @@ export default function CouponDetailPage() {
           }}
         >
           <Ticket className="w-5 h-5" />
-          {eligibility?.eligible ? "Redeem now" : "Not eligible"}
+          {eligibility?.eligible ? t("cdRedeemNow") : t("cdNotEligible")}
           {eligibility?.eligible && <ChevronRight className="w-4 h-4" />}
         </button>
       </div>
