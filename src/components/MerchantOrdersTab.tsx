@@ -270,6 +270,7 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
         open={!!courierOrder}
         onOpenChange={(o) => { if (!o) setCourierOrder(null); }}
         onBooked={load}
+        merchantId={merchantId}
       />
     </div>
   );
