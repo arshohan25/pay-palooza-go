@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Sparkles, TrendingUp, TrendingDown, Users, ShoppingBag, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 
 interface Snapshot {
   today_revenue: number;
