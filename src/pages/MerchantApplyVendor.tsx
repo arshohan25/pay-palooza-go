@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +13,9 @@ import { ArrowLeft, Store, CheckCircle2, Clock, XCircle, Camera, Upload, Loader2
 import { toast } from "sonner";
 
 type PhotoKey = "shop_front" | "shop_inside";
-const PHOTOS: { key: PhotoKey; slot: "front" | "inside"; urlField: "shop_front_photo_url" | "shop_inside_photo_url"; metaField: "shop_front_photo_meta" | "shop_inside_photo_meta"; label: string; hint: string }[] = [
-  { key: "shop_front",  slot: "front",  urlField: "shop_front_photo_url",  metaField: "shop_front_photo_meta",  label: "Shop front photo",  hint: "Exterior with signboard. Min 640×480, JPG/PNG/WEBP, ≤8MB." },
-  { key: "shop_inside", slot: "inside", urlField: "shop_inside_photo_url", metaField: "shop_inside_photo_meta", label: "Shop inside photo", hint: "Interior showing products / counter." },
+const PHOTOS: { key: PhotoKey; slot: "front" | "inside"; urlField: "shop_front_photo_url" | "shop_inside_photo_url"; metaField: "shop_front_photo_meta" | "shop_inside_photo_meta"; labelKey: TranslationKey; hintKey: TranslationKey }[] = [
+  { key: "shop_front",  slot: "front",  urlField: "shop_front_photo_url",  metaField: "shop_front_photo_meta",  labelKey: "mavShopFrontLabel",  hintKey: "mavShopFrontHint" },
+  { key: "shop_inside", slot: "inside", urlField: "shop_inside_photo_url", metaField: "shop_inside_photo_meta", labelKey: "mavShopInsideLabel", hintKey: "mavShopInsideHint" },
 ];
 
 const MAX_MB = 8;
