@@ -98,11 +98,11 @@ export default function TeamLoginPage() {
         }
       }
 
-      toast.success("Welcome back!");
+      toast.success(t("tlpWelcomeBack"));
       setShow2fa(false);
       await proceedToRedirect();
     } catch (err: any) {
-      toast.error(err.message || "Invalid or expired code");
+      toast.error(err.message || t("tlpInvalidCode"));
       setOtpCode("");
     }
     setVerifying2fa(false);
