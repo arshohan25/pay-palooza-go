@@ -376,8 +376,8 @@ const PayLinkPage = () => {
                       onClick={payWithUddoktapay}
                       disabled={paying || payingUp || !(finalAmount > 0)}
                     >
-                      {payingUp ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Redirecting…</>)
-                        : (<>Pay with bKash / Nagad / Card <ArrowRight className="w-4 h-4 ml-2" /></>)}
+                      {payingUp ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("plRedirecting")}</>)
+                        : (<>{t("plPayWithGateway")} <ArrowRight className="w-4 h-4 ml-2" /></>)}
                     </Button>
                   </>
                 )}
