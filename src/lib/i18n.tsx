@@ -3947,6 +3947,9 @@ const translations = {
 } as const;
 
 
+  mlSessionExpired: { en: "Your session has expired. Please sign in again.", bn: "আপনার সেশন শেষ হয়ে গেছে। আবার সাইন ইন করুন।" },
+} as unknown as typeof translations;
+
 export type TranslationKey = keyof typeof translations;
 export const translationsMap = translations;
 
