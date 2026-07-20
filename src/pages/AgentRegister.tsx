@@ -189,7 +189,7 @@ const AgentRegister = () => {
       haptics.success();
       goTo("otp");
     } catch (err: any) {
-      toast({ title: "Failed to send OTP", description: err.message, variant: "destructive" });
+      toast({ title: t("argSendOtpFail"), description: err.message, variant: "destructive" });
     } finally {
       setSendingOtp(false);
     }
