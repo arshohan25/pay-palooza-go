@@ -15,6 +15,7 @@ import { Copy, Link2, Plus, ExternalLink, CheckCircle2, Clock, XCircle, ChevronD
 import { motion } from "framer-motion";
 import PaymentLinkTimeline, { LinkPaymentRow } from "@/components/PaymentLinkTimeline";
 import { format, subDays } from "date-fns";
+import { useI18n } from "@/lib/i18n";
 
 type PaymentLink = {
   id: string;
@@ -51,12 +52,13 @@ const statusOf = (l: PaymentLink) => {
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
+  const { t } = useI18n();
   const map: Record<string, { label: string; cls: string; icon: any }> = {
-    active: { label: "Active", cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: Clock },
-    paid: { label: "Paid", cls: "bg-primary/10 text-primary border-primary/30", icon: CheckCircle2 },
-    exhausted: { label: "Exhausted", cls: "bg-primary/10 text-primary border-primary/30", icon: CheckCircle2 },
-    expired: { label: "Expired", cls: "bg-muted text-muted-foreground border-border", icon: XCircle },
-    inactive: { label: "Inactive", cls: "bg-muted text-muted-foreground border-border", icon: XCircle },
+    active: { label: t("prStatusActive"), cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: Clock },
+    paid: { label: t("prStatusPaid"), cls: "bg-primary/10 text-primary border-primary/30", icon: CheckCircle2 },
+    exhausted: { label: t("prStatusExhausted"), cls: "bg-primary/10 text-primary border-primary/30", icon: CheckCircle2 },
+    expired: { label: t("prStatusExpired"), cls: "bg-muted text-muted-foreground border-border", icon: XCircle },
+    inactive: { label: t("prStatusInactive"), cls: "bg-muted text-muted-foreground border-border", icon: XCircle },
   };
   const cfg = map[status] ?? map.inactive;
   const Icon = cfg.icon;
@@ -64,6 +66,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const PaymentRequestsPage = () => {
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [links, setLinks] = useState<PaymentLink[]>([]);
   const [payments, setPayments] = useState<ReceivedPayment[]>([]);
@@ -181,11 +184,11 @@ const PaymentRequestsPage = () => {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return toast.error("Please sign in first");
-    if (!title.trim()) return toast.error("Title is required");
+    if (!user) return toast.error(t("prSignInFirst"));
+    if (!title.trim()) return toast.error(t("prTitleRequired"));
     const amt = amount.trim() ? parseFloat(amount) : null;
     if (amt != null && (!Number.isFinite(amt) || amt <= 0)) {
-      return toast.error("Amount must be a positive number");
+      return toast.error(t("prAmountPositive"));
     }
     setCreating(true);
     const short_code = randomCode();
@@ -200,14 +203,14 @@ const PaymentRequestsPage = () => {
     });
     setCreating(false);
     if (error) return toast.error(error.message);
-    toast.success("Payment link created");
+    toast.success(t("prLinkCreated"));
     setTitle(""); setAmount(""); setDescription("");
     load();
   };
 
   const copy = async (code: string) => {
-    try { await navigator.clipboard.writeText(linkUrl(code)); toast.success("Link copied"); }
-    catch { toast.error("Could not copy"); }
+    try { await navigator.clipboard.writeText(linkUrl(code)); toast.success(t("prLinkCopied")); }
+    catch { toast.error(t("prCouldNotCopy")); }
   };
 
   const toggleActive = async (l: PaymentLink) => {
@@ -239,8 +242,8 @@ const PaymentRequestsPage = () => {
         try { msg = JSON.parse(detail).error ?? detail; } catch { /* ignore */ }
         throw new Error(msg);
       }
-      if (!data?.success) throw new Error(data?.error ?? "Refund failed");
-      toast.success(data.fully_refunded ? `Refunded ৳${data.amount}` : `Partial refund of ৳${data.amount} issued`);
+      if (!data?.success) throw new Error(data?.error ?? t("prRefundFailed"));
+      toast.success(data.fully_refunded ? `${t("prRefundedAmount")} ৳${data.amount}` : `${t("prPartialRefundIssued")} ৳${data.amount}`);
       load();
     } catch (e) {
       toast.error((e as Error).message);
@@ -278,28 +281,21 @@ const PaymentRequestsPage = () => {
 
 
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
-  if (!user) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Sign in to create payment requests.</div>;
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t("prLoadingDots")}</div>;
+  if (!user) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t("prSignInToCreate")}</div>;
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Seo title="Payment Requests" description="Create shareable payment request links and track their status." path="/payment-requests" />
-      <FlowHeader title="Payment Requests" tagline="Share a link to get paid" />
+      <Seo title={t("prSeoTitle")} description={t("prSeoDesc")} path="/payment-requests" />
+      <FlowHeader title={t("prSeoTitle")} tagline={t("prTagline")} />
 
       <div className="max-w-md mx-auto px-4 pt-4 space-y-6">
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-4 text-xs text-muted-foreground space-y-1">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <span aria-hidden>🤖</span> Agent tools (MCP)
+              <span aria-hidden>🤖</span> {t("prAgentToolsTitle")}
             </div>
-            <p>
-              The <strong>create request</strong> form below and the live status list share the same
-              operations exposed to AI assistants over MCP:
-              <code className="mx-1">create_payment_request</code>,
-              <code className="mx-1">get_payment_status</code>,
-              <code className="mx-1">list_payment_requests</code>. Anything created here — or via an
-              assistant — appears here in real time.
-            </p>
+            <p>{t("prAgentToolsBody")}</p>
           </CardContent>
         </Card>
 
@@ -307,23 +303,23 @@ const PaymentRequestsPage = () => {
           <CardContent className="p-5">
             <form onSubmit={submit} className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Plus className="w-4 h-4 text-primary" /> New request
+                <Plus className="w-4 h-4 text-primary" /> {t("prNewRequest")}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pr-title">What's it for?</Label>
-                <Input id="pr-title" placeholder="e.g. Rent for July" value={title} onChange={e => setTitle(e.target.value)} required />
+                <Label htmlFor="pr-title">{t("prWhatsItFor")}</Label>
+                <Input id="pr-title" placeholder={t("prTitlePlaceholder")} value={title} onChange={e => setTitle(e.target.value)} required />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pr-amount">Amount (BDT) <span className="text-muted-foreground font-normal">— leave blank for payer to choose</span></Label>
+                <Label htmlFor="pr-amount">{t("prAmountLabel")} <span className="text-muted-foreground font-normal">— {t("prAmountHint")}</span></Label>
                 <Input id="pr-amount" type="number" min="1" step="1" placeholder="1000" value={amount} onChange={e => setAmount(e.target.value)} />
-                <p className="text-[11px] text-muted-foreground">Payers can settle it in one go or in partial payments.</p>
+                <p className="text-[11px] text-muted-foreground">{t("prPartialHint")}</p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pr-desc">Note (optional)</Label>
+                <Label htmlFor="pr-desc">{t("prNoteOptional")}</Label>
                 <Textarea id="pr-desc" rows={2} value={description} onChange={e => setDescription(e.target.value)} />
               </div>
               <Button type="submit" className="w-full rounded-xl h-11" disabled={creating}>
-                {creating ? "Creating…" : "Create payment link"}
+                {creating ? t("prCreating") : t("prCreateLink")}
               </Button>
             </form>
           </CardContent>
@@ -334,20 +330,20 @@ const PaymentRequestsPage = () => {
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <History className="w-4 h-4 text-primary" /> Received payments
+                <History className="w-4 h-4 text-primary" /> {t("prReceivedPayments")}
               </h3>
-              <span className="text-[11px] text-muted-foreground">Live</span>
+              <span className="text-[11px] text-muted-foreground">{t("prLive")}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-primary/5 rounded-xl p-3">
-                <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Total received</p>
+                <p className="text-[10px] uppercase text-muted-foreground tracking-wider">{t("prTotalReceived")}</p>
                 <p className="text-lg font-bold text-foreground flex items-center gap-1">
                   <TrendingUp className="w-4 h-4 text-primary" /> ৳{totals.total.toLocaleString()}
                 </p>
               </div>
               <div className="bg-muted rounded-xl p-3">
-                <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Payments</p>
+                <p className="text-[10px] uppercase text-muted-foreground tracking-wider">{t("prPaymentsCount")}</p>
                 <p className="text-lg font-bold text-foreground">{totals.count}</p>
               </div>
             </div>
@@ -356,23 +352,23 @@ const PaymentRequestsPage = () => {
               <Select value={filterLink} onValueChange={setFilterLink}>
                 <SelectTrigger className="h-9 text-xs"><Filter className="w-3 h-3 mr-1" /><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All links</SelectItem>
+                  <SelectItem value="all">{t("prAllLinks")}</SelectItem>
                   {links.map(l => <SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={filterRange} onValueChange={setFilterRange}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="7">Last 7 days</SelectItem>
-                  <SelectItem value="30">Last 30 days</SelectItem>
-                  <SelectItem value="90">Last 90 days</SelectItem>
-                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="7">{t("prLast7")}</SelectItem>
+                  <SelectItem value="30">{t("prLast30")}</SelectItem>
+                  <SelectItem value="90">{t("prLast90")}</SelectItem>
+                  <SelectItem value="all">{t("prAllTime")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {filteredPayments.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic text-center py-4">No payments in this period.</p>
+              <p className="text-xs text-muted-foreground italic text-center py-4">{t("prNoPaymentsPeriod")}</p>
             ) : (
               <ul className="divide-y divide-border/50">
                 {filteredPayments.slice(0, 25).map(p => {
@@ -386,16 +382,16 @@ const PaymentRequestsPage = () => {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{link?.title ?? "—"}</p>
                         <p className="text-[11px] text-muted-foreground">
-                          {payerNames[p.payer_id] ?? "Unknown payer"} · {format(new Date(p.created_at), "d MMM, HH:mm")}
+                          {payerNames[p.payer_id] ?? t("prUnknownPayer")} · {format(new Date(p.created_at), "d MMM, HH:mm")}
                         </p>
                         {p.transaction_id && (
                           <p className="text-[10px] font-mono text-muted-foreground">ref {p.transaction_id.slice(0, 8).toUpperCase()}</p>
                         )}
                         {fully && (
-                          <p className="text-[10px] text-amber-600">Refunded{p.refund_reason ? ` · ${p.refund_reason}` : ""}</p>
+                          <p className="text-[10px] text-amber-600">{t("prRefunded")}{p.refund_reason ? ` · ${p.refund_reason}` : ""}</p>
                         )}
                         {partial && (
-                          <p className="text-[10px] text-amber-600">Partial refund: ৳{refunded.toLocaleString()} of ৳{Number(p.amount).toLocaleString()}</p>
+                          <p className="text-[10px] text-amber-600">{t("prPartialRefundLabel")}: ৳{refunded.toLocaleString()} / ৳{Number(p.amount).toLocaleString()}</p>
                         )}
                       </div>
                       {fully ? (
@@ -421,12 +417,12 @@ const PaymentRequestsPage = () => {
         {/* Links list */}
         <div>
           <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-            <Link2 className="w-4 h-4" /> Your links
+            <Link2 className="w-4 h-4" /> {t("prYourLinks")}
           </h3>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <p className="text-sm text-muted-foreground">{t("prLoadingDots")}</p>
           ) : links.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No payment links yet. Create your first one above.</p>
+            <p className="text-sm text-muted-foreground">{t("prNoLinksYet")}</p>
           ) : (
             <ul className="space-y-3">
               {links.map((l) => {
@@ -442,8 +438,8 @@ const PaymentRequestsPage = () => {
                         <p className="text-sm text-muted-foreground">
                           {l.amount != null
                             ? <>৳{Number(l.amount_paid ?? 0).toLocaleString()} / ৳{Number(l.amount).toLocaleString()}
-                              {remaining != null && remaining > 0 && <span className="text-primary"> · ৳{remaining.toLocaleString()} left</span>}</>
-                            : `${l.used_count} payments · payer chooses`}
+                              {remaining != null && remaining > 0 && <span className="text-primary"> · ৳{remaining.toLocaleString()} {t("prLeftSuffix")}</span>}</>
+                            : `${l.used_count} ${t("prPaymentsSuffix")} · ${t("prPayerChooses")}`}
                         </p>
                       </div>
                       <StatusBadge status={s} />
@@ -460,8 +456,8 @@ const PaymentRequestsPage = () => {
 
                     <div className="mt-3 flex items-center gap-2">
                       <code className="flex-1 text-xs bg-muted rounded-lg px-2 py-1.5 truncate">{linkUrl(l.short_code)}</code>
-                      <Button size="icon" variant="outline" onClick={() => copy(l.short_code)} title="Copy"><Copy className="w-4 h-4" /></Button>
-                      <Button size="icon" variant="outline" onClick={() => window.open(linkUrl(l.short_code), "_blank")} title="Open"><ExternalLink className="w-4 h-4" /></Button>
+                      <Button size="icon" variant="outline" onClick={() => copy(l.short_code)} title={t("prCopy")}><Copy className="w-4 h-4" /></Button>
+                      <Button size="icon" variant="outline" onClick={() => window.open(linkUrl(l.short_code), "_blank")} title={t("prOpen")}><ExternalLink className="w-4 h-4" /></Button>
                     </div>
 
                     <div className="mt-2 flex items-center justify-between">
@@ -470,13 +466,13 @@ const PaymentRequestsPage = () => {
                         className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                       >
                         {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                        Timeline ({linkPays.length})
+                        {t("prTimeline")} ({linkPays.length})
                       </button>
                       <button
                         onClick={() => toggleActive(l)}
                         className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
                       >
-                        {l.is_active ? "Deactivate" : "Reactivate"}
+                        {l.is_active ? t("prDeactivate") : t("prReactivate")}
                       </button>
                     </div>
 
@@ -485,12 +481,12 @@ const PaymentRequestsPage = () => {
                         {l.source === "mcp" && (
                           <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5 text-[11px] space-y-1">
                             <div className="flex items-center gap-1.5 text-foreground font-medium">
-                              <span aria-hidden>🤖</span> Created via AI assistant (MCP)
+                              <span aria-hidden>🤖</span> {t("prCreatedViaAI")}
                             </div>
                             {(mcpLogsByLink[l.id] ?? []).slice(0, 1).map(log => (
                               <div key={log.correlation_id} className="flex items-center justify-between gap-2 flex-wrap">
                                 <span className="text-muted-foreground">
-                                  correlation: <code className="font-mono text-foreground">{log.correlation_id.slice(0, 8)}…</code>
+                                  {t("prCorrelation")}: <code className="font-mono text-foreground">{log.correlation_id.slice(0, 8)}…</code>
                                 </span>
                                 <div className="flex items-center gap-2">
                                   <button
@@ -498,33 +494,33 @@ const PaymentRequestsPage = () => {
                                     onClick={async () => {
                                       try {
                                         await navigator.clipboard.writeText(log.correlation_id);
-                                        toast.success("Correlation ID copied");
+                                        toast.success(t("prCorrelationCopied"));
                                       } catch {
-                                        toast.error("Failed to copy");
+                                        toast.error(t("prCopyFailed"));
                                       }
                                     }}
                                     className="text-primary hover:underline inline-flex items-center gap-1"
-                                    aria-label="Copy correlation ID"
+                                    aria-label={t("prCopyId")}
                                   >
-                                    <Copy className="w-3 h-3" /> Copy ID
+                                    <Copy className="w-3 h-3" /> {t("prCopyId")}
                                   </button>
                                   <a
                                     href={`/admin/mcp-activity?cid=${log.correlation_id}`}
                                     onClick={(e) => { e.preventDefault(); window.open(`/admin/mcp-activity?cid=${log.correlation_id}`, "_blank"); }}
                                     className="text-primary hover:underline inline-flex items-center gap-1"
                                   >
-                                    View in Admin Activity Log <ExternalLink className="w-3 h-3" />
+                                    {t("prViewAdminLog")} <ExternalLink className="w-3 h-3" />
                                   </a>
                                 </div>
                               </div>
                             ))}
 
                             {!(mcpLogsByLink[l.id]?.length) && (
-                              <p className="text-muted-foreground">No correlation ID recorded for this link.</p>
+                              <p className="text-muted-foreground">{t("prNoCorrelation")}</p>
                             )}
                           </div>
                         )}
-                        <PaymentLinkTimeline payments={linkPays} emptyLabel="No payments on this link yet." onRefund={refund} refundingId={refundingId} />
+                        <PaymentLinkTimeline payments={linkPays} emptyLabel={t("prNoLinkPayments")} onRefund={refund} refundingId={refundingId} />
                       </div>
                     )}
                   </motion.li>
