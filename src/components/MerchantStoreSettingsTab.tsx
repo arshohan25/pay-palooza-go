@@ -96,17 +96,18 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await (supabase as any)
-      .from("vendor_stores")
-      .select("*")
-      .eq("merchant_id", merchantId)
-      .maybeSingle();
+    const [{ data }, { data: merchRow }] = await Promise.all([
+      (supabase as any).from("vendor_stores").select("*").eq("merchant_id", merchantId).maybeSingle(),
+      (supabase as any).from("merchants").select("business_name_bn").eq("id", merchantId).maybeSingle(),
+    ]);
+    const bnName = (merchRow?.business_name_bn as string | null) || "";
 
     if (data) {
       setStore(data);
       const sl = (data.social_links || {}) as any;
       setForm({
         store_name: data.store_name || "",
+        store_name_bn: bnName,
         slug: data.slug || "",
         description: data.description || "",
         logo_url: data.logo_url,
@@ -119,7 +120,7 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
     } else {
       // Pre-fill defaults
       const defaultSlug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-      setForm(f => ({ ...f, store_name: businessName, slug: defaultSlug }));
+      setForm(f => ({ ...f, store_name: businessName, store_name_bn: bnName, slug: defaultSlug }));
     }
     setLoading(false);
   }, [merchantId, businessName]);
