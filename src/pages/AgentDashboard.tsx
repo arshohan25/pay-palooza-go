@@ -240,8 +240,8 @@ const AgentDashboard = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6">
         <Shield size={48} className="text-muted-foreground" />
-        <p className="text-lg font-semibold text-foreground">Login required</p>
-        <Button onClick={() => navigate("/")} variant="outline">Go to Login</Button>
+        <p className="text-lg font-semibold text-foreground">{t("agdLoginRequired")}</p>
+        <Button onClick={() => navigate("/")} variant="outline">{t("agdGoToLogin")}</Button>
       </div>
     );
   }
@@ -250,19 +250,20 @@ const AgentDashboard = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6 text-center">
         <Building2 size={48} className="text-muted-foreground" />
-        <p className="text-lg font-semibold text-foreground">Agent Access Required</p>
+        <p className="text-lg font-semibold text-foreground">{t("agdAgentAccessRequired")}</p>
         <p className="text-sm text-muted-foreground max-w-xs">
-          You're signed in as <span className="font-semibold text-foreground">{currentPhone}</span>, which is not an agent account. Sign out and log in with your assigned agent number.
+          {t("agdNotAgentAccount").replace("{phone}", currentPhone)}
         </p>
         <div className="flex gap-2">
-          <Button onClick={() => navigate("/")} variant="outline"><ArrowLeft size={16} className="mr-2" />Home</Button>
+          <Button onClick={() => navigate("/")} variant="outline"><ArrowLeft size={16} className="mr-2" />{t("agdHome")}</Button>
           <Button
             onClick={async () => { await supabase.auth.signOut(); navigate("/agent/login"); }}
-          >Sign out & switch</Button>
+          >{t("agdSignOutSwitch")}</Button>
         </div>
       </div>
     );
   }
+
 
   const floatPct = Math.min(100, (balance / (agentInfo?.max_float ?? 500000)) * 100);
   const todayTxns = recentTxns.filter(t => new Date(t.created_at).toDateString() === new Date().toDateString());
@@ -306,7 +307,7 @@ const AgentDashboard = () => {
                 <motion.button
                   whileTap={{ scale: 0.88 }}
                   onClick={() => { haptics.light(); setTheme(isDark ? "light" : "dark"); }}
-                  aria-label="Toggle theme"
+                  aria-label={t("agdToggleTheme")}
                   className="w-9 h-9 rounded-2xl glass-hero flex items-center justify-center text-primary-foreground/90 hover:text-primary-foreground transition-colors"
                 >
                   {isDark ? <Sun size={16} /> : <Moon size={16} />}
@@ -360,7 +361,7 @@ const AgentDashboard = () => {
                 onClick={toggleBalance}
                 whileTap={{ scale: 0.97 }}
                 className="flex items-center mt-1"
-                aria-label={showBalance ? "Hide balance" : "Show balance"}
+                aria-label={showBalance ? t("agdHideBalance") : t("agdShowBalance")}
               >
                 <AnimatePresence mode="wait">
                   {showBalance ? (
@@ -563,8 +564,8 @@ const AgentDashboard = () => {
           <NotificationPanel
             notifications={notifications}
             systemAlerts={[
-              ...(floatPct < 20 ? [{ id: "float-low", text: "⚠️ Float balance critically low", time: new Date().toISOString() }] : []),
-              ...(floatPct < 50 && floatPct >= 20 ? [{ id: "float-warn", text: "📉 Float balance is getting low", time: new Date().toISOString() }] : []),
+              ...(floatPct < 20 ? [{ id: "float-low", text: t("agdFloatCritical"), time: new Date().toISOString() }] : []),
+              ...(floatPct < 50 && floatPct >= 20 ? [{ id: "float-warn", text: t("agdFloatWarn"), time: new Date().toISOString() }] : []),
             ]}
             onClose={() => setNotifOpen(false)}
             onViewTxn={(tx) => { setNotifOpen(false); setSelectedTxn(tx); }}
@@ -581,12 +582,12 @@ const AgentDashboard = () => {
       <Sheet open={floatSheetOpen} onOpenChange={setFloatSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-base font-extrabold">Request Float Top-Up</SheetTitle>
+            <SheetTitle className="text-base font-extrabold">{t("agdRequestFloatTopUp")}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Amount (৳)</Label>
-              <Input type="number" placeholder="e.g. 50000" value={floatAmount} onChange={e => setFloatAmount(e.target.value)} className="h-12 rounded-xl text-lg font-bold" />
+              <Label className="text-xs font-semibold">{t("agdAmountLabel")}</Label>
+              <Input type="number" placeholder={t("agdAmountPh")} value={floatAmount} onChange={e => setFloatAmount(e.target.value)} className="h-12 rounded-xl text-lg font-bold" />
               <div className="flex gap-2 mt-2">
                 {[10000, 25000, 50000, 100000].map(v => (
                   <button key={v} onClick={() => setFloatAmount(String(v))} className="flex-1 py-1.5 rounded-lg bg-muted text-xs font-semibold text-foreground hover:bg-primary/10 transition-colors">
@@ -596,8 +597,8 @@ const AgentDashboard = () => {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Note (optional)</Label>
-              <Textarea placeholder="Reason for float request..." value={floatNote} onChange={e => setFloatNote(e.target.value)} className="rounded-xl resize-none" rows={2} />
+              <Label className="text-xs font-semibold">{t("agdNoteOptional")}</Label>
+              <Textarea placeholder={t("agdFloatNotePh")} value={floatNote} onChange={e => setFloatNote(e.target.value)} className="rounded-xl resize-none" rows={2} />
             </div>
             <Button
               className="w-full h-12 rounded-xl text-sm font-bold gradient-primary text-primary-foreground"
@@ -611,7 +612,7 @@ const AgentDashboard = () => {
                     .select("id, distributor_id")
                     .eq("user_id", user.id)
                     .single();
-                  if (agentErr || !agentRow) throw agentErr || new Error("Agent record not found");
+                  if (agentErr || !agentRow) throw agentErr || new Error(t("agdAgentNotFound"));
                   const { error } = await supabase.from("agent_float_requests").insert({
                     agent_id: agentRow.id,
                     agent_user_id: user.id,
@@ -620,20 +621,21 @@ const AgentDashboard = () => {
                     note: floatNote || null,
                   });
                   if (error) throw error;
-                  toast.success(`Float request of ৳${fmt(Number(floatAmount))} sent to distributor`);
+                  toast.success(t("agdFloatSent").replace("{amt}", fmt(Number(floatAmount))));
                   setFloatAmount("");
                   setFloatNote("");
                   setFloatSheetOpen(false);
                 } catch (err: any) {
-                  toast.error(err?.message || "Failed to submit float request");
+                  toast.error(err?.message || t("agdFloatFailed"));
                 } finally {
                   setFloatSubmitting(false);
                 }
               }}
             >
-              {floatSubmitting ? "Submitting..." : "Submit Request"}
+              {floatSubmitting ? t("agdSubmitting") : t("agdSubmitRequest")}
             </Button>
           </div>
+
         </SheetContent>
       </Sheet>
 
@@ -641,7 +643,7 @@ const AgentDashboard = () => {
       <Sheet open={supportSheetOpen} onOpenChange={setSupportSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 max-h-[85vh] overflow-hidden flex flex-col">
           <SheetHeader className="mb-3">
-            <SheetTitle className="text-base font-extrabold">Agent Support</SheetTitle>
+            <SheetTitle className="text-base font-extrabold">{t("agdAgentSupport")}</SheetTitle>
           </SheetHeader>
 
           {/* Tab switcher */}
@@ -650,13 +652,13 @@ const AgentDashboard = () => {
               onClick={() => setSupportTab("faq")}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${supportTab === "faq" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <ChevronDown size={13} /> FAQ
+              <ChevronDown size={13} /> {t("agdFaq")}
             </button>
             <button
               onClick={() => setSupportTab("chat")}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${supportTab === "chat" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <MessageCircle size={13} /> Live Chat
+              <MessageCircle size={13} /> {t("agdLiveChat")}
             </button>
           </div>
 
@@ -664,11 +666,11 @@ const AgentDashboard = () => {
             {supportTab === "faq" ? (
               <div className="space-y-3 overflow-y-auto max-h-[55vh] pr-1">
                 {[
-                  { q: "How to request more float?", a: "Tap 'Float Req' from Quick Actions and enter the amount. Your distributor will be notified." },
-                  { q: "Cash In transaction failed?", a: "Check your balance and retry. If the issue persists, contact your distributor with the transaction ID." },
-                  { q: "How is commission calculated?", a: "You earn 0.49% on Cash In/Out and 0.019% on Bill Pay transactions, credited instantly." },
-                  { q: "How to register a new customer?", a: "Tap 'Register' and fill in the customer's phone, name, and NID details." },
-                  { q: "Bank transfer not reflecting?", a: "Bank transfers may take 1-2 business days. Check History for status updates." },
+                  { q: t("agdFaq1Q"), a: t("agdFaq1A") },
+                  { q: t("agdFaq2Q"), a: t("agdFaq2A") },
+                  { q: t("agdFaq3Q"), a: t("agdFaq3A") },
+                  { q: t("agdFaq4Q"), a: t("agdFaq4A") },
+                  { q: t("agdFaq5Q"), a: t("agdFaq5A") },
                 ].map((faq, i) => (
                   <details key={i} className="group">
                     <summary className="flex items-center justify-between cursor-pointer list-none p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
@@ -679,13 +681,13 @@ const AgentDashboard = () => {
                   </details>
                 ))}
                 <div className="pt-3 border-t border-border/50 space-y-2">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Need more help?</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t("agdNeedMoreHelp")}</p>
                   <div className="grid grid-cols-2 gap-2">
                     <Button variant="outline" className="rounded-xl h-11 text-xs font-bold gap-2" onClick={() => { window.location.href = "tel:+8801800000000"; }}>
-                      <Phone size={14} /> Call Support
+                      <Phone size={14} /> {t("agdCallSupport")}
                     </Button>
                     <Button variant="outline" className="rounded-xl h-11 text-xs font-bold gap-2" onClick={() => setSupportTab("chat")}>
-                      <MessageCircle size={14} /> Live Chat
+                      <MessageCircle size={14} /> {t("agdLiveChat")}
                     </Button>
                   </div>
                 </div>
@@ -694,6 +696,7 @@ const AgentDashboard = () => {
               <SupportChat userId={user!.id} />
             )}
           </div>
+
         </SheetContent>
       </Sheet>
     </div>
