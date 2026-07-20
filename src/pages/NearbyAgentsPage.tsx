@@ -266,7 +266,7 @@ const NearbyAgentsPage = () => {
                         ) : null}
                       </div>
                     ) : (
-                      <span className="text-[10px] text-muted-foreground shrink-0">New</span>
+                      <span className="text-[10px] text-muted-foreground shrink-0">{t("naNew")}</span>
                     )}
                   </button>
                 );
