@@ -139,6 +139,12 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
               placeholder="e.g. PTH-8842091" className="mt-1 h-10 text-[13px]" />
           </div>
 
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground">Booking Reference (optional)</label>
+            <Input value={bookingRef} onChange={(e) => setBookingRef(e.target.value)}
+              placeholder="e.g. BK-9821 (from courier portal)" className="mt-1 h-10 text-[13px]" />
+          </div>
+
           <Button onClick={book} disabled={busy || totalRemaining === 0}
             className="w-full rounded-xl h-11 gap-1.5 text-[13px] font-bold">
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Package size={14} />}
