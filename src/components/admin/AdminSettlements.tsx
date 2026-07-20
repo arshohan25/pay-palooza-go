@@ -136,6 +136,18 @@ export default function AdminSettlements() {
       const comms = (txns ?? []).reduce((s, t) => s + Number(t.commission), 0);
       const net = gross - fees + comms;
 
+      // Merchant service charge (from orders in period)
+      let serviceCharge = 0;
+      if (form.entityType === "merchant" && entityId) {
+        const { data: scOrders } = await supabase.from("orders")
+          .select("service_charge")
+          .eq("merchant_id", entityId)
+          .eq("status", "completed")
+          .gte("created_at", periodStart)
+          .lte("created_at", periodEnd);
+        serviceCharge = (scOrders ?? []).reduce((s, o: any) => s + Number(o.service_charge || 0), 0);
+      }
+
       const ref = `STL-${Date.now().toString(36).toUpperCase()}`;
 
       const { error } = await supabase.from("settlements").insert({
@@ -156,6 +168,7 @@ export default function AdminSettlements() {
         settlement_ref: ref,
         notes: form.notes || null,
         settled_by: session?.user?.id,
+        service_charge_amount: serviceCharge,
       } as any);
 
       if (error) throw error;
