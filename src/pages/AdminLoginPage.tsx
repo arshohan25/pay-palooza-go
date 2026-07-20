@@ -4,17 +4,19 @@ import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Smartphone, Lock, Shield, ArrowRight, Loader2 } from "lucide-react";
+import { Lock, Shield, ArrowRight, Loader2 } from "lucide-react";
 import { signIn } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-roles";
-import { APP_ROLE_HOME, APP_ROLE_LABEL, isRoleAllowedForApp } from "@/lib/appRole";
+import { APP_ROLE_HOME, isRoleAllowedForApp } from "@/lib/appRole";
 import { haptics } from "@/lib/haptics";
+import { useI18n } from "@/lib/i18n";
 
 const ADMIN_LAST_PHONE_KEY = "easypay_admin_last_phone";
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
 
@@ -37,11 +39,11 @@ const AdminLoginPage = () => {
     e.preventDefault();
     setError(null);
     if (!/^01[3-9]\d{8}$/.test(phone)) {
-      setError("Enter a valid 11-digit admin mobile number.");
+      setError(t("admlpErrValidPhone"));
       return;
     }
     if (pin.length !== 4) {
-      setError("Enter your 4-digit PIN.");
+      setError(t("admlpErrPin"));
       return;
     }
     setSubmitting(true);
@@ -50,15 +52,15 @@ const AdminLoginPage = () => {
       try { localStorage.setItem(ADMIN_LAST_PHONE_KEY, phone); } catch {}
       localStorage.setItem("mfs_has_authenticated", "1");
       haptics.success();
-      toast.success("Signed in");
+      toast.success(t("admlpSignedIn"));
     } catch (err) {
       haptics.error();
       const msg =
         err instanceof Error && err.message.includes("Invalid login credentials")
-          ? "Incorrect phone number or PIN."
+          ? t("admlpErrIncorrect")
           : err instanceof Error
             ? err.message
-            : "Unable to sign in right now.";
+            : t("admlpErrGeneric");
       setError(msg);
       setPin("");
     } finally {
@@ -66,13 +68,13 @@ const AdminLoginPage = () => {
     }
   };
 
-  const title = `${APP_ROLE_LABEL.admin} — Sign in`;
+  const title = t("admlpTitle");
 
   return (
     <div className="min-h-screen bg-[#07131017] text-white flex flex-col" style={{ background: "#071310" }}>
       <Helmet>
         <title>{title}</title>
-        <meta name="description" content="EasyPay Admin sign-in — manage users, transactions, fraud alerts and platform settings." />
+        <meta name="description" content={t("admlpMetaDesc")} />
         <link rel="icon" href="/icons/role-admin.png" />
         <link rel="apple-touch-icon" href="/icons/role-admin.png" />
       </Helmet>
@@ -83,10 +85,10 @@ const AdminLoginPage = () => {
           <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-2 shadow-lg">
             <Shield size={26} />
           </div>
-          <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">EasyPay</p>
-          <h1 className="text-xl font-extrabold mt-0.5">EasyPay Admin Console</h1>
+          <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">{t("admlpBrand")}</p>
+          <h1 className="text-xl font-extrabold mt-0.5">{t("admlpHeading")}</h1>
           <p className="text-xs opacity-90 mt-1 max-w-[280px] mx-auto">
-            Restricted access — authorized personnel only.
+            {t("admlpSubtitle")}
           </p>
         </div>
       </header>
@@ -101,7 +103,7 @@ const AdminLoginPage = () => {
         >
           <div className="space-y-1">
             <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-              Admin mobile number
+              {t("admlpPhoneLabel")}
             </label>
             <div className="relative">
               <input
@@ -122,7 +124,7 @@ const AdminLoginPage = () => {
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-              4-digit PIN
+              {t("admlpPinLabel")}
             </label>
             <div className="relative">
               <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400" />
@@ -157,20 +159,20 @@ const AdminLoginPage = () => {
             className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 disabled:opacity-60"
           >
             {submitting ? (
-              <><Loader2 size={18} className="animate-spin" /> Signing in…</>
+              <><Loader2 size={18} className="animate-spin" /> {t("admlpSigningIn")}</>
             ) : (
-              <>Sign in as Admin <ArrowRight size={18} /></>
+              <>{t("admlpSignInAction")} <ArrowRight size={18} /></>
             )}
           </button>
 
           <div className="flex items-center justify-between text-xs pt-1">
             <button type="button" onClick={() => navigate("/forgot-pin")} className="text-emerald-400 font-semibold hover:underline">
-              Forgot PIN?
+              {t("admlpForgotPin")}
             </button>
-            <span className="text-white/40">Admins only</span>
+            <span className="text-white/40">{t("admlpAdminsOnly")}</span>
           </div>
           <p className="text-[11px] text-white/50 text-center pt-1">
-            Admin & team accounts are provisioned internally. Contact your workspace owner.
+            {t("admlpFooterNote")}
           </p>
         </motion.form>
       </div>
