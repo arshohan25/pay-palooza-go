@@ -19,6 +19,7 @@ import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import { useDeviceOtpVerification } from "@/hooks/use-device-otp-verification";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import DeviceOtpStep from "@/components/DeviceOtpStep";
+import { useI18n } from "@/lib/i18n";
 
 const AGENT_LAST_PHONE_KEY = "easypay_agent_last_phone";
 
@@ -28,6 +29,7 @@ const AGENT_LAST_PHONE_KEY = "easypay_agent_last_phone";
  */
 const AgentLoginPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
 
@@ -57,7 +59,7 @@ const AgentLoginPage = () => {
     localStorage.setItem(AGENT_LAST_PHONE_KEY, phone);
     localStorage.setItem("mfs_has_authenticated", "1");
     haptics.success();
-    toast.success("Signed in");
+    toast.success(t("alpSignedIn"));
     navigate(APP_ROLE_HOME.agent, { replace: true });
   };
 
@@ -65,12 +67,12 @@ const AgentLoginPage = () => {
     e.preventDefault();
     setError(null);
     if (phoneVal.triggerShake()) {
-      setError(phoneVal.errorMessage || "Enter a valid 11-digit agent mobile number starting with 01.");
+      setError(phoneVal.errorMessage || t("alpErrInvalidPhone"));
       haptics.error();
       return;
     }
     if (pin.length !== 4) {
-      setError("Please enter your 4-digit PIN.");
+      setError(t("alpErrPinRequired"));
       haptics.error();
       return;
     }
@@ -84,7 +86,7 @@ const AgentLoginPage = () => {
         const st = Array.isArray(statusRows) ? statusRows[0] : statusRows;
         if (st?.state === "expired") {
           await supabase.auth.signOut();
-          throw new Error("Your temporary PIN has expired. Please ask your admin to resend a new one.");
+          throw new Error(t("alpErrTempExpired"));
         }
       }
 
@@ -99,15 +101,15 @@ const AgentLoginPage = () => {
     } catch (err) {
       haptics.error();
       const raw = err instanceof Error ? err.message : String(err ?? "");
-      let msg = "Unable to sign in right now. Please try again.";
+      let msg = t("alpErrGeneric");
       if (/Failed to fetch|NetworkError|network|ECONN/i.test(raw) || !navigator.onLine) {
-        msg = "You appear to be offline. Check your connection and try again.";
+        msg = t("alpErrOffline");
       } else if (/Invalid login credentials/i.test(raw)) {
-        msg = "Incorrect phone number or PIN.";
-      } else if (/temporary PIN has expired/i.test(raw)) {
+        msg = t("alpErrIncorrect");
+      } else if (/temporary PIN has expired/i.test(raw) || raw === t("alpErrTempExpired")) {
         msg = raw;
       } else if (/rate|too many/i.test(raw)) {
-        msg = "Too many attempts. Please wait a moment and try again.";
+        msg = t("alpErrRate");
       } else if (raw) {
         msg = raw;
       }
@@ -130,20 +132,20 @@ const AgentLoginPage = () => {
       if (mintErr) throw mintErr;
       const token = (data as any)?.device_token;
       const expires_at = (data as any)?.device_token_expires_at;
-      if (!token || !expires_at) throw new Error("Could not trust this device. Please try again.");
+      if (!token || !expires_at) throw new Error(t("alpTrustFail"));
       otp.saveTrustToken(phone, token, expires_at);
       finishLogin();
     } catch (err: any) {
       const raw = err?.message || String(err ?? "");
-      let msg = "Verification failed. Please try again.";
+      let msg = t("alpVerifyFail");
       if (/Failed to fetch|NetworkError|network/i.test(raw) || !navigator.onLine) {
-        msg = "Network error. Please check your connection and retry.";
+        msg = t("alpVerifyNetwork");
       } else if (/expired/i.test(raw)) {
-        msg = "This code has expired. Tap Resend to get a new one.";
+        msg = t("alpVerifyExpired");
       } else if (/invalid|incorrect|mismatch/i.test(raw)) {
-        msg = "Incorrect code. Please double-check and try again.";
+        msg = t("alpVerifyIncorrect");
       } else if (/too many|rate/i.test(raw)) {
-        msg = "Too many attempts. Please wait before retrying.";
+        msg = t("alpVerifyRate");
       } else if (raw) {
         msg = raw;
       }
@@ -160,7 +162,7 @@ const AgentLoginPage = () => {
     try { await supabase.auth.signOut(); } catch {}
   };
 
-  const title = `${APP_ROLE_LABEL.agent} — Sign in`;
+  const title = t("alpTitle");
 
   return (
     <div className="min-h-screen bg-[#0b1512] text-white flex flex-col">
@@ -168,7 +170,7 @@ const AgentLoginPage = () => {
         <title>{title}</title>
         <meta
           name="description"
-          content="EasyPay Agent sign-in — cash-in, cash-out, bill pay and customer onboarding."
+          content={t("alpMetaDesc")}
         />
         <link rel="icon" href="/icons/role-agent.png" />
         <link rel="apple-touch-icon" href="/icons/role-agent.png" />
@@ -181,12 +183,12 @@ const AgentLoginPage = () => {
           <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-2 shadow-lg">
             <ShieldCheck size={26} />
           </div>
-          <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">EasyPay</p>
-          <h1 className="text-xl font-extrabold mt-0.5">EasyPay Agent Portal</h1>
+          <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">{t("alpBrand")}</p>
+          <h1 className="text-xl font-extrabold mt-0.5">{t("alpHeading")}</h1>
           <p className="text-xs opacity-90 mt-1 max-w-[280px] mx-auto">
             {otpMode
-              ? "Verify this device to keep your agent account secure."
-              : "Sign in to serve customers — cash-in, cash-out & bill pay."}
+              ? t("alpSubOtp")
+              : t("alpSubDefault")}
           </p>
         </div>
       </header>
@@ -218,13 +220,13 @@ const AgentLoginPage = () => {
                 <div className="h-12 w-full rounded-2xl bg-white/5 animate-pulse" />
                 <p className="text-center text-[12px] text-white/60 flex items-center justify-center gap-2">
                   <Loader2 size={13} className="animate-spin" />
-                  Sending verification code…
+                  {t("alpSendingCode")}
                 </p>
               </div>
             ) : (
               <DeviceOtpStep
                 phone={phone}
-                portalLabel="Agent"
+                portalLabel={t("alpPortalAgent")}
                 resendIn={otp.resendIn}
                 loading={otp.status === "verifying" || otp.status === "sending" || finalizing}
                 error={otp.error}
@@ -237,7 +239,7 @@ const AgentLoginPage = () => {
             {finalizing && (
               <p className="mt-3 text-center text-[12px] text-white/70 flex items-center justify-center gap-2">
                 <Loader2 size={13} className="animate-spin" />
-                Trusting this device…
+                {t("alpTrustingDevice")}
               </p>
             )}
           </motion.div>
@@ -254,7 +256,7 @@ const AgentLoginPage = () => {
             <fieldset disabled={submitting} className="space-y-5 disabled:opacity-70">
             <div className="space-y-1">
               <label htmlFor="agent-phone" className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-                Agent mobile number
+                {t("alpPhoneLabel")}
               </label>
               <div className="relative">
                 <input
@@ -295,7 +297,7 @@ const AgentLoginPage = () => {
 
             <div className="space-y-1">
               <label htmlFor="agent-pin" className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-                4-digit PIN
+                {t("alpPinLabel")}
               </label>
               <div className="relative">
                 <Lock
@@ -340,11 +342,11 @@ const AgentLoginPage = () => {
             >
               {submitting ? (
                 <>
-                  <Loader2 size={18} className="animate-spin" /> Signing in…
+                  <Loader2 size={18} className="animate-spin" /> {t("alpSigningIn")}
                 </>
               ) : (
                 <>
-                  Sign In <ArrowRight size={18} />
+                  {t("alpSignIn")} <ArrowRight size={18} />
                 </>
               )}
             </button>
@@ -355,9 +357,9 @@ const AgentLoginPage = () => {
                 onClick={() => navigate("/forgot-pin")}
                 className="text-orange-400 font-semibold hover:underline disabled:opacity-50"
               >
-                Forgot PIN?
+                {t("alpForgotPin")}
               </button>
-              <span className="text-white/40">Agents only</span>
+              <span className="text-white/40">{t("alpAgentsOnly")}</span>
             </div>
             </fieldset>
           </motion.form>
