@@ -4859,6 +4859,7 @@ export type Database = {
           business_kyc_reviewed_by: string | null
           business_kyc_status: string
           business_name: string
+          business_name_bn: string | null
           category: Database["public"]["Enums"]["merchant_category"]
           commission_rate: number
           contact_email: string | null
@@ -4898,6 +4899,7 @@ export type Database = {
           business_kyc_reviewed_by?: string | null
           business_kyc_status?: string
           business_name: string
+          business_name_bn?: string | null
           category?: Database["public"]["Enums"]["merchant_category"]
           commission_rate?: number
           contact_email?: string | null
@@ -4937,6 +4939,7 @@ export type Database = {
           business_kyc_reviewed_by?: string | null
           business_kyc_status?: string
           business_name?: string
+          business_name_bn?: string | null
           category?: Database["public"]["Enums"]["merchant_category"]
           commission_rate?: number
           contact_email?: string | null
@@ -8885,10 +8888,9 @@ export type Database = {
           state: string
         }[]
       }
-      merchant_update_business_name: {
-        Args: { p_name: string }
-        Returns: undefined
-      }
+      merchant_update_business_name:
+        | { Args: { p_name: string }; Returns: undefined }
+        | { Args: { p_name: string; p_name_bn?: string }; Returns: undefined }
       merchant_update_service_charge: {
         Args: { p_absorb: boolean; p_enabled: boolean; p_rate: number }
         Returns: undefined
