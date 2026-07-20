@@ -2815,19 +2815,20 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
 
                 {selectedTx.fee > 0 && (
                   <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 space-y-2 text-xs">
-                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Fee Breakdown</p>
+                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">{t("mhFeeBreakdown")}</p>
                     <div className="flex justify-between">
-                      <span className="text-amber-800 dark:text-amber-300">Principal</span>
+                      <span className="text-amber-800 dark:text-amber-300">{t("mhPrincipal")}</span>
                       <span className="font-semibold text-amber-900 dark:text-amber-200">৳{fmt(selectedTx.amount)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-amber-800 dark:text-amber-300">Fee</span>
+                      <span className="text-amber-800 dark:text-amber-300">{t("mhFee")}</span>
                       <span className="font-semibold text-amber-900 dark:text-amber-200">৳{fmt(selectedTx.fee)}</span>
                     </div>
                     <div className="border-t border-amber-300 dark:border-amber-700 pt-2 flex justify-between font-bold">
-                      <span className="text-amber-900 dark:text-amber-100">Total</span>
+                      <span className="text-amber-900 dark:text-amber-100">{t("mhTotal")}</span>
                       <span className="text-amber-900 dark:text-amber-100">৳{fmt(selectedTx.amount + selectedTx.fee)}</span>
                     </div>
+
                   </div>
                 )}
 
