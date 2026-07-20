@@ -9,30 +9,35 @@ import LoyaltyBadge from "@/components/LoyaltyBadge";
 import { useLoyaltyTiers, useMyLoyalty, type LoyaltyTier } from "@/hooks/use-loyalty";
 import { useLoyaltyPerks } from "@/hooks/use-loyalty-perks";
 import { computeScoreBreakdown, LOYALTY_SCORE_WEIGHTS } from "@/lib/loyaltyScore";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
-const METRIC_FIELDS: Array<{
+type MetricField = {
   key: keyof LoyaltyTier & string;
   current: (l: any) => number;
-  label: string;
+  labelKey: TranslationKey;
   icon: React.ElementType;
   suffix?: string;
-  action: string;
+  actionKey: TranslationKey;
   actionRoute?: string;
-}> = [
-  { key: "min_volume_30d",         current: (l) => Number(l?.volume_30d ?? 0),         label: "30-day volume",         icon: TrendingUp, suffix: "৳", action: "Send money, pay bills or shop",    actionRoute: "/pay" },
-  { key: "min_lifetime_txn_count", current: (l) => Number(l?.lifetime_txn_count ?? 0), label: "Lifetime transactions", icon: Repeat,     suffix: "",  action: "Complete more transactions",       actionRoute: "/" },
-  { key: "min_wallet_balance",     current: (l) => Number(l?.wallet_balance ?? 0),     label: "Wallet balance",        icon: Wallet,     suffix: "৳", action: "Add money to your wallet",         actionRoute: "/" },
-  { key: "min_addmoney_lifetime",  current: (l) => Number(l?.addmoney_lifetime ?? 0),  label: "Add-money lifetime",    icon: Wallet,     suffix: "৳", action: "Top up from your bank / card",     actionRoute: "/" },
-  { key: "min_savings_balance",    current: (l) => Number(l?.savings_balance ?? 0),    label: "Savings balance",       icon: PiggyBank,  suffix: "৳", action: "Grow your savings goals",          actionRoute: "/savings" },
+};
+
+const METRIC_FIELDS: MetricField[] = [
+  { key: "min_volume_30d",         current: (l) => Number(l?.volume_30d ?? 0),         labelKey: "lpMetricVolume",   icon: TrendingUp, suffix: "৳", actionKey: "lpActionSend",     actionRoute: "/pay" },
+  { key: "min_lifetime_txn_count", current: (l) => Number(l?.lifetime_txn_count ?? 0), labelKey: "lpMetricTxnCount", icon: Repeat,     suffix: "",  actionKey: "lpActionTxn",      actionRoute: "/" },
+  { key: "min_wallet_balance",     current: (l) => Number(l?.wallet_balance ?? 0),     labelKey: "lpMetricWallet",   icon: Wallet,     suffix: "৳", actionKey: "lpActionAddMoney", actionRoute: "/" },
+  { key: "min_addmoney_lifetime",  current: (l) => Number(l?.addmoney_lifetime ?? 0),  labelKey: "lpMetricAddMoney", icon: Wallet,     suffix: "৳", actionKey: "lpActionTopUp",    actionRoute: "/" },
+  { key: "min_savings_balance",    current: (l) => Number(l?.savings_balance ?? 0),    labelKey: "lpMetricSavings",  icon: PiggyBank,  suffix: "৳", actionKey: "lpActionGrow",     actionRoute: "/savings" },
 ];
-
-const fmt = (n: number, suffix?: string) =>
-  suffix === "৳" ? `৳${Math.round(n).toLocaleString()}` : `${Math.round(n).toLocaleString()}${suffix ?? ""}`;
-
-const pctLabel = (p: number) => `${p.toFixed(p < 10 ? 1 : 0)}%`;
 
 export default function LoyaltyProgressPage() {
   const navigate = useNavigate();
+  const { t, lang } = useI18n();
+  const locale = lang === "bn" ? "bn-BD" : "en-US";
+  const fmtNum = (n: number) => Math.round(n).toLocaleString(locale);
+  const fmt = (n: number, suffix?: string) =>
+    suffix === "৳" ? `৳${fmtNum(n)}` : `${fmtNum(n)}${suffix ?? ""}`;
+  const pctLabel = (p: number) => `${p.toFixed(p < 10 ? 1 : 0)}%`;
+
   const { data: tiers } = useLoyaltyTiers();
   const { data: loyalty, isLoading } = useMyLoyalty();
   const perks = useLoyaltyPerks();
@@ -41,7 +46,7 @@ export default function LoyaltyProgressPage() {
   const currentTier = perks.tier;
   const nextTier = useMemo(() => {
     if (!currentTier) return sorted[0] ?? null;
-    return sorted.find((t) => t.rank > currentTier.rank && t.is_active) ?? null;
+    return sorted.find((tr) => tr.rank > currentTier.rank && tr.is_active) ?? null;
   }, [sorted, currentTier]);
 
   const gaps = useMemo(() => {
@@ -72,8 +77,8 @@ export default function LoyaltyProgressPage() {
           <ArrowLeft size={18} />
         </button>
         <div className="min-w-0">
-          <p className="text-sm font-bold flex items-center gap-1.5"><Sparkles size={14} className="text-primary" /> EasyPay Club</p>
-          <p className="text-[11px] text-muted-foreground truncate">Track your loyalty progress</p>
+          <p className="text-sm font-bold flex items-center gap-1.5"><Sparkles size={14} className="text-primary" /> {t("lpEasypayClub")}</p>
+          <p className="text-[11px] text-muted-foreground truncate">{t("lpSubtitle")}</p>
         </div>
       </div>
 
@@ -90,18 +95,18 @@ export default function LoyaltyProgressPage() {
           >
             <div className="flex items-center justify-between">
               <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-wider opacity-80">Current tier</p>
-                <p className="text-2xl font-bold truncate">{currentTier?.name ?? "Not enrolled"}</p>
+                <p className="text-[11px] uppercase tracking-wider opacity-80">{t("lpCurrentTier")}</p>
+                <p className="text-2xl font-bold truncate">{currentTier?.name ?? t("lpNotEnrolled")}</p>
                 {currentTier?.description && <p className="text-[12px] opacity-90 line-clamp-2 mt-0.5">{currentTier.description}</p>}
               </div>
               {currentTier && <LoyaltyBadge tier={currentTier} size="lg" />}
             </div>
 
             <div className="grid grid-cols-2 gap-2 mt-4">
-              <PerkChip icon={Percent} label={`Fee −${perks.feeDiscountPct}%`} />
-              <PerkChip icon={TrendingUp} label={`Limits ×${perks.limitMultiplier.toFixed(2)}`} />
-              <PerkChip icon={Gift} label={`Cashback +${perks.cashbackBonusPct}%`} />
-              <PerkChip icon={Headphones} label={perks.prioritySupport ? "Priority support" : "Standard support"} />
+              <PerkChip icon={Percent} label={t("lpFeeMinus").replace("{n}", fmtNum(perks.feeDiscountPct))} />
+              <PerkChip icon={TrendingUp} label={t("lpLimitsX").replace("{n}", perks.limitMultiplier.toFixed(2))} />
+              <PerkChip icon={Gift} label={t("lpCashbackPlus").replace("{n}", fmtNum(perks.cashbackBonusPct))} />
+              <PerkChip icon={Headphones} label={perks.prioritySupport ? t("lpPrioritySupport") : t("lpStandardSupport")} />
             </div>
           </div>
         </Card>
@@ -112,7 +117,7 @@ export default function LoyaltyProgressPage() {
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Next tier</p>
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("lpNextTier")}</p>
                   <p className="text-lg font-bold truncate">{nextTier.name}</p>
                 </div>
                 <LoyaltyBadge tier={nextTier} size="md" />
@@ -120,12 +125,12 @@ export default function LoyaltyProgressPage() {
 
               <div className="rounded-2xl bg-primary/5 border border-primary/20 p-3">
                 <div className="flex items-baseline justify-between mb-1.5">
-                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Overall</span>
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("lpOverall")}</span>
                   <span className="text-xl font-bold text-primary">{pctLabel(overallPct)}</span>
                 </div>
                 <Progress value={overallPct} className="h-2" />
                 <p className="text-[10.5px] text-muted-foreground mt-1.5">
-                  Averaged across {gaps.length} requirement{gaps.length === 1 ? "" : "s"}.
+                  {(gaps.length === 1 ? t("lpAveragedReq") : t("lpAveragedReqs")).replace("{n}", fmtNum(gaps.length))}
                 </p>
               </div>
 
@@ -137,7 +142,7 @@ export default function LoyaltyProgressPage() {
                   >
                     <div className="flex items-center gap-2 mb-1.5">
                       <g.icon size={14} className={g.done ? "text-emerald-600" : "text-primary"} />
-                      <p className="text-[13px] font-medium flex-1">{g.label}</p>
+                      <p className="text-[13px] font-medium flex-1">{t(g.labelKey)}</p>
                       <span className={`text-[11.5px] font-bold ${g.done ? "text-emerald-600" : "text-foreground"}`}>
                         {pctLabel(g.pct)}
                       </span>
@@ -145,20 +150,20 @@ export default function LoyaltyProgressPage() {
                     <Progress value={g.pct} className="h-1.5" />
                     <div className="flex items-center justify-between mt-2 gap-2">
                       <p className="text-[11px] text-muted-foreground truncate">
-                        {fmt(g.current, g.suffix)} <span className="opacity-60">of</span> {fmt(g.target, g.suffix)}
-                        {!g.done && <> · <span className="text-foreground/80 font-medium">{fmt(g.remaining, g.suffix)} to go</span></>}
+                        {fmt(g.current, g.suffix)} <span className="opacity-60">{t("lpOf")}</span> {fmt(g.target, g.suffix)}
+                        {!g.done && <> · <span className="text-foreground/80 font-medium">{t("lpToGo").replace("{amt}", fmt(g.remaining, g.suffix))}</span></>}
                       </p>
                       {!g.done && g.actionRoute && (
                         <Button size="sm" variant="ghost" className="h-7 text-[11px] shrink-0" onClick={() => navigate(g.actionRoute!)}>
-                          {g.action.split(" ").slice(0, 2).join(" ")} →
+                          {t(g.actionKey)} →
                         </Button>
                       )}
-                      {g.done && <span className="text-[10px] font-bold text-emerald-600">DONE</span>}
+                      {g.done && <span className="text-[10px] font-bold text-emerald-600">{t("lpDone")}</span>}
                     </div>
                   </div>
                 ))}
                 {gaps.length === 0 && (
-                  <p className="text-[12px] text-muted-foreground">You already meet every requirement — your tier will update on next recalculation.</p>
+                  <p className="text-[12px] text-muted-foreground">{t("lpAllMet")}</p>
                 )}
               </div>
             </CardContent>
@@ -167,8 +172,8 @@ export default function LoyaltyProgressPage() {
           <Card>
             <CardContent className="p-6 text-center space-y-1">
               <Award className="w-8 h-8 mx-auto text-amber-500" />
-              <p className="font-bold">You've reached the top!</p>
-              <p className="text-[12px] text-muted-foreground">You are enjoying the highest EasyPay Club tier available.</p>
+              <p className="font-bold">{t("lpTopReached")}</p>
+              <p className="text-[12px] text-muted-foreground">{t("lpTopDesc")}</p>
             </CardContent>
           </Card>
         )}
@@ -178,17 +183,17 @@ export default function LoyaltyProgressPage() {
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Calculator size={15} className="text-primary" />
-              <p className="text-sm font-bold flex-1">Combined score breakdown</p>
+              <p className="text-sm font-bold flex-1">{t("lpScoreBreakdown")}</p>
               <span className="text-[11px] text-muted-foreground">
                 {breakdown.total.toFixed(1)}
-                {scoreTarget > 0 && ` / ${scoreTarget.toLocaleString()}`}
+                {scoreTarget > 0 && ` / ${scoreTarget.toLocaleString(locale)}`}
               </span>
             </div>
 
             {scoreTarget > 0 && (
               <div>
                 <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="text-muted-foreground">Score toward {nextTier?.name}</span>
+                  <span className="text-muted-foreground">{t("lpScoreToward").replace("{tier}", nextTier?.name ?? "")}</span>
                   <span className="font-semibold">{pctLabel(scorePct)}</span>
                 </div>
                 <Progress value={scorePct} className="h-1.5" />
@@ -200,10 +205,13 @@ export default function LoyaltyProgressPage() {
                 <div key={p.key} className="rounded-xl bg-muted/40 px-3 py-2">
                   <div className="flex items-baseline justify-between text-[12px]">
                     <span className="font-medium">{p.label}</span>
-                    <span className="tabular-nums font-bold">+{p.points.toFixed(1)} pts</span>
+                    <span className="tabular-nums font-bold">{t("lpPoints").replace("{n}", p.points.toFixed(1))}</span>
                   </div>
                   <p className="text-[10.5px] text-muted-foreground mt-0.5">
-                    {p.metric.toLocaleString()} × {p.weight} weight · contributes {pctLabel(p.pctOfScore)} of your score
+                    {t("lpPartInfo")
+                      .replace("{metric}", p.metric.toLocaleString(locale))
+                      .replace("{weight}", String(p.weight))
+                      .replace("{pct}", pctLabel(p.pctOfScore))}
                   </p>
                   <div className="mt-1 h-1 rounded-full bg-background overflow-hidden">
                     <div
@@ -216,9 +224,12 @@ export default function LoyaltyProgressPage() {
             </div>
 
             <p className="text-[10px] text-muted-foreground leading-relaxed">
-              Weights: volume ×{LOYALTY_SCORE_WEIGHTS.volume_30d}, txn count ×{LOYALTY_SCORE_WEIGHTS.txn_count},
-              wallet ×{LOYALTY_SCORE_WEIGHTS.wallet}, add-money ×{LOYALTY_SCORE_WEIGHTS.addmoney},
-              savings ×{LOYALTY_SCORE_WEIGHTS.savings}. The bigger the contribution bar, the more that metric moves your tier.
+              {t("lpWeightsFootnote")
+                .replace("{v}", String(LOYALTY_SCORE_WEIGHTS.volume_30d))
+                .replace("{t}", String(LOYALTY_SCORE_WEIGHTS.txn_count))
+                .replace("{w}", String(LOYALTY_SCORE_WEIGHTS.wallet))
+                .replace("{a}", String(LOYALTY_SCORE_WEIGHTS.addmoney))
+                .replace("{s}", String(LOYALTY_SCORE_WEIGHTS.savings))}
             </p>
           </CardContent>
         </Card>
@@ -226,32 +237,35 @@ export default function LoyaltyProgressPage() {
         {/* All tiers roadmap */}
         <Card>
           <CardContent className="p-4">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">All tiers</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">{t("lpAllTiers")}</p>
             <div className="space-y-2">
-              {sorted.filter((t) => t.is_active).map((t) => {
-                const Icon = (Icons as any)[t.badge_icon] ?? Icons.Award;
-                const isCurrent = currentTier?.id === t.id;
+              {sorted.filter((tr) => tr.is_active).map((tr) => {
+                const Icon = (Icons as any)[tr.badge_icon] ?? Icons.Award;
+                const isCurrent = currentTier?.id === tr.id;
                 return (
                   <div
-                    key={t.id}
+                    key={tr.id}
                     className={`flex items-center gap-3 rounded-2xl border p-3 ${isCurrent ? "border-primary bg-primary/5" : "border-border/60"}`}
                   >
                     <div
                       className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0"
-                      style={{ background: `linear-gradient(135deg, ${t.gradient_from ?? t.badge_color}, ${t.gradient_to ?? t.badge_color})` }}
+                      style={{ background: `linear-gradient(135deg, ${tr.gradient_from ?? tr.badge_color}, ${tr.gradient_to ?? tr.badge_color})` }}
                     >
                       <Icon size={16} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-[13.5px] font-semibold truncate">{t.name}</p>
-                        {isCurrent && <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">CURRENT</span>}
+                        <p className="text-[13.5px] font-semibold truncate">{tr.name}</p>
+                        {isCurrent && <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">{t("lpCurrentBadge")}</span>}
                       </div>
                       <p className="text-[10.5px] text-muted-foreground truncate">
-                        Limits ×{t.limit_multiplier} · Fee −{t.fee_discount_pct}% · Cashback +{t.cashback_bonus_pct}%
+                        {t("lpTierPerks")
+                          .replace("{lm}", String(tr.limit_multiplier))
+                          .replace("{fd}", String(tr.fee_discount_pct))
+                          .replace("{cb}", String(tr.cashback_bonus_pct))}
                       </p>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">R{t.rank}</span>
+                    <span className="text-[10px] text-muted-foreground">R{tr.rank}</span>
                   </div>
                 );
               })}
@@ -259,7 +273,7 @@ export default function LoyaltyProgressPage() {
           </CardContent>
         </Card>
 
-        {isLoading && <p className="text-center text-xs text-muted-foreground">Loading your progress…</p>}
+        {isLoading && <p className="text-center text-xs text-muted-foreground">{t("lpLoadingProgress")}</p>}
       </div>
     </div>
   );
