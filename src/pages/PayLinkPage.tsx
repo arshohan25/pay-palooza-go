@@ -33,6 +33,7 @@ type Link = {
 };
 
 const PayLinkPage = () => {
+  const { t } = useI18n();
   const { shortCode } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
