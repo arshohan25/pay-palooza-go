@@ -386,6 +386,75 @@ export default function AdminSettlements() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Details Dialog */}
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-w-md max-h-[90svh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Settlement Details</DialogTitle></DialogHeader>
+          {detail && (() => {
+            const sc = Number(detail.service_charge_amount || 0);
+            const gross = Number(detail.gross_amount);
+            const fees = Number(detail.fee_amount);
+            const comms = Number(detail.commission_amount);
+            const net = Number(detail.net_amount);
+            const isMerchant = detail.entity_type === "merchant";
+            const absorb = detailSc?.absorb ?? false;
+            const rate = detailSc?.rate ?? 0;
+            // Base = gross minus service charge if customer added it (included in gross)
+            const base = isMerchant && sc > 0 && !absorb ? gross - sc : gross;
+            const finalPayout = isMerchant && absorb ? net - sc : net;
+            return (
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Ref</span><span className="font-mono">{detail.settlement_ref}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Entity</span><span className="font-medium">{detail.entity_name} · {detail.entity_phone}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Period</span><span>{detail.period_start?.slice(0,10)} → {detail.period_end?.slice(0,10)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Txns</span><span>{detail.txn_count}</span></div>
+
+                {isMerchant && (
+                  <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Service Charge Breakdown</p>
+                    <div className="flex justify-between"><span>Base amount</span><span className="font-mono">৳{base.toLocaleString()}</span></div>
+                    <div className="flex justify-between"><span>Rate</span><span className="font-mono">{rate.toFixed(2)}%</span></div>
+                    <div className="flex justify-between"><span>Mode</span>
+                      <Badge variant="outline" className="text-xs">
+                        {absorb ? "Merchant absorbed" : "Customer added"}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between"><span>Service charge</span>
+                      <span className={`font-mono ${absorb ? "text-red-600" : "text-emerald-600"}`}>
+                        {absorb ? "−" : "+"}৳{sc.toLocaleString()}
+                      </span>
+                    </div>
+                    {!detailSc?.enabled && sc === 0 && (
+                      <p className="text-xs text-muted-foreground italic">Service charge is disabled for this merchant.</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="rounded-lg border border-border/60 p-3 space-y-2">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Gross</span><span className="font-mono">৳{gross.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Fees</span><span className="font-mono text-red-600">−৳{fees.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Commission</span><span className="font-mono text-emerald-600">+৳{comms.toLocaleString()}</span></div>
+                  {isMerchant && absorb && sc > 0 && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Service charge (absorbed)</span><span className="font-mono text-red-600">−৳{sc.toLocaleString()}</span></div>
+                  )}
+                  <div className="flex justify-between border-t border-border/60 pt-2 mt-2">
+                    <span className="font-semibold">Final Payout</span>
+                    <span className="font-mono font-bold text-lg text-primary">৳{finalPayout.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {(detail.bank_name || detail.bank_account) && (
+                  <div className="text-xs text-muted-foreground">
+                    Payout to: {detail.bank_name} · {detail.bank_account}
+                  </div>
+                )}
+                {detail.notes && <p className="text-xs italic text-muted-foreground">{detail.notes}</p>}
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
