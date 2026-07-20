@@ -328,7 +328,7 @@ export default function CouponsPage() {
   const handleRedeemByCode = async () => {
     const code = redeemCode.trim().toUpperCase();
     if (code.length < 3) {
-      toast.error("Enter a valid coupon code");
+      toast.error(t("cpEnterValidCode"));
       return;
     }
     setRedeeming(true);
@@ -342,15 +342,15 @@ export default function CouponsPage() {
         .maybeSingle();
 
       if (error || !data) {
-        toast.error("Coupon not found");
+        toast.error(t("cpNotFound"));
         return;
       }
       if (data.expires_at && data.expires_at < now) {
-        toast.error("This coupon has expired");
+        toast.error(t("cpExpired"));
         return;
       }
       if (data.usage_limit != null && (data.used_count ?? 0) >= data.usage_limit) {
-        toast.error("This coupon is fully redeemed");
+        toast.error(t("cpFullyRedeemed"));
         return;
       }
 
@@ -358,7 +358,7 @@ export default function CouponsPage() {
       if (!existing) {
         setCoupons((prev) => [data as Coupon, ...prev]);
       }
-      toast.success(`Coupon ${code} added`);
+      toast.success(t("cpAddedToast").replace("{code}", code));
       setRedeemCode("");
       navigate(`/coupons/${data.id}`);
     } finally {
