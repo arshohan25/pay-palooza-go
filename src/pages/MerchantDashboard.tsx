@@ -1298,10 +1298,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       {merchant && (
         <motion.div variants={stagger.item} className="space-y-3">
           <MerchantTodaySnapshot merchantId={merchant.id} />
-          <div className="grid grid-cols-2 gap-2">
-            <MerchantPayoutEtaCard merchantId={merchant.id} frequency={merchant.settlement_frequency} />
-            <MerchantDisputesTile merchantId={merchant.id} />
-          </div>
           <MerchantInventoryAlerts merchantId={merchant.id} threshold={5} />
           <MerchantWeeklyDigestCard merchantId={merchant.id} />
         </motion.div>
