@@ -1326,8 +1326,8 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               <QrCode size={18} className="text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-[15px] font-bold text-foreground leading-tight">Dynamic QR</h4>
-              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">Generate a QR code that customers<br />scan to pay instantly</p>
+              <h4 className="text-[15px] font-bold text-foreground leading-tight">{t("mdDynamicQR")}</h4>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{t("mdDynamicQRDesc")}</p>
             </div>
             <Button
               size="sm"
@@ -1335,7 +1335,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               onClick={() => setShowQrGenerate(true)}
             >
               <ScanLine size={14} />
-              Generate QR
+              {t("mdGenerateQR")}
             </Button>
           </div>
         </Card>
