@@ -248,9 +248,9 @@ const AgentRegister = () => {
       if (error) throw error;
       if (data?.dev_otp) setDevOtp(data.dev_otp);
       setResendTimer(60);
-      toast({ title: "OTP Resent", description: "A new code has been sent." });
+      toast({ title: t("argOtpResent"), description: t("argOtpResentDesc") });
     } catch (err: any) {
-      toast({ title: "Resend Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("argResendFail"), description: err.message, variant: "destructive" });
     } finally {
       setSendingOtp(false);
     }
