@@ -128,7 +128,7 @@ const NearbyAgentsPage = () => {
         icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#3b82f6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 },
         title: "You",
       });
-    }).catch(e => toast.error(e.message));
+    }).catch(e => toast.error(e.message || t("naMapFailed")));
     return () => { cancelled = true; };
   }, [loc]);
 
