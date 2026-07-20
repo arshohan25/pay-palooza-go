@@ -182,7 +182,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
     const totalMonths = differenceInCalendarMonths(dateRange.to, dateRange.from);
     for (let i = totalMonths; i >= 0; i--) {
       const d = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth() - i, 1);
-      months.push({ key: getMonthKey(d), label: getMonthLabel(d) });
+      months.push({ key: getMonthKey(d), label: getMonthLabel(d, t) });
     }
     return months;
   }, [dateRange]);
