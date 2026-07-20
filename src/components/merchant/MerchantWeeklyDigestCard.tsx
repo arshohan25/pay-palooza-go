@@ -12,6 +12,8 @@ const fmt = (n: number) => new Intl.NumberFormat("en-BD", { maximumFractionDigit
 
 export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
   const [rows, setRows] = useState<Row[] | null>(null);
+  const { t } = useI18n();
+  const dowKeys = ["mdDowSun","mdDowMon","mdDowTue","mdDowWed","mdDowThu","mdDowFri","mdDowSat"] as const;
 
   useEffect(() => {
     let alive = true;
