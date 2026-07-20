@@ -2644,15 +2644,16 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
           <div className="grid grid-cols-3 gap-2 mb-3">
             <div className="bg-muted/40 rounded-xl p-2.5 text-center">
               <p className="text-sm font-bold text-foreground">{summary.count}</p>
-              <p className="text-[9px] text-muted-foreground font-medium">Transactions</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("mhTransactionsLabel")}</p>
             </div>
             <div className="bg-emerald-500/10 rounded-xl p-2.5 text-center">
               <p className="text-sm font-bold text-emerald-600">৳{fmt(summary.incoming)}</p>
-              <p className="text-[9px] text-muted-foreground font-medium">Incoming</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("mhIncoming")}</p>
             </div>
             <div className="bg-pink-500/10 rounded-xl p-2.5 text-center">
               <p className="text-sm font-bold text-pink-600">৳{fmt(summary.outgoing)}</p>
-              <p className="text-[9px] text-muted-foreground font-medium">Outgoing</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("mhOutgoing")}</p>
+
             </div>
           </div>
 
