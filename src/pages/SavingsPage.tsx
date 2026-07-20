@@ -810,7 +810,7 @@ function DpsTab() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <div className="text-[15px] font-semibold truncate">{goal?.name ?? "—"}</div>
-                  {!p.is_active && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wide">Paused</span>}
+                  {!p.is_active && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wide">{t("savPaused")}</span>}
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
                   <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wide">{freqLabel}</span>
