@@ -778,8 +778,8 @@ const AgentRegister = () => {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-2">
-                  <h2 className="text-xl font-bold text-foreground">KYC Rejected</h2>
-                  <p className="text-sm text-muted-foreground">The verification for <span className="font-semibold text-foreground">{name}</span> was not approved</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("argKycRejectedTitle")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("argKycRejectedDesc")} <span className="font-semibold text-foreground">{name}</span></p>
                 </motion.div>
 
                 {/* Rejection reason */}
@@ -789,7 +789,7 @@ const AgentRegister = () => {
                   transition={{ delay: 0.3 }}
                   className="rounded-2xl bg-red-500/5 border border-red-500/15 p-4 text-left space-y-2"
                 >
-                  <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">Reason for Rejection</p>
+                  <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">{t("argRejectionReason")}</p>
                   <p className="text-sm text-foreground leading-relaxed">{rejectionReason}</p>
                 </motion.div>
 
@@ -802,10 +802,10 @@ const AgentRegister = () => {
                     }}
                     className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl h-12 text-sm font-bold gap-2"
                   >
-                    <RefreshCw size={16} /> Retry KYC
+                    <RefreshCw size={16} /> {t("argRetryKyc")}
                   </Button>
                   <Button onClick={() => navigate("/agent")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2">
-                    <Home size={16} /> Back to Dashboard
+                    <Home size={16} /> {t("argBackDash")}
                   </Button>
                 </div>
               </Card>
