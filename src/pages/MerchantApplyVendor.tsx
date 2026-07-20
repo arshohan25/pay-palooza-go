@@ -145,7 +145,7 @@ export default function MerchantApplyVendor() {
 
     const { error: upErr } = await supabase.storage.from("vendor-kyc").upload(path, file, { upsert: true, contentType: file.type });
     if (upErr) {
-      toast.error("Upload failed: " + upErr.message);
+      toast.error(t("mavUploadFail").replace("{msg}", upErr.message));
       setPhotos(p => ({ ...p, [key]: { ...p[key], uploading: false, error: upErr.message } }));
       return;
     }
@@ -156,7 +156,8 @@ export default function MerchantApplyVendor() {
       try {
         const out = await validateOnServer(existing.id, slot, path, captureDate, form.resubmit_note || undefined);
         setPhotos(p => ({ ...p, [key]: { file, url: path, meta: out?.meta ?? null, uploading: false, validating: false, error: null } }));
-        toast.success(`${key === "shop_front" ? "Shop front" : "Shop inside"} photo validated (${out?.meta?.width}×${out?.meta?.height})`);
+        const label = key === "shop_front" ? t("mavShopFrontLabel") : t("mavShopInsideLabel");
+        toast.success(t("mavPhotoValidated").replace("{label}", label).replace("{w}", String(out?.meta?.width)).replace("{h}", String(out?.meta?.height)));
       } catch (e: any) {
         setPhotos(p => ({ ...p, [key]: { ...p[key], uploading: false, validating: false, error: e.message } }));
         toast.error(e.message, { duration: 6000 });
