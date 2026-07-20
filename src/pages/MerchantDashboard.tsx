@@ -2410,7 +2410,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
   };
 
   const exportPDF = async () => {
-    if (filtered.length === 0) { toast({ title: "No data to export" }); return; }
+    if (filtered.length === 0) { toast({ title: t("mhToastNoData") }); return; }
     const { default: jsPDF } = await import("jspdf");
     const { default: autoTable } = await import("jspdf-autotable");
     const doc = new jsPDF({ unit: "mm", format: "a4" });
