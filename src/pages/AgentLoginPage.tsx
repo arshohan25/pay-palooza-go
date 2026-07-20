@@ -67,12 +67,12 @@ const AgentLoginPage = () => {
     e.preventDefault();
     setError(null);
     if (phoneVal.triggerShake()) {
-      setError(phoneVal.errorMessage || "Enter a valid 11-digit agent mobile number starting with 01.");
+      setError(phoneVal.errorMessage || t("alpErrInvalidPhone"));
       haptics.error();
       return;
     }
     if (pin.length !== 4) {
-      setError("Please enter your 4-digit PIN.");
+      setError(t("alpErrPinRequired"));
       haptics.error();
       return;
     }
