@@ -1123,7 +1123,7 @@ export default function AdminDashboard() {
           <div className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${
             group.pro ? "text-primary" : "text-muted-foreground/60"
           }`}>
-            {group.label}
+            {tGroup(group.label)}
           </div>
           <div className="flex flex-col gap-0.5">
             {group.items.map(item => (
@@ -1137,7 +1137,7 @@ export default function AdminDashboard() {
                 }`}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
-                {item.label}
+                {tNav(item.id, item.label)}
                 {item.id === "alerts" && stats.openAlerts > 0 && (
                   <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
                     {stats.openAlerts}
