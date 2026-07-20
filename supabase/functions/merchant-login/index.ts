@@ -77,7 +77,6 @@ async function validateDeviceToken(
     .from("trusted_devices")
     .select("id, token_expires_at, revoked_at")
     .eq("user_id", user_id)
-    .eq("device_fp", device_fp)
     .eq("portal", PORTAL)
     .eq("token_hash", token_hash)
     .maybeSingle();

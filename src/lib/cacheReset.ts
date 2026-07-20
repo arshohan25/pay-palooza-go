@@ -39,6 +39,7 @@ const PRESERVED_KEYS = [
   "mfs_ui_lang",
   "mfs_onboarding_completed",
   "mfs_has_authenticated",
+  "mfs_device_fp",
   "mfs_app_role",
   // PWA per-role install tracking must survive cache resets so returning
   // users still see the installed-state "Open app" screen after the shell

@@ -285,17 +285,8 @@ export default function MerchantLoginPage() {
     });
     try {
       const stored = getStoredDeviceToken(cleanedPhone, "merchant");
-      console.info("[merchant-login] trust-token lookup", {
-        phone_suffix: cleanedPhone.slice(-3),
-        has_stored_token: !!stored,
-        storage_key: `mfs_devtok_merchant_${cleanedPhone}`,
-      });
       const result = await callMerchantLogin(cleanedPhone, pin, {
         device_token: stored ?? undefined,
-      });
-      console.info("[merchant-login] server response", {
-        kind: result.kind,
-        will_prompt_otp: result.kind === "otp_required",
       });
 
       if (result.kind === "locked") {
