@@ -20,23 +20,43 @@ const PLAN_CATEGORIES: { key: string; labelKey: TranslationKey; icon: any; color
   { key: "device", labelKey: "ipCatDevice", icon: Smartphone, color: "text-blue-500" },
 ];
 
-const PLANS: Record<string, { name: string; coverage: number; premium: number; duration: number; benefits: string[] }[]> = {
+type PlanDef = { id: string; nameKey: TranslationKey; coverage: number; premium: number; duration: number; benefitKeys: TranslationKey[] };
+
+const PLANS: Record<string, PlanDef[]> = {
   life: [
-    { name: "Basic Life Cover", coverage: 100000, premium: 150, duration: 12, benefits: ["Death benefit ৳1,00,000", "Accident cover included", "No medical exam required"] },
-    { name: "Premium Life Cover", coverage: 500000, premium: 500, duration: 12, benefits: ["Death benefit ৳5,00,000", "Critical illness rider", "Family coverage", "24/7 claim support"] },
+    { id: "basicLife", nameKey: "ipPlanBasicLife", coverage: 100000, premium: 150, duration: 12, benefitKeys: ["ipBenBasicLife1", "ipBenBasicLife2", "ipBenBasicLife3"] },
+    { id: "premiumLife", nameKey: "ipPlanPremiumLife", coverage: 500000, premium: 500, duration: 12, benefitKeys: ["ipBenPremiumLife1", "ipBenPremiumLife2", "ipBenPremiumLife3", "ipBenPremiumLife4"] },
   ],
   health: [
-    { name: "Essential Health", coverage: 50000, premium: 200, duration: 12, benefits: ["Hospitalization cover", "Medicine reimbursement", "Lab test coverage"] },
-    { name: "Complete Health", coverage: 200000, premium: 600, duration: 12, benefits: ["Full hospitalization", "Surgery cover", "OPD benefits", "Dental & vision"] },
+    { id: "essentialHealth", nameKey: "ipPlanEssentialHealth", coverage: 50000, premium: 200, duration: 12, benefitKeys: ["ipBenEssentialHealth1", "ipBenEssentialHealth2", "ipBenEssentialHealth3"] },
+    { id: "completeHealth", nameKey: "ipPlanCompleteHealth", coverage: 200000, premium: 600, duration: 12, benefitKeys: ["ipBenCompleteHealth1", "ipBenCompleteHealth2", "ipBenCompleteHealth3", "ipBenCompleteHealth4"] },
   ],
   accident: [
-    { name: "Personal Accident", coverage: 100000, premium: 100, duration: 12, benefits: ["Accidental death benefit", "Disability cover", "Medical expenses"] },
-    { name: "Family Accident", coverage: 300000, premium: 250, duration: 12, benefits: ["Family coverage up to 4", "Accidental death benefit", "Hospital cash", "Ambulance charges"] },
+    { id: "personalAccident", nameKey: "ipPlanPersonalAccident", coverage: 100000, premium: 100, duration: 12, benefitKeys: ["ipBenPersonalAccident1", "ipBenPersonalAccident2", "ipBenPersonalAccident3"] },
+    { id: "familyAccident", nameKey: "ipPlanFamilyAccident", coverage: 300000, premium: 250, duration: 12, benefitKeys: ["ipBenFamilyAccident1", "ipBenFamilyAccident2", "ipBenFamilyAccident3", "ipBenFamilyAccident4"] },
   ],
   device: [
-    { name: "Phone Protection", coverage: 15000, premium: 50, duration: 6, benefits: ["Screen damage", "Water damage", "Theft protection"] },
-    { name: "Gadget Shield", coverage: 50000, premium: 120, duration: 12, benefits: ["Covers phone + laptop", "Accidental damage", "Theft & loss", "Worldwide coverage"] },
+    { id: "phoneProtection", nameKey: "ipPlanPhoneProtection", coverage: 15000, premium: 50, duration: 6, benefitKeys: ["ipBenPhoneProtection1", "ipBenPhoneProtection2", "ipBenPhoneProtection3"] },
+    { id: "gadgetShield", nameKey: "ipPlanGadgetShield", coverage: 50000, premium: 120, duration: 12, benefitKeys: ["ipBenGadgetShield1", "ipBenGadgetShield2", "ipBenGadgetShield3", "ipBenGadgetShield4"] },
   ],
+};
+
+const STATUS_KEY: Record<string, TranslationKey> = {
+  active: "ipPolStatusActive",
+  expired: "ipPolStatusExpired",
+  cancelled: "ipPolStatusCancelled",
+  pending: "ipPolStatusPending",
+};
+
+const EN_PLAN_NAMES: Record<string, string> = {
+  basicLife: "Basic Life Cover",
+  premiumLife: "Premium Life Cover",
+  essentialHealth: "Essential Health",
+  completeHealth: "Complete Health",
+  personalAccident: "Personal Accident",
+  familyAccident: "Family Accident",
+  phoneProtection: "Phone Protection",
+  gadgetShield: "Gadget Shield",
 };
 
 const InsurancePage = () => {
@@ -77,7 +97,7 @@ const InsurancePage = () => {
       const { error } = await supabase.from("insurance_policies").insert({
         user_id: user.id,
         plan_type: category,
-        plan_name: plan.name,
+        plan_name: EN_PLAN_NAMES[plan.id] ?? plan.id,
         coverage_amount: plan.coverage,
         premium: plan.premium,
         duration_months: plan.duration,
@@ -94,6 +114,24 @@ const InsurancePage = () => {
     }
   };
 
+  // Map stored English plan_name back to a translation key for display
+  const planNameToKey: Record<string, TranslationKey> = Object.values(PLANS).flat().reduce((acc, p) => {
+    // Use the English label as key; render via t on lookup
+    acc[p.nameKey as string] = p.nameKey;
+    return acc;
+  }, {} as Record<string, TranslationKey>);
+  const englishNameMap: Record<string, TranslationKey> = {
+    "Basic Life Cover": "ipPlanBasicLife",
+    "Premium Life Cover": "ipPlanPremiumLife",
+    "Essential Health": "ipPlanEssentialHealth",
+    "Complete Health": "ipPlanCompleteHealth",
+    "Personal Accident": "ipPlanPersonalAccident",
+    "Family Accident": "ipPlanFamilyAccident",
+    "Phone Protection": "ipPlanPhoneProtection",
+    "Gadget Shield": "ipPlanGadgetShield",
+  };
+  const localizePlanName = (name: string) => englishNameMap[name] ? t(englishNameMap[name]) : name;
+
   return (
     <div className="min-h-screen bg-background">
       <Seo
@@ -103,7 +141,7 @@ const InsurancePage = () => {
       />
       <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur border-b border-primary/30 shadow-glow px-4 py-3 flex items-center gap-3">
         <button onClick={() => { if (selectedPlan) setSelectedPlan(null); else navigate(-1); }} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
-        <h1 className="text-lg font-bold text-foreground">{selectedPlan ? selectedPlan.name : t("ipTitle")}</h1>
+        <h1 className="text-lg font-bold text-foreground">{selectedPlan ? t(selectedPlan.nameKey) : t("ipTitle")}</h1>
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-4">
@@ -123,10 +161,10 @@ const InsurancePage = () => {
                 <div>
                   <p className="font-semibold text-foreground mb-2">{t("ipBenefits")}</p>
                   <ul className="space-y-2">
-                    {selectedPlan.benefits.map((b, i) => (
+                    {selectedPlan.benefitKeys.map((b, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
                         <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                        <span className="text-muted-foreground">{b}</span>
+                        <span className="text-muted-foreground">{t(b)}</span>
                       </li>
                     ))}
                   </ul>
@@ -160,11 +198,11 @@ const InsurancePage = () => {
                 {/* Plan Cards */}
                 <div className="space-y-3">
                   {PLANS[category]?.map((plan, i) => (
-                    <motion.div key={plan.name} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                    <motion.div key={plan.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                       <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedPlan(plan)}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-bold text-foreground">{plan.name}</h3>
+                            <h3 className="font-bold text-foreground">{t(plan.nameKey)}</h3>
                             <Badge variant="secondary">৳{plan.premium}{t("ipMoSuffix")}</Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">{t("ipCoverage")}: ৳{plan.coverage.toLocaleString()} · {plan.duration} {t("ipMonths")}</p>
@@ -183,20 +221,23 @@ const InsurancePage = () => {
                 <Card><CardContent className="p-6 text-center text-muted-foreground text-sm">{t("ipNoPolicies")}</CardContent></Card>
               ) : (
                 <div className="space-y-3">
-                  {policies.map((p, i) => (
+                  {policies.map((p, i) => {
+                    const statusKey = STATUS_KEY[String(p.status).toLowerCase()];
+                    return (
                     <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                       <Card>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-1">
-                            <h3 className="font-bold text-foreground text-sm">{p.plan_name}</h3>
-                            <Badge variant={p.status === "active" ? "default" : "secondary"}>{p.status}</Badge>
+                            <h3 className="font-bold text-foreground text-sm">{localizePlanName(p.plan_name)}</h3>
+                            <Badge variant={p.status === "active" ? "default" : "secondary"}>{statusKey ? t(statusKey) : p.status}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">{t("ipCoverage")}: ৳{Number(p.coverage_amount).toLocaleString()} · ৳{Number(p.premium).toLocaleString()}{t("ipMoSuffix")}</p>
                           {p.expires_at && <p className="text-xs text-muted-foreground">{t("ipExpires")}: {new Date(p.expires_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD")}</p>}
                         </CardContent>
                       </Card>
                     </motion.div>
-                  ))}
+                  );
+                  })}
                 </div>
               )
             )}
@@ -206,10 +247,11 @@ const InsurancePage = () => {
       <PinConfirmSheet
         open={!!pinPlan}
         onClose={() => setPinPlan(null)}
-        title="Confirm insurance purchase"
-        description={pinPlan ? `${pinPlan.name} · ৳${pinPlan.premium}/mo` : undefined}
+        title={t("ipPinTitle")}
+        description={pinPlan ? `${t(pinPlan.nameKey)} · ৳${pinPlan.premium}${t("ipMoSuffix")}` : undefined}
         onConfirmed={async () => { if (pinPlan) await handlePurchase(pinPlan); }}
       />
+
     </div>
   );
 };
