@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { Shield, Smartphone, BarChart3, Users, ShoppingBag } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-roles";
+import { useI18n } from "@/lib/i18n";
 import {
   APP_ROLE_ALLOWED,
   APP_ROLE_HOME,
@@ -21,42 +22,42 @@ const MerchantLoginPage = lazy(() => import("@/pages/MerchantLoginPage"));
 
 const ROLE_META: Record<
   AppRoleKey,
-  { icon: typeof Shield; gradient: string; tagline: string; favicon: string; description: string }
+  { icon: typeof Shield; gradient: string; favicon: string; taglineKey: string; descKey: string }
 > = {
   admin: {
     icon: Shield,
     gradient: "from-emerald-600 to-teal-500",
-    tagline: "Sign in with your admin / team account.",
     favicon: "/icons/role-admin.png",
-    description: "EasyPay Admin – manage users, transactions, fraud alerts and platform settings.",
+    taglineKey: "rlpTaglineAdmin",
+    descKey: "rlpDescAdmin",
   },
   agent: {
     icon: Smartphone,
     gradient: "from-orange-500 to-amber-500",
-    tagline: "Sign in with your agent phone number & PIN.",
     favicon: "/icons/role-agent.png",
-    description: "EasyPay Agent – cash-in, cash-out, bill pay and customer onboarding.",
+    taglineKey: "rlpTaglineAgent",
+    descKey: "rlpDescAgent",
   },
   merchant: {
     icon: ShoppingBag,
     gradient: "from-rose-500 to-pink-500",
-    tagline: "Sign in with your merchant account.",
     favicon: "/icons/role-merchant.png",
-    description: "EasyPay Merchant – accept payments, manage products and track analytics.",
+    taglineKey: "rlpTaglineMerchant",
+    descKey: "rlpDescMerchant",
   },
   distributor: {
     icon: Users,
     gradient: "from-blue-600 to-cyan-500",
-    tagline: "Sign in with your distributor phone number & PIN.",
     favicon: "/icons/role-distributor.png",
-    description: "EasyPay Distributor – create agents, manage float and track commissions.",
+    taglineKey: "rlpTaglineDistributor",
+    descKey: "rlpDescDistributor",
   },
   "super-distributor": {
     icon: BarChart3,
     gradient: "from-violet-600 to-purple-500",
-    tagline: "Sign in with your super-distributor account.",
     favicon: "/icons/role-super-distributor.png",
-    description: "EasyPay Super Distributor – manage distributors, float and commission networks.",
+    taglineKey: "rlpTaglineSD",
+    descKey: "rlpDescSD",
   },
 };
 
@@ -65,6 +66,7 @@ const RoleLoginPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
+  const { t } = useI18n();
 
   const roleKey = role && role in APP_ROLE_ALLOWED ? (role as AppRoleKey) : null;
 
@@ -79,7 +81,6 @@ const RoleLoginPage = () => {
 
   if (!roleKey) return <Navigate to="/install" replace />;
 
-  // Dedicated per-role login UIs (no generic customer AuthPage).
   const DedicatedLogin =
     roleKey === "agent"
       ? AgentLoginPage
@@ -103,17 +104,19 @@ const RoleLoginPage = () => {
 
   const meta = ROLE_META[roleKey];
   const Icon = meta.icon;
-  const title = `${APP_ROLE_LABEL[roleKey]} — Sign in`;
+  const tagline = t(meta.taglineKey as any);
+  const description = t(meta.descKey as any);
+  const title = t("rlpSignInSuffix", { role: APP_ROLE_LABEL[roleKey] });
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Helmet>
         <title>{title}</title>
-        <meta name="description" content={meta.description} />
+        <meta name="description" content={description} />
         <link rel="icon" href={meta.favicon} />
         <link rel="apple-touch-icon" href={meta.favicon} />
         <meta property="og:title" content={title} />
-        <meta property="og:description" content={meta.description} />
+        <meta property="og:description" content={description} />
       </Helmet>
       <header
         className={`bg-gradient-to-br ${meta.gradient} text-white px-6 pt-10 pb-8 text-center`}
@@ -122,7 +125,7 @@ const RoleLoginPage = () => {
           <Icon size={28} />
         </div>
         <h1 className="text-xl font-extrabold">{APP_ROLE_LABEL[roleKey]}</h1>
-        <p className="text-sm opacity-90 mt-1">{meta.tagline}</p>
+        <p className="text-sm opacity-90 mt-1">{tagline}</p>
       </header>
       <div className="flex-1 relative">
         <Suspense fallback={null}>
@@ -138,3 +141,4 @@ const RoleLoginPage = () => {
 };
 
 export default RoleLoginPage;
+
