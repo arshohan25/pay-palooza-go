@@ -496,10 +496,10 @@ function DpsPlanDetailsSheet({
             {/* Financial summary */}
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "Deposited", value: `৳${totalDeposited.toLocaleString()}`, tone: "text-foreground" },
-                { label: "Outstanding", value: `৳${outstanding.toLocaleString()}`, tone: "text-primary" },
-                { label: "Remaining installments", value: `${remaining}`, tone: "text-foreground" },
-                { label: "Missed", value: `${plan.missed_count ?? 0}`, tone: (plan.missed_count ?? 0) > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground" },
+                { label: t("savDepositedLabel"), value: `৳${totalDeposited.toLocaleString()}`, tone: "text-foreground" },
+                { label: t("savOutstanding"), value: `৳${outstanding.toLocaleString()}`, tone: "text-primary" },
+                { label: t("savRemainingInstallments"), value: `${remaining}`, tone: "text-foreground" },
+                { label: t("savMissed"), value: `${plan.missed_count ?? 0}`, tone: (plan.missed_count ?? 0) > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground" },
               ].map((s) => (
                 <div key={s.label} className="rounded-[14px] bg-card border border-border/70 p-3">
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{s.label}</div>
