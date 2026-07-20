@@ -228,10 +228,11 @@ const DonationsPage = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Seo
-        title="Donations – Give Securely with EasyPay"
-        description="Donate to verified causes, mosques, charities and disaster relief directly from your EasyPay wallet."
+        title={t("donSeoTitle")}
+        description={t("donSeoDesc")}
         path="/donations"
       />
+
       {/* Minimal Header */}
       <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur-xl border-b border-primary/30 shadow-glow">
         <div className="flex items-center gap-3 px-5 py-4 max-w-md mx-auto">
