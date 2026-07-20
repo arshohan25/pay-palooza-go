@@ -49,6 +49,13 @@ interface Settlement {
   notes: string | null;
   settled_at: string | null;
   created_at: string;
+  service_charge_amount: number | null;
+}
+
+interface MerchantSc {
+  enabled: boolean;
+  rate: number;
+  absorb: boolean;
 }
 
 export default function AdminSettlements() {
@@ -60,6 +67,8 @@ export default function AdminSettlements() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ entityType: "merchant", entityPhone: "", periodStart: "", periodEnd: "", bankName: "", bankAccount: "", notes: "" });
+  const [detail, setDetail] = useState<Settlement | null>(null);
+  const [detailSc, setDetailSc] = useState<MerchantSc | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,6 +136,18 @@ export default function AdminSettlements() {
       const comms = (txns ?? []).reduce((s, t) => s + Number(t.commission), 0);
       const net = gross - fees + comms;
 
+      // Merchant service charge (from orders in period)
+      let serviceCharge = 0;
+      if (form.entityType === "merchant" && entityId) {
+        const { data: scOrders } = await supabase.from("orders")
+          .select("service_charge")
+          .eq("merchant_id", entityId)
+          .eq("status", "completed")
+          .gte("created_at", periodStart)
+          .lte("created_at", periodEnd);
+        serviceCharge = (scOrders ?? []).reduce((s, o: any) => s + Number(o.service_charge || 0), 0);
+      }
+
       const ref = `STL-${Date.now().toString(36).toUpperCase()}`;
 
       const { error } = await supabase.from("settlements").insert({
@@ -147,6 +168,7 @@ export default function AdminSettlements() {
         settlement_ref: ref,
         notes: form.notes || null,
         settled_by: session?.user?.id,
+        service_charge_amount: serviceCharge,
       } as any);
 
       if (error) throw error;
@@ -178,6 +200,17 @@ export default function AdminSettlements() {
     await auditLog("settlement_delete", "settlement", id, {});
     toast.success("Settlement deleted");
     load();
+  };
+
+  const openDetail = async (s: Settlement) => {
+    setDetail(s);
+    setDetailSc(null);
+    if (s.entity_type === "merchant" && s.entity_id) {
+      const { data } = await supabase.from("merchants")
+        .select("service_charge_enabled, service_charge_rate, service_charge_absorb")
+        .eq("id", s.entity_id).maybeSingle();
+      if (data) setDetailSc({ enabled: !!(data as any).service_charge_enabled, rate: Number((data as any).service_charge_rate || 0), absorb: !!(data as any).service_charge_absorb });
+    }
   };
 
   const exportCSV = () => {
@@ -285,6 +318,7 @@ export default function AdminSettlements() {
                     <TableCell className="text-xs text-muted-foreground">{s.period_start?.slice(0, 10)} → {s.period_end?.slice(0, 10)}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => openDetail(s)}>View</Button>
                         {s.status === "pending" && (
                           <>
                             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => updateStatus(s.id, "processing")}>Process</Button>
@@ -350,6 +384,75 @@ export default function AdminSettlements() {
             <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
             <Button className="w-full" onClick={handleCreate} disabled={creating}>{creating ? "Creating…" : "Calculate & Create Settlement"}</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Details Dialog */}
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-w-md max-h-[90svh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Settlement Details</DialogTitle></DialogHeader>
+          {detail && (() => {
+            const sc = Number(detail.service_charge_amount || 0);
+            const gross = Number(detail.gross_amount);
+            const fees = Number(detail.fee_amount);
+            const comms = Number(detail.commission_amount);
+            const net = Number(detail.net_amount);
+            const isMerchant = detail.entity_type === "merchant";
+            const absorb = detailSc?.absorb ?? false;
+            const rate = detailSc?.rate ?? 0;
+            // Base = gross minus service charge if customer added it (included in gross)
+            const base = isMerchant && sc > 0 && !absorb ? gross - sc : gross;
+            const finalPayout = isMerchant && absorb ? net - sc : net;
+            return (
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Ref</span><span className="font-mono">{detail.settlement_ref}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Entity</span><span className="font-medium">{detail.entity_name} · {detail.entity_phone}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Period</span><span>{detail.period_start?.slice(0,10)} → {detail.period_end?.slice(0,10)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Txns</span><span>{detail.txn_count}</span></div>
+
+                {isMerchant && (
+                  <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Service Charge Breakdown</p>
+                    <div className="flex justify-between"><span>Base amount</span><span className="font-mono">৳{base.toLocaleString()}</span></div>
+                    <div className="flex justify-between"><span>Rate</span><span className="font-mono">{rate.toFixed(2)}%</span></div>
+                    <div className="flex justify-between"><span>Mode</span>
+                      <Badge variant="outline" className="text-xs">
+                        {absorb ? "Merchant absorbed" : "Customer added"}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between"><span>Service charge</span>
+                      <span className={`font-mono ${absorb ? "text-red-600" : "text-emerald-600"}`}>
+                        {absorb ? "−" : "+"}৳{sc.toLocaleString()}
+                      </span>
+                    </div>
+                    {!detailSc?.enabled && sc === 0 && (
+                      <p className="text-xs text-muted-foreground italic">Service charge is disabled for this merchant.</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="rounded-lg border border-border/60 p-3 space-y-2">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Gross</span><span className="font-mono">৳{gross.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Fees</span><span className="font-mono text-red-600">−৳{fees.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Commission</span><span className="font-mono text-emerald-600">+৳{comms.toLocaleString()}</span></div>
+                  {isMerchant && absorb && sc > 0 && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Service charge (absorbed)</span><span className="font-mono text-red-600">−৳{sc.toLocaleString()}</span></div>
+                  )}
+                  <div className="flex justify-between border-t border-border/60 pt-2 mt-2">
+                    <span className="font-semibold">Final Payout</span>
+                    <span className="font-mono font-bold text-lg text-primary">৳{finalPayout.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {(detail.bank_name || detail.bank_account) && (
+                  <div className="text-xs text-muted-foreground">
+                    Payout to: {detail.bank_name} · {detail.bank_account}
+                  </div>
+                )}
+                {detail.notes && <p className="text-xs italic text-muted-foreground">{detail.notes}</p>}
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
