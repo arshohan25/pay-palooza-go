@@ -63,14 +63,15 @@ const CATEGORIES = [
   "Watches", "Water", "Wedding", "Wellness", "Women's Fashion", "Woodwork", "Yoga",
 ];
 const EMOJIS = ["📦", "🎧", "⌚", "👕", "🍔", "💊", "🏠", "📱", "💻", "🎮", "☕", "🎁", "👟", "🔧", "📷", "💡", "🧴", "🎂"];
-const BADGES = [
-  { label: "None", value: "", color: "" },
-  { label: "NEW", value: "NEW", color: "#9C27B0" },
-  { label: "HOT", value: "HOT", color: "#FF5722" },
-  { label: "SALE", value: "SALE", color: "#FF9800" },
-  { label: "TOP PICK", value: "TOP PICK", color: "#00BCD4" },
+const BADGES: { labelKey: string; value: string; color: string }[] = [
+  { labelKey: "mprBadgeNone", value: "", color: "" },
+  { labelKey: "", value: "NEW", color: "#9C27B0" },
+  { labelKey: "", value: "HOT", color: "#FF5722" },
+  { labelKey: "", value: "SALE", color: "#FF9800" },
+  { labelKey: "", value: "TOP PICK", color: "#00BCD4" },
 ];
 const MAX_IMAGES = 4;
+
 
 function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
