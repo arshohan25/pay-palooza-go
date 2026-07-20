@@ -2716,12 +2716,13 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
                         </div>
                         {tx.status === "pending" && (
                           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 mt-0.5">
-                            <Clock size={9} /> PENDING
+                            <Clock size={9} /> {t("mhPending")}
                           </span>
                         )}
                         {tx.status === "failed" && (
                           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/10 text-destructive mt-0.5">
-                            <AlertTriangle size={9} /> FAILED
+                            <AlertTriangle size={9} /> {t("mhFailed")}
+
                           </span>
                         )}
                       </div>
