@@ -342,7 +342,7 @@ const PayLinkPage = () => {
                       </div>
                     ) : (
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Enter amount (BDT)</label>
+                        <label className="text-sm font-medium">{t("plEnterAmountBDT")}</label>
                         <Input
                           type="number" min="1" step="1" inputMode="numeric"
                           value={customAmount}
