@@ -27,6 +27,7 @@ import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import TransactionHistory from "./TransactionHistory";
 import DistributorFloatRequests from "@/components/DistributorFloatRequests";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
+import { useI18n } from "@/lib/i18n";
 
 /* ─── Types ─── */
 interface DistInfo {
@@ -71,6 +72,7 @@ const stagger = {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const DistributorDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   useUserSessionTimeout("distributor");
   const { toast } = useToast();
@@ -279,8 +281,8 @@ const DistributorDashboard = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6">
         <Shield size={48} className="text-muted-foreground" />
-        <p className="text-lg font-semibold text-foreground">Login required</p>
-        <Button onClick={() => navigate("/")} variant="outline">Go to Login</Button>
+        <p className="text-lg font-semibold text-foreground">{t("distDashLoginRequired")}</p>
+        <Button onClick={() => navigate("/")} variant="outline">{t("distDashGoToLogin")}</Button>
       </div>
     );
   }
@@ -288,9 +290,9 @@ const DistributorDashboard = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6 text-center">
         <Building2 size={48} className="text-muted-foreground" />
-        <p className="text-lg font-semibold text-foreground">Distributor Access Required</p>
+        <p className="text-lg font-semibold text-foreground">{t("distDashAccessReq")}</p>
         <p className="text-sm text-muted-foreground max-w-xs">You need a distributor role to access this dashboard.</p>
-        <Button onClick={() => navigate("/")} variant="outline"><ArrowLeft size={16} className="mr-2" />Back to Home</Button>
+        <Button onClick={() => navigate("/")} variant="outline"><ArrowLeft size={16} className="mr-2" />{t("distDashBackHome")}</Button>
       </div>
     );
   }
@@ -304,14 +306,14 @@ const DistributorDashboard = () => {
   const todayVolume = todayTxns.reduce((s, t) => s + t.amount, 0);
 
   const quickActions = [
-    { icon: UserPlus, label: "Create Agent", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/distributor/create-agent", toggleKey: "distributor_create_agent" },
-    { icon: Send, label: "Float Send", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", action: "float" as const, toggleKey: "distributor_float_send" },
-    { icon: Users, label: "Agents", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "agents" as const, toggleKey: "distributor_agents" },
-    { icon: ListChecks, label: "Agent Txns", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "agentTxns" as const, toggleKey: "distributor_agent_txns" },
-    { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const, toggleKey: "distributor_settle" },
-    { icon: TrendingUp, label: "Earnings", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "earnings" as const, toggleKey: "distributor_earnings" },
-    { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", action: "history" as const, toggleKey: "distributor_history" },
-    { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const, toggleKey: "distributor_support" },
+    { icon: UserPlus, label: t("distDashQaCreateAgent"), bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/distributor/create-agent", toggleKey: "distributor_create_agent" },
+    { icon: Send, label: t("distDashQaFloatSend"), bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", action: "float" as const, toggleKey: "distributor_float_send" },
+    { icon: Users, label: t("distDashQaAgents"), bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "agents" as const, toggleKey: "distributor_agents" },
+    { icon: ListChecks, label: t("distDashQaAgentTxns"), bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "agentTxns" as const, toggleKey: "distributor_agent_txns" },
+    { icon: Banknote, label: t("distDashQaSettle"), bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const, toggleKey: "distributor_settle" },
+    { icon: TrendingUp, label: t("distDashQaEarnings"), bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "earnings" as const, toggleKey: "distributor_earnings" },
+    { icon: History, label: t("distDashQaHistory"), bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", action: "history" as const, toggleKey: "distributor_history" },
+    { icon: Headphones, label: t("distDashQaSupport"), bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const, toggleKey: "distributor_support" },
   ].filter(a => !a.toggleKey || !isDisabled(a.toggleKey));
 
 
@@ -370,12 +372,12 @@ const DistributorDashboard = () => {
                 <Globe size={22} className="text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-base font-bold text-primary-foreground truncate">{distInfo?.business_name || "Distributor Hub"}</h1>
+                <h1 className="text-base font-bold text-primary-foreground truncate">{distInfo?.business_name || t("distDashHubDefault")}</h1>
                 <div className="flex items-center gap-2 mt-0.5">
-                  {distInfo?.territory?.slice(0, 3).map(t => (
-                    <span key={t} className="text-[9px] bg-white/15 rounded-full px-2 py-0.5 text-primary-foreground">{t}</span>
+                  {distInfo?.territory?.slice(0, 3).map(tt => (
+                    <span key={tt} className="text-[9px] bg-white/15 rounded-full px-2 py-0.5 text-primary-foreground">{tt}</span>
                   ))}
-                  <span className="text-[10px] text-primary-foreground/70">• {txnCount} txns today</span>
+                  <span className="text-[10px] text-primary-foreground/70">• {txnCount} {t("distDashTxnsToday")}</span>
                 </div>
               </div>
             </div>
