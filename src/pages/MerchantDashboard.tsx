@@ -2633,7 +2633,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
               </Popover>
               {(dateRange.from || dateRange.to) && (
                 <Button variant="ghost" size="sm" className="col-span-2 text-xs text-muted-foreground h-7" onClick={() => setDateRange({ from: undefined, to: undefined })}>
-                  <X size={12} className="mr-1" /> Clear dates
+                  <X size={12} className="mr-1" /> {t("mhClearDates")}
                 </Button>
               )}
             </div>
