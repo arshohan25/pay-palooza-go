@@ -81,28 +81,28 @@ export default function CouponDetailPage() {
     if (!coupon) return null;
     const now = Date.now();
     const items = [
-      { ok: coupon.is_active, label: coupon.is_active ? "Coupon is currently active" : "Coupon is inactive" },
+      { ok: coupon.is_active, label: coupon.is_active ? t("cdActive") : t("cdInactive") },
       {
         ok: !coupon.starts_at || new Date(coupon.starts_at).getTime() <= now,
-        label: coupon.starts_at ? `Starts ${new Date(coupon.starts_at).toLocaleDateString()}` : "Available immediately",
+        label: coupon.starts_at ? `${t("cdStartsPrefix")} ${new Date(coupon.starts_at).toLocaleDateString()}` : t("cdAvailableNow"),
       },
       {
         ok: !coupon.expires_at || new Date(coupon.expires_at).getTime() > now,
-        label: coupon.expires_at ? `Expires ${new Date(coupon.expires_at).toLocaleDateString()}` : "No expiry date",
+        label: coupon.expires_at ? `${t("cdExpiresPrefix")} ${new Date(coupon.expires_at).toLocaleDateString()}` : t("cdNoExpiry"),
       },
       {
         ok: coupon.usage_limit == null || coupon.used_count < coupon.usage_limit,
-        label: coupon.usage_limit ? `${coupon.used_count}/${coupon.usage_limit} total redemptions used` : "No total usage limit",
+        label: coupon.usage_limit ? `${coupon.used_count}/${coupon.usage_limit} ${t("cdRedemptionsUsed")}` : t("cdNoUsageLimit"),
       },
       {
         ok: (coupon.per_user_limit ?? 1) > myRedemptions,
         label: coupon.per_user_limit
-          ? `${myRedemptions}/${coupon.per_user_limit} used by you`
-          : myRedemptions > 0 ? "You've already used this coupon" : "Available for you",
+          ? `${myRedemptions}/${coupon.per_user_limit} ${t("cdUsedByYou")}`
+          : myRedemptions > 0 ? t("cdAlreadyUsed") : t("cdAvailableForYou"),
       },
     ];
     return { items, eligible: items.every(i => i.ok) };
-  }, [coupon, myRedemptions]);
+  }, [coupon, myRedemptions, t]);
 
   if (loading) {
     return (
