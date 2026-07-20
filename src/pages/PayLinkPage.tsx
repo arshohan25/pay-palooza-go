@@ -307,12 +307,12 @@ const PayLinkPage = () => {
 
                 {link.amount != null && (
                   <div className="bg-muted/40 rounded-xl p-3 text-center space-y-1">
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Requested / Paid</p>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("plRequestedPaid")}</p>
                     <p className="text-sm font-medium text-foreground">
-                      ৳{Number(link.amount).toLocaleString()} · paid ৳{Number(link.amount_paid ?? 0).toLocaleString()}
+                      {t("plPaidSummary").replace("{req}", Number(link.amount).toLocaleString()).replace("{paid}", Number(link.amount_paid ?? 0).toLocaleString())}
                     </p>
                     {remaining !== null && remaining > 0 && (
-                      <p className="text-xs text-primary font-semibold">৳{remaining.toLocaleString()} remaining</p>
+                      <p className="text-xs text-primary font-semibold">{t("plRemaining").replace("{amount}", remaining.toLocaleString())}</p>
                     )}
                   </div>
                 )}
