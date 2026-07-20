@@ -665,6 +665,25 @@ const translations = {
   siUsed: { en: "Used", bn: "ব্যবহৃত" },
   siNoData: { en: "No data for this period", bn: "এই সময়ের জন্য কোনো তথ্য নেই" },
   siUnknown: { en: "Unknown", bn: "অজানা" },
+  siCatSend: { en: "Send", bn: "পাঠানো" },
+  siCatCashOut: { en: "CashOut", bn: "ক্যাশআউট" },
+  siCatPayment: { en: "Payment", bn: "পেমেন্ট" },
+  siCatRecharge: { en: "Recharge", bn: "রিচার্জ" },
+  siCatOther: { en: "Other", bn: "অন্যান্য" },
+  siMonJan: { en: "Jan", bn: "জানু" },
+  siMonFeb: { en: "Feb", bn: "ফেব" },
+  siMonMar: { en: "Mar", bn: "মার্চ" },
+  siMonApr: { en: "Apr", bn: "এপ্রি" },
+  siMonMay: { en: "May", bn: "মে" },
+  siMonJun: { en: "Jun", bn: "জুন" },
+  siMonJul: { en: "Jul", bn: "জুলা" },
+  siMonAug: { en: "Aug", bn: "আগ" },
+  siMonSep: { en: "Sep", bn: "সেপ্ট" },
+  siMonOct: { en: "Oct", bn: "অক্টো" },
+  siMonNov: { en: "Nov", bn: "নভে" },
+  siMonDec: { en: "Dec", bn: "ডিসে" },
+
+
 
   // ─── Limits & Charges Page ───
   limitsTitle: { en: "Limits & Charges", bn: "সীমা ও চার্জ" },

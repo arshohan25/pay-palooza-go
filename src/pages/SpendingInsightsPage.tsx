@@ -56,9 +56,11 @@ function getMonthKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function getMonthLabel(d: Date) {
-  return d.toLocaleString("en", { month: "short" });
+const MONTH_KEYS = ["siMonJan","siMonFeb","siMonMar","siMonApr","siMonMay","siMonJun","siMonJul","siMonAug","siMonSep","siMonOct","siMonNov","siMonDec"] as const;
+function getMonthLabel(d: Date, t: (k: string) => string) {
+  return t(MONTH_KEYS[d.getMonth()]);
 }
+
 
 /* ── Presets ── */
 type PresetKey = "1M" | "3M" | "6M" | "1Y" | "custom";
@@ -180,10 +182,11 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
     const totalMonths = differenceInCalendarMonths(dateRange.to, dateRange.from);
     for (let i = totalMonths; i >= 0; i--) {
       const d = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth() - i, 1);
-      months.push({ key: getMonthKey(d), label: getMonthLabel(d) });
+      months.push({ key: getMonthKey(d), label: getMonthLabel(d, t) });
     }
     return months;
-  }, [dateRange]);
+  }, [dateRange, t]);
+
 
   const currentMonthKey = monthsMeta[monthsMeta.length - 1]?.key ?? "";
   const prevMonthKey = monthsMeta.length >= 2 ? monthsMeta[monthsMeta.length - 2].key : null;
@@ -709,8 +712,9 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
                             />
                           </div>
                           <span className="text-[10px] text-muted-foreground w-12 text-right shrink-0">
-                            #{i + 1} · {m.category}
+                            #{i + 1} · {t(`siCat${m.category}` as any)}
                           </span>
+
                         </div>
                       </div>
                     </div>
