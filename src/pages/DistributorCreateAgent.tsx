@@ -45,7 +45,7 @@ const DistributorCreateAgent = () => {
     if (!location.division || !location.district || !location.upazila) {
       const mismatch = await detectLocationMismatch({ ...location, area_type: (location.area_type as any) ?? null });
       setLocError(mismatch);
-      toast({ title: "Location required", description: mismatch?.message || "Pick Division → District → Upazila.", variant: "destructive" });
+      toast({ title: t("distCAToastLocReq"), description: mismatch?.message || t("distCAToastLocReqDesc"), variant: "destructive" });
       return;
     }
     setProcessing(true);
