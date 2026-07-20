@@ -44,7 +44,34 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [fulfillOrder, setFulfillOrder] = useState<MerchantOrder | null>(null);
 
+  const [courierOrder, setCourierOrder] = useState<MerchantOrder | null>(null);
+  const [invoiceBusy, setInvoiceBusy] = useState<string | null>(null);
+
   const fmt = (n: number) => n.toLocaleString(lang === "bn" ? "bn-BD" : "en-US");
+
+  const toInvoice = (o: MerchantOrder): InvoiceOrder => ({
+    order_num: o.order_num,
+    created_at: o.created_at,
+    shipping_name: o.shipping_name,
+    shipping_phone: o.shipping_phone,
+    shipping_address: o.shipping_address,
+    shipping_city: o.shipping_city,
+    payment_method: o.payment_method,
+    total: Number(o.total),
+    items: Array.isArray(o.items) ? o.items : [],
+  });
+
+  const handleInvoice = async (o: MerchantOrder, mode: "print" | "download") => {
+    try {
+      setInvoiceBusy(o.id + mode);
+      if (mode === "print") await printInvoice(toInvoice(o));
+      else await downloadInvoice(toInvoice(o));
+    } catch {
+      toast({ title: "Invoice failed", variant: "destructive" });
+    } finally {
+      setInvoiceBusy(null);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
