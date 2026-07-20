@@ -197,7 +197,7 @@ export default function CouponDetailPage() {
             </button>
             <div>
               <h1 className="text-[15px] font-bold tracking-tight text-foreground leading-none">
-                Coupon details
+                {t("cdHeaderTitle")}
               </h1>
               <p className="text-[10px] text-muted-foreground mt-0.5 truncate max-w-[180px]">{coupon.code}</p>
             </div>
