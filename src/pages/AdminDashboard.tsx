@@ -1307,7 +1307,7 @@ export default function AdminDashboard() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-                title="Toggle theme"
+                title={t("admToggleTheme")}
                 className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-primary-foreground backdrop-blur-md transition-all hover:scale-105"
               >
                 {resolvedTheme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
