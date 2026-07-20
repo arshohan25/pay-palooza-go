@@ -573,7 +573,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
             {/* Multi-Image Upload Grid */}
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                {t("mprPhotos", { n: MAX_IMAGES })}
+                {t("mprPhotos").replace("{n}", String(MAX_IMAGES))}
               </label>
               <div className="grid grid-cols-4 gap-2 mt-1.5">
                 {Array.from({ length: MAX_IMAGES }).map((_, idx) => {
