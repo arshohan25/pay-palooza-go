@@ -524,19 +524,19 @@ const MerchantDashboard = () => {
                 <h1 className="text-xl font-extrabold tracking-tight truncate">{merchant?.business_name || "Merchant"}</h1>
                 {kycStatus === "approved" ? (
                   <span title="KYC verified" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-emerald-400/25 border border-emerald-200/40 text-emerald-50 text-[9px] font-bold backdrop-blur-sm">
-                    <BadgeCheck size={11} /> KYC
+                    <BadgeCheck size={11} /> {t("mdKyc")}
                   </span>
                 ) : kycStatus === "pending" ? (
                   <span title="KYC under review" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-yellow-400/25 border border-yellow-200/40 text-yellow-50 text-[9px] font-bold backdrop-blur-sm">
-                    <Clock size={10} /> KYC
+                    <Clock size={10} /> {t("mdKyc")}
                   </span>
                 ) : kycStatus === "rejected" ? (
                   <span title="KYC rejected" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-red-400/25 border border-red-200/40 text-red-50 text-[9px] font-bold backdrop-blur-sm">
-                    <AlertTriangle size={10} /> KYC
+                    <AlertTriangle size={10} /> {t("mdKyc")}
                   </span>
                 ) : (
                   <span title="KYC not started" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-white/90 text-[9px] font-bold backdrop-blur-sm">
-                    <Shield size={10} /> KYC
+                    <Shield size={10} /> {t("mdKyc")}
                   </span>
                 )}
               </div>
@@ -546,12 +546,12 @@ const MerchantDashboard = () => {
                     <Users size={8} className="mr-0.5" />Staff · {staffRole}
                   </Badge>
                 )}
-                <Badge className="text-[9px] bg-white/15 border-white/20 text-white capitalize backdrop-blur-sm">{merchant?.category || "retail"}</Badge>
+                <Badge className="text-[9px] bg-white/15 border-white/20 text-white capitalize backdrop-blur-sm">{merchant?.category || t("mdCategoryRetail")}</Badge>
                 <Badge className="text-[9px] bg-white/15 border-white/20 text-white backdrop-blur-sm">
                   <Zap size={8} className="mr-0.5" />{merchant?.settlement_frequency || "T+1"}
                 </Badge>
                 <Badge className={`text-[9px] border-0 backdrop-blur-sm ${merchant?.status === "active" ? "bg-green-500/30 text-green-100" : "bg-yellow-500/30 text-yellow-100"}`}>
-                  {merchant?.status || "active"}
+                  {merchant?.status || t("mdStatusActive")}
                 </Badge>
               </div>
             </div>
