@@ -142,18 +142,18 @@ const DistributorCreateAgent = () => {
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
                 <UserPlus size={32} className="text-primary-foreground" />
               </motion.div>
-              <p className="text-lg font-extrabold text-foreground">Agent Created!</p>
-              <p className="text-sm text-muted-foreground">{businessName || name || phone} is now part of your network</p>
+              <p className="text-lg font-extrabold text-foreground">{t("distCASuccess")}</p>
+              <p className="text-sm text-muted-foreground">{t("distCASuccessBody").replace("{name}", businessName || name || phone)}</p>
               <div className="p-3 rounded-xl bg-muted/50 text-left space-y-1">
-                <p className="text-[10px] text-muted-foreground">Account Created</p>
-                <p className="text-xs text-foreground">A random PIN has been generated. The agent must use "Forgot PIN" to set their own PIN.</p>
+                <p className="text-[10px] text-muted-foreground">{t("distCAAccountCreated")}</p>
+                <p className="text-xs text-foreground">{t("distCAPinNote")}</p>
               </div>
               <Button onClick={resetForm} className="w-full rounded-xl h-11 text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
                 <UserPlus size={16} className="mr-2 text-primary-foreground" />
-                <span className="text-primary-foreground">Create Another Agent</span>
+                <span className="text-primary-foreground">{t("distCACreateAnother")}</span>
               </Button>
               <Button onClick={() => navigate("/distributor")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2">
-                <Home size={16} /> Back to Dashboard
+                <Home size={16} /> {t("distCABackDash")}
               </Button>
             </Card>
           </motion.div>
