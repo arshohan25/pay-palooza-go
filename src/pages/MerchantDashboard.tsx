@@ -2602,8 +2602,9 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
                 </Button>
               </div>
               <div className="flex gap-1.5 justify-center mb-3">
-                <button onClick={() => setMonthOffset(0)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>This Month</button>
-                <button onClick={() => setMonthOffset(-1)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === -1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>Last Month</button>
+                <button onClick={() => setMonthOffset(0)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{t("mhThisMonth")}</button>
+                <button onClick={() => setMonthOffset(-1)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === -1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{t("mhLastMonth")}</button>
+
               </div>
             </>
           ) : (
