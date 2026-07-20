@@ -2572,11 +2572,12 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
           <div className="flex items-center gap-1.5 mb-3">
             <div className="flex bg-muted p-0.5 rounded-lg">
               <button onClick={() => setFilterMode("month")} className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${filterMode === "month" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                <Calendar size={12} className="inline mr-1 -mt-0.5" />Monthly
+                <Calendar size={12} className="inline mr-1 -mt-0.5" />{t("mhMonthly")}
               </button>
               <button onClick={() => setFilterMode("range")} className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${filterMode === "range" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                <CalendarClock size={12} className="inline mr-1 -mt-0.5" />Custom Range
+                <CalendarClock size={12} className="inline mr-1 -mt-0.5" />{t("mhCustomRange")}
               </button>
+
             </div>
             <div className="relative ml-auto w-[42%] min-w-[110px]">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
