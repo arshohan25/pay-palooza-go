@@ -12,6 +12,7 @@ import { isWeakPin } from "@/lib/pinValidation";
 import { signIn } from "@/lib/auth";
 import { useOtpLockout, parseLockout } from "@/hooks/use-otp-lockout";
 import Seo from "@/components/Seo";
+import { useI18n } from "@/lib/i18n";
 
 type Step = "phone" | "otp" | "new" | "confirm" | "success" | "locked";
 
@@ -20,6 +21,7 @@ const RESEND_SECONDS = 60;
 const isValidBdPhone = (p: string) => /^01[3-9]\d{8}$/.test(p);
 
 const ForgotPinPage = () => {
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<Step>("phone");
@@ -55,7 +57,7 @@ const ForgotPinPage = () => {
   }, [lockout.isLocked, step]);
 
   const sendOtp = useCallback(async () => {
-    if (!isValidBdPhone(phone)) { setError("Enter a valid Bangladeshi mobile number"); return; }
+    if (!isValidBdPhone(phone)) { setError(t("fpInvalidPhone")); return; }
     if (lockout.isLocked) return;
     setSending(true); setError(""); setDevOtp(null);
     try {
@@ -68,7 +70,7 @@ const ForgotPinPage = () => {
       setResendIn(RESEND_SECONDS);
       setStep("otp");
     } catch (err: any) {
-      setError(err?.message || "Failed to send code");
+      setError(err?.message || t("fpSendFailed"));
     } finally {
       setSending(false);
     }
@@ -91,7 +93,7 @@ const ForgotPinPage = () => {
       }
       if (invokeErr) throw invokeErr;
       if (!data?.verified) {
-        setError(data?.error || "Incorrect code");
+        setError(data?.error || t("fpIncorrectCode"));
         setOtp("");
         haptics.error();
         return;
@@ -100,7 +102,7 @@ const ForgotPinPage = () => {
       setNewPin(""); setConfirmPin("");
       setStep("new");
     } catch (err: any) {
-      setError(err?.message || "Verification failed");
+      setError(err?.message || t("fpVerificationFailed"));
       haptics.error();
     } finally {
       setVerifying(false);
@@ -121,7 +123,7 @@ const ForgotPinPage = () => {
         return;
       }
       if (invokeErr || data?.error) {
-        setError(data?.error || "Could not reset PIN. Please try again.");
+        setError(data?.error || t("fpResetFailed"));
         setConfirmPin("");
         haptics.error();
         return;
@@ -132,7 +134,7 @@ const ForgotPinPage = () => {
       try { await signIn(phone, newPin); } catch { /* ignore */ }
       setTimeout(() => navigate("/", { replace: true }), 1600);
     } catch (err: any) {
-      setError(err?.message || "Could not reset PIN. Please try again.");
+      setError(err?.message || t("fpResetFailed"));
       haptics.error();
     } finally {
       setSubmitting(false);
@@ -153,7 +155,7 @@ const ForgotPinPage = () => {
     setError("");
     if (clean.length === 4) {
       if (isWeakPin(clean)) {
-        setError("PIN is too weak. Avoid sequential or repeated digits.");
+        setError(t("fpPinTooWeak"));
         haptics.error();
         setNewPin("");
         return;
@@ -168,7 +170,7 @@ const ForgotPinPage = () => {
     setError("");
     if (clean.length === 4) {
       if (clean !== newPin) {
-        setError("PINs don't match. Please re-enter.");
+        setError(t("fpPinsDontMatch"));
         haptics.error();
         setConfirmPin("");
         return;
@@ -207,8 +209,8 @@ const ForgotPinPage = () => {
               <KeyRound size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">Forgot PIN</h1>
-              <p className="text-[10px] text-primary-foreground/70">Reset your 4-digit transaction PIN</p>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("fpTitle")}</h1>
+              <p className="text-[10px] text-primary-foreground/70">{t("fpSubtitle")}</p>
             </div>
           </div>
         </div>
@@ -221,13 +223,13 @@ const ForgotPinPage = () => {
             <motion.div key="phone" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               <Card className="p-5 border-0 shadow-elevated rounded-2xl space-y-4">
                 <div>
-                  <h2 className="text-lg font-bold text-foreground">Confirm your number</h2>
+                  <h2 className="text-lg font-bold text-foreground">{t("fpConfirmNumber")}</h2>
                   <p className="text-xs text-muted-foreground mt-1">
-                    We'll send a 6-digit code to your registered phone.
+                    {t("fpConfirmNumberDesc")}
                   </p>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Phone</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("fpPhone")}</label>
                   <input
                     inputMode="numeric"
                     maxLength={11}
@@ -243,7 +245,7 @@ const ForgotPinPage = () => {
                   </p>
                 )}
                 <Button onClick={sendOtp} disabled={sending || !isValidBdPhone(phone)} className="w-full h-12 rounded-xl font-bold">
-                  {sending ? <><Loader2 size={16} className="animate-spin mr-2" /> Sending code…</> : "Send verification code"}
+                  {sending ? <><Loader2 size={16} className="animate-spin mr-2" /> {t("fpSendingCode")}</> : t("fpSendCode")}
                 </Button>
               </Card>
             </motion.div>
@@ -257,8 +259,8 @@ const ForgotPinPage = () => {
                   <div className="w-14 h-14 gradient-send rounded-2xl flex items-center justify-center text-primary-foreground mx-auto shadow-glow">
                     <MessageSquare size={26} />
                   </div>
-                  <h2 className="text-lg font-bold text-foreground">Verify it's you</h2>
-                  <p className="text-xs text-muted-foreground">Enter the 6-digit code sent to <span className="font-semibold text-foreground">{phone}</span></p>
+                  <h2 className="text-lg font-bold text-foreground">{t("fpVerifyItsYou")}</h2>
+                  <p className="text-xs text-muted-foreground">{t("fpEnterCodeSent")} <span className="font-semibold text-foreground">{phone}</span></p>
                 </div>
 
                 <div className="flex flex-col items-center gap-3">
@@ -278,7 +280,7 @@ const ForgotPinPage = () => {
 
                   {verifying && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <Loader2 size={12} className="animate-spin" /> Verifying…
+                      <Loader2 size={12} className="animate-spin" /> {t("fpVerifyingLbl")}
                     </p>
                   )}
                   {error && (
@@ -296,7 +298,7 @@ const ForgotPinPage = () => {
                     disabled={sending || resendIn > 0 || lockout.isLocked}
                     className="text-xs font-semibold text-primary disabled:text-muted-foreground disabled:opacity-60"
                   >
-                    {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
+                    {resendIn > 0 ? `${t("fpResendIn")} ${resendIn}s` : t("fpResendCode")}
                   </button>
                 </div>
               </Card>
@@ -312,10 +314,10 @@ const ForgotPinPage = () => {
                     {step === "new" ? <KeyRound size={26} /> : <ShieldCheck size={26} />}
                   </div>
                   <h2 className="text-lg font-bold text-foreground">
-                    {step === "new" ? "Set new PIN" : "Confirm new PIN"}
+                    {step === "new" ? t("fpSetNewPin") : t("fpConfirmNewPin")}
                   </h2>
                   <p className="text-xs text-muted-foreground">
-                    {step === "new" ? "Choose a strong 4-digit PIN." : "Re-enter to confirm."}
+                    {step === "new" ? t("fpChooseStrongPin") : t("fpReenterConfirm")}
                   </p>
                 </div>
                 <div className="px-6">
@@ -339,7 +341,7 @@ const ForgotPinPage = () => {
                 )}
                 {submitting && (
                   <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5">
-                    <Loader2 size={12} className="animate-spin" /> Saving new PIN…
+                    <Loader2 size={12} className="animate-spin" /> {t("fpSavingPin")}
                   </p>
                 )}
               </Card>
@@ -359,8 +361,8 @@ const ForgotPinPage = () => {
                   <CheckCircle2 size={40} />
                 </motion.div>
                 <div className="space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">PIN reset successful</h2>
-                  <p className="text-xs text-muted-foreground">Redirecting you back to your account…</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("fpSuccess")}</h2>
+                  <p className="text-xs text-muted-foreground">{t("fpRedirectingBack")}</p>
                 </div>
               </Card>
             </motion.div>
@@ -379,16 +381,16 @@ const ForgotPinPage = () => {
                   >
                     <ShieldAlert size={30} />
                   </motion.div>
-                  <h2 className="text-lg font-bold text-foreground">Verification locked</h2>
+                  <h2 className="text-lg font-bold text-foreground">{t("fpLocked")}</h2>
                   <p className="text-xs text-muted-foreground max-w-xs mx-auto">
                     {lockout.message ||
-                      `Too many incorrect codes. Try again in ${lockout.remainingMin} minute${lockout.remainingMin === 1 ? "" : "s"}.`}
+                      `${t("fpLockedDesc")} ${t("fpTryAgainIn")} ${lockout.remainingMin}m.`}
                   </p>
                 </div>
 
                 <div className="mx-auto rounded-2xl border border-destructive/25 bg-destructive/[0.06] px-5 py-4 flex flex-col items-center gap-2 min-w-[220px]">
                   <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-destructive/80 font-semibold">
-                    <Timer size={12} /> Try again in
+                    <Timer size={12} /> {t("fpTryAgainIn")}
                   </div>
                   <div className="font-mono text-3xl font-bold tabular-nums text-destructive">
                     {lockout.mmss}
