@@ -454,9 +454,10 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: "Total", value: products.length, emoji: "📦" },
-          { label: "Active", value: products.filter(p => p.is_active).length, emoji: "✅" },
-          { label: "Out of Stock", value: products.filter(p => p.stock === 0).length, emoji: "⚠️" },
+          { label: t("mprTotal"), value: products.length, emoji: "📦" },
+          { label: t("mprActive"), value: products.filter(p => p.is_active).length, emoji: "✅" },
+          { label: t("mprOutOfStock"), value: products.filter(p => p.stock === 0).length, emoji: "⚠️" },
+
         ].map(s => (
           <div key={s.label} className="bg-card border border-border/60 rounded-2xl p-3 text-center">
             <p className="text-lg">{s.emoji}</p>
