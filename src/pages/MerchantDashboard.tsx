@@ -2184,7 +2184,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
             <div className="relative">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm mb-2">
                 <img src={EASYPAY_LOGO_URL} alt="EasyPay" className="h-3.5 w-auto object-contain brightness-0 invert" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">Accepted Here</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">{t("mqrAcceptedHere")}</span>
               </div>
               <div className="flex items-center justify-center gap-2">
                 {shopLogo && (
