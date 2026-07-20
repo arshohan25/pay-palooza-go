@@ -72,6 +72,8 @@ import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
 import MerchantBroadcastTab from "@/components/merchant/MerchantBroadcastTab";
 import MerchantTodaySnapshot from "@/components/merchant/MerchantTodaySnapshot";
 import MerchantInventoryAlerts from "@/components/MerchantInventoryAlerts";
+import MerchantPayoutEtaCard from "@/components/merchant/MerchantPayoutEtaCard";
+import MerchantDisputesTile from "@/components/merchant/MerchantDisputesTile";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 import RequestAccessSheet from "@/components/merchant/RequestAccessSheet";
@@ -1259,6 +1261,10 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       {merchant && (
         <motion.div variants={stagger.item} className="space-y-3">
           <MerchantTodaySnapshot merchantId={merchant.id} />
+          <div className="grid grid-cols-2 gap-2">
+            <MerchantPayoutEtaCard merchantId={merchant.id} frequency={merchant.settlement_frequency} />
+            <MerchantDisputesTile merchantId={merchant.id} />
+          </div>
           <MerchantInventoryAlerts merchantId={merchant.id} threshold={5} />
         </motion.div>
       )}
