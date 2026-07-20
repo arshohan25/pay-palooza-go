@@ -71,6 +71,7 @@ import MerchantCouponsTab from "@/components/merchant/MerchantCouponsTab";
 import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
 import MerchantBroadcastTab from "@/components/merchant/MerchantBroadcastTab";
 import MerchantTodaySnapshot from "@/components/merchant/MerchantTodaySnapshot";
+import MerchantInventoryAlerts from "@/components/MerchantInventoryAlerts";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { useFutureFeatures } from "@/hooks/use-future-features";
 import RequestAccessSheet from "@/components/merchant/RequestAccessSheet";
@@ -221,6 +222,28 @@ const MerchantDashboard = () => {
   const [loggingOut, setLoggingOut] = useState(false);
   const logoutTriggerRef = useRef<HTMLButtonElement>(null);
   const balanceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [kycStatus, setKycStatus] = useState<"none" | "pending" | "approved" | "rejected">("none");
+
+  useEffect(() => {
+    if (!merchant?.id) return;
+    let cancelled = false;
+    const loadKyc = async () => {
+      const { data } = await (supabase as any)
+        .from("merchant_applications")
+        .select("business_kyc_status")
+        .eq("merchant_id", merchant.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      const raw = (data?.business_kyc_status as string) || "";
+      if (raw === "approved" || raw === "pending" || raw === "rejected") setKycStatus(raw);
+      else if (merchant.status === "active") setKycStatus("approved");
+      else setKycStatus("none");
+    };
+    loadKyc();
+    return () => { cancelled = true; };
+  }, [merchant?.id, merchant?.status]);
 
   const toggleBalance = () => {
     setShowBalance(v => {
@@ -485,7 +508,23 @@ const MerchantDashboard = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-extrabold tracking-tight truncate">{merchant?.business_name || "Merchant"}</h1>
-                <BadgeCheck size={18} className="text-white/80 shrink-0" />
+                {kycStatus === "approved" ? (
+                  <span title="KYC verified" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-emerald-400/25 border border-emerald-200/40 text-emerald-50 text-[9px] font-bold backdrop-blur-sm">
+                    <BadgeCheck size={11} /> KYC
+                  </span>
+                ) : kycStatus === "pending" ? (
+                  <span title="KYC under review" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-yellow-400/25 border border-yellow-200/40 text-yellow-50 text-[9px] font-bold backdrop-blur-sm">
+                    <Clock size={10} /> KYC
+                  </span>
+                ) : kycStatus === "rejected" ? (
+                  <span title="KYC rejected" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-red-400/25 border border-red-200/40 text-red-50 text-[9px] font-bold backdrop-blur-sm">
+                    <AlertTriangle size={10} /> KYC
+                  </span>
+                ) : (
+                  <span title="KYC not started" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-white/90 text-[9px] font-bold backdrop-blur-sm">
+                    <Shield size={10} /> KYC
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {isStaff && (
@@ -1218,8 +1257,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
       {/* Today snapshot */}
       {merchant && (
-        <motion.div variants={stagger.item}>
+        <motion.div variants={stagger.item} className="space-y-3">
           <MerchantTodaySnapshot merchantId={merchant.id} />
+          <MerchantInventoryAlerts merchantId={merchant.id} threshold={5} />
         </motion.div>
       )}
       {/* Quick Actions Grid */}
