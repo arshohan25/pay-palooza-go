@@ -120,7 +120,7 @@ export default function TeamLoginPage() {
       if (result?.error) throw new Error(result.error);
       setPreAuthToken(result.preAuthToken);
       setTeamEmail(result.emailMasked);
-      toast.info("New code sent");
+      toast.info(t("tlpNewCodeSent"));
       setResendCooldown(30);
       const interval = setInterval(() => {
         setResendCooldown(prev => {
@@ -129,7 +129,7 @@ export default function TeamLoginPage() {
         });
       }, 1000);
     } catch (err: any) {
-      toast.error(err.message || "Failed to resend code");
+      toast.error(err.message || t("tlpResendFailed"));
     }
   };
 
