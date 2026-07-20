@@ -6138,6 +6138,7 @@ export type Database = {
           email: string | null
           id: string
           kyc_exempt: boolean
+          lang_pref: string
           name: string | null
           phone: string
           referral_code: string | null
@@ -6157,6 +6158,7 @@ export type Database = {
           email?: string | null
           id?: string
           kyc_exempt?: boolean
+          lang_pref?: string
           name?: string | null
           phone: string
           referral_code?: string | null
@@ -6176,6 +6178,7 @@ export type Database = {
           email?: string | null
           id?: string
           kyc_exempt?: boolean
+          lang_pref?: string
           name?: string | null
           phone?: string
           referral_code?: string | null
