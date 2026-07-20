@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import FlowHeader from "@/components/FlowHeader";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface NearbyAgent {
   agent_id: string;
