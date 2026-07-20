@@ -2689,10 +2689,11 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
               >
                 <Receipt size={28} className="text-muted-foreground" />
               </motion.div>
-              <p className="text-sm font-semibold text-foreground">No transactions found</p>
+              <p className="text-sm font-semibold text-foreground">{t("mhNoTxnFound")}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {searchQuery ? "Try a different search term" : "Try selecting a different period"}
+                {searchQuery ? t("mhTrySearch") : t("mhTryPeriod")}
               </p>
+
             </motion.div>
           ) : (
             <div className="space-y-1">
