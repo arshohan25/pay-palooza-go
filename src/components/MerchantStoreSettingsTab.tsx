@@ -83,6 +83,7 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
 
   const [form, setForm] = useState({
     store_name: "",
+    store_name_bn: "",
     slug: "",
     description: "",
     logo_url: "" as string | null,
