@@ -370,9 +370,9 @@ const SuperDistributorDashboard = () => {
                 <Crown size={22} className="text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-base font-bold text-primary-foreground truncate">Super Distributor</h1>
+                <h1 className="text-base font-bold text-primary-foreground truncate">{t("sdDashTitle")}</h1>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] text-primary-foreground/70">{distributors.length} distributors · {agents.length} agents · {txnCount} txns today</span>
+                  <span className="text-[10px] text-primary-foreground/70">{distributors.length} {t("sdDashQaDistributors").toLowerCase()} · {agents.length} {t("sdDashAgents").toLowerCase()} · {txnCount} {t("distDashTxnsToday")}</span>
                 </div>
               </div>
             </div>
