@@ -176,7 +176,7 @@ const AgentRegister = () => {
       const cleanedPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
       const { data: existing } = await supabase.from("profiles").select("id").eq("phone", cleanedPhone).maybeSingle();
       if (existing) {
-        toast({ title: "Already Registered", description: "This number already has an account.", variant: "destructive" });
+        toast({ title: t("argAlreadyRegistered"), description: t("argAlreadyRegisteredDesc"), variant: "destructive" });
         setSendingOtp(false);
         return;
       }
