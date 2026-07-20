@@ -27,12 +27,13 @@ import { signOut } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/use-profile";
 import { useSessionTimeout } from "@/hooks/use-session-timeout";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
-const getGreeting = () => {
+const getGreetingKey = (): TranslationKey => {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good Morning";
-  if (hour < 17) return "Good Afternoon";
-  return "Good Evening";
+  if (hour < 12) return "admGoodMorning";
+  if (hour < 17) return "admGoodAfternoon";
+  return "admGoodEvening";
 };
 import AdminChargeConfig from "@/components/admin/AdminChargeConfig";
 import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
