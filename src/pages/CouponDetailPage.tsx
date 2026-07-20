@@ -286,7 +286,7 @@ export default function CouponDetailPage() {
                 className="w-full flex items-center gap-3 px-4 py-3 active:scale-[0.99] transition-transform"
               >
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-white/60">Coupon code</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white/60">{t("cdCouponCode")}</p>
                   <p className="text-[20px] font-black tracking-[0.22em] text-white truncate">{coupon.code}</p>
                 </div>
                 <div
@@ -297,7 +297,7 @@ export default function CouponDetailPage() {
                   }`}
                 >
                   {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  {copied ? "COPIED" : "COPY"}
+                  {copied ? t("cdCopied") : t("cdCopy")}
                 </div>
               </button>
             </div>
