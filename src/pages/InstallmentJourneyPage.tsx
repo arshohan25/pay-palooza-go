@@ -77,6 +77,7 @@ const STATUS_META: Record<Status, { labelKey: string; ring: string; dot: string;
 };
 
 function Ring({ value, size = 120, stroke = 10 }: { value: number; size?: number; stroke?: number }) {
+  const { t } = useI18n();
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const offset = c - (Math.min(100, Math.max(0, value)) / 100) * c;
