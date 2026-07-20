@@ -5,6 +5,7 @@ import { Package, Clock, CheckCircle2, Truck, CircleCheck, X, ChevronDown, Chevr
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import FulfillmentSheet from "@/components/merchant/FulfillmentSheet";
+import CourierTrackingTimeline from "@/components/merchant/CourierTrackingTimeline";
 import QuickCourierBookSheet from "@/components/merchant/QuickCourierBookSheet";
 import { downloadInvoice, printInvoice, type InvoiceOrder } from "@/components/InvoiceGenerator";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
@@ -21,6 +22,12 @@ interface MerchantOrder {
   shipping_city: string | null;
   payment_method: string;
   created_at: string;
+  courier_provider?: string | null;
+  tracking_number?: string | null;
+  courier_booking_ref?: string | null;
+  courier_last_status?: string | null;
+  courier_last_scan_at?: string | null;
+  courier_eta?: string | null;
 }
 
 const STATUS_FLOW = ["processing", "confirmed", "shipped", "out_for_delivery", "delivered"];
@@ -192,6 +199,19 @@ const MerchantOrdersTab = ({ merchantId }: Props) => {
                     <p>{order.shipping_address}, {order.shipping_city}</p>
                   </div>
                 )}
+
+                {/* Live courier tracking */}
+                {order.tracking_number && (
+                  <CourierTrackingTimeline
+                    orderId={order.id}
+                    courierProvider={order.courier_provider}
+                    trackingNumber={order.tracking_number}
+                    bookingRef={order.courier_booking_ref}
+                    eta={order.courier_eta}
+                  />
+                )}
+
+
 
                 {/* Action row */}
                 <div className="grid grid-cols-2 gap-2">

@@ -1673,6 +1673,59 @@ export type Database = {
         }
         Relationships: []
       }
+      courier_tracking_events: {
+        Row: {
+          courier_provider: string
+          created_at: string
+          eta: string | null
+          id: string
+          location: string | null
+          note: string | null
+          order_id: string
+          raw: Json | null
+          scanned_at: string
+          status: string
+          status_label: string | null
+          tracking_number: string | null
+        }
+        Insert: {
+          courier_provider: string
+          created_at?: string
+          eta?: string | null
+          id?: string
+          location?: string | null
+          note?: string | null
+          order_id: string
+          raw?: Json | null
+          scanned_at?: string
+          status: string
+          status_label?: string | null
+          tracking_number?: string | null
+        }
+        Update: {
+          courier_provider?: string
+          created_at?: string
+          eta?: string | null
+          id?: string
+          location?: string | null
+          note?: string | null
+          order_id?: string
+          raw?: Json | null
+          scanned_at?: string
+          status?: string
+          status_label?: string | null
+          tracking_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courier_tracking_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cron_alert_state: {
         Row: {
           alert_count: number
@@ -5065,6 +5118,12 @@ export type Database = {
         Row: {
           coupon_discount: number | null
           coupon_id: string | null
+          courier_booked_at: string | null
+          courier_booking_ref: string | null
+          courier_eta: string | null
+          courier_last_scan_at: string | null
+          courier_last_status: string | null
+          courier_provider: string | null
           courier_provider_id: string | null
           created_at: string
           delivery_address_id: string | null
@@ -5093,6 +5152,12 @@ export type Database = {
         Insert: {
           coupon_discount?: number | null
           coupon_id?: string | null
+          courier_booked_at?: string | null
+          courier_booking_ref?: string | null
+          courier_eta?: string | null
+          courier_last_scan_at?: string | null
+          courier_last_status?: string | null
+          courier_provider?: string | null
           courier_provider_id?: string | null
           created_at?: string
           delivery_address_id?: string | null
@@ -5121,6 +5186,12 @@ export type Database = {
         Update: {
           coupon_discount?: number | null
           coupon_id?: string | null
+          courier_booked_at?: string | null
+          courier_booking_ref?: string | null
+          courier_eta?: string | null
+          courier_last_scan_at?: string | null
+          courier_last_status?: string | null
+          courier_provider?: string | null
           courier_provider_id?: string | null
           created_at?: string
           delivery_address_id?: string | null
