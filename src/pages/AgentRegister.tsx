@@ -699,8 +699,8 @@ const AgentRegister = () => {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-2">
-                  <h2 className="text-xl font-bold text-foreground">KYC Approved! 🎉</h2>
-                  <p className="text-sm text-muted-foreground">Customer <span className="font-semibold text-foreground">{name}</span> is now verified</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("argKycApproved")}</h2>
+                  <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{name}</span> {t("argCustNowVerified")}</p>
                 </motion.div>
 
                 {/* Download link card */}
@@ -712,9 +712,9 @@ const AgentRegister = () => {
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Download size={16} className="text-primary" />
-                    <span className="text-sm font-bold text-foreground">Download EasyPay</span>
+                    <span className="text-sm font-bold text-foreground">{t("argDownloadEP")}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Share this link with the customer</p>
+                  <p className="text-xs text-muted-foreground">{t("argShareLink")}</p>
                   <div className="flex items-center gap-2 bg-background rounded-xl border border-border px-3 py-2.5">
                     <Smartphone size={14} className="text-primary shrink-0" />
                     <span className="text-xs font-mono text-foreground truncate flex-1">pay-palooza-go.lovable.app</span>
@@ -724,10 +724,10 @@ const AgentRegister = () => {
                       className="h-7 px-2 text-[10px] font-bold text-primary"
                       onClick={() => {
                         navigator.clipboard.writeText("https://pay-palooza-go.lovable.app");
-                        toast({ title: "Link Copied!" });
+                        toast({ title: t("argLinkCopied") });
                       }}
                     >
-                      Copy
+                      {t("argCopy")}
                     </Button>
                   </div>
                 </motion.div>
@@ -735,28 +735,28 @@ const AgentRegister = () => {
                 {/* Customer summary */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-left">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Name</span>
+                    <span className="text-muted-foreground">{t("argName")}</span>
                     <span className="font-semibold text-foreground">{name}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Phone</span>
+                    <span className="text-muted-foreground">{t("argPhone")}</span>
                     <span className="font-semibold text-foreground">+88{phone}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">KYC</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">VERIFIED ✓</span>
+                    <span className="text-muted-foreground">{t("argKycLabel")}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">{t("argVerified")}</span>
                   </div>
                 </motion.div>
 
                 <div className="space-y-2.5">
                   <Button onClick={() => goTo("customer_login")} className="w-full gradient-primary text-primary-foreground rounded-xl h-12 text-sm font-bold shadow-glow gap-2">
-                    <Smartphone size={16} /> Guide Customer Login
+                    <Smartphone size={16} /> {t("argGuideLogin")}
                   </Button>
                   <Button onClick={resetFlow} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2">
-                    <UserPlus size={16} /> Register Another
+                    <UserPlus size={16} /> {t("argRegAnother")}
                   </Button>
                   <Button onClick={() => navigate("/agent")} variant="ghost" className="w-full rounded-xl h-10 text-xs text-muted-foreground gap-2">
-                    <Home size={14} /> Back to Dashboard
+                    <Home size={14} /> {t("argBackDash")}
                   </Button>
                 </div>
               </Card>
