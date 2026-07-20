@@ -10,11 +10,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-roles";
 import { APP_ROLE_HOME, APP_ROLE_LABEL, isRoleAllowedForApp } from "@/lib/appRole";
 import { haptics } from "@/lib/haptics";
+import { useI18n } from "@/lib/i18n";
 
 const SD_LAST_PHONE_KEY = "easypay_super_distributor_last_phone";
 
 const SuperDistributorLoginPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
 
@@ -37,11 +39,11 @@ const SuperDistributorLoginPage = () => {
     e.preventDefault();
     setError(null);
     if (!/^01[3-9]\d{8}$/.test(phone)) {
-      setError("Enter a valid 11-digit mobile number.");
+      setError(t("sdLoginInvalidPhone"));
       return;
     }
     if (pin.length !== 4) {
-      setError("Enter your 4-digit PIN.");
+      setError(t("distLoginInvalidPin"));
       return;
     }
     setSubmitting(true);
@@ -50,15 +52,15 @@ const SuperDistributorLoginPage = () => {
       try { localStorage.setItem(SD_LAST_PHONE_KEY, phone); } catch {}
       localStorage.setItem("mfs_has_authenticated", "1");
       haptics.success();
-      toast.success("Signed in");
+      toast.success(t("distLoginSignedIn"));
     } catch (err) {
       haptics.error();
       const msg =
         err instanceof Error && err.message.includes("Invalid login credentials")
-          ? "Incorrect phone number or PIN."
+          ? t("distLoginInvalidCreds")
           : err instanceof Error
             ? err.message
-            : "Unable to sign in right now.";
+            : t("distLoginGenericErr");
       setError(msg);
       setPin("");
     } finally {
@@ -66,13 +68,13 @@ const SuperDistributorLoginPage = () => {
     }
   };
 
-  const title = `${APP_ROLE_LABEL["super-distributor"]} — Sign in`;
+  const title = `${APP_ROLE_LABEL["super-distributor"]} — ${t("distLoginSignInSuffix")}`;
 
   return (
     <div className="min-h-screen bg-[#120b1f] text-white flex flex-col">
       <Helmet>
         <title>{title}</title>
-        <meta name="description" content="EasyPay Super Distributor sign-in — manage distributors, float and commission networks." />
+        <meta name="description" content={t("sdLoginMetaDesc")} />
         <link rel="icon" href="/icons/role-super-distributor.png" />
         <link rel="apple-touch-icon" href="/icons/role-super-distributor.png" />
       </Helmet>
@@ -84,9 +86,9 @@ const SuperDistributorLoginPage = () => {
             <BarChart3 size={26} />
           </div>
           <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">EasyPay</p>
-          <h1 className="text-xl font-extrabold mt-0.5">EasyPay Super Distributor</h1>
+          <h1 className="text-xl font-extrabold mt-0.5">{t("sdLoginTitle")}</h1>
           <p className="text-xs opacity-90 mt-1 max-w-[280px] mx-auto">
-            Oversee your distributor network & commissions.
+            {t("sdLoginTagline")}
           </p>
         </div>
       </header>
@@ -101,7 +103,7 @@ const SuperDistributorLoginPage = () => {
         >
           <div className="space-y-1">
             <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-              Mobile number
+              {t("sdLoginMobileLabel")}
             </label>
             <div className="relative">
               <input
@@ -122,7 +124,7 @@ const SuperDistributorLoginPage = () => {
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-              4-digit PIN
+              {t("distLoginPinLabel")}
             </label>
             <div className="relative">
               <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-300" />
@@ -157,20 +159,20 @@ const SuperDistributorLoginPage = () => {
             className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-violet-500/30 disabled:opacity-60"
           >
             {submitting ? (
-              <><Loader2 size={18} className="animate-spin" /> Signing in…</>
+              <><Loader2 size={18} className="animate-spin" /> {t("distLoginSubmitting")}</>
             ) : (
-              <>Sign in <ArrowRight size={18} /></>
+              <>{t("sdLoginSubmit")} <ArrowRight size={18} /></>
             )}
           </button>
 
           <div className="flex items-center justify-between text-xs pt-1">
             <button type="button" onClick={() => navigate("/forgot-pin")} className="text-violet-300 font-semibold hover:underline">
-              Forgot PIN?
+              {t("distLoginForgotPin")}
             </button>
-            <span className="text-white/40">Super distributors only</span>
+            <span className="text-white/40">{t("sdLoginOnlyNote")}</span>
           </div>
           <p className="text-[11px] text-white/50 text-center pt-1">
-            Super Distributor accounts are provisioned by Admin.
+            {t("sdLoginProvisioned")}
           </p>
         </motion.form>
       </div>

@@ -3637,6 +3637,33 @@ const translations = {
   agDispSubjCommNotCred: { en: "Commission not credited", bn: "কমিশন ক্রেডিট হয়নি" },
   agDispSubjBillFailed: { en: "Bill payment failed but debited", bn: "বিল পরিশোধ ব্যর্থ কিন্তু ডেবিট" },
   agDispSubjOther: { en: "Other", bn: "অন্যান্য" },
+
+  // ── Batch 5: Distributor & Super Distributor login pages ──
+  distLoginTitle: { en: "EasyPay Distributor Portal", bn: "ইজিপে ডিস্ট্রিবিউটর পোর্টাল" },
+  distLoginTagline: { en: "Manage agents, float and commissions.", bn: "এজেন্ট, ফ্লোট ও কমিশন পরিচালনা করুন।" },
+  distLoginMetaDesc: { en: "EasyPay Distributor sign-in — create agents, manage float and track commissions.", bn: "ইজিপে ডিস্ট্রিবিউটর সাইন-ইন — এজেন্ট তৈরি, ফ্লোট পরিচালনা ও কমিশন ট্র্যাক করুন।" },
+  distLoginSignInSuffix: { en: "Sign in", bn: "সাইন ইন" },
+  distLoginMobileLabel: { en: "Distributor mobile number", bn: "ডিস্ট্রিবিউটর মোবাইল নম্বর" },
+  distLoginPinLabel: { en: "4-digit PIN", bn: "৪-সংখ্যার পিন" },
+  distLoginInvalidPhone: { en: "Enter a valid 11-digit distributor mobile number.", bn: "সঠিক ১১-সংখ্যার ডিস্ট্রিবিউটর মোবাইল নম্বর দিন।" },
+  distLoginInvalidPin: { en: "Enter your 4-digit PIN.", bn: "আপনার ৪-সংখ্যার পিন দিন।" },
+  distLoginInvalidCreds: { en: "Incorrect phone number or PIN.", bn: "ভুল ফোন নম্বর বা পিন।" },
+  distLoginGenericErr: { en: "Unable to sign in right now.", bn: "এখন সাইন ইন করা যাচ্ছে না।" },
+  distLoginSubmitting: { en: "Signing in…", bn: "সাইন ইন হচ্ছে…" },
+  distLoginSubmit: { en: "Sign in as Distributor", bn: "ডিস্ট্রিবিউটর হিসেবে সাইন ইন" },
+  distLoginSignedIn: { en: "Signed in", bn: "সাইন ইন সফল" },
+  distLoginForgotPin: { en: "Forgot PIN?", bn: "পিন ভুলে গেছেন?" },
+  distLoginOnlyNote: { en: "Distributors only", bn: "শুধু ডিস্ট্রিবিউটরদের জন্য" },
+  distLoginProvisioned: { en: "Distributor accounts are provisioned by your Super Distributor or Admin.", bn: "ডিস্ট্রিবিউটর অ্যাকাউন্ট আপনার সুপার ডিস্ট্রিবিউটর বা অ্যাডমিন কর্তৃক প্রদান করা হয়।" },
+
+  sdLoginTitle: { en: "EasyPay Super Distributor", bn: "ইজিপে সুপার ডিস্ট্রিবিউটর" },
+  sdLoginTagline: { en: "Oversee your distributor network & commissions.", bn: "আপনার ডিস্ট্রিবিউটর নেটওয়ার্ক ও কমিশন তদারকি করুন।" },
+  sdLoginMetaDesc: { en: "EasyPay Super Distributor sign-in — manage distributors, float and commission networks.", bn: "ইজিপে সুপার ডিস্ট্রিবিউটর সাইন-ইন — ডিস্ট্রিবিউটর, ফ্লোট ও কমিশন নেটওয়ার্ক পরিচালনা করুন।" },
+  sdLoginMobileLabel: { en: "Mobile number", bn: "মোবাইল নম্বর" },
+  sdLoginInvalidPhone: { en: "Enter a valid 11-digit mobile number.", bn: "সঠিক ১১-সংখ্যার মোবাইল নম্বর দিন।" },
+  sdLoginSubmit: { en: "Sign in", bn: "সাইন ইন" },
+  sdLoginOnlyNote: { en: "Super distributors only", bn: "শুধু সুপার ডিস্ট্রিবিউটরদের জন্য" },
+  sdLoginProvisioned: { en: "Super Distributor accounts are provisioned by Admin.", bn: "সুপার ডিস্ট্রিবিউটর অ্যাকাউন্ট অ্যাডমিন কর্তৃক প্রদান করা হয়।" },
 } as const;
 
 
