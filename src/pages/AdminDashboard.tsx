@@ -487,7 +487,36 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { displayName } = useProfile();
+  const { t } = useI18n();
   useSessionTimeout();
+  const tNav = (id: string, fallback: string) => {
+    const key = `admNav_${id}` as TranslationKey;
+    const val = t(key);
+    return val.startsWith("⟦") ? fallback : val;
+  };
+  const tGroup = (label: string) => {
+    const map: Record<string, TranslationKey> = {
+      "Overview": "admGrp_Overview",
+      "Operations": "admGrp_Operations",
+      "Support": "admGrp_Support",
+      "Network": "admGrp_Network",
+      "Financial": "admGrp_Financial",
+      "Services": "admGrp_Services",
+      "E-Commerce": "admGrp_ECommerce",
+      "System": "admGrp_System",
+      "Security & Risk": "admGrp_SecurityRisk",
+      "⭐ Pro Fintech": "admGrp_ProFintech",
+    };
+    const key = map[label];
+    if (!key) return label;
+    const val = t(key);
+    return val.startsWith("⟦") ? label : val;
+  };
+  const headerLabel = () => {
+    if (activeTab === "overview") return `${t(getGreetingKey())}, ${displayName || t("admTitle")}`;
+    const item = ALL_NAV_ITEMS.find(i => i.id === activeTab);
+    return item ? tNav(item.id, item.label) : t("admOverviewFallback");
+  };
   const [navGroups, setNavGroups] = useState<NavGroup[]>(loadNavOrder);
   const [showReorder, setShowReorder] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
