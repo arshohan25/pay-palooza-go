@@ -1864,7 +1864,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
         body { font-family: 'Helvetica Neue', Arial, sans-serif; }
         .sheet {
           width: 105mm; height: 148mm;
-          padding: 5mm; /* internal margin so the card doesn't touch bleed */
+          padding: 5mm;
           display: flex; align-items: stretch; justify-content: stretch;
         }
         .card {
@@ -1945,6 +1945,115 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
       </script>
       </body></html>`);
     w.document.close();
+  };
+
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const handleDownloadPdf = async () => {
+    if (!qrDataUrl) return;
+    try {
+      setPdfBusy(true);
+      const { jsPDF } = await import("jspdf");
+      // Exact A6 portrait: 105 x 148 mm
+      const doc = new jsPDF({ unit: "mm", format: "a6", orientation: "portrait" });
+      const W = 105, H = 148;
+      const M = 5; // internal margin
+      const cardX = M, cardY = M, cardW = W - 2 * M, cardH = H - 2 * M;
+
+      const hexToRgb = (hex: string) => {
+        const m = hex.replace("#", "");
+        const v = m.length === 3 ? m.split("").map((c) => c + c).join("") : m;
+        return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16)] as [number, number, number];
+      };
+      const [br1, bg1, bb1] = hexToRgb(bandStart);
+      const [br2, bg2, bb2] = hexToRgb(bandEnd);
+
+      // Card border
+      doc.setDrawColor(11, 11, 31);
+      doc.setLineWidth(0.6);
+      doc.roundedRect(cardX, cardY, cardW, cardH, 6, 6, "S");
+
+      // Band (approx gradient using vertical strips)
+      const bandH = 18;
+      const strips = 60;
+      for (let i = 0; i < strips; i++) {
+        const t = i / (strips - 1);
+        const r = Math.round(br1 + (br2 - br1) * t);
+        const g = Math.round(bg1 + (bg2 - bg1) * t);
+        const b = Math.round(bb1 + (bb2 - bb1) * t);
+        doc.setFillColor(r, g, b);
+        doc.rect(cardX + (cardW * i) / strips, cardY, cardW / strips + 0.2, bandH, "F");
+      }
+
+      // EasyPay logo + Accepted Here (inside band)
+      if (logoDataUrl) {
+        try { doc.addImage(logoDataUrl, "PNG", cardX + cardW / 2 - 16, cardY + 5, 8, 8, undefined, "FAST"); } catch {}
+      }
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("EASYPAY  •  ACCEPTED HERE", cardX + cardW / 2 + (logoDataUrl ? 2 : -8), cardY + bandH / 2 + 1.2, { align: "center" });
+
+      // Shop name
+      let y = cardY + bandH + 8;
+      doc.setTextColor(11, 11, 31);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text(shopName, W / 2, y, { align: "center" });
+
+      // Tagline
+      y += 5;
+      doc.setTextColor(br2, bg2, bb2);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text(tagline.toUpperCase(), W / 2, y, { align: "center" });
+
+      y += 4;
+      doc.setTextColor(120, 120, 130);
+      doc.setFontSize(7);
+      doc.text(QR_SUB_TAGLINE.toUpperCase(), W / 2, y, { align: "center" });
+
+      // QR
+      const qrSize = 55;
+      const qrX = W / 2 - qrSize / 2;
+      const qrY = y + 5;
+      // white pad with dashed border-ish frame
+      doc.setDrawColor(180, 180, 190);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(qrX - 3, qrY - 3, qrSize + 6, qrSize + 6, 3, 3, "S");
+      try { doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize, undefined, "FAST"); } catch {}
+
+      // Merchant ID pill
+      const midY = qrY + qrSize + 9;
+      doc.setFillColor(11, 11, 31);
+      const pillW = Math.min(cardW - 10, doc.getTextWidth(qrPayload) * 1.1 + 14);
+      const pillX = W / 2 - pillW / 2;
+      doc.roundedRect(pillX, midY - 4.5, pillW, 7, 3.5, 3.5, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("courier", "bold");
+      doc.setFontSize(10);
+      doc.text(qrPayload, W / 2, midY, { align: "center" });
+
+      // Foot
+      doc.setTextColor(120, 120, 130);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.text("SCAN WITH ANY EASYPAY APP", W / 2, midY + 6, { align: "center" });
+
+      // Powered by
+      doc.setTextColor(11, 11, 31);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      const footY = cardY + cardH - 4;
+      doc.text("POWERED BY EASYPAY", W / 2, footY, { align: "center" });
+
+      const safeName = shopName.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "merchant";
+      doc.save(`${safeName}-qr-a6.pdf`);
+      toast({ title: "Downloaded", description: "QR card saved as PDF (A6)." });
+    } catch (e: any) {
+      toast({ title: "PDF failed", description: e?.message || "Could not generate PDF", variant: "destructive" });
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
 
