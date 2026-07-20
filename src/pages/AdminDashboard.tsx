@@ -27,12 +27,13 @@ import { signOut } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/use-profile";
 import { useSessionTimeout } from "@/hooks/use-session-timeout";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
-const getGreeting = () => {
+const getGreetingKey = (): TranslationKey => {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good Morning";
-  if (hour < 17) return "Good Afternoon";
-  return "Good Evening";
+  if (hour < 12) return "admGoodMorning";
+  if (hour < 17) return "admGoodAfternoon";
+  return "admGoodEvening";
 };
 import AdminChargeConfig from "@/components/admin/AdminChargeConfig";
 import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
@@ -486,7 +487,36 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { displayName } = useProfile();
+  const { t } = useI18n();
   useSessionTimeout();
+  const tNav = (id: string, fallback: string) => {
+    const key = `admNav_${id}` as TranslationKey;
+    const val = t(key);
+    return val.startsWith("⟦") ? fallback : val;
+  };
+  const tGroup = (label: string) => {
+    const map: Record<string, TranslationKey> = {
+      "Overview": "admGrp_Overview",
+      "Operations": "admGrp_Operations",
+      "Support": "admGrp_Support",
+      "Network": "admGrp_Network",
+      "Financial": "admGrp_Financial",
+      "Services": "admGrp_Services",
+      "E-Commerce": "admGrp_ECommerce",
+      "System": "admGrp_System",
+      "Security & Risk": "admGrp_SecurityRisk",
+      "⭐ Pro Fintech": "admGrp_ProFintech",
+    };
+    const key = map[label];
+    if (!key) return label;
+    const val = t(key);
+    return val.startsWith("⟦") ? label : val;
+  };
+  const headerLabel = () => {
+    if (activeTab === "overview") return `${t(getGreetingKey())}, ${displayName || t("admTitle")}`;
+    const item = ALL_NAV_ITEMS.find(i => i.id === activeTab);
+    return item ? tNav(item.id, item.label) : t("admOverviewFallback");
+  };
   const [navGroups, setNavGroups] = useState<NavGroup[]>(loadNavOrder);
   const [showReorder, setShowReorder] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
@@ -1093,7 +1123,7 @@ export default function AdminDashboard() {
           <div className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${
             group.pro ? "text-primary" : "text-muted-foreground/60"
           }`}>
-            {group.label}
+            {tGroup(group.label)}
           </div>
           <div className="flex flex-col gap-0.5">
             {group.items.map(item => (
@@ -1107,7 +1137,7 @@ export default function AdminDashboard() {
                 }`}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
-                {item.label}
+                {tNav(item.id, item.label)}
                 {item.id === "alerts" && stats.openAlerts > 0 && (
                   <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
                     {stats.openAlerts}
@@ -1172,8 +1202,8 @@ export default function AdminDashboard() {
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
             <ShieldAlert className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
-          <h1 className="font-bold text-foreground text-sm">Admin</h1>
-          <Button variant="ghost" size="icon" className="ml-auto shrink-0 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowReorder(true)} title="Rearrange navigation">
+          <h1 className="font-bold text-foreground text-sm">{t("admTitle")}</h1>
+          <Button variant="ghost" size="icon" className="ml-auto shrink-0 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowReorder(true)} title={t("admRearrangeNav")}>
             <GripVertical className="w-4 h-4" />
           </Button>
         </div>
@@ -1182,7 +1212,7 @@ export default function AdminDashboard() {
         </div>
         <div className="px-3 pb-3">
           <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => signOut()}>
-            <LogOut className="w-4 h-4" /> Sign out
+            <LogOut className="w-4 h-4" /> {t("admSignOut")}
           </Button>
         </div>
       </aside>
@@ -1205,18 +1235,18 @@ export default function AdminDashboard() {
                 <div className="w-8 h-8 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
                   <ShieldAlert className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <h1 className="font-bold text-primary-foreground text-base tracking-tight">Admin</h1>
+                <h1 className="font-bold text-primary-foreground text-base tracking-tight">{t("admTitle")}</h1>
               </div>
               {/* Desktop: section label */}
               <span className="hidden lg:block text-lg font-bold text-primary-foreground tracking-tight truncate">
-                {activeTab === "overview" ? `${getGreeting()}, ${displayName || "Admin"}` : (ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview")}
+                {headerLabel()}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative hidden lg:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-foreground/60 z-10" />
                 <Input
-                  placeholder="Search users, transactions…"
+                  placeholder={t("admSearchLong")}
                   className="pl-10 w-64 h-9 rounded-full bg-white/95 dark:bg-white/10 backdrop-blur-md border-white/30 text-foreground dark:text-primary-foreground placeholder:text-muted-foreground/70 shadow-sm focus-visible:ring-2 focus-visible:ring-white/40"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
@@ -1225,7 +1255,7 @@ export default function AdminDashboard() {
               <div className="relative lg:hidden flex-1 max-w-[160px]">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary-foreground/60 z-10" />
                 <Input
-                  placeholder="Search…"
+                  placeholder={t("admSearchShort")}
                   className="pl-8 h-8 text-xs rounded-full bg-white/95 dark:bg-white/10 backdrop-blur-md border-white/30 text-foreground dark:text-primary-foreground placeholder:text-muted-foreground/70"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
@@ -1249,7 +1279,7 @@ export default function AdminDashboard() {
                           wsStatus === "connected" ? "bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.9)]" : wsStatus === "connecting" ? "bg-amber-300" : "bg-red-300"
                         }`} />
                       </span>
-                      {wsStatus === "connected" ? "Live" : wsStatus === "connecting" ? "Connecting…" : "Offline"}
+                      {wsStatus === "connected" ? t("admStatusLive") : wsStatus === "connecting" ? t("admStatusConnecting") : t("admStatusOffline")}
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs space-y-1">
@@ -1268,7 +1298,7 @@ export default function AdminDashboard() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowActivityFeed(v => !v)}
-                title="Activity Feed"
+                title={t("admActivityFeed")}
                 className={`h-9 w-9 rounded-full border backdrop-blur-md text-primary-foreground transition-all hover:scale-105 ${showActivityFeed ? "bg-white/30 border-white/40 shadow-glow" : "bg-white/10 hover:bg-white/20 border-white/20"}`}
               >
                 <Radio className="w-4 h-4" />
@@ -1277,7 +1307,7 @@ export default function AdminDashboard() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-                title="Toggle theme"
+                title={t("admToggleTheme")}
                 className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-primary-foreground backdrop-blur-md transition-all hover:scale-105"
               >
                 {resolvedTheme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -1296,7 +1326,7 @@ export default function AdminDashboard() {
               <Menu className="w-4 h-4" />
             </Button>
             <span className="text-sm font-semibold text-primary-foreground tracking-tight truncate">
-              {activeTab === "overview" ? `${getGreeting()}, ${displayName || "Admin"}` : (ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview")}
+              {headerLabel()}
             </span>
           </div>
         </header>
@@ -1305,7 +1335,7 @@ export default function AdminDashboard() {
         <Sheet open={showNavMenu} onOpenChange={setShowNavMenu}>
           <SheetContent side="left" className="w-64 p-0 flex flex-col">
             <SheetHeader className="px-4 pt-4 pb-2 shrink-0">
-              <SheetTitle className="text-sm font-bold">Navigation</SheetTitle>
+              <SheetTitle className="text-sm font-bold">{t("admNavigation")}</SheetTitle>
             </SheetHeader>
             <div className="flex-1 overflow-y-auto">
               {navContent}
