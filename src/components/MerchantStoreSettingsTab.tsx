@@ -136,6 +136,19 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       ({ error } = await (supabase as any).from("vendor_stores").insert(payload));
     }
 
+    // Also sync the merchant's business_name so the dashboard header reflects the new name
+    if (!error && payload.store_name) {
+      const { error: mErr } = await (supabase as any)
+        .from("merchants")
+        .update({ business_name: payload.store_name, updated_at: new Date().toISOString() })
+        .eq("id", merchantId);
+      if (mErr) {
+        toast({ title: t("mssSaveFailed"), description: mErr.message, variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+    }
+
     if (error) {
       toast({ title: t("mssSaveFailed"), description: error.message, variant: "destructive" });
     } else {
