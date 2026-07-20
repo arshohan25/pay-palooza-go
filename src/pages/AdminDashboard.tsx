@@ -1246,7 +1246,7 @@ export default function AdminDashboard() {
               <div className="relative hidden lg:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-foreground/60 z-10" />
                 <Input
-                  placeholder="Search users, transactions…"
+                  placeholder={t("admSearchLong")}
                   className="pl-10 w-64 h-9 rounded-full bg-white/95 dark:bg-white/10 backdrop-blur-md border-white/30 text-foreground dark:text-primary-foreground placeholder:text-muted-foreground/70 shadow-sm focus-visible:ring-2 focus-visible:ring-white/40"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
