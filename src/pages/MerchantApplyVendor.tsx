@@ -454,6 +454,7 @@ function PhotoTile({
   readOnly: boolean;
   onPick: (file: File) => void;
 }) {
+  const { t } = useI18n();
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
@@ -484,7 +485,7 @@ function PhotoTile({
         {(state.uploading || state.validating) && (
           <div className="absolute inset-0 bg-background/70 flex flex-col items-center justify-center gap-1">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
-            <p className="text-[10px] text-muted-foreground">{state.uploading ? "Uploading…" : "Validating…"}</p>
+            <p className="text-[10px] text-muted-foreground">{state.uploading ? t("mavUploading") : t("mavValidating")}</p>
           </div>
         )}
       </div>
@@ -493,10 +494,10 @@ function PhotoTile({
         <p className="text-[10px] text-muted-foreground mb-1.5">{hint}</p>
         {state.error && (() => {
           const m = state.error.toLowerCase();
-          const cat = m.includes("file type") || m.includes("mime") || m.includes("jpg") || m.includes("png") || m.includes("webp") ? "Wrong format"
-                    : m.includes("mb") || m.includes("exceeds") || m.includes("size") ? "File too large"
-                    : m.includes("resolution") || m.includes("×") || m.includes("dimensions") ? "Resolution too low"
-                    : "Validation failed";
+          const cat = m.includes("file type") || m.includes("mime") || m.includes("jpg") || m.includes("png") || m.includes("webp") ? t("mavErrCatFormat")
+                    : m.includes("mb") || m.includes("exceeds") || m.includes("size") ? t("mavErrCatSize")
+                    : m.includes("resolution") || m.includes("×") || m.includes("dimensions") ? t("mavErrCatRes")
+                    : t("mavErrCatOther");
           return (
             <div className="mb-1 rounded-md border border-red-500/40 bg-red-500/5 p-1.5">
               <p className="text-[10px] font-semibold text-red-700 dark:text-red-300">✕ {cat}</p>
@@ -510,7 +511,7 @@ function PhotoTile({
         {!readOnly && (
           <label className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-primary text-primary-foreground cursor-pointer">
             <Upload className="w-3 h-3" />
-            {state.url ? "Replace" : "Upload"}
+            {state.url ? t("mavReplace") : t("mavUpload")}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
