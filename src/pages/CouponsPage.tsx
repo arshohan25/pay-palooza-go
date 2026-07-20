@@ -132,7 +132,7 @@ function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
           {coupon.min_order_amount ? (
             <>
               <span className="opacity-40">•</span>
-              <span className="text-[11px] font-semibold">Min ৳{coupon.min_order_amount}</span>
+              <span className="text-[11px] font-semibold">{t("cpMinPrefix")} ৳{coupon.min_order_amount}</span>
             </>
           ) : null}
         </div>
