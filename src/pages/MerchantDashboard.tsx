@@ -1591,7 +1591,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               {/* Amount & Reference */}
               <div className="text-center space-y-1">
                 <p className="text-2xl font-extrabold text-foreground tracking-tight">{generatedQrAmount}</p>
-                {generatedQrRef && <p className="text-xs text-muted-foreground font-medium">Ref: {generatedQrRef}</p>}
+                {generatedQrRef && <p className="text-xs text-muted-foreground font-medium">{t("mqrRefPrefix")} {generatedQrRef}</p>}
               </div>
 
               {/* Copy Link Button */}
