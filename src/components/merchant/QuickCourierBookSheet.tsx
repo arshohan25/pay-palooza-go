@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Truck, Loader2, Package } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Truck, Loader2, Package, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const COURIERS = ["Pathao", "Steadfast", "RedX", "Sundarban", "Paperfly", "eCourier", "Other"];
@@ -15,14 +16,17 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onBooked?: () => void;
+  merchantId?: string;
 }
+
+interface CourierStat { provider: string; shipped: number; delivered: number; avgHours: number | null; score: number; }
 
 /**
  * Quickly book one courier for every remaining item on an order.
  * Creates one fulfillment row per item using the same tracking number,
  * then marks the order as `shipped`.
  */
-export default function QuickCourierBookSheet({ orderId, orderNum, items, open, onOpenChange, onBooked }: Props) {
+export default function QuickCourierBookSheet({ orderId, orderNum, items, open, onOpenChange, onBooked, merchantId }: Props) {
   const { toast } = useToast();
   const [courier, setCourier] = useState("Pathao");
   const [tracking, setTracking] = useState("");
