@@ -257,21 +257,21 @@ export default function TeamLoginPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-primary" />
-              Change Your Password
+              {t("tlpChangePassword")}
             </DialogTitle>
             <DialogDescription>
-              For security, you must change your temporary password before continuing.
+              {t("tlpChangePasswordDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <Label htmlFor="new-password">{t("tlpNewPassword")}</Label>
               <div className="relative">
                 <Input
                   id="new-password"
                   type={showNew ? "text" : "password"}
-                  placeholder="Min 8 characters"
+                  placeholder={t("tlpNewPwdPlaceholder")}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="pr-10"
@@ -285,17 +285,17 @@ export default function TeamLoginPage() {
                 </button>
               </div>
               {newPassword.length > 0 && newPassword.length < 8 && (
-                <p className="text-xs text-destructive">Must be at least 8 characters</p>
+                <p className="text-xs text-destructive">{t("tlpMin8")}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Label htmlFor="confirm-password">{t("tlpConfirmPassword")}</Label>
               <div className="relative">
                 <Input
                   id="confirm-password"
                   type={showConfirm ? "text" : "password"}
-                  placeholder="Re-enter password"
+                  placeholder={t("tlpConfirmPlaceholder")}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pr-10"
@@ -309,7 +309,7 @@ export default function TeamLoginPage() {
                 </button>
               </div>
               {confirmPassword.length > 0 && newPassword !== confirmPassword && (
-                <p className="text-xs text-destructive">Passwords do not match</p>
+                <p className="text-xs text-destructive">{t("tlpNoMatch")}</p>
               )}
             </div>
           </div>
@@ -320,7 +320,7 @@ export default function TeamLoginPage() {
               disabled={changingPassword || newPassword.length < 8 || newPassword !== confirmPassword}
               className="w-full"
             >
-              {changingPassword ? "Changing..." : "Change Password & Continue"}
+              {changingPassword ? t("tlpChanging") : t("tlpChangeContinue")}
             </Button>
           </DialogFooter>
         </DialogContent>
