@@ -17,6 +17,7 @@ import { BANGLADESH_BANKS } from "@/lib/bangladeshBanks";
 import { useSavedBanks, SavedBankAccount } from "@/hooks/use-saved-banks";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -34,6 +35,7 @@ type Step = "select" | "form" | "pin" | "confirm" | "done";
 
 const AgentBankTransfer = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { toast } = useToast();
   const { accounts, save, remove, refetch } = useSavedBanks();
 
