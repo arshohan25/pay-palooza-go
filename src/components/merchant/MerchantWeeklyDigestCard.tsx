@@ -57,7 +57,7 @@ export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
     const delta = lastRev > 0 ? ((thisRev - lastRev) / lastRev) * 100 : (thisRev > 0 ? 100 : 0);
     const topProduct = [...productTotals.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
     const bestDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
-    const bestDay = dayCounts[bestDayIdx] > 0 ? ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][bestDayIdx] : null;
+    const bestDay = dayCounts[bestDayIdx] > 0 ? t(dowKeys[bestDayIdx]) : null;
     return { thisRev, lastRev, thisOrders, lastOrders, delta, topProduct, bestDay };
   }, [rows]);
 
