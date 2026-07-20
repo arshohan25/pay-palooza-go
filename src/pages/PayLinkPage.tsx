@@ -276,13 +276,13 @@ const PayLinkPage = () => {
                 </motion.div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">৳{success.amount.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground mt-1">paid to {success.payee}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{t("plPaidTo").replace("{payee}", success.payee)}</p>
                 </div>
                 <div className="bg-muted rounded-xl p-3 text-xs text-muted-foreground">
-                  Reference: <span className="font-mono text-foreground">{success.reference}</span>
+                  {t("plReference")} <span className="font-mono text-foreground">{success.reference}</span>
                 </div>
                 <Button className="w-full rounded-xl h-11" onClick={() => navigate("/")}>
-                  <Home className="w-4 h-4 mr-2" /> Back to app
+                  <Home className="w-4 h-4 mr-2" /> {t("plBackToApp")}
                 </Button>
               </CardContent>
             </Card>
