@@ -1057,6 +1057,9 @@ const translations = {
 
   // ─── Donations Page ───
   donations: { en: "Donations", bn: "অনুদান" },
+  donSeoTitle: { en: "Donations – Give Securely with EasyPay", bn: "অনুদান – ইজিপে দিয়ে নিরাপদে দিন" },
+  donSeoDesc: { en: "Donate to verified causes, mosques, charities and disaster relief directly from your EasyPay wallet.", bn: "আপনার ইজিপে ওয়ালেট থেকে সরাসরি যাচাইকৃত কারণ, মসজিদ, দাতব্য ও দুর্যোগ ত্রাণে অনুদান দিন।" },
+
   donate: { en: "Donate", bn: "অনুদান দিন" },
   chooseCause: { en: "Choose a Cause", bn: "একটি কারণ বেছে নিন" },
   generosityChanges: { en: "Your generosity changes lives", bn: "আপনার দান জীবন বদলায়" },
