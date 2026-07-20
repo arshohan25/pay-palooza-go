@@ -120,20 +120,20 @@ export default function MerchantApplyVendor() {
     if (!user) return;
     // ---- Pre-upload client-side checks with exact reasons ----
     if (!ALLOWED.includes(file.type)) {
-      const msg = `Unsupported file type "${file.type || "unknown"}". Use JPG, PNG or WEBP.`;
+      const msg = t("mavErrUnsupportedType").replace("{type}", file.type || "unknown");
       toast.error(msg);
       setPhotos(p => ({ ...p, [key]: { ...p[key], error: msg } }));
       return;
     }
     if (file.size > MAX_MB * 1024 * 1024) {
-      const msg = `File is ${(file.size / 1048576).toFixed(2)} MB — exceeds the ${MAX_MB} MB limit.`;
+      const msg = t("mavErrTooLarge").replace("{mb}", (file.size / 1048576).toFixed(2)).replace("{max}", String(MAX_MB));
       toast.error(msg);
       setPhotos(p => ({ ...p, [key]: { ...p[key], error: msg } }));
       return;
     }
     const dims = await preflight(file);
     if (dims && (dims.width < 640 || dims.height < 480)) {
-      const msg = `Photo resolution ${dims.width}×${dims.height} is below the required 640×480.`;
+      const msg = t("mavErrLowRes").replace("{w}", String(dims.width)).replace("{h}", String(dims.height));
       toast.error(msg);
       setPhotos(p => ({ ...p, [key]: { ...p[key], error: msg } }));
       return;
