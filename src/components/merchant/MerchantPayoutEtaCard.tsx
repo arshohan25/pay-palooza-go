@@ -3,29 +3,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Landmark, CalendarClock } from "lucide-react";
 import { useUserRoles } from "@/hooks/use-user-roles";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
-const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(Math.round(n));
-
-function computeNextPayout(freq: string | null | undefined): { label: string; date: Date } {
+function computeNextPayout(
+  freq: string | null | undefined,
+  lang: string,
+  t: (k: TranslationKey) => string,
+): { label: string; date: Date } {
   const now = new Date();
   const d = new Date(now);
+  const locale = lang === "bn" ? "bn-BD" : "en-BD";
   const f = (freq || "T+1").toUpperCase();
-  if (f === "T+0" || f === "SAME_DAY") { return { label: "Today", date: d }; }
-  if (f === "T+1" || f === "DAILY") { d.setDate(d.getDate() + 1); return { label: "Tomorrow", date: d }; }
+  if (f === "T+0" || f === "SAME_DAY") return { label: t("mpeToday"), date: d };
+  if (f === "T+1" || f === "DAILY") { d.setDate(d.getDate() + 1); return { label: t("mpeTomorrow"), date: d }; }
   if (f === "WEEKLY" || f === "T+7") {
     const daysUntilSun = (7 - d.getDay()) % 7 || 7;
     d.setDate(d.getDate() + daysUntilSun);
-    return { label: d.toLocaleDateString("en-BD", { weekday: "long" }), date: d };
+    return { label: d.toLocaleDateString(locale, { weekday: "long" }), date: d };
   }
   if (f === "MONTHLY") {
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    return { label: end.toLocaleDateString("en-BD", { day: "numeric", month: "short" }), date: end };
+    return { label: end.toLocaleDateString(locale, { day: "numeric", month: "short" }), date: end };
   }
   d.setDate(d.getDate() + 1);
-  return { label: "Tomorrow", date: d };
+  return { label: t("mpeTomorrow"), date: d };
 }
 
 export default function MerchantPayoutEtaCard({ merchantId, frequency }: { merchantId: string; frequency: string | null }) {
+  const { t, lang } = useI18n();
+  const fmt = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-BD").format(Math.round(n));
   const { roles } = useUserRoles();
   const isMerchantOnly = roles.includes("merchant" as any) && !roles.includes("admin" as any);
   const [pending, setPending] = useState(0);
@@ -51,7 +57,7 @@ export default function MerchantPayoutEtaCard({ merchantId, frequency }: { merch
     return () => { supabase.removeChannel(ch); };
   }, [merchantId, load]);
 
-  const next = computeNextPayout(frequency);
+  const next = computeNextPayout(frequency, lang, t);
 
   if (isMerchantOnly) return null;
 
@@ -63,11 +69,11 @@ export default function MerchantPayoutEtaCard({ merchantId, frequency }: { merch
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground">
-            <CalendarClock size={11} /> Next payout · {next.label}
+            <CalendarClock size={11} /> {t("mpeNextPayout")} · {next.label}
           </div>
           <p className="text-base font-extrabold text-foreground truncate">৳{fmt(available + pending)}</p>
           <p className="text-[10px] text-muted-foreground">
-            ৳{fmt(available)} available · ৳{fmt(pending)} pending
+            ৳{fmt(available)} {t("mpeAvailable")} · ৳{fmt(pending)} {t("mpePending")}
           </p>
         </div>
       </div>

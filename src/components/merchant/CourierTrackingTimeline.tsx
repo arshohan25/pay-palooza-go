@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, formatDistanceToNow } from "date-fns";
 import { Truck, MapPin, Clock, CheckCircle2, PackageCheck, Loader2, Radio } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface TrackingEvent {
   id: string;
@@ -41,8 +42,10 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function CourierTrackingTimeline({ orderId, courierProvider, trackingNumber, bookingRef, eta }: Props) {
+  const { t } = useI18n();
   const [events, setEvents] = useState<TrackingEvent[]>([]);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     let mounted = true;
@@ -94,13 +97,13 @@ export default function CourierTrackingTimeline({ orderId, courierProvider, trac
               {courierProvider} · <span className="font-mono">{trackingNumber}</span>
             </p>
             <p className="text-[10px] text-muted-foreground truncate">
-              {latest ? (latest.status_label || latest.status.replace(/_/g, " ")) : "Awaiting first scan"}
+              {latest ? (latest.status_label || latest.status.replace(/_/g, " ")) : t("cttAwaitingFirstScan")}
               {latest && <> · {formatDistanceToNow(new Date(latest.scanned_at), { addSuffix: true })}</>}
             </p>
           </div>
         </div>
         <span className="flex items-center gap-1 text-[9.5px] text-emerald-600 dark:text-emerald-400 font-semibold shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> LIVE
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> {t("cttLive")}
         </span>
       </div>
 
@@ -109,12 +112,12 @@ export default function CourierTrackingTimeline({ orderId, courierProvider, trac
         <div className="px-3 py-2 border-b border-border/40 flex items-center gap-3 text-[10.5px] text-muted-foreground flex-wrap">
           {eta && (
             <span className="inline-flex items-center gap-1">
-              <Clock size={11} /> ETA <span className="font-semibold text-foreground">{format(new Date(eta), "dd MMM, h:mm a")}</span>
+              <Clock size={11} /> {t("cttEta")} <span className="font-semibold text-foreground">{format(new Date(eta), "dd MMM, h:mm a")}</span>
             </span>
           )}
           {bookingRef && (
             <span className="inline-flex items-center gap-1">
-              Ref <span className="font-mono font-semibold text-foreground">{bookingRef}</span>
+              {t("cttRef")} <span className="font-mono font-semibold text-foreground">{bookingRef}</span>
             </span>
           )}
         </div>
@@ -127,7 +130,7 @@ export default function CourierTrackingTimeline({ orderId, courierProvider, trac
             <Loader2 size={13} className="animate-spin" />
           </div>
         ) : events.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground text-center py-2">No scans yet.</p>
+          <p className="text-[11px] text-muted-foreground text-center py-2">{t("cttNoScans")}</p>
         ) : (
           <ol className="space-y-2.5">
             {events.map((ev, i) => {
