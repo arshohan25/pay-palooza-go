@@ -65,7 +65,7 @@ export default function MerchantWeeklyDigestCard({ merchantId }: Props) {
     return (
       <Card className="border-0 shadow-elevated bg-gradient-to-br from-accent/10 via-background to-primary/5 p-4 flex items-center gap-2">
         <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Loading weekly insights…</span>
+        <span className="text-sm text-muted-foreground">{t("mdWklyLoading")}</span>
       </Card>
     );
   }
