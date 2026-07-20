@@ -26,6 +26,8 @@ function computeNextPayout(freq: string | null | undefined): { label: string; da
 }
 
 export default function MerchantPayoutEtaCard({ merchantId, frequency }: { merchantId: string; frequency: string | null }) {
+  const { roles } = useUserRoles();
+  const isMerchantOnly = roles.includes("merchant" as any) && !roles.includes("admin" as any);
   const [pending, setPending] = useState(0);
   const [available, setAvailable] = useState(0);
 
