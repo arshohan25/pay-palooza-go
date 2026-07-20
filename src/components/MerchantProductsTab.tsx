@@ -207,6 +207,8 @@ const ensureVendorStore = async (merchantId: string, businessName: string) => {
 
 const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const { toast } = useToast();
+  const { t } = useI18n();
+
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
