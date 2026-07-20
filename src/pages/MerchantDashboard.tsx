@@ -2133,6 +2133,16 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
             </div>
 
             <Button
+              variant="outline"
+              className="w-full h-11 rounded-xl mt-2 text-xs font-semibold"
+              onClick={handleDownloadPdf}
+              disabled={pdfBusy || !qrDataUrl}
+            >
+              <Download size={14} className="mr-1.5" />
+              {pdfBusy ? "Preparing PDF…" : "Download PDF (A6)"}
+            </Button>
+
+            <Button
               className="w-full h-12 rounded-xl text-sm font-bold mt-3 shadow-glow text-white"
               style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
               onClick={async () => {
