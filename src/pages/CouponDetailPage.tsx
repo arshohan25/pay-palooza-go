@@ -81,28 +81,28 @@ export default function CouponDetailPage() {
     if (!coupon) return null;
     const now = Date.now();
     const items = [
-      { ok: coupon.is_active, label: coupon.is_active ? "Coupon is currently active" : "Coupon is inactive" },
+      { ok: coupon.is_active, label: coupon.is_active ? t("cdActive") : t("cdInactive") },
       {
         ok: !coupon.starts_at || new Date(coupon.starts_at).getTime() <= now,
-        label: coupon.starts_at ? `Starts ${new Date(coupon.starts_at).toLocaleDateString()}` : "Available immediately",
+        label: coupon.starts_at ? `${t("cdStartsPrefix")} ${new Date(coupon.starts_at).toLocaleDateString()}` : t("cdAvailableNow"),
       },
       {
         ok: !coupon.expires_at || new Date(coupon.expires_at).getTime() > now,
-        label: coupon.expires_at ? `Expires ${new Date(coupon.expires_at).toLocaleDateString()}` : "No expiry date",
+        label: coupon.expires_at ? `${t("cdExpiresPrefix")} ${new Date(coupon.expires_at).toLocaleDateString()}` : t("cdNoExpiry"),
       },
       {
         ok: coupon.usage_limit == null || coupon.used_count < coupon.usage_limit,
-        label: coupon.usage_limit ? `${coupon.used_count}/${coupon.usage_limit} total redemptions used` : "No total usage limit",
+        label: coupon.usage_limit ? `${coupon.used_count}/${coupon.usage_limit} ${t("cdRedemptionsUsed")}` : t("cdNoUsageLimit"),
       },
       {
         ok: (coupon.per_user_limit ?? 1) > myRedemptions,
         label: coupon.per_user_limit
-          ? `${myRedemptions}/${coupon.per_user_limit} used by you`
-          : myRedemptions > 0 ? "You've already used this coupon" : "Available for you",
+          ? `${myRedemptions}/${coupon.per_user_limit} ${t("cdUsedByYou")}`
+          : myRedemptions > 0 ? t("cdAlreadyUsed") : t("cdAvailableForYou"),
       },
     ];
     return { items, eligible: items.every(i => i.ok) };
-  }, [coupon, myRedemptions]);
+  }, [coupon, myRedemptions, t]);
 
   if (loading) {
     return (
@@ -123,13 +123,13 @@ export default function CouponDetailPage() {
         <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
           <Ticket className="w-7 h-7 text-muted-foreground" />
         </div>
-        <p className="text-[15px] font-semibold text-foreground">Coupon not found</p>
-        <p className="text-[12px] text-muted-foreground text-center">This coupon may have expired or been removed.</p>
+        <p className="text-[15px] font-semibold text-foreground">{t("cdNotFound")}</p>
+        <p className="text-[12px] text-muted-foreground text-center">{t("cdNotFoundDesc")}</p>
         <button
           onClick={() => navigate("/coupons")}
           className="mt-2 h-10 px-5 rounded-full bg-primary text-primary-foreground text-[13px] font-semibold"
         >
-          Back to coupons
+          {t("cdBackToCoupons")}
         </button>
       </div>
     );
@@ -150,16 +150,17 @@ export default function CouponDetailPage() {
   };
 
   const share = async () => {
-    const text = `Use ${coupon.code} on EasyPay for ${isPct ? `${coupon.discount_value}% off` : `৳${coupon.discount_value} off`}`;
+    const offText = isPct ? `${coupon.discount_value}${t("cdShareTextPctOff")}` : `৳${coupon.discount_value} ${t("cdShareTextFlatOff")}`;
+    const text = `${t("cdShareTextPrefix")} ${coupon.code} ${t("cdShareTextOn")} ${offText}`;
     try {
-      if (navigator.share) await navigator.share({ title: "EasyPay Coupon", text });
-      else { navigator.clipboard.writeText(text); toast.success("Copied share text"); }
+      if (navigator.share) await navigator.share({ title: t("cdShareTitle"), text });
+      else { navigator.clipboard.writeText(text); toast.success(t("cdCopiedShareText")); }
     } catch { /* user cancelled */ }
   };
 
   const redeem = () => {
     if (!eligibility?.eligible) {
-      toast.error("This coupon isn't eligible right now.");
+      toast.error(t("cdNotEligibleToast"));
       return;
     }
     navigator.clipboard.writeText(coupon.code);
@@ -196,7 +197,7 @@ export default function CouponDetailPage() {
             </button>
             <div>
               <h1 className="text-[15px] font-bold tracking-tight text-foreground leading-none">
-                Coupon details
+                {t("cdHeaderTitle")}
               </h1>
               <p className="text-[10px] text-muted-foreground mt-0.5 truncate max-w-[180px]">{coupon.code}</p>
             </div>
@@ -270,9 +271,9 @@ export default function CouponDetailPage() {
 
             {/* Meta line */}
             <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-white/70 text-[11px] font-semibold">
-              {coupon.min_order_amount ? <span>Min ৳{coupon.min_order_amount}</span> : null}
+              {coupon.min_order_amount ? <span>{t("cdMinPrefix")}{coupon.min_order_amount}</span> : null}
               {coupon.min_order_amount && coupon.max_discount && isPct ? <span className="opacity-40">•</span> : null}
-              {isPct && coupon.max_discount ? <span>Up to ৳{coupon.max_discount}</span> : null}
+              {isPct && coupon.max_discount ? <span>{t("cdUpToPrefix")}{coupon.max_discount}</span> : null}
             </div>
 
             {/* Code chip (large) */}
@@ -285,7 +286,7 @@ export default function CouponDetailPage() {
                 className="w-full flex items-center gap-3 px-4 py-3 active:scale-[0.99] transition-transform"
               >
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-white/60">Coupon code</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white/60">{t("cdCouponCode")}</p>
                   <p className="text-[20px] font-black tracking-[0.22em] text-white truncate">{coupon.code}</p>
                 </div>
                 <div
@@ -296,7 +297,7 @@ export default function CouponDetailPage() {
                   }`}
                 >
                   {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  {copied ? "COPIED" : "COPY"}
+                  {copied ? t("cdCopied") : t("cdCopy")}
                 </div>
               </button>
             </div>
@@ -310,7 +311,7 @@ export default function CouponDetailPage() {
               <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
                 <ShieldCheck className="w-3 h-3 text-primary" />
               </div>
-              <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">Eligibility</h3>
+              <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">{t("cdEligibility")}</h3>
             </div>
             <span
               className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
@@ -319,7 +320,7 @@ export default function CouponDetailPage() {
                   : "bg-destructive/10 text-destructive"
               }`}
             >
-              {eligibility?.eligible ? "Eligible" : "Not eligible"}
+              {eligibility?.eligible ? t("cdEligible") : t("cdNotEligible")}
             </span>
           </div>
           <div className="rounded-2xl bg-card border border-border/50 divide-y divide-border/40 overflow-hidden">
@@ -348,32 +349,32 @@ export default function CouponDetailPage() {
             <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
               <Info className="w-3 h-3 text-primary" />
             </div>
-            <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">Offer details</h3>
+            <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">{t("cdOfferDetails")}</h3>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             <DetailTile
               icon={Tag}
               tint={flowInfo.tint}
-              label="Min. order"
-              value={coupon.min_order_amount ? `৳${coupon.min_order_amount}` : "None"}
+              label={t("cdMinOrder")}
+              value={coupon.min_order_amount ? `৳${coupon.min_order_amount}` : t("cdNone")}
             />
             <DetailTile
               icon={Sparkles}
               tint="hsl(var(--shariah-gold-700))"
-              label="Max. discount"
-              value={coupon.max_discount ? `৳${coupon.max_discount}` : "Unlimited"}
+              label={t("cdMaxDiscount")}
+              value={coupon.max_discount ? `৳${coupon.max_discount}` : t("cdUnlimited")}
             />
             <DetailTile
               icon={CalendarClock}
               tint="hsl(190 75% 50%)"
-              label="Valid till"
-              value={coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString() : "No expiry"}
+              label={t("cdValidTill")}
+              value={coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString() : t("cdNoExpiryShort")}
             />
             <DetailTile
               icon={Users}
               tint="hsl(280 65% 60%)"
-              label="Per user"
-              value={coupon.per_user_limit ? `${coupon.per_user_limit}x` : "Unlimited"}
+              label={t("cdPerUser")}
+              value={coupon.per_user_limit ? `${coupon.per_user_limit}x` : t("cdUnlimited")}
             />
           </div>
         </section>
@@ -384,30 +385,30 @@ export default function CouponDetailPage() {
             <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
               <FileText className="w-3 h-3 text-primary" />
             </div>
-            <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">Terms & conditions</h3>
+            <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">{t("cdTerms")}</h3>
           </div>
           <ul className="rounded-2xl bg-card border border-border/50 p-4 space-y-2 text-[12px] text-muted-foreground leading-relaxed">
             <TermLine>
-              Applies to <span className="font-semibold text-foreground/85">{t(flowInfo.labelKey)}</span> transactions only.
+              {t("cdTermApplies1")} <span className="font-semibold text-foreground/85">{t(flowInfo.labelKey)}</span> {t("cdTermApplies2")}
             </TermLine>
             {coupon.min_order_amount && (
-              <TermLine>Minimum transaction amount of ৳{coupon.min_order_amount} required.</TermLine>
+              <TermLine>{t("cdTermMinOrder").replace("{amount}", String(coupon.min_order_amount))}</TermLine>
             )}
             {isPct && coupon.max_discount && (
-              <TermLine>Percentage discount is capped at ৳{coupon.max_discount} per transaction.</TermLine>
+              <TermLine>{t("cdTermMaxCap").replace("{amount}", String(coupon.max_discount))}</TermLine>
             )}
             {coupon.per_user_limit && (
-              <TermLine>Each user can redeem this coupon up to {coupon.per_user_limit} time(s).</TermLine>
+              <TermLine>{t("cdTermPerUser").replace("{n}", String(coupon.per_user_limit))}</TermLine>
             )}
-            <TermLine>Cannot be combined with other coupons or cashback offers on the same transaction.</TermLine>
-            <TermLine>EasyPay may withdraw or amend this offer at any time without prior notice.</TermLine>
-            <TermLine>Refunded transactions will reverse the coupon usage.</TermLine>
+            <TermLine>{t("cdTermCombine")}</TermLine>
+            <TermLine>{t("cdTermAmend")}</TermLine>
+            <TermLine>{t("cdTermRefund")}</TermLine>
           </ul>
         </section>
 
         <p className="text-center text-[10.5px] text-muted-foreground/60 pt-1 flex items-center justify-center gap-1">
           <Clock className="w-2.5 h-2.5" />
-          Terms subject to EasyPay policy
+          {t("cdTermsPolicy")}
         </p>
       </div>
 
@@ -424,7 +425,7 @@ export default function CouponDetailPage() {
           }}
         >
           <Ticket className="w-5 h-5" />
-          {eligibility?.eligible ? "Redeem now" : "Not eligible"}
+          {eligibility?.eligible ? t("cdRedeemNow") : t("cdNotEligible")}
           {eligibility?.eligible && <ChevronRight className="w-4 h-4" />}
         </button>
       </div>
