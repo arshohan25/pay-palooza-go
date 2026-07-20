@@ -319,10 +319,10 @@ const PayLinkPage = () => {
 
                 {!canPay ? (
                   <div className="bg-muted rounded-xl p-4 text-sm text-center text-muted-foreground">
-                    {status === "expired" && "This link has expired."}
-                    {status === "exhausted" && "This link reached its use limit."}
-                    {status === "paid" && "This request has been fully paid."}
-                    {status === "inactive" && "This link is no longer active."}
+                    {status === "expired" && t("plLinkExpired")}
+                    {status === "exhausted" && t("plLinkExhausted")}
+                    {status === "paid" && t("plRequestFullyPaid")}
+                    {status === "inactive" && t("plLinkInactive")}
                   </div>
                 ) : (
                   <>
