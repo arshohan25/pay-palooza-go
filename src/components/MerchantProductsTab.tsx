@@ -373,13 +373,13 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
     if (editing) {
       const { error } = await (supabase as any)
         .from("merchant_products").update(payload).eq("id", editing.id);
-      if (error) { toast({ title: "Update failed", description: error.message, variant: "destructive" }); }
-      else { toast({ title: "Product updated ✓" }); setShowSheet(false); loadProducts(); }
+      if (error) { toast({ title: t("mprToastUpdateFail"), description: error.message, variant: "destructive" }); }
+      else { toast({ title: t("mprToastUpdated") }); setShowSheet(false); loadProducts(); }
     } else {
       const { error } = await (supabase as any)
         .from("merchant_products").insert(payload);
-      if (error) { toast({ title: "Create failed", description: error.message, variant: "destructive" }); }
-      else { toast({ title: "Product added ✓" }); setShowSheet(false); loadProducts(); }
+      if (error) { toast({ title: t("mprToastCreateFail"), description: error.message, variant: "destructive" }); }
+      else { toast({ title: t("mprToastAdded") }); setShowSheet(false); loadProducts(); }
     }
     setSaving(false);
   };
@@ -387,8 +387,9 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const handleDelete = async (id: string) => {
     setDeleting(id);
     const { error } = await (supabase as any).from("merchant_products").delete().eq("id", id);
-    if (error) { toast({ title: "Delete failed", variant: "destructive" }); }
-    else { toast({ title: "Product deleted" }); loadProducts(); }
+    if (error) { toast({ title: t("mprToastDeleteFail"), variant: "destructive" }); }
+    else { toast({ title: t("mprToastDeleted") }); loadProducts(); }
+
     setDeleting(null);
   };
 
