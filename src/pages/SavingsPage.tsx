@@ -483,7 +483,7 @@ function DpsPlanDetailsSheet({
               {/* Progress */}
               <div className="relative mt-4">
                 <div className="flex items-baseline justify-between text-sm">
-                  <div className="text-primary-foreground/80">Progress</div>
+                  <div className="text-primary-foreground/80">{t("savProgress")}</div>
                   <div className="tabular-nums font-semibold">{paid}<span className="opacity-70">/{total || "∞"}</span> · {pct.toFixed(0)}%</div>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-white/15 overflow-hidden">
