@@ -52,12 +52,13 @@ const statusOf = (l: PaymentLink) => {
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
+  const { t } = useI18n();
   const map: Record<string, { label: string; cls: string; icon: any }> = {
-    active: { label: "Active", cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: Clock },
-    paid: { label: "Paid", cls: "bg-primary/10 text-primary border-primary/30", icon: CheckCircle2 },
-    exhausted: { label: "Exhausted", cls: "bg-primary/10 text-primary border-primary/30", icon: CheckCircle2 },
-    expired: { label: "Expired", cls: "bg-muted text-muted-foreground border-border", icon: XCircle },
-    inactive: { label: "Inactive", cls: "bg-muted text-muted-foreground border-border", icon: XCircle },
+    active: { label: t("prStatusActive"), cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", icon: Clock },
+    paid: { label: t("prStatusPaid"), cls: "bg-primary/10 text-primary border-primary/30", icon: CheckCircle2 },
+    exhausted: { label: t("prStatusExhausted"), cls: "bg-primary/10 text-primary border-primary/30", icon: CheckCircle2 },
+    expired: { label: t("prStatusExpired"), cls: "bg-muted text-muted-foreground border-border", icon: XCircle },
+    inactive: { label: t("prStatusInactive"), cls: "bg-muted text-muted-foreground border-border", icon: XCircle },
   };
   const cfg = map[status] ?? map.inactive;
   const Icon = cfg.icon;
