@@ -2387,7 +2387,8 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
   };
 
   const exportCSV = () => {
-    if (filtered.length === 0) { toast({ title: "No data to export" }); return; }
+    if (filtered.length === 0) { toast({ title: t("mhToastNoData") }); return; }
+
     const headers = ["ID", "Type", "Description", "Amount", "Fee", "Status", "Date", "Phone", "Reference"];
     const rows = filtered.map(tx => [
       tx.short_id || tx.id.slice(0, 12),
