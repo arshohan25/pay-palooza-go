@@ -105,13 +105,13 @@ export default function MerchantBroadcastTab({ merchantId }: { merchantId: strin
   return (
     <div className="space-y-4">
       <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-        <Megaphone size={18} className="text-primary" /> Broadcast
+        <Megaphone size={18} className="text-primary" /> {t("mbrTitle")}
       </h3>
 
       <Card className="border-0 shadow-elevated">
         <CardContent className="p-4 space-y-3">
           <div>
-            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">AUDIENCE</label>
+            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">{t("mbrAudience")}</label>
             <div className="grid grid-cols-2 gap-2">
               {AUDIENCES.map(a => (
                 <button
@@ -122,27 +122,27 @@ export default function MerchantBroadcastTab({ merchantId }: { merchantId: strin
                     audience === a.id ? "bg-primary text-primary-foreground border-primary" : "bg-muted/40 text-foreground border-border"
                   }`}
                 >
-                  {a.label}
+                  {t(a.labelKey)}
                 </button>
               ))}
             </div>
             <p className="text-[11px] text-muted-foreground mt-2 flex items-center gap-1.5">
               <Users size={12} />
-              {loadingCount ? "Counting…" : `${count ?? 0} customer${count === 1 ? "" : "s"} match`}
+              {loadingCount ? t("mbrCounting") : t("mbrMatchCount").replace("{n}", String(count ?? 0))}
             </p>
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">TITLE</label>
-            <Input value={title} onChange={e => setTitle(e.target.value.slice(0, 120))} placeholder="Weekend flash sale" maxLength={120} />
+            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">{t("mbrLabelTitle")}</label>
+            <Input value={title} onChange={e => setTitle(e.target.value.slice(0, 120))} placeholder={t("mbrTitlePh")} maxLength={120} />
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">MESSAGE</label>
+            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">{t("mbrMessage")}</label>
             <Textarea
               value={message}
               onChange={e => setMessage(e.target.value.slice(0, 500))}
-              placeholder="20% off all items until Sunday. Show this message at checkout."
+              placeholder={t("mbrMessagePh")}
               rows={4}
               maxLength={500}
             />
@@ -151,11 +151,12 @@ export default function MerchantBroadcastTab({ merchantId }: { merchantId: strin
 
           <Button onClick={send} disabled={sending || !title.trim() || !message.trim() || !count} className="w-full">
             {sending ? <Loader2 size={16} className="animate-spin mr-2" /> : <Send size={16} className="mr-2" />}
-            Send broadcast
+            {t("mbrSend")}
           </Button>
-          <p className="text-[10px] text-muted-foreground text-center">Max 5 broadcasts per day.</p>
+          <p className="text-[10px] text-muted-foreground text-center">{t("mbrDailyLimit")}</p>
         </CardContent>
       </Card>
+
 
       {history.length > 0 && (
         <div className="space-y-2">
