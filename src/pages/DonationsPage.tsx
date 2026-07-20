@@ -228,10 +228,11 @@ const DonationsPage = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Seo
-        title="Donations – Give Securely with EasyPay"
-        description="Donate to verified causes, mosques, charities and disaster relief directly from your EasyPay wallet."
+        title={t("donSeoTitle")}
+        description={t("donSeoDesc")}
         path="/donations"
       />
+
       {/* Minimal Header */}
       <div className="sticky top-0 z-30 gradient-hero text-primary-foreground backdrop-blur-xl border-b border-primary/30 shadow-glow">
         <div className="flex items-center gap-3 px-5 py-4 max-w-md mx-auto">
@@ -536,7 +537,7 @@ const DonationsPage = () => {
                       )}
                       {isRecurring && (
                         <span className="text-xs ring-1 ring-primary/30 text-primary px-3 py-1.5 rounded-full flex items-center gap-1 font-medium">
-                          <RefreshCw size={11} /> {frequency === "weekly" ? t("donWeekly") : t("donMonthly")}
+                          <RefreshCw size={11} /> {frequency === "weekly" ? t("donWeekly") : frequency === "yearly" ? t("donYearly") : t("donMonthly")}
                         </span>
                       )}
                     </div>
@@ -598,7 +599,7 @@ const DonationsPage = () => {
                         <p className="text-sm font-semibold text-foreground truncate">{localizeCauseName(r.cause_name)}</p>
                         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                           <CalendarClock size={11} />
-                          <span>{r.frequency === "weekly" ? t("donWeekly") : t("donMonthly")}</span>
+                          <span>{r.frequency === "weekly" ? t("donWeekly") : r.frequency === "yearly" ? t("donYearly") : t("donMonthly")}</span>
                           <span>· {t("savNextDate")}: {format(new Date(r.next_run_at), "dd MMM")}</span>
                         </div>
                       </div>
