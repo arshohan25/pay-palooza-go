@@ -74,7 +74,7 @@ const DistributorLoginPage = () => {
     <div className="min-h-screen bg-[#0b1220] text-white flex flex-col">
       <Helmet>
         <title>{title}</title>
-        <meta name="description" content="EasyPay Distributor sign-in — create agents, manage float and track commissions." />
+        <meta name="description" content={t("distLoginMetaDesc")} />
         <link rel="icon" href="/icons/role-distributor.png" />
         <link rel="apple-touch-icon" href="/icons/role-distributor.png" />
       </Helmet>
@@ -86,9 +86,9 @@ const DistributorLoginPage = () => {
             <Users size={26} />
           </div>
           <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">EasyPay</p>
-          <h1 className="text-xl font-extrabold mt-0.5">EasyPay Distributor Portal</h1>
+          <h1 className="text-xl font-extrabold mt-0.5">{t("distLoginTitle")}</h1>
           <p className="text-xs opacity-90 mt-1 max-w-[280px] mx-auto">
-            Manage agents, float and commissions.
+            {t("distLoginTagline")}
           </p>
         </div>
       </header>
@@ -103,7 +103,7 @@ const DistributorLoginPage = () => {
         >
           <div className="space-y-1">
             <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-              Distributor mobile number
+              {t("distLoginMobileLabel")}
             </label>
             <div className="relative">
               
@@ -125,7 +125,7 @@ const DistributorLoginPage = () => {
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-              4-digit PIN
+              {t("distLoginPinLabel")}
             </label>
             <div className="relative">
               <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400" />
@@ -160,20 +160,20 @@ const DistributorLoginPage = () => {
             className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/30 disabled:opacity-60"
           >
             {submitting ? (
-              <><Loader2 size={18} className="animate-spin" /> Signing in…</>
+              <><Loader2 size={18} className="animate-spin" /> {t("distLoginSubmitting")}</>
             ) : (
-              <>Sign in as Distributor <ArrowRight size={18} /></>
+              <>{t("distLoginSubmit")} <ArrowRight size={18} /></>
             )}
           </button>
 
           <div className="flex items-center justify-between text-xs pt-1">
             <button type="button" onClick={() => navigate("/forgot-pin")} className="text-cyan-400 font-semibold hover:underline">
-              Forgot PIN?
+              {t("distLoginForgotPin")}
             </button>
-            <span className="text-white/40">Distributors only</span>
+            <span className="text-white/40">{t("distLoginOnlyNote")}</span>
           </div>
           <p className="text-[11px] text-white/50 text-center pt-1">
-            Distributor accounts are provisioned by your Super Distributor or Admin.
+            {t("distLoginProvisioned")}
           </p>
         </motion.form>
       </div>
