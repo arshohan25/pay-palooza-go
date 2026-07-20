@@ -385,7 +385,7 @@ const SuperDistributorDashboard = () => {
         <Card className="p-5 border-0 shadow-elevated bg-card rounded-2xl">
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Master Float Pool</p>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{t("sdDashMasterFloatPool")}</p>
               <motion.button onClick={toggleBalance} whileTap={{ scale: 0.97 }} className="flex items-center mt-1">
                 {showBalance ? (
                   <motion.span key="bal" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="text-2xl font-extrabold text-foreground tracking-tight">৳{fmt(balance)}</motion.span>
