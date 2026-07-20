@@ -13,6 +13,8 @@ import RoleGuardLayout from "@/components/RoleGuardLayout";
 import RoleGuard from "@/components/RoleGuard";
 import MerchantSessionWatchdog from "@/components/MerchantSessionWatchdog";
 import AppRoleEnforcer from "@/components/AppRoleEnforcer";
+import ElevatedRoleBlockOverlay from "@/components/ElevatedRoleBlockOverlay";
+
 import LazyLoadErrorBoundary from "@/components/LazyLoadErrorBoundary";
 
 
@@ -134,6 +136,8 @@ const App = () => (
             <BrowserRouter>
               <MerchantSessionWatchdog />
               <AppRoleEnforcer />
+              <ElevatedRoleBlockOverlay />
+
 
               <LazyLoadErrorBoundary>
                 <Suspense fallback={<LazyFallback />}>
