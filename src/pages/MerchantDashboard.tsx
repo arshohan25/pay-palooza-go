@@ -1267,6 +1267,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
             <MerchantDisputesTile merchantId={merchant.id} />
           </div>
           <MerchantInventoryAlerts merchantId={merchant.id} threshold={5} />
+          <MerchantWeeklyDigestCard merchantId={merchant.id} />
         </motion.div>
       )}
       {/* Quick Actions Grid */}
