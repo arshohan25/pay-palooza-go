@@ -330,20 +330,20 @@ const PaymentRequestsPage = () => {
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <History className="w-4 h-4 text-primary" /> Received payments
+                <History className="w-4 h-4 text-primary" /> {t("prReceivedPayments")}
               </h3>
-              <span className="text-[11px] text-muted-foreground">Live</span>
+              <span className="text-[11px] text-muted-foreground">{t("prLive")}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-primary/5 rounded-xl p-3">
-                <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Total received</p>
+                <p className="text-[10px] uppercase text-muted-foreground tracking-wider">{t("prTotalReceived")}</p>
                 <p className="text-lg font-bold text-foreground flex items-center gap-1">
                   <TrendingUp className="w-4 h-4 text-primary" /> ৳{totals.total.toLocaleString()}
                 </p>
               </div>
               <div className="bg-muted rounded-xl p-3">
-                <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Payments</p>
+                <p className="text-[10px] uppercase text-muted-foreground tracking-wider">{t("prPaymentsCount")}</p>
                 <p className="text-lg font-bold text-foreground">{totals.count}</p>
               </div>
             </div>
@@ -352,23 +352,23 @@ const PaymentRequestsPage = () => {
               <Select value={filterLink} onValueChange={setFilterLink}>
                 <SelectTrigger className="h-9 text-xs"><Filter className="w-3 h-3 mr-1" /><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All links</SelectItem>
+                  <SelectItem value="all">{t("prAllLinks")}</SelectItem>
                   {links.map(l => <SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={filterRange} onValueChange={setFilterRange}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="7">Last 7 days</SelectItem>
-                  <SelectItem value="30">Last 30 days</SelectItem>
-                  <SelectItem value="90">Last 90 days</SelectItem>
-                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="7">{t("prLast7")}</SelectItem>
+                  <SelectItem value="30">{t("prLast30")}</SelectItem>
+                  <SelectItem value="90">{t("prLast90")}</SelectItem>
+                  <SelectItem value="all">{t("prAllTime")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {filteredPayments.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic text-center py-4">No payments in this period.</p>
+              <p className="text-xs text-muted-foreground italic text-center py-4">{t("prNoPaymentsPeriod")}</p>
             ) : (
               <ul className="divide-y divide-border/50">
                 {filteredPayments.slice(0, 25).map(p => {
@@ -382,16 +382,16 @@ const PaymentRequestsPage = () => {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{link?.title ?? "—"}</p>
                         <p className="text-[11px] text-muted-foreground">
-                          {payerNames[p.payer_id] ?? "Unknown payer"} · {format(new Date(p.created_at), "d MMM, HH:mm")}
+                          {payerNames[p.payer_id] ?? t("prUnknownPayer")} · {format(new Date(p.created_at), "d MMM, HH:mm")}
                         </p>
                         {p.transaction_id && (
                           <p className="text-[10px] font-mono text-muted-foreground">ref {p.transaction_id.slice(0, 8).toUpperCase()}</p>
                         )}
                         {fully && (
-                          <p className="text-[10px] text-amber-600">Refunded{p.refund_reason ? ` · ${p.refund_reason}` : ""}</p>
+                          <p className="text-[10px] text-amber-600">{t("prRefunded")}{p.refund_reason ? ` · ${p.refund_reason}` : ""}</p>
                         )}
                         {partial && (
-                          <p className="text-[10px] text-amber-600">Partial refund: ৳{refunded.toLocaleString()} of ৳{Number(p.amount).toLocaleString()}</p>
+                          <p className="text-[10px] text-amber-600">{t("prPartialRefundLabel")}: ৳{refunded.toLocaleString()} / ৳{Number(p.amount).toLocaleString()}</p>
                         )}
                       </div>
                       {fully ? (
