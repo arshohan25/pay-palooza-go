@@ -496,6 +496,15 @@ const MerchantDashboard = () => {
               <span>Logout</span>
             </motion.button>
             <div className="flex items-center gap-3">
+              <button
+                onClick={toggleLang}
+                className="tap-target h-10 px-3 rounded-xl glass-hero flex items-center gap-1 text-[12px] font-bold"
+                aria-label="Switch language"
+                title="Switch language"
+              >
+                <Globe size={14} />
+                <span>{lang === "en" ? "বাং" : "EN"}</span>
+              </button>
               <button onClick={loadData} className="tap-target w-10 h-10 rounded-xl glass-hero flex items-center justify-center">
                 <RefreshCw size={16} />
               </button>
