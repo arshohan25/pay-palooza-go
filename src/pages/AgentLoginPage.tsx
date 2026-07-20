@@ -342,11 +342,11 @@ const AgentLoginPage = () => {
             >
               {submitting ? (
                 <>
-                  <Loader2 size={18} className="animate-spin" /> Signing in…
+                  <Loader2 size={18} className="animate-spin" /> {t("alpSigningIn")}
                 </>
               ) : (
                 <>
-                  Sign In <ArrowRight size={18} />
+                  {t("alpSignIn")} <ArrowRight size={18} />
                 </>
               )}
             </button>
