@@ -5,6 +5,7 @@ import { Package, Clock, CheckCircle2, Truck, CircleCheck, X, ChevronDown, Chevr
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import FulfillmentSheet from "@/components/merchant/FulfillmentSheet";
+import CourierTrackingTimeline from "@/components/merchant/CourierTrackingTimeline";
 import QuickCourierBookSheet from "@/components/merchant/QuickCourierBookSheet";
 import { downloadInvoice, printInvoice, type InvoiceOrder } from "@/components/InvoiceGenerator";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
