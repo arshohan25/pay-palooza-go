@@ -1173,11 +1173,12 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const yesterdayRevenue = yesterdayTxns.reduce((s, t) => s + t.amount, 0);
   const revenueDelta = yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100) : (todayRevenue > 0 ? 100 : 0);
 
+  const dowKeys = ["mdDowSun","mdDowMon","mdDowTue","mdDowWed","mdDowThu","mdDowFri","mdDowSat"] as const;
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i));
     const dayStr = d.toDateString();
     const dayTxns = paymentTxns.filter(t => new Date(t.created_at).toDateString() === dayStr);
-    return { day: d.toLocaleDateString("en-BD", { weekday: "short" }), amount: dayTxns.reduce((s, t) => s + t.amount, 0), count: dayTxns.length };
+    return { day: t(dowKeys[d.getDay()]), amount: dayTxns.reduce((s, t) => s + t.amount, 0), count: dayTxns.length };
   });
   const maxDay = Math.max(...last7.map(d => d.amount), 1);
 
