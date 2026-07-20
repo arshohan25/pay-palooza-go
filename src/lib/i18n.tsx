@@ -4948,6 +4948,7 @@ const translations = {
   argCustomerPhoneLabel: { en: "Customer Phone", bn: "গ্রাহকের ফোন" },
   argEnterInApp: { en: "Customer enters this number in the app to login", bn: "গ্রাহক লগইন করতে অ্যাপে এই নম্বরটি প্রবেশ করাবেন" },
   argOtpAutoDetect: { en: "OTP Auto-Detection", bn: "ওটিপি স্বয়ংক্রিয় সনাক্তকরণ" },
+  argNextSetPin: { en: "Next: Set PIN", bn: "পরবর্তী: পিন সেট করুন" },
 } as const;
 
 
