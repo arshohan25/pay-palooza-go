@@ -388,10 +388,10 @@ const PayLinkPage = () => {
             <Card className="border-border/40">
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-foreground">Payment timeline</h3>
-                  <span className="text-[11px] text-muted-foreground">Live · {payments.length}</span>
+                  <h3 className="text-sm font-semibold text-foreground">{t("plPaymentTimeline")}</h3>
+                  <span className="text-[11px] text-muted-foreground">{t("plLive")} · {payments.length}</span>
                 </div>
-                <PaymentLinkTimeline payments={payments} emptyLabel="No payments recorded yet." />
+                <PaymentLinkTimeline payments={payments} emptyLabel={t("plNoPaymentsYet")} />
               </CardContent>
             </Card>
           </motion.div>
