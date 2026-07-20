@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, TrendingDown, Sparkles, Loader2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface Props { merchantId: string }
 
