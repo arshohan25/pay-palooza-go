@@ -116,7 +116,7 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
   const book = async () => {
     if (!orderId || pending.length === 0) return;
     if (!tracking.trim()) {
-      toast({ title: "Tracking number required", variant: "destructive" });
+      toast({ title: t("qcbErrTracking"), variant: "destructive" });
       return;
     }
     setBusy(true);
@@ -149,19 +149,23 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
         courier_provider: courier,
         tracking_number: trk,
         status: "booked",
-        status_label: "Courier Booked",
-        note: ref ? `Booking Ref: ${ref}` : "Awaiting first scan",
+        status_label: t("qcbCourierBookedEvent"),
+        note: ref ? t("qcbBookingRefNote").replace("{ref}", ref) : t("qcbAwaitingScan"),
       });
     }
     setBusy(false);
     if (error) {
-      toast({ title: "Booking failed", description: error.message, variant: "destructive" });
+      toast({ title: t("qcbErrFailed"), description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: `Courier booked · ${courier}`, description: `${totalRemaining} item(s) marked shipped` });
+    toast({
+      title: t("qcbToastBooked").replace("{courier}", courier),
+      description: t("qcbToastShipped").replace("{n}", fmt(totalRemaining)),
+    });
     onOpenChange(false);
     onBooked?.();
   };
+
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -169,18 +173,18 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
         <SheetHeader className="text-left mb-4">
           <SheetTitle className="flex items-center gap-2 text-[16px]">
             <Truck size={17} className="text-primary" />
-            Book Courier {orderNum && <span className="font-mono text-[12px] text-muted-foreground">· {orderNum}</span>}
+            {t("qcbBookCourier")} {orderNum && <span className="font-mono text-[12px] text-muted-foreground">· {orderNum}</span>}
           </SheetTitle>
           <p className="text-[11.5px] text-muted-foreground">
-            Ship all remaining items under one courier & tracking number.
+            {t("qcbSubtitle")}
           </p>
         </SheetHeader>
 
         <div className="space-y-3">
           <div className="bg-muted/40 rounded-2xl p-3">
-            <p className="text-[11px] text-muted-foreground font-semibold">Remaining to ship</p>
+            <p className="text-[11px] text-muted-foreground font-semibold">{t("qcbRemaining")}</p>
             <p className="text-[15px] font-bold text-foreground">
-              {totalRemaining} item{totalRemaining !== 1 ? "s" : ""} across {pending.length} product{pending.length !== 1 ? "s" : ""}
+              {t("qcbItemsProducts").replace("{items}", fmt(totalRemaining)).replace("{products}", fmt(pending.length))}
             </p>
           </div>
 
@@ -188,27 +192,27 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
             <div className="rounded-2xl p-3 bg-gradient-to-br from-primary/10 via-background to-accent/10 border border-primary/20">
               <div className="flex items-center gap-1.5 mb-1">
                 <Sparkles size={12} className="text-primary" />
-                <span className="text-[11px] font-bold text-primary uppercase tracking-wide">Smart pick</span>
+                <span className="text-[11px] font-bold text-primary uppercase tracking-wide">{t("qcbSmartPick")}</span>
                 <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
-                  {Math.round((recommended.delivered / recommended.shipped) * 100)}% delivered
+                  {t("qcbDelivered").replace("{n}", fmt(Math.round((recommended.delivered / recommended.shipped) * 100)))}
                 </Badge>
               </div>
               <p className="text-[12px] text-foreground">
-                <b>{recommended.provider}</b> performs best for your shop
-                {recommended.avgHours != null && <> · avg {Math.round(recommended.avgHours)}h delivery</>}
-                {" "}({recommended.shipped} past shipments)
+                <b>{recommended.provider}</b> {t("qcbBestFor")}
+                {recommended.avgHours != null && <> · {t("qcbAvgDelivery").replace("{n}", fmt(Math.round(recommended.avgHours)))}</>}
+                {" "}({t("qcbPastShipments").replace("{n}", fmt(recommended.shipped))})
               </p>
             </div>
           )}
 
           <div>
-            <label className="text-[11px] font-semibold text-muted-foreground">Courier</label>
+            <label className="text-[11px] font-semibold text-muted-foreground">{t("qcbCourier")}</label>
             <select value={courier} onChange={(e) => setCourier(e.target.value)}
               className="mt-1 w-full h-10 text-[13px] rounded-md border border-input bg-background px-2">
               {COURIERS.map(c => {
                 const s = stats?.find(x => x.provider === c);
                 const label = s && s.shipped >= 3
-                  ? `${c} · ${Math.round((s.delivered / s.shipped) * 100)}% success`
+                  ? `${c} · ${t("qcbSuccess").replace("{n}", fmt(Math.round((s.delivered / s.shipped) * 100)))}`
                   : c;
                 return <option key={c} value={c}>{label}</option>;
               })}
@@ -217,21 +221,23 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
 
 
           <div>
-            <label className="text-[11px] font-semibold text-muted-foreground">Tracking / Consignment No.</label>
+            <label className="text-[11px] font-semibold text-muted-foreground">{t("qcbTrackingLabel")}</label>
             <Input value={tracking} onChange={(e) => setTracking(e.target.value)}
-              placeholder="e.g. PTH-8842091" className="mt-1 h-10 text-[13px]" />
+              placeholder={t("qcbTrackingPh")} className="mt-1 h-10 text-[13px]" />
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold text-muted-foreground">Booking Reference (optional)</label>
+            <label className="text-[11px] font-semibold text-muted-foreground">{t("qcbBookingRefLabel")}</label>
             <Input value={bookingRef} onChange={(e) => setBookingRef(e.target.value)}
-              placeholder="e.g. BK-9821 (from courier portal)" className="mt-1 h-10 text-[13px]" />
+              placeholder={t("qcbBookingRefPh")} className="mt-1 h-10 text-[13px]" />
           </div>
 
           <Button onClick={book} disabled={busy || totalRemaining === 0}
             className="w-full rounded-xl h-11 gap-1.5 text-[13px] font-bold">
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Package size={14} />}
-            {totalRemaining === 0 ? "Nothing left to ship" : `Book ${courier} · Ship ${totalRemaining} item(s)`}
+            {totalRemaining === 0
+              ? t("qcbNothingLeft")
+              : t("qcbBookShip").replace("{courier}", courier).replace("{n}", fmt(totalRemaining))}
           </Button>
         </div>
       </SheetContent>
