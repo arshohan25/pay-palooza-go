@@ -2321,10 +2321,13 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 
 /* ── Transactions Tab ── */
 const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | null }) => {
+  const { t, lang } = useI18n();
+  const localeTag = lang === "bn" ? "bn-BD" : "en-BD";
   const [monthOffset, setMonthOffset] = useState(0);
   const [selectedTx, setSelectedTx] = useState<TxnRow | null>(null);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+
   const [filterMode, setFilterMode] = useState<"month" | "range">("month");
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [searchQuery, setSearchQuery] = useState("");
