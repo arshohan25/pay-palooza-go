@@ -15,6 +15,7 @@ import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
 import PaymentLinkTimeline, { LinkPaymentRow } from "@/components/PaymentLinkTimeline";
+import { useI18n } from "@/lib/i18n";
 
 type Link = {
   id: string;
