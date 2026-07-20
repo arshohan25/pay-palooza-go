@@ -4085,8 +4085,36 @@ const translations = {
   mprToastTooLarge: { en: "File too large", bn: "ফাইল অনেক বড়" },
   mprToastTooLargeDesc: { en: "Max 5MB allowed", bn: "সর্বোচ্চ ৫ এমবি অনুমোদিত" },
 
+  // Merchant Broadcast (mbr*)
+  mbrTitle: { en: "Broadcast", bn: "ব্রডকাস্ট" },
+  mbrAudience: { en: "AUDIENCE", bn: "শ্রোতা" },
+  mbrAudAll: { en: "All customers", bn: "সব গ্রাহক" },
+  mbrAudRecent: { en: "Recent (30d)", bn: "সাম্প্রতিক (৩০ দিন)" },
+  mbrAudInactive: { en: "Inactive (60d+)", bn: "নিষ্ক্রিয় (৬০+ দিন)" },
+  mbrAudGoldSilver: { en: "Gold + Silver", bn: "গোল্ড + সিলভার" },
+  mbrCounting: { en: "Counting…", bn: "গণনা চলছে…" },
+  mbrMatchCount: { en: "{n} customers match", bn: "{n} জন গ্রাহক মিলেছে" },
+  mbrLabelTitle: { en: "TITLE", bn: "শিরোনাম" },
+  mbrTitlePh: { en: "Weekend flash sale", bn: "সাপ্তাহিক ফ্ল্যাশ সেল" },
+  mbrMessage: { en: "MESSAGE", bn: "বার্তা" },
+  mbrMessagePh: { en: "20% off all items until Sunday. Show this message at checkout.", bn: "রবিবার পর্যন্ত সব পণ্যে ২০% ছাড়। চেকআউটে এই বার্তা দেখান।" },
+  mbrSend: { en: "Send broadcast", bn: "ব্রডকাস্ট পাঠান" },
+  mbrDailyLimit: { en: "Max 5 broadcasts per day.", bn: "দৈনিক সর্বোচ্চ ৫টি ব্রডকাস্ট।" },
+  mbrRecent: { en: "Recent broadcasts", bn: "সাম্প্রতিক ব্রডকাস্ট" },
+  mbrErrMissing: { en: "Missing content", bn: "বিষয়বস্তু নেই" },
+  mbrErrMissingDesc: { en: "Title and message are required.", bn: "শিরোনাম ও বার্তা আবশ্যক।" },
+  mbrErrEmpty: { en: "No recipients", bn: "কোনো প্রাপক নেই" },
+  mbrErrEmptyDesc: { en: "This audience is empty.", bn: "এই শ্রোতা তালিকা খালি।" },
+  mbrConfirm: { en: "Send this broadcast to {n} customers?", bn: "এই ব্রডকাস্ট {n} জন গ্রাহকে পাঠাবেন?" },
+  mbrToastSent: { en: "Broadcast sent", bn: "ব্রডকাস্ট পাঠানো হয়েছে" },
+  mbrToastDelivered: { en: "Delivered to {n} customers.", bn: "{n} জন গ্রাহকে পৌঁছেছে।" },
+  mbrToastFail: { en: "Send failed", bn: "পাঠানো ব্যর্থ" },
 
-
+  // Merchant Disputes tile (mdt*)
+  mdtInbox: { en: "Dispute inbox", bn: "বিরোধ ইনবক্স" },
+  mdtOpen: { en: "{n} open", bn: "{n}টি খোলা" },
+  mdtAllClear: { en: "All clear", bn: "সব ঠিকঠাক" },
+  mdtTotal: { en: "{n} total disputes", bn: "মোট {n}টি বিরোধ" },
 
 
   // Last 7 Days card

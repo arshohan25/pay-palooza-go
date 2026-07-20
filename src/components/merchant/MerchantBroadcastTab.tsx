@@ -8,15 +8,17 @@ import { Megaphone, Send, Users, Loader2, CheckCircle2, AlertCircle } from "luci
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 const AUDIENCES = [
-  { id: "all", label: "All customers" },
-  { id: "recent_30d", label: "Recent (30d)" },
-  { id: "inactive_60d", label: "Inactive (60d+)" },
-  { id: "gold_silver", label: "Gold + Silver" },
+  { id: "all", labelKey: "mbrAudAll" as TranslationKey },
+  { id: "recent_30d", labelKey: "mbrAudRecent" as TranslationKey },
+  { id: "inactive_60d", labelKey: "mbrAudInactive" as TranslationKey },
+  { id: "gold_silver", labelKey: "mbrAudGoldSilver" as TranslationKey },
 ] as const;
 
 type Audience = typeof AUDIENCES[number]["id"];
+
 
 interface Broadcast {
   id: string;
@@ -31,6 +33,8 @@ interface Broadcast {
 }
 
 export default function MerchantBroadcastTab({ merchantId }: { merchantId: string }) {
+  const { t } = useI18n();
+
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
@@ -71,14 +75,14 @@ export default function MerchantBroadcastTab({ merchantId }: { merchantId: strin
 
   const send = async () => {
     if (!title.trim() || !message.trim()) {
-      toast({ title: "Missing content", description: "Title and message are required.", variant: "destructive" });
+      toast({ title: t("mbrErrMissing"), description: t("mbrErrMissingDesc"), variant: "destructive" });
       return;
     }
     if (!count || count < 1) {
-      toast({ title: "No recipients", description: "This audience is empty.", variant: "destructive" });
+      toast({ title: t("mbrErrEmpty"), description: t("mbrErrEmptyDesc"), variant: "destructive" });
       return;
     }
-    if (!confirm(`Send this broadcast to ${count} customer${count === 1 ? "" : "s"}?`)) return;
+    if (!confirm(t("mbrConfirm").replace("{n}", String(count)))) return;
 
     setSending(true);
     try {
@@ -87,26 +91,27 @@ export default function MerchantBroadcastTab({ merchantId }: { merchantId: strin
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      toast({ title: "Broadcast sent", description: `Delivered to ${(data as any).delivered} customers.` });
+      toast({ title: t("mbrToastSent"), description: t("mbrToastDelivered").replace("{n}", String((data as any).delivered)) });
       setTitle(""); setMessage("");
       loadHistory();
     } catch (e: any) {
-      toast({ title: "Send failed", description: e?.message || "Unknown error", variant: "destructive" });
+      toast({ title: t("mbrToastFail"), description: e?.message || "Unknown error", variant: "destructive" });
     } finally {
       setSending(false);
     }
+
   };
 
   return (
     <div className="space-y-4">
       <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-        <Megaphone size={18} className="text-primary" /> Broadcast
+        <Megaphone size={18} className="text-primary" /> {t("mbrTitle")}
       </h3>
 
       <Card className="border-0 shadow-elevated">
         <CardContent className="p-4 space-y-3">
           <div>
-            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">AUDIENCE</label>
+            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">{t("mbrAudience")}</label>
             <div className="grid grid-cols-2 gap-2">
               {AUDIENCES.map(a => (
                 <button
@@ -117,27 +122,27 @@ export default function MerchantBroadcastTab({ merchantId }: { merchantId: strin
                     audience === a.id ? "bg-primary text-primary-foreground border-primary" : "bg-muted/40 text-foreground border-border"
                   }`}
                 >
-                  {a.label}
+                  {t(a.labelKey)}
                 </button>
               ))}
             </div>
             <p className="text-[11px] text-muted-foreground mt-2 flex items-center gap-1.5">
               <Users size={12} />
-              {loadingCount ? "Counting…" : `${count ?? 0} customer${count === 1 ? "" : "s"} match`}
+              {loadingCount ? t("mbrCounting") : t("mbrMatchCount").replace("{n}", String(count ?? 0))}
             </p>
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">TITLE</label>
-            <Input value={title} onChange={e => setTitle(e.target.value.slice(0, 120))} placeholder="Weekend flash sale" maxLength={120} />
+            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">{t("mbrLabelTitle")}</label>
+            <Input value={title} onChange={e => setTitle(e.target.value.slice(0, 120))} placeholder={t("mbrTitlePh")} maxLength={120} />
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">MESSAGE</label>
+            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block">{t("mbrMessage")}</label>
             <Textarea
               value={message}
               onChange={e => setMessage(e.target.value.slice(0, 500))}
-              placeholder="20% off all items until Sunday. Show this message at checkout."
+              placeholder={t("mbrMessagePh")}
               rows={4}
               maxLength={500}
             />
@@ -146,15 +151,16 @@ export default function MerchantBroadcastTab({ merchantId }: { merchantId: strin
 
           <Button onClick={send} disabled={sending || !title.trim() || !message.trim() || !count} className="w-full">
             {sending ? <Loader2 size={16} className="animate-spin mr-2" /> : <Send size={16} className="mr-2" />}
-            Send broadcast
+            {t("mbrSend")}
           </Button>
-          <p className="text-[10px] text-muted-foreground text-center">Max 5 broadcasts per day.</p>
+          <p className="text-[10px] text-muted-foreground text-center">{t("mbrDailyLimit")}</p>
         </CardContent>
       </Card>
 
+
       {history.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-bold text-foreground">Recent broadcasts</h4>
+          <h4 className="text-xs font-bold text-foreground">{t("mbrRecent")}</h4>
           {history.map(b => (
             <Card key={b.id} className="border-0 shadow-elevated">
               <CardContent className="p-3">
