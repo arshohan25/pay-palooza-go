@@ -73,10 +73,10 @@ const NearbyAgentsPage = () => {
   const [sort, setSort] = useState<SortKey>("nearest");
 
   useEffect(() => {
-    if (!navigator.geolocation) { toast.error("Geolocation unavailable"); setLoading(false); return; }
+    if (!navigator.geolocation) { toast.error(t("naGeoUnavailable")); setLoading(false); return; }
     navigator.geolocation.getCurrentPosition(
       p => setLoc({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      err => { toast.error(err.message || "Location denied"); setLoading(false); },
+      err => { toast.error(err.message || t("naLocationDenied")); setLoading(false); },
       { enableHighAccuracy: true, timeout: 12000 },
     );
   }, []);
