@@ -400,7 +400,7 @@ const GiftCardsPage = () => {
       <PinConfirmSheet
         open={pinOpen}
         onClose={() => setPinOpen(false)}
-        title="Confirm gift card purchase"
+        title={t("giftCardsPinTitle")}
         description={`৳${denomination.toLocaleString()} · ${brand === "all" ? BRANDS[0].name : BRANDS.find(b => b.id === brand)?.name}`}
         onConfirmed={handlePurchase}
       />
