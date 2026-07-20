@@ -3733,6 +3733,10 @@ const translations = {
   distDashTxnsToday: { en: "txns today", bn: "আজকের লেনদেন" },
 
   sdDashDistTxns: { en: "Distributor Transactions", bn: "ডিস্ট্রিবিউটর লেনদেন" },
+  sdDashQaCreateDist: { en: "Create Dist.", bn: "ডিস্ট্রিবিউটর তৈরি" },
+  sdDashTitle: { en: "Super Distributor", bn: "সুপার ডিস্ট্রিবিউটর" },
+  sdDashSummary: { en: "distributors · {a} agents · {t} txns today", bn: "ডিস্ট্রিবিউটর · {a} এজেন্ট · {t} আজকের লেনদেন" },
+  sdDashMasterFloatPool: { en: "Master Float Pool", bn: "মাস্টার ফ্লোট পুল" },
   sdDashQaFloatSend: { en: "Float Send", bn: "ফ্লোট পাঠান" },
   sdDashQaDistributors: { en: "Distributors", bn: "ডিস্ট্রিবিউটর" },
   sdDashQaDistTxns: { en: "Dist Txns", bn: "ডিস্ট লেনদেন" },
