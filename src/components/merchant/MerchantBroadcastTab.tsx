@@ -33,6 +33,8 @@ interface Broadcast {
 }
 
 export default function MerchantBroadcastTab({ merchantId }: { merchantId: string }) {
+  const { t } = useI18n();
+
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
