@@ -80,6 +80,7 @@ const stagger = {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const SuperDistributorDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   useUserSessionTimeout("super_distributor");
   const { toast } = useToast();
