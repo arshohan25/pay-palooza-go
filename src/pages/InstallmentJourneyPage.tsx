@@ -468,10 +468,10 @@ export default function InstallmentJourneyPage() {
                       </div>
                     </div>
                     <div className="mt-4">
-                      <div className="text-[11px] text-white/60">Current Balance</div>
+                      <div className="text-[11px] text-white/60">{t("ijCurrentBalance")}</div>
                       <div className="text-3xl font-bold tabular-nums">{bdt(balance)}</div>
                       <div className="mt-1 text-[11px] text-white/60">
-                        of <span className="tabular-nums text-white/80">{bdt(target)}</span> target
+                        {t("ijOfTarget").replace("{target}", bdt(target))}
                       </div>
                     </div>
                   </div>
@@ -480,9 +480,9 @@ export default function InstallmentJourneyPage() {
 
                 <div className="mt-5 grid grid-cols-3 gap-2">
                   {[
-                    { label: "Outstanding", value: bdt(outstanding) },
-                    { label: "Next Amt", value: nextAmount > 0 ? bdt(nextAmount) : "—" },
-                    { label: "Due", value: nextDate },
+                    { label: t("ijOutstanding"), value: bdt(outstanding) },
+                    { label: t("ijNextAmt"), value: nextAmount > 0 ? bdt(nextAmount) : "—" },
+                    { label: t("ijDue"), value: nextDate },
                   ].map((s) => (
                     <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.06] p-2.5">
                       <div className="text-[9px] uppercase tracking-wider text-white/50">{s.label}</div>
@@ -495,12 +495,12 @@ export default function InstallmentJourneyPage() {
                   <div className="flex items-center gap-2">
                     <TrendingUp size={16} className="text-emerald-400" />
                     <div>
-                      <div className="text-[10px] uppercase tracking-widest text-white/50">Progress</div>
-                      <div className="text-sm font-semibold">{Math.round(pct)}% complete</div>
+                      <div className="text-[10px] uppercase tracking-widest text-white/50">{t("ijProgress")}</div>
+                      <div className="text-sm font-semibold">{t("ijPctComplete").replace("{pct}", String(Math.round(pct)))}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 rounded-full bg-gradient-to-r from-[#F4C542] to-amber-500 px-2.5 py-1 text-[10px] font-bold text-black">
-                    <Trophy size={11} /> Streak {paidCount}
+                    <Trophy size={11} /> {t("ijStreak")} {paidCount}
                   </div>
                 </div>
               </div>
@@ -509,11 +509,11 @@ export default function InstallmentJourneyPage() {
             {/* Section title */}
             <div className="mt-6 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">Timeline</div>
-                <div className="text-lg font-bold">Milestones</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">{t("ijTimeline")}</div>
+                <div className="text-lg font-bold">{t("ijMilestones")}</div>
               </div>
               <div className="text-[11px] text-white/60">
-                {paidCount}/{installments.length} paid
+                {t("ijPaidCount").replace("{paid}", String(paidCount)).replace("{total}", String(installments.length))}
               </div>
             </div>
 
@@ -529,7 +529,7 @@ export default function InstallmentJourneyPage() {
               ))}
               {installments.length === 0 && (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center text-sm text-white/60">
-                  No installments yet.
+                  {t("ijNoInstallments")}
                 </div>
               )}
             </div>
@@ -543,11 +543,12 @@ export default function InstallmentJourneyPage() {
                 className="mt-8 rounded-[22px] border border-[#F4C542]/30 bg-gradient-to-br from-[#F4C542]/10 to-transparent p-4 backdrop-blur"
               >
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#F4C542]">
-                  <Sparkles size={12} /> AI Insight
+                  <Sparkles size={12} /> {t("ijAiInsight")}
                 </div>
                 <p className="mt-1.5 text-sm leading-relaxed text-white/85">
-                  Add <span className="font-bold text-[#F4C542]">{bdt(Math.round(nextAmount * 0.2))}</span> extra per
-                  cycle to finish <span className="font-semibold">{displayName}</span> faster.
+                  {t("ijAiInsightBody")
+                    .replace("{extra}", bdt(Math.round(nextAmount * 0.2)))
+                    .replace("{name}", displayName)}
                 </p>
               </motion.div>
             )}
