@@ -638,7 +638,7 @@ function DpsPlanDetailsSheet({
                                   {isCollected ? "+" : isMissed ? "" : ""}৳{Number(h.amount).toLocaleString()}
                                 </div>
                                 <div className="text-[9px] text-muted-foreground uppercase tracking-wide">
-                                  {isCollected ? "Collected" : isMissed ? "Due" : "—"}
+                                  {isCollected ? t("savCollected") : isMissed ? t("savDue") : "—"}
                                 </div>
                               </div>
                             )}
