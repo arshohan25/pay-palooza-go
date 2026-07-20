@@ -1796,7 +1796,8 @@ const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null
 
 
 const EASYPAY_LOGO_URL = "/icons/easypay-logo.webp";
-const DEFAULT_QR_TAGLINE = "Scan to Pay for good";
+const DEFAULT_QR_TAGLINE = "Pay Smart · Live Easy";
+const QR_SUB_TAGLINE = "Instant • Secure • Rewarding";
 const DEFAULT_BAND_START = "#ff6a1a";
 const DEFAULT_BAND_END = "#c02a55";
 
