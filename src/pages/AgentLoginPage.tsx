@@ -297,7 +297,7 @@ const AgentLoginPage = () => {
 
             <div className="space-y-1">
               <label htmlFor="agent-pin" className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-                4-digit PIN
+                {t("alpPinLabel")}
               </label>
               <div className="relative">
                 <Lock
