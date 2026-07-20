@@ -162,8 +162,9 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
 
     // Optimistic UI: broadcast the pending name so the dashboard header updates immediately
     const optimisticName = form.store_name.trim();
+    const optimisticNameBn = form.store_name_bn.trim() || null;
     const previousName = store?.store_name || "";
-    window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: optimisticName } }));
+    window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: optimisticName, nameBn: optimisticNameBn } }));
 
     const payload = {
       merchant_id: merchantId,
@@ -188,15 +189,15 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       ({ error } = await (supabase as any).from("vendor_stores").insert(payload));
     }
 
-    // Also sync the merchant's business_name so the dashboard header reflects
-    // the new name. Merchants cannot UPDATE public.merchants directly (admin-only
-    // RLS), so we call a scoped SECURITY DEFINER RPC that only lets the caller
-    // rename their own record.
+    // Also sync the merchant's business_name (+ optional Bangla name) so the
+    // dashboard header reflects the new name. Merchants cannot UPDATE
+    // public.merchants directly (admin-only RLS), so we call a scoped
+    // SECURITY DEFINER RPC that only lets the caller rename their own record.
     if (!error && payload.store_name) {
       const { error: mErr } = await (supabase as any)
-        .rpc("merchant_update_business_name", { p_name: payload.store_name });
+        .rpc("merchant_update_business_name", { p_name: payload.store_name, p_name_bn: optimisticNameBn });
       if (mErr) {
-        window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: previousName } }));
+        window.dispatchEvent(new CustomEvent("merchant:business-name-preview", { detail: { merchantId, name: previousName, nameBn: null } }));
         toast({ title: t("mssSaveFailed"), description: mErr.message, variant: "destructive" });
         setSaving(false);
         return;
