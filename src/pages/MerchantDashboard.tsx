@@ -1278,7 +1278,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       setQrAmount("");
       setQrReference("");
     } catch (err: any) {
-      toast({ title: "Generation Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("mqrGenerationFailed"), description: err.message, variant: "destructive" });
     } finally {
       setQrGenerateLoading(false);
     }
