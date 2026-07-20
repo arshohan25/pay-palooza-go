@@ -4116,6 +4116,48 @@ const translations = {
   mdtAllClear: { en: "All clear", bn: "সব ঠিকঠাক" },
   mdtTotal: { en: "{n} total disputes", bn: "মোট {n}টি বিরোধ" },
 
+  // Merchant Payout ETA card (mpe*)
+  mpeNextPayout: { en: "Next payout", bn: "পরবর্তী পেআউট" },
+  mpeToday: { en: "Today", bn: "আজ" },
+  mpeTomorrow: { en: "Tomorrow", bn: "আগামীকাল" },
+  mpeAvailable: { en: "available", bn: "উপলব্ধ" },
+  mpePending: { en: "pending", bn: "বিচারাধীন" },
+
+  // Courier tracking timeline (ctt*)
+  cttAwaitingFirstScan: { en: "Awaiting first scan", bn: "প্রথম স্ক্যানের অপেক্ষায়" },
+  cttLive: { en: "LIVE", bn: "লাইভ" },
+  cttEta: { en: "ETA", bn: "আনু. সময়" },
+  cttRef: { en: "Ref", bn: "রেফ" },
+  cttNoScans: { en: "No scans yet.", bn: "এখনো কোনো স্ক্যান নেই।" },
+
+  // Quick Courier Book sheet (qcb*)
+  qcbBookCourier: { en: "Book Courier", bn: "কুরিয়ার বুক করুন" },
+  qcbSubtitle: { en: "Ship all remaining items under one courier & tracking number.", bn: "সব অবশিষ্ট আইটেম একটি কুরিয়ার ও ট্র্যাকিং নম্বরে পাঠান।" },
+  qcbRemaining: { en: "Remaining to ship", bn: "শিপ করার বাকি" },
+  qcbItemsProducts: { en: "{items} item(s) across {products} product(s)", bn: "{products}টি পণ্যের {items}টি আইটেম" },
+  qcbSmartPick: { en: "Smart pick", bn: "স্মার্ট পছন্দ" },
+  qcbDelivered: { en: "{n}% delivered", bn: "{n}% ডেলিভার্ড" },
+  qcbBestFor: { en: "performs best for your shop", bn: "আপনার শপের জন্য সেরা" },
+  qcbAvgDelivery: { en: "avg {n}h delivery", bn: "গড় {n} ঘণ্টায় ডেলিভারি" },
+  qcbPastShipments: { en: "{n} past shipments", bn: "{n}টি পূর্ববর্তী শিপমেন্ট" },
+  qcbCourier: { en: "Courier", bn: "কুরিয়ার" },
+  qcbSuccess: { en: "{n}% success", bn: "{n}% সাফল্য" },
+  qcbTrackingLabel: { en: "Tracking / Consignment No.", bn: "ট্র্যাকিং / কনসাইনমেন্ট নং" },
+  qcbTrackingPh: { en: "e.g. PTH-8842091", bn: "যেমন PTH-8842091" },
+  qcbBookingRefLabel: { en: "Booking Reference (optional)", bn: "বুকিং রেফারেন্স (ঐচ্ছিক)" },
+  qcbBookingRefPh: { en: "e.g. BK-9821 (from courier portal)", bn: "যেমন BK-9821 (কুরিয়ার পোর্টাল থেকে)" },
+  qcbErrTracking: { en: "Tracking number required", bn: "ট্র্যাকিং নম্বর প্রয়োজন" },
+  qcbErrFailed: { en: "Booking failed", bn: "বুকিং ব্যর্থ" },
+  qcbToastBooked: { en: "Courier booked · {courier}", bn: "কুরিয়ার বুক হয়েছে · {courier}" },
+  qcbToastShipped: { en: "{n} item(s) marked shipped", bn: "{n}টি আইটেম শিপড চিহ্নিত হয়েছে" },
+  qcbNothingLeft: { en: "Nothing left to ship", bn: "শিপ করার কিছু নেই" },
+  qcbBookShip: { en: "Book {courier} · Ship {n} item(s)", bn: "{courier} বুক · {n}টি আইটেম শিপ" },
+  qcbCourierBookedEvent: { en: "Courier Booked", bn: "কুরিয়ার বুক করা হয়েছে" },
+  qcbBookingRefNote: { en: "Booking Ref: {ref}", bn: "বুকিং রেফ: {ref}" },
+  qcbAwaitingScan: { en: "Awaiting first scan", bn: "প্রথম স্ক্যানের অপেক্ষায়" },
+
+
+
 
   // Last 7 Days card
   mdLast7Days: { en: "Last 7 Days", bn: "গত ৭ দিন" },
