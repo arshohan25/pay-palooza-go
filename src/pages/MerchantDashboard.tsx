@@ -25,6 +25,7 @@ import {
   Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package, MessageCircle, Search,
   Undo2, Ticket, XCircle, Loader2, LogOut, Megaphone
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 import MerchantBusinessKycFlow from "@/components/MerchantBusinessKycFlow";
 import VendorOnboardingChecklist from "@/components/VendorOnboardingChecklist";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
@@ -190,6 +191,7 @@ const MerchantDashboard = () => {
   const navigate = useNavigate();
   useUserSessionTimeout("merchant");
   const { toast } = useToast();
+  const { lang, toggleLang } = useI18n();
   const { isDisabled } = useGlobalToggles();
   const futureFeatures = useFutureFeatures();
   void futureFeatures.visibility.future_merchant_growth_os;
@@ -494,6 +496,15 @@ const MerchantDashboard = () => {
               <span>Logout</span>
             </motion.button>
             <div className="flex items-center gap-3">
+              <button
+                onClick={toggleLang}
+                className="tap-target h-10 px-3 rounded-xl glass-hero flex items-center gap-1 text-[12px] font-bold"
+                aria-label="Switch language"
+                title="Switch language"
+              >
+                <Globe size={14} />
+                <span>{lang === "en" ? "বাং" : "EN"}</span>
+              </button>
               <button onClick={loadData} className="tap-target w-10 h-10 rounded-xl glass-hero flex items-center justify-center">
                 <RefreshCw size={16} />
               </button>
