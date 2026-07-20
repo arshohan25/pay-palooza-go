@@ -1573,8 +1573,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               {/* Header */}
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-primary" /> Payment QR Ready
+                  <CheckCircle2 size={16} className="text-primary" /> {t("mqrPopupTitle")}
                 </h3>
+
                 <button onClick={() => setShowQrPopup(false)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
                   <X size={14} className="text-muted-foreground" />
                 </button>
