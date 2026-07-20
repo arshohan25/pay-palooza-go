@@ -19,15 +19,10 @@ import { isWeakPin } from "@/lib/pinValidation";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import KycFlow from "@/components/KycFlow";
+import { useI18n } from "@/lib/i18n";
 
 type FlowStep = "phone" | "otp" | "info" | "kyc" | "kyc_waiting" | "approved" | "rejected" | "customer_login";
 
-const STEPS: { key: FlowStep; label: string; icon: React.ElementType }[] = [
-  { key: "phone", label: "Phone", icon: Phone },
-  { key: "otp", label: "Verify", icon: ShieldCheck },
-  { key: "info", label: "Info", icon: User },
-  { key: "kyc", label: "KYC", icon: FileCheck },
-];
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? "40%" : "-40%", opacity: 0, scale: 0.97 }),
@@ -40,8 +35,16 @@ const POST_KYC_STEPS = ["kyc_waiting", "approved", "rejected", "customer_login"]
 const AgentRegister = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useI18n();
+  const STEPS: { key: FlowStep; label: string; icon: React.ElementType }[] = [
+    { key: "phone", label: t("argStepPhone"), icon: Phone },
+    { key: "otp", label: t("argStepVerify"), icon: ShieldCheck },
+    { key: "info", label: t("argStepInfo"), icon: User },
+    { key: "kyc", label: t("argStepKyc"), icon: FileCheck },
+  ];
   const [currentStep, setCurrentStep] = useState<FlowStep>("phone");
   const [direction, setDirection] = useState(1);
+
 
   // Phone step
   const [phone, setPhone] = useState("");
@@ -128,7 +131,7 @@ const AgentRegister = () => {
             goTo("approved");
           } else if (data[0].status === "rejected") {
             setKycStatus("rejected");
-            setRejectionReason(data[0].reviewer_notes || "No reason provided.");
+            setRejectionReason(data[0].reviewer_notes || t("argNoReason"));
             goTo("rejected");
           }
         }
@@ -153,7 +156,7 @@ const AgentRegister = () => {
             goTo("approved");
           } else if (newStatus === "rejected") {
             setKycStatus("rejected");
-            setRejectionReason(payload.new?.reviewer_notes || "No reason provided.");
+            setRejectionReason(payload.new?.reviewer_notes || t("argNoReason"));
             goTo("rejected");
           }
         }
@@ -173,7 +176,7 @@ const AgentRegister = () => {
       const cleanedPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
       const { data: existing } = await supabase.from("profiles").select("id").eq("phone", cleanedPhone).maybeSingle();
       if (existing) {
-        toast({ title: "Already Registered", description: "This number already has an account.", variant: "destructive" });
+        toast({ title: t("argAlreadyRegistered"), description: t("argAlreadyRegisteredDesc"), variant: "destructive" });
         setSendingOtp(false);
         return;
       }
@@ -186,7 +189,7 @@ const AgentRegister = () => {
       haptics.success();
       goTo("otp");
     } catch (err: any) {
-      toast({ title: "Failed to send OTP", description: err.message, variant: "destructive" });
+      toast({ title: t("argSendOtpFail"), description: err.message, variant: "destructive" });
     } finally {
       setSendingOtp(false);
     }
@@ -207,9 +210,7 @@ const AgentRegister = () => {
         const kind: "invalid" | "expired" = raw.includes("expired") || raw.includes("no pending") ? "expired" : "invalid";
         setOtpError({
           kind,
-          message: kind === "expired"
-            ? "This code has expired. Tap Resend to get a new one."
-            : "Incorrect code. Please double-check and try again.",
+          message: kind === "expired" ? t("argOtpExpired") : t("argOtpInvalid"),
         });
         setOtpAttempts(a => a + 1);
         setOtpValue("");
@@ -226,7 +227,7 @@ const AgentRegister = () => {
       }, 1100);
       return;
     } catch (err: any) {
-      setOtpError({ kind: "network", message: err.message || "Couldn't verify right now. Please try again." });
+      setOtpError({ kind: "network", message: err.message || t("argOtpNetwork") });
       haptics.error();
     } finally {
       setVerifyingOtp(false);
@@ -247,9 +248,9 @@ const AgentRegister = () => {
       if (error) throw error;
       if (data?.dev_otp) setDevOtp(data.dev_otp);
       setResendTimer(60);
-      toast({ title: "OTP Resent", description: "A new code has been sent." });
+      toast({ title: t("argOtpResent"), description: t("argOtpResentDesc") });
     } catch (err: any) {
-      toast({ title: "Resend Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("argResendFail"), description: err.message, variant: "destructive" });
     } finally {
       setSendingOtp(false);
     }
@@ -257,7 +258,7 @@ const AgentRegister = () => {
 
   const handleCreateAccount = async () => {
     if (!name.trim()) {
-      toast({ title: "Name Required", description: "Please enter the customer's name.", variant: "destructive" });
+      toast({ title: t("argNameReq"), description: t("argNameReqDesc"), variant: "destructive" });
       return;
     }
     setCreatingAccount(true);
@@ -274,7 +275,7 @@ const AgentRegister = () => {
       haptics.success();
       goTo("kyc");
     } catch (err: any) {
-      toast({ title: "Registration Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("argRegFail"), description: err.message, variant: "destructive" });
     } finally {
       setCreatingAccount(false);
     }
@@ -288,15 +289,15 @@ const AgentRegister = () => {
 
   const handleSetPin = async () => {
     if (newPin.length !== 4) {
-      toast({ title: "Invalid PIN", description: "PIN must be 4 digits.", variant: "destructive" });
+      toast({ title: t("argInvalidPin"), description: t("argInvalidPinDesc"), variant: "destructive" });
       return;
     }
     if (newPin !== confirmPin) {
-      toast({ title: "PIN Mismatch", description: "PINs do not match.", variant: "destructive" });
+      toast({ title: t("argPinMismatch"), description: t("argPinMismatchDesc"), variant: "destructive" });
       return;
     }
     if (isWeakPin(newPin)) {
-      toast({ title: "Weak PIN", description: "Please choose a stronger PIN.", variant: "destructive" });
+      toast({ title: t("argWeakPinTitle"), description: t("argWeakPinDesc"), variant: "destructive" });
       return;
     }
     setSettingPin(true);
@@ -304,11 +305,11 @@ const AgentRegister = () => {
       // Note: PIN setup would normally be done by the customer on their device
       // Here we show a guide for the agent to walk through with the customer
       haptics.success();
-      toast({ title: "Setup Complete!", description: "Customer can now login with their PIN." });
+      toast({ title: t("argSetupComplete"), description: t("argSetupCompleteDesc") });
       // Reset and go back
       resetFlow();
     } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("argFailed"), description: err.message, variant: "destructive" });
     } finally {
       setSettingPin(false);
     }
@@ -356,14 +357,14 @@ const AgentRegister = () => {
               <UserPlus size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">Register Customer</h1>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("argTitle")}</h1>
               <p className="text-[9px] text-primary-foreground/60">
                 {isPostKyc
-                  ? currentStep === "kyc_waiting" ? "Awaiting KYC Review"
-                  : currentStep === "approved" ? "KYC Approved"
-                  : currentStep === "rejected" ? "KYC Rejected"
-                  : "Customer Setup"
-                  : `Step ${stepIndex + 1} of ${STEPS.length}`}
+                  ? currentStep === "kyc_waiting" ? t("argAwaitingReview")
+                  : currentStep === "approved" ? t("argApprovedSub")
+                  : currentStep === "rejected" ? t("argRejectedSub")
+                  : t("argCustomerSetup")
+                  : t("argStepOf").replace("{n}", String(stepIndex + 1)).replace("{total}", String(STEPS.length))}
               </p>
             </div>
           </div>
@@ -412,11 +413,11 @@ const AgentRegister = () => {
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto shadow-glow">
                     <Phone size={28} className="text-primary-foreground" />
                   </motion.div>
-                  <h2 className="text-lg font-bold text-foreground">Customer Phone</h2>
-                  <p className="text-xs text-muted-foreground">Enter the customer's mobile number to begin registration</p>
+                  <h2 className="text-lg font-bold text-foreground">{t("argCustomerPhone")}</h2>
+                  <p className="text-xs text-muted-foreground">{t("argCustomerPhoneDesc")}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Phone Number</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("argPhoneLabel")}</Label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">+88</span>
                     <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-12 pl-12 text-lg font-semibold tracking-wider ${phoneValidation.inputClassName}`} />
@@ -426,11 +427,11 @@ const AgentRegister = () => {
                   )}
                 </div>
                 <Button onClick={handleSendOtp} disabled={!phoneValidation.isValid || sendingOtp} className="w-full gradient-primary text-primary-foreground rounded-xl h-12 text-sm font-bold shadow-glow gap-2">
-                  {sendingOtp ? <><Loader2 size={16} className="animate-spin" /> Sending OTP...</> : <><Send size={16} /> Send OTP</>}
+                  {sendingOtp ? <><Loader2 size={16} className="animate-spin" /> {t("argSendingOtp")}</> : <><Send size={16} /> {t("argSendOtp")}</>}
                 </Button>
                 <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
                   <ShieldCheck size={12} className="text-primary" />
-                  <span>OTP will be sent to the customer's phone</span>
+                  <span>{t("argOtpNote")}</span>
                 </div>
               </Card>
             </motion.div>
@@ -444,12 +445,12 @@ const AgentRegister = () => {
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-16 h-16 rounded-2xl gradient-accent flex items-center justify-center mx-auto shadow-glow">
                     <ShieldCheck size={28} className="text-primary-foreground" />
                   </motion.div>
-                  <h2 className="text-lg font-bold text-foreground">Verify OTP</h2>
-                  <p className="text-xs text-muted-foreground">Enter the 6-digit code sent to <span className="font-bold text-foreground">+88{phone}</span></p>
+                  <h2 className="text-lg font-bold text-foreground">{t("argVerifyOtp")}</h2>
+                  <p className="text-xs text-muted-foreground">{t("argVerifyOtpDesc")} <span className="font-bold text-foreground">+88{phone}</span></p>
                 </div>
                 {devOtp && (
                   <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="text-center px-3 py-2 rounded-xl bg-accent/10 border border-accent/20">
-                    <p className="text-[10px] text-accent font-bold uppercase tracking-wider">Dev Mode OTP</p>
+                    <p className="text-[10px] text-accent font-bold uppercase tracking-wider">{t("argDevOtp")}</p>
                     <p className="text-lg font-mono font-bold text-accent tracking-[0.3em]">{devOtp}</p>
                   </motion.div>
                 )}
@@ -528,7 +529,7 @@ const AgentRegister = () => {
                           />
                         </motion.svg>
                       </motion.div>
-                      <p className="text-sm font-semibold text-foreground">Verified successfully</p>
+                      <p className="text-sm font-semibold text-foreground">{t("argVerifiedOk")}</p>
                       <div className="h-1 w-40 overflow-hidden rounded-full bg-muted">
                         <motion.div
                           initial={{ width: "0%" }}
@@ -537,7 +538,7 @@ const AgentRegister = () => {
                           className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
                         />
                       </div>
-                      <p className="text-[11px] text-muted-foreground">Moving to next step…</p>
+                      <p className="text-[11px] text-muted-foreground">{t("argMovingNext")}</p>
                     </motion.div>
                   ) : otpError ? (
                     <motion.div
@@ -563,17 +564,17 @@ const AgentRegister = () => {
                       className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
                     >
                       <Loader2 size={16} className="animate-spin text-primary" />
-                      <span>Verifying...</span>
+                      <span>{t("argVerifying")}</span>
                     </motion.div>
                   ) : null}
                 </AnimatePresence>
 
                 <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                   {resendTimer > 0 ? (
-                    <span>Resend available in <span className="font-semibold text-foreground">{resendTimer}s</span></span>
+                    <span>{t("argResendIn")} <span className="font-semibold text-foreground">{resendTimer}s</span></span>
                   ) : (
                     <button onClick={handleResendOtp} disabled={sendingOtp} className="inline-flex items-center gap-1.5 font-semibold text-primary active:scale-95 transition-transform disabled:opacity-60">
-                      <RefreshCw size={12} className={sendingOtp ? "animate-spin" : ""} /> Resend code
+                      <RefreshCw size={12} className={sendingOtp ? "animate-spin" : ""} /> {t("argResendCode")}
                     </button>
                   )}
                 </div>
@@ -590,21 +591,21 @@ const AgentRegister = () => {
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center mx-auto shadow-glow">
                     <User size={28} className="text-primary-foreground" />
                   </motion.div>
-                  <h2 className="text-lg font-bold text-foreground">Customer Details</h2>
-                  <p className="text-xs text-muted-foreground">Provide basic information to create the account</p>
+                  <h2 className="text-lg font-bold text-foreground">{t("argCustDetails")}</h2>
+                  <p className="text-xs text-muted-foreground">{t("argCustDetailsDesc")}</p>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Full Name *</Label>
-                    <Input placeholder="Customer's full name" value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-12 text-sm font-medium" />
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("argFullName")}</Label>
+                    <Input placeholder={t("argFullNamePh")} value={name} onChange={e => setName(e.target.value)} className="rounded-xl h-12 text-sm font-medium" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">NID Number (Optional)</Label>
-                    <Input type="text" inputMode="numeric" placeholder="National ID number" value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-12 text-sm font-medium" />
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("argNidOptional")}</Label>
+                    <Input type="text" inputMode="numeric" placeholder={t("argNidPh")} value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-12 text-sm font-medium" />
                   </div>
                 </div>
                 <Button onClick={handleCreateAccount} disabled={!name.trim() || creatingAccount} className="w-full gradient-primary text-primary-foreground rounded-xl h-12 text-sm font-bold shadow-glow gap-2">
-                  {creatingAccount ? <><Loader2 size={16} className="animate-spin" /> Creating Account...</> : <><UserPlus size={16} /> Create & Start KYC</>}
+                  {creatingAccount ? <><Loader2 size={16} className="animate-spin" /> {t("argCreating")}</> : <><UserPlus size={16} /> {t("argCreateKyc")}</>}
                 </Button>
               </Card>
             </motion.div>
@@ -639,9 +640,9 @@ const AgentRegister = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <h2 className="text-lg font-bold text-foreground">KYC Under Review</h2>
+                  <h2 className="text-lg font-bold text-foreground">{t("argKycReview")}</h2>
                   <p className="text-xs text-muted-foreground">
-                    Waiting for admin approval
+                    {t("argWaitingAdmin")}
                     <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>...</motion.span>
                   </p>
                 </div>
@@ -651,33 +652,33 @@ const AgentRegister = () => {
                   <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}>
                     <Loader2 size={14} className="text-amber-500" />
                   </motion.div>
-                  <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Pending Review</span>
+                  <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">{t("argPendingReview")}</span>
                 </div>
 
                 {/* Elapsed time */}
                 <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                   <Clock size={12} />
-                  <span>Elapsed: {formatElapsed(waitingElapsed)}</span>
+                  <span>{t("argElapsed")} {formatElapsed(waitingElapsed)}</span>
                 </div>
 
                 {/* Customer info summary */}
                 <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-left">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Name</span>
+                    <span className="text-muted-foreground">{t("argName")}</span>
                     <span className="font-semibold text-foreground">{name}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Phone</span>
+                    <span className="text-muted-foreground">{t("argPhone")}</span>
                     <span className="font-semibold text-foreground">+88{phone}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Status</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">PENDING</span>
+                    <span className="text-muted-foreground">{t("argStatus")}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">{t("argPending")}</span>
                   </div>
                 </div>
 
                 <p className="text-[10px] text-muted-foreground">
-                  This page updates automatically when admin reviews the KYC
+                  {t("argAutoUpdate")}
                 </p>
               </Card>
             </motion.div>
@@ -698,8 +699,8 @@ const AgentRegister = () => {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-2">
-                  <h2 className="text-xl font-bold text-foreground">KYC Approved! 🎉</h2>
-                  <p className="text-sm text-muted-foreground">Customer <span className="font-semibold text-foreground">{name}</span> is now verified</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("argKycApproved")}</h2>
+                  <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{name}</span> {t("argCustNowVerified")}</p>
                 </motion.div>
 
                 {/* Download link card */}
@@ -711,9 +712,9 @@ const AgentRegister = () => {
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Download size={16} className="text-primary" />
-                    <span className="text-sm font-bold text-foreground">Download EasyPay</span>
+                    <span className="text-sm font-bold text-foreground">{t("argDownloadEP")}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Share this link with the customer</p>
+                  <p className="text-xs text-muted-foreground">{t("argShareLink")}</p>
                   <div className="flex items-center gap-2 bg-background rounded-xl border border-border px-3 py-2.5">
                     <Smartphone size={14} className="text-primary shrink-0" />
                     <span className="text-xs font-mono text-foreground truncate flex-1">pay-palooza-go.lovable.app</span>
@@ -723,10 +724,10 @@ const AgentRegister = () => {
                       className="h-7 px-2 text-[10px] font-bold text-primary"
                       onClick={() => {
                         navigator.clipboard.writeText("https://pay-palooza-go.lovable.app");
-                        toast({ title: "Link Copied!" });
+                        toast({ title: t("argLinkCopied") });
                       }}
                     >
-                      Copy
+                      {t("argCopy")}
                     </Button>
                   </div>
                 </motion.div>
@@ -734,28 +735,28 @@ const AgentRegister = () => {
                 {/* Customer summary */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-left">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Name</span>
+                    <span className="text-muted-foreground">{t("argName")}</span>
                     <span className="font-semibold text-foreground">{name}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Phone</span>
+                    <span className="text-muted-foreground">{t("argPhone")}</span>
                     <span className="font-semibold text-foreground">+88{phone}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">KYC</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">VERIFIED ✓</span>
+                    <span className="text-muted-foreground">{t("argKycLabel")}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">{t("argVerified")}</span>
                   </div>
                 </motion.div>
 
                 <div className="space-y-2.5">
                   <Button onClick={() => goTo("customer_login")} className="w-full gradient-primary text-primary-foreground rounded-xl h-12 text-sm font-bold shadow-glow gap-2">
-                    <Smartphone size={16} /> Guide Customer Login
+                    <Smartphone size={16} /> {t("argGuideLogin")}
                   </Button>
                   <Button onClick={resetFlow} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2">
-                    <UserPlus size={16} /> Register Another
+                    <UserPlus size={16} /> {t("argRegAnother")}
                   </Button>
                   <Button onClick={() => navigate("/agent")} variant="ghost" className="w-full rounded-xl h-10 text-xs text-muted-foreground gap-2">
-                    <Home size={14} /> Back to Dashboard
+                    <Home size={14} /> {t("argBackDash")}
                   </Button>
                 </div>
               </Card>
@@ -777,8 +778,8 @@ const AgentRegister = () => {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-2">
-                  <h2 className="text-xl font-bold text-foreground">KYC Rejected</h2>
-                  <p className="text-sm text-muted-foreground">The verification for <span className="font-semibold text-foreground">{name}</span> was not approved</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("argKycRejectedTitle")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("argKycRejectedDesc")} <span className="font-semibold text-foreground">{name}</span></p>
                 </motion.div>
 
                 {/* Rejection reason */}
@@ -788,7 +789,7 @@ const AgentRegister = () => {
                   transition={{ delay: 0.3 }}
                   className="rounded-2xl bg-red-500/5 border border-red-500/15 p-4 text-left space-y-2"
                 >
-                  <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">Reason for Rejection</p>
+                  <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">{t("argRejectionReason")}</p>
                   <p className="text-sm text-foreground leading-relaxed">{rejectionReason}</p>
                 </motion.div>
 
@@ -801,10 +802,10 @@ const AgentRegister = () => {
                     }}
                     className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl h-12 text-sm font-bold gap-2"
                   >
-                    <RefreshCw size={16} /> Retry KYC
+                    <RefreshCw size={16} /> {t("argRetryKyc")}
                   </Button>
                   <Button onClick={() => navigate("/agent")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2">
-                    <Home size={16} /> Back to Dashboard
+                    <Home size={16} /> {t("argBackDash")}
                   </Button>
                 </div>
               </Card>
@@ -819,14 +820,14 @@ const AgentRegister = () => {
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center mx-auto shadow-glow">
                     <Smartphone size={24} className="text-primary-foreground" />
                   </motion.div>
-                  <h2 className="text-base font-bold text-foreground">Customer Login Guide</h2>
-                  <p className="text-[11px] text-muted-foreground">Walk the customer through their first login</p>
+                  <h2 className="text-base font-bold text-foreground">{t("argLoginGuide")}</h2>
+                  <p className="text-[11px] text-muted-foreground">{t("argLoginGuideDesc")}</p>
                 </div>
 
                 {/* Mini step indicators */}
                 <div className="flex items-center justify-center gap-3">
                   {(["phone_confirm", "otp_verify", "set_pin"] as const).map((s, i) => {
-                    const labels = ["Phone", "OTP", "PIN"];
+                    const labels = [t("argPhone"), t("argOtp"), t("argPin")];
                     const icons = [Phone, ShieldCheck, Lock];
                     const Icon = icons[i];
                     const isActive = s === loginStep;
@@ -851,15 +852,15 @@ const AgentRegister = () => {
                 {loginStep === "phone_confirm" && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                     <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Customer Phone</Label>
+                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t("argCustomerPhoneLabel")}</Label>
                       <div className="flex items-center gap-2 bg-background rounded-xl border border-border px-3 py-3">
                         <Phone size={14} className="text-primary" />
                         <span className="text-sm font-bold text-foreground tracking-wider">+88{phone}</span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">Customer enters this number in the app to login</p>
+                      <p className="text-[10px] text-muted-foreground">{t("argEnterInApp")}</p>
                     </div>
                     <Button onClick={() => setLoginStep("otp_verify")} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold gap-2">
-                      Next: OTP Verification <ArrowLeft size={14} className="rotate-180" />
+                      {t("argNextOtp")} <ArrowLeft size={14} className="rotate-180" />
                     </Button>
                   </motion.div>
                 )}
@@ -872,10 +873,10 @@ const AgentRegister = () => {
                         <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
                           <ShieldCheck size={12} className="text-primary" />
                         </div>
-                        <span className="text-xs font-bold text-foreground">OTP Auto-Detection</span>
+                        <span className="text-xs font-bold text-foreground">{t("argOtpAutoDetect")}</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        On Android Chrome, the OTP will be automatically detected from SMS. Customer just needs to tap "Auto-fill" when the prompt appears.
+                        {t("argOtpAutoDesc")}
                       </p>
                       <div className="flex justify-center">
                         <InputOTP maxLength={6} value={customerOtp} onChange={setCustomerOtp}>
@@ -888,7 +889,7 @@ const AgentRegister = () => {
                       </div>
                     </div>
                     <Button onClick={() => setLoginStep("set_pin")} disabled={customerOtp.length !== 6} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold gap-2">
-                      Next: Set PIN <ArrowLeft size={14} className="rotate-180" />
+                      {t("argNextSetPin")} <ArrowLeft size={14} className="rotate-180" />
                     </Button>
                   </motion.div>
                 )}
@@ -901,12 +902,12 @@ const AgentRegister = () => {
                         <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
                           <Lock size={12} className="text-primary" />
                         </div>
-                        <span className="text-xs font-bold text-foreground">Set 4-Digit PIN</span>
+                        <span className="text-xs font-bold text-foreground">{t("argSet4Pin")}</span>
                       </div>
 
                       <div className="space-y-3">
                         <div className="space-y-1.5">
-                          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">New PIN</Label>
+                          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{t("argNewPin")}</Label>
                           <div className="relative">
                             <Input
                               type={showPin ? "text" : "password"}
@@ -923,7 +924,7 @@ const AgentRegister = () => {
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Confirm PIN</Label>
+                          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{t("argConfirmPin")}</Label>
                           <Input
                             type={showPin ? "text" : "password"}
                             inputMode="numeric"
@@ -938,12 +939,12 @@ const AgentRegister = () => {
 
                       {newPin.length === 4 && isWeakPin(newPin) && (
                         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-destructive font-medium flex items-center gap-1">
-                          <AlertTriangle size={10} /> Weak PIN — avoid sequential or repeated digits
+                          <AlertTriangle size={10} /> {t("argWeakPin")}
                         </motion.p>
                       )}
                       {newPin.length === 4 && confirmPin.length === 4 && newPin !== confirmPin && (
                         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-destructive font-medium">
-                          PINs do not match
+                          {t("argPinMismatch")}
                         </motion.p>
                       )}
                     </div>
@@ -953,13 +954,13 @@ const AgentRegister = () => {
                       disabled={newPin.length !== 4 || confirmPin.length !== 4 || newPin !== confirmPin || isWeakPin(newPin) || settingPin}
                       className="w-full gradient-primary text-primary-foreground rounded-xl h-12 text-sm font-bold shadow-glow gap-2"
                     >
-                      {settingPin ? <><Loader2 size={16} className="animate-spin" /> Setting up...</> : <><CheckCircle2 size={16} /> Complete Setup</>}
+                      {settingPin ? <><Loader2 size={16} className="animate-spin" /> {t("argSettingUp")}</> : <><CheckCircle2 size={16} /> {t("argCompleteSetup")}</>}
                     </Button>
                   </motion.div>
                 )}
 
                 <Button onClick={() => goTo("approved", -1)} variant="ghost" className="w-full text-xs text-muted-foreground gap-1.5">
-                  <ArrowLeft size={12} /> Back to Approval
+                  <ArrowLeft size={12} /> {t("argBackApproval")}
                 </Button>
               </Card>
             </motion.div>
