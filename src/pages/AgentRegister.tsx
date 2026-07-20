@@ -275,7 +275,7 @@ const AgentRegister = () => {
       haptics.success();
       goTo("kyc");
     } catch (err: any) {
-      toast({ title: "Registration Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("argRegFail"), description: err.message, variant: "destructive" });
     } finally {
       setCreatingAccount(false);
     }
