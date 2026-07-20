@@ -181,13 +181,37 @@ export default function QuickCourierBookSheet({ orderId, orderNum, items, open, 
             </p>
           </div>
 
+          {recommended && (
+            <div className="rounded-2xl p-3 bg-gradient-to-br from-primary/10 via-background to-accent/10 border border-primary/20">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Sparkles size={12} className="text-primary" />
+                <span className="text-[11px] font-bold text-primary uppercase tracking-wide">Smart pick</span>
+                <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                  {Math.round((recommended.delivered / recommended.shipped) * 100)}% delivered
+                </Badge>
+              </div>
+              <p className="text-[12px] text-foreground">
+                <b>{recommended.provider}</b> performs best for your shop
+                {recommended.avgHours != null && <> · avg {Math.round(recommended.avgHours)}h delivery</>}
+                {" "}({recommended.shipped} past shipments)
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground">Courier</label>
             <select value={courier} onChange={(e) => setCourier(e.target.value)}
               className="mt-1 w-full h-10 text-[13px] rounded-md border border-input bg-background px-2">
-              {COURIERS.map(c => <option key={c} value={c}>{c}</option>)}
+              {COURIERS.map(c => {
+                const s = stats?.find(x => x.provider === c);
+                const label = s && s.shipped >= 3
+                  ? `${c} · ${Math.round((s.delivered / s.shipped) * 100)}% success`
+                  : c;
+                return <option key={c} value={c}>{label}</option>;
+              })}
             </select>
           </div>
+
 
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground">Tracking / Consignment No.</label>
