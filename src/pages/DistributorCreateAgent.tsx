@@ -128,8 +128,8 @@ const DistributorCreateAgent = () => {
               <UserPlus size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">Create Agent Account</h1>
-              <p className="text-[9px] text-primary-foreground/60">Register new agent in your network</p>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("distCATitle")}</h1>
+              <p className="text-[9px] text-primary-foreground/60">{t("distCASubtitle")}</p>
             </div>
           </div>
         </div>
