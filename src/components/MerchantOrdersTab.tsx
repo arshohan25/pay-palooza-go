@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Package, Clock, CheckCircle2, Truck, CircleCheck, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Package, Clock, CheckCircle2, Truck, CircleCheck, X, ChevronDown, ChevronUp, Printer, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import FulfillmentSheet from "@/components/merchant/FulfillmentSheet";
+import QuickCourierBookSheet from "@/components/merchant/QuickCourierBookSheet";
+import { downloadInvoice, printInvoice, type InvoiceOrder } from "@/components/InvoiceGenerator";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 interface MerchantOrder {
