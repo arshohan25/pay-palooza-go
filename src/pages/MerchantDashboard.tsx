@@ -1258,19 +1258,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
 
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
-      {/* Today snapshot */}
-      {merchant && (
-        <motion.div variants={stagger.item} className="space-y-3">
-          <MerchantTodaySnapshot merchantId={merchant.id} />
-          <div className="grid grid-cols-2 gap-2">
-            <MerchantPayoutEtaCard merchantId={merchant.id} frequency={merchant.settlement_frequency} />
-            <MerchantDisputesTile merchantId={merchant.id} />
-          </div>
-          <MerchantInventoryAlerts merchantId={merchant.id} threshold={5} />
-          <MerchantWeeklyDigestCard merchantId={merchant.id} />
-        </motion.div>
-      )}
-      {/* Quick Actions Grid */}
+      {/* Quick Actions Grid — Merchant Services (top of Overview) */}
       <motion.div variants={stagger.item}>
         <div className="flex items-center justify-between mb-2.5 px-1">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -1305,6 +1293,20 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
           })}
         </div>
       </motion.div>
+
+      {/* Today snapshot */}
+      {merchant && (
+        <motion.div variants={stagger.item} className="space-y-3">
+          <MerchantTodaySnapshot merchantId={merchant.id} />
+          <div className="grid grid-cols-2 gap-2">
+            <MerchantPayoutEtaCard merchantId={merchant.id} frequency={merchant.settlement_frequency} />
+            <MerchantDisputesTile merchantId={merchant.id} />
+          </div>
+          <MerchantInventoryAlerts merchantId={merchant.id} threshold={5} />
+          <MerchantWeeklyDigestCard merchantId={merchant.id} />
+        </motion.div>
+      )}
+
 
       {/* Dynamic QR Demo Card */}
       <motion.div variants={stagger.item}>
