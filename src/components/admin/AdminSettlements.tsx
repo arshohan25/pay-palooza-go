@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Landmark, Plus, CheckCircle, Clock, XCircle, Download, Search, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Landmark, Plus, CheckCircle, Clock, XCircle, Download, Search, Trash2, MoreVertical, Eye, PlayCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -69,6 +70,7 @@ export default function AdminSettlements() {
   const [form, setForm] = useState({ entityType: "merchant", entityPhone: "", periodStart: "", periodEnd: "", bankName: "", bankAccount: "", notes: "" });
   const [detail, setDetail] = useState<Settlement | null>(null);
   const [detailSc, setDetailSc] = useState<MerchantSc | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -306,38 +308,47 @@ export default function AdminSettlements() {
                 <div><p className="text-muted-foreground text-[10px]">Net</p><p className="font-mono font-bold">৳{Number(s.net_amount).toLocaleString()}</p></div>
                 <div><p className="text-muted-foreground text-[10px]">Txns</p><p className="font-mono">{s.txn_count}</p></div>
               </div>
-              <p className="text-[10px] text-muted-foreground">{s.period_start?.slice(0, 10)} → {s.period_end?.slice(0, 10)}</p>
-              <div className="flex gap-1 flex-wrap pt-1">
-                <Button size="sm" variant="ghost" className="h-7 text-xs flex-1 min-w-[60px]" onClick={() => openDetail(s)}>View</Button>
-                {s.status === "pending" && (
-                  <>
-                    <Button size="sm" variant="outline" className="h-7 text-xs flex-1 min-w-[70px]" onClick={() => updateStatus(s.id, "processing")}>Process</Button>
-                    <Button size="sm" variant="destructive" className="h-7 text-xs flex-1 min-w-[60px]" onClick={() => updateStatus(s.id, "failed")}>Fail</Button>
-                  </>
-                )}
-                {s.status === "processing" && (
-                  <Button size="sm" className="h-7 text-xs flex-1 min-w-[90px]" onClick={() => updateStatus(s.id, "completed")}><CheckCircle className="w-3 h-3 mr-1" /> Complete</Button>
-                )}
-                {s.status === "completed" && s.settled_at && (
-                  <span className="text-[10px] text-muted-foreground self-center px-2">{formatDistanceToNow(new Date(s.settled_at), { addSuffix: true })}</span>
-                )}
-                {s.status === "failed" && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive flex-1 min-w-[70px]"><Trash2 className="w-3 h-3 mr-1" />Delete</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Settlement</AlertDialogTitle>
-                        <AlertDialogDescription>Delete this failed settlement? This cannot be undone.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteSettlement(s.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <p className="text-[10px] text-muted-foreground truncate">{s.period_start?.slice(0, 10)} → {s.period_end?.slice(0, 10)}</p>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline" className="h-8 px-2 shrink-0">
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => openDetail(s)}>
+                      <Eye className="w-4 h-4 mr-2" /> View details
+                    </DropdownMenuItem>
+                    {s.status === "pending" && (
+                      <>
+                        <DropdownMenuItem onClick={() => updateStatus(s.id, "processing")}>
+                          <PlayCircle className="w-4 h-4 mr-2" /> Mark processing
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => updateStatus(s.id, "failed")} className="text-destructive focus:text-destructive">
+                          <AlertTriangle className="w-4 h-4 mr-2" /> Mark failed
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {s.status === "processing" && (
+                      <DropdownMenuItem onClick={() => updateStatus(s.id, "completed")}>
+                        <CheckCircle className="w-4 h-4 mr-2" /> Mark completed
+                      </DropdownMenuItem>
+                    )}
+                    {s.status === "completed" && s.settled_at && (
+                      <DropdownMenuItem disabled className="text-[11px]">
+                        Settled {formatDistanceToNow(new Date(s.settled_at), { addSuffix: true })}
+                      </DropdownMenuItem>
+                    )}
+                    {s.status === "failed" && (
+                      <DropdownMenuItem onClick={() => setDeleteId(s.id)} className="text-destructive focus:text-destructive">
+                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </CardContent>
           </Card>
@@ -518,6 +529,24 @@ export default function AdminSettlements() {
           })()}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Settlement</AlertDialogTitle>
+            <AlertDialogDescription>Delete this failed settlement? This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (deleteId) { deleteSettlement(deleteId); setDeleteId(null); } }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
