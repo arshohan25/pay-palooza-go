@@ -17,7 +17,9 @@ import { useI18n } from "@/lib/i18n";
 export default function VendorAccessGate({ children }: { children: ReactNode }) {
   const nav = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [state, setState] = useState<"loading" | "approved" | "pending" | "rejected" | "none">("loading");
+
   const [app, setApp] = useState<any>(null);
 
   useEffect(() => {
