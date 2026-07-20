@@ -136,7 +136,7 @@ export default function TeamLoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      toast.error("Please enter both username and password");
+      toast.error(t("tlpEnterBoth"));
       return;
     }
     setLoading(true);
@@ -149,14 +149,14 @@ export default function TeamLoginPage() {
       if (error) throw error;
       const result = typeof data === "string" ? JSON.parse(data) : data;
       if (result?.error) throw new Error(result.error);
-      if (!result?.preAuthToken) throw new Error("Login failed");
+      if (!result?.preAuthToken) throw new Error(t("tlpLoginFailed"));
 
       setPreAuthToken(result.preAuthToken);
       setTeamEmail(result.emailMasked || "");
       setShow2fa(true);
-      toast.info(`Verification code sent to ${result.emailMasked || "your email"}`);
+      toast.info(`${t("tlpCodeSentToEmail")} ${result.emailMasked || t("tlpYourEmail")}`);
     } catch (err: any) {
-      toast.error(err.message || "Invalid credentials");
+      toast.error(err.message || t("tlpInvalidCreds"));
     }
     setLoading(false);
   };
