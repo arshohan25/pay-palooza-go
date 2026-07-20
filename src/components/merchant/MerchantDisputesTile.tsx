@@ -38,6 +38,8 @@ export default function MerchantDisputesTile({ merchantId, onOpen }: { merchantI
 
   const hasOpen = openCount > 0;
 
+  if (isMerchantOnly) return null;
+
   return (
     <Card
       onClick={onOpen}
