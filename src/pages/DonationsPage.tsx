@@ -599,7 +599,7 @@ const DonationsPage = () => {
                         <p className="text-sm font-semibold text-foreground truncate">{localizeCauseName(r.cause_name)}</p>
                         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                           <CalendarClock size={11} />
-                          <span>{r.frequency === "weekly" ? t("donWeekly") : t("donMonthly")}</span>
+                          <span>{r.frequency === "weekly" ? t("donWeekly") : r.frequency === "yearly" ? t("donYearly") : t("donMonthly")}</span>
                           <span>· {t("savNextDate")}: {format(new Date(r.next_run_at), "dd MMM")}</span>
                         </div>
                       </div>
