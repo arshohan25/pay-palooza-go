@@ -366,7 +366,7 @@ const PayLinkPage = () => {
                     <div className="relative py-1">
                       <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/60" /></div>
                       <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
-                        <span className="bg-card px-2 text-muted-foreground">or</span>
+                        <span className="bg-card px-2 text-muted-foreground">{t("plOr")}</span>
                       </div>
                     </div>
 
