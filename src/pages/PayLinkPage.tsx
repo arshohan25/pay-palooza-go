@@ -216,10 +216,10 @@ const PayLinkPage = () => {
     const up = searchParams.get("up");
     if (!up) return;
     if (up === "success") {
-      toast.success("Payment received — updating…");
+      toast.success(t("plPaymentReceived"));
       if (link?.id) loadPayments(link.id);
     } else if (up === "cancel") {
-      toast.error("Payment cancelled");
+      toast.error(t("plPaymentCancelled"));
     }
     searchParams.delete("up");
     setSearchParams(searchParams, { replace: true });
