@@ -410,14 +410,14 @@ export default function InstallmentJourneyPage() {
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            aria-label="Back"
+            aria-label={t("ijBack")}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur"
           >
             <ArrowLeft size={18} />
           </button>
           <div className="text-center">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">Journey</div>
-            <div className="text-sm font-semibold">Installment Timeline</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">{t("ijJourney")}</div>
+            <div className="text-sm font-semibold">{t("ijInstallmentTimeline")}</div>
           </div>
           <div className="h-10 w-10" aria-hidden />
         </div>
@@ -425,22 +425,22 @@ export default function InstallmentJourneyPage() {
         {loadingState && (
           <div className="mt-16 flex flex-col items-center gap-3 text-white/60">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-            <div className="text-sm">Loading timeline…</div>
+            <div className="text-sm">{t("ijLoadingTimeline")}</div>
           </div>
         )}
 
         {notFound && (
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center">
             <AlertTriangle size={22} className="mx-auto text-amber-400" />
-            <div className="mt-2 text-base font-semibold">Not found</div>
+            <div className="mt-2 text-base font-semibold">{t("ijNotFound")}</div>
             <p className="mt-1 text-sm text-white/60">
-              This {type === "dps" ? "DPS plan" : "goal"} could not be located.
+              {type === "dps" ? t("ijNotFoundDps") : t("ijNotFoundGoal")}
             </p>
             <button
               onClick={() => navigate("/savings")}
               className="mt-4 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold"
             >
-              Back to Savings
+              {t("ijBackToSavings")}
             </button>
           </div>
         )}
