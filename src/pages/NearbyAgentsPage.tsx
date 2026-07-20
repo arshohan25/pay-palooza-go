@@ -149,17 +149,18 @@ const NearbyAgentsPage = () => {
   const copyId = (uid?: string | null) => {
     if (!uid) return;
     navigator.clipboard.writeText(uid);
-    toast.success("Agent ID copied");
+    toast.success(t("naIdCopied"));
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <FlowHeader
-        title="Nearby Agents"
-        tagline={loc ? `${filtered.length} of ${agents.length} within ${radius} km` : "Locating you…"}
+        title={t("naTitle")}
+        tagline={loc ? t("naTaglineWithin").replace("{shown}", String(filtered.length)).replace("{total}", String(agents.length)).replace("{radius}", String(radius)) : t("naLocating")}
         icon={MapPin}
         onBack={() => navigate(-1)}
       />
+
 
       <div className="relative flex-1">
         {loading && (
