@@ -170,31 +170,30 @@ const InstallAllRolesWizard = () => {
               onClick={() => navigate("/install")}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft size={14} /> All installers
+              <ArrowLeft size={14} /> {t("iarAllInstallers")}
             </button>
             <button
               onClick={restart}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
-              <RotateCcw size={12} /> Restart
+              <RotateCcw size={12} /> {t("iarRestart")}
             </button>
           </div>
 
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary mb-3">
             <Download size={12} />
-            Install all roles · wizard
+            {t("iarBadge")}
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-            Install every EasyPay role app in order
+            {t("iarHeading")}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-xl">
-            Each role installs as its own PWA. Follow these {STEPS.length} steps —
-            we'll track progress and open the correct installer for you.
+            {t("iarSubheading").replace("{count}", String(STEPS.length))}
           </p>
 
           <div className="mt-5">
             <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground mb-1.5">
-              <span>{completedCount} of {STEPS.length} installed</span>
+              <span>{t("iarInstalledCount").replace("{done}", String(completedCount)).replace("{total}", String(STEPS.length))}</span>
               <span className="tabular-nums">{progressPct}%</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
