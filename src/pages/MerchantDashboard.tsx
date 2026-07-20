@@ -2673,7 +2673,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
       {/* Transaction list */}
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
-          <h3 className="text-sm font-bold text-foreground mb-3">Transactions</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("mhTransactionsTitle")}</h3>
 
           {filtered.length === 0 ? (
             <motion.div
