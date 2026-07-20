@@ -74,7 +74,7 @@ const PayLinkPage = () => {
         .eq("short_code", shortCode)
         .maybeSingle();
       if (error) setError(error.message);
-      else if (!data) setError("This payment link doesn't exist.");
+      else if (!data) setError(t("plLinkNotExist"));
       else {
         setLink(data as Link);
         loadPayments(data.id);
