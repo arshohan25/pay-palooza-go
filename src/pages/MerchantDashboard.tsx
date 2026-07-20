@@ -1234,7 +1234,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
         .single();
 
       if (!keyData) {
-        toast({ title: "No API Key", description: "Request API access from the API tab first.", variant: "destructive" });
+        toast({ title: t("mqrNoApiKey"), description: t("mqrNoApiKeyDesc"), variant: "destructive" });
         setQrGenerateLoading(false);
         return;
       }
