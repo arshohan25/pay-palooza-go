@@ -485,7 +485,23 @@ const MerchantDashboard = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-extrabold tracking-tight truncate">{merchant?.business_name || "Merchant"}</h1>
-                <BadgeCheck size={18} className="text-white/80 shrink-0" />
+                {kycStatus === "approved" ? (
+                  <span title="KYC verified" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-emerald-400/25 border border-emerald-200/40 text-emerald-50 text-[9px] font-bold backdrop-blur-sm">
+                    <BadgeCheck size={11} /> KYC
+                  </span>
+                ) : kycStatus === "pending" ? (
+                  <span title="KYC under review" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-yellow-400/25 border border-yellow-200/40 text-yellow-50 text-[9px] font-bold backdrop-blur-sm">
+                    <Clock size={10} /> KYC
+                  </span>
+                ) : kycStatus === "rejected" ? (
+                  <span title="KYC rejected" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-red-400/25 border border-red-200/40 text-red-50 text-[9px] font-bold backdrop-blur-sm">
+                    <AlertTriangle size={10} /> KYC
+                  </span>
+                ) : (
+                  <span title="KYC not started" className="inline-flex items-center gap-0.5 shrink-0 px-1.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-white/90 text-[9px] font-bold backdrop-blur-sm">
+                    <Shield size={10} /> KYC
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {isStaff && (
