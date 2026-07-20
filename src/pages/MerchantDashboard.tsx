@@ -2060,7 +2060,7 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
       <motion.div variants={stagger.item}>
-        <Card className="p-0 border-0 shadow-elevated relative overflow-hidden rounded-3xl">
+        <Card id="merchant-qr-card" className="p-0 border-0 shadow-elevated relative overflow-hidden rounded-3xl">
           {/* Premium gradient band (dynamic colors) */}
           <div className="relative px-6 pt-6 pb-4 text-center overflow-hidden"
             style={{ background: `linear-gradient(135deg, ${bandStart} 0%, ${bandEnd} 100%)` }}>
