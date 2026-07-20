@@ -4992,6 +4992,25 @@ const translations = {
   alpVerifyIncorrect: { en: "Incorrect code. Please double-check and try again.", bn: "ভুল কোড। ভালোভাবে দেখে আবার চেষ্টা করুন।" },
   alpVerifyRate: { en: "Too many attempts. Please wait before retrying.", bn: "অনেক বেশি চেষ্টা। কিছুক্ষণ অপেক্ষা করে আবার চেষ্টা করুন।" },
   alpTrustFail: { en: "Could not trust this device. Please try again.", bn: "এই ডিভাইসটি বিশ্বাসযোগ্য করা যায়নি। আবার চেষ্টা করুন।" },
+
+  // Admin Login Page
+  admlpTitle: { en: "Admin — Sign in", bn: "অ্যাডমিন — সাইন ইন" },
+  admlpMetaDesc: { en: "EasyPay Admin sign-in — manage users, transactions, fraud alerts and platform settings.", bn: "ইজিপে অ্যাডমিন সাইন-ইন — ব্যবহারকারী, লেনদেন, জালিয়াতি সতর্কতা ও প্ল্যাটফর্ম সেটিংস পরিচালনা।" },
+  admlpBrand: { en: "EasyPay", bn: "ইজিপে" },
+  admlpHeading: { en: "EasyPay Admin Console", bn: "ইজিপে অ্যাডমিন কনসোল" },
+  admlpSubtitle: { en: "Restricted access — authorized personnel only.", bn: "সীমিত প্রবেশাধিকার — শুধুমাত্র অনুমোদিত কর্মীদের জন্য।" },
+  admlpPhoneLabel: { en: "Admin mobile number", bn: "অ্যাডমিন মোবাইল নম্বর" },
+  admlpPinLabel: { en: "4-digit PIN", bn: "৪-সংখ্যার পিন" },
+  admlpSignedIn: { en: "Signed in", bn: "সাইন ইন হয়েছে" },
+  admlpSigningIn: { en: "Signing in…", bn: "সাইন ইন হচ্ছে…" },
+  admlpSignInAction: { en: "Sign in as Admin", bn: "অ্যাডমিন হিসেবে সাইন ইন" },
+  admlpForgotPin: { en: "Forgot PIN?", bn: "পিন ভুলে গেছেন?" },
+  admlpAdminsOnly: { en: "Admins only", bn: "শুধু অ্যাডমিন" },
+  admlpFooterNote: { en: "Admin & team accounts are provisioned internally. Contact your workspace owner.", bn: "অ্যাডমিন ও টিম অ্যাকাউন্ট অভ্যন্তরীণভাবে তৈরি হয়। আপনার ওয়ার্কস্পেস মালিকের সাথে যোগাযোগ করুন।" },
+  admlpErrValidPhone: { en: "Enter a valid 11-digit admin mobile number.", bn: "সঠিক ১১-সংখ্যার অ্যাডমিন মোবাইল নম্বর দিন।" },
+  admlpErrPin: { en: "Enter your 4-digit PIN.", bn: "আপনার ৪-সংখ্যার পিন দিন।" },
+  admlpErrIncorrect: { en: "Incorrect phone number or PIN.", bn: "ভুল ফোন নম্বর অথবা পিন।" },
+  admlpErrGeneric: { en: "Unable to sign in right now.", bn: "এখন সাইন ইন করা যাচ্ছে না।" },
 } as const;
 
 
