@@ -265,7 +265,7 @@ const PayLinkPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background flex items-start justify-center p-4 py-8">
-      <Seo title={`Pay: ${link.title}`} description={`Pay ${link.title} securely from your wallet.`} path={`/r/${link.short_code}`} />
+      <Seo title={t("plSeoTitle").replace("{title}", link.title)} description={t("plSeoDesc").replace("{title}", link.title)} path={`/r/${link.short_code}`} />
       <AnimatePresence mode="wait">
         {success ? (
           <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="w-full max-w-sm">
