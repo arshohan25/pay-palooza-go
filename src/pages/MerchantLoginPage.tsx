@@ -679,9 +679,9 @@ export default function MerchantLoginPage() {
               <>
                 <div className="mt-3 grid grid-cols-3 gap-1.5">
                   {[
-                    { icon: Lock, label: "Secure PIN" },
-                    { icon: ShieldCheck, label: "Encrypted" },
-                    { icon: Sparkles, label: "Bank-grade" },
+                    { icon: Lock, label: t("mlTrustSecurePin") },
+                    { icon: ShieldCheck, label: t("mlTrustEncrypted") },
+                    { icon: Sparkles, label: t("mlTrustBankGrade") },
                   ].map(({ icon: Icon, label }) => (
                     <div
                       key={label}
@@ -695,10 +695,10 @@ export default function MerchantLoginPage() {
 
                 <div className="mt-2.5 flex items-center justify-between rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.03] to-white/[0.06] px-3 py-1.5">
                   {[
-                    { icon: ShoppingBag, label: "Orders" },
-                    { icon: Wallet, label: "Payouts" },
-                    { icon: QrCode, label: "QR" },
-                    { icon: BarChart3, label: "Insights" },
+                    { icon: ShoppingBag, label: t("mlPillOrders") },
+                    { icon: Wallet, label: t("mlPillPayouts") },
+                    { icon: QrCode, label: t("mlPillQR") },
+                    { icon: BarChart3, label: t("mlPillInsights") },
                   ].map(({ icon: Icon, label }) => (
                     <div key={label} className="flex flex-col items-center gap-0.5 text-white/70">
                       <Icon className="h-3.5 w-3.5 text-amber-200" />
