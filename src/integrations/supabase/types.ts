@@ -3800,6 +3800,100 @@ export type Database = {
           },
         ]
       }
+      merchant_broadcast_recipients: {
+        Row: {
+          broadcast_id: string
+          created_at: string
+          error: string | null
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          broadcast_id: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          broadcast_id?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_broadcast_recipients_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_broadcasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_broadcasts: {
+        Row: {
+          audience: string
+          channel: string
+          created_at: string
+          created_by: string
+          delivered_count: number
+          error: string | null
+          failed_count: number
+          id: string
+          merchant_id: string
+          message: string
+          recipients_count: number
+          sent_at: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          audience: string
+          channel?: string
+          created_at?: string
+          created_by: string
+          delivered_count?: number
+          error?: string | null
+          failed_count?: number
+          id?: string
+          merchant_id: string
+          message: string
+          recipients_count?: number
+          sent_at?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          audience?: string
+          channel?: string
+          created_at?: string
+          created_by?: string
+          delivered_count?: number
+          error?: string | null
+          failed_count?: number
+          id?: string
+          merchant_id?: string
+          message?: string
+          recipients_count?: number
+          sent_at?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_broadcasts_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_categories: {
         Row: {
           created_at: string | null
@@ -4453,6 +4547,38 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_review_nudges: {
+        Row: {
+          id: string
+          merchant_id: string
+          order_id: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          merchant_id: string
+          order_id: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          merchant_id?: string
+          order_id?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_review_nudges_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
             referencedColumns: ["id"]
           },
         ]
@@ -8524,6 +8650,10 @@ export type Database = {
         Args: { p_category: string; p_merchant_id: string }
         Returns: number
       }
+      get_merchant_broadcast_audience_count: {
+        Args: { p_audience: string; p_merchant_id: string }
+        Returns: number
+      }
       get_merchant_customers: {
         Args: { p_merchant_id: string }
         Returns: {
@@ -8545,6 +8675,10 @@ export type Database = {
         }[]
       }
       get_merchant_review_eta: { Args: never; Returns: Json }
+      get_merchant_today_snapshot: {
+        Args: { p_merchant_id: string }
+        Returns: Json
+      }
       get_nearby_agents: {
         Args: { p_lat: number; p_lng: number; p_radius_km?: number }
         Returns: {
@@ -8652,6 +8786,7 @@ export type Database = {
         Returns: boolean
       }
       is_merchant_owner: { Args: { _merchant_id: string }; Returns: boolean }
+      is_merchant_owner_of: { Args: { _merchant_id: string }; Returns: boolean }
       is_merchant_staff_user: { Args: { _staff_id: string }; Returns: boolean }
       is_phone_registered: { Args: { p_phone: string }; Returns: boolean }
       is_push_enabled: {
