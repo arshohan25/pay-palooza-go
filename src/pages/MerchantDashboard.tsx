@@ -2321,10 +2321,13 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 
 /* ── Transactions Tab ── */
 const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | null }) => {
+  const { t, lang } = useI18n();
+  const localeTag = lang === "bn" ? "bn-BD" : "en-BD";
   const [monthOffset, setMonthOffset] = useState(0);
   const [selectedTx, setSelectedTx] = useState<TxnRow | null>(null);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+
   const [filterMode, setFilterMode] = useState<"month" | "range">("month");
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [searchQuery, setSearchQuery] = useState("");
@@ -2371,7 +2374,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     return { count: filtered.length, incoming, outgoing };
   }, [filtered]);
 
-  const monthLabel = targetMonth.toLocaleDateString("en-BD", { month: "long", year: "numeric" });
+  const monthLabel = targetMonth.toLocaleDateString(localeTag, { month: "long", year: "numeric" });
 
   const exportLabel = filterMode === "range" && dateRange.from && dateRange.to
     ? `Statement_${format(dateRange.from, "yyyy-MM-dd")}_to_${format(dateRange.to, "yyyy-MM-dd")}`
@@ -2384,7 +2387,8 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
   };
 
   const exportCSV = () => {
-    if (filtered.length === 0) { toast({ title: "No data to export" }); return; }
+    if (filtered.length === 0) { toast({ title: t("mhToastNoData") }); return; }
+
     const headers = ["ID", "Type", "Description", "Amount", "Fee", "Status", "Date", "Phone", "Reference"];
     const rows = filtered.map(tx => [
       tx.short_id || tx.id.slice(0, 12),
@@ -2406,7 +2410,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
   };
 
   const exportPDF = async () => {
-    if (filtered.length === 0) { toast({ title: "No data to export" }); return; }
+    if (filtered.length === 0) { toast({ title: t("mhToastNoData") }); return; }
     const { default: jsPDF } = await import("jspdf");
     const { default: autoTable } = await import("jspdf-autotable");
     const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -2568,18 +2572,19 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
           <div className="flex items-center gap-1.5 mb-3">
             <div className="flex bg-muted p-0.5 rounded-lg">
               <button onClick={() => setFilterMode("month")} className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${filterMode === "month" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                <Calendar size={12} className="inline mr-1 -mt-0.5" />Monthly
+                <Calendar size={12} className="inline mr-1 -mt-0.5" />{t("mhMonthly")}
               </button>
               <button onClick={() => setFilterMode("range")} className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${filterMode === "range" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                <CalendarClock size={12} className="inline mr-1 -mt-0.5" />Custom Range
+                <CalendarClock size={12} className="inline mr-1 -mt-0.5" />{t("mhCustomRange")}
               </button>
+
             </div>
             <div className="relative ml-auto w-[42%] min-w-[110px]">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search..."
+                placeholder={t("mhSearchPh")}
                 className="pl-8 h-8 text-xs rounded-full bg-background"
               />
             </div>
@@ -2597,8 +2602,9 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
                 </Button>
               </div>
               <div className="flex gap-1.5 justify-center mb-3">
-                <button onClick={() => setMonthOffset(0)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>This Month</button>
-                <button onClick={() => setMonthOffset(-1)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === -1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>Last Month</button>
+                <button onClick={() => setMonthOffset(0)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{t("mhThisMonth")}</button>
+                <button onClick={() => setMonthOffset(-1)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === -1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{t("mhLastMonth")}</button>
+
               </div>
             </>
           ) : (
@@ -2607,7 +2613,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={`w-full justify-start text-left text-xs font-normal h-9 ${!dateRange.from && "text-muted-foreground"}`}>
                     <Calendar size={13} className="mr-1.5 shrink-0" />
-                    {dateRange.from ? format(dateRange.from, "dd MMM yyyy") : "From date"}
+                    {dateRange.from ? format(dateRange.from, "dd MMM yyyy") : t("mhFromDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-[100]" align="start">
@@ -2618,7 +2624,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={`w-full justify-start text-left text-xs font-normal h-9 ${!dateRange.to && "text-muted-foreground"}`}>
                     <Calendar size={13} className="mr-1.5 shrink-0" />
-                    {dateRange.to ? format(dateRange.to, "dd MMM yyyy") : "To date"}
+                    {dateRange.to ? format(dateRange.to, "dd MMM yyyy") : t("mhToDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-[100]" align="start">
@@ -2627,7 +2633,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
               </Popover>
               {(dateRange.from || dateRange.to) && (
                 <Button variant="ghost" size="sm" className="col-span-2 text-xs text-muted-foreground h-7" onClick={() => setDateRange({ from: undefined, to: undefined })}>
-                  <X size={12} className="mr-1" /> Clear dates
+                  <X size={12} className="mr-1" /> {t("mhClearDates")}
                 </Button>
               )}
             </div>
@@ -2638,26 +2644,28 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
           <div className="grid grid-cols-3 gap-2 mb-3">
             <div className="bg-muted/40 rounded-xl p-2.5 text-center">
               <p className="text-sm font-bold text-foreground">{summary.count}</p>
-              <p className="text-[9px] text-muted-foreground font-medium">Transactions</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("mhTransactionsLabel")}</p>
             </div>
             <div className="bg-emerald-500/10 rounded-xl p-2.5 text-center">
               <p className="text-sm font-bold text-emerald-600">৳{fmt(summary.incoming)}</p>
-              <p className="text-[9px] text-muted-foreground font-medium">Incoming</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("mhIncoming")}</p>
             </div>
             <div className="bg-pink-500/10 rounded-xl p-2.5 text-center">
               <p className="text-sm font-bold text-pink-600">৳{fmt(summary.outgoing)}</p>
-              <p className="text-[9px] text-muted-foreground font-medium">Outgoing</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("mhOutgoing")}</p>
+
             </div>
           </div>
 
           {/* Export buttons */}
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" onClick={exportPDF}>
-              <Download size={13} /> PDF Statement
+              <Download size={13} /> {t("mhPdfStatement")}
             </Button>
             <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" onClick={exportCSV}>
-              <Download size={13} /> CSV Export
+              <Download size={13} /> {t("mhCsvExport")}
             </Button>
+
           </div>
         </Card>
       </motion.div>
@@ -2665,7 +2673,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
       {/* Transaction list */}
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
-          <h3 className="text-sm font-bold text-foreground mb-3">Transactions</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("mhTransactionsTitle")}</h3>
 
           {filtered.length === 0 ? (
             <motion.div
@@ -2681,10 +2689,11 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
               >
                 <Receipt size={28} className="text-muted-foreground" />
               </motion.div>
-              <p className="text-sm font-semibold text-foreground">No transactions found</p>
+              <p className="text-sm font-semibold text-foreground">{t("mhNoTxnFound")}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {searchQuery ? "Try a different search term" : "Try selecting a different period"}
+                {searchQuery ? t("mhTrySearch") : t("mhTryPeriod")}
               </p>
+
             </motion.div>
           ) : (
             <div className="space-y-1">
@@ -2707,12 +2716,13 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
                         </div>
                         {tx.status === "pending" && (
                           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 mt-0.5">
-                            <Clock size={9} /> PENDING
+                            <Clock size={9} /> {t("mhPending")}
                           </span>
                         )}
                         {tx.status === "failed" && (
                           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/10 text-destructive mt-0.5">
-                            <AlertTriangle size={9} /> FAILED
+                            <AlertTriangle size={9} /> {t("mhFailed")}
+
                           </span>
                         )}
                       </div>
@@ -2723,9 +2733,10 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
                           {isIncoming ? "+" : "−"}৳{fmt(tx.amount)}
                         </p>
                         <p className="text-[9px] text-muted-foreground">
-                          {new Date(tx.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric" })}
+                          {new Date(tx.created_at).toLocaleDateString(localeTag, { month: "short", day: "numeric" })}
                           {" "}
-                          {new Date(tx.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
+                          {new Date(tx.created_at).toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit" })}
+
                         </p>
                       </div>
                       <ChevronRight size={14} className="text-muted-foreground" />
@@ -2742,7 +2753,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
       <Sheet open={!!selectedTx} onOpenChange={o => { if (!o) setSelectedTx(null); }}>
         <SheetContent side="bottom" className="z-[80] rounded-t-3xl px-5 pb-8 pt-2 max-h-[85vh] overflow-y-auto">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-base font-bold text-foreground">Transaction Details</SheetTitle>
+            <SheetTitle className="text-base font-bold text-foreground">{t("mhTxnDetails")}</SheetTitle>
           </SheetHeader>
           {selectedTx && (() => {
             const isIncoming = MERCHANT_INCOMING_TYPES.has(selectedTx.type);
@@ -2766,62 +2777,64 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
 
                 <div className="bg-muted/40 rounded-2xl p-4 space-y-2.5 text-xs">
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Transaction ID</span>
+                    <span className="text-muted-foreground">{t("mhTxnId")}</span>
                     <button onClick={() => copyId(selectedTx.short_id || selectedTx.id)} className="flex items-center gap-1 font-mono font-semibold text-foreground">
                       {txId} {copied ? <CheckCircle2 size={11} className="text-primary" /> : <Copy size={11} className="text-muted-foreground" />}
                     </button>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Type</span>
+                    <span className="text-muted-foreground">{t("mhType")}</span>
                     <span className="font-semibold text-foreground">{cfg.label}</span>
                   </div>
                   {selectedTx.recipient_name && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">{isIncoming ? "From" : "To"}</span>
+                      <span className="text-muted-foreground">{isIncoming ? t("mhFrom") : t("mhTo")}</span>
                       <span className="font-semibold text-foreground">{selectedTx.recipient_name}</span>
                     </div>
                   )}
                   {selectedTx.recipient_phone && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Phone</span>
+                      <span className="text-muted-foreground">{t("mhPhone")}</span>
                       <span className="font-semibold text-foreground">{selectedTx.recipient_phone}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date</span>
-                    <span className="font-semibold text-foreground">{new Date(selectedTx.created_at).toLocaleString("en-BD", { dateStyle: "medium", timeStyle: "short" })}</span>
+                    <span className="text-muted-foreground">{t("mhDate")}</span>
+                    <span className="font-semibold text-foreground">{new Date(selectedTx.created_at).toLocaleString(localeTag, { dateStyle: "medium", timeStyle: "short" })}</span>
                   </div>
                   {selectedTx.reference && (
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Reference</span>
+                      <span className="text-muted-foreground">{t("mhReference")}</span>
                       <button onClick={() => copyId(selectedTx.reference!)} className="flex items-center gap-1 font-mono font-semibold text-foreground">
                         {selectedTx.reference} <Copy size={11} className="text-muted-foreground" />
                       </button>
                     </div>
                   )}
+
                 </div>
 
                 {selectedTx.fee > 0 && (
                   <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 space-y-2 text-xs">
-                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Fee Breakdown</p>
+                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">{t("mhFeeBreakdown")}</p>
                     <div className="flex justify-between">
-                      <span className="text-amber-800 dark:text-amber-300">Principal</span>
+                      <span className="text-amber-800 dark:text-amber-300">{t("mhPrincipal")}</span>
                       <span className="font-semibold text-amber-900 dark:text-amber-200">৳{fmt(selectedTx.amount)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-amber-800 dark:text-amber-300">Fee</span>
+                      <span className="text-amber-800 dark:text-amber-300">{t("mhFee")}</span>
                       <span className="font-semibold text-amber-900 dark:text-amber-200">৳{fmt(selectedTx.fee)}</span>
                     </div>
                     <div className="border-t border-amber-300 dark:border-amber-700 pt-2 flex justify-between font-bold">
-                      <span className="text-amber-900 dark:text-amber-100">Total</span>
+                      <span className="text-amber-900 dark:text-amber-100">{t("mhTotal")}</span>
                       <span className="text-amber-900 dark:text-amber-100">৳{fmt(selectedTx.amount + selectedTx.fee)}</span>
                     </div>
+
                   </div>
                 )}
 
                 {selectedTx.balance_after !== null && (
                   <div className="text-center text-[11px] text-muted-foreground">
-                    Balance after: <span className="font-bold text-foreground">৳{fmt(selectedTx.balance_after)}</span>
+                    {t("mhBalanceAfter")} <span className="font-bold text-foreground">৳{fmt(selectedTx.balance_after)}</span>
                   </div>
                 )}
               </div>
