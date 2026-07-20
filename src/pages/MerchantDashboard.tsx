@@ -561,7 +561,13 @@ const MerchantDashboard = () => {
                   <Zap size={8} className="mr-0.5" />{merchant?.settlement_frequency || "T+1"}
                 </Badge>
                 <Badge className={`text-[9px] border-0 backdrop-blur-sm ${merchant?.status === "active" ? "bg-green-500/30 text-green-100" : "bg-yellow-500/30 text-yellow-100"}`}>
-                  {merchant?.status === "active" ? t("mdStatusActive") : (merchant?.status ? t(`mdStatus_${merchant.status}` as any) : t("mdStatusActive"))}
+                  {merchant?.status === "active"
+                    ? t("mdStatusActive")
+                    : merchant?.status === "pending"
+                      ? t("mdStatusPending")
+                      : merchant?.status === "suspended"
+                        ? t("mdStatusSuspended")
+                        : (merchant?.status || t("mdStatusActive"))}
                 </Badge>
               </div>
             </div>
