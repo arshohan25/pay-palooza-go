@@ -75,14 +75,14 @@ export default function MerchantBroadcastTab({ merchantId }: { merchantId: strin
 
   const send = async () => {
     if (!title.trim() || !message.trim()) {
-      toast({ title: "Missing content", description: "Title and message are required.", variant: "destructive" });
+      toast({ title: t("mbrErrMissing"), description: t("mbrErrMissingDesc"), variant: "destructive" });
       return;
     }
     if (!count || count < 1) {
-      toast({ title: "No recipients", description: "This audience is empty.", variant: "destructive" });
+      toast({ title: t("mbrErrEmpty"), description: t("mbrErrEmptyDesc"), variant: "destructive" });
       return;
     }
-    if (!confirm(`Send this broadcast to ${count} customer${count === 1 ? "" : "s"}?`)) return;
+    if (!confirm(t("mbrConfirm").replace("{n}", String(count)))) return;
 
     setSending(true);
     try {
@@ -91,14 +91,15 @@ export default function MerchantBroadcastTab({ merchantId }: { merchantId: strin
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      toast({ title: "Broadcast sent", description: `Delivered to ${(data as any).delivered} customers.` });
+      toast({ title: t("mbrToastSent"), description: t("mbrToastDelivered").replace("{n}", String((data as any).delivered)) });
       setTitle(""); setMessage("");
       loadHistory();
     } catch (e: any) {
-      toast({ title: "Send failed", description: e?.message || "Unknown error", variant: "destructive" });
+      toast({ title: t("mbrToastFail"), description: e?.message || "Unknown error", variant: "destructive" });
     } finally {
       setSending(false);
     }
+
   };
 
   return (
