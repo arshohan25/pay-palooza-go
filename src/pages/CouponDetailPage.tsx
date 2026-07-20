@@ -123,13 +123,13 @@ export default function CouponDetailPage() {
         <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
           <Ticket className="w-7 h-7 text-muted-foreground" />
         </div>
-        <p className="text-[15px] font-semibold text-foreground">Coupon not found</p>
-        <p className="text-[12px] text-muted-foreground text-center">This coupon may have expired or been removed.</p>
+        <p className="text-[15px] font-semibold text-foreground">{t("cdNotFound")}</p>
+        <p className="text-[12px] text-muted-foreground text-center">{t("cdNotFoundDesc")}</p>
         <button
           onClick={() => navigate("/coupons")}
           className="mt-2 h-10 px-5 rounded-full bg-primary text-primary-foreground text-[13px] font-semibold"
         >
-          Back to coupons
+          {t("cdBackToCoupons")}
         </button>
       </div>
     );
