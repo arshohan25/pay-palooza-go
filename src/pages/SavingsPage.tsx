@@ -660,7 +660,7 @@ function DpsPlanDetailsSheet({
             {/* Actions */}
             <div className="pt-1">
               <Button variant="outline" className="rounded-[14px] h-11" disabled={busy} onClick={togglePause}>
-                {plan.is_active ? <><Pause className="w-4 h-4 mr-1.5" />Pause plan</> : <><Play className="w-4 h-4 mr-1.5" />Resume plan</>}
+                {plan.is_active ? <><Pause className="w-4 h-4 mr-1.5" />{t("savPausePlan")}</> : <><Play className="w-4 h-4 mr-1.5" />{t("savResumePlan")}</>}
               </Button>
             </div>
           </div>
