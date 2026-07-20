@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -35,6 +36,7 @@ const agentTxnLabel = (type: string) => {
 
 const AgentStatement = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { toast } = useToast();
   const today = new Date();
   const weekAgo = new Date(Date.now() - 6 * 86400000);
@@ -182,8 +184,8 @@ const AgentStatement = () => {
               <FileText size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">Statement & EOD</h1>
-              <p className="text-[9px] text-primary-foreground/60">Reconcile cash and export reports</p>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("agStTitle")}</h1>
+              <p className="text-[9px] text-primary-foreground/60">{t("agStTagline")}</p>
             </div>
           </div>
         </div>
@@ -191,20 +193,20 @@ const AgentStatement = () => {
 
       <div className="max-w-xl mx-auto px-4 py-5 space-y-4">
         <Card className="p-4 border-0 shadow-elevated rounded-2xl space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold"><CalIcon size={14} /> Date Range</div>
+          <div className="flex items-center gap-2 text-sm font-semibold"><CalIcon size={14} /> {t("agStDateRange")}</div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-[10px] font-semibold text-muted-foreground">From</Label>
+              <Label className="text-[10px] font-semibold text-muted-foreground">{t("agStFrom")}</Label>
               <Input type="date" value={from} onChange={e => setFrom(e.target.value)} max={to} className="rounded-xl h-10 mt-1" />
             </div>
             <div>
-              <Label className="text-[10px] font-semibold text-muted-foreground">To</Label>
+              <Label className="text-[10px] font-semibold text-muted-foreground">{t("agStTo")}</Label>
               <Input type="date" value={to} onChange={e => setTo(e.target.value)} min={from} max={toISO(new Date())} className="rounded-xl h-10 mt-1" />
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
             {[
-              { label: "Today", days: 0 },
+              { label: t("agStToday"), days: 0 },
               { label: "7d", days: 6 },
               { label: "30d", days: 29 },
             ].map(p => (
@@ -215,34 +217,34 @@ const AgentStatement = () => {
             ))}
           </div>
           <Button onClick={load} disabled={loading} className="w-full gradient-primary text-primary-foreground rounded-xl h-10 text-sm font-bold">
-            {loading ? "Loading…" : "Refresh"}
+            {loading ? t("agComLoading") : t("agComRefresh")}
           </Button>
         </Card>
 
         <Card className="p-4 border-0 shadow-elevated rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-semibold"><Wallet size={14} /> EOD Summary</div>
-            <span className="text-[10px] text-muted-foreground">{summary.count} txns</span>
+            <div className="flex items-center gap-2 text-sm font-semibold"><Wallet size={14} /> {t("agStEodSummary")}</div>
+            <span className="text-[10px] text-muted-foreground">{t("agStTxnsCount").replace("{count}", String(summary.count))}</span>
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <Metric label="Cash Out Received (wallet in)" val={summary.cashOutReceived} tone="primary" />
-            <Metric label="Cash In Sent (wallet out)" val={summary.cashInSent} tone="destructive" />
-            <Metric label="B2B Send" val={summary.b2bOut} />
-            <Metric label="Bank Transfer" val={summary.banktransfer} />
-            <Metric label="Bill Pay" val={summary.paybill} />
-            <Metric label="Fees Paid" val={summary.fees} />
-            <Metric label="Commission Earned" val={summary.commission} tone="primary" bold />
-            <Metric label="Wallet Balance" val={balance} bold />
+            <Metric label={t("agStCashOutRecv")} val={summary.cashOutReceived} tone="primary" />
+            <Metric label={t("agStCashInSent")} val={summary.cashInSent} tone="destructive" />
+            <Metric label={t("agStB2bSend")} val={summary.b2bOut} />
+            <Metric label={t("agStBankTransfer")} val={summary.banktransfer} />
+            <Metric label={t("agStBillPay")} val={summary.paybill} />
+            <Metric label={t("agStFeesPaid")} val={summary.fees} />
+            <Metric label={t("agStCommEarned")} val={summary.commission} tone="primary" bold />
+            <Metric label={t("agStWalletBal")} val={balance} bold />
           </div>
           <div className="mt-2 p-3 rounded-xl bg-muted/60 border border-border/40">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Net Cash in Hand</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("agStNetCash")}</p>
             <p className={`text-lg font-extrabold ${cashInHand >= 0 ? "text-primary" : "text-destructive"}`}>৳{fmt(cashInHand)}</p>
-            <p className="text-[10px] text-muted-foreground">Cash In Sent − Cash Out Received over the selected period</p>
+            <p className="text-[10px] text-muted-foreground">{t("agStNetCashDesc")}</p>
           </div>
         </Card>
 
         <Card className="p-4 border-0 shadow-elevated rounded-2xl space-y-2">
-          <p className="text-sm font-semibold">Export</p>
+          <p className="text-sm font-semibold">{t("agStExport")}</p>
           <div className="grid grid-cols-2 gap-2">
             <Button onClick={exportCSV} disabled={!txns.length} variant="outline" className="rounded-xl h-11 gap-2 text-sm font-bold">
               <Download size={14} /> CSV
