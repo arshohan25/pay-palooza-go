@@ -26,6 +26,7 @@ import {
   Undo2, Ticket, XCircle, Loader2, LogOut, Megaphone
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { bnCategoryLabel } from "@/lib/merchantCategoryBn";
 import MerchantBusinessKycFlow from "@/components/MerchantBusinessKycFlow";
 import VendorOnboardingChecklist from "@/components/VendorOnboardingChecklist";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
@@ -490,10 +491,10 @@ const MerchantDashboard = () => {
               whileTap={{ scale: 0.92 }}
               onClick={() => setShowLogoutConfirm(true)}
               className="tap-target h-10 px-3 rounded-xl glass-hero flex items-center gap-1.5 text-[12px] font-semibold"
-              aria-label="Logout"
+              aria-label={t("logout")}
             >
               <LogOut size={15} />
-              <span>Logout</span>
+              <span>{t("logout")}</span>
             </motion.button>
             <div className="flex items-center gap-3">
               <button
@@ -546,7 +547,7 @@ const MerchantDashboard = () => {
                     <Users size={8} className="mr-0.5" />Staff · {staffRole}
                   </Badge>
                 )}
-                <Badge className="text-[9px] bg-white/15 border-white/20 text-white capitalize backdrop-blur-sm">{merchant?.category || t("mdCategoryRetail")}</Badge>
+                <Badge className="text-[9px] bg-white/15 border-white/20 text-white capitalize backdrop-blur-sm">{lang === "bn" ? bnCategoryLabel(merchant?.category, t("mdCategoryRetail")) : (merchant?.category || t("mdCategoryRetail"))}</Badge>
                 <Badge className="text-[9px] bg-white/15 border-white/20 text-white backdrop-blur-sm">
                   <Zap size={8} className="mr-0.5" />{merchant?.settlement_frequency || "T+1"}
                 </Badge>
