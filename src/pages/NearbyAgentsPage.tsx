@@ -88,7 +88,7 @@ const NearbyAgentsPage = () => {
       const { data, error } = await (supabase as any).rpc("nearby_agents", {
         _lat: loc.lat, _lng: loc.lng, _radius_km: radius,
       });
-      if (error) toast.error("Could not load agents");
+      if (error) toast.error(t("naLoadFailed"));
       setAgents((data as NearbyAgent[]) ?? []);
       setLoading(false);
     })();
