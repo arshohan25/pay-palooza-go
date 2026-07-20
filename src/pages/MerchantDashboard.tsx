@@ -1348,9 +1348,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <BarChart3 size={15} className="text-primary" />
               </div>
-              <h3 className="text-sm font-bold text-foreground">Last 7 Days</h3>
+              <h3 className="text-sm font-bold text-foreground">{t("mdLast7Days")}</h3>
             </div>
-            <p className="text-[10px] text-muted-foreground font-medium">{uniqueCustomers} unique customer{uniqueCustomers !== 1 ? "s" : ""}</p>
+            <p className="text-[10px] text-muted-foreground font-medium">{(uniqueCustomers === 1 ? t("mdUniqueCustomer") : t("mdUniqueCustomers")).replace("{n}", String(uniqueCustomers))}</p>
           </div>
           <div className="flex items-end gap-1.5 h-20">
             {last7.map((d, i) => {
