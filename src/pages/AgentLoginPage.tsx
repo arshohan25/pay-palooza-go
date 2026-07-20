@@ -162,7 +162,7 @@ const AgentLoginPage = () => {
     try { await supabase.auth.signOut(); } catch {}
   };
 
-  const title = `${APP_ROLE_LABEL.agent} — Sign in`;
+  const title = t("alpTitle");
 
   return (
     <div className="min-h-screen bg-[#0b1512] text-white flex flex-col">
@@ -170,7 +170,7 @@ const AgentLoginPage = () => {
         <title>{title}</title>
         <meta
           name="description"
-          content="EasyPay Agent sign-in — cash-in, cash-out, bill pay and customer onboarding."
+          content={t("alpMetaDesc")}
         />
         <link rel="icon" href="/icons/role-agent.png" />
         <link rel="apple-touch-icon" href="/icons/role-agent.png" />
