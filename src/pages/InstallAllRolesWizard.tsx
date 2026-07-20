@@ -20,15 +20,16 @@ import {
 import { toast } from "sonner";
 import { getRoleInstallUrl } from "@/lib/rolePwaOrigins";
 import type { InstallableRoleKey } from "@/lib/appRole";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 const INSTALLED_ROLES_KEY = "mfs_pwa_installed_roles";
 const WIZARD_PROGRESS_KEY = "mfs_pwa_wizard_progress";
 
 type WizardRole = {
   key: Exclude<InstallableRoleKey, "customer">;
-  name: string;
-  short: string;
-  why: string;
+  nameKey: TranslationKey;
+  shortKey: TranslationKey;
+  whyKey: TranslationKey;
   Icon: typeof Shield;
   gradient: string;
 };
@@ -38,41 +39,41 @@ type WizardRole = {
 const STEPS: WizardRole[] = [
   {
     key: "agent",
-    name: "EasyPay Agent",
-    short: "Agent",
-    why: "Front-line cash-in, cash-out and customer onboarding.",
+    nameKey: "iarRoleAgentName",
+    shortKey: "iarRoleAgentShort",
+    whyKey: "iarRoleAgentWhy",
     Icon: Smartphone,
     gradient: "from-orange-500 to-amber-500",
   },
   {
     key: "merchant",
-    name: "EasyPay Merchant",
-    short: "Merchant",
-    why: "Accept payments, manage products and track sales.",
+    nameKey: "iarRoleMerchantName",
+    shortKey: "iarRoleMerchantShort",
+    whyKey: "iarRoleMerchantWhy",
     Icon: ShoppingBag,
     gradient: "from-rose-500 to-pink-500",
   },
   {
     key: "distributor",
-    name: "EasyPay Distributor",
-    short: "Distributor",
-    why: "Create agents, manage float and commissions.",
+    nameKey: "iarRoleDistributorName",
+    shortKey: "iarRoleDistributorShort",
+    whyKey: "iarRoleDistributorWhy",
     Icon: Users,
     gradient: "from-blue-600 to-cyan-500",
   },
   {
     key: "super-distributor",
-    name: "EasyPay Super Distributor",
-    short: "Super Distributor",
-    why: "Oversee distributors and network-wide allocation.",
+    nameKey: "iarRoleSDName",
+    shortKey: "iarRoleSDShort",
+    whyKey: "iarRoleSDWhy",
     Icon: BarChart3,
     gradient: "from-violet-600 to-purple-500",
   },
   {
     key: "admin",
-    name: "EasyPay Admin",
-    short: "Admin",
-    why: "Manage users, transactions and platform settings.",
+    nameKey: "iarRoleAdminName",
+    shortKey: "iarRoleAdminShort",
+    whyKey: "iarRoleAdminWhy",
     Icon: Shield,
     gradient: "from-emerald-600 to-teal-500",
   },
