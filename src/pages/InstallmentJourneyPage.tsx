@@ -258,6 +258,7 @@ function buildFromGoal(goal: SavingsGoal, plan?: AutoSavePlan): Installment[] {
 }
 
 export default function InstallmentJourneyPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { user } = useAuth();
