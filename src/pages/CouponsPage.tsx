@@ -504,7 +504,7 @@ export default function CouponsPage() {
                       <Flame className="w-3 h-3 text-destructive" />
                     </div>
                     <h3 className="text-[12px] font-black uppercase tracking-wider text-foreground/80">
-                      Ending soon
+                      {t("cpEndingSoon")}
                     </h3>
                   </div>
                   <span className="text-[10px] font-semibold text-muted-foreground">{endingSoon.length}</span>
