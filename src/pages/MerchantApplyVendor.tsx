@@ -25,6 +25,7 @@ export default function MerchantApplyVendor() {
   const nav = useNavigate();
   const [sp] = useSearchParams();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [merchant, setMerchant] = useState<any>(null);
   const [existing, setExisting] = useState<any>(null);
   const [loading, setLoading] = useState(true);
