@@ -89,9 +89,7 @@ Deno.serve(async (req) => {
     }
     const allRoles = [...(roles ?? []).map((r) => r.role as string), ...inferred];
 
-    const elevated = (roles ?? [])
-      .map((r) => r.role as string)
-      .find((r) => ELEVATED.includes(r));
+    const elevated = allRoles.find((r) => ELEVATED.includes(r));
 
     if (elevated) {
       return new Response(
