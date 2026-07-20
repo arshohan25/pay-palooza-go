@@ -106,7 +106,7 @@ const RoleLoginPage = () => {
   const Icon = meta.icon;
   const tagline = t(meta.taglineKey as any);
   const description = t(meta.descKey as any);
-  const title = t("rlpSignInSuffix", { role: APP_ROLE_LABEL[roleKey] });
+  const title = t("rlpSignInSuffix").replace("{role}", APP_ROLE_LABEL[roleKey]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
