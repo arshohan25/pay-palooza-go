@@ -90,9 +90,9 @@ const DistributorCreateAgent = () => {
       }
 
       setDone(true);
-      toast({ title: "Agent Created", description: `${businessName || name || phone} has been registered as an agent` });
+      toast({ title: t("distCAToastCreated"), description: t("distCAToastCreatedDesc").replace("{name}", businessName || name || phone) });
     } catch (err: any) {
-      toast({ title: "Creation Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("distCAToastFailed"), description: err.message, variant: "destructive" });
     } finally {
       setProcessing(false);
     }
