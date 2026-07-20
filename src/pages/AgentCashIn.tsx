@@ -24,6 +24,7 @@ const COMMISSION_RATE = 0.0049;
 
 const AgentCashIn = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { toast } = useToast();
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
@@ -124,8 +125,8 @@ const AgentCashIn = () => {
               <ArrowUpFromLine size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">Cash In</h1>
-              <p className="text-[9px] text-primary-foreground/60">Deposit to customer wallet</p>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("agCinTitle")}</h1>
+              <p className="text-[9px] text-primary-foreground/60">{t("agCinTagline")}</p>
             </div>
           </div>
         </div>
@@ -154,46 +155,46 @@ const AgentCashIn = () => {
                 <CheckCircle2 size={32} className="text-primary" />
               </motion.div>
               <div>
-                <p className="text-lg font-extrabold text-foreground">Cash In Successful</p>
-                <p className="text-sm text-muted-foreground mt-1">৳{fmt(Number(amount))} deposited to {phone}</p>
+                <p className="text-lg font-extrabold text-foreground">{t("agCinSuccess")}</p>
+                <p className="text-sm text-muted-foreground mt-1">৳{fmt(Number(amount))} → {phone}</p>
               </div>
               <div className="space-y-2 bg-muted/50 rounded-xl p-4 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-bold text-primary">Free</span></div>
-                <p className="text-[11px] text-muted-foreground text-right">৳{fmt(Number(amount))} + Free</p>
-                <div className="flex justify-between border-t border-border/40 pt-2"><span className="text-muted-foreground">Commission earned</span><span className="font-bold text-primary">+৳{fmt(commission)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{t("agComAmount")}</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{t("agComFee")}</span><span className="font-bold text-primary">{t("agComFree")}</span></div>
+                <p className="text-[11px] text-muted-foreground text-right">৳{fmt(Number(amount))} + {t("agComFree")}</p>
+                <div className="flex justify-between border-t border-border/40 pt-2"><span className="text-muted-foreground">{t("agCinCommissionEarned")}</span><span className="font-bold text-primary">+৳{fmt(commission)}</span></div>
               </div>
               <Button onClick={() => { setStep("form"); setPhone(""); setAmount(""); setPin(""); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11">
-                New Transaction
+                {t("agCinNewTxn")}
               </Button>
               <Button onClick={() => navigate("/agent")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2">
-                <Home size={16} /> Back to Dashboard
+                <Home size={16} /> {t("agComBackToDash")}
               </Button>
             </Card>
           </motion.div>
         ) : step === "confirm" ? (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="p-5 border-0 shadow-elevated rounded-2xl space-y-4">
-              <h3 className="text-base font-extrabold text-foreground text-center">Confirm Cash In</h3>
+              <h3 className="text-base font-extrabold text-foreground text-center">{t("agCinConfirm")}</h3>
               <div className="space-y-2.5 bg-muted/50 rounded-xl p-4">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Customer</span><span className="font-bold text-foreground">{phone}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Fee</span><span className="font-bold text-primary">Free</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Commission (0.499%)</span><span className="font-bold text-primary">৳{fmt(commission)}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComCustomer")}</span><span className="font-bold text-foreground">{phone}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComAmount")}</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComFee")}</span><span className="font-bold text-primary">{t("agComFree")}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agCinCommissionRate")}</span><span className="font-bold text-primary">৳{fmt(commission)}</span></div>
               </div>
               <div>
-                <Label className="text-xs font-semibold">Enter PIN</Label>
+                <Label className="text-xs font-semibold">{t("agComEnterPin")}</Label>
                 <Input type="password" inputMode="numeric" maxLength={4} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" className="text-center text-lg tracking-[0.5em] rounded-xl h-12 mt-1" />
               </div>
-              <SlideToConfirm onConfirm={handleConfirm} disabled={pin.length < 4 || processing} label={processing ? "Processing…" : "Slide to Deposit"} icon={HandCoins} />
-              <Button variant="ghost" onClick={() => setStep("form")} className="w-full text-muted-foreground">Cancel</Button>
+              <SlideToConfirm onConfirm={handleConfirm} disabled={pin.length < 4 || processing} label={processing ? t("agComProcessing") : t("agCinSlideDeposit")} icon={HandCoins} />
+              <Button variant="ghost" onClick={() => setStep("form")} className="w-full text-muted-foreground">{t("agComCancel")}</Button>
             </Card>
           </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="p-5 border-0 shadow-elevated rounded-2xl space-y-4">
               <div>
-                <Label className="text-xs font-semibold">Customer Phone</Label>
+                <Label className="text-xs font-semibold">{t("agCinCustPhone")}</Label>
                 <div className="relative mt-1">
                   <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, "")); setResolvedName(""); }} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
                   <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
@@ -204,10 +205,10 @@ const AgentCashIn = () => {
                 {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
               </div>
               <div>
-                <Label className="text-xs font-semibold">Amount (৳)</Label>
-                <Input type="text" inputMode="numeric" placeholder="Enter amount" value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
+                <Label className="text-xs font-semibold">{t("agComAmountLbl")}</Label>
+                <Input type="text" inputMode="numeric" placeholder={t("agComEnterAmt")} value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
                 {Number(amount) > 0 && (
-                  <p className="text-[10px] text-primary font-semibold mt-1.5">Commission: ৳{fmt(commission)}</p>
+                  <p className="text-[10px] text-primary font-semibold mt-1.5">{t("agCinCommissionLine")}: ৳{fmt(commission)}</p>
                 )}
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -219,7 +220,7 @@ const AgentCashIn = () => {
               </div>
               {phoneValidation.isValid && amount && Number(amount) >= 10 && (
                 <Button onClick={() => { if (phoneValidation.triggerShake()) return; setStep("confirm"); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in">
-                  Continue
+                  {t("agComContinue")}
                 </Button>
               )}
             </Card>
@@ -229,7 +230,7 @@ const AgentCashIn = () => {
       <QrScannerModal
         open={showQr}
         onClose={() => setShowQr(false)}
-        title="Scan Customer QR"
+        title={t("agComScanCustQr")}
         onScan={async (result) => {
           setShowQr(false);
           const parsed = parseQrData(result);
