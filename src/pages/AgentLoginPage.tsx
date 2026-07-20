@@ -256,7 +256,7 @@ const AgentLoginPage = () => {
             <fieldset disabled={submitting} className="space-y-5 disabled:opacity-70">
             <div className="space-y-1">
               <label htmlFor="agent-phone" className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-                Agent mobile number
+                {t("alpPhoneLabel")}
               </label>
               <div className="relative">
                 <input
