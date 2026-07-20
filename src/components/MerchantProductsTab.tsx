@@ -74,6 +74,8 @@ const MAX_IMAGES = 4;
 
 
 function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useI18n();
+
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [customMode, setCustomMode] = useState(false);
