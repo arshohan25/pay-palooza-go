@@ -575,8 +575,7 @@ export default function MerchantLoginPage() {
                 <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-amber-100">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
                   <p className="text-[13px] leading-snug">
-                    {attemptsRemaining} attempt{attemptsRemaining === 1 ? "" : "s"} remaining
-                    before this account is temporarily locked.
+                    {(attemptsRemaining === 1 ? t("mlAttemptsRemainingOne") : t("mlAttemptsRemainingOther")).replace("{n}", String(attemptsRemaining))}
                   </p>
                 </div>
               )}
