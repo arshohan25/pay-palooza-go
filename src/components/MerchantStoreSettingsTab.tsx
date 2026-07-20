@@ -265,6 +265,18 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
           <Input value={form.store_name} onChange={e => setForm(f => ({ ...f, store_name: e.target.value }))} className="mt-1 rounded-xl" />
         </div>
         <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssStoreNameBn")}</label>
+          <Input
+            value={form.store_name_bn}
+            onChange={e => setForm(f => ({ ...f, store_name_bn: e.target.value }))}
+            placeholder={t("mssStoreNameBnPh")}
+            maxLength={120}
+            className="mt-1 rounded-xl"
+            lang="bn"
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">{t("mssStoreNameBnHelp")}</p>
+        </div>
+        <div>
           <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mssUrlSlug")}</label>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-xs text-muted-foreground">/shop/</span>
