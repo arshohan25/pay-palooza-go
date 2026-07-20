@@ -291,12 +291,13 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast({ title: "Invalid file", description: "Please select an image file", variant: "destructive" });
+      toast({ title: t("mprToastInvalidFile"), description: t("mprToastInvalidFileDesc"), variant: "destructive" });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Max 5MB allowed", variant: "destructive" });
+      toast({ title: t("mprToastTooLarge"), description: t("mprToastTooLargeDesc"), variant: "destructive" });
       return;
+
     }
 
     setUploadingSlot(slotIndex);
