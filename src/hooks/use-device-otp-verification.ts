@@ -17,8 +17,10 @@ const PURPOSE_BY_PORTAL: Record<DeviceOtpPortal, string> = {
   super_distributor: "device_verify_super_distributor",
 };
 
+const normalizeDevicePhone = (phone: string) => phone.replace(/\D/g, "").replace(/^88/, "");
+
 const TOKEN_KEY = (phone: string, portal: DeviceOtpPortal) =>
-  `mfs_devtok_${portal}_${phone}`;
+  `mfs_devtok_${portal}_${normalizeDevicePhone(phone)}`;
 
 interface StoredToken { token: string; expires_at: string }
 

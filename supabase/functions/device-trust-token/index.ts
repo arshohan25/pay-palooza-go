@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
   );
 
   const { data: profile } = await admin
-    .from("profiles").select("id").eq("phone", phone).maybeSingle();
+    .from("profiles").select("user_id").eq("phone", phone).maybeSingle();
   if (!profile) return json(200, { trusted: false });
 
   const token_hash = await sha256Hex(token);
@@ -65,8 +65,7 @@ Deno.serve(async (req) => {
   const { data: row } = await admin
     .from("trusted_devices")
     .select("id, token_expires_at, revoked_at")
-    .eq("user_id", profile.id)
-    .eq("device_fp", device_fp)
+    .eq("user_id", profile.user_id)
     .eq("portal", portal)
     .eq("token_hash", token_hash)
     .maybeSingle();
