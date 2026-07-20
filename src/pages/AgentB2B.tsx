@@ -15,11 +15,13 @@ import QrScannerModal from "@/components/QrScannerModal";
 import { parseQrData } from "@/lib/qrParser";
 
 import { verifyPin } from "@/lib/verifyPin";
+import { useI18n } from "@/lib/i18n";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
 const AgentB2B = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { toast } = useToast();
   const [transferType, setTransferType] = useState<"agent" | "distributor">("distributor");
   const [phone, setPhone] = useState("");
@@ -135,8 +137,8 @@ const AgentB2B = () => {
               <ArrowRightLeft size={16} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-primary-foreground">B2B Transfer</h1>
-              <p className="text-[9px] text-primary-foreground/60">Agent or Distributor</p>
+              <h1 className="text-sm font-bold text-primary-foreground">{t("agB2bTitle")}</h1>
+              <p className="text-[9px] text-primary-foreground/60">{t("agB2bTagline")}</p>
             </div>
           </div>
         </div>
@@ -159,38 +161,38 @@ const AgentB2B = () => {
                 <CheckCircle2 size={32} className="text-primary" />
               </motion.div>
               <div>
-                <p className="text-lg font-extrabold text-foreground">Transfer Successful</p>
-                <p className="text-sm text-muted-foreground mt-1">৳{fmt(Number(amount))} sent to {transferType === "agent" ? "Agent" : "Distributor"} ({phone})</p>
+                <p className="text-lg font-extrabold text-foreground">{t("agB2bSuccess")}</p>
+                <p className="text-sm text-muted-foreground mt-1">৳{fmt(Number(amount))} → {phone}</p>
               </div>
               <div className="space-y-2 bg-muted/50 rounded-xl p-4 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">{fee > 0 ? `৳${fmt(fee)} (from receiver)` : "Free"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Receiver gets</span><span className="font-bold text-foreground">৳{fmt(Number(amount) - fee)}</span></div>
-                <div className="flex justify-between font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">You pay</span><span className="text-foreground">৳{fmt(Number(amount))}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{t("agComAmount")}</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{t("agComFee")}</span><span className="font-bold text-foreground">{fee > 0 ? t("agB2bFeeFromReceiver").replace("{fee}", fmt(fee)) : t("agComFree")}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{t("agComReceiverGets")}</span><span className="font-bold text-foreground">৳{fmt(Number(amount) - fee)}</span></div>
+                <div className="flex justify-between font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">{t("agComYouPay")}</span><span className="text-foreground">৳{fmt(Number(amount))}</span></div>
               </div>
-              <Button onClick={() => { setStep("form"); setPhone(""); setAmount(""); setNote(""); setPin(""); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11">New Transfer</Button>
-              <Button onClick={() => navigate("/agent")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2"><Home size={16} /> Back to Dashboard</Button>
+              <Button onClick={() => { setStep("form"); setPhone(""); setAmount(""); setNote(""); setPin(""); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11">{t("agB2bNewTransfer")}</Button>
+              <Button onClick={() => navigate("/agent")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2"><Home size={16} /> {t("agComBackToDash")}</Button>
             </Card>
           </motion.div>
         ) : step === "confirm" ? (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="p-5 border-0 shadow-elevated rounded-2xl space-y-4">
-              <h3 className="text-base font-extrabold text-foreground text-center">Confirm B2B Transfer</h3>
+              <h3 className="text-base font-extrabold text-foreground text-center">{t("agB2bConfirm")}</h3>
               <div className="space-y-2.5 bg-muted/50 rounded-xl p-4">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">To</span><span className="font-bold text-foreground capitalize">{transferType}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Phone</span><span className="font-bold text-foreground">{phone}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">{fee > 0 ? `৳${fmt(fee)} (from receiver)` : "Free"}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Receiver gets</span><span className="font-bold text-foreground">৳{fmt(Number(amount) - fee)}</span></div>
-                <div className="flex justify-between text-sm font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">You pay</span><span className="text-foreground">৳{fmt(Number(amount))}</span></div>
-                {note && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Note</span><span className="font-medium text-foreground">{note}</span></div>}
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComTo")}</span><span className="font-bold text-foreground capitalize">{transferType}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComPhone")}</span><span className="font-bold text-foreground">{phone}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComAmount")}</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComFee")}</span><span className="font-bold text-foreground">{fee > 0 ? t("agB2bFeeFromReceiver").replace("{fee}", fmt(fee)) : t("agComFree")}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComReceiverGets")}</span><span className="font-bold text-foreground">৳{fmt(Number(amount) - fee)}</span></div>
+                <div className="flex justify-between text-sm font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">{t("agComYouPay")}</span><span className="text-foreground">৳{fmt(Number(amount))}</span></div>
+                {note && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComNote")}</span><span className="font-medium text-foreground">{note}</span></div>}
               </div>
               <div>
-                <Label className="text-xs font-semibold">Enter PIN</Label>
+                <Label className="text-xs font-semibold">{t("agComEnterPin")}</Label>
                 <Input type="password" inputMode="numeric" maxLength={4} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" className="text-center text-lg tracking-[0.5em] rounded-xl h-12 mt-1" />
               </div>
-              <SlideToConfirm onConfirm={handleConfirm} disabled={pin.length < 4 || processing} label={processing ? "Processing…" : "Slide to Transfer"} />
-              <Button variant="ghost" onClick={() => setStep("form")} className="w-full text-muted-foreground">Cancel</Button>
+              <SlideToConfirm onConfirm={handleConfirm} disabled={pin.length < 4 || processing} label={processing ? t("agComProcessing") : t("agB2bSlideTransfer")} />
+              <Button variant="ghost" onClick={() => setStep("form")} className="w-full text-muted-foreground">{t("agComCancel")}</Button>
             </Card>
           </motion.div>
         ) : (
@@ -199,7 +201,7 @@ const AgentB2B = () => {
               <div className="grid grid-cols-2 gap-2">
                 {(["agent", "distributor"] as const).map(t => (
                   <button key={t} onClick={() => setTransferType(t)} className={`py-3 rounded-xl text-xs font-bold transition-all ${transferType === t ? "bg-primary/10 text-primary ring-1 ring-primary/20" : "bg-muted text-muted-foreground"}`}>
-                    {t === "agent" ? "🏪 Agent" : "🏢 Distributor"}
+                    {t === "agent" ? (useI18n as any) && "" : ""}{t === "agent" ? "🏪 " : "🏢 "}{t === "agent" ? "Agent" : "Distributor"}
                   </button>
                 ))}
               </div>
