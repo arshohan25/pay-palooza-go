@@ -563,7 +563,7 @@ export default function CouponsPage() {
         {!loading && filtered.length > 0 && (
           <p className="text-center text-[10.5px] text-muted-foreground/60 pt-2 flex items-center justify-center gap-1">
             <Clock className="w-2.5 h-2.5" />
-            Coupons refresh in real-time. Tap any card for details.
+            {t("cpFooterNote")}
           </p>
         )}
       </div>
