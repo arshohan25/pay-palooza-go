@@ -58,6 +58,7 @@ const CATEGORIES: { key: CategoryKey; labelKey: TranslationKey }[] = [
 ];
 
 const NearbyAgentsPage = () => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
