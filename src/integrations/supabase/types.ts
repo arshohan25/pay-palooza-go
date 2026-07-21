@@ -1108,6 +1108,57 @@ export type Database = {
         }
         Relationships: []
       }
+      biller_settlements: {
+        Row: {
+          account_reference: string | null
+          admin_note: string | null
+          amount: number
+          biller_name: string
+          created_at: string
+          id: string
+          paid_at: string | null
+          paid_by: string | null
+          provider_ref: string | null
+          reference: string | null
+          status: string
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_reference?: string | null
+          admin_note?: string | null
+          amount: number
+          biller_name: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          provider_ref?: string | null
+          reference?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_reference?: string | null
+          admin_note?: string | null
+          amount?: number
+          biller_name?: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          provider_ref?: string | null
+          reference?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       blacklist_entries: {
         Row: {
           blocked_by: string
@@ -8884,6 +8935,14 @@ export type Database = {
         }[]
       }
       mark_agent_temp_pin_used: { Args: never; Returns: undefined }
+      mark_biller_settlement_paid: {
+        Args: {
+          p_note?: string
+          p_provider_ref?: string
+          p_settlement_id: string
+        }
+        Returns: Json
+      }
       mark_merchant_temp_pin_used: { Args: never; Returns: undefined }
       merchant_resubmit_vendor_photos: {
         Args: {
