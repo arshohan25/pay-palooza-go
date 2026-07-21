@@ -282,7 +282,7 @@ export default function AdminBankListManager() {
 }
 
 function SortableBankRow({
-  bank, disabled, onToggle, onDelete, onLogoChanged, onSetDefault,
+  bank, disabled, onToggle, onDelete, onLogoChanged, onSetDefault, onToggleAudience,
 }: {
   bank: PlatformBank;
   disabled: boolean;
@@ -290,6 +290,7 @@ function SortableBankRow({
   onDelete: () => void;
   onLogoChanged: () => void;
   onSetDefault: () => void;
+  onToggleAudience: (audience: "customer" | "agent" | "merchant") => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bank.id, disabled });
   const style = {
@@ -298,6 +299,29 @@ function SortableBankRow({
     zIndex: isDragging ? 10 : "auto",
     opacity: isDragging ? 0.85 : 1,
   } as React.CSSProperties;
+
+  const showCustomer = bank.show_for_customer ?? true;
+  const showAgent = bank.show_for_agent ?? true;
+  const showMerchant = bank.show_for_merchant ?? true;
+
+  const audBtn = (
+    active: boolean,
+    onClick: () => void,
+    Icon: typeof User,
+    label: string,
+  ) => (
+    <Button
+      size="icon"
+      variant="ghost"
+      className={`w-7 h-7 ${active ? "text-primary" : "text-muted-foreground/40 hover:text-muted-foreground"}`}
+      onClick={onClick}
+      title={`${active ? "Hide from" : "Show in"} ${label} picker`}
+      aria-label={`${active ? "Hide from" : "Show in"} ${label} picker`}
+      aria-pressed={active}
+    >
+      <Icon className="w-3.5 h-3.5" />
+    </Button>
+  );
 
   return (
     <div ref={setNodeRef} style={style} className="flex items-center justify-between px-3 py-3 hover:bg-muted/30 gap-2 bg-card">
@@ -328,6 +352,11 @@ function SortableBankRow({
             )}
           </p>
           <p className="text-[10px] text-muted-foreground">#{bank.sort_order} · {bank.short_code}</p>
+          <div className="flex items-center gap-0.5 mt-0.5 -ml-1">
+            {audBtn(showCustomer, () => onToggleAudience("customer"), User, "user")}
+            {audBtn(showAgent, () => onToggleAudience("agent"), Briefcase, "agent")}
+            {audBtn(showMerchant, () => onToggleAudience("merchant"), Store, "merchant")}
+          </div>
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
