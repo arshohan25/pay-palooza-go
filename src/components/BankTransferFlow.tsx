@@ -9,6 +9,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { BANGLADESH_BANKS, bankColorFromName, BankInfo } from "@/lib/bangladeshBanks";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
+import { BankLogo } from "@/components/BankLogo";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import { getBalance } from "@/lib/balanceStore";
 import SlideToConfirm from "@/components/SlideToConfirm";
@@ -72,7 +73,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const availableBanks: BankInfo[] = useMemo(() => {
     if (platformBanks.length === 0) return BANGLADESH_BANKS;
     return platformBanks.map(b => ({
-      id: b.id, name: b.name, short: b.short_code, color: bankColorFromName(b.name),
+      id: b.id, name: b.name, short: b.short_code, color: bankColorFromName(b.name), logo_url: b.logo_url,
     }));
   }, [platformBanks]);
 
@@ -233,9 +234,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                         <button className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:border-primary/50 transition-all text-left">
                           {selectedBank ? (
                             <>
-                              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ backgroundColor: selectedBank.color }}>
-                                {selectedBank.short.slice(0, 2)}
-                              </div>
+                              <BankLogo bank={selectedBank} size={40} rounded="rounded-xl" />
                               <span className="flex-1 text-sm font-semibold text-foreground">{selectedBank.name}</span>
                             </>
                           ) : (
@@ -273,9 +272,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                                 onClick={() => { setBankName(b.name); setBankDropdownOpen(false); setBankSearch(""); setError(""); }}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${bankName === b.name ? "bg-primary/10" : ""}`}
                               >
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: b.color }}>
-                                  {b.short.slice(0, 2)}
-                                </div>
+                                <BankLogo bank={b} size={32} />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium text-foreground truncate">{b.name}</p>
                                   <p className="text-[10px] text-muted-foreground">{b.short}</p>

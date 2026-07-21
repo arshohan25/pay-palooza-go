@@ -14,6 +14,7 @@ import SlideToConfirm from "@/components/SlideToConfirm";
 import { verifyPin } from "@/lib/verifyPin";
 import { BANGLADESH_BANKS, bankColorFromName, BankInfo } from "@/lib/bangladeshBanks";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
+import { BankLogo } from "@/components/BankLogo";
 
 import { useSavedBanks, SavedBankAccount } from "@/hooks/use-saved-banks";
 import { useFeeConfig } from "@/hooks/use-fee-config";
@@ -68,7 +69,7 @@ const AgentBankTransfer = () => {
   const availableBanks: BankInfo[] = useMemo(() => {
     if (platformBanks.length === 0) return BANGLADESH_BANKS;
     return platformBanks.map(b => ({
-      id: b.id, name: b.name, short: b.short_code, color: bankColorFromName(b.name),
+      id: b.id, name: b.name, short: b.short_code, color: bankColorFromName(b.name), logo_url: b.logo_url,
     }));
   }, [platformBanks]);
 
@@ -442,9 +443,7 @@ const AgentBankTransfer = () => {
                       <button className="w-full flex items-center gap-3 p-3 mt-1.5 rounded-xl border border-border bg-card hover:border-primary/50 transition-all text-left">
                         {selectedNewBank ? (
                           <>
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: selectedNewBank.color }}>
-                              {selectedNewBank.short.slice(0, 2)}
-                            </div>
+                            <BankLogo bank={selectedNewBank} size={32} />
                             <span className="flex-1 text-sm font-semibold text-foreground truncate">{selectedNewBank.name}</span>
                           </>
                         ) : (
@@ -482,9 +481,7 @@ const AgentBankTransfer = () => {
                               onClick={() => { setNewBankName(b.name); setNewShortCode(b.short); setBankDropdownOpen(false); setBankSearch(""); }}
                               className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${newBankName === b.name ? "bg-primary/10" : ""}`}
                             >
-                              <div className="w-7 h-7 rounded-md flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: b.color }}>
-                                {b.short.slice(0, 2)}
-                              </div>
+                              <BankLogo bank={b} size={28} rounded="rounded-md" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-medium text-foreground truncate">{b.name}</p>
                               </div>

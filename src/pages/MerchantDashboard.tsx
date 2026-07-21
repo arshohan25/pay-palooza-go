@@ -4146,9 +4146,15 @@ const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onCl
                           onClick={() => { setBankName(b.name); setBankOpen(false); setBankSearch(""); }}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${bankName === b.name ? "bg-primary/5" : ""}`}
                         >
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <span className="text-[9px] font-bold text-primary">{b.short_code.slice(0, 4)}</span>
-                          </div>
+                          {b.logo_url ? (
+                            <div className="w-8 h-8 rounded-lg bg-white border border-border/40 overflow-hidden shrink-0 flex items-center justify-center">
+                              <img src={b.logo_url} alt={b.name} className="w-full h-full object-contain" loading="lazy" />
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                              <span className="text-[9px] font-bold text-primary">{b.short_code.slice(0, 4)}</span>
+                            </div>
+                          )}
                           <div className="min-w-0 flex-1">
                             <p className="text-xs font-medium text-foreground truncate">{b.name}</p>
                             <p className="text-[10px] text-muted-foreground">{b.short_code}</p>

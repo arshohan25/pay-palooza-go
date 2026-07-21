@@ -3,6 +3,7 @@ export interface BankInfo {
   name: string;
   short: string;
   color: string; // HSL color for avatar
+  logo_url?: string | null;
 }
 
 // Deterministic color from bank name
