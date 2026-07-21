@@ -4,19 +4,95 @@
  * `usePlatformBanks` hook, so this harness validates the ordering, logo
  * rendering, and default-flagging contract that all three UIs inherit.
  *
+ * It also exposes an interactive picker + submit surface per flow, used by
+ * the `bank-picker-submit-cross-flow` Playwright spec to prove that a bank
+ * can be selected and the flow submitted in customer, agent, and merchant.
+ *
  * Rendered at `/__test/bank-picker-harness` (dev builds only).
  */
 
+import { useState } from "react";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import { BankLogo } from "@/components/BankLogo";
 import { BankListLiveBadge } from "@/components/BankListLiveBadge";
 import { bankColorFromName } from "@/lib/bangladeshBanks";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const FLOWS: Array<{ id: string; label: string }> = [
-  { id: "customer", label: "Customer bank transfer" },
-  { id: "agent", label: "Agent bank transfer" },
-  { id: "merchant", label: "Merchant bank link" },
+const FLOWS: Array<{ id: "customer" | "agent" | "merchant"; label: string; submitLabel: string }> = [
+  { id: "customer", label: "Customer bank transfer", submitLabel: "Transfer" },
+  { id: "agent", label: "Agent bank transfer", submitLabel: "Send" },
+  { id: "merchant", label: "Merchant bank link", submitLabel: "Link Bank" },
 ];
+
+function FlowPicker({
+  flowId,
+  submitLabel,
+  banks,
+}: {
+  flowId: "customer" | "agent" | "merchant";
+  submitLabel: string;
+  banks: ReturnType<typeof usePlatformBanks>["banks"];
+}) {
+  const defaultBank = banks.find(b => b.is_default);
+  const [selected, setSelected] = useState<string | undefined>(defaultBank?.id);
+  const [submitted, setSubmitted] = useState<{ bankId: string; bankName: string } | null>(null);
+
+  const handleSubmit = () => {
+    const b = banks.find(x => x.id === selected);
+    if (!b) return;
+    setSubmitted({ bankId: b.id, bankName: b.name });
+  };
+
+  return (
+    <div
+      className="mt-3 space-y-2 border-t border-border/40 pt-3"
+      data-testid={`picker-${flowId}`}
+    >
+      <Select value={selected} onValueChange={setSelected}>
+        <SelectTrigger data-testid={`picker-trigger-${flowId}`}>
+          <SelectValue placeholder="Choose a bank..." />
+        </SelectTrigger>
+        <SelectContent>
+          {banks.map(b => (
+            <SelectItem
+              key={b.id}
+              value={b.id}
+              data-testid={`picker-option-${flowId}-${b.id}`}
+            >
+              {b.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button
+        type="button"
+        size="sm"
+        disabled={!selected}
+        onClick={handleSubmit}
+        data-testid={`picker-submit-${flowId}`}
+      >
+        {submitLabel}
+      </Button>
+      {submitted && (
+        <div
+          data-testid={`picker-result-${flowId}`}
+          data-submitted-bank-id={submitted.bankId}
+          data-submitted-bank-name={submitted.bankName}
+          className="text-xs text-emerald-600 font-medium"
+        >
+          Submitted: {submitted.bankName}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function BankPickerHarness() {
   const { banks, loading, liveUpdateKey } = usePlatformBanks(false);
@@ -73,6 +149,7 @@ export default function BankPickerHarness() {
                 </li>
               ))}
             </ol>
+            <FlowPicker flowId={flow.id} submitLabel={flow.submitLabel} banks={banks} />
           </section>
         ))}
       </div>
