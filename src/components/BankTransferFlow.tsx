@@ -11,6 +11,7 @@ import { BANGLADESH_BANKS, bankColorFromName, BankInfo } from "@/lib/bangladeshB
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import { BankLogo } from "@/components/BankLogo";
 import { BankListLiveBadge } from "@/components/BankListLiveBadge";
+import { RefreshBanksButton } from "@/components/RefreshBanksButton";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import { getBalance } from "@/lib/balanceStore";
 import SlideToConfirm from "@/components/SlideToConfirm";
@@ -70,7 +71,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const fee = calcBankTransferFee(parsedAmount);
   const totalDeduction = parsedAmount + fee;
 
-  const { banks: platformBanks, liveUpdateKey: banksLiveKey } = usePlatformBanks(false);
+  const { banks: platformBanks, liveUpdateKey: banksLiveKey, lastSyncedAt: banksLastSyncedAt, refetch: refetchBanks } = usePlatformBanks(false);
   const availableBanks: BankInfo[] = useMemo(() => {
     if (platformBanks.length === 0) return BANGLADESH_BANKS;
     return platformBanks.map(b => ({
@@ -238,7 +239,10 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                   {/* Bank dropdown */}
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-foreground">{t("selectBank")}</label>
-                    <div className="flex justify-end -mt-1 mb-1"><BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" /></div>
+                    <div className="flex justify-end items-center gap-2 -mt-1 mb-1">
+                      <BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" />
+                      <RefreshBanksButton refetch={refetchBanks} lastSyncedAt={banksLastSyncedAt} liveUpdateKey={banksLiveKey} />
+                    </div>
                     <Popover open={bankDropdownOpen} onOpenChange={setBankDropdownOpen}>
                       <PopoverTrigger asChild>
                         <button className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:border-primary/50 transition-all text-left">
