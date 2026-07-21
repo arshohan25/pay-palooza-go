@@ -383,7 +383,7 @@ const AgentBankTransfer = () => {
                   label={processing ? t("agComProcessing") : (mode === "send" ? t("agBtSlideSend") : t("agBtSlideReceive"))}
                   icon={Building2}
                 />
-                <Button variant="ghost" onClick={() => { setStep("pin"); setPin(""); setPinError(""); setPinVerified(false); }} className="w-full text-muted-foreground">{t("agComCancel")}</Button>
+                <Button variant="ghost" onClick={() => { setStep("form"); setPin(""); setPinError(""); setPinVerified(false); }} className="w-full text-muted-foreground">{t("agComCancel")}</Button>
               </Card>
             </motion.div>
           )}
