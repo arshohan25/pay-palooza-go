@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useUserRoles } from "@/hooks/use-user-roles";
+
+const EXPORT_ROLES = new Set(["admin", "audit", "compliance", "finance"]);
 
 type PaybillRow = {
   transaction_id: string;
@@ -68,6 +71,8 @@ function downloadCsv(filename: string, csv: string) {
 }
 
 export default function AdminReconciliationDashboard() {
+  const { roles } = useUserRoles();
+  const canExport = roles.some((r) => EXPORT_ROLES.has(r));
   const [paybills, setPaybills] = useState<PaybillRow[]>([]);
   const [donations, setDonations] = useState<DonationRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +122,7 @@ export default function AdminReconciliationDashboard() {
   };
 
   const exportCsv = () => {
+    if (!canExport) { toast.error("You don't have permission to export audit reports"); return; }
     const rows = tab === "paybills" ? paybillsFiltered : donationsFiltered;
     if (!rows.length) { toast.info("Nothing to export"); return; }
     const csv = toCsv(rows as any[]);
@@ -138,7 +144,7 @@ export default function AdminReconciliationDashboard() {
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw size={14} className={`mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
           </Button>
-          <Button size="sm" onClick={exportCsv}>
+          <Button size="sm" onClick={exportCsv} disabled={!canExport} title={canExport ? undefined : "Requires admin/audit/compliance/finance role"}>
             <Download size={14} className="mr-1" /> Export CSV
           </Button>
         </div>

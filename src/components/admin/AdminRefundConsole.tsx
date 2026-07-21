@@ -14,6 +14,10 @@ import { Search, RotateCcw, Loader2, RefreshCw, ShieldAlert, CheckCircle2 } from
 import { format } from "date-fns";
 import { toast } from "sonner";
 import TransactionStatusTimeline from "@/components/TransactionStatusTimeline";
+import { useUserRoles } from "@/hooks/use-user-roles";
+
+const REFUND_ROLES = new Set(["admin", "finance", "compliance"]);
+const DISPUTE_ROLES = new Set(["admin", "finance", "compliance", "risk"]);
 
 type OrphanRow = {
   transaction_id: string;
@@ -33,6 +37,9 @@ type OrphanRow = {
 };
 
 export default function AdminRefundConsole() {
+  const { roles } = useUserRoles();
+  const canRefund = roles.some((r) => REFUND_ROLES.has(r));
+  const canDispute = roles.some((r) => DISPUTE_ROLES.has(r));
   const [rows, setRows] = useState<OrphanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -41,6 +48,7 @@ export default function AdminRefundConsole() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [disputing, setDisputing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,17 +94,37 @@ export default function AdminRefundConsole() {
 
   const runBulkRefund = async () => {
     if (!selected.size) return;
+    if (!canRefund) { toast.error("You don't have permission to approve refunds"); return; }
     setProcessing(true);
-    let ok = 0, failed = 0;
+    let ok = 0, failed = 0, locked = 0;
     for (const id of Array.from(selected)) {
       const { error } = await supabase.rpc("admin_refund_transaction" as any, { p_txn_id: id, p_reason: reason });
-      if (error) { failed++; console.error("refund failed:", id, error.message); } else { ok++; }
+      if (error) {
+        if (/already in progress|already refunded|already reversed/i.test(error.message)) locked++;
+        else failed++;
+        console.error("refund failed:", id, error.message);
+      } else { ok++; }
     }
     setProcessing(false);
     setConfirmOpen(false);
     if (ok) toast.success(`Refunded ${ok} transaction${ok === 1 ? "" : "s"}`);
+    if (locked) toast.info(`${locked} skipped — already refunded or locked`);
     if (failed) toast.error(`${failed} refund${failed === 1 ? "" : "s"} failed — see console`);
     load();
+  };
+
+  const openDispute = async (settlementId: string | null, txnId: string) => {
+    if (!settlementId) { toast.error("This paybill has no settlement row to dispute"); return; }
+    if (!canDispute) { toast.error("You don't have permission to open disputes"); return; }
+    const reason = window.prompt("Reason for dispute (required)");
+    if (!reason?.trim()) return;
+    setDisputing(txnId);
+    const { error } = await supabase.rpc("admin_open_paybill_dispute" as any, {
+      p_settlement_id: settlementId, p_reason: reason.trim(),
+    });
+    setDisputing(null);
+    if (error) toast.error(error.message);
+    else { toast.success("Dispute opened — awaiting provider evidence"); load(); }
   };
 
   return (
@@ -123,7 +151,8 @@ export default function AdminRefundConsole() {
         </div>
         <Button
           size="sm"
-          disabled={!selected.size || processing}
+          disabled={!selected.size || processing || !canRefund}
+          title={canRefund ? undefined : "Requires admin/finance/compliance role"}
           onClick={() => setConfirmOpen(true)}
           className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white"
         >
@@ -175,12 +204,25 @@ export default function AdminRefundConsole() {
                         ) : (
                           <Badge variant="outline" className="capitalize">{r.flag.replace(/_/g, " ")}</Badge>
                         )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+
                         <button
                           onClick={() => setExpanded(expanded === r.transaction_id ? null : r.transaction_id)}
                           className="text-[10px] text-primary hover:underline"
                         >
                           {expanded === r.transaction_id ? "Hide" : "View"} timeline
                         </button>
+                        {canDispute && r.settlement_id && (
+                          <button
+                            disabled={disputing === r.transaction_id}
+                            onClick={() => openDispute(r.settlement_id, r.transaction_id)}
+                            className="text-[10px] text-amber-600 hover:underline disabled:opacity-50"
+                          >
+                            {disputing === r.transaction_id ? "…" : "Open dispute"}
+                          </button>
+                        )}
                       </div>
                     </div>
                     {expanded === r.transaction_id && (
