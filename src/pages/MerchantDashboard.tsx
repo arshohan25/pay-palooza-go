@@ -3298,8 +3298,8 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
         <motion.div variants={stagger.item}>
           <Card className="p-4 border-0 shadow-card">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-foreground">Your Payment Links</h3>
-              <Badge variant="secondary" className="text-[9px]">{links.length} links</Badge>
+              <h3 className="text-sm font-bold text-foreground">{t("plmcYourLinks")}</h3>
+              <Badge variant="secondary" className="text-[9px]">{t("plmcLinksCount").replace("{count}", String(links.length))}</Badge>
             </div>
             <div className="space-y-2.5">
               {links.map(link => (
