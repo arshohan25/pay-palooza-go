@@ -86,7 +86,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
       .select("id, sender_id, sender_role, body, created_at")
       .eq("dispute_id", id)
       .order("created_at", { ascending: true });
-    if (error) toast({ title: "Load failed", description: error.message, variant: "destructive" });
+    if (error) toast({ title: t("dddLoadFailed"), description: error.message, variant: "destructive" });
     setMessages(((data as unknown) as Message[]) || []);
     setLoading(false);
     setTimeout(() => scrollRef.current?.scrollTo({ top: 999999, behavior: "smooth" }), 50);
