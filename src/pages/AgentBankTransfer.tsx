@@ -442,9 +442,7 @@ const AgentBankTransfer = () => {
                       <button className="w-full flex items-center gap-3 p-3 mt-1.5 rounded-xl border border-border bg-card hover:border-primary/50 transition-all text-left">
                         {selectedNewBank ? (
                           <>
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: selectedNewBank.color }}>
-                              {selectedNewBank.short.slice(0, 2)}
-                            </div>
+                            <BankLogo bank={selectedNewBank} size={32} />
                             <span className="flex-1 text-sm font-semibold text-foreground truncate">{selectedNewBank.name}</span>
                           </>
                         ) : (
