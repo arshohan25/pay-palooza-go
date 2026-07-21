@@ -408,9 +408,9 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                   >
                     <ShieldAlert size={30} />
                   </motion.div>
-                  <h2 className="text-xl font-bold text-foreground">Verification locked</h2>
+                  <h2 className="text-xl font-bold text-foreground">{t("cpfLockedTitle")}</h2>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    Too many incorrect codes. For your security, verification is temporarily paused.
+                    {t("cpfLockedSub")}
                   </p>
                 </div>
 
