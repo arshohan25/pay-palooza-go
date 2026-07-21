@@ -1970,6 +1970,7 @@ export default function AdminDashboard() {
 
         {/* ═══ DISPUTE RESOLUTION ═══ */}
         {activeTab === "disputes" && <AdminDisputeResolution />}
+        {activeTab === "paybill_disputes" && <AdminPaybillDisputesQueue />}
 
         {/* ═══ LIVE CHAT ═══ */}
         {activeTab === "live_chat" && <AdminSupportDashboard mode="live_chat" />}
