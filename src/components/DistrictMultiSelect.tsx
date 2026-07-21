@@ -16,6 +16,7 @@ import { Check, ChevronsUpDown, MapPin, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { districtCommandFilter } from "@/lib/districtCommandFilter";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useI18n } from "@/lib/i18n";
 
 interface Row {
   code: string;
