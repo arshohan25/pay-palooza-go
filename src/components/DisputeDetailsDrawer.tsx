@@ -263,7 +263,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
           {/* Resolution */}
           {dispute.resolution_notes && (
             <div className="rounded-2xl p-3 bg-emerald-500/10 border border-emerald-500/20">
-              <p className="text-[10px] font-bold text-emerald-600 mb-1">Resolution</p>
+              <p className="text-[10px] font-bold text-emerald-600 mb-1">{t("dddResolution")}</p>
               <p className="text-[11px] text-foreground whitespace-pre-wrap">{dispute.resolution_notes}</p>
             </div>
           )}
@@ -273,15 +273,15 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
           {/* Conversation */}
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1">
-              <MessageSquare size={11} /> Conversation with handler
+              <MessageSquare size={11} /> {t("dddConversation")}
             </p>
             {loading ? (
               <div className="text-center py-6 text-xs text-muted-foreground flex items-center justify-center gap-2">
-                <Loader2 size={12} className="animate-spin" /> Loading…
+                <Loader2 size={12} className="animate-spin" /> {t("dddLoading")}
               </div>
             ) : messages.length === 0 ? (
               <p className="text-[11px] text-muted-foreground text-center py-6">
-                No notes yet. Send a message to the dispute handler below.
+                {t("dddNoNotes")}
               </p>
             ) : (
               <div className="space-y-2">
@@ -293,7 +293,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
                         <div className="flex items-center gap-1 mb-0.5">
                           <User2 size={9} className="opacity-70" />
                           <p className={`text-[9px] font-bold ${mine ? "opacity-90" : "text-muted-foreground"}`}>
-                            {mine ? "You" : m.sender_role === "admin" ? "Handler" : m.sender_role}
+                            {mine ? t("dddYou") : m.sender_role === "admin" ? t("dddHandler") : m.sender_role}
                           </p>
                         </div>
                         <p className="text-[11px] whitespace-pre-wrap">{m.body}</p>
