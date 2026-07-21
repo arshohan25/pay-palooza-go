@@ -146,6 +146,14 @@ export default function AdminBankListManager() {
     refetch();
   };
 
+  const deleteBank = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"?`)) return;
+    await supabase.from("platform_banks").delete().eq("id", id);
+    auditLog("delete_bank", id, { name });
+    toast.success("Bank deleted");
+    refetch();
+  };
+
   const persistOrder = async (ordered: PlatformBank[]) => {
     // Assign sequential sort_order starting at 1
     const updates = ordered.map((b, idx) => ({ id: b.id, sort_order: idx + 1 }));
