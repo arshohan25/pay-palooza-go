@@ -18,7 +18,7 @@ import { BankListLiveBadge } from "@/components/BankListLiveBadge";
 import { BankLogo } from "@/components/BankLogo";
 
 import { useSavedBanks, SavedBankAccount } from "@/hooks/use-saved-banks";
-import { useFeeConfig } from "@/hooks/use-fee-config";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import {
