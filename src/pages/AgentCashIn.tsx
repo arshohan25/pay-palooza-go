@@ -242,9 +242,9 @@ const AgentCashIn = () => {
                   <p className="text-[10px] text-primary font-semibold mt-1.5">{t("agCinCommissionLine")}: ৳{fmt(commission)}</p>
                 )}
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
                 {[500, 1000, 2000, 5000, 10000].map(a => (
-                  <button key={a} onClick={() => setAmount(String(a))} className="px-3 py-2 rounded-xl text-xs font-bold bg-muted text-muted-foreground press-effect hover:bg-primary/10 hover:text-primary transition-colors">
+                  <button key={a} onClick={() => setAmount(String(a))} className="shrink-0 px-3 py-2 rounded-xl text-xs font-bold bg-muted text-muted-foreground press-effect hover:bg-primary/10 hover:text-primary transition-colors">
                     ৳{fmt(a)}
                   </button>
                 ))}
