@@ -23,6 +23,12 @@ export interface InvoiceOrder {
   }>;
 }
 
+// NOTE: Invoice PDF is intentionally rendered in English regardless of the
+// app's UI language (en/bn). jsPDF's default Helvetica font cannot render
+// Bengali glyphs; a proper Bengali PDF would require embedding a Noto Sans
+// Bengali TTF via addFileToVFS/addFont, which significantly bloats the bundle.
+// English invoices are also the standard for cross-border/audit contexts.
+
 function fmt(n: number) {
   return n.toLocaleString("en-BD");
 }
