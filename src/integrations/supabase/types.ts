@@ -1115,6 +1115,15 @@ export type Database = {
           amount: number
           biller_name: string
           created_at: string
+          dispute_opened_at: string | null
+          dispute_opened_by: string | null
+          dispute_reason: string | null
+          dispute_resolved_at: string | null
+          dispute_resolved_by: string | null
+          dispute_status: string
+          evidence_note: string | null
+          evidence_received_at: string | null
+          evidence_url: string | null
           id: string
           idempotency_key: string | null
           last_attempt_at: string | null
@@ -1123,6 +1132,11 @@ export type Database = {
           provider_attempts: number
           provider_ref: string | null
           reference: string | null
+          refund_lock_key: string | null
+          refund_locked_at: string | null
+          refund_locked_by: string | null
+          refunded_at: string | null
+          refunded_by: string | null
           status: string
           transaction_id: string | null
           updated_at: string
@@ -1134,6 +1148,15 @@ export type Database = {
           amount: number
           biller_name: string
           created_at?: string
+          dispute_opened_at?: string | null
+          dispute_opened_by?: string | null
+          dispute_reason?: string | null
+          dispute_resolved_at?: string | null
+          dispute_resolved_by?: string | null
+          dispute_status?: string
+          evidence_note?: string | null
+          evidence_received_at?: string | null
+          evidence_url?: string | null
           id?: string
           idempotency_key?: string | null
           last_attempt_at?: string | null
@@ -1142,6 +1165,11 @@ export type Database = {
           provider_attempts?: number
           provider_ref?: string | null
           reference?: string | null
+          refund_lock_key?: string | null
+          refund_locked_at?: string | null
+          refund_locked_by?: string | null
+          refunded_at?: string | null
+          refunded_by?: string | null
           status?: string
           transaction_id?: string | null
           updated_at?: string
@@ -1153,6 +1181,15 @@ export type Database = {
           amount?: number
           biller_name?: string
           created_at?: string
+          dispute_opened_at?: string | null
+          dispute_opened_by?: string | null
+          dispute_reason?: string | null
+          dispute_resolved_at?: string | null
+          dispute_resolved_by?: string | null
+          dispute_status?: string
+          evidence_note?: string | null
+          evidence_received_at?: string | null
+          evidence_url?: string | null
           id?: string
           idempotency_key?: string | null
           last_attempt_at?: string | null
@@ -1161,6 +1198,11 @@ export type Database = {
           provider_attempts?: number
           provider_ref?: string | null
           reference?: string | null
+          refund_lock_key?: string | null
+          refund_locked_at?: string | null
+          refund_locked_by?: string | null
+          refunded_at?: string | null
+          refunded_by?: string | null
           status?: string
           transaction_id?: string | null
           updated_at?: string
@@ -8457,6 +8499,42 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          event_id: string
+          event_type: string | null
+          id: string
+          payload: Json
+          processed_at: string
+          provider: string
+          reference: string | null
+          result: string | null
+          signature: string | null
+        }
+        Insert: {
+          event_id: string
+          event_type?: string | null
+          id?: string
+          payload: Json
+          processed_at?: string
+          provider: string
+          reference?: string | null
+          result?: string | null
+          signature?: string | null
+        }
+        Update: {
+          event_id?: string
+          event_type?: string | null
+          id?: string
+          payload?: Json
+          processed_at?: string
+          provider?: string
+          reference?: string | null
+          result?: string | null
+          signature?: string | null
+        }
+        Relationships: []
+      }
       wishlists: {
         Row: {
           created_at: string
@@ -8548,6 +8626,7 @@ export type Database = {
         Args: { _phones: string[]; _reason: string }
         Returns: Json
       }
+      admin_can_export_audit: { Args: never; Returns: boolean }
       admin_chargeback: {
         Args: {
           p_amount: number
@@ -8601,6 +8680,10 @@ export type Database = {
           phone: string
         }[]
       }
+      admin_open_paybill_dispute: {
+        Args: { p_reason: string; p_settlement_id: string }
+        Returns: Json
+      }
       admin_refund_paybill: {
         Args: { p_reason?: string; p_txn_id: string }
         Returns: Json
@@ -8621,6 +8704,10 @@ export type Database = {
         Args: { p_referral_id: string }
         Returns: Json
       }
+      admin_resolve_paybill_dispute: {
+        Args: { p_note?: string; p_outcome: string; p_settlement_id: string }
+        Returns: Json
+      }
       admin_reverse_chargeback: {
         Args: { p_chargeback_txn_id: string; p_reason: string }
         Returns: Json
@@ -8637,6 +8724,15 @@ export type Database = {
       admin_set_merchant_category_active: {
         Args: { _active: boolean; _name: string }
         Returns: undefined
+      }
+      admin_submit_dispute_evidence: {
+        Args: {
+          p_evidence_url: string
+          p_note?: string
+          p_provider_ref?: string
+          p_settlement_id: string
+        }
+        Returns: Json
       }
       admin_toggle_referral_milestone: {
         Args: { p_action: string; p_milestone: number; p_referral_id: string }
@@ -9036,6 +9132,13 @@ export type Database = {
       grant_merchant_api_access: {
         Args: { p_note?: string; p_request_id?: string; p_user_id: string }
         Returns: Json
+      }
+      has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
       }
       has_merchant_api_access: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
