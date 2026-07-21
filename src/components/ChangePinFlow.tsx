@@ -230,7 +230,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
       if (!payload?.verified) {
         haptics.error();
-        setOtpError(payload?.error || "Incorrect code");
+        setOtpError(payload?.error || t("cpfIncorrectCode"));
         setTimeout(() => setOtp(""), 500);
         return;
       }
