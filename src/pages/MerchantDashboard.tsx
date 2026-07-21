@@ -4041,7 +4041,7 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
 /* ── Merchant Add Bank Sheet ── */
 const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onClose: () => void; merchant: MerchantInfo | null }) => {
   const { toast } = useToast();
-  const { banks: platformBanks, loading: banksLoading, liveUpdateKey: banksLiveKey } = usePlatformBanks();
+  const { banks: platformBanks, loading: banksLoading, liveUpdateKey: banksLiveKey } = usePlatformBanks(false, "merchant");
   const [bankName, setBankName] = useState(merchant?.bank_name || "");
 
   // Auto-select the admin-marked default bank for first-time users
