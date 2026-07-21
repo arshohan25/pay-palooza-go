@@ -7,6 +7,7 @@ export interface PlatformBank {
   short_code: string;
   is_active: boolean;
   sort_order: number;
+  logo_url: string | null;
 }
 
 export function usePlatformBanks(includeInactive = false) {
