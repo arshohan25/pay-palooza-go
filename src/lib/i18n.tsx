@@ -5431,7 +5431,17 @@ const translations = {
   ussSearch: { en: "Search…", bn: "খুঁজুন…" },
   ussLoading: { en: "Loading…", bn: "লোড হচ্ছে…" },
   ussNoResults: { en: "No results", bn: "কোনো ফলাফল নেই" },
+
+  // DistrictRoutePicker
+  drpSelectDistrict: { en: "Select district", bn: "জেলা নির্বাচন করুন" },
+  drpLoadingDistricts: { en: "Loading districts…", bn: "জেলা লোড হচ্ছে…" },
+  drpSearchPh: { en: "Search district, code, or division…", bn: "জেলা, কোড বা বিভাগ খুঁজুন…" },
+  drpDivision: { en: "Division", bn: "বিভাগ" },
+  drpFilterByDivision: { en: "Filter by division", bn: "বিভাগ অনুযায়ী ফিল্টার করুন" },
+  drpAllDivisions: { en: "All divisions", bn: "সব বিভাগ" },
+  drpNoDistrictFound: { en: "No district found.", bn: "কোনো জেলা পাওয়া যায়নি।" },
 } as const;
+
 
 
 
