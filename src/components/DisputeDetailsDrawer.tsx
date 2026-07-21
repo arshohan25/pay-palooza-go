@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 
 type DisputeStatus = "open" | "under_review" | "resolved" | "rejected";
 
@@ -35,11 +36,11 @@ type Message = {
   created_at: string;
 };
 
-const STATUS_META: Record<DisputeStatus, { cls: string; icon: any; label: string }> = {
-  open: { cls: "bg-amber-500/15 text-amber-600 border-amber-500/30", icon: Clock, label: "Submitted" },
-  under_review: { cls: "bg-blue-500/15 text-blue-600 border-blue-500/30", icon: Search, label: "Under review" },
-  resolved: { cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", icon: CheckCircle2, label: "Resolved" },
-  rejected: { cls: "bg-rose-500/15 text-rose-600 border-rose-500/30", icon: XCircle, label: "Rejected" },
+const STATUS_META: Record<DisputeStatus, { cls: string; icon: any; labelKey: "dddStatusSubmitted" | "dddStatusUnderReview" | "dddStatusResolved" | "dddStatusRejected" }> = {
+  open: { cls: "bg-amber-500/15 text-amber-600 border-amber-500/30", icon: Clock, labelKey: "dddStatusSubmitted" },
+  under_review: { cls: "bg-blue-500/15 text-blue-600 border-blue-500/30", icon: Search, labelKey: "dddStatusUnderReview" },
+  resolved: { cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", icon: CheckCircle2, labelKey: "dddStatusResolved" },
+  rejected: { cls: "bg-rose-500/15 text-rose-600 border-rose-500/30", icon: XCircle, labelKey: "dddStatusRejected" },
 };
 
 interface Props {
@@ -50,6 +51,7 @@ interface Props {
 
 export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Props) {
   const { toast } = useToast();
+  const { t } = useI18n();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -84,7 +86,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
       .select("id, sender_id, sender_role, body, created_at")
       .eq("dispute_id", id)
       .order("created_at", { ascending: true });
-    if (error) toast({ title: "Load failed", description: error.message, variant: "destructive" });
+    if (error) toast({ title: t("dddLoadFailed"), description: error.message, variant: "destructive" });
     setMessages(((data as unknown) as Message[]) || []);
     setLoading(false);
     setTimeout(() => scrollRef.current?.scrollTo({ top: 999999, behavior: "smooth" }), 50);
@@ -109,7 +111,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
 
   const openEvidence = async (path: string) => {
     const { data, error } = await supabase.storage.from("dispute-evidence").createSignedUrl(path, 60);
-    if (error) return toast({ title: "Cannot open file", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: t("dddCannotOpen"), description: error.message, variant: "destructive" });
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
@@ -127,8 +129,8 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
       if (error) throw error;
       setBody("");
     } catch (e: any) {
-      setSendError(e.message || "Failed to send");
-      toast({ title: "Send failed", description: e.message, variant: "destructive" });
+      setSendError(e.message || t("dddFailedToSend"));
+      toast({ title: t("dddSendFailed"), description: e.message, variant: "destructive" });
     } finally {
       setPosting(false);
     }
@@ -141,17 +143,17 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
   const StatusIcon = meta.icon;
 
   const steps = [
-    { key: "s", label: "Submitted", at: dispute.created_at, done: true, icon: FileCheck2 },
+    { key: "s", label: t("dddStatusSubmitted"), at: dispute.created_at, done: true, icon: FileCheck2 },
     {
       key: "r",
-      label: "Under review",
+      label: t("dddStatusUnderReview"),
       at: dispute.status !== "open" ? dispute.updated_at : null,
       done: dispute.status !== "open",
       icon: Search,
     },
     {
       key: "c",
-      label: dispute.status === "rejected" ? "Rejected" : "Resolved",
+      label: dispute.status === "rejected" ? t("dddStatusRejected") : t("dddStatusResolved"),
       at: dispute.resolved_at ?? (dispute.status === "resolved" || dispute.status === "rejected" ? dispute.updated_at : null),
       done: dispute.status === "resolved" || dispute.status === "rejected",
       icon: dispute.status === "rejected" ? XCircle : CheckCircle2,
@@ -163,9 +165,9 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
       <SheetContent side="bottom" className="p-0 h-[90vh] rounded-t-3xl flex flex-col">
         <SheetHeader className="px-4 pt-4 pb-2 shrink-0">
           <SheetTitle className="text-sm flex items-center gap-2">
-            Dispute details
+            {t("dddTitle")}
             <Badge variant="outline" className={`${meta.cls} text-[10px] gap-1 rounded-full`}>
-              <StatusIcon size={10} /> {meta.label}
+              <StatusIcon size={10} /> {t(meta.labelKey)}
             </Badge>
           </SheetTitle>
         </SheetHeader>
@@ -186,12 +188,12 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
               </div>
               {dispute.transaction_id && (
                 <div className="flex items-center gap-1 text-muted-foreground col-span-2">
-                  <Hash size={10} /> TX <span className="font-mono">{dispute.transaction_id}</span>
+                  <Hash size={10} /> {t("dddTx")} <span className="font-mono">{dispute.transaction_id}</span>
                 </div>
               )}
               <div className="flex items-center gap-1 text-muted-foreground">
                 <ShieldCheck size={10} />
-                {dispute.assigned_to ? "Handler assigned" : "Awaiting handler"}
+                {dispute.assigned_to ? t("dddHandlerAssigned") : t("dddAwaitingHandler")}
               </div>
             </div>
             {dispute.evidence_url && (
@@ -199,14 +201,14 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
                 onClick={() => openEvidence(dispute.evidence_url!)}
                 className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
               >
-                <Paperclip size={11} /> View evidence
+                <Paperclip size={11} /> {t("dddViewEvidence")}
               </button>
             )}
           </div>
 
           {/* Timeline */}
           <div className="rounded-2xl border border-border/40 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-3">Timeline</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-3">{t("dddTimeline")}</p>
             <div className="flex items-start justify-between gap-1">
               {steps.map((s, i) => {
                 const Icon = s.icon;
@@ -229,13 +231,13 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
           {/* Referenced transaction */}
           {dispute.transaction_id && (
             <div className="rounded-2xl border border-border/40 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Referenced transaction</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2">{t("dddReferencedTxn")}</p>
               {txnLoading ? (
                 <div className="text-[11px] text-muted-foreground flex items-center gap-2 py-2">
-                  <Loader2 size={12} className="animate-spin" /> Loading transaction…
+                  <Loader2 size={12} className="animate-spin" /> {t("dddLoadingTxn")}
                 </div>
               ) : !txn ? (
-                <p className="text-[11px] text-muted-foreground">Transaction not found or no longer accessible.</p>
+                <p className="text-[11px] text-muted-foreground">{t("dddTxnNotFound")}</p>
               ) : (
                 <div className="space-y-1.5 text-[11px]">
                   <div className="flex items-center justify-between">
@@ -244,11 +246,11 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
                   </div>
                   <p className="text-lg font-bold text-foreground">৳{Number(txn.amount).toFixed(2)}</p>
                   <div className="grid grid-cols-2 gap-1 pt-1 text-[10px] text-muted-foreground">
-                    <div>Ref: <span className="font-mono text-foreground">{txn.short_id || txn.reference || "—"}</span></div>
-                    <div>Fee: ৳{Number(txn.fee || 0).toFixed(2)}</div>
-                    {txn.commission > 0 && <div>Commission: ৳{Number(txn.commission).toFixed(2)}</div>}
+                    <div>{t("dddRef")}: <span className="font-mono text-foreground">{txn.short_id || txn.reference || "—"}</span></div>
+                    <div>{t("dddFee")}: ৳{Number(txn.fee || 0).toFixed(2)}</div>
+                    {txn.commission > 0 && <div>{t("dddCommission")}: ৳{Number(txn.commission).toFixed(2)}</div>}
                     <div>{new Date(txn.created_at).toLocaleString()}</div>
-                    {txn.recipient_name && <div className="col-span-2">To: {txn.recipient_name}</div>}
+                    {txn.recipient_name && <div className="col-span-2">{t("dddTo")}: {txn.recipient_name}</div>}
                     {txn.recipient_phone && <div className="col-span-2 font-mono">{txn.recipient_phone}</div>}
                     {txn.description && <div className="col-span-2">{txn.description}</div>}
                   </div>
@@ -261,7 +263,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
           {/* Resolution */}
           {dispute.resolution_notes && (
             <div className="rounded-2xl p-3 bg-emerald-500/10 border border-emerald-500/20">
-              <p className="text-[10px] font-bold text-emerald-600 mb-1">Resolution</p>
+              <p className="text-[10px] font-bold text-emerald-600 mb-1">{t("dddResolution")}</p>
               <p className="text-[11px] text-foreground whitespace-pre-wrap">{dispute.resolution_notes}</p>
             </div>
           )}
@@ -271,15 +273,15 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
           {/* Conversation */}
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1">
-              <MessageSquare size={11} /> Conversation with handler
+              <MessageSquare size={11} /> {t("dddConversation")}
             </p>
             {loading ? (
               <div className="text-center py-6 text-xs text-muted-foreground flex items-center justify-center gap-2">
-                <Loader2 size={12} className="animate-spin" /> Loading…
+                <Loader2 size={12} className="animate-spin" /> {t("dddLoading")}
               </div>
             ) : messages.length === 0 ? (
               <p className="text-[11px] text-muted-foreground text-center py-6">
-                No notes yet. Send a message to the dispute handler below.
+                {t("dddNoNotes")}
               </p>
             ) : (
               <div className="space-y-2">
@@ -291,7 +293,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
                         <div className="flex items-center gap-1 mb-0.5">
                           <User2 size={9} className="opacity-70" />
                           <p className={`text-[9px] font-bold ${mine ? "opacity-90" : "text-muted-foreground"}`}>
-                            {mine ? "You" : m.sender_role === "admin" ? "Handler" : m.sender_role}
+                            {mine ? t("dddYou") : m.sender_role === "admin" ? t("dddHandler") : m.sender_role}
                           </p>
                         </div>
                         <p className="text-[11px] whitespace-pre-wrap">{m.body}</p>
@@ -316,7 +318,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
                 onChange={e => setBody(e.target.value)}
                 rows={2}
                 maxLength={500}
-                placeholder="Message the dispute handler…"
+                placeholder={t("dddPlaceholder")}
                 className="rounded-xl text-xs resize-none"
               />
               <Button
