@@ -95,6 +95,7 @@ import AdminSmartRouting from "@/components/admin/AdminSmartRouting";
 import AdminLiquidityPrediction from "@/components/admin/AdminLiquidityPrediction";
 import AdminRealtimeMonitor from "@/components/admin/AdminRealtimeMonitor";
 import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
+import AdminBankListManager from "@/components/admin/AdminBankListManager";
 import AdminRiskControl from "@/components/admin/AdminRiskControl";
 import AdminFloatManagement from "@/components/admin/AdminFloatManagement";
 import AdminRevenueDashboard from "@/components/admin/AdminRevenueDashboard";
@@ -162,7 +163,7 @@ import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AdminNavReorder, { type NavGroup } from "@/components/admin/AdminNavReorder";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Landmark } from "lucide-react";
 import AdminPushSetupWizard from "@/components/admin/AdminPushSetupWizard";
 
 interface Stats {
@@ -324,6 +325,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "revenue", label: "Revenue", icon: TrendingUp },
       { id: "investment_pnl", label: "Investment P/L", icon: TrendingUp },
       { id: "deposit_accounts", label: "Deposit Accts", icon: CreditCard },
+      { id: "bank_list", label: "Bank List", icon: Landmark },
     ],
   },
   {
@@ -2192,6 +2194,9 @@ export default function AdminDashboard() {
 
         {/* ═══ DEPOSIT ACCOUNTS ═══ */}
         {activeTab === "deposit_accounts" && <AdminDepositAccounts />}
+
+        {/* ═══ BANK LIST MANAGER ═══ */}
+        {activeTab === "bank_list" && <AdminBankListManager />}
 
         {/* ═══ BLACKLIST MANAGER ═══ */}
         {activeTab === "blacklist" && <AdminBlacklistManager />}

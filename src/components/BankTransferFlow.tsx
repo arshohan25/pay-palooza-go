@@ -7,7 +7,8 @@ import { useFundRequests } from "@/hooks/use-fund-requests";
 import { useSavedBanks } from "@/hooks/use-saved-banks";
 import { verifyPin } from "@/lib/verifyPin";
 import { useFeeConfig } from "@/hooks/use-fee-config";
-import { BANGLADESH_BANKS } from "@/lib/bangladeshBanks";
+import { BANGLADESH_BANKS, bankColorFromName, BankInfo } from "@/lib/bangladeshBanks";
+import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import { getBalance } from "@/lib/balanceStore";
 import SlideToConfirm from "@/components/SlideToConfirm";
@@ -67,11 +68,19 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const fee = calcBankTransferFee(parsedAmount);
   const totalDeduction = parsedAmount + fee;
 
+  const { banks: platformBanks } = usePlatformBanks(false);
+  const availableBanks: BankInfo[] = useMemo(() => {
+    if (platformBanks.length === 0) return BANGLADESH_BANKS;
+    return platformBanks.map(b => ({
+      id: b.id, name: b.name, short: b.short_code, color: bankColorFromName(b.name),
+    }));
+  }, [platformBanks]);
+
   const filteredBanks = useMemo(() => {
-    if (!bankSearch.trim()) return BANGLADESH_BANKS;
+    if (!bankSearch.trim()) return availableBanks;
     const q = bankSearch.toLowerCase();
-    return BANGLADESH_BANKS.filter(b => b.name.toLowerCase().includes(q) || b.short.toLowerCase().includes(q));
-  }, [bankSearch]);
+    return availableBanks.filter(b => b.name.toLowerCase().includes(q) || b.short.toLowerCase().includes(q));
+  }, [bankSearch, availableBanks]);
 
   const goTo = (next: Step) => {
     haptics.medium();
@@ -125,7 +134,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       });
       setResultData({ fee: result.fee, total_deducted: result.total_deducted, new_balance: result.new_balance });
 
-      const bankShort = BANGLADESH_BANKS.find(b => b.name === bankName)?.short ?? bankName.slice(0, 4).toUpperCase();
+      const bankShort = availableBanks.find(b => b.name === bankName)?.short ?? bankName.slice(0, 4).toUpperCase();
       saveBank({ bank_name: bankName, account_number: accountNumber, account_holder: accountHolder, short_code: bankShort });
       haptics.success();
       setDirection(1);
@@ -144,7 +153,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
 
   const handleSlideConfirm = handlePinSubmit;
 
-  const selectedBank = BANGLADESH_BANKS.find(b => b.name === bankName);
+  const selectedBank = availableBanks.find(b => b.name === bankName);
 
   return (
     <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}

@@ -6,11 +6,13 @@ export interface BankInfo {
 }
 
 // Deterministic color from bank name
-const hueFromName = (name: string) => {
+export const hueFromName = (name: string) => {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
   return h;
 };
+
+export const bankColorFromName = (name: string) => `hsl(${hueFromName(name)}, 55%, 45%)`;
 
 const bank = (id: string, name: string, short: string): BankInfo => ({
   id, name, short,
