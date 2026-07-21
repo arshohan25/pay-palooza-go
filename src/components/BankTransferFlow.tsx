@@ -73,7 +73,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const availableBanks: BankInfo[] = useMemo(() => {
     if (platformBanks.length === 0) return BANGLADESH_BANKS;
     return platformBanks.map(b => ({
-      id: b.id, name: b.name, short: b.short_code, color: bankColorFromName(b.name),
+      id: b.id, name: b.name, short: b.short_code, color: bankColorFromName(b.name), logo_url: b.logo_url,
     }));
   }, [platformBanks]);
 
