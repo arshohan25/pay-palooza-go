@@ -265,6 +265,7 @@ export default function AdminBankListManager() {
                     onDelete={() => deleteBank(b.id, b.name)}
                     onLogoChanged={refetch}
                     onSetDefault={() => setDefaultBank(b)}
+                    onToggleAudience={(aud) => toggleAudience(b, aud)}
                   />
                 ))}
               </div>
