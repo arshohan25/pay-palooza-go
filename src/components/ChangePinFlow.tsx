@@ -197,7 +197,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       if (payload?.dev_otp) setDevOtp(String(payload.dev_otp));
       setResendIn(RESEND_SECONDS);
     } catch (err: any) {
-      setOtpError(err?.message || "Failed to send code");
+      setOtpError(err?.message || t("cpfFailedToSendCode"));
     } finally {
       setOtpSending(false);
     }
