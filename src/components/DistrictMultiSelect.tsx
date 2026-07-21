@@ -240,7 +240,7 @@ export default function DistrictMultiSelect({
           {/* Division segment */}
           <div className="relative flex-1 min-w-0 rounded-lg transition-colors hover:bg-white/5">
             <span className="pointer-events-none absolute left-3 top-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">
-              Division
+              {t("dmsDivision")}
             </span>
             <Select
               value={division}
