@@ -176,14 +176,14 @@ export default function DistrictMultiSelect({
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search district or code…"
+          placeholder={t("dmsSearchDistrict")}
           className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
         />
       </div>
       <div ref={setScrollEl} className="max-h-72 overflow-y-auto">
         {filteredDistricts.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">
-            No district found.
+            {t("dmsNoDistrictFound")}
           </div>
         ) : (
           <div
