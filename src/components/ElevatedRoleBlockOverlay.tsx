@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth, signOut } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-roles";
