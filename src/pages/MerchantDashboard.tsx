@@ -3066,6 +3066,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [linkPayments, setLinkPayments] = useState<Record<string, any[]>>({});
   const { user } = useAuth();
+  const { t, lang } = useI18n();
 
   const baseUrl = window.location.origin;
   const merchantCode = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
@@ -3164,7 +3165,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
     const url = buildUrl(link);
     const text = `Pay ${merchant?.business_name || "merchant"}${link.amount ? ` ৳${fmt(link.amount)}` : ""}${link.note ? ` — ${link.note}` : ""}`;
     if (navigator.share) {
-      try { await navigator.share({ title: "Payment Link", text, url }); } catch {}
+      try { await navigator.share({ title: t("plmcShareTitle"), text, url }); } catch {}
     } else {
       copyLink(link);
     }
@@ -3215,21 +3216,21 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                 <Link size={18} className="text-primary" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Create Payment Link</h3>
-                <p className="text-[10px] text-muted-foreground">Share with customers for remote payments</p>
+                <h3 className="text-sm font-bold text-foreground">{t("plmcCreateTitle")}</h3>
+                <p className="text-[10px] text-muted-foreground">{t("plmcCreateSubtitle")}</p>
               </div>
             </div>
 
             <div className="space-y-3">
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">
-                  Amount (optional)
+                  {t("plmcAmountLabel")}
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
                   <Input
                     type="number"
-                    placeholder="Leave empty for any amount"
+                    placeholder={t("plmcAmountPlaceholder")}
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                     className="pl-8 h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-background"
@@ -3239,10 +3240,10 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
 
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">
-                  Note / Description
+                  {t("plmcNoteLabel")}
                 </label>
                 <Input
-                  placeholder="e.g. Invoice #123, Order for blue shirt"
+                  placeholder={t("plmcNotePlaceholder")}
                   value={note}
                   onChange={e => setNote(e.target.value)}
                   maxLength={100}
@@ -3255,7 +3256,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                 className="w-full h-12 rounded-xl text-sm font-bold shadow-glow"
                 style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
               >
-                <Plus size={16} className="mr-1.5" /> Generate Payment Link
+                <Plus size={16} className="mr-1.5" /> {t("plmcGenerate")}
               </Button>
             </div>
           </div>
@@ -3266,13 +3267,13 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
           <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-            <Sparkles size={14} className="text-primary" /> How It Works
+            <Sparkles size={14} className="text-primary" /> {t("plmcHowItWorks")}
           </h3>
           <div className="space-y-3">
             {[
-              { step: "1", title: "Create a link", desc: "Set amount & note, generate a unique payment link" },
-              { step: "2", title: "Share with customer", desc: "Send via SMS, WhatsApp, email, or any messenger" },
-              { step: "3", title: "Get paid instantly", desc: "Customer pays through the link, money hits your account" },
+              { step: "1", title: t("plmcStep1Title"), desc: t("plmcStep1Desc") },
+              { step: "2", title: t("plmcStep2Title"), desc: t("plmcStep2Desc") },
+              { step: "3", title: t("plmcStep3Title"), desc: t("plmcStep3Desc") },
             ].map(s => (
               <div key={s.step} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -3297,8 +3298,8 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
         <motion.div variants={stagger.item}>
           <Card className="p-4 border-0 shadow-card">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-foreground">Your Payment Links</h3>
-              <Badge variant="secondary" className="text-[9px]">{links.length} links</Badge>
+              <h3 className="text-sm font-bold text-foreground">{t("plmcYourLinks")}</h3>
+              <Badge variant="secondary" className="text-[9px]">{t("plmcLinksCount").replace("{count}", String(links.length))}</Badge>
             </div>
             <div className="space-y-2.5">
               {links.map(link => (
@@ -3312,14 +3313,14 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-xs font-bold text-foreground">
-                          {link.amount ? `৳${fmt(link.amount)}` : "Open Amount"}
+                          {link.amount ? `৳${fmt(link.amount)}` : t("plmcOpenAmount")}
                         </span>
                         <Badge variant={link.is_active ? "secondary" : "destructive"} className="text-[8px]">
-                          {link.is_active ? "Active" : "Revoked"}
+                          {link.is_active ? t("plmcActive") : t("plmcRevoked")}
                         </Badge>
                         {link.used_count > 0 && (
                           <Badge variant="outline" className="text-[8px] text-primary border-primary/30">
-                            {link.used_count} paid
+                            {t("plmcPaidCount").replace("{count}", String(link.used_count))}
                           </Badge>
                         )}
                       </div>
@@ -3328,7 +3329,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                       )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => toggleActive(link)} className="tap-target text-muted-foreground hover:text-primary transition-colors" title={link.is_active ? "Revoke" : "Reactivate"}>
+                      <button onClick={() => toggleActive(link)} className="tap-target text-muted-foreground hover:text-primary transition-colors" title={link.is_active ? t("plmcRevoke") : t("plmcReactivate")}>
                         {link.is_active ? <Lock size={13} /> : <CheckCircle2 size={13} />}
                       </button>
                       <button onClick={() => removeLink(link.id)} className="tap-target text-muted-foreground hover:text-destructive transition-colors">
@@ -3351,9 +3352,9 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                       disabled={!link.is_active}
                     >
                       {copiedId === link.id ? (
-                        <><Check size={12} className="mr-1 text-primary" /> Copied!</>
+                        <><Check size={12} className="mr-1 text-primary" /> {t("plmcCopied")}</>
                       ) : (
-                        <><Copy size={12} className="mr-1" /> Copy Link</>
+                        <><Copy size={12} className="mr-1" /> {t("plmcCopyLink")}</>
                       )}
                     </Button>
                     <Button
@@ -3363,7 +3364,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                       onClick={() => shareLink(link)}
                       disabled={!link.is_active}
                     >
-                      <Share2 size={12} className="mr-1" /> Share
+                      <Share2 size={12} className="mr-1" /> {t("plmcShare")}
                     </Button>
                   </div>
 
@@ -3373,7 +3374,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                     className="w-full mt-2 flex items-center justify-between text-[10px] text-muted-foreground hover:text-foreground transition-colors py-1"
                   >
                     <span className="flex items-center gap-1">
-                      <Receipt size={10} /> {link.used_count} payment{link.used_count !== 1 ? "s" : ""} received
+                      <Receipt size={10} /> {t("plmcPaymentsReceived").replace("{count}", String(link.used_count))}
                     </span>
                     <ChevronDown size={10} className={`transition-transform ${expandedId === link.id ? "rotate-180" : ""}`} />
                   </button>
@@ -3387,18 +3388,18 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                         className="overflow-hidden"
                       >
                         {linkPayments[link.id].length === 0 ? (
-                          <p className="text-[10px] text-muted-foreground text-center py-3">No payments yet</p>
+                          <p className="text-[10px] text-muted-foreground text-center py-3">{t("plmcNoPaymentsYet")}</p>
                         ) : (
                           <div className="mt-1 space-y-1.5">
                             {linkPayments[link.id].map((txn: any) => (
                               <div key={txn.id} className="flex items-center justify-between bg-background/60 rounded-lg px-2.5 py-2">
                                 <div>
                                   <p className="text-[10px] font-semibold text-foreground">৳{fmt(txn.amount)}</p>
-                                  <p className="text-[8px] text-muted-foreground">{txn.recipient_name || "Customer"}</p>
+                                  <p className="text-[8px] text-muted-foreground">{txn.recipient_name || t("plmcCustomer")}</p>
                                 </div>
                                 <div className="text-right">
                                   <p className="text-[8px] text-muted-foreground">
-                                    {new Date(txn.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short" })}
+                                    {new Date(txn.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD", { day: "numeric", month: "short" })}
                                   </p>
                                   <p className="text-[7px] text-muted-foreground font-mono">{txn.short_id}</p>
                                 </div>
@@ -3411,7 +3412,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                   </AnimatePresence>
 
                   <p className="text-[8px] text-muted-foreground mt-2 text-right">
-                    Created {new Date(link.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })}
+                    {t("plmcCreatedOn").replace("{date}", new Date(link.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD", { day: "numeric", month: "short", year: "numeric" }))}
                   </p>
                 </motion.div>
               ))}
@@ -3423,13 +3424,13 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
       {/* Benefits */}
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
-          <h3 className="text-sm font-bold text-foreground mb-3">Why Use Payment Links?</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("plmcWhyTitle")}</h3>
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { icon: Globe, title: "Remote Payments", desc: "Accept payments from anywhere" },
-              { icon: Zap, title: "Instant Setup", desc: "No extra hardware needed" },
-              { icon: ShieldCheck, title: "Secure", desc: "End-to-end encrypted" },
-              { icon: Receipt, title: "Auto Tracked", desc: "All transactions logged" },
+              { icon: Globe, title: t("plmcWhyRemote"), desc: t("plmcWhyRemoteDesc") },
+              { icon: Zap, title: t("plmcWhyInstant"), desc: t("plmcWhyInstantDesc") },
+              { icon: ShieldCheck, title: t("plmcWhySecure"), desc: t("plmcWhySecureDesc") },
+              { icon: Receipt, title: t("plmcWhyTracked"), desc: t("plmcWhyTrackedDesc") },
             ].map(b => (
               <div key={b.title} className="p-3 rounded-xl bg-muted/30 text-center">
                 <b.icon size={16} className="text-primary mx-auto mb-1.5" />
