@@ -310,17 +310,17 @@ export default function DistrictMultiSelect({
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              aria-label="Districts"
+              aria-label={t("dmsDistricts")}
               disabled={districtDisabled}
               className="w-full justify-between rounded-xl h-11 font-normal"
             >
               <span className="flex items-center gap-2 truncate">
                 <MapPin size={14} className="opacity-60" />
                 {value.length > 0
-                  ? `${value.length} district${value.length > 1 ? "s" : ""} selected`
+                  ? (value.length === 1 ? t("dmsSelectedOne") : t("dmsSelectedMany").replace("{count}", String(value.length)))
                   : loading
-                  ? "Loading districts…"
-                  : placeholder}
+                  ? t("dmsLoadingDistricts")
+                  : resolvedPlaceholder}
               </span>
               <ChevronsUpDown size={14} className="ml-2 shrink-0 opacity-50" />
             </Button>
