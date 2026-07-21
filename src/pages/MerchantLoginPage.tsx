@@ -224,10 +224,14 @@ export default function MerchantLoginPage() {
     });
 
     const ctx: any = (error as any)?.context;
-    let body: any = data ?? ctx?.body ?? null;
-    if (!body && ctx?.json) { try { body = await ctx.json(); } catch {} }
-    if (!body && ctx?.text) {
-      try { body = JSON.parse(await ctx.text()); } catch {}
+    let body: any = data ?? null;
+    // NOTE: ctx.body is a ReadableStream on the Response — never use it as the
+    // parsed body. Always read via .json() / .text().
+    if (!body && typeof ctx?.json === "function") {
+      try { body = await ctx.clone().json(); } catch {}
+    }
+    if (!body && typeof ctx?.text === "function") {
+      try { body = JSON.parse(await ctx.clone().text()); } catch {}
     }
     const status: number | undefined = ctx?.status;
     const headerRetry = (() => {
