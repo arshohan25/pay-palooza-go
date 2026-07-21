@@ -153,7 +153,7 @@ const AgentBankTransfer = () => {
       if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setProcessing(false); return; }
       setPinVerified(true);
       setProcessing(false);
-      await executeTransaction();
+      setStep("confirm");
     } catch (e: any) {
       setPinError(e.message || "Verification failed.");
       setProcessing(false);
@@ -162,7 +162,8 @@ const AgentBankTransfer = () => {
 
   const handleSlideConfirm = async () => {
     if (processing || !selectedAccount) return;
-    setStep("pin");
+    if (!pinVerified) { toast({ title: "Verify PIN first", variant: "destructive" }); setStep("pin"); return; }
+    await executeTransaction();
   };
 
 
