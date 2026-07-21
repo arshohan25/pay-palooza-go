@@ -14,6 +14,7 @@ import SlideToConfirm from "@/components/SlideToConfirm";
 import { verifyPin } from "@/lib/verifyPin";
 import { BANGLADESH_BANKS, bankColorFromName, BankInfo } from "@/lib/bangladeshBanks";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
+import { BankListLiveBadge } from "@/components/BankListLiveBadge";
 import { BankLogo } from "@/components/BankLogo";
 
 import { useSavedBanks, SavedBankAccount } from "@/hooks/use-saved-banks";
@@ -65,7 +66,7 @@ const AgentBankTransfer = () => {
   const { calcBankTransferFee, getFeeLabel } = useFeeConfig();
   const fee = mode === "send" ? calcBankTransferFee(Number(amount)) : 0;
 
-  const { banks: platformBanks } = usePlatformBanks(false);
+  const { banks: platformBanks, liveUpdateKey: banksLiveKey } = usePlatformBanks(false);
   const availableBanks: BankInfo[] = useMemo(() => {
     if (platformBanks.length === 0) return BANGLADESH_BANKS;
     return platformBanks.map(b => ({
@@ -448,7 +449,10 @@ const AgentBankTransfer = () => {
 
                 {/* Searchable bank dropdown */}
                 <div>
-                  <Label className="text-xs font-semibold">Bank Name</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">Bank Name</Label>
+                    <BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" />
+                  </div>
                   <Popover open={bankDropdownOpen} onOpenChange={setBankDropdownOpen}>
                     <PopoverTrigger asChild>
                       <button className="w-full flex items-center gap-3 p-3 mt-1.5 rounded-xl border border-border bg-card hover:border-primary/50 transition-all text-left">

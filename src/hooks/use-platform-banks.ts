@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PlatformBank {
@@ -11,11 +11,20 @@ export interface PlatformBank {
   is_default?: boolean;
 }
 
+/**
+ * `liveUpdateKey` increments every time realtime (or the dev-only
+ * `__banks:refetch` window event used by the realtime smoke test) triggers
+ * a refetch. It does NOT bump on the initial load, so consumers can safely
+ * use it to flash a "list updated" indicator only on genuine live changes.
+ */
 export function usePlatformBanks(includeInactive = false) {
   const [banks, setBanks] = useState<PlatformBank[]>([]);
   const [loading, setLoading] = useState(true);
+  const [liveUpdateKey, setLiveUpdateKey] = useState(0);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const isInitial = useRef(true);
 
-  const fetchBanks = async () => {
+  const fetchBanks = async (opts: { live?: boolean } = {}) => {
     setLoading(true);
     let query = supabase.from("platform_banks").select("*").order("sort_order");
     if (!includeInactive) {
@@ -23,7 +32,12 @@ export function usePlatformBanks(includeInactive = false) {
     }
     const { data } = await query;
     setBanks((data as PlatformBank[]) ?? []);
+    setLastSyncedAt(Date.now());
     setLoading(false);
+    if (opts.live && !isInitial.current) {
+      setLiveUpdateKey(k => k + 1);
+    }
+    isInitial.current = false;
   };
 
   useEffect(() => {
@@ -37,16 +51,27 @@ export function usePlatformBanks(includeInactive = false) {
         "postgres_changes",
         { event: "*", schema: "public", table: "platform_banks" },
         () => {
-          fetchBanks();
+          fetchBanks({ live: true });
         },
       )
       .subscribe();
 
+    // Dev/smoke-test hook: dispatch `window.dispatchEvent(new Event('__banks:refetch'))`
+    // to simulate a realtime change without touching the database. Used by
+    // `e2e/bank-realtime-smoke.spec.ts`.
+    const onDevRefetch = () => fetchBanks({ live: true });
+    if (typeof window !== "undefined") {
+      window.addEventListener("__banks:refetch", onDevRefetch);
+    }
+
     return () => {
       supabase.removeChannel(channel);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("__banks:refetch", onDevRefetch);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [includeInactive]);
 
-  return { banks, loading, refetch: fetchBanks };
+  return { banks, loading, refetch: fetchBanks, liveUpdateKey, lastSyncedAt };
 }
