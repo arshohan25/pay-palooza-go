@@ -38,6 +38,7 @@ const getGreetingKey = (): TranslationKey => {
 import AdminChargeConfig from "@/components/admin/AdminChargeConfig";
 import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
 import AdminDisputeResolution from "@/components/admin/AdminDisputeResolution";
+import AdminPaybillDisputesQueue from "@/components/admin/AdminPaybillDisputesQueue";
 import AdminReporting from "@/components/admin/AdminReporting";
 import AdminSupportDashboard from "@/components/admin/AdminSupportDashboard";
 import AdminPinResetQueue from "@/components/admin/AdminPinResetQueue";
