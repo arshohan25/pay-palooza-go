@@ -144,7 +144,7 @@ export default function AdminReconciliationDashboard() {
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw size={14} className={`mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
           </Button>
-          <Button size="sm" onClick={exportCsv}>
+          <Button size="sm" onClick={exportCsv} disabled={!canExport} title={canExport ? undefined : "Requires admin/audit/compliance/finance role"}>
             <Download size={14} className="mr-1" /> Export CSV
           </Button>
         </div>
