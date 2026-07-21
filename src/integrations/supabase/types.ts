@@ -5902,6 +5902,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          is_default: boolean
           logo_url: string | null
           name: string
           short_code: string
@@ -5911,6 +5912,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_default?: boolean
           logo_url?: string | null
           name: string
           short_code: string
@@ -5920,6 +5922,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_default?: boolean
           logo_url?: string | null
           name?: string
           short_code?: string
