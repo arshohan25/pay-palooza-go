@@ -3412,7 +3412,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                   </AnimatePresence>
 
                   <p className="text-[8px] text-muted-foreground mt-2 text-right">
-                    Created {new Date(link.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })}
+                    {t("plmcCreatedOn").replace("{date}", new Date(link.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD", { day: "numeric", month: "short", year: "numeric" }))}
                   </p>
                 </motion.div>
               ))}
