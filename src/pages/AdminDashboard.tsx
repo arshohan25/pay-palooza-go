@@ -284,6 +284,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "operations_wall", label: "Operations Wall", icon: Activity },
       { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
+      { id: "paybill_disputes", label: "Paybill Disputes", icon: Scale },
       { id: "complaints", label: "Complaints", icon: AlertTriangle },
       { id: "kyc", label: "KYC", icon: ScanFace },
       { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
