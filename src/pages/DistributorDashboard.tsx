@@ -828,6 +828,7 @@ const AgentsGridView = ({ agents, onAgentClick, onStatusChange, onCreateAgent }:
   onStatusChange: (id: string, status: string) => void;
   onCreateAgent: () => void;
 }) => {
+  const { t } = useI18n();
   const [filter, setFilter] = useState<"all" | "active" | "pending" | "suspended">("all");
   const [search, setSearch] = useState("");
   const filtered = (filter === "all" ? agents : agents.filter(a => a.status === filter))
@@ -837,25 +838,29 @@ const AgentsGridView = ({ agents, onAgentClick, onStatusChange, onCreateAgent }:
     <div className="space-y-4">
       {/* Header + Create */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-foreground">Agent Network</h3>
+        <h3 className="text-sm font-bold text-foreground">{t("distDashAgentNetwork")}</h3>
         <Button size="sm" onClick={onCreateAgent} className="h-8 text-xs gap-1.5 gradient-primary text-primary-foreground rounded-xl">
-          <UserPlus size={14} /> Create Agent
+          <UserPlus size={14} /> {t("distDashCreateAgent")}
         </Button>
       </div>
 
       {/* Search */}
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search agents..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-xl h-10 text-xs" />
+        <Input placeholder={t("distDashSearchAgents")} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-xl h-10 text-xs" />
       </div>
 
       {/* Filter chips */}
       <div className="flex gap-2 overflow-x-auto scrollbar-none">
-        {(["all", "active", "pending", "suspended"] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-xl text-[10px] font-semibold whitespace-nowrap transition-all ${filter === f ? "gradient-addmoney text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground"}`}>
-            {f === "all" ? `All (${agents.length})` : `${f.charAt(0).toUpperCase() + f.slice(1)} (${agents.filter(a => a.status === f).length})`}
-          </button>
-        ))}
+        {(["all", "active", "pending", "suspended"] as const).map(f => {
+          const labelMap: Record<string, string> = { all: t("distDashAll"), active: t("distDashActive"), pending: t("distDashPending"), suspended: t("distDashSuspend") };
+          const count = f === "all" ? agents.length : agents.filter(a => a.status === f).length;
+          return (
+            <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-xl text-[10px] font-semibold whitespace-nowrap transition-all ${filter === f ? "gradient-addmoney text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground"}`}>
+              {labelMap[f]} ({count})
+            </button>
+          );
+        })}
       </div>
 
       {/* Grid */}
