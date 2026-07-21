@@ -122,6 +122,7 @@ export default function AdminReconciliationDashboard() {
   };
 
   const exportCsv = () => {
+    if (!canExport) { toast.error("You don't have permission to export audit reports"); return; }
     const rows = tab === "paybills" ? paybillsFiltered : donationsFiltered;
     if (!rows.length) { toast.info("Nothing to export"); return; }
     const csv = toCsv(rows as any[]);
