@@ -306,11 +306,27 @@ function SortableBankRow({
           </div>
         )}
         <div className="min-w-0">
-          <p className="text-xs font-medium text-foreground truncate">{bank.name}</p>
+          <p className="text-xs font-medium text-foreground truncate flex items-center gap-1.5">
+            {bank.name}
+            {bank.is_default && (
+              <Badge className="text-[9px] bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-0 px-1.5 py-0" data-testid="default-badge">Default</Badge>
+            )}
+          </p>
           <p className="text-[10px] text-muted-foreground">#{bank.sort_order} · {bank.short_code}</p>
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
+        <Button
+          size="icon"
+          variant="ghost"
+          className={`w-7 h-7 ${bank.is_default ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"}`}
+          onClick={onSetDefault}
+          title={bank.is_default ? "Unset as default" : "Set as default bank"}
+          aria-label={bank.is_default ? "Unset default bank" : "Set as default bank"}
+          aria-pressed={bank.is_default}
+        >
+          <Star className={`w-3.5 h-3.5 ${bank.is_default ? "fill-amber-500" : ""}`} />
+        </Button>
         <BankLogoUploader bank={bank} onChanged={onLogoChanged} />
         <Badge variant={bank.is_active ? "default" : "secondary"} className="text-[10px]">
           {bank.is_active ? "On" : "Off"}
