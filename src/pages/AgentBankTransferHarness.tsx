@@ -3,20 +3,13 @@ import SlideToConfirm from "@/components/SlideToConfirm";
 import ModernPinField from "@/components/ModernPinField";
 
 /**
- * Dev/test-only harness that mirrors the AgentBankTransfer state machine
- * (form → preview → pin → confirm(slider) → done) without hitting Supabase.
+ * Dev/test-only harness mirroring the AgentBankTransfer state machine:
+ *   form → pin → confirm(summary + slider) → done
  *
- * PIN "1234" is treated as valid; anything else is rejected. This lets the
- * E2E suite verify the flow's key contract:
- *   1. Preview screen appears between form and PIN.
- *   2. After PIN is verified, the confirmation screen with the Slide-to-Confirm
- *      slider stays visible (the flow does NOT jump straight to done).
- *   3. Back from confirm returns to PIN; back from PIN returns to preview.
- *   4. The slider is disabled until the PIN is verified.
- *
- * Mounted at /__test/agent-bank-transfer-harness in dev builds (see App.tsx).
+ * A single summary/preview appears on the confirm step (post-PIN) — no
+ * duplicate preview before the PIN gate. PIN "1234" is accepted.
  */
-type Step = "form" | "preview" | "pin" | "confirm" | "done";
+type Step = "form" | "pin" | "confirm" | "done";
 
 export default function AgentBankTransferHarness() {
   const [step, setStep] = useState<Step>("form");
@@ -53,22 +46,10 @@ export default function AgentBankTransferHarness() {
           />
           <button
             data-testid="form-continue"
-            onClick={() => setStep("preview")}
+            onClick={() => setStep("pin")}
             disabled={!amount || Number(amount) < 10}
           >
             Continue
-          </button>
-        </div>
-      )}
-
-      {step === "preview" && (
-        <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
-          <p data-testid="preview-amount">Amount: ৳{amount}</p>
-          <button data-testid="preview-continue" onClick={() => setStep("pin")}>
-            Continue
-          </button>
-          <button data-testid="preview-back" onClick={() => setStep("form")}>
-            Back
           </button>
         </div>
       )}
@@ -97,7 +78,7 @@ export default function AgentBankTransferHarness() {
           <button
             data-testid="pin-back"
             onClick={() => {
-              setStep("preview");
+              setStep("form");
               setPin("");
               setPinError("");
               setPinVerified(false);
@@ -118,7 +99,11 @@ export default function AgentBankTransferHarness() {
               label="Slide to send"
             />
           </div>
-          <button data-testid="confirm-back" onClick={() => setStep("pin")}>
+          <button data-testid="confirm-back" onClick={() => {
+            setStep("pin");
+            setPin("");
+            setPinVerified(false);
+          }}>
             Back
           </button>
         </div>
