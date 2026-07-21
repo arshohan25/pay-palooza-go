@@ -2195,6 +2195,9 @@ export default function AdminDashboard() {
         {/* ═══ DEPOSIT ACCOUNTS ═══ */}
         {activeTab === "deposit_accounts" && <AdminDepositAccounts />}
 
+        {/* ═══ BANK LIST MANAGER ═══ */}
+        {activeTab === "bank_list" && <AdminBankListManager />}
+
         {/* ═══ BLACKLIST MANAGER ═══ */}
         {activeTab === "blacklist" && <AdminBlacklistManager />}
 
