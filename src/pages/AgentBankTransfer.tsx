@@ -36,6 +36,7 @@ const genRef = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r =
 
 type Mode = "send" | "receive";
 type Step = "select" | "form" | "pin" | "confirm" | "done";
+// Flow order: select → form → pin → confirm(slider) → done
 
 const AgentBankTransfer = () => {
   const navigate = useNavigate();
