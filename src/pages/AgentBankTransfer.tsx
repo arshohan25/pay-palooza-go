@@ -15,7 +15,6 @@ import { verifyPin } from "@/lib/verifyPin";
 import { BANGLADESH_BANKS, bankColorFromName, BankInfo } from "@/lib/bangladeshBanks";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import { BankListLiveBadge } from "@/components/BankListLiveBadge";
-import { RefreshBanksButton } from "@/components/RefreshBanksButton";
 import { BankLogo } from "@/components/BankLogo";
 
 import { useSavedBanks, SavedBankAccount } from "@/hooks/use-saved-banks";
@@ -67,7 +66,7 @@ const AgentBankTransfer = () => {
   const { calcBankTransferFee, getFeeLabel } = useFeeConfig();
   const fee = mode === "send" ? calcBankTransferFee(Number(amount)) : 0;
 
-  const { banks: platformBanks, liveUpdateKey: banksLiveKey, lastSyncedAt: banksLastSyncedAt, refetch: refetchBanks } = usePlatformBanks(false);
+  const { banks: platformBanks, liveUpdateKey: banksLiveKey } = usePlatformBanks(false);
   const availableBanks: BankInfo[] = useMemo(() => {
     if (platformBanks.length === 0) return BANGLADESH_BANKS;
     return platformBanks.map(b => ({
@@ -452,10 +451,7 @@ const AgentBankTransfer = () => {
                 <div>
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-semibold">Bank Name</Label>
-                    <div className="flex items-center gap-2">
-                      <BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" />
-                      <RefreshBanksButton refetch={refetchBanks} lastSyncedAt={banksLastSyncedAt} liveUpdateKey={banksLiveKey} />
-                    </div>
+                    <BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" />
                   </div>
                   <Popover open={bankDropdownOpen} onOpenChange={setBankDropdownOpen}>
                     <PopoverTrigger asChild>

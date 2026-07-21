@@ -31,7 +31,6 @@ import MerchantBusinessKycFlow from "@/components/MerchantBusinessKycFlow";
 import VendorOnboardingChecklist from "@/components/VendorOnboardingChecklist";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import { BankListLiveBadge } from "@/components/BankListLiveBadge";
-import { RefreshBanksButton } from "@/components/RefreshBanksButton";
 import { formatMdrPercent, mdrFraction } from "@/lib/mdr";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -4042,7 +4041,7 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
 /* ── Merchant Add Bank Sheet ── */
 const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onClose: () => void; merchant: MerchantInfo | null }) => {
   const { toast } = useToast();
-  const { banks: platformBanks, loading: banksLoading, liveUpdateKey: banksLiveKey, lastSyncedAt: banksLastSyncedAt, refetch: refetchBanks } = usePlatformBanks();
+  const { banks: platformBanks, loading: banksLoading, liveUpdateKey: banksLiveKey } = usePlatformBanks();
   const [bankName, setBankName] = useState(merchant?.bank_name || "");
 
   // Auto-select the admin-marked default bank for first-time users
@@ -4122,10 +4121,7 @@ const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onCl
             
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center justify-between">
               <span>Bank Name *</span>
-              <span className="flex items-center gap-2">
-                <BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" />
-                <RefreshBanksButton refetch={refetchBanks} lastSyncedAt={banksLastSyncedAt} liveUpdateKey={banksLiveKey} />
-              </span>
+              <BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" />
             </label>
             <div className="relative">
               <button

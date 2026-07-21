@@ -10,7 +10,6 @@
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import { BankLogo } from "@/components/BankLogo";
 import { BankListLiveBadge } from "@/components/BankListLiveBadge";
-import { RefreshBanksButton } from "@/components/RefreshBanksButton";
 import { bankColorFromName } from "@/lib/bangladeshBanks";
 
 const FLOWS: Array<{ id: string; label: string }> = [
@@ -20,14 +19,13 @@ const FLOWS: Array<{ id: string; label: string }> = [
 ];
 
 export default function BankPickerHarness() {
-  const { banks, loading, liveUpdateKey, lastSyncedAt, refetch } = usePlatformBanks(false);
+  const { banks, loading, liveUpdateKey } = usePlatformBanks(false);
 
   return (
     <div className="min-h-screen bg-background p-6" data-testid="bank-picker-harness">
       <div className="flex items-center gap-3 mb-4">
         <h1 className="text-lg font-bold">Bank picker harness</h1>
         <BankListLiveBadge liveUpdateKey={liveUpdateKey} label="Harness" toastOnUpdate={false} />
-        <RefreshBanksButton refetch={refetch} lastSyncedAt={lastSyncedAt} liveUpdateKey={liveUpdateKey} />
       </div>
       {loading && <p data-testid="banks-loading">Loading…</p>}
       <div className="grid gap-6 md:grid-cols-3">
@@ -40,10 +38,7 @@ export default function BankPickerHarness() {
           >
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-semibold">{flow.label}</h2>
-              <div className="flex items-center gap-2">
-                <BankListLiveBadge liveUpdateKey={liveUpdateKey} label={flow.label} toastOnUpdate={false} />
-                <RefreshBanksButton refetch={refetch} lastSyncedAt={lastSyncedAt} liveUpdateKey={liveUpdateKey} />
-              </div>
+              <BankListLiveBadge liveUpdateKey={liveUpdateKey} label={flow.label} toastOnUpdate={false} />
             </div>
             <ol className="space-y-2" data-testid={`bank-list-${flow.id}`}>
               {banks.map((b, idx) => (
