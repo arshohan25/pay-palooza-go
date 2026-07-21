@@ -2067,6 +2067,8 @@ export default function AdminDashboard() {
 
         {/* ═══ BILLER PAYOUTS & REFUNDS ═══ */}
         {activeTab === "biller_payouts" && <AdminBillerSettlements />}
+        {activeTab === "reconciliation" && <AdminReconciliationDashboard />}
+        {activeTab === "refund_console" && <AdminRefundConsole />}
 
         {/* ═══ BANK RECONCILIATION ═══ */}
         {activeTab === "bank_recon" && <AdminBankReconciliation />}
