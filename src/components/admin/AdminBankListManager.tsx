@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Landmark, Plus, Trash2, Search, Upload, X, Loader2, GripVertical } from "lucide-react";
+import { Landmark, Plus, Trash2, Search, Upload, X, Loader2, GripVertical, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePlatformBanks, PlatformBank } from "@/hooks/use-platform-banks";
