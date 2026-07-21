@@ -79,6 +79,8 @@ import AdminDonationFunds from "@/components/admin/AdminDonationFunds";
 import AdminFundRequests from "@/components/admin/AdminFundRequests";
 import AdminSettlements from "@/components/admin/AdminSettlements";
 import AdminBillerSettlements from "@/components/admin/AdminBillerSettlements";
+import AdminReconciliationDashboard from "@/components/admin/AdminReconciliationDashboard";
+import AdminRefundConsole from "@/components/admin/AdminRefundConsole";
 import AdminBankReconciliation from "@/components/admin/AdminBankReconciliation";
 import AdminMarketingTools from "@/components/admin/AdminMarketingTools";
 import AdminAdvancedReports from "@/components/admin/AdminAdvancedReports";
@@ -276,6 +278,8 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "transactions", label: "Transactions", icon: Receipt },
       { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
       { id: "biller_payouts", label: "Biller Payouts", icon: Zap },
+      { id: "reconciliation", label: "Reconciliation", icon: AlertTriangle },
+      { id: "refund_console", label: "Refund Console", icon: RotateCcw },
       { id: "operations_wall", label: "Operations Wall", icon: Activity },
       { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
@@ -2063,6 +2067,8 @@ export default function AdminDashboard() {
 
         {/* ═══ BILLER PAYOUTS & REFUNDS ═══ */}
         {activeTab === "biller_payouts" && <AdminBillerSettlements />}
+        {activeTab === "reconciliation" && <AdminReconciliationDashboard />}
+        {activeTab === "refund_console" && <AdminRefundConsole />}
 
         {/* ═══ BANK RECONCILIATION ═══ */}
         {activeTab === "bank_recon" && <AdminBankReconciliation />}

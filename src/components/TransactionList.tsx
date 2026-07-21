@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { getContactNameByPhone } from "@/lib/contactStore";
 import { subscribeRealtime } from "@/lib/realtimeManager";
 import { downloadTxnReceiptPdf } from "@/lib/txnReceiptPdf";
+import TransactionStatusTimeline from "@/components/TransactionStatusTimeline";
 import {
   TxSendIcon,
   TxReceiveIcon,
@@ -325,6 +326,10 @@ const TransactionDetailSheet = ({ tx: initialTx, onClose }: { tx: DbTransaction;
                 ? "Download Pending Advice (PDF)"
                 : "Download Failed Advice (PDF)"}
           </button>
+
+          <div className="mt-4">
+            <TransactionStatusTimeline transactionId={tx.id} compact />
+          </div>
 
         </div>
       </motion.div>

@@ -1116,8 +1116,11 @@ export type Database = {
           biller_name: string
           created_at: string
           id: string
+          idempotency_key: string | null
+          last_attempt_at: string | null
           paid_at: string | null
           paid_by: string | null
+          provider_attempts: number
           provider_ref: string | null
           reference: string | null
           status: string
@@ -1132,8 +1135,11 @@ export type Database = {
           biller_name: string
           created_at?: string
           id?: string
+          idempotency_key?: string | null
+          last_attempt_at?: string | null
           paid_at?: string | null
           paid_by?: string | null
+          provider_attempts?: number
           provider_ref?: string | null
           reference?: string | null
           status?: string
@@ -1148,8 +1154,11 @@ export type Database = {
           biller_name?: string
           created_at?: string
           id?: string
+          idempotency_key?: string | null
+          last_attempt_at?: string | null
           paid_at?: string | null
           paid_by?: string | null
+          provider_attempts?: number
           provider_ref?: string | null
           reference?: string | null
           status?: string
@@ -1538,6 +1547,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "transactions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_donations"
+            referencedColumns: ["transaction_id"]
+          },
+          {
+            foreignKeyName: "commission_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_paybills"
+            referencedColumns: ["transaction_id"]
           },
         ]
       }
@@ -2153,6 +2176,20 @@ export type Database = {
             referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "disputes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_donations"
+            referencedColumns: ["transaction_id"]
+          },
+          {
+            foreignKeyName: "disputes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_paybills"
+            referencedColumns: ["transaction_id"]
+          },
         ]
       }
       distributors: {
@@ -2297,6 +2334,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "transactions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_donations"
+            referencedColumns: ["transaction_id"]
+          },
+          {
+            foreignKeyName: "donations_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_paybills"
+            referencedColumns: ["transaction_id"]
           },
         ]
       }
@@ -2822,6 +2873,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "transactions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fund_requests_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_donations"
+            referencedColumns: ["transaction_id"]
+          },
+          {
+            foreignKeyName: "fund_requests_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_paybills"
+            referencedColumns: ["transaction_id"]
           },
         ]
       }
@@ -5594,6 +5659,20 @@ export type Database = {
             referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "payment_link_payments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_donations"
+            referencedColumns: ["transaction_id"]
+          },
+          {
+            foreignKeyName: "payment_link_payments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_paybills"
+            referencedColumns: ["transaction_id"]
+          },
         ]
       }
       payment_link_refund_idempotency: {
@@ -7436,6 +7515,64 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_type: string
+          id: string
+          meta: Json
+          note: string | null
+          provider_ref: string | null
+          status: string | null
+          transaction_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_type: string
+          id?: string
+          meta?: Json
+          note?: string | null
+          provider_ref?: string | null
+          status?: string | null
+          transaction_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_type?: string
+          id?: string
+          meta?: Json
+          note?: string | null
+          provider_ref?: string | null
+          status?: string | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_events_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_events_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_donations"
+            referencedColumns: ["transaction_id"]
+          },
+          {
+            foreignKeyName: "transaction_events_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_paybills"
+            referencedColumns: ["transaction_id"]
+          },
+        ]
+      }
       transaction_limits: {
         Row: {
           applies_to: string
@@ -8351,7 +8488,40 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_orphan_donations: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          description: string | null
+          recipient_name: string | null
+          reference: string | null
+          refund_status: string | null
+          status: Database["public"]["Enums"]["txn_status"] | null
+          transaction_id: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      v_orphan_paybills: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          description: string | null
+          fee: number | null
+          flag: string | null
+          provider_ref: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          reference: string | null
+          refund_status: string | null
+          settlement_id: string | null
+          settlement_status: string | null
+          status: Database["public"]["Enums"]["txn_status"] | null
+          transaction_id: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _dispatch_push: {
@@ -8432,6 +8602,10 @@ export type Database = {
         }[]
       }
       admin_refund_paybill: {
+        Args: { p_reason?: string; p_txn_id: string }
+        Returns: Json
+      }
+      admin_refund_transaction: {
         Args: { p_reason?: string; p_txn_id: string }
         Returns: Json
       }
@@ -8932,6 +9106,17 @@ export type Database = {
       log_easypay_uid_access_attempt: {
         Args: { _payload: Json; _rpc: string }
         Returns: undefined
+      }
+      log_transaction_event: {
+        Args: {
+          p_event_type: string
+          p_meta?: Json
+          p_note?: string
+          p_provider_ref?: string
+          p_status?: string
+          p_transaction_id: string
+        }
+        Returns: string
       }
       log_user_activity: { Args: { _events: Json }; Returns: number }
       lookup_easypay_user_by_phone: {

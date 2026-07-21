@@ -56,8 +56,10 @@ const AgentBillPay = () => {
       if (error) throw error;
 
       // Submit to biller provider (edge function). If no live config, it queues for manual settlement.
+      const idemKey = `pb_${reference}_${Number(amount)}`;
       const { data: payRes, error: payErr } = await supabase.functions.invoke("pay-bill", {
-        body: { biller_name: selected, account_no: accountNo, amount: Number(amount), reference },
+        body: { biller_name: selected, account_no: accountNo, amount: Number(amount), reference, idempotency_key: idemKey },
+        headers: { "idempotency-key": idemKey },
       });
       if (payErr) {
         toast({ title: t("agBillPaid"), description: `৳${amount} → ${selected} (queued for settlement)` });
