@@ -129,8 +129,8 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
       if (error) throw error;
       setBody("");
     } catch (e: any) {
-      setSendError(e.message || "Failed to send");
-      toast({ title: "Send failed", description: e.message, variant: "destructive" });
+      setSendError(e.message || t("dddFailedToSend"));
+      toast({ title: t("dddSendFailed"), description: e.message, variant: "destructive" });
     } finally {
       setPosting(false);
     }
