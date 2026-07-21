@@ -66,7 +66,7 @@ const AgentBankTransfer = () => {
   const { calcBankTransferFee, getFeeLabel } = useFeeConfig();
   const fee = mode === "send" ? calcBankTransferFee(Number(amount)) : 0;
 
-  const { banks: platformBanks, liveUpdateKey: banksLiveKey } = usePlatformBanks(false);
+  const { banks: platformBanks, liveUpdateKey: banksLiveKey } = usePlatformBanks(false, "agent");
   const availableBanks: BankInfo[] = useMemo(() => {
     if (platformBanks.length === 0) return BANGLADESH_BANKS;
     return platformBanks.map(b => ({

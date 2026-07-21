@@ -5906,6 +5906,9 @@ export type Database = {
           logo_url: string | null
           name: string
           short_code: string
+          show_for_agent: boolean
+          show_for_customer: boolean
+          show_for_merchant: boolean
           sort_order: number | null
         }
         Insert: {
@@ -5916,6 +5919,9 @@ export type Database = {
           logo_url?: string | null
           name: string
           short_code: string
+          show_for_agent?: boolean
+          show_for_customer?: boolean
+          show_for_merchant?: boolean
           sort_order?: number | null
         }
         Update: {
@@ -5926,6 +5932,9 @@ export type Database = {
           logo_url?: string | null
           name?: string
           short_code?: string
+          show_for_agent?: boolean
+          show_for_customer?: boolean
+          show_for_merchant?: boolean
           sort_order?: number | null
         }
         Relationships: []

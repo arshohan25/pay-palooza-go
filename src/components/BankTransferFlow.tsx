@@ -70,7 +70,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const fee = calcBankTransferFee(parsedAmount);
   const totalDeduction = parsedAmount + fee;
 
-  const { banks: platformBanks, liveUpdateKey: banksLiveKey } = usePlatformBanks(false);
+  const { banks: platformBanks, liveUpdateKey: banksLiveKey } = usePlatformBanks(false, "customer");
   const availableBanks: BankInfo[] = useMemo(() => {
     if (platformBanks.length === 0) return BANGLADESH_BANKS;
     return platformBanks.map(b => ({

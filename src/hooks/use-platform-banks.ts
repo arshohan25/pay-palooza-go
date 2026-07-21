@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export type BankAudience = "customer" | "agent" | "merchant";
+
 export interface PlatformBank {
   id: string;
   name: string;
@@ -9,6 +11,9 @@ export interface PlatformBank {
   sort_order: number;
   logo_url: string | null;
   is_default?: boolean;
+  show_for_customer?: boolean;
+  show_for_agent?: boolean;
+  show_for_merchant?: boolean;
 }
 
 /**
@@ -16,8 +21,11 @@ export interface PlatformBank {
  * `__banks:refetch` window event used by the realtime smoke test) triggers
  * a refetch. It does NOT bump on the initial load, so consumers can safely
  * use it to flash a "list updated" indicator only on genuine live changes.
+ *
+ * `audience` filters to banks the admin has enabled for that picker
+ * (customer / agent / merchant). Admin views omit it to see everything.
  */
-export function usePlatformBanks(includeInactive = false) {
+export function usePlatformBanks(includeInactive = false, audience?: BankAudience) {
   const [banks, setBanks] = useState<PlatformBank[]>([]);
   const [loading, setLoading] = useState(true);
   const [liveUpdateKey, setLiveUpdateKey] = useState(0);
@@ -30,6 +38,9 @@ export function usePlatformBanks(includeInactive = false) {
     if (!includeInactive) {
       query = query.eq("is_active", true);
     }
+    if (audience === "customer") query = query.eq("show_for_customer", true);
+    else if (audience === "agent") query = query.eq("show_for_agent", true);
+    else if (audience === "merchant") query = query.eq("show_for_merchant", true);
     const { data } = await query;
     setBanks((data as PlatformBank[]) ?? []);
     setLastSyncedAt(Date.now());
@@ -71,7 +82,7 @@ export function usePlatformBanks(includeInactive = false) {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeInactive]);
+  }, [includeInactive, audience]);
 
   return { banks, loading, refetch: fetchBanks, liveUpdateKey, lastSyncedAt };
 }
