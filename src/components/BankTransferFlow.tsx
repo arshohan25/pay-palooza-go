@@ -239,7 +239,10 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                   {/* Bank dropdown */}
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-foreground">{t("selectBank")}</label>
-                    <div className="flex justify-end -mt-1 mb-1"><BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" /></div>
+                    <div className="flex justify-end items-center gap-2 -mt-1 mb-1">
+                      <BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" />
+                      <RefreshBanksButton refetch={refetchBanks} lastSyncedAt={banksLastSyncedAt} liveUpdateKey={banksLiveKey} />
+                    </div>
                     <Popover open={bankDropdownOpen} onOpenChange={setBankDropdownOpen}>
                       <PopoverTrigger asChild>
                         <button className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:border-primary/50 transition-all text-left">
