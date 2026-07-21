@@ -2848,22 +2848,63 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
 
 /* ── Settlement Tab ── */
 const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
-  const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
+  const { t, lang } = useI18n();
+  const { toast } = useToast();
+  const [period, setPeriod] = useState<"7" | "30" | "all">("30");
+  const fmtN = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-BD").format(n);
+  const localeDate = lang === "bn" ? "bn-BD" : "en-BD";
+
+  const cutoff = useMemo(() => {
+    if (period === "all") return 0;
+    const days = period === "7" ? 7 : 30;
+    return Date.now() - days * 86400_000;
+  }, [period]);
+
+  const filteredTxns = useMemo(
+    () => paymentTxns.filter(t => new Date(t.created_at).getTime() >= cutoff),
+    [paymentTxns, cutoff],
+  );
+
   const mdrFrac = mdrFraction(merchant?.mdr_rate);
+  const totalRevenue = filteredTxns.reduce((s, t) => s + t.amount, 0);
   const totalMDR = Math.round(totalRevenue * mdrFrac);
   const netSettlement = totalRevenue - totalMDR;
 
+  // Pending = txns from today (not yet settled on T+1)
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const pendingTxns = paymentTxns.filter(x => new Date(x.created_at).getTime() >= todayStart.getTime());
+  const pendingGross = pendingTxns.reduce((s, t) => s + t.amount, 0);
+  const pendingNet = pendingGross - Math.round(pendingGross * mdrFrac);
+
+  const nextPayoutDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toLocaleDateString(localeDate, { weekday: "short", day: "numeric", month: "short" });
+  }, [localeDate]);
+
   const dailyBatches = useMemo(() => {
     const groups: Record<string, { date: string; amount: number; count: number; mdr: number }> = {};
-    paymentTxns.forEach(t => {
-      const day = new Date(t.created_at).toLocaleDateString("en-BD", { year: "numeric", month: "short", day: "numeric" });
+    filteredTxns.forEach(tx => {
+      const day = new Date(tx.created_at).toLocaleDateString(localeDate, { year: "numeric", month: "short", day: "numeric" });
       if (!groups[day]) groups[day] = { date: day, amount: 0, count: 0, mdr: 0 };
-      groups[day].amount += t.amount;
+      groups[day].amount += tx.amount;
       groups[day].count++;
-      groups[day].mdr += Math.round(t.amount * mdrFrac);
+      groups[day].mdr += Math.round(tx.amount * mdrFrac);
     });
     return Object.values(groups).reverse();
-  }, [paymentTxns, mdrFrac]);
+  }, [filteredTxns, mdrFrac, localeDate]);
+
+  const exportCsv = () => {
+    const rows = [["Date", "Transactions", "Gross (BDT)", "MDR (BDT)", "Net (BDT)"]];
+    dailyBatches.forEach(b => rows.push([b.date, String(b.count), String(b.amount), String(b.mdr), String(b.amount - b.mdr)]));
+    const csv = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `settlement-${period}-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: t("stlmExportedToast") });
+  };
 
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
@@ -2875,27 +2916,69 @@ const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | nul
             background: "radial-gradient(circle, hsl(36 95% 65%) 0%, transparent 70%)"
           }} />
           <div className="relative">
-            <p className="text-[11px] text-primary-foreground/70 font-medium uppercase tracking-wider">Net Settlement</p>
-            <p className="text-3xl font-black text-primary-foreground mt-1">৳{fmt(netSettlement)}</p>
+            <p className="text-[11px] text-primary-foreground/70 font-medium uppercase tracking-wider">{t("stlmNetSettlement")}</p>
+            <p className="text-3xl font-black text-primary-foreground mt-1">৳{fmtN(netSettlement)}</p>
             <div className="flex items-center gap-4 mt-2 text-[10px] text-primary-foreground/60">
-              <span>Gross: ৳{fmt(totalRevenue)}</span>
-              <span>MDR: -৳{fmt(totalMDR)}</span>
+              <span>{t("stlmGross")}: ৳{fmtN(totalRevenue)}</span>
+              <span>{t("stlmMdr")}: -৳{fmtN(totalMDR)}</span>
             </div>
           </div>
+        </Card>
+      </motion.div>
+
+      {/* Period filter + export */}
+      <motion.div variants={stagger.item} className="flex items-center gap-2">
+        <div className="flex-1 flex gap-1.5 p-1 rounded-xl bg-muted/50">
+          {([
+            { k: "7", label: t("stlmPeriod7") },
+            { k: "30", label: t("stlmPeriod30") },
+            { k: "all", label: t("stlmPeriodAll") },
+          ] as const).map(o => (
+            <button
+              key={o.k}
+              onClick={() => setPeriod(o.k)}
+              className={`flex-1 h-8 rounded-lg text-[11px] font-semibold transition-colors ${period === o.k ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <Button size="sm" variant="outline" className="h-9 px-3 text-[11px]" onClick={exportCsv} disabled={dailyBatches.length === 0}>
+          <Download size={12} className="mr-1" /> {t("stlmExportCsv")}
+        </Button>
+      </motion.div>
+
+      {/* Pending / Next payout */}
+      <motion.div variants={stagger.item} className="grid grid-cols-2 gap-2.5">
+        <Card className="p-3 border-0 shadow-card">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Timer size={12} className="text-amber-600" />
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">{t("stlmPending")}</p>
+          </div>
+          <p className="text-lg font-extrabold text-foreground">৳{fmtN(pendingNet)}</p>
+          <p className="text-[9px] text-muted-foreground mt-0.5">{t("stlmPendingDesc")}</p>
+        </Card>
+        <Card className="p-3 border-0 shadow-card">
+          <div className="flex items-center gap-1.5 mb-1">
+            <CalendarClock size={12} className="text-primary" />
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">{t("stlmNextPayout")}</p>
+          </div>
+          <p className="text-lg font-extrabold text-foreground">{nextPayoutDate}</p>
+          <p className="text-[9px] text-muted-foreground mt-0.5">{merchant?.settlement_frequency || "T+1"}</p>
         </Card>
       </motion.div>
 
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
           <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-            <Landmark size={14} className="text-primary" /> Bank Details
+            <Landmark size={14} className="text-primary" /> {t("stlmBankDetails")}
           </h3>
           <div className="space-y-2 text-xs">
             {[
-              { label: "Bank", value: merchant?.bank_name || "Not configured" },
-              { label: "Account", value: merchant?.bank_account_number ? `****${merchant.bank_account_number.slice(-4)}` : "—" },
-              { label: "Routing", value: merchant?.bank_routing || "—" },
-              { label: "Frequency", value: merchant?.settlement_frequency || "T+1" },
+              { label: t("stlmBank"), value: merchant?.bank_name || t("stlmNotConfigured") },
+              { label: t("stlmAccount"), value: merchant?.bank_account_number ? `****${merchant.bank_account_number.slice(-4)}` : "—" },
+              { label: t("stlmRouting"), value: merchant?.bank_routing || "—" },
+              { label: t("stlmFrequency"), value: merchant?.settlement_frequency || "T+1" },
             ].map(r => (
               <div key={r.label} className="flex justify-between py-2 border-b border-border/50 last:border-0">
                 <span className="text-muted-foreground">{r.label}</span>
@@ -2908,14 +2991,14 @@ const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | nul
 
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
-          <h3 className="text-sm font-bold text-foreground mb-3">Settlement Batches</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("stlmBatches")}</h3>
           {dailyBatches.length === 0 ? (
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
               <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
                 <BanknoteIcon className="w-7 h-7 text-muted-foreground" />
               </motion.div>
-              <p className="text-sm font-semibold text-foreground">No settlements yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Settlement batches will appear here</p>
+              <p className="text-sm font-semibold text-foreground">{t("stlmNoBatches")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("stlmBatchesEmpty")}</p>
             </motion.div>
           ) : (
             <div className="space-y-2">
@@ -2926,12 +3009,12 @@ const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | nul
                       <Calendar size={12} className="text-muted-foreground" />
                       <p className="text-xs font-semibold text-foreground">{b.date}</p>
                     </div>
-                    <Badge variant="secondary" className="text-[9px]">{b.count} txns</Badge>
+                    <Badge variant="secondary" className="text-[9px]">{t("stlmTxns").replace("{count}", fmtN(b.count))}</Badge>
                   </div>
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted-foreground">Gross: ৳{fmt(b.amount)}</span>
-                    <span className="text-red-500">MDR: -৳{fmt(b.mdr)}</span>
-                    <span className="font-bold text-emerald-600">Net: ৳{fmt(b.amount - b.mdr)}</span>
+                    <span className="text-muted-foreground">{t("stlmGross")}: ৳{fmtN(b.amount)}</span>
+                    <span className="text-red-500">{t("stlmMdr")}: -৳{fmtN(b.mdr)}</span>
+                    <span className="font-bold text-emerald-600">{t("stlmNet")}: ৳{fmtN(b.amount - b.mdr)}</span>
                   </div>
                 </div>
               ))}
@@ -2945,11 +3028,26 @@ const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | nul
 
 /* ── MDR Analytics Tab ── */
 const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
+  const { t, lang } = useI18n();
+  const { toast } = useToast();
+  const fmtN = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-BD").format(n);
   const mdrFrac = mdrFraction(merchant?.mdr_rate);
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
   const totalMDR = Math.round(totalRevenue * mdrFrac);
   const avgTxnSize = paymentTxns.length > 0 ? Math.round(totalRevenue / paymentTxns.length) : 0;
   const avgMDRPerTxn = paymentTxns.length > 0 ? Math.round(totalMDR / paymentTxns.length) : 0;
+
+  // Effective rate (actual MDR / gross)
+  const effectiveRate = totalRevenue > 0 ? (totalMDR / totalRevenue) * 100 : 0;
+
+  // Monthly projection based on recent daily average
+  const projection = useMemo(() => {
+    if (paymentTxns.length === 0) return { mdr: 0, gross: 0 };
+    const timestamps = paymentTxns.map(x => new Date(x.created_at).getTime());
+    const span = Math.max(1, (Math.max(...timestamps) - Math.min(...timestamps)) / 86400_000);
+    const daily = totalRevenue / span;
+    return { gross: Math.round(daily * 30), mdr: Math.round(daily * 30 * mdrFrac) };
+  }, [paymentTxns, totalRevenue, mdrFrac]);
 
   const ranges = [
     { label: "< ৳500", min: 0, max: 500 },
@@ -2965,19 +3063,40 @@ const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paym
   }));
   const maxCount = Math.max(...distribution.map(d => d.count), 1);
 
+  const downloadStatement = () => {
+    const rows = [
+      ["Metric", "Value"],
+      ["MDR Rate", formatMdrPercent(merchant?.mdr_rate)],
+      ["Total Revenue (BDT)", String(totalRevenue)],
+      ["Total MDR Paid (BDT)", String(totalMDR)],
+      ["Effective Rate (%)", effectiveRate.toFixed(3)],
+      ["Avg MDR per Txn (BDT)", String(avgMDRPerTxn)],
+      ["Avg Txn Size (BDT)", String(avgTxnSize)],
+      ["Projected Monthly MDR (BDT)", String(projection.mdr)],
+      ["Projected Monthly Gross (BDT)", String(projection.gross)],
+    ];
+    const csv = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `fee-statement-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: t("feesStatementToast") });
+  };
+
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
       <motion.div variants={stagger.item}>
         <Card className="p-5 border-0 shadow-card">
           <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-            <Percent size={14} className="text-primary" /> MDR Summary
+            <Percent size={14} className="text-primary" /> {t("feesSummary")}
           </h3>
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { label: "Your MDR Rate", value: formatMdrPercent(merchant?.mdr_rate), icon: Percent, color: "bg-primary/10 text-primary" },
-              { label: "Total MDR Paid", value: `৳${fmt(totalMDR)}`, icon: DollarSign, color: "bg-red-500/10 text-red-500" },
-              { label: "Avg MDR/Txn", value: `৳${fmt(avgMDRPerTxn)}`, icon: Receipt, color: "bg-amber-500/10 text-amber-600" },
-              { label: "Avg Txn Size", value: `৳${fmt(avgTxnSize)}`, icon: CreditCard, color: "bg-blue-500/10 text-blue-600" },
+              { label: t("feesYourRate"), value: formatMdrPercent(merchant?.mdr_rate), icon: Percent, color: "bg-primary/10 text-primary" },
+              { label: t("feesTotalPaid"), value: `৳${fmtN(totalMDR)}`, icon: DollarSign, color: "bg-red-500/10 text-red-500" },
+              { label: t("feesAvgPerTxn"), value: `৳${fmtN(avgMDRPerTxn)}`, icon: Receipt, color: "bg-amber-500/10 text-amber-600" },
+              { label: t("feesAvgTxnSize"), value: `৳${fmtN(avgTxnSize)}`, icon: CreditCard, color: "bg-blue-500/10 text-blue-600" },
             ].map(m => (
               <div key={m.label} className="p-3 rounded-xl bg-muted/30 border border-border/30">
                 <div className={`w-7 h-7 rounded-lg ${m.color} flex items-center justify-center mb-2`}>
@@ -2991,15 +3110,41 @@ const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paym
         </Card>
       </motion.div>
 
+      {/* Effective Rate + Monthly Projection */}
+      <motion.div variants={stagger.item} className="grid grid-cols-2 gap-2.5">
+        <Card className="p-3.5 border-0 shadow-card">
+          <div className="flex items-center gap-1.5 mb-1">
+            <TrendingDown size={12} className="text-emerald-600" />
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">{t("feesEffectiveRate")}</p>
+          </div>
+          <p className="text-xl font-extrabold text-foreground">{effectiveRate.toFixed(2)}%</p>
+          <p className="text-[9px] text-muted-foreground mt-0.5">{t("feesEffectiveDesc")}</p>
+        </Card>
+        <Card className="p-3.5 border-0 shadow-card">
+          <div className="flex items-center gap-1.5 mb-1">
+            <TrendingUp size={12} className="text-primary" />
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">{t("feesMonthlyProjection")}</p>
+          </div>
+          <p className="text-xl font-extrabold text-foreground">৳{fmtN(projection.mdr)}</p>
+          <p className="text-[9px] text-muted-foreground mt-0.5">{t("feesProjectionDesc")}</p>
+        </Card>
+      </motion.div>
+
+      <motion.div variants={stagger.item}>
+        <Button variant="outline" size="sm" className="w-full h-9 text-[11px]" onClick={downloadStatement} disabled={paymentTxns.length === 0}>
+          <Download size={12} className="mr-1.5" /> {t("feesDownloadStatement")}
+        </Button>
+      </motion.div>
+
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
-          <h3 className="text-sm font-bold text-foreground mb-3">Transaction Size Distribution</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("feesDistribution")}</h3>
           <div className="space-y-3">
             {distribution.map(d => (
               <div key={d.label} className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold text-foreground">{d.label}</span>
-                  <span className="text-[10px] text-muted-foreground">{d.count} txns · ৳{fmt(d.volume)}</span>
+                  <span className="text-[10px] text-muted-foreground">{t("feesTxnsVolume").replace("{count}", fmtN(d.count)).replace("{volume}", fmtN(d.volume))}</span>
                 </div>
                 <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                   <motion.div
@@ -3018,20 +3163,20 @@ const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paym
 
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
-          <h3 className="text-sm font-bold text-foreground mb-3">MDR Rate Comparison</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("feesComparison")}</h3>
           <div className="space-y-1.5 text-xs">
             {[
-              { category: "Retail", rate: "1.50%", yours: merchant?.category === "retail" },
-              { category: "Restaurant", rate: "1.50%", yours: merchant?.category === "restaurant" },
-              { category: "Grocery", rate: "1.20%", yours: merchant?.category === "grocery" },
-              { category: "Pharmacy", rate: "1.00%", yours: merchant?.category === "pharmacy" },
-              { category: "Education", rate: "0.80%", yours: merchant?.category === "education" },
-              { category: "Utility", rate: "0.50%", yours: merchant?.category === "utility" },
+              { category: t("feesCatRetail"), rate: "1.50%", yours: merchant?.category === "retail" },
+              { category: t("feesCatRestaurant"), rate: "1.50%", yours: merchant?.category === "restaurant" },
+              { category: t("feesCatGrocery"), rate: "1.20%", yours: merchant?.category === "grocery" },
+              { category: t("feesCatPharmacy"), rate: "1.00%", yours: merchant?.category === "pharmacy" },
+              { category: t("feesCatEducation"), rate: "0.80%", yours: merchant?.category === "education" },
+              { category: t("feesCatUtility"), rate: "0.50%", yours: merchant?.category === "utility" },
             ].map(r => (
               <div key={r.category} className={`flex items-center justify-between py-2.5 px-3 rounded-xl transition-colors ${r.yours ? "bg-primary/5 border border-primary/20 shadow-sm" : "hover:bg-muted/30"}`}>
                 <div className="flex items-center gap-2">
                   <span className="text-foreground font-medium capitalize">{r.category}</span>
-                  {r.yours && <Badge className="text-[8px] bg-primary/10 text-primary border-0">Your Rate</Badge>}
+                  {r.yours && <Badge className="text-[8px] bg-primary/10 text-primary border-0">{t("feesYourRateBadge")}</Badge>}
                 </div>
                 <span className="font-bold text-foreground">{r.rate}</span>
               </div>
