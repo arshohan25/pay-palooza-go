@@ -2,6 +2,8 @@ import { ArrowLeft, type LucideIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ReactNode } from "react";
+import { useI18n } from "@/lib/i18n";
+
 
 interface FlowHeaderProps {
   title: string;
@@ -29,6 +31,7 @@ export default function FlowHeader({
   sticky = true,
 }: FlowHeaderProps) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const handleBack = onBack ?? (() => navigate(-1));
 
   return (
@@ -39,9 +42,10 @@ export default function FlowHeader({
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={handleBack}
-          aria-label="Back"
+          aria-label={t("fhBack")}
           className="w-9 h-9 rounded-full bg-white/15 backdrop-blur flex items-center justify-center ring-1 ring-white/20"
         >
+
           <ArrowLeft className="w-5 h-5 text-primary-foreground" />
         </motion.button>
 

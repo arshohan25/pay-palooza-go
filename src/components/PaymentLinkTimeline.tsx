@@ -8,6 +8,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useI18n } from "@/lib/i18n";
 
 export type LinkPaymentRow = {
   id: string;
@@ -29,18 +30,18 @@ interface Props {
   refundingId?: string | null;
 }
 
-const PaymentLinkTimeline = ({ payments, emptyLabel = "No payments yet.", currency = "৳", onRefund, refundingId }: Props) => {
+const PaymentLinkTimeline = ({ payments, emptyLabel, currency = "৳", onRefund, refundingId }: Props) => {
+  const { t } = useI18n();
   const [reason, setReason] = useState("");
   const [refundAmount, setRefundAmount] = useState<string>("");
   const [openId, setOpenId] = useState<string | null>(null);
 
-  // reset dialog inputs on open
   useEffect(() => {
     if (!openId) { setReason(""); setRefundAmount(""); }
   }, [openId]);
 
   if (!payments.length) {
-    return <p className="text-xs text-muted-foreground italic">{emptyLabel}</p>;
+    return <p className="text-xs text-muted-foreground italic">{emptyLabel ?? t("pltNoPayments")}</p>;
   }
 
   return (
@@ -72,16 +73,20 @@ const PaymentLinkTimeline = ({ payments, emptyLabel = "No payments yet.", curren
               </span>
             </div>
             {p.payer_name && (
-              <p className="text-xs text-muted-foreground">from {p.payer_name}</p>
+              <p className="text-xs text-muted-foreground">{t("pltFrom").replace("{name}", p.payer_name)}</p>
             )}
             {p.transaction_id && (
               <p className="text-[10px] font-mono text-muted-foreground truncate">
-                ref: {p.transaction_id.slice(0, 8).toUpperCase()}
+                {t("pltRef").replace("{id}", p.transaction_id.slice(0, 8).toUpperCase())}
               </p>
             )}
             {(fullyRefunded || partiallyRefunded) && (
               <p className="text-[11px] text-amber-600 mt-0.5">
-                {fullyRefunded ? "Refunded" : `Partially refunded ${currency}${refundedAmt.toLocaleString()} / ${currency}${Number(p.amount).toLocaleString()}`}
+                {fullyRefunded
+                  ? t("pltRefunded")
+                  : t("pltPartiallyRefunded")
+                      .replace("{amount}", `${currency}${refundedAmt.toLocaleString()}`)
+                      .replace("{total}", `${currency}${Number(p.amount).toLocaleString()}`)}
                 {p.refunded_at && fullyRefunded ? ` · ${format(new Date(p.refunded_at), "d MMM, HH:mm")}` : ""}
                 {p.refund_reason ? ` · ${p.refund_reason}` : ""}
               </p>
@@ -90,14 +95,16 @@ const PaymentLinkTimeline = ({ payments, emptyLabel = "No payments yet.", curren
               <AlertDialog open={openId === p.id} onOpenChange={(o) => setOpenId(o ? p.id : null)}>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-6 mt-1 px-2 text-[11px] text-muted-foreground hover:text-destructive">
-                    <RotateCcw className="w-3 h-3 mr-1" /> Refund{partiallyRefunded ? " more" : ""}
+                    <RotateCcw className="w-3 h-3 mr-1" /> {partiallyRefunded ? t("pltRefundMore") : t("pltRefund")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Refund up to {currency}{refundable.toLocaleString()}?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      {t("pltRefundUpTo").replace("{amount}", `${currency}${refundable.toLocaleString()}`)}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Leave the amount blank to refund the full remaining balance. Partial refunds keep the payment open for future refunds.
+                      {t("pltRefundDesc")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   {(() => {
@@ -111,18 +118,19 @@ const PaymentLinkTimeline = ({ payments, emptyLabel = "No payments yet.", curren
                     return (
                       <>
                         <div className="space-y-2">
-                          <label className="text-xs font-medium text-muted-foreground">Amount ({currency})</label>
+                          <label className="text-xs font-medium text-muted-foreground">
+                            {t("pltAmountLabel").replace("{currency}", currency)}
+                          </label>
                           <Input
                             type="number" min="1" step="1" inputMode="numeric"
                             max={refundable}
-                            placeholder={`Full refund: ${refundable.toLocaleString()}`}
+                            placeholder={t("pltFullRefund").replace("{amount}", refundable.toLocaleString())}
                             value={refundAmount}
                             onChange={(e) => {
                               const v = e.target.value;
                               if (v === "") return setRefundAmount("");
                               const n = parseFloat(v);
                               if (!Number.isFinite(n)) return setRefundAmount(v);
-                              // Clamp to refundable so users can't exceed
                               const clamped = Math.min(n, refundable);
                               setRefundAmount(String(clamped));
                             }}
@@ -131,15 +139,15 @@ const PaymentLinkTimeline = ({ payments, emptyLabel = "No payments yet.", curren
                           <div className="flex items-center justify-between text-[11px]">
                             <span className={overCap ? "text-destructive" : "text-muted-foreground"}>
                               {overCap
-                                ? `Exceeds refundable balance (${currency}${refundable.toLocaleString()})`
-                                : `Refundable: ${currency}${refundable.toLocaleString()}`}
+                                ? t("pltExceeds").replace("{amount}", `${currency}${refundable.toLocaleString()}`)
+                                : t("pltRefundable").replace("{amount}", `${currency}${refundable.toLocaleString()}`)}
                             </span>
                             <span className="text-muted-foreground">
-                              Remaining after: <span className="font-medium text-foreground">{currency}{remainingAfter.toLocaleString()}</span>
+                              {t("pltRemainingAfter")} <span className="font-medium text-foreground">{currency}{remainingAfter.toLocaleString()}</span>
                             </span>
                           </div>
                           <Textarea
-                            placeholder="Reason (optional)"
+                            placeholder={t("pltReasonPh")}
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             rows={2}
@@ -147,7 +155,7 @@ const PaymentLinkTimeline = ({ payments, emptyLabel = "No payments yet.", curren
                           />
                         </div>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>{t("pltCancel")}</AlertDialogCancel>
                           <AlertDialogAction
                             disabled={refundingId === p.id || !canSubmit}
                             onClick={async (e) => {
@@ -157,7 +165,7 @@ const PaymentLinkTimeline = ({ payments, emptyLabel = "No payments yet.", curren
                               setOpenId(null);
                             }}
                           >
-                            {refundingId === p.id ? "Refunding…" : "Confirm refund"}
+                            {refundingId === p.id ? t("pltRefunding") : t("pltConfirmRefund")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </>
