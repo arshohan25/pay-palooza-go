@@ -267,13 +267,14 @@ export default function AdminBankListManager() {
 }
 
 function SortableBankRow({
-  bank, disabled, onToggle, onDelete, onLogoChanged,
+  bank, disabled, onToggle, onDelete, onLogoChanged, onSetDefault,
 }: {
   bank: PlatformBank;
   disabled: boolean;
   onToggle: () => void;
   onDelete: () => void;
   onLogoChanged: () => void;
+  onSetDefault: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bank.id, disabled });
   const style = {
