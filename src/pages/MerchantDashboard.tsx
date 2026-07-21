@@ -3224,7 +3224,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
             <div className="space-y-3">
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">
-                  Amount (optional)
+                  {t("plmcAmountLabel")}
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
