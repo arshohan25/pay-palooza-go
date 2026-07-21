@@ -151,7 +151,8 @@ export default function AdminRefundConsole() {
         </div>
         <Button
           size="sm"
-          disabled={!selected.size || processing}
+          disabled={!selected.size || processing || !canRefund}
+          title={canRefund ? undefined : "Requires admin/finance/compliance role"}
           onClick={() => setConfirmOpen(true)}
           className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white"
         >
