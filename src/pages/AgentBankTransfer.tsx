@@ -333,25 +333,10 @@ const AgentBankTransfer = () => {
                       {(mode === "send" ? t("agBtConfirmTransfer") : t("agBtConfirmDeposit")).replace("{amount}", fmt(Number(amount) + fee))}
                     </p>
                   </div>
-                  <div className="flex gap-3">
-                    {[0, 1, 2, 3].map(i => (
-                      <div key={i} className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-bold transition-all ${pin.length > i ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}>
-                        {pin.length > i ? "•" : ""}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="w-full max-w-[200px]">
-                    <Input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength={4}
-                      placeholder={t("agComEnterPin")}
-                      value={pin}
-                      onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
-                      className="text-center text-lg tracking-[0.5em] rounded-xl h-12"
-                      autoFocus
-                    />
-                  </div>
+                  <ModernPinField
+                    value={pin}
+                    onChange={(v) => { setPin(v); setPinError(""); }}
+                  />
                   {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}
                   <Button
                     className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold"
