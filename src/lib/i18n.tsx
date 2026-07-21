@@ -5453,6 +5453,21 @@ const translations = {
 
   // PlatformBanner
   pbDismiss: { en: "Dismiss announcement", bn: "ঘোষণা বন্ধ করুন" },
+
+  // ExternalLink
+  elOpensNewTab: { en: " (opens in new tab)", bn: " (নতুন ট্যাবে খোলে)" },
+
+  // LazyLoadErrorBoundary
+  llebRecovering: { en: "Recovering…", bn: "পুনরুদ্ধার হচ্ছে…" },
+  llebUpdateTitle: { en: "Update available", bn: "আপডেট উপলব্ধ" },
+  llebErrorTitle: { en: "Something went wrong", bn: "কিছু ভুল হয়েছে" },
+  llebUpdateBody: { en: "A new version of the app is ready. Reload to continue.", bn: "অ্যাপের একটি নতুন সংস্করণ প্রস্তুত। চালিয়ে যেতে রিলোড করুন।" },
+  llebErrorBody: { en: "An unexpected error occurred while loading this screen.", bn: "এই স্ক্রীন লোড করার সময় অপ্রত্যাশিত ত্রুটি ঘটেছে।" },
+  llebReload: { en: "Reload app", bn: "অ্যাপ রিলোড করুন" },
+  llebTryAgain: { en: "Try again", bn: "আবার চেষ্টা করুন" },
+
+  // FestivalOverlay
+  foDismiss: { en: "Dismiss festival greeting", bn: "উৎসব শুভেচ্ছা বন্ধ করুন" },
 } as const;
 
 

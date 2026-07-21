@@ -1,5 +1,10 @@
 import { forwardRef, AnchorHTMLAttributes, MouseEvent } from "react";
 import { ExternalLink as ExternalLinkIcon } from "lucide-react";
+import { translationsMap } from "@/lib/i18n";
+
+function getLang(): "en" | "bn" {
+  try { return localStorage.getItem("mfs_ui_lang") === "bn" ? "bn" : "en"; } catch { return "en"; }
+}
 
 /**
  * Safe external link component.
@@ -72,7 +77,7 @@ export const ExternalLink = forwardRef<HTMLAnchorElement, ExternalLinkProps>(
           />
         )}
         {target === "_blank" && (
-          <span className="sr-only"> (opens in new tab)</span>
+          <span className="sr-only">{translationsMap.elOpensNewTab[getLang()]}</span>
         )}
       </a>
     );
