@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { verifyPin } from "@/lib/verifyPin";
 import { haptics } from "@/lib/haptics";
+import { useI18n } from "@/lib/i18n";
 
 interface PinConfirmSheetProps {
   open: boolean;
@@ -25,6 +26,7 @@ export default function PinConfirmSheet({
   description,
   onConfirmed,
 }: PinConfirmSheetProps) {
+  const { t } = useI18n();
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -39,13 +41,13 @@ export default function PinConfirmSheet({
 
   const handleConfirm = async () => {
     if (pin.length < 4) {
-      setError("Enter your 4-digit PIN.");
+      setError(t("pcsEnter4"));
       return;
     }
     setBusy(true);
     const ok = await verifyPin(pin);
     if (!ok) {
-      setError("Incorrect PIN. Please try again.");
+      setError(t("pcsIncorrect"));
       setPin("");
       setBusy(false);
       haptics.error();
@@ -56,7 +58,7 @@ export default function PinConfirmSheet({
       haptics.success();
       onClose();
     } catch (e: any) {
-      setError(e?.message || "Transaction failed.");
+      setError(e?.message || t("pcsTxnFailed"));
       setBusy(false);
     }
   };
@@ -75,7 +77,7 @@ export default function PinConfirmSheet({
         )}
         <div>
           <label className="text-xs font-semibold text-muted-foreground">
-            Enter your PIN
+            {t("pcsEnterPin")}
           </label>
           <Input
             type="password"
@@ -100,10 +102,10 @@ export default function PinConfirmSheet({
           {busy ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              Verifying…
+              {t("pcsVerifying")}
             </>
           ) : (
-            "Confirm"
+            t("pcsConfirm")
           )}
         </Button>
       </SheetContent>

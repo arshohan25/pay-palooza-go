@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { useLoyaltyPerks } from "@/hooks/use-loyalty-perks";
 import { useLoyaltyTiers, useMyLoyalty } from "@/hooks/use-loyalty";
+import { useI18n } from "@/lib/i18n";
 
 interface LoyaltyPerksPopupProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface LoyaltyPerksPopupProps {
  * All values are read live from `useLoyaltyPerks`.
  */
 export default function LoyaltyPerksPopup({ open, onOpenChange }: LoyaltyPerksPopupProps) {
+  const { t: tr } = useI18n();
   const perks = useLoyaltyPerks();
   const navigate = useNavigate();
   const { data: tiers } = useLoyaltyTiers();
@@ -59,7 +61,7 @@ export default function LoyaltyPerksPopup({ open, onOpenChange }: LoyaltyPerksPo
           <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/10" />
           <DialogHeader className="relative">
             <DialogTitle className="flex items-center gap-2 text-white">
-              <Sparkles size={16} /> EasyPay Club
+              <Sparkles size={16} /> {tr("lpEasypayClub")}
             </DialogTitle>
           </DialogHeader>
           <div className="relative flex items-center gap-3 mt-4">
@@ -67,8 +69,8 @@ export default function LoyaltyPerksPopup({ open, onOpenChange }: LoyaltyPerksPo
               <Icon size={28} />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider opacity-80">Your tier</p>
-              <p className="text-xl font-bold truncate">{t?.name ?? "Not enrolled"}</p>
+              <p className="text-[11px] uppercase tracking-wider opacity-80">{tr("lppYourTier")}</p>
+              <p className="text-xl font-bold truncate">{t?.name ?? tr("lpNotEnrolled")}</p>
               {t?.description && <p className="text-[11px] opacity-90 line-clamp-2">{t.description}</p>}
             </div>
           </div>
@@ -76,7 +78,7 @@ export default function LoyaltyPerksPopup({ open, onOpenChange }: LoyaltyPerksPo
             <div className="relative mt-3 rounded-lg bg-white/15 backdrop-blur px-2.5 py-1.5 flex items-center gap-1.5 text-[11px]">
               <Crown size={12} />
               <span className="truncate">
-                Admin-granted tier{perks.overrideUntil ? ` · until ${new Date(perks.overrideUntil).toLocaleDateString()}` : ""}
+                {tr("lppAdminGrantedTier")}{perks.overrideUntil ? ` · ${tr("lppUntil").replace("{date}", new Date(perks.overrideUntil).toLocaleDateString())}` : ""}
               </span>
             </div>
           )}
@@ -85,21 +87,21 @@ export default function LoyaltyPerksPopup({ open, onOpenChange }: LoyaltyPerksPo
         {/* Perks grid */}
         <div className="p-4 space-y-2 bg-background">
           <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted-foreground px-1">
-            Active perks
+            {tr("lppActivePerks")}
           </p>
 
-          <PerkRow icon={TrendingUp} label="Transaction limits" value={`×${perks.limitMultiplier.toFixed(2)}`} tone="text-primary" />
-          <PerkRow icon={Percent} label="Fee discount" value={perks.feeDiscountPct > 0 ? `−${perks.feeDiscountPct}%` : "—"} tone="text-emerald-600" />
-          <PerkRow icon={Gift} label="Cashback bonus" value={perks.cashbackBonusPct > 0 ? `+${perks.cashbackBonusPct}%` : "—"} tone="text-amber-600" />
-          <PerkRow icon={Headphones} label="Priority support" value={perks.prioritySupport ? "Yes" : "No"} tone={perks.prioritySupport ? "text-primary" : "text-muted-foreground"} />
+          <PerkRow icon={TrendingUp} label={tr("lppTxnLimits")} value={`×${perks.limitMultiplier.toFixed(2)}`} tone="text-primary" />
+          <PerkRow icon={Percent} label={tr("lppFeeDiscount")} value={perks.feeDiscountPct > 0 ? `−${perks.feeDiscountPct}%` : "—"} tone="text-emerald-600" />
+          <PerkRow icon={Gift} label={tr("lppCashbackBonus")} value={perks.cashbackBonusPct > 0 ? `+${perks.cashbackBonusPct}%` : "—"} tone="text-amber-600" />
+          <PerkRow icon={Headphones} label={tr("lppPrioritySupportRow")} value={perks.prioritySupport ? tr("lppYes") : tr("lppNo")} tone={perks.prioritySupport ? "text-primary" : "text-muted-foreground"} />
 
           {nextProgress && (
             <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 p-3">
               <div className="flex items-baseline justify-between mb-1">
                 <p className="text-[11px] font-semibold">
-                  {Math.round(nextProgress.pct)}% to <span className="text-primary">{nextProgress.next.name}</span>
+                  {tr("lppPctTo").replace("{n}", String(Math.round(nextProgress.pct)))} <span className="text-primary">{nextProgress.next.name}</span>
                 </p>
-                <span className="text-[10px] text-muted-foreground">Next tier</span>
+                <span className="text-[10px] text-muted-foreground">{tr("lppNextTier")}</span>
               </div>
               <Progress value={nextProgress.pct} className="h-1.5" />
             </div>
@@ -109,7 +111,7 @@ export default function LoyaltyPerksPopup({ open, onOpenChange }: LoyaltyPerksPo
             className="w-full mt-3 h-11 rounded-2xl"
             onClick={() => { onOpenChange(false); navigate("/loyalty"); }}
           >
-            See tier progress <ArrowRight size={14} className="ml-1" />
+            {tr("lppSeeProgress")} <ArrowRight size={14} className="ml-1" />
           </Button>
         </div>
       </DialogContent>
