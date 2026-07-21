@@ -5477,6 +5477,19 @@ const translations = {
   lbCongrats: { en: "Congratulations! 🎉", bn: "অভিনন্দন! 🎉" },
   lbTopReached: { en: "You've reached the highest tier. Enjoy every EasyPay Club perk — you're royalty.", bn: "আপনি সর্বোচ্চ টিয়ারে পৌঁছেছেন। ইজিপে ক্লাবের প্রতিটি সুবিধা উপভোগ করুন — আপনি রাজকীয়।" },
   lbViewPerks: { en: "View perks", bn: "সুবিধা দেখুন" },
+
+  // OAuthConsent
+  ocMissingAuthId: { en: "Missing authorization_id", bn: "authorization_id অনুপস্থিত" },
+  ocNoRedirect: { en: "No redirect returned by the authorization server.", bn: "অথরাইজেশন সার্ভার থেকে কোনো রিডাইরেক্ট পাওয়া যায়নি।" },
+  ocLoadFailed: { en: "Could not load this authorization request", bn: "এই অথরাইজেশন অনুরোধটি লোড করা যায়নি" },
+  ocLoading: { en: "Loading…", bn: "লোড হচ্ছে…" },
+  ocFallbackAppName: { en: "an app", bn: "একটি অ্যাপ" },
+  ocConnectTitle: { en: "Connect {name} to EasyPay", bn: "{name} কে ইজিপে-এর সাথে যুক্ত করুন" },
+  ocConnectDesc: { en: "{name} will be able to call EasyPay tools as you: create payment requests, check payment status, and list your recent payment requests.", bn: "{name} আপনার হয়ে ইজিপে টুলস কল করতে পারবে: পেমেন্ট রিকোয়েস্ট তৈরি করা, পেমেন্ট স্ট্যাটাস দেখা এবং সাম্প্রতিক পেমেন্ট রিকোয়েস্ট তালিকাভুক্ত করা।" },
+  ocRedirectsTo: { en: "Redirects to: {url}", bn: "রিডাইরেক্ট হবে: {url}" },
+  ocPolicyNote: { en: "This does not bypass EasyPay's permissions or backend policies.", bn: "এটি ইজিপের অনুমতি বা ব্যাকএন্ড পলিসি বাইপাস করে না।" },
+  ocApprove: { en: "Approve", bn: "অনুমোদন" },
+  ocCancel: { en: "Cancel", bn: "বাতিল" },
 } as const;
 
 
