@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
+import ModernPinField from "@/components/ModernPinField";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
