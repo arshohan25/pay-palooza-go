@@ -1,17 +1,11 @@
 import { AlertCircle } from "lucide-react";
 import type { LocationMismatch } from "@/lib/detectLocationMismatch";
+import { useI18n } from "@/lib/i18n";
 
 interface Props {
   mismatch: LocationMismatch | null;
   className?: string;
 }
-
-const FIELD_LABEL: Record<LocationMismatch["field"], string> = {
-  division: "Division",
-  district: "District",
-  upazila: "Upazila / Thana",
-  union_parishad: "Union / Powrashava / City Corp.",
-};
 
 /**
  * Consistent inline error banner shown under the location picker across
@@ -20,7 +14,14 @@ const FIELD_LABEL: Record<LocationMismatch["field"], string> = {
  * what to correct.
  */
 export default function LocationMismatchAlert({ mismatch, className }: Props) {
+  const { t } = useI18n();
   if (!mismatch) return null;
+  const FIELD_LABEL: Record<LocationMismatch["field"], string> = {
+    division: t("lmaDivision"),
+    district: t("lmaDistrict"),
+    upazila: t("lmaUpazila"),
+    union_parishad: t("lmaUnion"),
+  };
   return (
     <div
       role="alert"
@@ -34,7 +35,7 @@ export default function LocationMismatchAlert({ mismatch, className }: Props) {
       <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
       <div className="min-w-0">
         <p className="text-xs font-semibold text-destructive">
-          {FIELD_LABEL[mismatch.field]} needs correction
+          {t("lmaNeedsCorrection").replace("{field}", FIELD_LABEL[mismatch.field])}
         </p>
         <p className="text-[11px] text-destructive/90 mt-0.5 break-words">
           {mismatch.message}

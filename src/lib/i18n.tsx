@@ -4509,6 +4509,21 @@ const translations = {
   lppPctTo: { en: "{n}% to", bn: "{n}% বাকি —" },
   lppNextTier: { en: "Next tier", bn: "পরবর্তী টায়ার" },
   lppSeeProgress: { en: "See tier progress", bn: "টায়ার অগ্রগতি দেখুন" },
+  // Elevated role block overlay
+  erbTitle: { en: "Wrong app for this account", bn: "এই অ্যাকাউন্টের জন্য ভুল অ্যাপ" },
+  erbBody: { en: "This number is registered as a {role} account and cannot be used inside the customer app. Please continue from the {role} portal instead.", bn: "এই নম্বরটি {role} অ্যাকাউন্ট হিসেবে নিবন্ধিত এবং কাস্টমার অ্যাপে ব্যবহার করা যাবে না। অনুগ্রহ করে {role} পোর্টাল থেকে চালিয়ে যান।" },
+  erbOpenPortal: { en: "Open {role} portal", bn: "{role} পোর্টাল খুলুন" },
+  erbSignOut: { en: "Sign out", bn: "সাইন আউট" },
+  erbFooter: { en: "Each role has its own dedicated app for security and compliance.", bn: "নিরাপত্তা ও কমপ্লায়েন্সের জন্য প্রতিটি ভূমিকার নিজস্ব ডেডিকেটেড অ্যাপ রয়েছে।" },
+  // Location mismatch alert fields + suffix
+  lmaDivision: { en: "Division", bn: "বিভাগ" },
+  lmaDistrict: { en: "District", bn: "জেলা" },
+  lmaUpazila: { en: "Upazila / Thana", bn: "উপজেলা / থানা" },
+  lmaUnion: { en: "Union / Powrashava / City Corp.", bn: "ইউনিয়ন / পৌরসভা / সিটি কর্পোরেশন" },
+  lmaNeedsCorrection: { en: "{field} needs correction", bn: "{field} সংশোধন প্রয়োজন" },
+  // Daily limit badge
+  dlbReached: { en: "Daily limit reached", bn: "দৈনিক সীমা শেষ" },
+  dlbLeftToday: { en: "৳{amt} left today", bn: "আজ ৳{amt} বাকি" },
 
   lpTopReached: { en: "You've reached the top!", bn: "আপনি সর্বোচ্চ পৌঁছেছেন!" },
   lpTopDesc: { en: "You are enjoying the highest EasyPay Club tier available.", bn: "আপনি সর্বোচ্চ ইজিপে ক্লাব টায়ার উপভোগ করছেন।" },

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, TrendingUp } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+
 
 const DAILY_LIMITS: Record<string, { limit: number; label: string }> = {
   send:         { limit: 50000,  label: "Send" },
@@ -17,8 +19,10 @@ interface DailyLimitBadgeProps {
 }
 
 const DailyLimitBadge = ({ txnType, className = "" }: DailyLimitBadgeProps) => {
+  const { t, lang } = useI18n();
   const [remaining, setRemaining] = useState<number | null>(null);
   const [limit, setLimit] = useState(0);
+
 
   useEffect(() => {
     const fetch = async () => {
@@ -69,9 +73,10 @@ const DailyLimitBadge = ({ txnType, className = "" }: DailyLimitBadgeProps) => {
         }`}
       >
         {isExhausted
-          ? "Daily limit reached"
-          : `৳${remaining.toLocaleString("en-BD")} left today`}
+          ? t("dlbReached")
+          : t("dlbLeftToday").replace("{amt}", remaining.toLocaleString(lang === "bn" ? "bn-BD" : "en-BD"))}
       </span>
+
       {!isExhausted && (
         <div className="w-12 h-1.5 rounded-full bg-muted overflow-hidden ml-1">
           <div

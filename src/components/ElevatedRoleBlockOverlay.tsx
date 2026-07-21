@@ -5,6 +5,8 @@ import { useUserRoles } from "@/hooks/use-user-roles";
 import { getBoundAppRole, APP_ROLE_LABEL } from "@/lib/appRole";
 import { ShieldAlert, ArrowRight, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
+
 
 /**
  * Full-screen, non-dismissable overlay shown when a signed-in user holds an
@@ -31,10 +33,12 @@ const ROLE_PORTAL_PREFIXES = [
 ];
 
 const ElevatedRoleBlockOverlay = () => {
+  const { t } = useI18n();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
   const location = useLocation();
   const [signingOut, setSigningOut] = useState(false);
+
 
   const inScope = !authLoading && !rolesLoading && isAuthenticated;
   const onPortalPath = ROLE_PORTAL_PREFIXES.some(
@@ -89,12 +93,14 @@ const ElevatedRoleBlockOverlay = () => {
           id="elevated-role-block-title"
           className="text-lg font-semibold text-foreground"
         >
-          Wrong app for this account
+          {t("erbTitle")}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          This number is registered as a <span className="font-semibold text-foreground">{label}</span> account
-          and cannot be used inside the customer app. Please continue from
-          the {label} portal instead.
+          {t("erbBody").split("{role}").reduce((acc, part, i, arr) => {
+            acc.push(<span key={`p${i}`}>{part}</span>);
+            if (i < arr.length - 1) acc.push(<span key={`r${i}`} className="font-semibold text-foreground">{label}</span>);
+            return acc;
+          }, [] as React.ReactNode[])}
         </p>
 
         <div className="mt-5 space-y-2">
@@ -103,7 +109,7 @@ const ElevatedRoleBlockOverlay = () => {
             disabled={signingOut}
             className="w-full h-11 rounded-xl"
           >
-            Open {label} portal
+            {t("erbOpenPortal").replace("{role}", label)}
             <ArrowRight className="ml-1.5 h-4 w-4" />
           </Button>
           <Button
@@ -113,14 +119,15 @@ const ElevatedRoleBlockOverlay = () => {
             className="w-full h-11 rounded-xl"
           >
             <LogOut className="mr-1.5 h-4 w-4" />
-            Sign out
+            {t("erbSignOut")}
           </Button>
         </div>
 
         <p className="mt-4 text-[11px] text-muted-foreground/80">
-          Each role has its own dedicated app for security and compliance.
+          {t("erbFooter")}
         </p>
       </div>
+
     </div>
   );
 };
