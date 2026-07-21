@@ -3590,6 +3590,14 @@ const translations = {
   fpLocked: { en: "Verification locked", bn: "যাচাইকরণ লক" },
   fpLockedDesc: { en: "Too many incorrect codes.", bn: "অনেক ভুল কোড।" },
   fpTryAgainIn: { en: "Try again in", bn: "আবার চেষ্টা করুন" },
+  fpSeoTitle: { en: "Forgot PIN – Reset your transaction PIN", bn: "পিন ভুলে গেছেন – আপনার লেনদেন পিন রিসেট করুন" },
+  fpSeoDesc: { en: "Recover access by verifying your phone and setting a new 4-digit PIN.", bn: "ফোন যাচাই করে নতুন ৪-সংখ্যার পিন সেট করে অ্যাক্সেস ফিরে পান।" },
+  fpWhyLocked: { en: "Why is OTP locked?", bn: "OTP কেন লক?" },
+  fpLockedHelp1: { en: "To protect your account from brute-force attempts, we temporarily pause OTP verification after several incorrect codes.", bn: "ব্রুট-ফোর্স চেষ্টা থেকে আপনার অ্যাকাউন্ট রক্ষা করতে, কয়েকবার ভুল কোড দেওয়ার পর আমরা সাময়িকভাবে OTP যাচাই বন্ধ রাখি।" },
+  fpLockedHelp2: { en: "Wait for the timer to end, then request a fresh code. If you keep getting locked out, contact support so we can help you regain access safely.", bn: "টাইমার শেষ হওয়া পর্যন্ত অপেক্ষা করুন, তারপর নতুন কোড অনুরোধ করুন। যদি বারবার লক হন, নিরাপদে অ্যাক্সেস ফিরে পেতে সাপোর্টে যোগাযোগ করুন।" },
+  fpCloseReturn: { en: "Close and return later", bn: "বন্ধ করুন এবং পরে ফিরে আসুন" },
+
+
 
   // ─── CareersPage ───
   crHeader: { en: "Careers", bn: "ক্যারিয়ার" },

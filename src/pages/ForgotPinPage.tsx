@@ -190,8 +190,8 @@ const ForgotPinPage = () => {
   return (
     <div className="min-h-screen bg-background pb-10">
       <Seo
-        title="Forgot PIN – Reset your transaction PIN"
-        description="Recover access by verifying your phone and setting a new 4-digit PIN."
+        title={t("fpSeoTitle")}
+        description={t("fpSeoDesc")}
         path="/forgot-pin"
       />
 
@@ -411,7 +411,7 @@ const ForgotPinPage = () => {
                   onClick={() => setShowHelp(v => !v)}
                   className="mx-auto flex items-center gap-1.5 text-xs font-semibold text-primary"
                 >
-                  <HelpCircle size={13} /> Why is OTP locked?
+                  <HelpCircle size={13} /> {t("fpWhyLocked")}
                 </button>
                 <AnimatePresence>
                   {showHelp && (
@@ -421,23 +421,15 @@ const ForgotPinPage = () => {
                       exit={{ opacity: 0, height: 0 }}
                       className="rounded-xl bg-muted/60 border border-border px-4 py-3 text-[11.5px] leading-relaxed text-muted-foreground space-y-1.5"
                     >
-                      <p>
-                        To protect your account from brute-force attempts, we
-                        temporarily pause OTP verification after several
-                        incorrect codes.
-                      </p>
-                      <p>
-                        Wait for the timer to end, then request a fresh code.
-                        If you keep getting locked out, contact support so we
-                        can help you regain access safely.
-                      </p>
+                      <p>{t("fpLockedHelp1")}</p>
+                      <p>{t("fpLockedHelp2")}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <div className="text-center">
                   <button onClick={() => navigate(-1)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
-                    Close and return later
+                    {t("fpCloseReturn")}
                   </button>
                 </div>
               </Card>
