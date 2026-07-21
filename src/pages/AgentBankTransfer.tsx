@@ -176,7 +176,7 @@ const AgentBankTransfer = () => {
     setPinVerified(false);
   };
 
-  const progressPct = step === "select" ? "20%" : step === "form" ? "45%" : step === "pin" ? "70%" : step === "confirm" ? "90%" : "100%";
+  const progressPct = step === "select" ? "15%" : step === "form" ? "35%" : step === "preview" ? "55%" : step === "pin" ? "75%" : step === "confirm" ? "92%" : "100%";
 
   return (
     <div className="min-h-screen bg-background">
