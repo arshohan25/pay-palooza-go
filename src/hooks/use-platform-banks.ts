@@ -82,7 +82,7 @@ export function usePlatformBanks(includeInactive = false, audience?: BankAudienc
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeInactive]);
+  }, [includeInactive, audience]);
 
   return { banks, loading, refetch: fetchBanks, liveUpdateKey, lastSyncedAt };
 }
