@@ -8,7 +8,7 @@ export interface PlatformBank {
   is_active: boolean;
   sort_order: number;
   logo_url: string | null;
-  is_default: boolean;
+  is_default?: boolean;
 }
 
 export function usePlatformBanks(includeInactive = false) {
@@ -26,7 +26,27 @@ export function usePlatformBanks(includeInactive = false) {
     setLoading(false);
   };
 
-  useEffect(() => { fetchBanks(); }, [includeInactive]);
+  useEffect(() => {
+    fetchBanks();
+
+    // Realtime: refetch when admins add/remove/reorder/toggle/mark-default a
+    // platform bank so every transfer UI stays in sync without a refresh.
+    const channel = supabase
+      .channel(`platform-banks-${includeInactive ? "all" : "active"}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "platform_banks" },
+        () => {
+          fetchBanks();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [includeInactive]);
 
   return { banks, loading, refetch: fetchBanks };
 }
