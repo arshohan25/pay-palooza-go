@@ -95,6 +95,7 @@ import AdminSmartRouting from "@/components/admin/AdminSmartRouting";
 import AdminLiquidityPrediction from "@/components/admin/AdminLiquidityPrediction";
 import AdminRealtimeMonitor from "@/components/admin/AdminRealtimeMonitor";
 import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
+import AdminBankListManager from "@/components/admin/AdminBankListManager";
 import AdminRiskControl from "@/components/admin/AdminRiskControl";
 import AdminFloatManagement from "@/components/admin/AdminFloatManagement";
 import AdminRevenueDashboard from "@/components/admin/AdminRevenueDashboard";
