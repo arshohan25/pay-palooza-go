@@ -329,34 +329,7 @@ const AgentBankTransfer = () => {
             </motion.div>
           )}
 
-          {/* ── STEP: Preview (summary before PIN) ── */}
-          {step === "preview" && selectedAccount && (
-            <motion.div key="preview" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-              <Card className="p-5 border-0 shadow-elevated rounded-2xl space-y-4">
-                <h3 className="text-base font-extrabold text-foreground text-center">
-                  {mode === "send" ? t("agBtConfirmSend") : t("agBtConfirmReceive")}
-                </h3>
-                <div className="space-y-2.5 bg-muted/50 rounded-xl p-4">
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agBtBank")}</span><span className="font-bold text-foreground">{selectedAccount.bank_name}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agBtAccount")}</span><span className="font-bold text-foreground">****{selectedAccount.account_number.slice(-4)}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agBtHolder")}</span><span className="font-bold text-foreground">{selectedAccount.account_holder}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComAmountLbl")}</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
-                  {fee > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("agComFee")}</span><span className="font-bold text-foreground">৳{fmt(fee)}</span></div>}
-                  <div className="flex justify-between text-sm font-bold border-t border-border/40 pt-2">
-                    <span className="text-muted-foreground">{t("agComTotal")}</span>
-                    <span className="text-foreground">৳{fmt(Number(amount) + fee)}</span>
-                  </div>
-                </div>
-                <Button
-                  onClick={() => setStep("pin")}
-                  className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold"
-                >
-                  {t("agComContinue")}
-                </Button>
-                <Button variant="ghost" onClick={() => setStep("form")} className="w-full text-muted-foreground">{t("agComBack")}</Button>
-              </Card>
-            </motion.div>
-          )}
+          {/* Pre-PIN preview removed — a single summary is shown on the confirm step. */}
 
           {/* ── STEP: PIN ── */}
           {step === "pin" && selectedAccount && (
