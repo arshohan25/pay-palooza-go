@@ -134,7 +134,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       });
       setResultData({ fee: result.fee, total_deducted: result.total_deducted, new_balance: result.new_balance });
 
-      const bankShort = BANGLADESH_BANKS.find(b => b.name === bankName)?.short ?? bankName.slice(0, 4).toUpperCase();
+      const bankShort = availableBanks.find(b => b.name === bankName)?.short ?? bankName.slice(0, 4).toUpperCase();
       saveBank({ bank_name: bankName, account_number: accountNumber, account_holder: accountHolder, short_code: bankShort });
       haptics.success();
       setDirection(1);
