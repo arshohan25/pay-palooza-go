@@ -353,7 +353,7 @@ const AgentBankTransfer = () => {
                   >
                     {processing ? t("agBtVerifying") : t("agBtVerifyPin")}
                   </Button>
-                  <Button variant="ghost" onClick={() => { setStep("form"); setPin(""); setPinError(""); }} className="w-full text-muted-foreground">{t("agComBack")}</Button>
+                  <Button variant="ghost" onClick={() => { setStep("confirm"); setPin(""); setPinError(""); }} className="w-full text-muted-foreground">{t("agComBack")}</Button>
                 </div>
               </Card>
             </motion.div>
