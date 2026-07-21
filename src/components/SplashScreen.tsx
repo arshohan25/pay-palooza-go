@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { translationsMap } from "@/lib/i18n";
 const logo = "/icons/easypay-logo.webp";
 
 interface SplashScreenProps {
@@ -9,12 +10,13 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
   const [exiting, setExiting] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
 
-  const lang = (() => {
+  const lang: "en" | "bn" = (() => {
     try { return localStorage.getItem("mfs_ui_lang") === "bn" ? "bn" : "en"; } catch { return "en"; }
   })();
 
-  const appName = lang === "bn" ? "ইজিপে" : "EasyPay";
-  const tagline = lang === "bn" ? "বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট" : "Bangladesh's Simplest Digital Wallet";
+  const appName = translationsMap.splashAppName[lang];
+  const tagline = translationsMap.splashTagline[lang];
+
 
   useEffect(() => {
     const img = new Image();
