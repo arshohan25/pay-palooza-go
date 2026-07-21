@@ -276,6 +276,10 @@ const App = () => (
                           path="/__test/bank-picker-harness"
                           element={<BankPickerHarness />}
                         />
+                        <Route
+                          path="/__test/agent-bank-transfer-harness"
+                          element={<AgentBankTransferHarness />}
+                        />
                       </>
                     )}
                     <Route path="*" element={<NotFound />} />
