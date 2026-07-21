@@ -107,8 +107,15 @@ Deno.serve(async (req) => {
     // Expose OTP on-screen for non-production origins (preview/localhost/lovable domains)
     // so device verification can be tested without a live SMS gateway.
     const origin = req.headers.get("origin") || req.headers.get("referer") || "";
-    const isDevOrigin =
-      /localhost|127\.0\.0\.1|lovable\.app|lovableproject\.com|lovable\.dev/i.test(origin);
+    // Extra dev origins can be added via env (comma-separated hostnames or substrings).
+    const extraDevOrigins = (Deno.env.get("OTP_DEV_ORIGINS") || "smartshop.bd")
+      .split(",").map((s) => s.trim()).filter(Boolean)
+      .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+    const devOriginRegex = new RegExp(
+      `localhost|127\\.0\\.0\\.1|lovable\\.app|lovableproject\\.com|lovable\\.dev${extraDevOrigins ? `|${extraDevOrigins}` : ""}`,
+      "i",
+    );
+    const isDevOrigin = devOriginRegex.test(origin);
 
     return new Response(
       JSON.stringify({
