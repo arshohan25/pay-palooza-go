@@ -524,7 +524,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                     disabled={otpSending || resendIn > 0 || isLocked}
                     className="text-xs font-semibold text-primary disabled:text-muted-foreground disabled:opacity-60"
                   >
-                    {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
+                    {resendIn > 0 ? t("cpfResendIn").replace("{s}", String(resendIn)) : t("cpfResendCode")}
                   </button>
                 </div>
               </div>
