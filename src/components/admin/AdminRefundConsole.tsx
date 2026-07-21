@@ -204,12 +204,22 @@ export default function AdminRefundConsole() {
                         ) : (
                           <Badge variant="outline" className="capitalize">{r.flag.replace(/_/g, " ")}</Badge>
                         )}
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={() => setExpanded(expanded === r.transaction_id ? null : r.transaction_id)}
                           className="text-[10px] text-primary hover:underline"
                         >
                           {expanded === r.transaction_id ? "Hide" : "View"} timeline
                         </button>
+                        {canDispute && r.settlement_id && (
+                          <button
+                            disabled={disputing === r.transaction_id}
+                            onClick={() => openDispute(r.settlement_id, r.transaction_id)}
+                            className="text-[10px] text-amber-600 hover:underline disabled:opacity-50"
+                          >
+                            {disputing === r.transaction_id ? "…" : "Open dispute"}
+                          </button>
+                        )}
                       </div>
                     </div>
                     {expanded === r.transaction_id && (
