@@ -455,13 +455,13 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
                 <div className="text-center space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    You can resume verification once the timer ends.
+                    {t("cpfResumeHint")}
                   </p>
                   <button
                     onClick={onClose}
                     className="text-xs font-semibold text-primary active:scale-95 transition-transform"
                   >
-                    Close and return later
+                    {t("cpfCloseReturn")}
                   </button>
                 </div>
               </div>
