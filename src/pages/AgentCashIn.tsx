@@ -250,8 +250,8 @@ const AgentCashIn = () => {
                 ))}
               </div>
               {phoneValidation.isValid && amount && Number(amount) >= 10 && (
-                <Button onClick={() => { if (phoneValidation.triggerShake()) return; setStep("confirm"); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in">
-                  {t("agComContinue")}
+                <Button onClick={() => { if (phoneValidation.triggerShake()) return; setStep("confirm"); }} disabled={walletStatus !== "valid" || walletChecking} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in disabled:opacity-50">
+                  {walletChecking ? "Verifying wallet…" : walletStatus !== "valid" ? "Enter a valid customer wallet" : t("agComContinue")}
                 </Button>
               )}
             </Card>
