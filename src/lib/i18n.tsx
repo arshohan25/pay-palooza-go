@@ -5352,6 +5352,29 @@ const translations = {
   dddYou: { en: "You", bn: "আপনি" },
   dddHandler: { en: "Handler", bn: "হ্যান্ডলার" },
   dddPlaceholder: { en: "Message the dispute handler…", bn: "হ্যান্ডলারকে বার্তা লিখুন…" },
+
+  // Change PIN Flow (cpf*)
+  cpfOtpHeading: { en: "Verify it's you", bn: "আপনার পরিচয় যাচাই করুন" },
+  cpfOtpSubTo: { en: "Enter the 6-digit code we sent to {phone}", bn: "{phone} নম্বরে পাঠানো ৬-সংখ্যার কোডটি লিখুন" },
+  cpfOtpSubGeneric: { en: "your phone", bn: "আপনার ফোন" },
+  cpfMissingPhone: { en: "Missing phone number", bn: "ফোন নম্বর নেই" },
+  cpfFailedToSendCode: { en: "Failed to send code", bn: "কোড পাঠাতে ব্যর্থ" },
+  cpfIncorrectCode: { en: "Incorrect code", bn: "ভুল কোড" },
+  cpfVerificationFailed: { en: "Verification failed", bn: "যাচাই ব্যর্থ" },
+  cpfTooManyAttempts: { en: "Too many failed attempts. Try again in {mins} minute(s).", bn: "অনেকবার ভুল হয়েছে। {mins} মিনিট পরে আবার চেষ্টা করুন।" },
+  cpfLockedTitle: { en: "Verification locked", bn: "যাচাই লক করা হয়েছে" },
+  cpfLockedSub: { en: "Too many incorrect codes. For your security, verification is temporarily paused.", bn: "অনেক ভুল কোড। আপনার নিরাপত্তার জন্য যাচাই সাময়িক বন্ধ রাখা হয়েছে।" },
+  cpfTryAgainIn: { en: "Try again in", bn: "আবার চেষ্টা করুন" },
+  cpfWhyLocked: { en: "Why is OTP locked?", bn: "ওটিপি কেন লক?" },
+  cpfLockedHelp1: { en: "For your protection, OTP verification is temporarily paused after several incorrect codes. This helps stop anyone from guessing your codes.", bn: "আপনার সুরক্ষার জন্য একাধিক ভুল কোডের পরে ওটিপি যাচাই সাময়িক বন্ধ রাখা হয়েছে। এটি অনুমান রোধ করে।" },
+  cpfLockedHelp2: { en: "Wait for the timer to end, then request a fresh code. If this keeps happening, contact support.", bn: "টাইমার শেষ হলে নতুন কোড অনুরোধ করুন। বারবার হলে সহায়তায় যোগাযোগ করুন।" },
+  cpfResumeHint: { en: "You can resume verification once the timer ends.", bn: "টাইমার শেষ হলে যাচাই আবার শুরু করা যাবে।" },
+  cpfCloseReturn: { en: "Close and return later", bn: "বন্ধ করুন, পরে আসুন" },
+  cpfSendingCode: { en: "Sending code…", bn: "কোড পাঠানো হচ্ছে…" },
+  cpfVerifying: { en: "Verifying…", bn: "যাচাই হচ্ছে…" },
+  cpfDevCode: { en: "DEV code", bn: "ডেভ কোড" },
+  cpfResendIn: { en: "Resend in {s}s", bn: "{s} সেকেন্ডে পুনরায় পাঠান" },
+  cpfResendCode: { en: "Resend code", bn: "কোড পুনরায় পাঠান" },
 } as const;
 
 
