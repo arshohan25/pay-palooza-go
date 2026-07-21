@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Check, ChevronsUpDown, MapPin, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useI18n } from "@/lib/i18n";
 import type { AreaType } from "./DivisionDistrictUpazilaPicker";
+
 
 export interface UnionOption {
   name: string;
@@ -58,9 +60,11 @@ export default function UnionSearchSelect({
   displayName,
   loading = false,
 }: Props) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+
 
   const groupLabel = (t: AreaType) =>
     t === "city_corporation" ? labels.tCity : t === "powrashava" ? labels.tPowrashava : labels.tUnion;
@@ -149,7 +153,7 @@ export default function UnionSearchSelect({
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={labels.search ?? "Search…"}
+            placeholder={labels.search ?? t("ussSearch")}
             className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
           />
         </div>
@@ -173,7 +177,7 @@ export default function UnionSearchSelect({
               className="flex flex-col items-center justify-center gap-2 py-10 text-sm text-muted-foreground"
             >
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span>{labels.loading ?? "Loading…"}</span>
+              <span>{labels.loading ?? t("ussLoading")}</span>
             </div>
           ) : flat.length === 0 ? (
             <div
@@ -183,7 +187,7 @@ export default function UnionSearchSelect({
             >
               <MapPin className="h-5 w-5 opacity-40" />
               <p className="text-sm font-medium text-foreground">
-                {labels.empty ?? "No results"}
+                {labels.empty ?? t("ussNoResults")}
               </p>
               {query.trim() && (
                 <p className="text-xs text-muted-foreground">"{query}"</p>

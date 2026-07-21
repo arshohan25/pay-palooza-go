@@ -5423,7 +5423,16 @@ const translations = {
 
   // FlowHeader
   fhBack: { en: "Back", bn: "পিছনে" },
+
+  // SlideToConfirm
+  stcDefault: { en: "Slide to Confirm", bn: "নিশ্চিত করতে স্লাইড করুন" },
+
+  // UnionSearchSelect
+  ussSearch: { en: "Search…", bn: "খুঁজুন…" },
+  ussLoading: { en: "Loading…", bn: "লোড হচ্ছে…" },
+  ussNoResults: { en: "No results", bn: "কোনো ফলাফল নেই" },
 } as const;
+
 
 
 
