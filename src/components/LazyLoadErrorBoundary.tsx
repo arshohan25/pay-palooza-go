@@ -1,6 +1,11 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { recoverFromChunkLoadError, clearClientCache } from "@/lib/cacheReset";
 import { RefreshCw, AlertTriangle } from "lucide-react";
+import { translationsMap } from "@/lib/i18n";
+
+function getLang(): "en" | "bn" {
+  try { return localStorage.getItem("mfs_ui_lang") === "bn" ? "bn" : "en"; } catch { return "en"; }
+}
 
 interface Props {
   children: ReactNode;
@@ -71,13 +76,14 @@ export default class LazyLoadErrorBoundary extends Component<Props, State> {
 
   render() {
     if (!this.state.hasError) return this.props.children;
+    const lang = getLang();
 
     if (this.state.recovering) {
       return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-muted-foreground">Recovering…</p>
+            <p className="text-sm text-muted-foreground">{translationsMap.llebRecovering[lang]}</p>
           </div>
         </div>
       );
@@ -92,12 +98,10 @@ export default class LazyLoadErrorBoundary extends Component<Props, State> {
           </div>
           <div className="space-y-1">
             <h2 className="text-base font-bold text-foreground">
-              {isChunk ? "Update available" : "Something went wrong"}
+              {isChunk ? translationsMap.llebUpdateTitle[lang] : translationsMap.llebErrorTitle[lang]}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {isChunk
-                ? "A new version of the app is ready. Reload to continue."
-                : "An unexpected error occurred while loading this screen."}
+              {isChunk ? translationsMap.llebUpdateBody[lang] : translationsMap.llebErrorBody[lang]}
             </p>
             {!isChunk && this.state.message && (
               <p className="text-[10px] text-muted-foreground/70 mt-2 font-mono break-all">{this.state.message}</p>
@@ -109,14 +113,14 @@ export default class LazyLoadErrorBoundary extends Component<Props, State> {
               className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
             >
               <RefreshCw className="w-4 h-4" />
-              Reload app
+              {translationsMap.llebReload[lang]}
             </button>
             {!isChunk && (
               <button
                 onClick={this.handleRetry}
                 className="w-full h-10 rounded-xl border border-border text-foreground text-sm font-medium active:scale-[0.98] transition-transform"
               >
-                Try again
+                {translationsMap.llebTryAgain[lang]}
               </button>
             )}
           </div>
