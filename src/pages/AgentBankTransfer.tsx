@@ -18,7 +18,7 @@ import { BankListLiveBadge } from "@/components/BankListLiveBadge";
 import { BankLogo } from "@/components/BankLogo";
 
 import { useSavedBanks, SavedBankAccount } from "@/hooks/use-saved-banks";
-import { useFeeConfig } from "@/hooks/use-fee-config";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -63,8 +63,9 @@ const AgentBankTransfer = () => {
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<SavedBankAccount | null>(null);
 
-  const { calcBankTransferFee, getFeeLabel } = useFeeConfig();
-  const fee = mode === "send" ? calcBankTransferFee(Number(amount)) : 0;
+  // Agent bank transfer/receive is free by policy — no fee applied.
+  const fee = 0;
+  const getFeeLabel = (_: string) => "Free";
 
   const { banks: platformBanks, liveUpdateKey: banksLiveKey } = usePlatformBanks(false, "agent");
   const availableBanks: BankInfo[] = useMemo(() => {
