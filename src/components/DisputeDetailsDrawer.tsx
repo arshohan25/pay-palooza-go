@@ -143,17 +143,17 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
   const StatusIcon = meta.icon;
 
   const steps = [
-    { key: "s", label: "Submitted", at: dispute.created_at, done: true, icon: FileCheck2 },
+    { key: "s", label: t("dddStatusSubmitted"), at: dispute.created_at, done: true, icon: FileCheck2 },
     {
       key: "r",
-      label: "Under review",
+      label: t("dddStatusUnderReview"),
       at: dispute.status !== "open" ? dispute.updated_at : null,
       done: dispute.status !== "open",
       icon: Search,
     },
     {
       key: "c",
-      label: dispute.status === "rejected" ? "Rejected" : "Resolved",
+      label: dispute.status === "rejected" ? t("dddStatusRejected") : t("dddStatusResolved"),
       at: dispute.resolved_at ?? (dispute.status === "resolved" || dispute.status === "rejected" ? dispute.updated_at : null),
       done: dispute.status === "resolved" || dispute.status === "rejected",
       icon: dispute.status === "rejected" ? XCircle : CheckCircle2,
@@ -165,9 +165,9 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
       <SheetContent side="bottom" className="p-0 h-[90vh] rounded-t-3xl flex flex-col">
         <SheetHeader className="px-4 pt-4 pb-2 shrink-0">
           <SheetTitle className="text-sm flex items-center gap-2">
-            Dispute details
+            {t("dddTitle")}
             <Badge variant="outline" className={`${meta.cls} text-[10px] gap-1 rounded-full`}>
-              <StatusIcon size={10} /> {meta.label}
+              <StatusIcon size={10} /> {t(meta.labelKey)}
             </Badge>
           </SheetTitle>
         </SheetHeader>
