@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect, forwardRef } from "react";
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
 import { ChevronRight, CheckCircle2, ArrowRight, type LucideIcon } from "lucide-react";
 import { haptics } from "@/lib/haptics";
+import { useI18n } from "@/lib/i18n";
+
 
 interface SlideToConfirmProps {
   onConfirm: () => void;
@@ -20,12 +22,15 @@ const TRACK_H = THUMB + PADDING * 2; // 56px total
 
 const SlideToConfirm = forwardRef<HTMLDivElement, SlideToConfirmProps>(({
   onConfirm,
-  label = "Slide to Confirm",
+  label,
   gradient = "gradient-primary",
   disabled = false,
   pinComplete = false,
   icon: Icon = ArrowRight,
 }, ref) => {
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t("stcDefault");
+
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -146,8 +151,9 @@ const SlideToConfirm = forwardRef<HTMLDivElement, SlideToConfirmProps>(({
           <ChevronRight size={20} className="text-muted-foreground opacity-100" />
         </motion.span>
         <span className="text-sm font-semibold text-muted-foreground">
-          {label}
+          {resolvedLabel}
         </span>
+
       </motion.div>
 
       {/* Draggable thumb – vertically centered with equal margin */}
