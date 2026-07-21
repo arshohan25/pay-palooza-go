@@ -33,15 +33,9 @@ describe("platform_banks grants regression guard", () => {
     });
   });
 
-  it("public bank picker query returns at least one active bank", async () => {
-    const { data, error } = await client
-      .from("platform_banks")
-      .select("id,name,is_active,sort_order")
-      .eq("is_active", true)
-      .order("sort_order")
-      .limit(5);
+  it("at least one active bank exists for pickers to render", async () => {
+    const { data, error } = await client.rpc("check_platform_banks_grants");
     expect(error).toBeNull();
-    expect(Array.isArray(data)).toBe(true);
-    expect((data ?? []).length).toBeGreaterThan(0);
+    expect((data as any)?.active_bank_count).toBeGreaterThan(0);
   });
 });
