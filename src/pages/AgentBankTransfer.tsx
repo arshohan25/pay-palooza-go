@@ -36,6 +36,7 @@ const genRef = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r =
 
 type Mode = "send" | "receive";
 type Step = "select" | "form" | "pin" | "confirm" | "done";
+// Flow order: select → form → pin → confirm(slider) → done
 
 const AgentBankTransfer = () => {
   const navigate = useNavigate();
@@ -152,7 +153,7 @@ const AgentBankTransfer = () => {
       if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setProcessing(false); return; }
       setPinVerified(true);
       setProcessing(false);
-      await executeTransaction();
+      setStep("confirm");
     } catch (e: any) {
       setPinError(e.message || "Verification failed.");
       setProcessing(false);
@@ -161,7 +162,8 @@ const AgentBankTransfer = () => {
 
   const handleSlideConfirm = async () => {
     if (processing || !selectedAccount) return;
-    setStep("pin");
+    if (!pinVerified) { toast({ title: "Verify PIN first", variant: "destructive" }); setStep("pin"); return; }
+    await executeTransaction();
   };
 
 
@@ -174,7 +176,7 @@ const AgentBankTransfer = () => {
     setPinVerified(false);
   };
 
-  const progressPct = step === "select" ? "20%" : step === "form" ? "45%" : step === "confirm" ? "65%" : step === "pin" ? "90%" : "100%";
+  const progressPct = step === "select" ? "20%" : step === "form" ? "45%" : step === "pin" ? "70%" : step === "confirm" ? "90%" : "100%";
 
   return (
     <div className="min-h-screen bg-background">
@@ -317,7 +319,7 @@ const AgentBankTransfer = () => {
 
                 {amount && Number(amount) >= 10 && (
                   <Button
-                    onClick={() => setStep("confirm")}
+                    onClick={() => setStep("pin")}
                     className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in"
                   >
                     {t("agComContinue")}
@@ -353,7 +355,7 @@ const AgentBankTransfer = () => {
                   >
                     {processing ? t("agBtVerifying") : t("agBtVerifyPin")}
                   </Button>
-                  <Button variant="ghost" onClick={() => { setStep("confirm"); setPin(""); setPinError(""); }} className="w-full text-muted-foreground">{t("agComBack")}</Button>
+                  <Button variant="ghost" onClick={() => { setStep("form"); setPin(""); setPinError(""); setPinVerified(false); }} className="w-full text-muted-foreground">{t("agComBack")}</Button>
                 </div>
               </Card>
             </motion.div>
@@ -379,11 +381,11 @@ const AgentBankTransfer = () => {
                 </div>
                 <SlideToConfirm
                   onConfirm={handleSlideConfirm}
-                  disabled={processing}
+                  disabled={processing || !pinVerified}
                   label={processing ? t("agComProcessing") : (mode === "send" ? t("agBtSlideSend") : t("agBtSlideReceive"))}
                   icon={Building2}
                 />
-                <Button variant="ghost" onClick={() => { setStep("form"); setPin(""); setPinError(""); setPinVerified(false); }} className="w-full text-muted-foreground">{t("agComCancel")}</Button>
+                <Button variant="ghost" onClick={() => { setStep("pin"); }} className="w-full text-muted-foreground">{t("agComBack")}</Button>
               </Card>
             </motion.div>
           )}
