@@ -272,9 +272,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                                 onClick={() => { setBankName(b.name); setBankDropdownOpen(false); setBankSearch(""); setError(""); }}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${bankName === b.name ? "bg-primary/10" : ""}`}
                               >
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: b.color }}>
-                                  {b.short.slice(0, 2)}
-                                </div>
+                                <BankLogo bank={b} size={32} />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium text-foreground truncate">{b.name}</p>
                                   <p className="text-[10px] text-muted-foreground">{b.short}</p>
