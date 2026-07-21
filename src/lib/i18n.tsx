@@ -5375,6 +5375,17 @@ const translations = {
   cpfDevCode: { en: "DEV code", bn: "ডেভ কোড" },
   cpfResendIn: { en: "Resend in {s}s", bn: "{s} সেকেন্ডে পুনরায় পাঠান" },
   cpfResendCode: { en: "Resend code", bn: "কোড পুনরায় পাঠান" },
+
+  // DivisionDistrictPicker
+  ddpDivision: { en: "Division", bn: "বিভাগ" },
+  ddpDistrict: { en: "District", bn: "জেলা" },
+  ddpLoadingDivisions: { en: "Loading divisions…", bn: "বিভাগ লোড হচ্ছে…" },
+  ddpSelectDivision: { en: "Select division", bn: "বিভাগ নির্বাচন করুন" },
+  ddpSelectDivisionFirst: { en: "Select a division first", bn: "প্রথমে একটি বিভাগ নির্বাচন করুন" },
+  ddpNoDistricts: { en: "No districts available", bn: "কোনো জেলা উপলব্ধ নেই" },
+  ddpSelectDistrict: { en: "Select district", bn: "জেলা নির্বাচন করুন" },
+  ddpDistrictHint: { en: "Choose a division to enable districts.", bn: "জেলা সক্রিয় করতে একটি বিভাগ নির্বাচন করুন।" },
+  ddpLoadError: { en: "Could not load districts. Please try again.", bn: "জেলা লোড করা যায়নি। আবার চেষ্টা করুন।" },
 } as const;
 
 
