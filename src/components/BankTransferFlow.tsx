@@ -1,5 +1,5 @@
 import { validateRecipient } from "@/lib/recipientValidation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import FeatureGuard from "@/components/FeatureGuard";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
