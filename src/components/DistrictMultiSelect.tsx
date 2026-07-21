@@ -248,10 +248,10 @@ export default function DistrictMultiSelect({
               disabled={disabled || loading}
             >
               <SelectTrigger
-                aria-label="Division"
+                aria-label={t("dmsDivision")}
                 className="h-auto w-full rounded-lg border-0 bg-transparent px-3 pt-[18px] pb-1.5 text-sm font-medium shadow-none ring-0 hover:bg-transparent focus:ring-0 focus-visible:ring-0 [&>svg]:opacity-40"
               >
-                <SelectValue placeholder={loading ? "Loading…" : "Select division"} />
+                <SelectValue placeholder={loading ? t("dmsLoading") : t("dmsSelectDivision")} />
               </SelectTrigger>
               <SelectContent>
                 {divisions.map((d) => (
@@ -268,7 +268,7 @@ export default function DistrictMultiSelect({
           {/* Districts segment */}
           <div className="relative flex-[1.5] min-w-0 rounded-lg transition-colors hover:bg-white/5">
             <span className="pointer-events-none absolute left-3 top-1 z-10 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">
-              Districts
+              {t("dmsDistricts")}
             </span>
             <Popover open={open} onOpenChange={(o) => !districtDisabled && setOpen(o)}>
               <PopoverTrigger asChild>
@@ -276,19 +276,19 @@ export default function DistrictMultiSelect({
                   type="button"
                   role="combobox"
                   aria-expanded={open}
-                  aria-label="Districts"
+                  aria-label={t("dmsDistricts")}
                   disabled={districtDisabled}
                   className="group flex w-full items-center gap-2 rounded-lg px-3 pt-[18px] pb-1.5 text-left text-sm outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <MapPin size={14} className={cn("shrink-0", value.length > 0 ? "text-primary" : "opacity-50")} />
                   <span className="flex-1 truncate font-medium">
                     {value.length > 0
-                      ? `${value.length} district${value.length > 1 ? "s" : ""} selected`
+                      ? (value.length === 1 ? t("dmsSelectedOne") : t("dmsSelectedMany").replace("{count}", String(value.length)))
                       : loading
-                      ? "Loading districts…"
+                      ? t("dmsLoadingDistricts")
                       : !division
-                      ? "Select a division first"
-                      : placeholder}
+                      ? t("dmsSelectDivisionFirst")
+                      : resolvedPlaceholder}
                   </span>
                   <ChevronsUpDown size={12} className="shrink-0 opacity-40 transition-opacity group-hover:opacity-70" />
                 </button>
