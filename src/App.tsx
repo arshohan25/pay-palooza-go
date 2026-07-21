@@ -271,6 +271,10 @@ const App = () => (
                           path="/__test/cashout-qr-error-harness"
                           element={<CashOutQrErrorHarness />}
                         />
+                        <Route
+                          path="/__test/bank-picker-harness"
+                          element={<BankPickerHarness />}
+                        />
                       </>
                     )}
                     <Route path="*" element={<NotFound />} />
