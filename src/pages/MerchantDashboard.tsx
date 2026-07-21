@@ -3388,7 +3388,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                         className="overflow-hidden"
                       >
                         {linkPayments[link.id].length === 0 ? (
-                          <p className="text-[10px] text-muted-foreground text-center py-3">No payments yet</p>
+                          <p className="text-[10px] text-muted-foreground text-center py-3">{t("plmcNoPaymentsYet")}</p>
                         ) : (
                           <div className="mt-1 space-y-1.5">
                             {linkPayments[link.id].map((txn: any) => (
