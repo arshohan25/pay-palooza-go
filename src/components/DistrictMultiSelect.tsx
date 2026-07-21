@@ -344,7 +344,7 @@ export default function DistrictMultiSelect({
                 type="button"
                 onClick={() => toggle(r.code)}
                 className="ml-0.5 rounded-sm opacity-60 hover:opacity-100"
-                aria-label={`Remove ${r.district}`}
+                aria-label={t("dmsRemove").replace("{name}", r.district)}
               >
                 <X size={12} />
               </button>
