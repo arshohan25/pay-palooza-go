@@ -5,13 +5,15 @@ import { useAuth } from "@/hooks/use-auth";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
-async function fetchUserRoles(userId?: string) {
+export async function fetchUserRoles(userId?: string) {
   if (!userId) return [] as AppRole[];
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId);
+
+  if (error) throw error;
 
   return (data?.map((row) => row.role) ?? []) as AppRole[];
 }
