@@ -238,7 +238,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       goTo("new");
     } catch (err: any) {
       haptics.error();
-      setOtpError(err?.message || "Verification failed");
+      setOtpError(err?.message || t("cpfVerificationFailed"));
       setTimeout(() => setOtp(""), 500);
     } finally {
       setOtpVerifying(false);
