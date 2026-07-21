@@ -33,24 +33,50 @@ const AgentCashIn = () => {
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [resolvedName, setResolvedName] = useState("");
+  const [walletStatus, setWalletStatus] = useState<"idle" | "checking" | "valid" | "not_found" | "not_user">("idle");
+  const [walletChecking, setWalletChecking] = useState(false);
   const phoneValidation = usePhoneValidation(phone);
   const commission = Number(amount) > 0 ? Math.round(Number(amount) * COMMISSION_RATE * 100) / 100 : 0;
 
   useEffect(() => {
-    if (phone.length === 11 && phone.startsWith("01")) {
-      const resolve = async () => {
-        try {
-          const { data } = await supabase.rpc("resolve_transfer_recipient", {
-            p_identifier: phone, p_flow: "send"
-          });
-          const res = data as any;
-          if (res?.found) setResolvedName(res.recipient_name);
-          else setResolvedName("");
-        } catch { setResolvedName(""); }
-      };
-      resolve();
+    if (phone.length !== 11 || !phone.startsWith("01")) {
+      setWalletStatus("idle");
+      setResolvedName("");
+      return;
     }
+    let cancelled = false;
+    const verify = async () => {
+      setWalletStatus("checking");
+      setWalletChecking(true);
+      try {
+        const { data, error } = await supabase.rpc("get_customer_daily_cashin_usage", { p_phone: phone });
+        if (cancelled) return;
+        if (error) throw error;
+        const row = (data as any)?.[0] ?? {};
+        if (!row.customer_user_id) {
+          setWalletStatus("not_found");
+          setResolvedName("");
+        } else if (!row.is_user_wallet) {
+          setWalletStatus("not_user");
+          setResolvedName("");
+        } else {
+          setWalletStatus("valid");
+          try {
+            const { data: r } = await supabase.rpc("resolve_transfer_recipient", { p_identifier: phone, p_flow: "send" });
+            const res = r as any;
+            if (!cancelled && res?.found) setResolvedName(res.recipient_name);
+          } catch {}
+        }
+      } catch {
+        if (!cancelled) setWalletStatus("idle");
+      } finally {
+        if (!cancelled) setWalletChecking(false);
+      }
+    };
+    verify();
+    return () => { cancelled = true; };
   }, [phone]);
+
 
   const handleConfirm = async () => {
     if (processing) return;
