@@ -8,6 +8,7 @@ export interface PlatformBank {
   is_active: boolean;
   sort_order: number;
   logo_url: string | null;
+  is_default: boolean;
 }
 
 export function usePlatformBanks(includeInactive = false) {

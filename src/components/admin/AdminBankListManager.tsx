@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Landmark, Plus, Trash2, Search, Upload, X, Loader2, GripVertical } from "lucide-react";
+import { Landmark, Plus, Trash2, Search, Upload, X, Loader2, GripVertical, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePlatformBanks, PlatformBank } from "@/hooks/use-platform-banks";
@@ -154,6 +154,22 @@ export default function AdminBankListManager() {
     refetch();
   };
 
+  const setDefaultBank = async (bank: PlatformBank) => {
+    const nextValue = !bank.is_default;
+    // Trigger will auto-clear any other default when we set one.
+    const { error } = await supabase
+      .from("platform_banks")
+      .update({ is_default: nextValue } as any)
+      .eq("id", bank.id);
+    if (error) {
+      toast.error(error.message || "Failed to set default");
+      return;
+    }
+    auditLog("set_default_bank", bank.id, { name: bank.name, is_default: nextValue });
+    toast.success(nextValue ? `${bank.name} is now the default bank` : "Default bank cleared");
+    refetch();
+  };
+
   const persistOrder = async (ordered: PlatformBank[]) => {
     // Assign sequential sort_order starting at 1
     const updates = ordered.map((b, idx) => ({ id: b.id, sort_order: idx + 1 }));
@@ -234,6 +250,7 @@ export default function AdminBankListManager() {
                     onToggle={() => toggleBank(b.id, b.is_active)}
                     onDelete={() => deleteBank(b.id, b.name)}
                     onLogoChanged={refetch}
+                    onSetDefault={() => setDefaultBank(b)}
                   />
                 ))}
               </div>
@@ -250,13 +267,14 @@ export default function AdminBankListManager() {
 }
 
 function SortableBankRow({
-  bank, disabled, onToggle, onDelete, onLogoChanged,
+  bank, disabled, onToggle, onDelete, onLogoChanged, onSetDefault,
 }: {
   bank: PlatformBank;
   disabled: boolean;
   onToggle: () => void;
   onDelete: () => void;
   onLogoChanged: () => void;
+  onSetDefault: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bank.id, disabled });
   const style = {
@@ -288,11 +306,27 @@ function SortableBankRow({
           </div>
         )}
         <div className="min-w-0">
-          <p className="text-xs font-medium text-foreground truncate">{bank.name}</p>
+          <p className="text-xs font-medium text-foreground truncate flex items-center gap-1.5">
+            {bank.name}
+            {bank.is_default && (
+              <Badge className="text-[9px] bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-0 px-1.5 py-0" data-testid="default-badge">Default</Badge>
+            )}
+          </p>
           <p className="text-[10px] text-muted-foreground">#{bank.sort_order} · {bank.short_code}</p>
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
+        <Button
+          size="icon"
+          variant="ghost"
+          className={`w-7 h-7 ${bank.is_default ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"}`}
+          onClick={onSetDefault}
+          title={bank.is_default ? "Unset as default" : "Set as default bank"}
+          aria-label={bank.is_default ? "Unset default bank" : "Set as default bank"}
+          aria-pressed={bank.is_default}
+        >
+          <Star className={`w-3.5 h-3.5 ${bank.is_default ? "fill-amber-500" : ""}`} />
+        </Button>
         <BankLogoUploader bank={bank} onChanged={onLogoChanged} />
         <Badge variant={bank.is_active ? "default" : "secondary"} className="text-[10px]">
           {bank.is_active ? "On" : "Off"}

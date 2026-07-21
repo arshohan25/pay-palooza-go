@@ -1,5 +1,5 @@
 import { validateRecipient } from "@/lib/recipientValidation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import FeatureGuard from "@/components/FeatureGuard";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
@@ -82,6 +82,14 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
     const q = bankSearch.toLowerCase();
     return availableBanks.filter(b => b.name.toLowerCase().includes(q) || b.short.toLowerCase().includes(q));
   }, [bankSearch, availableBanks]);
+
+  // Auto-select the admin-marked default bank for first-time users
+  // (no saved banks and nothing chosen yet).
+  useEffect(() => {
+    if (bankName || savedBanks.length > 0) return;
+    const def = platformBanks.find(b => b.is_default);
+    if (def) setBankName(def.name);
+  }, [platformBanks, savedBanks.length, bankName]);
 
   const goTo = (next: Step) => {
     haptics.medium();

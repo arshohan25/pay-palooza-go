@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -80,6 +80,17 @@ const AgentBankTransfer = () => {
   }, [bankSearch, availableBanks]);
 
   const selectedNewBank = availableBanks.find(b => b.name === newBankName);
+
+  // Auto-select the admin-marked default bank for first-time users opening
+  // the "Add Bank" sheet with nothing chosen yet.
+  useEffect(() => {
+    if (!showAddBank || newBankName) return;
+    const def = platformBanks.find(b => b.is_default);
+    if (def) {
+      setNewBankName(def.name);
+      setNewShortCode(def.short_code);
+    }
+  }, [showAddBank, platformBanks, newBankName]);
 
   const handleSaveBank = async () => {
     if (!newBankName || !newAccNumber || !newAccHolder) {

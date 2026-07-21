@@ -4042,6 +4042,14 @@ const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onCl
   const { toast } = useToast();
   const { banks: platformBanks, loading: banksLoading } = usePlatformBanks();
   const [bankName, setBankName] = useState(merchant?.bank_name || "");
+
+  // Auto-select the admin-marked default bank for first-time users
+  // (no bank linked yet on this merchant).
+  useEffect(() => {
+    if (!open || bankName || merchant?.bank_name) return;
+    const def = platformBanks.find(b => b.is_default);
+    if (def) setBankName(def.name);
+  }, [open, platformBanks, bankName, merchant?.bank_name]);
   const [accHolder, setAccHolder] = useState(merchant?.bank_account_holder || "");
   const [accNumber, setAccNumber] = useState(merchant?.bank_account_number || "");
   const [branch, setBranch] = useState(merchant?.bank_branch || "");
