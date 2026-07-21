@@ -1037,6 +1037,7 @@ const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents:
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Agent Transactions View ── */
 const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
+  const { t: tr } = useI18n();
   const [selectedAgent, setSelectedAgent] = useState<AgentRow | null>(null);
   const [txns, setTxns] = useState<any[]>([]);
   const [loadingTxns, setLoadingTxns] = useState(false);
@@ -1098,16 +1099,16 @@ const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-        <ListChecks size={14} className="text-primary" /> Agent Transaction Monitor
+        <ListChecks size={14} className="text-primary" /> {tr("distDashAgentTxnMonitor")}
       </h3>
 
       {!selectedAgent ? (
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">Select an agent to monitor transactions:</p>
+          <p className="text-xs text-muted-foreground">{tr("distDashSelectAgentMonitor")}</p>
           {agents.length === 0 ? (
             <Card className="p-8 border-0 shadow-card text-center">
               <Users size={28} className="text-muted-foreground mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No agents in your network</p>
+              <p className="text-xs text-muted-foreground">{tr("distDashNoAgentsInYours")}</p>
             </Card>
           ) : (
             agents.map(ag => (
@@ -1117,7 +1118,7 @@ const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
                     <Building2 size={14} className="text-primary-foreground" />
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-semibold text-foreground">{ag.business_name || "Agent"}</p>
+                    <p className="text-xs font-semibold text-foreground">{ag.business_name || tr("distDashAgent")}</p>
                     <Badge className={`text-[8px] px-1.5 py-0 ${statusColor[ag.status]}`}>{ag.status}</Badge>
                   </div>
                 </div>
@@ -1135,28 +1136,28 @@ const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
                 <Building2 size={14} className="text-primary-foreground" />
               </div>
               <div>
-                <p className="text-xs font-bold text-foreground">{selectedAgent.business_name || "Agent"}</p>
-                <p className="text-[9px] text-muted-foreground">{selectedAgent.territory_code || "—"} · {txns.length} txns loaded</p>
+                <p className="text-xs font-bold text-foreground">{selectedAgent.business_name || tr("distDashAgent")}</p>
+                <p className="text-[9px] text-muted-foreground">{selectedAgent.territory_code || "—"} · {tr("distDashTxnsLoaded").replace("{n}", String(txns.length))}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => loadAgentTxns(selectedAgent.user_id)}>
                 <RefreshCw size={12} />
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => { setSelectedAgent(null); setTxns([]); }} className="h-7 text-[10px]">Back</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setSelectedAgent(null); setTxns([]); }} className="h-7 text-[10px]">{tr("distDashBack")}</Button>
             </div>
           </div>
 
           {/* Realtime badge */}
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-[10px] text-muted-foreground">Live monitoring</span>
+            <span className="text-[10px] text-muted-foreground">{tr("distDashLiveMonitor")}</span>
           </div>
 
           {/* Search */}
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search by name, phone, ID, type..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-xl h-9 text-xs" />
+            <Input placeholder={tr("distDashSearchTxns")} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-xl h-9 text-xs" />
           </div>
 
           {/* Transaction list */}
@@ -1167,7 +1168,7 @@ const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
           ) : filteredTxns.length === 0 ? (
             <Card className="p-6 border-0 shadow-card text-center">
               <FileText size={24} className="text-muted-foreground mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">{search ? "No matching transactions" : "No transactions yet"}</p>
+              <p className="text-xs text-muted-foreground">{search ? tr("distDashNoMatchTxns") : tr("distDashNoTxnsYet")}</p>
             </Card>
           ) : (
             <div className="space-y-1.5">
@@ -1188,7 +1189,7 @@ const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
                       <p className={`text-sm font-bold ${txnColors[t.type] || "text-foreground"}`}>
                         {["receive", "cashin", "addmoney"].includes(t.type) ? "+" : "−"}৳{fmt(t.amount)}
                       </p>
-                      {t.commission > 0 && <p className="text-[9px] text-primary">+৳{fmt(t.commission)} comm</p>}
+                      {t.commission > 0 && <p className="text-[9px] text-primary">+৳{fmt(t.commission)} {tr("distDashComm")}</p>}
                       <p className="text-[9px] text-muted-foreground">{new Date(t.created_at).toLocaleTimeString()}</p>
                     </div>
                   </div>
