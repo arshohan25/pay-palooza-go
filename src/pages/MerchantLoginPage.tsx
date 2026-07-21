@@ -213,34 +213,76 @@ export default function MerchantLoginPage() {
     | { kind: "error"; message: string }
   > => {
     const device_fp = await getDeviceFingerprint();
-    const { data, error } = await supabase.functions.invoke("merchant-login", {
-      body: {
-        phone: cleanedPhone,
-        pin: pinValue,
-        device_fp,
-        mode: loginMode,
-        ...extras,
-      },
-    });
+    const payload = {
+      phone: cleanedPhone,
+      pin: pinValue,
+      device_fp,
+      mode: loginMode,
+      ...extras,
+    };
 
-    const ctx: any = (error as any)?.context;
+    let data: any = null;
+    let error: any = null;
+    let ctx: any = null;
+    let status: number | undefined;
+    let headerRetry: number | null = null;
+
+    try {
+      const res = await supabase.functions.invoke("merchant-login", { body: payload });
+      data = res.data;
+      error = res.error;
+      ctx = (error as any)?.context ?? null;
+    } catch (e: any) {
+      error = e;
+    }
+
     let body: any = data ?? null;
-    // NOTE: ctx.body is a ReadableStream on the Response — never use it as the
-    // parsed body. Always read via .json() / .text().
     if (!body && typeof ctx?.json === "function") {
       try { body = await ctx.clone().json(); } catch {}
     }
     if (!body && typeof ctx?.text === "function") {
       try { body = JSON.parse(await ctx.clone().text()); } catch {}
     }
-    const status: number | undefined = ctx?.status;
-    const headerRetry = (() => {
+    status = ctx?.status;
+    headerRetry = (() => {
       try {
         const h = ctx?.headers?.get?.("retry-after");
         const n = h ? parseInt(h, 10) : NaN;
         return Number.isFinite(n) && n > 0 ? n : null;
       } catch { return null; }
     })();
+
+    // Fallback: functions.invoke throws FunctionsFetchError ("Failed to send a
+    // request to the Edge Function") on some mobile/PWA networks even though
+    // the endpoint is reachable. Retry once via raw fetch before surfacing.
+    const looksLikeFetchFailure =
+      !body && !ctx && error &&
+      /failed to send a request|failed to fetch|network|load failed/i.test(
+        String((error as any)?.message ?? ""),
+      );
+    if (looksLikeFetchFailure) {
+      try {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/merchant-login`;
+        const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey,
+            Authorization: `Bearer ${apikey}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        status = resp.status;
+        try { body = await resp.json(); } catch { body = null; }
+        const h = resp.headers.get("retry-after");
+        const n = h ? parseInt(h, 10) : NaN;
+        headerRetry = Number.isFinite(n) && n > 0 ? n : null;
+        error = null;
+      } catch (e: any) {
+        error = e;
+      }
+    }
 
     if (body?.locked || status === 429) {
       return {
@@ -262,7 +304,10 @@ export default function MerchantLoginPage() {
         message: body.message,
       };
     }
-    return { kind: "error", message: error?.message || "Sign-in failed" };
+    const msg = /failed to send a request|failed to fetch|load failed/i.test(String(error?.message ?? ""))
+      ? "Network issue reaching sign-in service. Check your connection and try again."
+      : (error?.message || "Sign-in failed");
+    return { kind: "error", message: msg };
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
