@@ -231,13 +231,13 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
           {/* Referenced transaction */}
           {dispute.transaction_id && (
             <div className="rounded-2xl border border-border/40 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Referenced transaction</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2">{t("dddReferencedTxn")}</p>
               {txnLoading ? (
                 <div className="text-[11px] text-muted-foreground flex items-center gap-2 py-2">
-                  <Loader2 size={12} className="animate-spin" /> Loading transaction…
+                  <Loader2 size={12} className="animate-spin" /> {t("dddLoadingTxn")}
                 </div>
               ) : !txn ? (
-                <p className="text-[11px] text-muted-foreground">Transaction not found or no longer accessible.</p>
+                <p className="text-[11px] text-muted-foreground">{t("dddTxnNotFound")}</p>
               ) : (
                 <div className="space-y-1.5 text-[11px]">
                   <div className="flex items-center justify-between">
@@ -246,11 +246,11 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
                   </div>
                   <p className="text-lg font-bold text-foreground">৳{Number(txn.amount).toFixed(2)}</p>
                   <div className="grid grid-cols-2 gap-1 pt-1 text-[10px] text-muted-foreground">
-                    <div>Ref: <span className="font-mono text-foreground">{txn.short_id || txn.reference || "—"}</span></div>
-                    <div>Fee: ৳{Number(txn.fee || 0).toFixed(2)}</div>
-                    {txn.commission > 0 && <div>Commission: ৳{Number(txn.commission).toFixed(2)}</div>}
+                    <div>{t("dddRef")}: <span className="font-mono text-foreground">{txn.short_id || txn.reference || "—"}</span></div>
+                    <div>{t("dddFee")}: ৳{Number(txn.fee || 0).toFixed(2)}</div>
+                    {txn.commission > 0 && <div>{t("dddCommission")}: ৳{Number(txn.commission).toFixed(2)}</div>}
                     <div>{new Date(txn.created_at).toLocaleString()}</div>
-                    {txn.recipient_name && <div className="col-span-2">To: {txn.recipient_name}</div>}
+                    {txn.recipient_name && <div className="col-span-2">{t("dddTo")}: {txn.recipient_name}</div>}
                     {txn.recipient_phone && <div className="col-span-2 font-mono">{txn.recipient_phone}</div>}
                     {txn.description && <div className="col-span-2">{txn.description}</div>}
                   </div>
