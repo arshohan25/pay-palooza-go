@@ -3395,11 +3395,11 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                               <div key={txn.id} className="flex items-center justify-between bg-background/60 rounded-lg px-2.5 py-2">
                                 <div>
                                   <p className="text-[10px] font-semibold text-foreground">৳{fmt(txn.amount)}</p>
-                                  <p className="text-[8px] text-muted-foreground">{txn.recipient_name || "Customer"}</p>
+                                  <p className="text-[8px] text-muted-foreground">{txn.recipient_name || t("plmcCustomer")}</p>
                                 </div>
                                 <div className="text-right">
                                   <p className="text-[8px] text-muted-foreground">
-                                    {new Date(txn.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short" })}
+                                    {new Date(txn.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-BD", { day: "numeric", month: "short" })}
                                   </p>
                                   <p className="text-[7px] text-muted-foreground font-mono">{txn.short_id}</p>
                                 </div>
