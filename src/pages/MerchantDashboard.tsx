@@ -3329,7 +3329,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                       )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => toggleActive(link)} className="tap-target text-muted-foreground hover:text-primary transition-colors" title={link.is_active ? "Revoke" : "Reactivate"}>
+                      <button onClick={() => toggleActive(link)} className="tap-target text-muted-foreground hover:text-primary transition-colors" title={link.is_active ? t("plmcRevoke") : t("plmcReactivate")}>
                         {link.is_active ? <Lock size={13} /> : <CheckCircle2 size={13} />}
                       </button>
                       <button onClick={() => removeLink(link.id)} className="tap-target text-muted-foreground hover:text-destructive transition-colors">
