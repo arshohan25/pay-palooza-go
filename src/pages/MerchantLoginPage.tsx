@@ -304,7 +304,10 @@ export default function MerchantLoginPage() {
         message: body.message,
       };
     }
-    return { kind: "error", message: error?.message || "Sign-in failed" };
+    const msg = /failed to send a request|failed to fetch|load failed/i.test(String(error?.message ?? ""))
+      ? "Network issue reaching sign-in service. Check your connection and try again."
+      : (error?.message || "Sign-in failed");
+    return { kind: "error", message: msg };
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
