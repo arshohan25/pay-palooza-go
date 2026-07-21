@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useUserRoles } from "@/hooks/use-user-roles";
+
+const EXPORT_ROLES = new Set(["admin", "audit", "compliance", "finance"]);
 
 type PaybillRow = {
   transaction_id: string;
