@@ -57,12 +57,14 @@ function readPersisted(key: string): { division: string; value: string[] } | nul
 export default function DistrictMultiSelect({
   value,
   onChange,
-  placeholder = "Select districts",
+  placeholder,
   disabled,
   className,
   showDivisionField = true,
   persistKey,
 }: Props) {
+  const { t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t("dmsSelectDistricts");
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
