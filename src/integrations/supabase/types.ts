@@ -8526,6 +8526,7 @@ export type Database = {
           retry_after_seconds: number
         }[]
       }
+      check_platform_banks_grants: { Args: never; Returns: Json }
       check_referral_milestones: {
         Args: { p_referee_id: string }
         Returns: undefined
