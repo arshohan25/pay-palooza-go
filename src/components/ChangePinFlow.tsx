@@ -144,7 +144,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
   const stepMeta = {
     current: { heading: t("enterCurrentPin"), sub: t("confirmCurrentPinSub"), gradient: "gradient-send", iconGradient: "gradient-send" },
-    otp:     { heading: "Verify it's you", sub: `Enter the 6-digit code we sent to ${getPhone() || "your phone"}`, gradient: "gradient-send", iconGradient: "gradient-send" },
+    otp:     { heading: t("cpfOtpHeading"), sub: t("cpfOtpSubTo").replace("{phone}", getPhone() || t("cpfOtpSubGeneric")), gradient: "gradient-send", iconGradient: "gradient-send" },
     new:     { heading: t("setNewPin"), sub: t("chooseStrongPin"), gradient: "gradient-primary", iconGradient: "gradient-primary" },
     confirm: { heading: t("confirmNewPin"), sub: t("reenterNewPin"), gradient: "gradient-addmoney", iconGradient: "gradient-addmoney" },
     success: { heading: "", sub: "", gradient: "", iconGradient: "" },
@@ -175,11 +175,9 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
   const applyLockout = (minutes: number, message?: string) => {
     const mins = Math.max(1, Number(minutes) || 15);
-    lockout.lock(
-      mins,
-      message || `Too many failed attempts. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`,
-    );
-    setOtpError(message || `Too many failed attempts. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`);
+    const msg = message || t("cpfTooManyAttempts").replace("{mins}", String(mins));
+    lockout.lock(mins, msg);
+    setOtpError(msg);
     setOtp("");
     haptics.error();
   };
@@ -187,7 +185,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const sendOtp = async () => {
     if (isLocked) return;
     const phone = getPhone();
-    if (!phone) { setOtpError("Missing phone number"); return; }
+    if (!phone) { setOtpError(t("cpfMissingPhone")); return; }
     setOtpSending(true); setOtpError(""); setDevOtp(null);
     try {
       const { data, error: invokeErr } = await supabase.functions.invoke("send-otp", {
@@ -199,7 +197,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       if (payload?.dev_otp) setDevOtp(String(payload.dev_otp));
       setResendIn(RESEND_SECONDS);
     } catch (err: any) {
-      setOtpError(err?.message || "Failed to send code");
+      setOtpError(err?.message || t("cpfFailedToSendCode"));
     } finally {
       setOtpSending(false);
     }
@@ -232,7 +230,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
       if (!payload?.verified) {
         haptics.error();
-        setOtpError(payload?.error || "Incorrect code");
+        setOtpError(payload?.error || t("cpfIncorrectCode"));
         setTimeout(() => setOtp(""), 500);
         return;
       }
@@ -240,7 +238,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       goTo("new");
     } catch (err: any) {
       haptics.error();
-      setOtpError(err?.message || "Verification failed");
+      setOtpError(err?.message || t("cpfVerificationFailed"));
       setTimeout(() => setOtp(""), 500);
     } finally {
       setOtpVerifying(false);
@@ -410,15 +408,15 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                   >
                     <ShieldAlert size={30} />
                   </motion.div>
-                  <h2 className="text-xl font-bold text-foreground">Verification locked</h2>
+                  <h2 className="text-xl font-bold text-foreground">{t("cpfLockedTitle")}</h2>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    Too many incorrect codes. For your security, verification is temporarily paused.
+                    {t("cpfLockedSub")}
                   </p>
                 </div>
 
                 <div className="mx-auto rounded-2xl border border-destructive/25 bg-destructive/[0.06] px-5 py-4 flex flex-col items-center gap-2 min-w-[220px]">
                   <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-destructive/80 font-semibold">
-                    <Timer size={12} /> Try again in
+                    <Timer size={12} /> {t("cpfTryAgainIn")}
                   </div>
                   <div className="font-mono text-3xl font-bold tabular-nums text-destructive">
                     {lockedMmSs}
@@ -439,7 +437,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                   onClick={() => setShowLockoutHelp(v => !v)}
                   className="mx-auto flex items-center gap-1.5 text-xs font-semibold text-primary"
                 >
-                  <HelpCircle size={13} /> Why is OTP locked?
+                  <HelpCircle size={13} /> {t("cpfWhyLocked")}
                 </button>
                 <AnimatePresence>
                   {showLockoutHelp && (
@@ -449,28 +447,21 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                       exit={{ opacity: 0, height: 0 }}
                       className="mx-4 rounded-xl bg-muted/60 border border-border px-4 py-3 text-[11.5px] leading-relaxed text-muted-foreground space-y-1.5"
                     >
-                      <p>
-                        For your protection, OTP verification is temporarily
-                        paused after several incorrect codes. This helps stop
-                        anyone from guessing your codes.
-                      </p>
-                      <p>
-                        Wait for the timer to end, then request a fresh code.
-                        If this keeps happening, contact support.
-                      </p>
+                      <p>{t("cpfLockedHelp1")}</p>
+                      <p>{t("cpfLockedHelp2")}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <div className="text-center space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    You can resume verification once the timer ends.
+                    {t("cpfResumeHint")}
                   </p>
                   <button
                     onClick={onClose}
                     className="text-xs font-semibold text-primary active:scale-95 transition-transform"
                   >
-                    Close and return later
+                    {t("cpfCloseReturn")}
                   </button>
                 </div>
               </div>
@@ -508,12 +499,12 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
                   {otpSending && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <Loader2 size={12} className="animate-spin" /> Sending code…
+                      <Loader2 size={12} className="animate-spin" /> {t("cpfSendingCode")}
                     </p>
                   )}
                   {otpVerifying && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <Loader2 size={12} className="animate-spin" /> Verifying…
+                      <Loader2 size={12} className="animate-spin" /> {t("cpfVerifying")}
                     </p>
                   )}
                   {otpError && (
@@ -522,7 +513,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                     </p>
                   )}
                   {devOtp && (
-                    <p className="text-[10px] text-amber-500 font-mono">DEV code: {devOtp}</p>
+                    <p className="text-[10px] text-amber-500 font-mono">{t("cpfDevCode")}: {devOtp}</p>
                   )}
                 </div>
 
@@ -533,7 +524,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                     disabled={otpSending || resendIn > 0 || isLocked}
                     className="text-xs font-semibold text-primary disabled:text-muted-foreground disabled:opacity-60"
                   >
-                    {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
+                    {resendIn > 0 ? t("cpfResendIn").replace("{s}", String(resendIn)) : t("cpfResendCode")}
                   </button>
                 </div>
               </div>
