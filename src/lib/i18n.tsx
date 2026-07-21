@@ -4524,6 +4524,22 @@ const translations = {
   // Daily limit badge
   dlbReached: { en: "Daily limit reached", bn: "দৈনিক সীমা শেষ" },
   dlbLeftToday: { en: "৳{amt} left today", bn: "আজ ৳{amt} বাকি" },
+  // Agent transaction detail modal
+  atdmTitle: { en: "Transaction Details", bn: "লেনদেনের বিবরণ" },
+  atdmType: { en: "Type", bn: "ধরন" },
+  atdmName: { en: "Name", bn: "নাম" },
+  atdmPhone: { en: "Phone", bn: "ফোন" },
+  atdmAmount: { en: "Amount", bn: "পরিমাণ" },
+  atdmCommission: { en: "Commission", bn: "কমিশন" },
+  atdmBalanceAfter: { en: "Balance After", bn: "লেনদেন পরবর্তী ব্যালেন্স" },
+  atdmDescription: { en: "Description", bn: "বিবরণ" },
+  atdmDate: { en: "Date", bn: "তারিখ" },
+  atdmTxnId: { en: "Transaction ID", bn: "লেনদেন আইডি" },
+  atdmDlReceipt: { en: "Download Receipt (PDF)", bn: "রশিদ ডাউনলোড (PDF)" },
+  atdmDlPending: { en: "Download Pending Advice (PDF)", bn: "পেন্ডিং অ্যাডভাইস ডাউনলোড (PDF)" },
+  atdmDlFailed: { en: "Download Failed Advice (PDF)", bn: "ব্যর্থ অ্যাডভাইস ডাউনলোড (PDF)" },
+  atdmShare: { en: "Share Receipt", bn: "রশিদ শেয়ার" },
+  atdmDone: { en: "Done", bn: "সম্পন্ন" },
 
   lpTopReached: { en: "You've reached the top!", bn: "আপনি সর্বোচ্চ পৌঁছেছেন!" },
   lpTopDesc: { en: "You are enjoying the highest EasyPay Club tier available.", bn: "আপনি সর্বোচ্চ ইজিপে ক্লাব টায়ার উপভোগ করছেন।" },
