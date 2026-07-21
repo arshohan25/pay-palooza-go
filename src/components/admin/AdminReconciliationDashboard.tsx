@@ -71,6 +71,8 @@ function downloadCsv(filename: string, csv: string) {
 }
 
 export default function AdminReconciliationDashboard() {
+  const { roles } = useUserRoles();
+  const canExport = roles.some((r) => EXPORT_ROLES.has(r));
   const [paybills, setPaybills] = useState<PaybillRow[]>([]);
   const [donations, setDonations] = useState<DonationRow[]>([]);
   const [loading, setLoading] = useState(true);
