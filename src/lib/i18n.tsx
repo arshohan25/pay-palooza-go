@@ -5386,6 +5386,20 @@ const translations = {
   ddpSelectDistrict: { en: "Select district", bn: "জেলা নির্বাচন করুন" },
   ddpDistrictHint: { en: "Choose a division to enable districts.", bn: "জেলা সক্রিয় করতে একটি বিভাগ নির্বাচন করুন।" },
   ddpLoadError: { en: "Could not load districts. Please try again.", bn: "জেলা লোড করা যায়নি। আবার চেষ্টা করুন।" },
+
+  // DistrictMultiSelect
+  dmsSelectDistricts: { en: "Select districts", bn: "জেলা নির্বাচন করুন" },
+  dmsSearchDistrict: { en: "Search district or code…", bn: "জেলা বা কোড খুঁজুন…" },
+  dmsNoDistrictFound: { en: "No district found.", bn: "কোনো জেলা পাওয়া যায়নি।" },
+  dmsDivision: { en: "Division", bn: "বিভাগ" },
+  dmsDistricts: { en: "Districts", bn: "জেলাসমূহ" },
+  dmsLoading: { en: "Loading…", bn: "লোড হচ্ছে…" },
+  dmsSelectDivision: { en: "Select division", bn: "বিভাগ নির্বাচন করুন" },
+  dmsLoadingDistricts: { en: "Loading districts…", bn: "জেলা লোড হচ্ছে…" },
+  dmsSelectDivisionFirst: { en: "Select a division first", bn: "প্রথমে একটি বিভাগ নির্বাচন করুন" },
+  dmsSelectedOne: { en: "1 district selected", bn: "১টি জেলা নির্বাচিত" },
+  dmsSelectedMany: { en: "{count} districts selected", bn: "{count}টি জেলা নির্বাচিত" },
+  dmsRemove: { en: "Remove {name}", bn: "{name} সরান" },
 } as const;
 
 
