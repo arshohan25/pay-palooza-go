@@ -14,6 +14,10 @@ import { Search, RotateCcw, Loader2, RefreshCw, ShieldAlert, CheckCircle2 } from
 import { format } from "date-fns";
 import { toast } from "sonner";
 import TransactionStatusTimeline from "@/components/TransactionStatusTimeline";
+import { useUserRoles } from "@/hooks/use-user-roles";
+
+const REFUND_ROLES = new Set(["admin", "finance", "compliance"]);
+const DISPUTE_ROLES = new Set(["admin", "finance", "compliance", "risk"]);
 
 type OrphanRow = {
   transaction_id: string;
