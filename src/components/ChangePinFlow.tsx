@@ -416,7 +416,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
                 <div className="mx-auto rounded-2xl border border-destructive/25 bg-destructive/[0.06] px-5 py-4 flex flex-col items-center gap-2 min-w-[220px]">
                   <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-destructive/80 font-semibold">
-                    <Timer size={12} /> Try again in
+                    <Timer size={12} /> {t("cpfTryAgainIn")}
                   </div>
                   <div className="font-mono text-3xl font-bold tabular-nums text-destructive">
                     {lockedMmSs}
