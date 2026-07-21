@@ -188,12 +188,12 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
               </div>
               {dispute.transaction_id && (
                 <div className="flex items-center gap-1 text-muted-foreground col-span-2">
-                  <Hash size={10} /> TX <span className="font-mono">{dispute.transaction_id}</span>
+                  <Hash size={10} /> {t("dddTx")} <span className="font-mono">{dispute.transaction_id}</span>
                 </div>
               )}
               <div className="flex items-center gap-1 text-muted-foreground">
                 <ShieldCheck size={10} />
-                {dispute.assigned_to ? "Handler assigned" : "Awaiting handler"}
+                {dispute.assigned_to ? t("dddHandlerAssigned") : t("dddAwaitingHandler")}
               </div>
             </div>
             {dispute.evidence_url && (
@@ -201,14 +201,14 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
                 onClick={() => openEvidence(dispute.evidence_url!)}
                 className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
               >
-                <Paperclip size={11} /> View evidence
+                <Paperclip size={11} /> {t("dddViewEvidence")}
               </button>
             )}
           </div>
 
           {/* Timeline */}
           <div className="rounded-2xl border border-border/40 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-3">Timeline</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-3">{t("dddTimeline")}</p>
             <div className="flex items-start justify-between gap-1">
               {steps.map((s, i) => {
                 const Icon = s.icon;
