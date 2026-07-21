@@ -118,24 +118,8 @@ const AgentBankTransfer = () => {
     setDeleteTarget(null);
   };
 
-  const handlePinSubmit = async () => {
-    if (pin.length !== 4) { setPinError("Enter your 4-digit PIN."); return; }
-    setProcessing(true);
-    setPinError("");
-    try {
-      const valid = await verifyPin(pin);
-      if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setProcessing(false); return; }
-      setPinVerified(true);
-      setStep("confirm");
-    } catch (e: any) {
-      setPinError(e.message || "Verification failed.");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleSlideConfirm = async () => {
-    if (processing || !selectedAccount || !pinVerified) return;
+  const executeTransaction = async () => {
+    if (!selectedAccount) return;
     setProcessing(true);
     try {
       const txType = mode === "send" ? "banktransfer" : "addmoney";
@@ -153,10 +137,33 @@ const AgentBankTransfer = () => {
       toast({ title: `Bank ${mode === "send" ? "Transfer" : "Deposit"} Successful`, description: `৳${amount} ${mode === "send" ? "sent to" : "received from"} ${selectedAccount.bank_name}` });
     } catch (err: any) {
       toast({ title: "Failed", description: err.message, variant: "destructive" });
+      throw err;
     } finally {
       setProcessing(false);
     }
   };
+
+  const handlePinSubmit = async () => {
+    if (pin.length !== 4) { setPinError("Enter your 4-digit PIN."); return; }
+    setProcessing(true);
+    setPinError("");
+    try {
+      const valid = await verifyPin(pin);
+      if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setProcessing(false); return; }
+      setPinVerified(true);
+      setProcessing(false);
+      await executeTransaction();
+    } catch (e: any) {
+      setPinError(e.message || "Verification failed.");
+      setProcessing(false);
+    }
+  };
+
+  const handleSlideConfirm = async () => {
+    if (processing || !selectedAccount) return;
+    setStep("pin");
+  };
+
 
   const reset = () => {
     setStep("select");
