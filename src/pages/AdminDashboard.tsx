@@ -38,6 +38,7 @@ const getGreetingKey = (): TranslationKey => {
 import AdminChargeConfig from "@/components/admin/AdminChargeConfig";
 import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
 import AdminDisputeResolution from "@/components/admin/AdminDisputeResolution";
+import AdminPaybillDisputesQueue from "@/components/admin/AdminPaybillDisputesQueue";
 import AdminReporting from "@/components/admin/AdminReporting";
 import AdminSupportDashboard from "@/components/admin/AdminSupportDashboard";
 import AdminPinResetQueue from "@/components/admin/AdminPinResetQueue";
@@ -283,6 +284,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "operations_wall", label: "Operations Wall", icon: Activity },
       { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
+      { id: "paybill_disputes", label: "Paybill Disputes", icon: Scale },
       { id: "complaints", label: "Complaints", icon: AlertTriangle },
       { id: "kyc", label: "KYC", icon: ScanFace },
       { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
@@ -1968,6 +1970,7 @@ export default function AdminDashboard() {
 
         {/* ═══ DISPUTE RESOLUTION ═══ */}
         {activeTab === "disputes" && <AdminDisputeResolution />}
+        {activeTab === "paybill_disputes" && <AdminPaybillDisputesQueue />}
 
         {/* ═══ LIVE CHAT ═══ */}
         {activeTab === "live_chat" && <AdminSupportDashboard mode="live_chat" />}
