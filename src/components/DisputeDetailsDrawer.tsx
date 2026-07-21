@@ -111,7 +111,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
 
   const openEvidence = async (path: string) => {
     const { data, error } = await supabase.storage.from("dispute-evidence").createSignedUrl(path, 60);
-    if (error) return toast({ title: "Cannot open file", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: t("dddCannotOpen"), description: error.message, variant: "destructive" });
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
