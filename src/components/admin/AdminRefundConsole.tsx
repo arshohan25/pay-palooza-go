@@ -94,17 +94,37 @@ export default function AdminRefundConsole() {
 
   const runBulkRefund = async () => {
     if (!selected.size) return;
+    if (!canRefund) { toast.error("You don't have permission to approve refunds"); return; }
     setProcessing(true);
-    let ok = 0, failed = 0;
+    let ok = 0, failed = 0, locked = 0;
     for (const id of Array.from(selected)) {
       const { error } = await supabase.rpc("admin_refund_transaction" as any, { p_txn_id: id, p_reason: reason });
-      if (error) { failed++; console.error("refund failed:", id, error.message); } else { ok++; }
+      if (error) {
+        if (/already in progress|already refunded|already reversed/i.test(error.message)) locked++;
+        else failed++;
+        console.error("refund failed:", id, error.message);
+      } else { ok++; }
     }
     setProcessing(false);
     setConfirmOpen(false);
     if (ok) toast.success(`Refunded ${ok} transaction${ok === 1 ? "" : "s"}`);
+    if (locked) toast.info(`${locked} skipped — already refunded or locked`);
     if (failed) toast.error(`${failed} refund${failed === 1 ? "" : "s"} failed — see console`);
     load();
+  };
+
+  const openDispute = async (settlementId: string | null, txnId: string) => {
+    if (!settlementId) { toast.error("This paybill has no settlement row to dispute"); return; }
+    if (!canDispute) { toast.error("You don't have permission to open disputes"); return; }
+    const reason = window.prompt("Reason for dispute (required)");
+    if (!reason?.trim()) return;
+    setDisputing(txnId);
+    const { error } = await supabase.rpc("admin_open_paybill_dispute" as any, {
+      p_settlement_id: settlementId, p_reason: reason.trim(),
+    });
+    setDisputing(null);
+    if (error) toast.error(error.message);
+    else { toast.success("Dispute opened — awaiting provider evidence"); load(); }
   };
 
   return (
