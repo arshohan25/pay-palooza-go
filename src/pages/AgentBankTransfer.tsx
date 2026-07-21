@@ -452,7 +452,10 @@ const AgentBankTransfer = () => {
                 <div>
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-semibold">Bank Name</Label>
-                    <BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" />
+                    <div className="flex items-center gap-2">
+                      <BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" />
+                      <RefreshBanksButton refetch={refetchBanks} lastSyncedAt={banksLastSyncedAt} liveUpdateKey={banksLiveKey} />
+                    </div>
                   </div>
                   <Popover open={bankDropdownOpen} onOpenChange={setBankDropdownOpen}>
                     <PopoverTrigger asChild>
