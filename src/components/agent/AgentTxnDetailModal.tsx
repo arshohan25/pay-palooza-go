@@ -8,6 +8,7 @@ import { getAgentTxnLabel, isAgentTxnCredit } from "@/lib/agentTransactions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
 import { downloadTxnReceiptPdf } from "@/lib/txnReceiptPdf";
+import { useI18n } from "@/lib/i18n";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(Number(n) || 0));
@@ -45,6 +46,7 @@ const inferRpc = (tx: AgentTxnDetailTx): string => {
 import { subscribeRealtime } from "@/lib/realtimeManager";
 
 const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx: initialTx, onClose, onShare }, ref) => {
+  const { t, lang } = useI18n();
   const [tx, setTx] = useState<AgentTxnDetailTx>(initialTx);
   useEffect(() => { setTx(initialTx); }, [initialTx]);
 
@@ -118,17 +120,18 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx: initi
   };
 
   const rows: { label: string; value: string }[] = [
-    { label: "Type", value: displayType },
-    ...(tx.recipient_name ? [{ label: "Name", value: tx.recipient_name }] : []),
-    ...(tx.recipient_phone ? [{ label: "Phone", value: tx.recipient_phone }] : []),
-    { label: "Amount", value: `৳${fmt(tx.amount)}` },
+    { label: t("atdmType"), value: displayType },
+    ...(tx.recipient_name ? [{ label: t("atdmName"), value: tx.recipient_name }] : []),
+    ...(tx.recipient_phone ? [{ label: t("atdmPhone"), value: tx.recipient_phone }] : []),
+    { label: t("atdmAmount"), value: `৳${fmt(tx.amount)}` },
     ...(isCashFlow || Number(tx.commission) > 0
-      ? [{ label: "Commission", value: Number(tx.commission) > 0 ? `+৳${fmt(tx.commission!)}` : "৳0.00" }]
+      ? [{ label: t("atdmCommission"), value: Number(tx.commission) > 0 ? `+৳${fmt(tx.commission!)}` : "৳0.00" }]
       : []),
-    ...(tx.balance_after != null ? [{ label: "Balance After", value: `৳${fmt(tx.balance_after)}` }] : []),
-    ...(tx.description ? [{ label: "Description", value: tx.description }] : []),
-    { label: "Date", value: new Date(tx.created_at).toLocaleString("en-BD") },
+    ...(tx.balance_after != null ? [{ label: t("atdmBalanceAfter"), value: `৳${fmt(tx.balance_after)}` }] : []),
+    ...(tx.description ? [{ label: t("atdmDescription"), value: tx.description }] : []),
+    { label: t("atdmDate"), value: new Date(tx.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-BD") },
   ];
+
 
   return (
     <div ref={ref}>
@@ -145,7 +148,7 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx: initi
         <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 rounded-full bg-muted-foreground/25" /></div>
         <div className="px-5 pb-8 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-extrabold text-foreground">Transaction Details</h3>
+            <h3 className="text-base font-extrabold text-foreground">{t("atdmTitle")}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
               <X size={15} />
             </button>
@@ -166,7 +169,7 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx: initi
               ))}
             </div>
             <div className="px-4 py-3 border-t border-border/50 bg-muted/30">
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">Transaction ID</p>
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">{t("atdmTxnId")}</p>
               <p className="text-[10px] font-mono font-bold text-primary break-all mt-0.5">{tx.short_id || tx.id}</p>
             </div>
           </Card>
@@ -270,18 +273,18 @@ const AgentTxnDetailModal = React.forwardRef<HTMLDivElement, Props>(({ tx: initi
           >
             <Download size={14} />
             {status === "completed" || status === "success"
-              ? "Download Receipt (PDF)"
+              ? t("atdmDlReceipt")
               : status === "pending" || status === "processing"
-                ? "Download Pending Advice (PDF)"
-                : "Download Failed Advice (PDF)"}
+                ? t("atdmDlPending")
+                : t("atdmDlFailed")}
           </Button>
 
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => onShare(tx)} className="rounded-xl h-11 text-xs font-bold gap-2">
-              <Share2 size={14} /> Share Receipt
+              <Share2 size={14} /> {t("atdmShare")}
             </Button>
             <Button onClick={onClose} className="gradient-primary text-primary-foreground rounded-xl h-11 text-xs font-bold">
-              Done
+              {t("atdmDone")}
             </Button>
           </div>
         </div>
