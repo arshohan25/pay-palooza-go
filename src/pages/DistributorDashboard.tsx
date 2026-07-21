@@ -973,6 +973,7 @@ const TerritoryView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Earnings View ── */
 const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents: AgentRow[] }) => {
+  const { t } = useI18n();
   const totalNetworkCommission = agents.reduce((s, a) => s + a.commission_earned, 0);
   const distRate = distInfo?.commission_rate ?? 0.002;
   const estimatedEarnings = totalNetworkCommission * distRate * 100;
@@ -980,25 +981,25 @@ const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents:
   return (
     <div className="space-y-4">
       <Card className="p-5 border-0 shadow-card" style={{ background: "linear-gradient(150deg, hsl(217 80% 50%) 0%, hsl(226 75% 40%) 100%)" }}>
-        <p className="text-xs text-primary-foreground/80 font-medium">Estimated Earnings</p>
+        <p className="text-xs text-primary-foreground/80 font-medium">{t("distDashEstimatedEarnings")}</p>
         <p className="text-3xl font-bold text-primary-foreground mt-1">৳{fmt(Math.round(estimatedEarnings))}</p>
-        <p className="text-[10px] text-primary-foreground/70 mt-1">Commission Rate: {(distRate * 100).toFixed(2)}%</p>
+        <p className="text-[10px] text-primary-foreground/70 mt-1">{t("distDashCommRate")}: {(distRate * 100).toFixed(2)}%</p>
       </Card>
 
       <Card className="p-5 border-0 shadow-card">
-        <h3 className="text-sm font-bold text-foreground mb-3">Revenue Breakdown</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">{t("distDashRevenueBreakdown")}</h3>
         <div className="space-y-3">
           {[
-            { source: "Cash Out Commission", share: "40%", amount: Math.round(estimatedEarnings * 0.4) },
-            { source: "Cash In Commission", share: "25%", amount: Math.round(estimatedEarnings * 0.25) },
-            { source: "Bill Pay Commission", share: "15%", amount: Math.round(estimatedEarnings * 0.15) },
-            { source: "Agent Onboarding", share: "10%", amount: Math.round(estimatedEarnings * 0.1) },
-            { source: "Other", share: "10%", amount: Math.round(estimatedEarnings * 0.1) },
+            { source: t("distDashSrcCashOut"), share: "40%", amount: Math.round(estimatedEarnings * 0.4) },
+            { source: t("distDashSrcCashIn"), share: "25%", amount: Math.round(estimatedEarnings * 0.25) },
+            { source: t("distDashSrcBillPay"), share: "15%", amount: Math.round(estimatedEarnings * 0.15) },
+            { source: t("distDashSrcOnboarding"), share: "10%", amount: Math.round(estimatedEarnings * 0.1) },
+            { source: t("distDashSrcOther"), share: "10%", amount: Math.round(estimatedEarnings * 0.1) },
           ].map(r => (
             <div key={r.source} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
               <div>
                 <p className="text-xs font-semibold text-foreground">{r.source}</p>
-                <p className="text-[10px] text-muted-foreground">{r.share} of total</p>
+                <p className="text-[10px] text-muted-foreground">{r.share} {t("distDashOfTotal")}</p>
               </div>
               <p className="text-xs font-bold text-primary">৳{fmt(r.amount)}</p>
             </div>
@@ -1007,9 +1008,9 @@ const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents:
       </Card>
 
       <Card className="p-5 border-0 shadow-card">
-        <h3 className="text-sm font-bold text-foreground mb-3">Agent Performance</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">{t("distDashAgentPerformance")}</h3>
         {agents.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-4">No agents yet</p>
+          <p className="text-xs text-muted-foreground text-center py-4">{t("distDashNoAgentsYet")}</p>
         ) : (
           <div className="space-y-2">
             {[...agents].sort((a, b) => b.commission_earned - a.commission_earned).map(ag => {
@@ -1017,7 +1018,7 @@ const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents:
               return (
                 <div key={ag.id} className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-semibold text-foreground">{ag.business_name || "Agent"}</p>
+                    <p className="text-[10px] font-semibold text-foreground">{ag.business_name || t("distDashAgent")}</p>
                     <p className="text-[10px] text-muted-foreground">৳{fmt(ag.commission_earned)}</p>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
