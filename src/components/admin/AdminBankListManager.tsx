@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Landmark, Plus, Trash2, Search } from "lucide-react";
+import { Landmark, Plus, Trash2, Search, Upload, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { usePlatformBanks } from "@/hooks/use-platform-banks";
+import { usePlatformBanks, PlatformBank } from "@/hooks/use-platform-banks";
 
 async function auditLog(action: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -16,6 +16,88 @@ async function auditLog(action: string, entityId: string, details: any) {
       actor_id: session.user.id, action, entity_type: "platform_bank", entity_id: entityId, details
     }).then();
   }
+}
+
+// Signed URLs max 1 year. Store the URL directly.
+const SIGNED_URL_TTL = 60 * 60 * 24 * 365; // 1 year
+
+async function uploadLogoAndGetUrl(file: File, bankId: string): Promise<string> {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+  const path = `${bankId}/${Date.now()}.${ext}`;
+  const { error: upErr } = await supabase.storage
+    .from("bank-logos")
+    .upload(path, file, { upsert: true, contentType: file.type, cacheControl: "31536000" });
+  if (upErr) throw upErr;
+  const { data, error: signErr } = await supabase.storage
+    .from("bank-logos")
+    .createSignedUrl(path, SIGNED_URL_TTL);
+  if (signErr || !data?.signedUrl) throw signErr ?? new Error("Sign failed");
+  return data.signedUrl;
+}
+
+function BankLogoUploader({ bank, onChanged }: { bank: PlatformBank; onChanged: () => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 500 * 1024) {
+      toast.error("Logo must be under 500KB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const url = await uploadLogoAndGetUrl(file, bank.id);
+      const { error } = await supabase.from("platform_banks").update({ logo_url: url } as any).eq("id", bank.id);
+      if (error) throw error;
+      auditLog("upload_bank_logo", bank.id, { name: bank.name });
+      toast.success(`Logo updated for ${bank.name}`);
+      onChanged();
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  const clearLogo = async () => {
+    if (!confirm(`Remove logo for ${bank.name}?`)) return;
+    await supabase.from("platform_banks").update({ logo_url: null } as any).eq("id", bank.id);
+    auditLog("remove_bank_logo", bank.id, { name: bank.name });
+    toast.success("Logo removed");
+    onChanged();
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 shrink-0">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+        className="hidden"
+        onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+      />
+      <Button
+        size="icon"
+        variant="ghost"
+        className="w-7 h-7 text-muted-foreground hover:text-primary"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+        title={bank.logo_url ? "Replace logo" : "Upload logo"}
+      >
+        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+      </Button>
+      {bank.logo_url && (
+        <Button size="icon" variant="ghost" className="w-7 h-7 text-muted-foreground hover:text-destructive" onClick={clearLogo} title="Remove logo">
+          <X className="w-3.5 h-3.5" />
+        </Button>
+      )}
+    </div>
+  );
 }
 
 export default function AdminBankListManager() {
@@ -85,6 +167,7 @@ export default function AdminBankListManager() {
               <Plus className="w-4 h-4" />
             </Button>
           </div>
+          <p className="text-[10px] text-muted-foreground">After adding, upload a logo from the list below (PNG/JPG/SVG, ≤500KB).</p>
         </CardContent>
       </Card>
 
@@ -99,19 +182,26 @@ export default function AdminBankListManager() {
         <CardContent className="p-0 max-h-[400px] overflow-y-auto">
           <div className="divide-y divide-border/50">
             {filtered.map(b => (
-              <div key={b.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/30">
+              <div key={b.id} className="flex items-center justify-between px-3 py-3 hover:bg-muted/30 gap-2">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-[10px] font-bold text-primary">{b.short_code.slice(0, 3)}</span>
-                  </div>
+                  {b.logo_url ? (
+                    <div className="w-9 h-9 rounded-lg bg-white border border-border/40 overflow-hidden shrink-0 flex items-center justify-center">
+                      <img src={b.logo_url} alt={b.name} className="w-full h-full object-contain" />
+                    </div>
+                  ) : (
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-[10px] font-bold text-primary">{b.short_code.slice(0, 3)}</span>
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-foreground truncate">{b.name}</p>
                     <p className="text-[10px] text-muted-foreground">{b.short_code}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
+                  <BankLogoUploader bank={b} onChanged={refetch} />
                   <Badge variant={b.is_active ? "default" : "secondary"} className="text-[10px]">
-                    {b.is_active ? "Active" : "Off"}
+                    {b.is_active ? "On" : "Off"}
                   </Badge>
                   <Switch checked={b.is_active} onCheckedChange={() => toggleBank(b.id, b.is_active)} />
                   <Button size="icon" variant="ghost" className="w-7 h-7 text-destructive/70 hover:text-destructive" onClick={() => deleteBank(b.id, b.name)}>
@@ -124,7 +214,7 @@ export default function AdminBankListManager() {
           {!loading && filtered.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No banks found</p>}
         </CardContent>
       </Card>
-      <p className="text-[10px] text-muted-foreground text-center">{banks.length} banks total · {banks.filter(b => b.is_active).length} active</p>
+      <p className="text-[10px] text-muted-foreground text-center">{banks.length} banks total · {banks.filter(b => b.is_active).length} active · {banks.filter(b => b.logo_url).length} with logos</p>
     </div>
   );
 }
