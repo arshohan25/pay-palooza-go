@@ -3267,13 +3267,13 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
           <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-            <Sparkles size={14} className="text-primary" /> How It Works
+            <Sparkles size={14} className="text-primary" /> {t("plmcHowItWorks")}
           </h3>
           <div className="space-y-3">
             {[
-              { step: "1", title: "Create a link", desc: "Set amount & note, generate a unique payment link" },
-              { step: "2", title: "Share with customer", desc: "Send via SMS, WhatsApp, email, or any messenger" },
-              { step: "3", title: "Get paid instantly", desc: "Customer pays through the link, money hits your account" },
+              { step: "1", title: t("plmcStep1Title"), desc: t("plmcStep1Desc") },
+              { step: "2", title: t("plmcStep2Title"), desc: t("plmcStep2Desc") },
+              { step: "3", title: t("plmcStep3Title"), desc: t("plmcStep3Desc") },
             ].map(s => (
               <div key={s.step} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
