@@ -153,7 +153,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
 
   const handleSlideConfirm = handlePinSubmit;
 
-  const selectedBank = BANGLADESH_BANKS.find(b => b.name === bankName);
+  const selectedBank = availableBanks.find(b => b.name === bankName);
 
   return (
     <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
