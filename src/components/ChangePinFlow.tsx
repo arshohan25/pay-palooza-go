@@ -185,7 +185,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const sendOtp = async () => {
     if (isLocked) return;
     const phone = getPhone();
-    if (!phone) { setOtpError("Missing phone number"); return; }
+    if (!phone) { setOtpError(t("cpfMissingPhone")); return; }
     setOtpSending(true); setOtpError(""); setDevOtp(null);
     try {
       const { data, error: invokeErr } = await supabase.functions.invoke("send-otp", {
