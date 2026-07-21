@@ -170,6 +170,20 @@ export default function AdminBankListManager() {
     refetch();
   };
 
+  const toggleAudience = async (bank: PlatformBank, audience: "customer" | "agent" | "merchant") => {
+    const col = `show_for_${audience}` as const;
+    const next = !(bank[col] ?? true);
+    const { error } = await supabase.from("platform_banks").update({ [col]: next } as any).eq("id", bank.id);
+    if (error) {
+      toast.error(error.message || "Failed to update visibility");
+      return;
+    }
+    auditLog("toggle_bank_audience", bank.id, { name: bank.name, audience, visible: next });
+    toast.success(`${bank.name}: ${audience} picker ${next ? "shown" : "hidden"}`);
+    refetch();
+  };
+
+
   const persistOrder = async (ordered: PlatformBank[]) => {
     // Assign sequential sort_order starting at 1
     const updates = ordered.map((b, idx) => ({ id: b.id, sort_order: idx + 1 }));
