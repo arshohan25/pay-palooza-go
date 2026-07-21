@@ -1115,11 +1115,14 @@ export type Database = {
           amount: number
           biller_name: string
           created_at: string
+          dispute_evidence_due_at: string | null
           dispute_opened_at: string | null
           dispute_opened_by: string | null
           dispute_reason: string | null
+          dispute_resolution_due_at: string | null
           dispute_resolved_at: string | null
           dispute_resolved_by: string | null
+          dispute_sla_alerted_at: string | null
           dispute_status: string
           evidence_note: string | null
           evidence_received_at: string | null
@@ -1148,11 +1151,14 @@ export type Database = {
           amount: number
           biller_name: string
           created_at?: string
+          dispute_evidence_due_at?: string | null
           dispute_opened_at?: string | null
           dispute_opened_by?: string | null
           dispute_reason?: string | null
+          dispute_resolution_due_at?: string | null
           dispute_resolved_at?: string | null
           dispute_resolved_by?: string | null
+          dispute_sla_alerted_at?: string | null
           dispute_status?: string
           evidence_note?: string | null
           evidence_received_at?: string | null
@@ -1181,11 +1187,14 @@ export type Database = {
           amount?: number
           biller_name?: string
           created_at?: string
+          dispute_evidence_due_at?: string | null
           dispute_opened_at?: string | null
           dispute_opened_by?: string | null
           dispute_reason?: string | null
+          dispute_resolution_due_at?: string | null
           dispute_resolved_at?: string | null
           dispute_resolved_by?: string | null
+          dispute_sla_alerted_at?: string | null
           dispute_status?: string
           evidence_note?: string | null
           evidence_received_at?: string | null
@@ -2131,6 +2140,60 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      dispute_evidence: {
+        Row: {
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          note: string | null
+          settlement_id: string
+          transaction_id: string | null
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          note?: string | null
+          settlement_id: string
+          transaction_id?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          note?: string | null
+          settlement_id?: string
+          transaction_id?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_evidence_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "biller_settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_evidence_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_paybills"
+            referencedColumns: ["settlement_id"]
+          },
+        ]
       }
       dispute_messages: {
         Row: {
@@ -8680,10 +8743,17 @@ export type Database = {
           phone: string
         }[]
       }
-      admin_open_paybill_dispute: {
-        Args: { p_reason: string; p_settlement_id: string }
-        Returns: Json
-      }
+      admin_open_paybill_dispute:
+        | { Args: { p_reason: string; p_settlement_id: string }; Returns: Json }
+        | {
+            Args: {
+              p_evidence_due_hours?: number
+              p_reason: string
+              p_resolution_due_days?: number
+              p_settlement_id: string
+            }
+            Returns: Json
+          }
       admin_refund_paybill: {
         Args: { p_reason?: string; p_txn_id: string }
         Returns: Json
@@ -8725,15 +8795,27 @@ export type Database = {
         Args: { _active: boolean; _name: string }
         Returns: undefined
       }
-      admin_submit_dispute_evidence: {
-        Args: {
-          p_evidence_url: string
-          p_note?: string
-          p_provider_ref?: string
-          p_settlement_id: string
-        }
-        Returns: Json
-      }
+      admin_submit_dispute_evidence:
+        | {
+            Args: {
+              p_evidence_url: string
+              p_note?: string
+              p_provider_ref?: string
+              p_settlement_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_file_name?: string
+              p_file_path?: string
+              p_file_size?: number
+              p_mime_type?: string
+              p_note: string
+              p_settlement_id: string
+            }
+            Returns: Json
+          }
       admin_toggle_referral_milestone: {
         Args: { p_action: string; p_milestone: number; p_referral_id: string }
         Returns: Json
@@ -8863,6 +8945,7 @@ export type Database = {
           retry_after_seconds: number
         }[]
       }
+      check_paybill_dispute_sla_breaches: { Args: never; Returns: Json }
       check_platform_banks_grants: { Args: never; Returns: Json }
       check_referral_milestones: {
         Args: { p_referee_id: string }
