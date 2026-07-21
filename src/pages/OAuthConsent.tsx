@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 
 // Beta Supabase OAuth server methods — tiny typed wrapper.
 type OAuthAuth = {
@@ -11,6 +12,7 @@ type OAuthAuth = {
 const oauth = (supabase.auth as unknown as { oauth: OAuthAuth }).oauth;
 
 export default function OAuthConsent() {
+  const { t } = useI18n();
   const [params] = useSearchParams();
   const authorizationId = params.get("authorization_id") ?? "";
   const [details, setDetails] = useState<any>(null);
@@ -20,7 +22,7 @@ export default function OAuthConsent() {
   useEffect(() => {
     let active = true;
     (async () => {
-      if (!authorizationId) return setError("Missing authorization_id");
+      if (!authorizationId) return setError(t("ocMissingAuthId"));
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) {
         const next = window.location.pathname + window.location.search;
@@ -40,7 +42,7 @@ export default function OAuthConsent() {
     return () => {
       active = false;
     };
-  }, [authorizationId]);
+  }, [authorizationId, t]);
 
   async function decide(approve: boolean) {
     setBusy(true);
@@ -54,7 +56,7 @@ export default function OAuthConsent() {
     const target = data?.redirect_url ?? data?.redirect_to;
     if (!target) {
       setBusy(false);
-      return setError("No redirect returned by the authorization server.");
+      return setError(t("ocNoRedirect"));
     }
     window.location.href = target;
   }
@@ -63,7 +65,7 @@ export default function OAuthConsent() {
     return (
       <main className="min-h-screen flex items-center justify-center p-6 bg-background text-foreground">
         <div className="max-w-md w-full space-y-3">
-          <h1 className="text-xl font-semibold">Could not load this authorization request</h1>
+          <h1 className="text-xl font-semibold">{t("ocLoadFailed")}</h1>
           <p className="text-sm text-muted-foreground">{error}</p>
         </div>
       </main>
@@ -72,28 +74,27 @@ export default function OAuthConsent() {
   if (!details) {
     return (
       <main className="min-h-screen flex items-center justify-center p-6 bg-background text-foreground">
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">{t("ocLoading")}</p>
       </main>
     );
   }
-  const clientName = details.client?.name ?? details.client?.client_name ?? "an app";
+  const clientName = details.client?.name ?? details.client?.client_name ?? t("ocFallbackAppName");
   const redirectUri = details.client?.redirect_uris?.[0] ?? details.redirect_uri ?? "";
 
   return (
     <main className="min-h-screen flex items-center justify-center p-6 bg-background text-foreground">
       <div className="max-w-md w-full rounded-2xl border border-border bg-card p-6 space-y-4 shadow">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Connect {clientName} to EasyPay</h1>
+          <h1 className="text-xl font-semibold">{t("ocConnectTitle").replace("{name}", clientName)}</h1>
           <p className="text-sm text-muted-foreground">
-            {clientName} will be able to call EasyPay tools as you: create payment requests, check
-            payment status, and list your recent payment requests.
+            {t("ocConnectDesc").replace("{name}", clientName)}
           </p>
         </div>
         {redirectUri && (
-          <p className="text-xs text-muted-foreground break-all">Redirects to: {redirectUri}</p>
+          <p className="text-xs text-muted-foreground break-all">{t("ocRedirectsTo").replace("{url}", redirectUri)}</p>
         )}
         <p className="text-xs text-muted-foreground">
-          This does not bypass EasyPay's permissions or backend policies.
+          {t("ocPolicyNote")}
         </p>
         <div className="flex gap-2 pt-2">
           <button
@@ -101,14 +102,14 @@ export default function OAuthConsent() {
             onClick={() => decide(true)}
             className="flex-1 rounded-xl bg-primary text-primary-foreground px-4 py-2 text-sm font-medium disabled:opacity-50"
           >
-            Approve
+            {t("ocApprove")}
           </button>
           <button
             disabled={busy}
             onClick={() => decide(false)}
             className="flex-1 rounded-xl bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium disabled:opacity-50"
           >
-            Cancel
+            {t("ocCancel")}
           </button>
         </div>
       </div>
