@@ -499,12 +499,12 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
                   {otpSending && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <Loader2 size={12} className="animate-spin" /> Sending code…
+                      <Loader2 size={12} className="animate-spin" /> {t("cpfSendingCode")}
                     </p>
                   )}
                   {otpVerifying && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <Loader2 size={12} className="animate-spin" /> Verifying…
+                      <Loader2 size={12} className="animate-spin" /> {t("cpfVerifying")}
                     </p>
                   )}
                   {otpError && (
@@ -513,7 +513,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                     </p>
                   )}
                   {devOtp && (
-                    <p className="text-[10px] text-amber-500 font-mono">DEV code: {devOtp}</p>
+                    <p className="text-[10px] text-amber-500 font-mono">{t("cpfDevCode")}: {devOtp}</p>
                   )}
                 </div>
 
