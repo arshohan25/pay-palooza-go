@@ -3216,8 +3216,8 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                 <Link size={18} className="text-primary" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Create Payment Link</h3>
-                <p className="text-[10px] text-muted-foreground">Share with customers for remote payments</p>
+                <h3 className="text-sm font-bold text-foreground">{t("plmcCreateTitle")}</h3>
+                <p className="text-[10px] text-muted-foreground">{t("plmcCreateSubtitle")}</p>
               </div>
             </div>
 
