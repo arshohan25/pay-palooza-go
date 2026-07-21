@@ -275,6 +275,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "transactions", label: "Transactions", icon: Receipt },
       { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
+      { id: "biller_payouts", label: "Biller Payouts", icon: Zap },
       { id: "operations_wall", label: "Operations Wall", icon: Activity },
       { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
@@ -2059,6 +2060,9 @@ export default function AdminDashboard() {
 
         {/* ═══ SETTLEMENTS ═══ */}
         {activeTab === "settlements" && <AdminSettlements />}
+
+        {/* ═══ BILLER PAYOUTS & REFUNDS ═══ */}
+        {activeTab === "biller_payouts" && <AdminBillerSettlements />}
 
         {/* ═══ BANK RECONCILIATION ═══ */}
         {activeTab === "bank_recon" && <AdminBankReconciliation />}
