@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { verifyPin } from "@/lib/verifyPin";
-import { BANGLADESH_BANKS } from "@/lib/bangladeshBanks";
+import { BANGLADESH_BANKS, bankColorFromName, BankInfo } from "@/lib/bangladeshBanks";
+import { usePlatformBanks } from "@/hooks/use-platform-banks";
 
 import { useSavedBanks, SavedBankAccount } from "@/hooks/use-saved-banks";
 import { useFeeConfig } from "@/hooks/use-fee-config";
