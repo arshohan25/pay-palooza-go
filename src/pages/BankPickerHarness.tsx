@@ -10,6 +10,7 @@
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import { BankLogo } from "@/components/BankLogo";
 import { BankListLiveBadge } from "@/components/BankListLiveBadge";
+import { RefreshBanksButton } from "@/components/RefreshBanksButton";
 import { bankColorFromName } from "@/lib/bangladeshBanks";
 
 const FLOWS: Array<{ id: string; label: string }> = [
