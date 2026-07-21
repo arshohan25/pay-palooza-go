@@ -203,8 +203,9 @@ export default function AdminRefundConsole() {
                           <Badge className="bg-red-500/15 text-red-500">Failed</Badge>
                         ) : (
                           <Badge variant="outline" className="capitalize">{r.flag.replace(/_/g, " ")}</Badge>
-                        )}
+                      </div>
                       <div className="flex items-center gap-2">
+
                         <button
                           onClick={() => setExpanded(expanded === r.transaction_id ? null : r.transaction_id)}
                           className="text-[10px] text-primary hover:underline"
