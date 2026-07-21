@@ -867,7 +867,7 @@ const AgentsGridView = ({ agents, onAgentClick, onStatusChange, onCreateAgent }:
       {filtered.length === 0 ? (
         <Card className="p-8 border-0 shadow-card text-center">
           <Users size={32} className="text-muted-foreground mx-auto mb-2" />
-          <p className="text-xs text-muted-foreground">No agents found</p>
+          <p className="text-xs text-muted-foreground">{t("distDashNoAgents")}</p>
         </Card>
       ) : (
         <div className="grid grid-cols-2 gap-3">
@@ -879,21 +879,21 @@ const AgentsGridView = ({ agents, onAgentClick, onStatusChange, onCreateAgent }:
                     <Building2 size={16} className="text-primary-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-bold text-foreground truncate">{ag.business_name || "Agent"}</p>
+                    <p className="text-[11px] font-bold text-foreground truncate">{ag.business_name || t("distDashAgent")}</p>
                     <Badge className={`text-[8px] px-1.5 py-0 ${statusColor[ag.status]}`}>{ag.status}</Badge>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   <div className="p-1.5 rounded-lg bg-muted/50 text-center">
                     <p className="text-[10px] font-bold text-foreground">{ag.customers_onboarded}</p>
-                    <p className="text-[8px] text-muted-foreground">Customers</p>
+                    <p className="text-[8px] text-muted-foreground">{t("distDashCustomersLbl")}</p>
                   </div>
                   <div className="p-1.5 rounded-lg bg-muted/50 text-center">
                     <p className="text-[10px] font-bold text-foreground">৳{fmt(ag.commission_earned)}</p>
-                    <p className="text-[8px] text-muted-foreground">Earned</p>
+                    <p className="text-[8px] text-muted-foreground">{t("distDashEarned")}</p>
                   </div>
                 </div>
-                <p className="text-[8px] text-muted-foreground mt-1.5 truncate">{ag.territory_code || "—"} · Since {new Date(ag.created_at).toLocaleDateString()}</p>
+                <p className="text-[8px] text-muted-foreground mt-1.5 truncate">{ag.territory_code || "—"} · {t("distDashSince")} {new Date(ag.created_at).toLocaleDateString()}</p>
               </Card>
             </motion.div>
           ))}
