@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, X } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export interface TxnToastData {
   id: string;
@@ -20,6 +21,7 @@ export const showTxnToast = (data: Omit<TxnToastData, "id">) => {
 };
 
 const TxnToast = () => {
+  const { t } = useI18n();
   const [toasts, setToasts] = useState<TxnToastData[]>([]);
 
   useEffect(() => {
@@ -60,7 +62,7 @@ const TxnToast = () => {
 
               {/* Text */}
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] text-muted-foreground font-medium leading-tight">{t.type} Successful</p>
+                <p className="text-[11px] text-muted-foreground font-medium leading-tight">{t("txnToastSuccess").replace("{type}", t.type)}</p>
                 <p className="text-base font-extrabold text-foreground tracking-tight leading-tight">{t.amount}</p>
               </div>
 

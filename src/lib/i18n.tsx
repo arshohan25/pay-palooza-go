@@ -4540,6 +4540,20 @@ const translations = {
   atdmDlFailed: { en: "Download Failed Advice (PDF)", bn: "ব্যর্থ অ্যাডভাইস ডাউনলোড (PDF)" },
   atdmShare: { en: "Share Receipt", bn: "রশিদ শেয়ার" },
   atdmDone: { en: "Done", bn: "সম্পন্ন" },
+  // Txn toast
+  txnToastSuccess: { en: "{type} Successful", bn: "{type} সফল হয়েছে" },
+  // Role dashboard cards
+  rdcYourDashboards: { en: "Your Dashboards", bn: "আপনার ড্যাশবোর্ড" },
+  rdcAdminLabel: { en: "Admin Panel", bn: "অ্যাডমিন প্যানেল" },
+  rdcAdminDesc: { en: "Users, transactions & fraud alerts", bn: "ব্যবহারকারী, লেনদেন ও ফ্রড অ্যালার্ট" },
+  rdcAgentLabel: { en: "Agent Portal", bn: "এজেন্ট পোর্টাল" },
+  rdcAgentDesc: { en: "Cash-in, cash-out & float management", bn: "ক্যাশ-ইন, ক্যাশ-আউট ও ফ্লোট ব্যবস্থাপনা" },
+  rdcMerchantLabel: { en: "Merchant Portal", bn: "মার্চেন্ট পোর্টাল" },
+  rdcMerchantDesc: { en: "QR payments, settlements & MDR", bn: "QR পেমেন্ট, সেটেলমেন্ট ও MDR" },
+  rdcDistLabel: { en: "Distributor Portal", bn: "ডিস্ট্রিবিউটর পোর্টাল" },
+  rdcDistDesc: { en: "Agent network & float distribution", bn: "এজেন্ট নেটওয়ার্ক ও ফ্লোট বণ্টন" },
+  rdcSdLabel: { en: "Super Distributor", bn: "সুপার ডিস্ট্রিবিউটর" },
+  rdcSdDesc: { en: "Regional operations & oversight", bn: "আঞ্চলিক পরিচালনা ও তত্ত্বাবধান" },
 
   lpTopReached: { en: "You've reached the top!", bn: "আপনি সর্বোচ্চ পৌঁছেছেন!" },
   lpTopDesc: { en: "You are enjoying the highest EasyPay Club tier available.", bn: "আপনি সর্বোচ্চ ইজিপে ক্লাব টায়ার উপভোগ করছেন।" },
