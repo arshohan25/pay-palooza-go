@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertCircle } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface Row {
   code: string;
@@ -42,6 +43,7 @@ export default function DivisionDistrictPicker({
   required,
   idPrefix = "ddp",
 }: Props) {
+  const { t } = useI18n();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export default function DivisionDistrictPicker({
         .order("district", { ascending: true });
       if (!alive) return;
       if (err) {
-        setError("Could not load districts. Please try again.");
+        setError(t("ddpLoadError"));
         setRows([]);
       } else {
         setRows((data as Row[]) ?? []);
@@ -105,7 +107,7 @@ export default function DivisionDistrictPicker({
     <div className="space-y-3">
       <div className="space-y-1.5">
         <Label htmlFor={divisionId} className="text-xs font-semibold">
-          Division{required && <span className="text-destructive"> *</span>}
+          {t("ddpDivision")}{required && <span className="text-destructive"> *</span>}
         </Label>
         <Select
           value={value.division ?? ""}
@@ -120,7 +122,7 @@ export default function DivisionDistrictPicker({
             className="rounded-xl h-11"
           >
             <SelectValue
-              placeholder={loading ? "Loading divisions…" : "Select division"}
+              placeholder={loading ? t("ddpLoadingDivisions") : t("ddpSelectDivision")}
             />
           </SelectTrigger>
           <SelectContent>
@@ -135,7 +137,7 @@ export default function DivisionDistrictPicker({
 
       <div className="space-y-1.5">
         <Label htmlFor={districtId} className="text-xs font-semibold">
-          District{required && <span className="text-destructive"> *</span>}
+          {t("ddpDistrict")}{required && <span className="text-destructive"> *</span>}
         </Label>
         <Select
           value={value.district ?? ""}
@@ -154,10 +156,10 @@ export default function DivisionDistrictPicker({
             <SelectValue
               placeholder={
                 !value.division
-                  ? "Select a division first"
+                  ? t("ddpSelectDivisionFirst")
                   : districtsForDivision.length === 0
-                  ? "No districts available"
-                  : "Select district"
+                  ? t("ddpNoDistricts")
+                  : t("ddpSelectDistrict")
               }
             />
           </SelectTrigger>
@@ -177,7 +179,7 @@ export default function DivisionDistrictPicker({
             id={`${idPrefix}-district-hint`}
             className="text-[10px] text-muted-foreground"
           >
-            Choose a division to enable districts.
+            {t("ddpDistrictHint")}
           </p>
         )}
       </div>
