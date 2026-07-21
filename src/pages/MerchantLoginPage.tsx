@@ -327,7 +327,34 @@ export default function MerchantLoginPage() {
           event_name: "merchant_login_error",
           metadata: { mode: loginMode, message: result.message },
         });
-        toast.error(result.message);
+        const msg = result.message || "";
+        const notMerchant = /isn'?t a merchant account/i.test(msg);
+        const notManager = /isn'?t an active store manager/i.test(msg);
+        if (notMerchant) {
+          toast.error(msg, {
+            description: "This phone is registered under a different role. Sign in through the correct portal, or apply to become a merchant.",
+            duration: 10000,
+            action: {
+              label: "Go to Agent login",
+              onClick: () => navigate(`/agent-login?phone=${encodeURIComponent(cleanedPhone)}`),
+            },
+            cancel: {
+              label: "Apply as merchant",
+              onClick: () => navigate("/merchant-apply"),
+            },
+          });
+        } else if (notManager) {
+          toast.error(msg, {
+            description: "Ask your store owner to add you as a Manager, or switch to Owner login.",
+            duration: 10000,
+            action: {
+              label: "Switch to Owner",
+              onClick: () => setLoginMode("owner"),
+            },
+          });
+        } else {
+          toast.error(msg);
+        }
         return;
       }
 
