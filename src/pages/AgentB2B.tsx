@@ -240,15 +240,15 @@ const AgentB2B = () => {
                 <Label className="text-xs font-semibold">{t("agComAmountLbl")}</Label>
                 <Input type="text" inputMode="numeric" placeholder={t("agComEnterAmt")} value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
               </div>
-
-              <div>
-                <Label className="text-xs font-semibold">{t("agComNote")}</Label>
-                <Input placeholder={t("agB2bNotePh")} value={note} onChange={e => setNote(e.target.value)} maxLength={50} className="rounded-xl h-11 mt-1" />
-              </div>
               <div className="flex gap-2 flex-wrap">
                 {[5000, 10000, 25000, 50000].map(a => (
                   <button key={a} onClick={() => setAmount(String(a))} className="px-3 py-2 rounded-xl text-xs font-bold bg-muted text-muted-foreground press-effect hover:bg-primary/10 hover:text-primary transition-colors">৳{fmt(a)}</button>
                 ))}
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold">{t("agComNote")}</Label>
+                <Input placeholder={t("agB2bNotePh")} value={note} onChange={e => setNote(e.target.value)} maxLength={50} className="rounded-xl h-11 mt-1" />
               </div>
               {((transferType === "agent" ? phoneValidation.isValid : !!distributorInfo) && !!amount && Number(amount) >= 10) && (
                 <Button onClick={() => { if (transferType === "agent" && phoneValidation.triggerShake()) return; setStep("confirm"); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in">{t("agComContinue")}</Button>
