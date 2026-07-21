@@ -7514,6 +7514,7 @@ export type Database = {
           recipient_name: string | null
           recipient_phone: string | null
           reference: string | null
+          refund_status: string | null
           short_id: string
           status: Database["public"]["Enums"]["txn_status"]
           type: Database["public"]["Enums"]["txn_type"]
@@ -7530,6 +7531,7 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone?: string | null
           reference?: string | null
+          refund_status?: string | null
           short_id?: string
           status?: Database["public"]["Enums"]["txn_status"]
           type: Database["public"]["Enums"]["txn_type"]
@@ -7546,6 +7548,7 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone?: string | null
           reference?: string | null
+          refund_status?: string | null
           short_id?: string
           status?: Database["public"]["Enums"]["txn_status"]
           type?: Database["public"]["Enums"]["txn_type"]
@@ -8427,6 +8430,10 @@ export type Database = {
           original_user_id: string
           phone: string
         }[]
+      }
+      admin_refund_paybill: {
+        Args: { p_reason?: string; p_txn_id: string }
+        Returns: Json
       }
       admin_reject_fund_request: {
         Args: { p_admin_note?: string; p_request_id: string }
@@ -9327,6 +9334,8 @@ export type Database = {
         | "banktransfer"
         | "chargeback"
         | "deposit"
+        | "refund"
+        | "reversal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -9515,6 +9524,8 @@ export const Constants = {
         "banktransfer",
         "chargeback",
         "deposit",
+        "refund",
+        "reversal",
       ],
     },
   },
