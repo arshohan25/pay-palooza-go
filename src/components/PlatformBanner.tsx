@@ -20,6 +20,7 @@ const typeConfig: Record<string, { icon: typeof Info; bg: string; border: string
 };
 
 export default function PlatformBanner() {
+  const { t } = useI18n();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
@@ -71,7 +72,7 @@ export default function PlatformBanner() {
                 <p className={`text-sm font-semibold ${cfg.text}`}>{a.title}</p>
                 <p className={`text-xs ${cfg.text} opacity-80`}>{a.message}</p>
               </div>
-              <button onClick={() => dismiss(a.id)} className={`shrink-0 p-1 rounded-lg hover:bg-black/5 ${cfg.text}`}>
+              <button onClick={() => dismiss(a.id)} aria-label={t("pbDismiss")} className={`shrink-0 p-1 rounded-lg hover:bg-black/5 ${cfg.text}`}>
                 <X className="h-4 w-4" />
               </button>
             </motion.div>
