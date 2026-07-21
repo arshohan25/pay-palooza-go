@@ -222,13 +222,18 @@ const AgentCashIn = () => {
               <div>
                 <Label className="text-xs font-semibold">{t("agCinCustPhone")}</Label>
                 <div className="relative mt-1">
-                  <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, "")); setResolvedName(""); }} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
+                  <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, "")); setResolvedName(""); setWalletStatus("idle"); }} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
                   <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
                     <ScanLine size={16} />
                   </button>
                 </div>
-                {resolvedName && <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {resolvedName}</p>}
+                {walletStatus === "checking" && <p className="text-[11px] text-muted-foreground mt-1 animate-pulse">Verifying wallet…</p>}
+                {walletStatus === "valid" && resolvedName && <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {resolvedName}</p>}
+                {walletStatus === "valid" && !resolvedName && <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> Valid customer wallet</p>}
+                {walletStatus === "not_found" && <p className="text-[11px] text-destructive font-medium mt-1">No wallet exists for this number.</p>}
+                {walletStatus === "not_user" && <p className="text-[11px] text-destructive font-medium mt-1">Not a customer wallet. Cash In is only allowed to user wallets.</p>}
                 {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
+
               </div>
               <div>
                 <Label className="text-xs font-semibold">{t("agComAmountLbl")}</Label>
