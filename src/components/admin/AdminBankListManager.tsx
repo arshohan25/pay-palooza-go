@@ -4,10 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Landmark, Plus, Trash2, Search, Upload, X, Loader2 } from "lucide-react";
+import { Landmark, Plus, Trash2, Search, Upload, X, Loader2, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePlatformBanks, PlatformBank } from "@/hooks/use-platform-banks";
+import { DndContext, closestCenter, PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 
 async function auditLog(action: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -150,6 +154,45 @@ export default function AdminBankListManager() {
     refetch();
   };
 
+  const persistOrder = async (ordered: PlatformBank[]) => {
+    // Assign sequential sort_order starting at 1
+    const updates = ordered.map((b, idx) => ({ id: b.id, sort_order: idx + 1 }));
+    // Perform in parallel; small list
+    const results = await Promise.all(
+      updates.map(u => supabase.from("platform_banks").update({ sort_order: u.sort_order } as any).eq("id", u.id))
+    );
+    const failed = results.find(r => r.error);
+    if (failed?.error) {
+      toast.error("Failed to save order");
+      refetch();
+      return;
+    }
+    auditLog("reorder_banks", "bulk", { count: ordered.length });
+    toast.success("Order saved");
+    refetch();
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    // Only reorder when not filtering (would be ambiguous)
+    if (search.trim()) {
+      toast.info("Clear search to reorder");
+      return;
+    }
+    const oldIndex = banks.findIndex(b => b.id === active.id);
+    const newIndex = banks.findIndex(b => b.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(banks, oldIndex, newIndex);
+    persistOrder(next);
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -167,7 +210,7 @@ export default function AdminBankListManager() {
               <Plus className="w-4 h-4" />
             </Button>
           </div>
-          <p className="text-[10px] text-muted-foreground">After adding, upload a logo from the list below (PNG/JPG/SVG, ≤500KB).</p>
+          <p className="text-[10px] text-muted-foreground">After adding, upload a logo and drag rows to reorder.</p>
         </CardContent>
       </Card>
 
@@ -180,41 +223,86 @@ export default function AdminBankListManager() {
       {/* Bank list */}
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardContent className="p-0 max-h-[400px] overflow-y-auto">
-          <div className="divide-y divide-border/50">
-            {filtered.map(b => (
-              <div key={b.id} className="flex items-center justify-between px-3 py-3 hover:bg-muted/30 gap-2">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {b.logo_url ? (
-                    <div className="w-9 h-9 rounded-lg bg-white border border-border/40 overflow-hidden shrink-0 flex items-center justify-center">
-                      <img src={b.logo_url} alt={b.name} className="w-full h-full object-contain" />
-                    </div>
-                  ) : (
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-[10px] font-bold text-primary">{b.short_code.slice(0, 3)}</span>
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{b.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{b.short_code}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <BankLogoUploader bank={b} onChanged={refetch} />
-                  <Badge variant={b.is_active ? "default" : "secondary"} className="text-[10px]">
-                    {b.is_active ? "On" : "Off"}
-                  </Badge>
-                  <Switch checked={b.is_active} onCheckedChange={() => toggleBank(b.id, b.is_active)} />
-                  <Button size="icon" variant="ghost" className="w-7 h-7 text-destructive/70 hover:text-destructive" onClick={() => deleteBank(b.id, b.name)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={filtered.map(b => b.id)} strategy={verticalListSortingStrategy}>
+              <div className="divide-y divide-border/50">
+                {filtered.map(b => (
+                  <SortableBankRow
+                    key={b.id}
+                    bank={b}
+                    disabled={!!search.trim()}
+                    onToggle={() => toggleBank(b.id, b.is_active)}
+                    onDelete={() => deleteBank(b.id, b.name)}
+                    onLogoChanged={refetch}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
           {!loading && filtered.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No banks found</p>}
         </CardContent>
       </Card>
-      <p className="text-[10px] text-muted-foreground text-center">{banks.length} banks total · {banks.filter(b => b.is_active).length} active · {banks.filter(b => b.logo_url).length} with logos</p>
+      <p className="text-[10px] text-muted-foreground text-center">
+        {banks.length} banks · {banks.filter(b => b.is_active).length} active · {banks.filter(b => b.logo_url).length} with logos · drag <GripVertical className="inline w-3 h-3" /> to reorder
+      </p>
     </div>
   );
 }
+
+function SortableBankRow({
+  bank, disabled, onToggle, onDelete, onLogoChanged,
+}: {
+  bank: PlatformBank;
+  disabled: boolean;
+  onToggle: () => void;
+  onDelete: () => void;
+  onLogoChanged: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bank.id, disabled });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : "auto",
+    opacity: isDragging ? 0.85 : 1,
+  } as React.CSSProperties;
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center justify-between px-3 py-3 hover:bg-muted/30 gap-2 bg-card">
+      <button
+        {...attributes}
+        {...listeners}
+        className={`touch-none shrink-0 p-1 -ml-1 rounded ${disabled ? "opacity-30 cursor-not-allowed" : "text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"}`}
+        aria-label="Drag to reorder"
+        disabled={disabled}
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        {bank.logo_url ? (
+          <div className="w-9 h-9 rounded-lg bg-white border border-border/40 overflow-hidden shrink-0 flex items-center justify-center">
+            <img src={bank.logo_url} alt={bank.name} className="w-full h-full object-contain" />
+          </div>
+        ) : (
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="text-[10px] font-bold text-primary">{bank.short_code.slice(0, 3)}</span>
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-foreground truncate">{bank.name}</p>
+          <p className="text-[10px] text-muted-foreground">#{bank.sort_order} · {bank.short_code}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <BankLogoUploader bank={bank} onChanged={onLogoChanged} />
+        <Badge variant={bank.is_active ? "default" : "secondary"} className="text-[10px]">
+          {bank.is_active ? "On" : "Off"}
+        </Badge>
+        <Switch checked={bank.is_active} onCheckedChange={onToggle} />
+        <Button size="icon" variant="ghost" className="w-7 h-7 text-destructive/70 hover:text-destructive" onClick={onDelete}>
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
