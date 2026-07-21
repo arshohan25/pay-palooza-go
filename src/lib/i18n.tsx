@@ -5400,7 +5400,31 @@ const translations = {
   dmsSelectedOne: { en: "1 district selected", bn: "১টি জেলা নির্বাচিত" },
   dmsSelectedMany: { en: "{count} districts selected", bn: "{count}টি জেলা নির্বাচিত" },
   dmsRemove: { en: "Remove {name}", bn: "{name} সরান" },
+
+  // PaymentLinkTimeline
+  pltNoPayments: { en: "No payments yet.", bn: "এখনও কোনো পেমেন্ট নেই।" },
+  pltFrom: { en: "from {name}", bn: "প্রেরক {name}" },
+  pltRef: { en: "ref: {id}", bn: "রেফ: {id}" },
+  pltRefunded: { en: "Refunded", bn: "ফেরত দেওয়া হয়েছে" },
+  pltPartiallyRefunded: { en: "Partially refunded {amount} / {total}", bn: "আংশিক ফেরত {amount} / {total}" },
+  pltRefund: { en: "Refund", bn: "ফেরত দিন" },
+  pltRefundMore: { en: "Refund more", bn: "আরও ফেরত দিন" },
+  pltRefundUpTo: { en: "Refund up to {amount}?", bn: "{amount} পর্যন্ত ফেরত দেবেন?" },
+  pltRefundDesc: { en: "Leave the amount blank to refund the full remaining balance. Partial refunds keep the payment open for future refunds.", bn: "সম্পূর্ণ অবশিষ্ট ব্যালেন্স ফেরত দিতে ফাঁকা রাখুন। আংশিক ফেরত পরবর্তী ফেরতের জন্য পেমেন্ট খোলা রাখে।" },
+  pltAmountLabel: { en: "Amount ({currency})", bn: "পরিমাণ ({currency})" },
+  pltFullRefund: { en: "Full refund: {amount}", bn: "সম্পূর্ণ ফেরত: {amount}" },
+  pltExceeds: { en: "Exceeds refundable balance ({amount})", bn: "ফেরতযোগ্য ব্যালেন্স ({amount}) ছাড়িয়ে গেছে" },
+  pltRefundable: { en: "Refundable: {amount}", bn: "ফেরতযোগ্য: {amount}" },
+  pltRemainingAfter: { en: "Remaining after:", bn: "পরে অবশিষ্ট:" },
+  pltReasonPh: { en: "Reason (optional)", bn: "কারণ (ঐচ্ছিক)" },
+  pltCancel: { en: "Cancel", bn: "বাতিল" },
+  pltRefunding: { en: "Refunding…", bn: "ফেরত দেওয়া হচ্ছে…" },
+  pltConfirmRefund: { en: "Confirm refund", bn: "ফেরত নিশ্চিত করুন" },
+
+  // FlowHeader
+  fhBack: { en: "Back", bn: "পিছনে" },
 } as const;
+
 
 
 export type TranslationKey = keyof typeof translations;
