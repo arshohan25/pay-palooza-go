@@ -4118,7 +4118,7 @@ const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onCl
         <div className="space-y-5">
           {/* Bank Name — Searchable dropdown */}
           <div>
-            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Bank Name *</label>
+            
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center justify-between">
               <span>Bank Name *</span>
               <BankListLiveBadge liveUpdateKey={banksLiveKey} label="Bank list" />
