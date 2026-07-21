@@ -178,8 +178,8 @@ export default function LoyaltyBadge({
   const pctLabel = progress == null ? null : `${Math.round(progress)}%`;
   const isTopTier = !nextTier;
   const ariaLabel = nextTier && pctLabel
-    ? t("lbTierAria", { tier: tier.name, pct: String(Math.round(progress ?? 0)), next: nextTier.name })
-    : t("lbTopTierAria", { tier: tier.name });
+    ? t("lbTierAria").replace("{tier}", tier.name).replace("{pct}", String(Math.round(progress ?? 0))).replace("{next}", nextTier.name)
+    : t("lbTopTierAria").replace("{tier}", tier.name);
 
   const handleBadgeClick = () => {
     if (isTouch) {
@@ -252,7 +252,7 @@ export default function LoyaltyBadge({
       {nextTier ? (
         <>
           <p className="text-[11px] text-muted-foreground mb-1.5">
-            {t("lbTowardNext", { pct: pctLabel ?? "0%", next: nextTier.name })}
+            {t("lbTowardNext").replace("{pct}", pctLabel ?? "0%").replace("{next}", nextTier.name)}
           </p>
           <div
             className="h-1.5 w-full rounded-full bg-muted overflow-hidden"
@@ -260,7 +260,7 @@ export default function LoyaltyBadge({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(progress ?? 0)}
-            aria-label={t("lbProgressAria", { next: nextTier.name })}
+            aria-label={t("lbProgressAria").replace("{next}", nextTier.name)}
           >
             <div
               className="h-full rounded-full transition-all"
