@@ -319,7 +319,7 @@ const AgentBankTransfer = () => {
 
                 {amount && Number(amount) >= 10 && (
                   <Button
-                    onClick={() => setStep("pin")}
+                    onClick={() => setStep("preview")}
                     className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in"
                   >
                     {t("agComContinue")}
