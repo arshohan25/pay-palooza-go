@@ -9,6 +9,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { BANGLADESH_BANKS, bankColorFromName, BankInfo } from "@/lib/bangladeshBanks";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
+import { BankLogo } from "@/components/BankLogo";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import { getBalance } from "@/lib/balanceStore";
 import SlideToConfirm from "@/components/SlideToConfirm";
