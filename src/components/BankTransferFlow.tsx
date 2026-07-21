@@ -68,11 +68,19 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const fee = calcBankTransferFee(parsedAmount);
   const totalDeduction = parsedAmount + fee;
 
+  const { banks: platformBanks } = usePlatformBanks(false);
+  const availableBanks: BankInfo[] = useMemo(() => {
+    if (platformBanks.length === 0) return BANGLADESH_BANKS;
+    return platformBanks.map(b => ({
+      id: b.id, name: b.name, short: b.short_code, color: bankColorFromName(b.name),
+    }));
+  }, [platformBanks]);
+
   const filteredBanks = useMemo(() => {
-    if (!bankSearch.trim()) return BANGLADESH_BANKS;
+    if (!bankSearch.trim()) return availableBanks;
     const q = bankSearch.toLowerCase();
-    return BANGLADESH_BANKS.filter(b => b.name.toLowerCase().includes(q) || b.short.toLowerCase().includes(q));
-  }, [bankSearch]);
+    return availableBanks.filter(b => b.name.toLowerCase().includes(q) || b.short.toLowerCase().includes(q));
+  }, [bankSearch, availableBanks]);
 
   const goTo = (next: Step) => {
     haptics.medium();
