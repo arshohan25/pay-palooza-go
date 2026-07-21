@@ -51,6 +51,7 @@ interface Props {
 
 export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Props) {
   const { toast } = useToast();
+  const { t } = useI18n();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
