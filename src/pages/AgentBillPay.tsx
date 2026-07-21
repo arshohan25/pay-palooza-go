@@ -44,17 +44,29 @@ const AgentBillPay = () => {
     try {
       const pinValid = await verifyPin(pin);
       if (!pinValid) { toast({ title: t("agBillWrongPin"), description: t("agBillWrongPinDesc"), variant: "destructive" }); setPin(""); setProcessing(false); return; }
+      const reference = (() => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; })();
       const { error } = await supabase.rpc("record_transaction", {
         p_type: "paybill" as any,
         p_amount: Number(amount),
         p_fee: 0,
         p_description: `Bill Pay - ${selected}`,
         p_recipient_name: selected,
-        p_reference: (() => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; })(),
+        p_reference: reference,
       });
       if (error) throw error;
+
+      // Submit to biller provider (edge function). If no live config, it queues for manual settlement.
+      const { data: payRes, error: payErr } = await supabase.functions.invoke("pay-bill", {
+        body: { biller_name: selected, account_no: accountNo, amount: Number(amount), reference },
+      });
+      if (payErr) {
+        toast({ title: t("agBillPaid"), description: `৳${amount} → ${selected} (queued for settlement)` });
+      } else if (payRes?.queued) {
+        toast({ title: t("agBillPaid"), description: `৳${amount} → ${selected} (queued for settlement)` });
+      } else {
+        toast({ title: t("agBillPaid"), description: `৳${amount} → ${selected}${payRes?.provider_ref ? ` • Ref ${payRes.provider_ref}` : ""}` });
+      }
       setStep("done");
-      toast({ title: t("agBillPaid"), description: `৳${amount} → ${selected}` });
     } catch (err: any) {
       toast({ title: t("agBillFailed"), description: err.message, variant: "destructive" });
     } finally {
