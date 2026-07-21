@@ -7,6 +7,8 @@ import { Check, ChevronsUpDown, MapPin, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { districtCommandFilter } from "@/lib/districtCommandFilter";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useI18n } from "@/lib/i18n";
+
 
 export interface DistrictRoute {
   code: string;
@@ -29,11 +31,14 @@ type FlatRow =
 export default function DistrictRoutePicker({
   value,
   onChange,
-  placeholder = "Select district",
+  placeholder,
   disabled,
   className,
 }: Props) {
+  const { t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t("drpSelectDistrict");
   const [open, setOpen] = useState(false);
+
   const [rows, setRows] = useState<DistrictRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -117,8 +122,9 @@ export default function DistrictRoutePicker({
             {selected
               ? `${selected.district} · ${selected.code}`
               : loading
-              ? "Loading districts…"
-              : placeholder}
+              ? t("drpLoadingDistricts")
+              : resolvedPlaceholder}
+
           </span>
           <ChevronsUpDown size={14} className="ml-2 shrink-0 opacity-50" />
         </Button>
@@ -130,19 +136,20 @@ export default function DistrictRoutePicker({
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search district, code, or division…"
+            placeholder={t("drpSearchPh")}
             className="h-8 border-0 focus-visible:ring-0 shadow-none px-0"
           />
         </div>
         <div className="flex items-center gap-2 border-b px-3 py-1.5 bg-muted/30">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Division</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("drpDivision")}</span>
           <select
-            aria-label="Filter by division"
+            aria-label={t("drpFilterByDivision")}
             value={divisionFilter}
             onChange={(e) => setDivisionFilter(e.target.value)}
             className="h-7 flex-1 rounded-md border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
           >
-            <option value="all">All divisions</option>
+            <option value="all">{t("drpAllDivisions")}</option>
+
             {divisions.map((d) => (
               <option key={d} value={d}>{d}</option>
             ))}
@@ -151,8 +158,9 @@ export default function DistrictRoutePicker({
         <div ref={setScrollEl} className="max-h-72 overflow-y-auto">
           {flat.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
-              No district found.
+              {t("drpNoDistrictFound")}
             </div>
+
           ) : (
             <div
               style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}
