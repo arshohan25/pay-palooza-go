@@ -437,7 +437,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                   onClick={() => setShowLockoutHelp(v => !v)}
                   className="mx-auto flex items-center gap-1.5 text-xs font-semibold text-primary"
                 >
-                  <HelpCircle size={13} /> Why is OTP locked?
+                  <HelpCircle size={13} /> {t("cpfWhyLocked")}
                 </button>
                 <AnimatePresence>
                   {showLockoutHelp && (
