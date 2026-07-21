@@ -447,15 +447,8 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                       exit={{ opacity: 0, height: 0 }}
                       className="mx-4 rounded-xl bg-muted/60 border border-border px-4 py-3 text-[11.5px] leading-relaxed text-muted-foreground space-y-1.5"
                     >
-                      <p>
-                        For your protection, OTP verification is temporarily
-                        paused after several incorrect codes. This helps stop
-                        anyone from guessing your codes.
-                      </p>
-                      <p>
-                        Wait for the timer to end, then request a fresh code.
-                        If this keeps happening, contact support.
-                      </p>
+                      <p>{t("cpfLockedHelp1")}</p>
+                      <p>{t("cpfLockedHelp2")}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
