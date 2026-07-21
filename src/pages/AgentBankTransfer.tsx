@@ -481,9 +481,7 @@ const AgentBankTransfer = () => {
                               onClick={() => { setNewBankName(b.name); setNewShortCode(b.short); setBankDropdownOpen(false); setBankSearch(""); }}
                               className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${newBankName === b.name ? "bg-primary/10" : ""}`}
                             >
-                              <div className="w-7 h-7 rounded-md flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: b.color }}>
-                                {b.short.slice(0, 2)}
-                              </div>
+                              <BankLogo bank={b} size={28} rounded="rounded-md" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-medium text-foreground truncate">{b.name}</p>
                               </div>
