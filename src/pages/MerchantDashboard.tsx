@@ -3313,14 +3313,14 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-xs font-bold text-foreground">
-                          {link.amount ? `৳${fmt(link.amount)}` : "Open Amount"}
+                          {link.amount ? `৳${fmt(link.amount)}` : t("plmcOpenAmount")}
                         </span>
                         <Badge variant={link.is_active ? "secondary" : "destructive"} className="text-[8px]">
-                          {link.is_active ? "Active" : "Revoked"}
+                          {link.is_active ? t("plmcActive") : t("plmcRevoked")}
                         </Badge>
                         {link.used_count > 0 && (
                           <Badge variant="outline" className="text-[8px] text-primary border-primary/30">
-                            {link.used_count} paid
+                            {t("plmcPaidCount").replace("{count}", String(link.used_count))}
                           </Badge>
                         )}
                       </div>
