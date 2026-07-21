@@ -3240,10 +3240,10 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
 
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">
-                  Note / Description
+                  {t("plmcNoteLabel")}
                 </label>
                 <Input
-                  placeholder="e.g. Invoice #123, Order for blue shirt"
+                  placeholder={t("plmcNotePlaceholder")}
                   value={note}
                   onChange={e => setNote(e.target.value)}
                   maxLength={100}
