@@ -4,6 +4,7 @@ import { useLoyaltyTiers, useMyLoyalty, type LoyaltyTier } from "@/hooks/use-loy
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { trackLoyalty, trackTierView } from "@/lib/loyaltyAnalytics";
+import { useI18n } from "@/lib/i18n";
 
 /** True on devices whose primary input cannot hover (phones/tablets). */
 function useIsTouchDevice() {
@@ -56,6 +57,7 @@ export default function LoyaltyBadge({
   disableTooltip,
   surface = "unknown",
 }: LoyaltyBadgeProps) {
+  const { t } = useI18n();
   const { data: tiers } = useLoyaltyTiers();
   const { data: loyalty } = useMyLoyalty();
   const isTouch = useIsTouchDevice();
@@ -176,8 +178,8 @@ export default function LoyaltyBadge({
   const pctLabel = progress == null ? null : `${Math.round(progress)}%`;
   const isTopTier = !nextTier;
   const ariaLabel = nextTier && pctLabel
-    ? `EasyPay Club tier: ${tier.name}. ${pctLabel} progress toward ${nextTier.name}.`
-    : `EasyPay Club tier: ${tier.name}. Top tier reached — congratulations!`;
+    ? t("lbTierAria", { tier: tier.name, pct: String(Math.round(progress ?? 0)), next: nextTier.name })
+    : t("lbTopTierAria", { tier: tier.name });
 
   const handleBadgeClick = () => {
     if (isTouch) {
@@ -250,7 +252,7 @@ export default function LoyaltyBadge({
       {nextTier ? (
         <>
           <p className="text-[11px] text-muted-foreground mb-1.5">
-            {pctLabel} toward <span className="font-semibold text-foreground">{nextTier.name}</span>
+            {t("lbTowardNext", { pct: pctLabel ?? "0%", next: nextTier.name })}
           </p>
           <div
             className="h-1.5 w-full rounded-full bg-muted overflow-hidden"
@@ -258,7 +260,7 @@ export default function LoyaltyBadge({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(progress ?? 0)}
-            aria-label={`Progress toward ${nextTier.name}`}
+            aria-label={t("lbProgressAria", { next: nextTier.name })}
           >
             <div
               className="h-full rounded-full transition-all"
@@ -275,10 +277,10 @@ export default function LoyaltyBadge({
         <div className="rounded-lg bg-gradient-to-br from-amber-500/10 via-fuchsia-500/10 to-primary/10 border border-amber-500/20 p-2">
           <div className="flex items-center gap-1.5 mb-0.5">
             <Icons.Crown size={11} className="text-amber-500" aria-hidden="true" />
-            <span className="text-[11px] font-bold text-foreground">Congratulations! 🎉</span>
+            <span className="text-[11px] font-bold text-foreground">{t("lbCongrats")}</span>
           </div>
           <p className="text-[10.5px] text-muted-foreground leading-snug">
-            You've reached the highest tier. Enjoy every EasyPay Club perk — you're royalty.
+            {t("lbTopReached")}
           </p>
         </div>
       )}
@@ -288,7 +290,7 @@ export default function LoyaltyBadge({
           onClick={openPerks}
           className="mt-2 w-full h-8 rounded-lg bg-primary text-primary-foreground text-[11px] font-semibold active:scale-95 transition-transform"
         >
-          View perks
+          {t("lbViewPerks")}
         </button>
       )}
     </>
