@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import AgentTxnDetailModal from "@/components/agent/AgentTxnDetailModal";
+import PinConfirmSheet from "@/components/PinConfirmSheet";
 
 import AgentMenuDrawer from "@/components/AgentMenuDrawer";
 import { useNavigate } from "react-router-dom";
@@ -89,6 +90,7 @@ const AgentDashboard = () => {
   const [floatAmount, setFloatAmount] = useState("");
   const [floatNote, setFloatNote] = useState("");
   const [floatSubmitting, setFloatSubmitting] = useState(false);
+  const [floatPinOpen, setFloatPinOpen] = useState(false);
 
   // Menu drawer
   const [menuOpen, setMenuOpen] = useState(false);
@@ -603,34 +605,7 @@ const AgentDashboard = () => {
             <Button
               className="w-full h-12 rounded-xl text-sm font-bold gradient-primary text-primary-foreground"
               disabled={!floatAmount || Number(floatAmount) <= 0 || floatSubmitting}
-              onClick={async () => {
-                if (!user) return;
-                setFloatSubmitting(true);
-                try {
-                  const { data: agentRow, error: agentErr } = await supabase
-                    .from("agents")
-                    .select("id, distributor_id")
-                    .eq("user_id", user.id)
-                    .single();
-                  if (agentErr || !agentRow) throw agentErr || new Error(t("agdAgentNotFound"));
-                  const { error } = await supabase.from("agent_float_requests").insert({
-                    agent_id: agentRow.id,
-                    agent_user_id: user.id,
-                    distributor_id: agentRow.distributor_id,
-                    amount: Number(floatAmount),
-                    note: floatNote || null,
-                  });
-                  if (error) throw error;
-                  toast.success(t("agdFloatSent").replace("{amt}", fmt(Number(floatAmount))));
-                  setFloatAmount("");
-                  setFloatNote("");
-                  setFloatSheetOpen(false);
-                } catch (err: any) {
-                  toast.error(err?.message || t("agdFloatFailed"));
-                } finally {
-                  setFloatSubmitting(false);
-                }
-              }}
+              onClick={() => setFloatPinOpen(true)}
             >
               {floatSubmitting ? t("agdSubmitting") : t("agdSubmitRequest")}
             </Button>
@@ -638,6 +613,43 @@ const AgentDashboard = () => {
 
         </SheetContent>
       </Sheet>
+
+      <PinConfirmSheet
+        open={floatPinOpen}
+        onClose={() => setFloatPinOpen(false)}
+        title={t("agdRequestFloatTopUp")}
+        description={floatAmount ? `৳${fmt(Number(floatAmount))}` : undefined}
+        onConfirmed={async () => {
+          if (!user) return;
+          setFloatSubmitting(true);
+          try {
+            const { data: agentRow, error: agentErr } = await supabase
+              .from("agents")
+              .select("id, distributor_id")
+              .eq("user_id", user.id)
+              .single();
+            if (agentErr || !agentRow) throw agentErr || new Error(t("agdAgentNotFound"));
+            const { error } = await supabase.from("agent_float_requests").insert({
+              agent_id: agentRow.id,
+              agent_user_id: user.id,
+              distributor_id: agentRow.distributor_id,
+              amount: Number(floatAmount),
+              note: floatNote || null,
+            });
+            if (error) throw error;
+            toast.success(t("agdFloatSent").replace("{amt}", fmt(Number(floatAmount))));
+            setFloatAmount("");
+            setFloatNote("");
+            setFloatSheetOpen(false);
+          } catch (err: any) {
+            toast.error(err?.message || t("agdFloatFailed"));
+            throw err;
+          } finally {
+            setFloatSubmitting(false);
+          }
+        }}
+      />
+
 
       {/* ── Support Sheet with Live Chat ── */}
       <Sheet open={supportSheetOpen} onOpenChange={setSupportSheetOpen}>
