@@ -9,17 +9,15 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import { invokeMerchantLoginWithFallback } from "@/lib/merchantLoginInvoke";
 
-// smartshop.bd is the custom-domain PWA where FunctionsFetchError was
-// reported. Match the env vars the helper reads.
-const SUPABASE_URL = "https://lmgsxyzytssddijjxbzc.supabase.co";
-const ANON_KEY = "test-anon-key";
+// Vite inlines VITE_* env vars at transform time, so we assert against the
+// values that actually reached the helper rather than overriding them.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
   invokeMock.mockReset();
-  (import.meta as any).env.VITE_SUPABASE_URL = SUPABASE_URL;
-  (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY = ANON_KEY;
 });
 
 afterEach(() => {
