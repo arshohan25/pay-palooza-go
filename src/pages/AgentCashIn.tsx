@@ -33,24 +33,50 @@ const AgentCashIn = () => {
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [resolvedName, setResolvedName] = useState("");
+  const [walletStatus, setWalletStatus] = useState<"idle" | "checking" | "valid" | "not_found" | "not_user">("idle");
+  const [walletChecking, setWalletChecking] = useState(false);
   const phoneValidation = usePhoneValidation(phone);
   const commission = Number(amount) > 0 ? Math.round(Number(amount) * COMMISSION_RATE * 100) / 100 : 0;
 
   useEffect(() => {
-    if (phone.length === 11 && phone.startsWith("01")) {
-      const resolve = async () => {
-        try {
-          const { data } = await supabase.rpc("resolve_transfer_recipient", {
-            p_identifier: phone, p_flow: "send"
-          });
-          const res = data as any;
-          if (res?.found) setResolvedName(res.recipient_name);
-          else setResolvedName("");
-        } catch { setResolvedName(""); }
-      };
-      resolve();
+    if (phone.length !== 11 || !phone.startsWith("01")) {
+      setWalletStatus("idle");
+      setResolvedName("");
+      return;
     }
+    let cancelled = false;
+    const verify = async () => {
+      setWalletStatus("checking");
+      setWalletChecking(true);
+      try {
+        const { data, error } = await supabase.rpc("get_customer_daily_cashin_usage", { p_phone: phone });
+        if (cancelled) return;
+        if (error) throw error;
+        const row = (data as any)?.[0] ?? {};
+        if (!row.customer_user_id) {
+          setWalletStatus("not_found");
+          setResolvedName("");
+        } else if (!row.is_user_wallet) {
+          setWalletStatus("not_user");
+          setResolvedName("");
+        } else {
+          setWalletStatus("valid");
+          try {
+            const { data: r } = await supabase.rpc("resolve_transfer_recipient", { p_identifier: phone, p_flow: "send" });
+            const res = r as any;
+            if (!cancelled && res?.found) setResolvedName(res.recipient_name);
+          } catch {}
+        }
+      } catch {
+        if (!cancelled) setWalletStatus("idle");
+      } finally {
+        if (!cancelled) setWalletChecking(false);
+      }
+    };
+    verify();
+    return () => { cancelled = true; };
   }, [phone]);
+
 
   const handleConfirm = async () => {
     if (processing) return;
@@ -196,13 +222,18 @@ const AgentCashIn = () => {
               <div>
                 <Label className="text-xs font-semibold">{t("agCinCustPhone")}</Label>
                 <div className="relative mt-1">
-                  <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, "")); setResolvedName(""); }} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
+                  <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, "")); setResolvedName(""); setWalletStatus("idle"); }} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
                   <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
                     <ScanLine size={16} />
                   </button>
                 </div>
-                {resolvedName && <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {resolvedName}</p>}
+                {walletStatus === "checking" && <p className="text-[11px] text-muted-foreground mt-1 animate-pulse">Verifying wallet…</p>}
+                {walletStatus === "valid" && resolvedName && <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {resolvedName}</p>}
+                {walletStatus === "valid" && !resolvedName && <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> Valid customer wallet</p>}
+                {walletStatus === "not_found" && <p className="text-[11px] text-destructive font-medium mt-1">No wallet exists for this number.</p>}
+                {walletStatus === "not_user" && <p className="text-[11px] text-destructive font-medium mt-1">Not a customer wallet. Cash In is only allowed to user wallets.</p>}
                 {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
+
               </div>
               <div>
                 <Label className="text-xs font-semibold">{t("agComAmountLbl")}</Label>
@@ -219,8 +250,8 @@ const AgentCashIn = () => {
                 ))}
               </div>
               {phoneValidation.isValid && amount && Number(amount) >= 10 && (
-                <Button onClick={() => { if (phoneValidation.triggerShake()) return; setStep("confirm"); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in">
-                  {t("agComContinue")}
+                <Button onClick={() => { if (phoneValidation.triggerShake()) return; setStep("confirm"); }} disabled={walletStatus !== "valid" || walletChecking} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in disabled:opacity-50">
+                  {walletChecking ? "Verifying wallet…" : walletStatus !== "valid" ? "Enter a valid customer wallet" : t("agComContinue")}
                 </Button>
               )}
             </Card>
