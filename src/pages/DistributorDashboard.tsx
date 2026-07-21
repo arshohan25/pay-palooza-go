@@ -906,6 +906,7 @@ const AgentsGridView = ({ agents, onAgentClick, onStatusChange, onCreateAgent }:
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Territory View ── */
 const TerritoryView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents: AgentRow[] }) => {
+  const { t: tr } = useI18n();
   const territories = distInfo?.territory ?? [];
   const agentsByTerritory = territories.map(t => ({
     name: t,
@@ -915,29 +916,29 @@ const TerritoryView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-        <MapPin size={14} className="text-primary" /> Territory Overview
+        <MapPin size={14} className="text-primary" /> {tr("distDashTerritoryOverview")}
       </h3>
 
       {/* Coverage stats */}
       <div className="grid grid-cols-3 gap-2">
         <Card className="p-3 border-0 shadow-card text-center">
           <p className="text-lg font-bold text-foreground">{territories.length}</p>
-          <p className="text-[9px] text-muted-foreground">Areas</p>
+          <p className="text-[9px] text-muted-foreground">{tr("distDashAreas")}</p>
         </Card>
         <Card className="p-3 border-0 shadow-card text-center">
           <p className="text-lg font-bold text-foreground">{territories.length > 0 ? (agents.length / territories.length).toFixed(1) : 0}</p>
-          <p className="text-[9px] text-muted-foreground">Avg Agents</p>
+          <p className="text-[9px] text-muted-foreground">{tr("distDashAvgAgents")}</p>
         </Card>
         <Card className="p-3 border-0 shadow-card text-center">
           <p className="text-lg font-bold text-foreground">{agents.reduce((s, a) => s + a.customers_onboarded, 0)}</p>
-          <p className="text-[9px] text-muted-foreground">Total Reach</p>
+          <p className="text-[9px] text-muted-foreground">{tr("distDashTotalReach")}</p>
         </Card>
       </div>
 
       {territories.length === 0 && (
         <Card className="p-6 border-0 shadow-card text-center">
           <MapPin size={28} className="text-muted-foreground mx-auto mb-2" />
-          <p className="text-xs text-muted-foreground">No territories assigned</p>
+          <p className="text-xs text-muted-foreground">{tr("distDashNoTerritory")}</p>
         </Card>
       )}
 
@@ -947,20 +948,20 @@ const TerritoryView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents
             <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
               <MapPin size={12} className="text-primary" /> {t.name}
             </h4>
-            <Badge variant="outline" className="text-[9px]">{t.agents.length} agents</Badge>
+            <Badge variant="outline" className="text-[9px]">{tr("distDashAgentsCount").replace("{n}", String(t.agents.length))}</Badge>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="p-2 rounded-lg bg-primary/5 text-center">
               <p className="text-sm font-bold text-foreground">{t.agents.filter(a => a.status === "active").length}</p>
-              <p className="text-[9px] text-muted-foreground">Active</p>
+              <p className="text-[9px] text-muted-foreground">{tr("distDashActive")}</p>
             </div>
             <div className="p-2 rounded-lg bg-accent/5 text-center">
               <p className="text-sm font-bold text-foreground">{t.agents.reduce((s, a) => s + a.customers_onboarded, 0)}</p>
-              <p className="text-[9px] text-muted-foreground">Customers</p>
+              <p className="text-[9px] text-muted-foreground">{tr("distDashCustomersLbl")}</p>
             </div>
             <div className="p-2 rounded-lg bg-muted/50 text-center">
               <p className="text-sm font-bold text-foreground">৳{fmt(t.agents.reduce((s, a) => s + a.commission_earned, 0))}</p>
-              <p className="text-[9px] text-muted-foreground">Earned</p>
+              <p className="text-[9px] text-muted-foreground">{tr("distDashEarned")}</p>
             </div>
           </div>
         </Card>
