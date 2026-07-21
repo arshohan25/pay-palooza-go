@@ -9,6 +9,7 @@
 
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import { BankLogo } from "@/components/BankLogo";
+import { BankListLiveBadge } from "@/components/BankListLiveBadge";
 import { bankColorFromName } from "@/lib/bangladeshBanks";
 
 const FLOWS: Array<{ id: string; label: string }> = [
@@ -18,7 +19,7 @@ const FLOWS: Array<{ id: string; label: string }> = [
 ];
 
 export default function BankPickerHarness() {
-  const { banks, loading } = usePlatformBanks(false);
+  const { banks, loading, liveUpdateKey } = usePlatformBanks(false);
 
   return (
     <div className="min-h-screen bg-background p-6" data-testid="bank-picker-harness">
