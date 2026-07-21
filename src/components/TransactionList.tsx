@@ -326,6 +326,10 @@ const TransactionDetailSheet = ({ tx: initialTx, onClose }: { tx: DbTransaction;
                 : "Download Failed Advice (PDF)"}
           </button>
 
+          <div className="mt-4">
+            <TransactionStatusTimeline transactionId={tx.id} compact />
+          </div>
+
         </div>
       </motion.div>
     </>
