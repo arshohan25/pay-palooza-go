@@ -18,10 +18,8 @@ const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
   invokeMock.mockReset();
-  // @ts-expect-error test override
-  import.meta.env.VITE_SUPABASE_URL = SUPABASE_URL;
-  // @ts-expect-error test override
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY = ANON_KEY;
+  (import.meta as any).env.VITE_SUPABASE_URL = SUPABASE_URL;
+  (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY = ANON_KEY;
 });
 
 afterEach(() => {
