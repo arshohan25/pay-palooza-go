@@ -318,7 +318,7 @@ export default function DisputeDetailsDrawer({ dispute, open, onOpenChange }: Pr
                 onChange={e => setBody(e.target.value)}
                 rows={2}
                 maxLength={500}
-                placeholder="Message the dispute handler…"
+                placeholder={t("dddPlaceholder")}
                 className="rounded-xl text-xs resize-none"
               />
               <Button
