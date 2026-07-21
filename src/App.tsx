@@ -90,6 +90,7 @@ const KycOcrRescanHarness = lazy(() => import("./pages/KycOcrRescanHarness"));
 const QrScanRouterHarness = lazy(() => import("./pages/QrScanRouterHarness"));
 const CashOutQrErrorHarness = lazy(() => import("./pages/CashOutQrErrorHarness"));
 const BankPickerHarness = lazy(() => import("./pages/BankPickerHarness"));
+const AgentBankTransferHarness = lazy(() => import("./pages/AgentBankTransferHarness"));
 const PaymentRequestsPage = lazy(() => import("./pages/PaymentRequestsPage"));
 const PayLinkPage = lazy(() => import("./pages/PayLinkPage"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
