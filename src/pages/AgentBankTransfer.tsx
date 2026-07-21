@@ -21,6 +21,7 @@ import { useSavedBanks, SavedBankAccount } from "@/hooks/use-saved-banks";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
+import ModernPinField from "@/components/ModernPinField";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
