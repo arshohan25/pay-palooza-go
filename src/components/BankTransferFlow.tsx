@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
+import ModernPinField from "@/components/ModernPinField";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -387,25 +388,10 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     <h2 className="text-lg font-bold text-foreground">{t("btEnterYourPin")}</h2>
                     <p className="text-sm text-muted-foreground">{t("btConfirmWithdrawalOf").replace("{amount}", fmt(totalDeduction))}</p>
                   </div>
-                  <div className="flex gap-3">
-                    {[0, 1, 2, 3].map(i => (
-                      <div key={i} className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-bold transition-all ${pin.length > i ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}>
-                        {pin.length > i ? "•" : ""}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="w-full max-w-[200px]">
-                    <Input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength={4}
-                      placeholder={t("btEnter4DigitPin")}
-                      value={pin}
-                      onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
-                      className="text-center text-lg tracking-[0.5em] h-12 bg-card border-border"
-                      autoFocus
-                    />
-                  </div>
+                  <ModernPinField
+                    value={pin}
+                    onChange={(v) => { setPin(v); setPinError(""); }}
+                  />
                   {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}
                   <Button
                     className="w-full max-w-xs h-11 gradient-primary border-0 text-white font-semibold"
