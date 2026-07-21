@@ -3066,6 +3066,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [linkPayments, setLinkPayments] = useState<Record<string, any[]>>({});
   const { user } = useAuth();
+  const { t, lang } = useI18n();
 
   const baseUrl = window.location.origin;
   const merchantCode = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
