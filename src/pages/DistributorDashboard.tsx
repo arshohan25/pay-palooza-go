@@ -203,9 +203,9 @@ const DistributorDashboard = () => {
   const updateAgentStatus = async (agentId: string, newStatus: string) => {
     const { error } = await supabase.from("agents").update({ status: newStatus as any }).eq("id", agentId);
     if (error) {
-      toast({ title: "Failed", description: error.message, variant: "destructive" });
+      toast({ title: t("distDashFailed"), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Updated", description: `Agent status → ${newStatus}` });
+      toast({ title: t("distDashUpdated"), description: t("distDashStatusChanged").replace("{s}", newStatus) });
       setAgentDetailSheet(null);
       loadData();
     }
@@ -217,7 +217,7 @@ const DistributorDashboard = () => {
     setFloatProcessing(true);
     try {
       const agentProfile = await supabase.from("profiles").select("phone").eq("user_id", selectedFloatAgent.user_id).single();
-      if (!agentProfile.data) throw new Error("Agent profile not found");
+      if (!agentProfile.data) throw new Error(t("distDashAgentProfileNotFound"));
       const { error } = await supabase.rpc("transfer_money", {
         p_recipient_phone: agentProfile.data.phone,
         p_amount: Number(floatAmount),
@@ -227,13 +227,13 @@ const DistributorDashboard = () => {
         p_reference: `FD-${Date.now()}`,
       });
       if (error) throw error;
-      toast({ title: "Float Distributed", description: `৳${fmt(Number(floatAmount))} sent to ${selectedFloatAgent.business_name}` });
+      toast({ title: t("distDashFloatDistributed"), description: t("distDashFloatSentTo").replace("{amt}", fmt(Number(floatAmount))).replace("{name}", selectedFloatAgent.business_name || t("distDashAgent")) });
       setSelectedFloatAgent(null);
       setFloatAmount("");
       setFloatSheet(false);
       loadData();
     } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("distDashFailed"), description: err.message, variant: "destructive" });
     } finally {
       setFloatProcessing(false);
     }
@@ -245,9 +245,9 @@ const DistributorDashboard = () => {
     setSettleProcessing(true);
     try {
       const agentProfile = await supabase.from("profiles").select("phone").eq("user_id", settleAgent.user_id).single();
-      if (!agentProfile.data) throw new Error("Agent profile not found");
+      if (!agentProfile.data) throw new Error(t("distDashAgentProfileNotFound"));
       const amount = settleAgent.commission_earned;
-      if (amount <= 0) throw new Error("No commission to settle");
+      if (amount <= 0) throw new Error(t("distDashNoCommSettle"));
       const { error } = await supabase.rpc("transfer_money", {
         p_recipient_phone: agentProfile.data.phone,
         p_amount: amount,
@@ -259,12 +259,12 @@ const DistributorDashboard = () => {
       if (error) throw error;
       // Reset agent commission_earned after settlement
       await supabase.from("agents").update({ commission_earned: 0 }).eq("id", settleAgent.id);
-      toast({ title: "Settled", description: `৳${fmt(amount)} commission paid to ${settleAgent.business_name}` });
+      toast({ title: t("distDashSettled"), description: t("distDashCommPaidTo").replace("{amt}", fmt(amount)).replace("{name}", settleAgent.business_name || t("distDashAgent")) });
       setSettleAgent(null);
       setSettleSheet(false);
       loadData();
     } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
+      toast({ title: t("distDashFailed"), description: err.message, variant: "destructive" });
     } finally {
       setSettleProcessing(false);
     }
@@ -291,7 +291,7 @@ const DistributorDashboard = () => {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6 text-center">
         <Building2 size={48} className="text-muted-foreground" />
         <p className="text-lg font-semibold text-foreground">{t("distDashAccessReq")}</p>
-        <p className="text-sm text-muted-foreground max-w-xs">You need a distributor role to access this dashboard.</p>
+        <p className="text-sm text-muted-foreground max-w-xs">{t("distDashNeedRole")}</p>
         <Button onClick={() => navigate("/")} variant="outline"><ArrowLeft size={16} className="mr-2" />{t("distDashBackHome")}</Button>
       </div>
     );
@@ -390,7 +390,7 @@ const DistributorDashboard = () => {
         <Card className="p-5 border-0 shadow-elevated bg-card rounded-2xl">
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Float Balance</p>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{t("distDashFloatBalance")}</p>
               <motion.button onClick={toggleBalance} whileTap={{ scale: 0.97 }} className="flex items-center mt-1">
                 <AnimatePresence mode="wait">
                   {showBalance ? (
@@ -402,7 +402,7 @@ const DistributorDashboard = () => {
                   ) : (
                     <motion.div key="hidden" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="glass-hero rounded-2xl px-4 py-2 flex items-center gap-2 bg-muted/60 border border-border/40">
                       <Eye size={14} className="text-muted-foreground" />
-                      <span className="text-xs font-semibold text-muted-foreground">Tap to see balance</span>
+                      <span className="text-xs font-semibold text-muted-foreground">{t("distDashTapToSee")}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -410,9 +410,9 @@ const DistributorDashboard = () => {
             </div>
             <div className="flex flex-col items-end gap-1">
               <Badge variant="outline" className={`text-[9px] font-bold ${floatPct > 50 ? "text-primary border-primary/30" : floatPct > 20 ? "text-accent border-accent/30" : "text-destructive border-destructive/30"}`}>
-                {floatPct > 50 ? "Healthy" : floatPct > 20 ? "Low" : "Critical"}
+                {floatPct > 50 ? t("distDashHealthy") : floatPct > 20 ? t("distDashLow") : t("distDashCritical")}
               </Badge>
-              <p className="text-[10px] text-muted-foreground">Max ৳{fmt(distInfo?.max_float ?? 10000000)}</p>
+              <p className="text-[10px] text-muted-foreground">{t("distDashMax")} ৳{fmt(distInfo?.max_float ?? 10000000)}</p>
             </div>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -451,10 +451,10 @@ const DistributorDashboard = () => {
               {/* ═══ Stats Grid ═══ */}
               <div className="grid grid-cols-2 gap-3 mb-5">
                 {[
-                  { label: "Active Agents", value: activeAgents.toString(), icon: UserCheck, gradient: "gradient-cashout" },
-                  { label: "Pending", value: pendingAgents.toString(), icon: Clock, gradient: "gradient-accent" },
-                  { label: "Customers", value: totalCustomers.toString(), icon: Users, gradient: "gradient-addmoney" },
-                  { label: "Network Earned", value: `৳${fmt(totalCommission)}`, icon: DollarSign, gradient: "gradient-send" },
+                  { label: t("distDashActiveAgents"), value: activeAgents.toString(), icon: UserCheck, gradient: "gradient-cashout" },
+                  { label: t("distDashPending"), value: pendingAgents.toString(), icon: Clock, gradient: "gradient-accent" },
+                  { label: t("distDashCustomers"), value: totalCustomers.toString(), icon: Users, gradient: "gradient-addmoney" },
+                  { label: t("distDashNetworkEarned"), value: `৳${fmt(totalCommission)}`, icon: DollarSign, gradient: "gradient-send" },
                 ].map((s, i) => (
                   <motion.div key={s.label} custom={i + 8} initial="hidden" animate="visible" variants={stagger}>
                     <Card className="p-3 border-0 shadow-card">
@@ -471,7 +471,7 @@ const DistributorDashboard = () => {
               {/* ═══ 7-Day Volume Chart ═══ */}
               <Card className="p-4 border-0 shadow-card mb-5">
                 <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                  <BarChart3 size={14} className="text-primary" /> 7-Day Volume
+                  <BarChart3 size={14} className="text-primary" /> {t("distDash7DayVolume")}
                 </h3>
                 <div className="h-32">
                   <ResponsiveContainer width="100%" height="100%">
@@ -486,7 +486,7 @@ const DistributorDashboard = () => {
                       <YAxis hide />
                       <Tooltip
                         contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 11 }}
-                        formatter={(v: number) => [`৳${fmt(v)}`, "Volume"]}
+                        formatter={(v: number) => [`৳${fmt(v)}`, t("distDashVolume")]}
                       />
                       <Area type="monotone" dataKey="volume" stroke="hsl(217,80%,50%)" strokeWidth={2} fill="url(#distVolGrad)" />
                     </AreaChart>
@@ -500,44 +500,44 @@ const DistributorDashboard = () => {
               {/* ═══ Network Health ═══ */}
               <Card className="p-4 border-0 shadow-card mb-5">
                 <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                  <Activity size={14} className="text-accent" /> Network Health
+                  <Activity size={14} className="text-accent" /> {t("distDashNetworkHealth")}
                 </h3>
                 <div className="space-y-2">
                   {pendingAgents > 0 && (
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-accent/5 border border-accent/20">
                       <AlertTriangle size={14} className="text-accent shrink-0" />
-                      <p className="text-xs text-foreground">{pendingAgents} agent{pendingAgents > 1 ? "s" : ""} pending approval</p>
-                      <Button size="sm" variant="ghost" className="ml-auto h-6 text-[10px] text-accent" onClick={() => setSubView("agents")}>Review</Button>
+                      <p className="text-xs text-foreground">{t("distDashPendingApproval").replace("{n}", String(pendingAgents))}</p>
+                      <Button size="sm" variant="ghost" className="ml-auto h-6 text-[10px] text-accent" onClick={() => setSubView("agents")}>{t("distDashReview")}</Button>
                     </div>
                   )}
                   {agents.filter(a => a.status === "suspended").length > 0 && (
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-destructive/5 border border-destructive/20">
                       <UserX size={14} className="text-destructive shrink-0" />
-                      <p className="text-xs text-foreground">{agents.filter(a => a.status === "suspended").length} suspended</p>
+                      <p className="text-xs text-foreground">{t("distDashSuspended").replace("{n}", String(agents.filter(a => a.status === "suspended").length))}</p>
                     </div>
                   )}
                   {agents.length > 0 && pendingAgents === 0 && agents.filter(a => a.status === "suspended").length === 0 && (
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary/5 border border-primary/20">
                       <CheckCircle2 size={14} className="text-primary" />
-                      <p className="text-xs text-foreground">All agents operational</p>
+                      <p className="text-xs text-foreground">{t("distDashAllOperational")}</p>
                     </div>
                   )}
-                  {agents.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No agents in network</p>}
+                  {agents.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">{t("distDashNoAgentsInNet")}</p>}
                 </div>
               </Card>
 
               {/* ═══ Top Agents ═══ */}
               <Card className="p-4 border-0 shadow-card">
                 <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                  <Target size={14} className="text-primary" /> Top Performing Agents
+                  <Target size={14} className="text-primary" /> {t("distDashTopPerforming")}
                 </h3>
                 {agents.length === 0 ? (
                   <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
                     <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
                       <Users className="w-7 h-7 text-muted-foreground" />
                     </motion.div>
-                    <p className="text-sm font-semibold text-foreground">No agents yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">Your top performers will appear here</p>
+                    <p className="text-sm font-semibold text-foreground">{t("distDashNoAgentsYet")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("distDashTopWillAppear")}</p>
                   </motion.div>
                 ) : (
                   <div className="space-y-2">
@@ -546,8 +546,8 @@ const DistributorDashboard = () => {
                         <div className="flex items-center gap-2">
                           <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${i === 0 ? "gradient-accent text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{i + 1}</span>
                           <div>
-                            <p className="text-xs font-semibold text-foreground">{ag.business_name || "Agent"}</p>
-                            <p className="text-[10px] text-muted-foreground">{ag.territory_code || "—"} · {ag.customers_onboarded} customers</p>
+                            <p className="text-xs font-semibold text-foreground">{ag.business_name || t("distDashAgent")}</p>
+                            <p className="text-[10px] text-muted-foreground">{ag.territory_code || "—"} · {ag.customers_onboarded} {t("distDashCustomersLbl").toLowerCase()}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -605,7 +605,7 @@ const DistributorDashboard = () => {
           {agentDetailSheet && (
             <>
               <SheetHeader>
-                <SheetTitle className="text-base">{agentDetailSheet.business_name || "Agent Details"}</SheetTitle>
+                <SheetTitle className="text-base">{agentDetailSheet.business_name || t("distDashAgentDetails")}</SheetTitle>
               </SheetHeader>
               <div className="mt-4 space-y-4">
                 <div className="flex items-center gap-3">
@@ -613,7 +613,7 @@ const DistributorDashboard = () => {
                     <Building2 size={20} className="text-primary-foreground" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-foreground">{agentDetailSheet.business_name || "Unnamed Agent"}</p>
+                    <p className="text-sm font-bold text-foreground">{agentDetailSheet.business_name || t("distDashUnnamedAgent")}</p>
                     <div className="flex items-center gap-2">
                       <Badge className={`text-[10px] ${statusColor[agentDetailSheet.status]}`}>{agentDetailSheet.status}</Badge>
                       <span className="text-[10px] text-muted-foreground">{agentDetailSheet.territory_code || "—"}</span>
@@ -623,9 +623,9 @@ const DistributorDashboard = () => {
 
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: "Customers", value: agentDetailSheet.customers_onboarded },
-                    { label: "Commission", value: `৳${fmt(agentDetailSheet.commission_earned)}` },
-                    { label: "Max Float", value: `৳${fmt(agentDetailSheet.max_float)}` },
+                    { label: t("distDashCustomers"), value: agentDetailSheet.customers_onboarded },
+                    { label: t("distDashCommission"), value: `৳${fmt(agentDetailSheet.commission_earned)}` },
+                    { label: t("distDashMaxFloat"), value: `৳${fmt(agentDetailSheet.max_float)}` },
                   ].map(s => (
                     <div key={s.label} className="p-3 rounded-xl bg-muted/50 text-center">
                       <p className="text-sm font-bold text-foreground">{s.value}</p>
@@ -634,23 +634,23 @@ const DistributorDashboard = () => {
                   ))}
                 </div>
 
-                <p className="text-[10px] text-muted-foreground">Joined {new Date(agentDetailSheet.created_at).toLocaleDateString()}</p>
+                <p className="text-[10px] text-muted-foreground">{t("distDashJoined").replace("{date}", new Date(agentDetailSheet.created_at).toLocaleDateString())}</p>
 
                 <div className="flex gap-2">
                   {agentDetailSheet.status === "pending" && (
                     <>
-                      <Button onClick={() => updateAgentStatus(agentDetailSheet.id, "active")} className="flex-1 gradient-primary text-primary-foreground"><UserCheck size={14} className="mr-1" />Approve</Button>
-                      <Button variant="destructive" onClick={() => updateAgentStatus(agentDetailSheet.id, "suspended")} className="flex-1"><UserX size={14} className="mr-1" />Reject</Button>
+                      <Button onClick={() => updateAgentStatus(agentDetailSheet.id, "active")} className="flex-1 gradient-primary text-primary-foreground"><UserCheck size={14} className="mr-1" />{t("distDashApprove")}</Button>
+                      <Button variant="destructive" onClick={() => updateAgentStatus(agentDetailSheet.id, "suspended")} className="flex-1"><UserX size={14} className="mr-1" />{t("distDashReject")}</Button>
                     </>
                   )}
                   {agentDetailSheet.status === "active" && (
                     <>
-                      <Button variant="outline" onClick={() => updateAgentStatus(agentDetailSheet.id, "suspended")} className="flex-1">Suspend</Button>
-                      <Button onClick={() => { setSelectedFloatAgent(agentDetailSheet); setAgentDetailSheet(null); setFloatSheet(true); }} className="flex-1 gradient-addmoney text-primary-foreground"><Send size={14} className="mr-1" />Send Float</Button>
+                      <Button variant="outline" onClick={() => updateAgentStatus(agentDetailSheet.id, "suspended")} className="flex-1">{t("distDashSuspend")}</Button>
+                      <Button onClick={() => { setSelectedFloatAgent(agentDetailSheet); setAgentDetailSheet(null); setFloatSheet(true); }} className="flex-1 gradient-addmoney text-primary-foreground"><Send size={14} className="mr-1" />{t("distDashSendFloat")}</Button>
                     </>
                   )}
                   {agentDetailSheet.status === "suspended" && (
-                    <Button onClick={() => updateAgentStatus(agentDetailSheet.id, "active")} className="flex-1 gradient-primary text-primary-foreground">Reactivate</Button>
+                    <Button onClick={() => updateAgentStatus(agentDetailSheet.id, "active")} className="flex-1 gradient-primary text-primary-foreground">{t("distDashReactivate")}</Button>
                   )}
                 </div>
               </div>
@@ -663,21 +663,21 @@ const DistributorDashboard = () => {
       <Sheet open={floatSheet} onOpenChange={setFloatSheet}>
         <SheetContent side="bottom" className="rounded-t-3xl pb-8">
           <SheetHeader>
-            <SheetTitle className="text-base">Distribute Float</SheetTitle>
+            <SheetTitle className="text-base">{t("distDashDistributeFloat")}</SheetTitle>
           </SheetHeader>
           <div className="mt-4 space-y-4">
             {selectedFloatAgent ? (
               <>
                 <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20">
                   <div>
-                    <p className="text-xs font-semibold text-foreground">{selectedFloatAgent.business_name || "Agent"}</p>
+                    <p className="text-xs font-semibold text-foreground">{selectedFloatAgent.business_name || t("distDashAgent")}</p>
                     <p className="text-[10px] text-muted-foreground">{selectedFloatAgent.territory_code || "—"}</p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedFloatAgent(null)} className="h-7 text-[10px]">Change</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedFloatAgent(null)} className="h-7 text-[10px]">{t("distDashChange")}</Button>
                 </div>
                 <div>
-                  <Label className="text-xs">Amount (৳)</Label>
-                  <Input type="text" inputMode="numeric" placeholder="Enter float amount" value={floatAmount} onChange={e => setFloatAmount(e.target.value.replace(/\D/g, ""))} className="mt-1 rounded-xl h-11" />
+                  <Label className="text-xs">{t("distDashAmountBDT")}</Label>
+                  <Input type="text" inputMode="numeric" placeholder={t("distDashEnterFloatAmt")} value={floatAmount} onChange={e => setFloatAmount(e.target.value.replace(/\D/g, ""))} className="mt-1 rounded-xl h-11" />
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {[10000, 25000, 50000, 100000].map(a => (
@@ -685,13 +685,13 @@ const DistributorDashboard = () => {
                   ))}
                 </div>
                 <Button onClick={distributeFloat} disabled={!floatAmount || Number(floatAmount) < 1000 || floatProcessing} className="w-full gradient-addmoney text-primary-foreground rounded-xl h-11">
-                  {floatProcessing ? "Sending…" : `Send ৳${floatAmount ? fmt(Number(floatAmount)) : "0"}`}
+                  {floatProcessing ? t("distDashSending") : t("distDashSendAmount").replace("{amt}", floatAmount ? fmt(Number(floatAmount)) : "0")}
                 </Button>
               </>
             ) : (
               <div className="space-y-2">
                 {agents.filter(a => a.status === "active").length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-6">No active agents to distribute float to</p>
+                  <p className="text-xs text-muted-foreground text-center py-6">{t("distDashNoActiveAgents")}</p>
                 ) : (
                   agents.filter(a => a.status === "active").map(ag => (
                     <button key={ag.id} onClick={() => setSelectedFloatAgent(ag)} className="w-full flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/50 press-effect">
@@ -700,8 +700,8 @@ const DistributorDashboard = () => {
                           <Building2 size={14} className="text-primary-foreground" />
                         </div>
                         <div className="text-left">
-                          <p className="text-xs font-semibold text-foreground">{ag.business_name || "Agent"}</p>
-                          <p className="text-[9px] text-muted-foreground">Max: ৳{fmt(ag.max_float)}</p>
+                          <p className="text-xs font-semibold text-foreground">{ag.business_name || t("distDashAgent")}</p>
+                          <p className="text-[9px] text-muted-foreground">{t("distDashMaxLabel")}: ৳{fmt(ag.max_float)}</p>
                         </div>
                       </div>
                       <ChevronRight size={14} className="text-muted-foreground" />
@@ -717,10 +717,10 @@ const DistributorDashboard = () => {
       {/* ═══ Notifications Sheet ═══ */}
       <Sheet open={notifOpen} onOpenChange={setNotifOpen}>
         <SheetContent side="right" className="w-80 overflow-y-auto">
-          <SheetHeader><SheetTitle className="text-sm">Notifications</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle className="text-sm">{t("distDashNotifs")}</SheetTitle></SheetHeader>
           <div className="mt-4 space-y-2">
             {notifications.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-8">No notifications yet</p>
+              <p className="text-xs text-muted-foreground text-center py-8">{t("distDashNoNotifs")}</p>
             ) : (
               notifications.slice(0, 20).map(n => (
                 <div key={n.id} className="p-3 rounded-xl bg-muted/30 border border-border/50">
@@ -739,7 +739,7 @@ const DistributorDashboard = () => {
       {/* ═══ Support Sheet ═══ */}
       <Sheet open={supportOpen} onOpenChange={setSupportOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl h-[80vh]">
-          <SheetHeader><SheetTitle className="text-sm">Support</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle className="text-sm">{t("distDashSupport")}</SheetTitle></SheetHeader>
           <div className="mt-4 h-full">{user && <SupportChat userId={user.id} />}</div>
         </SheetContent>
       </Sheet>
@@ -748,7 +748,7 @@ const DistributorDashboard = () => {
       <Sheet open={settleSheet} onOpenChange={v => { setSettleSheet(v); if (!v) setSettleAgent(null); }}>
         <SheetContent side="bottom" className="rounded-t-3xl pb-8 max-h-[80vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle className="text-base flex items-center gap-2"><Banknote size={16} className="text-primary" /> Commission Settlement</SheetTitle>
+            <SheetTitle className="text-base flex items-center gap-2"><Banknote size={16} className="text-primary" /> {t("distDashCommSettlement")}</SheetTitle>
           </SheetHeader>
           <div className="mt-4 space-y-4">
             {settleAgent ? (
@@ -759,17 +759,17 @@ const DistributorDashboard = () => {
                       <Building2 size={18} className="text-primary-foreground" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-foreground">{settleAgent.business_name || "Agent"}</p>
+                      <p className="text-sm font-bold text-foreground">{settleAgent.business_name || t("distDashAgent")}</p>
                       <p className="text-[10px] text-muted-foreground">{settleAgent.territory_code || "—"}</p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setSettleAgent(null)} className="h-7 text-[10px]">Change</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setSettleAgent(null)} className="h-7 text-[10px]">{t("distDashChange")}</Button>
                   </div>
                 </div>
 
                 <Card className="p-4 border-0 shadow-card">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Accumulated Commission</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">{t("distDashAccumulatedComm")}</p>
                   <p className="text-2xl font-extrabold text-foreground">৳{fmt(settleAgent.commission_earned)}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">This amount will be transferred to the agent's wallet and their commission counter will be reset to zero.</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{t("distDashSettleNote")}</p>
                 </Card>
 
                 <Button
@@ -777,20 +777,20 @@ const DistributorDashboard = () => {
                   disabled={settleAgent.commission_earned <= 0 || settleProcessing}
                   className="w-full gradient-primary text-primary-foreground rounded-xl h-11"
                 >
-                  {settleProcessing ? "Processing…" : `Settle ৳${fmt(settleAgent.commission_earned)}`}
+                  {settleProcessing ? t("distDashProcessing") : t("distDashSettleAmount").replace("{amt}", fmt(settleAgent.commission_earned))}
                 </Button>
 
                 {settleAgent.commission_earned <= 0 && (
-                  <p className="text-xs text-muted-foreground text-center">No pending commission to settle</p>
+                  <p className="text-xs text-muted-foreground text-center">{t("distDashNoPendingComm")}</p>
                 )}
               </>
             ) : (
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground mb-2">Select an agent to settle commission:</p>
+                <p className="text-xs text-muted-foreground mb-2">{t("distDashSelectAgentSettle")}</p>
                 {agents.filter(a => a.commission_earned > 0).length === 0 ? (
                   <div className="text-center py-8">
                     <CheckCircle2 size={28} className="text-primary mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground">All commissions are settled!</p>
+                    <p className="text-xs text-muted-foreground">{t("distDashAllSettled")}</p>
                   </div>
                 ) : (
                   agents.filter(a => a.commission_earned > 0).sort((a, b) => b.commission_earned - a.commission_earned).map(ag => (
@@ -800,7 +800,7 @@ const DistributorDashboard = () => {
                           <Building2 size={14} className="text-primary-foreground" />
                         </div>
                         <div className="text-left">
-                          <p className="text-xs font-semibold text-foreground">{ag.business_name || "Agent"}</p>
+                          <p className="text-xs font-semibold text-foreground">{ag.business_name || t("distDashAgent")}</p>
                           <p className="text-[9px] text-muted-foreground">{ag.territory_code || "—"}</p>
                         </div>
                       </div>
@@ -828,6 +828,7 @@ const AgentsGridView = ({ agents, onAgentClick, onStatusChange, onCreateAgent }:
   onStatusChange: (id: string, status: string) => void;
   onCreateAgent: () => void;
 }) => {
+  const { t } = useI18n();
   const [filter, setFilter] = useState<"all" | "active" | "pending" | "suspended">("all");
   const [search, setSearch] = useState("");
   const filtered = (filter === "all" ? agents : agents.filter(a => a.status === filter))
@@ -837,32 +838,36 @@ const AgentsGridView = ({ agents, onAgentClick, onStatusChange, onCreateAgent }:
     <div className="space-y-4">
       {/* Header + Create */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-foreground">Agent Network</h3>
+        <h3 className="text-sm font-bold text-foreground">{t("distDashAgentNetwork")}</h3>
         <Button size="sm" onClick={onCreateAgent} className="h-8 text-xs gap-1.5 gradient-primary text-primary-foreground rounded-xl">
-          <UserPlus size={14} /> Create Agent
+          <UserPlus size={14} /> {t("distDashCreateAgent")}
         </Button>
       </div>
 
       {/* Search */}
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search agents..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-xl h-10 text-xs" />
+        <Input placeholder={t("distDashSearchAgents")} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-xl h-10 text-xs" />
       </div>
 
       {/* Filter chips */}
       <div className="flex gap-2 overflow-x-auto scrollbar-none">
-        {(["all", "active", "pending", "suspended"] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-xl text-[10px] font-semibold whitespace-nowrap transition-all ${filter === f ? "gradient-addmoney text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground"}`}>
-            {f === "all" ? `All (${agents.length})` : `${f.charAt(0).toUpperCase() + f.slice(1)} (${agents.filter(a => a.status === f).length})`}
-          </button>
-        ))}
+        {(["all", "active", "pending", "suspended"] as const).map(f => {
+          const labelMap: Record<string, string> = { all: t("distDashAll"), active: t("distDashActive"), pending: t("distDashPending"), suspended: t("distDashSuspend") };
+          const count = f === "all" ? agents.length : agents.filter(a => a.status === f).length;
+          return (
+            <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-xl text-[10px] font-semibold whitespace-nowrap transition-all ${filter === f ? "gradient-addmoney text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground"}`}>
+              {labelMap[f]} ({count})
+            </button>
+          );
+        })}
       </div>
 
       {/* Grid */}
       {filtered.length === 0 ? (
         <Card className="p-8 border-0 shadow-card text-center">
           <Users size={32} className="text-muted-foreground mx-auto mb-2" />
-          <p className="text-xs text-muted-foreground">No agents found</p>
+          <p className="text-xs text-muted-foreground">{t("distDashNoAgents")}</p>
         </Card>
       ) : (
         <div className="grid grid-cols-2 gap-3">
@@ -874,21 +879,21 @@ const AgentsGridView = ({ agents, onAgentClick, onStatusChange, onCreateAgent }:
                     <Building2 size={16} className="text-primary-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-bold text-foreground truncate">{ag.business_name || "Agent"}</p>
+                    <p className="text-[11px] font-bold text-foreground truncate">{ag.business_name || t("distDashAgent")}</p>
                     <Badge className={`text-[8px] px-1.5 py-0 ${statusColor[ag.status]}`}>{ag.status}</Badge>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   <div className="p-1.5 rounded-lg bg-muted/50 text-center">
                     <p className="text-[10px] font-bold text-foreground">{ag.customers_onboarded}</p>
-                    <p className="text-[8px] text-muted-foreground">Customers</p>
+                    <p className="text-[8px] text-muted-foreground">{t("distDashCustomersLbl")}</p>
                   </div>
                   <div className="p-1.5 rounded-lg bg-muted/50 text-center">
                     <p className="text-[10px] font-bold text-foreground">৳{fmt(ag.commission_earned)}</p>
-                    <p className="text-[8px] text-muted-foreground">Earned</p>
+                    <p className="text-[8px] text-muted-foreground">{t("distDashEarned")}</p>
                   </div>
                 </div>
-                <p className="text-[8px] text-muted-foreground mt-1.5 truncate">{ag.territory_code || "—"} · Since {new Date(ag.created_at).toLocaleDateString()}</p>
+                <p className="text-[8px] text-muted-foreground mt-1.5 truncate">{ag.territory_code || "—"} · {t("distDashSince")} {new Date(ag.created_at).toLocaleDateString()}</p>
               </Card>
             </motion.div>
           ))}
@@ -901,6 +906,7 @@ const AgentsGridView = ({ agents, onAgentClick, onStatusChange, onCreateAgent }:
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Territory View ── */
 const TerritoryView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents: AgentRow[] }) => {
+  const { t: tr } = useI18n();
   const territories = distInfo?.territory ?? [];
   const agentsByTerritory = territories.map(t => ({
     name: t,
@@ -910,29 +916,29 @@ const TerritoryView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-        <MapPin size={14} className="text-primary" /> Territory Overview
+        <MapPin size={14} className="text-primary" /> {tr("distDashTerritoryOverview")}
       </h3>
 
       {/* Coverage stats */}
       <div className="grid grid-cols-3 gap-2">
         <Card className="p-3 border-0 shadow-card text-center">
           <p className="text-lg font-bold text-foreground">{territories.length}</p>
-          <p className="text-[9px] text-muted-foreground">Areas</p>
+          <p className="text-[9px] text-muted-foreground">{tr("distDashAreas")}</p>
         </Card>
         <Card className="p-3 border-0 shadow-card text-center">
           <p className="text-lg font-bold text-foreground">{territories.length > 0 ? (agents.length / territories.length).toFixed(1) : 0}</p>
-          <p className="text-[9px] text-muted-foreground">Avg Agents</p>
+          <p className="text-[9px] text-muted-foreground">{tr("distDashAvgAgents")}</p>
         </Card>
         <Card className="p-3 border-0 shadow-card text-center">
           <p className="text-lg font-bold text-foreground">{agents.reduce((s, a) => s + a.customers_onboarded, 0)}</p>
-          <p className="text-[9px] text-muted-foreground">Total Reach</p>
+          <p className="text-[9px] text-muted-foreground">{tr("distDashTotalReach")}</p>
         </Card>
       </div>
 
       {territories.length === 0 && (
         <Card className="p-6 border-0 shadow-card text-center">
           <MapPin size={28} className="text-muted-foreground mx-auto mb-2" />
-          <p className="text-xs text-muted-foreground">No territories assigned</p>
+          <p className="text-xs text-muted-foreground">{tr("distDashNoTerritory")}</p>
         </Card>
       )}
 
@@ -942,20 +948,20 @@ const TerritoryView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents
             <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
               <MapPin size={12} className="text-primary" /> {t.name}
             </h4>
-            <Badge variant="outline" className="text-[9px]">{t.agents.length} agents</Badge>
+            <Badge variant="outline" className="text-[9px]">{tr("distDashAgentsCount").replace("{n}", String(t.agents.length))}</Badge>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="p-2 rounded-lg bg-primary/5 text-center">
               <p className="text-sm font-bold text-foreground">{t.agents.filter(a => a.status === "active").length}</p>
-              <p className="text-[9px] text-muted-foreground">Active</p>
+              <p className="text-[9px] text-muted-foreground">{tr("distDashActive")}</p>
             </div>
             <div className="p-2 rounded-lg bg-accent/5 text-center">
               <p className="text-sm font-bold text-foreground">{t.agents.reduce((s, a) => s + a.customers_onboarded, 0)}</p>
-              <p className="text-[9px] text-muted-foreground">Customers</p>
+              <p className="text-[9px] text-muted-foreground">{tr("distDashCustomersLbl")}</p>
             </div>
             <div className="p-2 rounded-lg bg-muted/50 text-center">
               <p className="text-sm font-bold text-foreground">৳{fmt(t.agents.reduce((s, a) => s + a.commission_earned, 0))}</p>
-              <p className="text-[9px] text-muted-foreground">Earned</p>
+              <p className="text-[9px] text-muted-foreground">{tr("distDashEarned")}</p>
             </div>
           </div>
         </Card>
@@ -967,6 +973,7 @@ const TerritoryView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Earnings View ── */
 const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents: AgentRow[] }) => {
+  const { t } = useI18n();
   const totalNetworkCommission = agents.reduce((s, a) => s + a.commission_earned, 0);
   const distRate = distInfo?.commission_rate ?? 0.002;
   const estimatedEarnings = totalNetworkCommission * distRate * 100;
@@ -974,25 +981,25 @@ const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents:
   return (
     <div className="space-y-4">
       <Card className="p-5 border-0 shadow-card" style={{ background: "linear-gradient(150deg, hsl(217 80% 50%) 0%, hsl(226 75% 40%) 100%)" }}>
-        <p className="text-xs text-primary-foreground/80 font-medium">Estimated Earnings</p>
+        <p className="text-xs text-primary-foreground/80 font-medium">{t("distDashEstimatedEarnings")}</p>
         <p className="text-3xl font-bold text-primary-foreground mt-1">৳{fmt(Math.round(estimatedEarnings))}</p>
-        <p className="text-[10px] text-primary-foreground/70 mt-1">Commission Rate: {(distRate * 100).toFixed(2)}%</p>
+        <p className="text-[10px] text-primary-foreground/70 mt-1">{t("distDashCommRate")}: {(distRate * 100).toFixed(2)}%</p>
       </Card>
 
       <Card className="p-5 border-0 shadow-card">
-        <h3 className="text-sm font-bold text-foreground mb-3">Revenue Breakdown</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">{t("distDashRevenueBreakdown")}</h3>
         <div className="space-y-3">
           {[
-            { source: "Cash Out Commission", share: "40%", amount: Math.round(estimatedEarnings * 0.4) },
-            { source: "Cash In Commission", share: "25%", amount: Math.round(estimatedEarnings * 0.25) },
-            { source: "Bill Pay Commission", share: "15%", amount: Math.round(estimatedEarnings * 0.15) },
-            { source: "Agent Onboarding", share: "10%", amount: Math.round(estimatedEarnings * 0.1) },
-            { source: "Other", share: "10%", amount: Math.round(estimatedEarnings * 0.1) },
+            { source: t("distDashSrcCashOut"), share: "40%", amount: Math.round(estimatedEarnings * 0.4) },
+            { source: t("distDashSrcCashIn"), share: "25%", amount: Math.round(estimatedEarnings * 0.25) },
+            { source: t("distDashSrcBillPay"), share: "15%", amount: Math.round(estimatedEarnings * 0.15) },
+            { source: t("distDashSrcOnboarding"), share: "10%", amount: Math.round(estimatedEarnings * 0.1) },
+            { source: t("distDashSrcOther"), share: "10%", amount: Math.round(estimatedEarnings * 0.1) },
           ].map(r => (
             <div key={r.source} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
               <div>
                 <p className="text-xs font-semibold text-foreground">{r.source}</p>
-                <p className="text-[10px] text-muted-foreground">{r.share} of total</p>
+                <p className="text-[10px] text-muted-foreground">{r.share} {t("distDashOfTotal")}</p>
               </div>
               <p className="text-xs font-bold text-primary">৳{fmt(r.amount)}</p>
             </div>
@@ -1001,9 +1008,9 @@ const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents:
       </Card>
 
       <Card className="p-5 border-0 shadow-card">
-        <h3 className="text-sm font-bold text-foreground mb-3">Agent Performance</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">{t("distDashAgentPerformance")}</h3>
         {agents.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-4">No agents yet</p>
+          <p className="text-xs text-muted-foreground text-center py-4">{t("distDashNoAgentsYet")}</p>
         ) : (
           <div className="space-y-2">
             {[...agents].sort((a, b) => b.commission_earned - a.commission_earned).map(ag => {
@@ -1011,7 +1018,7 @@ const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents:
               return (
                 <div key={ag.id} className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-semibold text-foreground">{ag.business_name || "Agent"}</p>
+                    <p className="text-[10px] font-semibold text-foreground">{ag.business_name || t("distDashAgent")}</p>
                     <p className="text-[10px] text-muted-foreground">৳{fmt(ag.commission_earned)}</p>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -1030,6 +1037,7 @@ const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents:
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Agent Transactions View ── */
 const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
+  const { t: tr } = useI18n();
   const [selectedAgent, setSelectedAgent] = useState<AgentRow | null>(null);
   const [txns, setTxns] = useState<any[]>([]);
   const [loadingTxns, setLoadingTxns] = useState(false);
@@ -1091,16 +1099,16 @@ const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-        <ListChecks size={14} className="text-primary" /> Agent Transaction Monitor
+        <ListChecks size={14} className="text-primary" /> {tr("distDashAgentTxnMonitor")}
       </h3>
 
       {!selectedAgent ? (
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">Select an agent to monitor transactions:</p>
+          <p className="text-xs text-muted-foreground">{tr("distDashSelectAgentMonitor")}</p>
           {agents.length === 0 ? (
             <Card className="p-8 border-0 shadow-card text-center">
               <Users size={28} className="text-muted-foreground mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No agents in your network</p>
+              <p className="text-xs text-muted-foreground">{tr("distDashNoAgentsInYours")}</p>
             </Card>
           ) : (
             agents.map(ag => (
@@ -1110,7 +1118,7 @@ const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
                     <Building2 size={14} className="text-primary-foreground" />
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-semibold text-foreground">{ag.business_name || "Agent"}</p>
+                    <p className="text-xs font-semibold text-foreground">{ag.business_name || tr("distDashAgent")}</p>
                     <Badge className={`text-[8px] px-1.5 py-0 ${statusColor[ag.status]}`}>{ag.status}</Badge>
                   </div>
                 </div>
@@ -1128,28 +1136,28 @@ const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
                 <Building2 size={14} className="text-primary-foreground" />
               </div>
               <div>
-                <p className="text-xs font-bold text-foreground">{selectedAgent.business_name || "Agent"}</p>
-                <p className="text-[9px] text-muted-foreground">{selectedAgent.territory_code || "—"} · {txns.length} txns loaded</p>
+                <p className="text-xs font-bold text-foreground">{selectedAgent.business_name || tr("distDashAgent")}</p>
+                <p className="text-[9px] text-muted-foreground">{selectedAgent.territory_code || "—"} · {tr("distDashTxnsLoaded").replace("{n}", String(txns.length))}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => loadAgentTxns(selectedAgent.user_id)}>
                 <RefreshCw size={12} />
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => { setSelectedAgent(null); setTxns([]); }} className="h-7 text-[10px]">Back</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setSelectedAgent(null); setTxns([]); }} className="h-7 text-[10px]">{tr("distDashBack")}</Button>
             </div>
           </div>
 
           {/* Realtime badge */}
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-[10px] text-muted-foreground">Live monitoring</span>
+            <span className="text-[10px] text-muted-foreground">{tr("distDashLiveMonitor")}</span>
           </div>
 
           {/* Search */}
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search by name, phone, ID, type..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-xl h-9 text-xs" />
+            <Input placeholder={tr("distDashSearchTxns")} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-xl h-9 text-xs" />
           </div>
 
           {/* Transaction list */}
@@ -1160,7 +1168,7 @@ const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
           ) : filteredTxns.length === 0 ? (
             <Card className="p-6 border-0 shadow-card text-center">
               <FileText size={24} className="text-muted-foreground mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">{search ? "No matching transactions" : "No transactions yet"}</p>
+              <p className="text-xs text-muted-foreground">{search ? tr("distDashNoMatchTxns") : tr("distDashNoTxnsYet")}</p>
             </Card>
           ) : (
             <div className="space-y-1.5">
@@ -1181,7 +1189,7 @@ const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
                       <p className={`text-sm font-bold ${txnColors[t.type] || "text-foreground"}`}>
                         {["receive", "cashin", "addmoney"].includes(t.type) ? "+" : "−"}৳{fmt(t.amount)}
                       </p>
-                      {t.commission > 0 && <p className="text-[9px] text-primary">+৳{fmt(t.commission)} comm</p>}
+                      {t.commission > 0 && <p className="text-[9px] text-primary">+৳{fmt(t.commission)} {tr("distDashComm")}</p>}
                       <p className="text-[9px] text-muted-foreground">{new Date(t.created_at).toLocaleTimeString()}</p>
                     </div>
                   </div>
