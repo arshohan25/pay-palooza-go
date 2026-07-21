@@ -154,6 +154,22 @@ export default function AdminBankListManager() {
     refetch();
   };
 
+  const setDefaultBank = async (bank: PlatformBank) => {
+    const nextValue = !bank.is_default;
+    // Trigger will auto-clear any other default when we set one.
+    const { error } = await supabase
+      .from("platform_banks")
+      .update({ is_default: nextValue } as any)
+      .eq("id", bank.id);
+    if (error) {
+      toast.error(error.message || "Failed to set default");
+      return;
+    }
+    auditLog("set_default_bank", bank.id, { name: bank.name, is_default: nextValue });
+    toast.success(nextValue ? `${bank.name} is now the default bank` : "Default bank cleared");
+    refetch();
+  };
+
   const persistOrder = async (ordered: PlatformBank[]) => {
     // Assign sequential sort_order starting at 1
     const updates = ordered.map((b, idx) => ({ id: b.id, sort_order: idx + 1 }));
