@@ -3364,7 +3364,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                       onClick={() => shareLink(link)}
                       disabled={!link.is_active}
                     >
-                      <Share2 size={12} className="mr-1" /> Share
+                      <Share2 size={12} className="mr-1" /> {t("plmcShare")}
                     </Button>
                   </div>
 
