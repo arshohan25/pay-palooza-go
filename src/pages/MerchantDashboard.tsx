@@ -3374,7 +3374,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                     className="w-full mt-2 flex items-center justify-between text-[10px] text-muted-foreground hover:text-foreground transition-colors py-1"
                   >
                     <span className="flex items-center gap-1">
-                      <Receipt size={10} /> {link.used_count} payment{link.used_count !== 1 ? "s" : ""} received
+                      <Receipt size={10} /> {t("plmcPaymentsReceived").replace("{count}", String(link.used_count))}
                     </span>
                     <ChevronDown size={10} className={`transition-transform ${expandedId === link.id ? "rotate-180" : ""}`} />
                   </button>
