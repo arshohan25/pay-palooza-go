@@ -6,6 +6,7 @@ import {
   subscribeAuthError,
   type AuthErrorInfo,
 } from "@/hooks/use-auth";
+import { translationsMap } from "@/lib/i18n";
 
 /**
  * Full-screen overlay shown when session validation fails. Gives the user a
@@ -19,23 +20,17 @@ export default function AuthErrorOverlay() {
 
   if (!err) return null;
 
-  const lang = (() => {
+  const lang: "en" | "bn" = (() => {
     try { return localStorage.getItem("mfs_ui_lang") === "bn" ? "bn" : "en"; } catch { return "en"; }
   })();
 
-  const t = lang === "bn"
-    ? {
-        title: "সেশন যাচাই ব্যর্থ",
-        body: "আপনার সেশনটি আর বৈধ নয়। পুনরায় চেষ্টা করুন বা আবার লগ ইন করুন।",
-        retry: "পুনরায় চেষ্টা করুন",
-        login: "আবার লগ ইন করুন",
-      }
-    : {
-        title: "Session validation failed",
-        body: "Your session could not be verified. Please retry or sign in again.",
-        retry: "Retry",
-        login: "Sign in again",
-      };
+  const t = {
+    title: translationsMap.aeoTitle[lang],
+    body: translationsMap.aeoBody[lang],
+    retry: translationsMap.aeoRetry[lang],
+    login: translationsMap.aeoSignIn[lang],
+  };
+
 
   const handleRetry = async () => {
     if (retrying) return;

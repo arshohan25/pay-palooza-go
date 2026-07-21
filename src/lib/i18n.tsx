@@ -5440,6 +5440,19 @@ const translations = {
   drpFilterByDivision: { en: "Filter by division", bn: "বিভাগ অনুযায়ী ফিল্টার করুন" },
   drpAllDivisions: { en: "All divisions", bn: "সব বিভাগ" },
   drpNoDistrictFound: { en: "No district found.", bn: "কোনো জেলা পাওয়া যায়নি।" },
+
+  // SplashScreen
+  splashAppName: { en: "EasyPay", bn: "ইজিপে" },
+  splashTagline: { en: "Bangladesh's Simplest Digital Wallet", bn: "বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট" },
+
+  // AuthErrorOverlay
+  aeoTitle: { en: "Session validation failed", bn: "সেশন যাচাই ব্যর্থ" },
+  aeoBody: { en: "Your session could not be verified. Please retry or sign in again.", bn: "আপনার সেশনটি আর বৈধ নয়। পুনরায় চেষ্টা করুন বা আবার লগ ইন করুন।" },
+  aeoRetry: { en: "Retry", bn: "পুনরায় চেষ্টা করুন" },
+  aeoSignIn: { en: "Sign in again", bn: "আবার লগ ইন করুন" },
+
+  // PlatformBanner
+  pbDismiss: { en: "Dismiss announcement", bn: "ঘোষণা বন্ধ করুন" },
 } as const;
 
 
