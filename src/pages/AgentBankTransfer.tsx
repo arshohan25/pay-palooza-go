@@ -35,8 +35,8 @@ const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 const genRef = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
 
 type Mode = "send" | "receive";
-type Step = "select" | "form" | "preview" | "pin" | "confirm" | "done";
-// Flow order: select → form → preview(summary) → pin → confirm(slider) → done
+type Step = "select" | "form" | "pin" | "confirm" | "done";
+// Flow order: select → form → pin → confirm(summary + slider) → done
 
 const AgentBankTransfer = () => {
   const navigate = useNavigate();
