@@ -118,24 +118,8 @@ const AgentBankTransfer = () => {
     setDeleteTarget(null);
   };
 
-  const handlePinSubmit = async () => {
-    if (pin.length !== 4) { setPinError("Enter your 4-digit PIN."); return; }
-    setProcessing(true);
-    setPinError("");
-    try {
-      const valid = await verifyPin(pin);
-      if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setProcessing(false); return; }
-      setPinVerified(true);
-      setStep("confirm");
-    } catch (e: any) {
-      setPinError(e.message || "Verification failed.");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleSlideConfirm = async () => {
-    if (processing || !selectedAccount || !pinVerified) return;
+  const executeTransaction = async () => {
+    if (!selectedAccount) return;
     setProcessing(true);
     try {
       const txType = mode === "send" ? "banktransfer" : "addmoney";
@@ -153,10 +137,33 @@ const AgentBankTransfer = () => {
       toast({ title: `Bank ${mode === "send" ? "Transfer" : "Deposit"} Successful`, description: `৳${amount} ${mode === "send" ? "sent to" : "received from"} ${selectedAccount.bank_name}` });
     } catch (err: any) {
       toast({ title: "Failed", description: err.message, variant: "destructive" });
+      throw err;
     } finally {
       setProcessing(false);
     }
   };
+
+  const handlePinSubmit = async () => {
+    if (pin.length !== 4) { setPinError("Enter your 4-digit PIN."); return; }
+    setProcessing(true);
+    setPinError("");
+    try {
+      const valid = await verifyPin(pin);
+      if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setProcessing(false); return; }
+      setPinVerified(true);
+      setProcessing(false);
+      await executeTransaction();
+    } catch (e: any) {
+      setPinError(e.message || "Verification failed.");
+      setProcessing(false);
+    }
+  };
+
+  const handleSlideConfirm = async () => {
+    if (processing || !selectedAccount) return;
+    setStep("pin");
+  };
+
 
   const reset = () => {
     setStep("select");
@@ -167,7 +174,7 @@ const AgentBankTransfer = () => {
     setPinVerified(false);
   };
 
-  const progressPct = step === "select" ? "25%" : step === "form" ? "50%" : step === "pin" ? "65%" : step === "confirm" ? "85%" : "100%";
+  const progressPct = step === "select" ? "20%" : step === "form" ? "45%" : step === "confirm" ? "65%" : step === "pin" ? "90%" : "100%";
 
   return (
     <div className="min-h-screen bg-background">
@@ -310,7 +317,7 @@ const AgentBankTransfer = () => {
 
                 {amount && Number(amount) >= 10 && (
                   <Button
-                    onClick={() => setStep("pin")}
+                    onClick={() => setStep("confirm")}
                     className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold animate-fade-in"
                   >
                     {t("agComContinue")}
@@ -346,7 +353,7 @@ const AgentBankTransfer = () => {
                   >
                     {processing ? t("agBtVerifying") : t("agBtVerifyPin")}
                   </Button>
-                  <Button variant="ghost" onClick={() => { setStep("form"); setPin(""); setPinError(""); }} className="w-full text-muted-foreground">{t("agComBack")}</Button>
+                  <Button variant="ghost" onClick={() => { setStep("confirm"); setPin(""); setPinError(""); }} className="w-full text-muted-foreground">{t("agComBack")}</Button>
                 </div>
               </Card>
             </motion.div>
@@ -376,7 +383,7 @@ const AgentBankTransfer = () => {
                   label={processing ? t("agComProcessing") : (mode === "send" ? t("agBtSlideSend") : t("agBtSlideReceive"))}
                   icon={Building2}
                 />
-                <Button variant="ghost" onClick={() => { setStep("pin"); setPin(""); setPinError(""); setPinVerified(false); }} className="w-full text-muted-foreground">{t("agComCancel")}</Button>
+                <Button variant="ghost" onClick={() => { setStep("form"); setPin(""); setPinError(""); setPinVerified(false); }} className="w-full text-muted-foreground">{t("agComCancel")}</Button>
               </Card>
             </motion.div>
           )}
