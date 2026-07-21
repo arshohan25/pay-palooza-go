@@ -3256,7 +3256,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                 className="w-full h-12 rounded-xl text-sm font-bold shadow-glow"
                 style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
               >
-                <Plus size={16} className="mr-1.5" /> Generate Payment Link
+                <Plus size={16} className="mr-1.5" /> {t("plmcGenerate")}
               </Button>
             </div>
           </div>
