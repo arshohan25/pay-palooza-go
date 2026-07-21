@@ -1,13 +1,14 @@
 import { normalizeBDPhoneInput } from "@/lib/phoneInput";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Smartphone, Lock, BarChart3, ArrowRight, Loader2 } from "lucide-react";
-import { signIn } from "@/lib/auth";
+import { signIn, signOut } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
-import { useUserRoles } from "@/hooks/use-user-roles";
+import { fetchUserRoles, useUserRoles } from "@/hooks/use-user-roles";
 import { APP_ROLE_HOME, APP_ROLE_LABEL, isRoleAllowedForApp } from "@/lib/appRole";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
@@ -16,6 +17,7 @@ const SD_LAST_PHONE_KEY = "easypay_super_distributor_last_phone";
 
 const SuperDistributorLoginPage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { t } = useI18n();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading } = useUserRoles();
@@ -48,11 +50,28 @@ const SuperDistributorLoginPage = () => {
     }
     setSubmitting(true);
     try {
-      await signIn(phone, pin);
+      const authData = await signIn(phone, pin);
+      const userId = authData.user?.id;
+      if (!userId) throw new Error(t("distLoginGenericErr"));
+
+      const freshRoles = await fetchUserRoles(userId);
+      queryClient.setQueryData(["user-roles", userId], freshRoles);
+
+      if (!isRoleAllowedForApp("super-distributor", freshRoles as string[])) {
+        await signOut();
+        const message = `${APP_ROLE_LABEL["super-distributor"]} account required.`;
+        setError(message);
+        setPin("");
+        haptics.error();
+        toast.error(message);
+        return;
+      }
+
       try { localStorage.setItem(SD_LAST_PHONE_KEY, phone); } catch {}
       localStorage.setItem("mfs_has_authenticated", "1");
       haptics.success();
       toast.success(t("distLoginSignedIn"));
+      navigate(APP_ROLE_HOME["super-distributor"], { replace: true });
     } catch (err) {
       haptics.error();
       const msg =
