@@ -64,13 +64,21 @@ const AgentBankTransfer = () => {
   const { calcBankTransferFee, getFeeLabel } = useFeeConfig();
   const fee = mode === "send" ? calcBankTransferFee(Number(amount)) : 0;
 
-  const filteredBanks = useMemo(() => {
-    if (!bankSearch.trim()) return BANGLADESH_BANKS;
-    const q = bankSearch.toLowerCase();
-    return BANGLADESH_BANKS.filter(b => b.name.toLowerCase().includes(q) || b.short.toLowerCase().includes(q));
-  }, [bankSearch]);
+  const { banks: platformBanks } = usePlatformBanks(false);
+  const availableBanks: BankInfo[] = useMemo(() => {
+    if (platformBanks.length === 0) return BANGLADESH_BANKS;
+    return platformBanks.map(b => ({
+      id: b.id, name: b.name, short: b.short_code, color: bankColorFromName(b.name),
+    }));
+  }, [platformBanks]);
 
-  const selectedNewBank = BANGLADESH_BANKS.find(b => b.name === newBankName);
+  const filteredBanks = useMemo(() => {
+    if (!bankSearch.trim()) return availableBanks;
+    const q = bankSearch.toLowerCase();
+    return availableBanks.filter(b => b.name.toLowerCase().includes(q) || b.short.toLowerCase().includes(q));
+  }, [bankSearch, availableBanks]);
+
+  const selectedNewBank = availableBanks.find(b => b.name === newBankName);
 
   const handleSaveBank = async () => {
     if (!newBankName || !newAccNumber || !newAccHolder) {
