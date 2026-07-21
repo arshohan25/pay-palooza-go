@@ -3165,7 +3165,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
     const url = buildUrl(link);
     const text = `Pay ${merchant?.business_name || "merchant"}${link.amount ? ` ৳${fmt(link.amount)}` : ""}${link.note ? ` — ${link.note}` : ""}`;
     if (navigator.share) {
-      try { await navigator.share({ title: "Payment Link", text, url }); } catch {}
+      try { await navigator.share({ title: t("plmcShareTitle"), text, url }); } catch {}
     } else {
       copyLink(link);
     }
