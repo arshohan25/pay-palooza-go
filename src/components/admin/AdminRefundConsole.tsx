@@ -37,6 +37,9 @@ type OrphanRow = {
 };
 
 export default function AdminRefundConsole() {
+  const { roles } = useUserRoles();
+  const canRefund = roles.some((r) => REFUND_ROLES.has(r));
+  const canDispute = roles.some((r) => DISPUTE_ROLES.has(r));
   const [rows, setRows] = useState<OrphanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -45,6 +48,7 @@ export default function AdminRefundConsole() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [disputing, setDisputing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
