@@ -234,9 +234,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                         <button className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:border-primary/50 transition-all text-left">
                           {selectedBank ? (
                             <>
-                              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ backgroundColor: selectedBank.color }}>
-                                {selectedBank.short.slice(0, 2)}
-                              </div>
+                              <BankLogo bank={selectedBank} size={40} rounded="rounded-xl" />
                               <span className="flex-1 text-sm font-semibold text-foreground">{selectedBank.name}</span>
                             </>
                           ) : (
