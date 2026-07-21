@@ -89,7 +89,7 @@ const AgentBankTransfer = () => {
       bank_name: newBankName,
       account_number: newAccNumber,
       account_holder: newAccHolder,
-      short_code: newShortCode || BANGLADESH_BANKS.find(b => b.name === newBankName)?.short || newBankName.slice(0, 3).toUpperCase(),
+      short_code: newShortCode || availableBanks.find(b => b.name === newBankName)?.short || newBankName.slice(0, 3).toUpperCase(),
     });
     toast({ title: "Bank Saved", description: `${newBankName} account added` });
     setShowAddBank(false);
