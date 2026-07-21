@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { useFestivalTheme } from "@/contexts/FestivalThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export default function FestivalOverlay() {
+  const { t } = useI18n();
   const { theme, isActive } = useFestivalTheme();
   const [dismissed, setDismissed] = useState(false);
 
@@ -33,6 +35,7 @@ export default function FestivalOverlay() {
               setDismissed(true);
               sessionStorage.setItem("festival_dismissed", theme.id);
             }}
+            aria-label={t("foDismiss")}
             className="shrink-0 rounded-full p-1 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
           >
             <X className="w-4 h-4" />
