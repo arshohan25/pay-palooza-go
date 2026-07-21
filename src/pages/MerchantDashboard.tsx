@@ -3424,13 +3424,13 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
       {/* Benefits */}
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
-          <h3 className="text-sm font-bold text-foreground mb-3">Why Use Payment Links?</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">{t("plmcWhyTitle")}</h3>
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { icon: Globe, title: "Remote Payments", desc: "Accept payments from anywhere" },
-              { icon: Zap, title: "Instant Setup", desc: "No extra hardware needed" },
-              { icon: ShieldCheck, title: "Secure", desc: "End-to-end encrypted" },
-              { icon: Receipt, title: "Auto Tracked", desc: "All transactions logged" },
+              { icon: Globe, title: t("plmcWhyRemote"), desc: t("plmcWhyRemoteDesc") },
+              { icon: Zap, title: t("plmcWhyInstant"), desc: t("plmcWhyInstantDesc") },
+              { icon: ShieldCheck, title: t("plmcWhySecure"), desc: t("plmcWhySecureDesc") },
+              { icon: Receipt, title: t("plmcWhyTracked"), desc: t("plmcWhyTrackedDesc") },
             ].map(b => (
               <div key={b.title} className="p-3 rounded-xl bg-muted/30 text-center">
                 <b.icon size={16} className="text-primary mx-auto mb-1.5" />
