@@ -164,7 +164,7 @@ import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AdminNavReorder, { type NavGroup } from "@/components/admin/AdminNavReorder";
-import { GripVertical, Landmark } from "lucide-react";
+import { GripVertical, Landmark, Zap } from "lucide-react";
 import AdminPushSetupWizard from "@/components/admin/AdminPushSetupWizard";
 
 interface Stats {
