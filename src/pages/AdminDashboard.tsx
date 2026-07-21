@@ -325,6 +325,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "revenue", label: "Revenue", icon: TrendingUp },
       { id: "investment_pnl", label: "Investment P/L", icon: TrendingUp },
       { id: "deposit_accounts", label: "Deposit Accts", icon: CreditCard },
+      { id: "bank_list", label: "Bank List", icon: Landmark },
     ],
   },
   {
