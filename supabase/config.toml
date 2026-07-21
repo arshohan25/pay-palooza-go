@@ -84,4 +84,7 @@ verify_jwt = false
 [functions.courier-webhook]
 verify_jwt = false
 
+[functions.pay-bill]
+verify_jwt = true
+
 
