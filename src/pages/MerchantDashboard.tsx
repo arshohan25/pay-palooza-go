@@ -3352,9 +3352,9 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                       disabled={!link.is_active}
                     >
                       {copiedId === link.id ? (
-                        <><Check size={12} className="mr-1 text-primary" /> Copied!</>
+                        <><Check size={12} className="mr-1 text-primary" /> {t("plmcCopied")}</>
                       ) : (
-                        <><Copy size={12} className="mr-1" /> Copy Link</>
+                        <><Copy size={12} className="mr-1" /> {t("plmcCopyLink")}</>
                       )}
                     </Button>
                     <Button
