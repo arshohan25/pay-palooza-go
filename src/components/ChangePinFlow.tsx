@@ -144,7 +144,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
   const stepMeta = {
     current: { heading: t("enterCurrentPin"), sub: t("confirmCurrentPinSub"), gradient: "gradient-send", iconGradient: "gradient-send" },
-    otp:     { heading: "Verify it's you", sub: `Enter the 6-digit code we sent to ${getPhone() || "your phone"}`, gradient: "gradient-send", iconGradient: "gradient-send" },
+    otp:     { heading: t("cpfOtpHeading"), sub: t("cpfOtpSubTo").replace("{phone}", getPhone() || t("cpfOtpSubGeneric")), gradient: "gradient-send", iconGradient: "gradient-send" },
     new:     { heading: t("setNewPin"), sub: t("chooseStrongPin"), gradient: "gradient-primary", iconGradient: "gradient-primary" },
     confirm: { heading: t("confirmNewPin"), sub: t("reenterNewPin"), gradient: "gradient-addmoney", iconGradient: "gradient-addmoney" },
     success: { heading: "", sub: "", gradient: "", iconGradient: "" },
