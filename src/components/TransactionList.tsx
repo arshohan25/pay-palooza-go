@@ -41,6 +41,8 @@ const TX_CONFIG: Record<string, {
   paybill:  { Icon: TxBillIcon,     bg: "rgba(255,193,7,0.12)",  ring: "1px solid rgba(255,193,7,0.2)",  label: "Bill Pay", gradient: "from-yellow-500 to-amber-600" },
   addmoney: { Icon: TxBankIcon,     bg: "rgba(25,118,210,0.12)", ring: "1px solid rgba(25,118,210,0.2)", label: "Add Money", gradient: "from-blue-500 to-indigo-600" },
   banktransfer: { Icon: TxBankTransferIcon, bg: "rgba(63,81,181,0.12)", ring: "1px solid rgba(63,81,181,0.2)", label: "Bank Transfer", gradient: "from-indigo-500 to-blue-600" },
+  refund:   { Icon: TxReceiveIcon,  bg: "rgba(217,70,239,0.12)", ring: "1px solid rgba(217,70,239,0.2)", label: "Refund",       gradient: "from-fuchsia-500 to-pink-600" },
+  reversal: { Icon: TxReceiveIcon,  bg: "rgba(217,70,239,0.12)", ring: "1px solid rgba(217,70,239,0.2)", label: "Reversal",     gradient: "from-fuchsia-500 to-pink-600" },
 };
 
 const CASHBACK_CONFIG = {
@@ -330,7 +332,7 @@ const TransactionDetailSheet = ({ tx: initialTx, onClose }: { tx: DbTransaction;
   );
 };
 
-const USER_TYPES = new Set(["send", "receive", "cashout", "cashin", "payment", "recharge", "paybill", "addmoney", "banktransfer"]);
+const USER_TYPES = new Set(["send", "receive", "cashout", "cashin", "payment", "recharge", "paybill", "addmoney", "banktransfer", "refund", "reversal"]);
 
 const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
   const { t } = useI18n();

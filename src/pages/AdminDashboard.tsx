@@ -78,6 +78,7 @@ import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
 import AdminDonationFunds from "@/components/admin/AdminDonationFunds";
 import AdminFundRequests from "@/components/admin/AdminFundRequests";
 import AdminSettlements from "@/components/admin/AdminSettlements";
+import AdminBillerSettlements from "@/components/admin/AdminBillerSettlements";
 import AdminBankReconciliation from "@/components/admin/AdminBankReconciliation";
 import AdminMarketingTools from "@/components/admin/AdminMarketingTools";
 import AdminAdvancedReports from "@/components/admin/AdminAdvancedReports";
@@ -163,7 +164,7 @@ import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AdminNavReorder, { type NavGroup } from "@/components/admin/AdminNavReorder";
-import { GripVertical, Landmark } from "lucide-react";
+import { GripVertical, Landmark, Zap } from "lucide-react";
 import AdminPushSetupWizard from "@/components/admin/AdminPushSetupWizard";
 
 interface Stats {
@@ -274,6 +275,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "transactions", label: "Transactions", icon: Receipt },
       { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
+      { id: "biller_payouts", label: "Biller Payouts", icon: Zap },
       { id: "operations_wall", label: "Operations Wall", icon: Activity },
       { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
@@ -2058,6 +2060,9 @@ export default function AdminDashboard() {
 
         {/* ═══ SETTLEMENTS ═══ */}
         {activeTab === "settlements" && <AdminSettlements />}
+
+        {/* ═══ BILLER PAYOUTS & REFUNDS ═══ */}
+        {activeTab === "biller_payouts" && <AdminBillerSettlements />}
 
         {/* ═══ BANK RECONCILIATION ═══ */}
         {activeTab === "bank_recon" && <AdminBankReconciliation />}
