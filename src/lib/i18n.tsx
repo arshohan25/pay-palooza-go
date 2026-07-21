@@ -5468,6 +5468,15 @@ const translations = {
 
   // FestivalOverlay
   foDismiss: { en: "Dismiss festival greeting", bn: "উৎসব শুভেচ্ছা বন্ধ করুন" },
+
+  // LoyaltyBadge
+  lbTierAria: { en: "EasyPay Club tier: {tier}. {pct}% progress toward {next}.", bn: "ইজিপে ক্লাব টিয়ার: {tier}। {next} এর দিকে {pct}% অগ্রগতি।" },
+  lbTopTierAria: { en: "EasyPay Club tier: {tier}. Top tier reached — congratulations!", bn: "ইজিপে ক্লাব টিয়ার: {tier}। সর্বোচ্চ টিয়ারে পৌঁছেছেন — অভিনন্দন!" },
+  lbTowardNext: { en: "{pct} toward {next}", bn: "{next} এর দিকে {pct}" },
+  lbProgressAria: { en: "Progress toward {next}", bn: "{next} এর দিকে অগ্রগতি" },
+  lbCongrats: { en: "Congratulations! 🎉", bn: "অভিনন্দন! 🎉" },
+  lbTopReached: { en: "You've reached the highest tier. Enjoy every EasyPay Club perk — you're royalty.", bn: "আপনি সর্বোচ্চ টিয়ারে পৌঁছেছেন। ইজিপে ক্লাবের প্রতিটি সুবিধা উপভোগ করুন — আপনি রাজকীয়।" },
+  lbViewPerks: { en: "View perks", bn: "সুবিধা দেখুন" },
 } as const;
 
 
