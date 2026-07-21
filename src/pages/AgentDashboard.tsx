@@ -90,6 +90,7 @@ const AgentDashboard = () => {
   const [floatAmount, setFloatAmount] = useState("");
   const [floatNote, setFloatNote] = useState("");
   const [floatSubmitting, setFloatSubmitting] = useState(false);
+  const [floatPinOpen, setFloatPinOpen] = useState(false);
 
   // Menu drawer
   const [menuOpen, setMenuOpen] = useState(false);
