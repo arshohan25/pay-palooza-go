@@ -23,6 +23,45 @@ export interface InvoiceOrder {
   }>;
 }
 
+// ── Localization ──
+type Lang = "en" | "bn";
+function getLang(): Lang {
+  try {
+    const v = localStorage.getItem("mfs_ui_lang");
+    return v === "bn" ? "bn" : "en";
+  } catch {
+    return "en";
+  }
+}
+const STRINGS = {
+  en: {
+    brand: "EasyPay", tagline: "Digital Financial Services", city: "Dhaka, Bangladesh",
+    invoice: "INVOICE", invoiceNo: "Invoice No", date: "Date",
+    billTo: "BILL TO", customer: "Customer",
+    paymentMethod: "PAYMENT METHOD",
+    pmWallet: "EasyPay Wallet", pmCod: "Cash on Delivery", pmCard: "Card",
+    product: "Product", qty: "Qty", unitPrice: "Unit Price", total: "Total",
+    item: "Item", subtotal: "Subtotal", coupon: "Coupon Discount",
+    delivery: "Delivery Fee", free: "Free", grandTotal: "TOTAL",
+    footer1: "This is a computer-generated document and does not require a signature.",
+    footer2: "EasyPay Digital Financial Services · Dhaka, Bangladesh",
+    generated: "Generated",
+  },
+  bn: {
+    brand: "EasyPay", tagline: "Digital Financial Services", city: "Dhaka, Bangladesh",
+    invoice: "INVOICE", invoiceNo: "Invoice No", date: "Date",
+    billTo: "BILL TO", customer: "Customer",
+    paymentMethod: "PAYMENT METHOD",
+    pmWallet: "EasyPay Wallet", pmCod: "Cash on Delivery", pmCard: "Card",
+    product: "Product", qty: "Qty", unitPrice: "Unit Price", total: "Total",
+    item: "Item", subtotal: "Subtotal", coupon: "Coupon Discount",
+    delivery: "Delivery Fee", free: "Free", grandTotal: "TOTAL",
+    footer1: "This is a computer-generated document and does not require a signature.",
+    footer2: "EasyPay Digital Financial Services · Dhaka, Bangladesh",
+    generated: "Generated",
+  },
+};
+
 function fmt(n: number) {
   return n.toLocaleString("en-BD");
 }
