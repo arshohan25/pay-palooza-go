@@ -381,7 +381,7 @@ const SuperDistributorDashboard = () => {
       </header>
 
       {/* ═══ Balance Card ═══ */}
-      <div className="max-w-xl mx-auto px-4 -mt-20 relative z-10">
+      <div className="max-w-xl mx-auto px-4 -mt-20 relative z-10 gpu-stable-child">
         <Card className="p-5 border-0 shadow-elevated bg-card rounded-2xl">
           <div className="flex items-start justify-between mb-3">
             <div>
