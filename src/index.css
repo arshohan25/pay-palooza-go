@@ -397,6 +397,26 @@ input[type="number"] {
   display: none;               /* Chrome / Safari / Webkit */
 }
 
+/* ── Scroll repaint stabilizer ─────────────────────────────────────────────
+   Fixes Android WebView / Chrome tearing artifacts on pages that overlap a
+   Card onto a gradient hero header via negative margins while framer-motion
+   animations run. Promotes the affected subtree to its own compositor layer
+   and isolates the stacking context so repaint regions stay bounded. */
+.gpu-stable {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  isolation: isolate;
+}
+.gpu-stable-child {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
 /* ── Splash screen CSS animations (avoids framer-motion forced reflows) ──── */
 @keyframes splash-ring-pulse {
   0%   { width: 96px; height: 96px; opacity: 0.5; }
