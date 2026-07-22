@@ -104,25 +104,20 @@ Deno.serve(async (req) => {
     // --- DEV MODE: Log OTP to function logs (replace with SMS API in production) ---
     console.log(`[DEV] OTP for ${phone}: ${code}`);
 
-    // Expose OTP on-screen for non-production origins (preview/localhost/lovable domains)
-    // so device verification can be tested without a live SMS gateway.
-    const origin = req.headers.get("origin") || req.headers.get("referer") || "";
-    // Extra dev origins can be added via env (comma-separated hostnames or substrings).
-    const extraDevOrigins = (Deno.env.get("OTP_DEV_ORIGINS") || "smartshop.bd")
-      .split(",").map((s) => s.trim()).filter(Boolean)
-      .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
-    const devOriginRegex = new RegExp(
-      `localhost|127\\.0\\.0\\.1|lovable\\.app|lovableproject\\.com|lovable\\.dev${extraDevOrigins ? `|${extraDevOrigins}` : ""}`,
-      "i",
-    );
-    const isDevOrigin = devOriginRegex.test(origin);
+    // Expose OTP on-screen ONLY when explicitly enabled via server-side env.
+    // NEVER key this off Origin/Referer — those are attacker-controlled headers
+    // and would let anyone retrieve OTPs for arbitrary phone numbers.
+    const otpDevMode =
+      (Deno.env.get("OTP_DEV_MODE") || "").toLowerCase() === "true" ||
+      (Deno.env.get("ENVIRONMENT") || "").toLowerCase() === "development";
 
     return new Response(
       JSON.stringify({
         success: true,
         message: "OTP sent successfully.",
-        ...(isDevOrigin ? { dev_otp: code } : {}),
+        ...(otpDevMode ? { dev_otp: code } : {}),
       }),
+
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
