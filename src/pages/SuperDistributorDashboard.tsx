@@ -332,9 +332,9 @@ const SuperDistributorDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background pb-6">
+    <div className="min-h-screen bg-background pb-6 gpu-stable">
       {/* ═══ Hero Header ═══ */}
-      <header className="relative overflow-hidden">
+      <header className="relative overflow-hidden gpu-stable-child">
         <div className="px-4 pt-5 pb-28" style={{ background: "linear-gradient(150deg, hsl(270 60% 40%) 0%, hsl(285 55% 30%) 50%, hsl(300 45% 22%) 100%)" }}>
           <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-white/5 pointer-events-none" />
           <div className="absolute top-32 -left-16 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
@@ -381,7 +381,7 @@ const SuperDistributorDashboard = () => {
       </header>
 
       {/* ═══ Balance Card ═══ */}
-      <div className="max-w-xl mx-auto px-4 -mt-20 relative z-10">
+      <div className="max-w-xl mx-auto px-4 -mt-20 relative z-10 gpu-stable-child">
         <Card className="p-5 border-0 shadow-elevated bg-card rounded-2xl">
           <div className="flex items-start justify-between mb-3">
             <div>
