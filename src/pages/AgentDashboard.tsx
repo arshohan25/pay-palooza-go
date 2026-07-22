@@ -354,7 +354,7 @@ const AgentDashboard = () => {
       </header>
 
       {/* ── Balance Card (tap to reveal, 5s auto-hide) ── */}
-      <div className="max-w-xl mx-auto px-4 -mt-20 relative z-10">
+      <div className="max-w-xl mx-auto px-4 -mt-20 relative z-10 gpu-stable-child">
         <Card className="p-5 border-0 shadow-elevated bg-card rounded-2xl">
           <div className="flex items-start justify-between mb-3">
             <div>
