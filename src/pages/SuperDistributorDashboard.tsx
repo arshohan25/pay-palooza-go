@@ -248,21 +248,20 @@ const SuperDistributorDashboard = () => {
     );
   }
   if (!isAuthenticated) {
+    if (typeof window !== "undefined") window.location.replace("/super-distributor/login");
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6">
-        <Shield size={48} className="text-muted-foreground" />
-        <p className="text-lg font-semibold text-foreground">Login required</p>
-        <Button onClick={() => navigate("/")} variant="outline">Go to Login</Button>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
   if (isSD === false) {
+    void supabase.auth.signOut().finally(() => {
+      if (typeof window !== "undefined") window.location.replace("/super-distributor/login");
+    });
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6 text-center">
-        <Crown size={48} className="text-muted-foreground" />
-        <p className="text-lg font-semibold text-foreground">Super Distributor Access Required</p>
-        <p className="text-sm text-muted-foreground max-w-xs">This dashboard is restricted to super distributors.</p>
-        <Button onClick={() => navigate("/")} variant="outline"><ArrowLeft size={16} className="mr-2" />Back to Home</Button>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
