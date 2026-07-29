@@ -106,7 +106,7 @@ export default function AdminOverviewCharts() {
       setLoading(true);
       const since = subMonths(new Date(), 6).toISOString();
       const [txnRes, signupRes, statusRes, agentRes, merchantRes] = await Promise.all([
-        supabase.from("transactions").select("type, amount, fee, created_at").eq("status", "completed").gte("created_at", since).order("created_at", { ascending: true }).limit(1000),
+        supabase.from("transactions").select("type, amount, fee, commission, created_at").eq("status", "completed").gte("created_at", since).order("created_at", { ascending: true }).limit(2000),
         supabase.from("profiles").select("created_at").gte("created_at", subDays(new Date(), 14).toISOString()).order("created_at", { ascending: true }).limit(1000),
         supabase.from("transactions").select("status").gte("created_at", since).limit(1000),
         supabase.from("agents").select("created_at").gte("created_at", since).order("created_at", { ascending: true }).limit(1000),
