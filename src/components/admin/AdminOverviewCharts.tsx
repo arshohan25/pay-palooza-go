@@ -206,10 +206,46 @@ export default function AdminOverviewCharts() {
     return [...map.keys()].sort().map(month => { const v = map.get(month)!; cumA += v.agents; cumM += v.merchants; return { month, agents: cumA, merchants: cumM }; });
   }, [agentDates, merchantDates]);
 
+  const revenueByType = useMemo(() => {
+    const map = new Map<string, { fees: number; commission: number; net: number }>();
+    txns.forEach(t => {
+      const f = Number(t.fee) || 0;
+      const c = Number(t.commission) || 0;
+      const prev = map.get(t.type) ?? { fees: 0, commission: 0, net: 0 };
+      map.set(t.type, { fees: prev.fees + f, commission: prev.commission + c, net: prev.net + (f - c) });
+    });
+    return Array.from(map.entries())
+      .map(([name, v]) => ({ name, ...v }))
+      .filter(r => r.fees > 0 || r.commission > 0)
+      .sort((a, b) => b.net - a.net)
+      .slice(0, 8);
+  }, [txns]);
+
+  const revenueKpis = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const monthStart = startOfMonth(new Date()).toISOString().slice(0, 10);
+    const prevMonthStart = startOfMonth(subMonths(new Date(), 1)).toISOString().slice(0, 10);
+    let today = 0, mtd = 0, prevMtd = 0, totalFees = 0, totalCommission = 0;
+    txns.forEach(t => {
+      const f = Number(t.fee) || 0;
+      const c = Number(t.commission) || 0;
+      const net = f - c;
+      const d = t.created_at.slice(0, 10);
+      totalFees += f;
+      totalCommission += c;
+      if (d === todayStr) today += net;
+      if (d >= monthStart) mtd += net;
+      else if (d >= prevMonthStart && d < monthStart) prevMtd += net;
+    });
+    const delta = prevMtd > 0 ? ((mtd - prevMtd) / prevMtd) * 100 : (mtd > 0 ? 100 : 0);
+    return { today, mtd, prevMtd, delta, totalFees, totalCommission, netRevenue: totalFees - totalCommission };
+  }, [txns]);
+
   const chartData = period === "daily" ? dailyData : period === "weekly" ? weeklyData : monthlyData;
 
   const renderDonutLabel = ({ name, percent }: { name: string; percent: number }) =>
     percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : "";
+
 
   // ─── Chart panels map ───
   const panels: Record<string, ReactNode> = {
