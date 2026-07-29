@@ -19,7 +19,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 type Period = "daily" | "weekly" | "monthly";
 
-interface TxnRow { type: string; amount: number; fee: number; created_at: string; }
+interface TxnRow { type: string; amount: number; fee: number; commission: number; created_at: string; }
 interface StatusRow { status: string; }
 
 const tooltipStyle = {
