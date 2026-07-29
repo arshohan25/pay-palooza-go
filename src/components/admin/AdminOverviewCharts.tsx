@@ -366,6 +366,33 @@ export default function AdminOverviewCharts() {
         </div>
       </div>
 
+      {/* Revenue KPI strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Net Revenue (6M)", value: `৳${revenueKpis.netRevenue.toLocaleString()}`, icon: Wallet, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+          { label: "Total Fees Collected", value: `৳${revenueKpis.totalFees.toLocaleString()}`, icon: DollarSign, color: "text-primary", bg: "bg-primary/10" },
+          { label: "Commissions Paid", value: `৳${revenueKpis.totalCommission.toLocaleString()}`, icon: Coins, color: "text-amber-500", bg: "bg-amber-500/10" },
+          { label: "Today (Net)", value: `৳${revenueKpis.today.toLocaleString()}`, icon: Calendar, color: "text-blue-500", bg: "bg-blue-500/10", delta: revenueKpis.delta },
+        ].map((k) => (
+          <Card key={k.label} className="border-0 shadow-[var(--shadow-card)]">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl ${k.bg} flex items-center justify-center ${k.color}`}><k.icon className="w-5 h-5" /></div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{k.label}</p>
+                <p className="text-base font-bold text-foreground truncate">{k.value}</p>
+                {typeof k.delta === "number" && (
+                  <p className={`text-[10px] flex items-center gap-0.5 ${k.delta >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+                    {k.delta >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                    {Math.abs(k.delta).toFixed(1)}% MTD vs prev
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={panelOrder} strategy={rectSortingStrategy}>
           <div className="grid md:grid-cols-2 gap-4">
