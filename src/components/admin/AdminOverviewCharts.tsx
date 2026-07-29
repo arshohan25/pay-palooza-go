@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BarChart3, TrendingUp, Users, Clock, PieChart as PieIcon, DollarSign, CheckCircle, Building2, GripVertical, RotateCcw } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Clock, PieChart as PieIcon, DollarSign, CheckCircle, Building2, GripVertical, RotateCcw, Wallet, Coins, Calendar, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, AreaChart, Area, ComposedChart, PieChart, Pie, Cell, Legend,
@@ -19,7 +19,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 type Period = "daily" | "weekly" | "monthly";
 
-interface TxnRow { type: string; amount: number; fee: number; created_at: string; }
+interface TxnRow { type: string; amount: number; fee: number; commission: number; created_at: string; }
 interface StatusRow { status: string; }
 
 const tooltipStyle = {
@@ -42,6 +42,7 @@ const STATUS_COLORS = {
 };
 
 const DEFAULT_ORDER = [
+  "net_revenue_trend", "revenue_by_type",
   "txn_volume", "cumulative", "type_breakdown", "revenue_fees",
   "signups", "active_hours", "success_ratio", "growth",
 ];
@@ -105,7 +106,7 @@ export default function AdminOverviewCharts() {
       setLoading(true);
       const since = subMonths(new Date(), 6).toISOString();
       const [txnRes, signupRes, statusRes, agentRes, merchantRes] = await Promise.all([
-        supabase.from("transactions").select("type, amount, fee, created_at").eq("status", "completed").gte("created_at", since).order("created_at", { ascending: true }).limit(1000),
+        supabase.from("transactions").select("type, amount, fee, commission, created_at").eq("status", "completed").gte("created_at", since).order("created_at", { ascending: true }).limit(2000),
         supabase.from("profiles").select("created_at").gte("created_at", subDays(new Date(), 14).toISOString()).order("created_at", { ascending: true }).limit(1000),
         supabase.from("transactions").select("status").gte("created_at", since).limit(1000),
         supabase.from("agents").select("created_at").gte("created_at", since).order("created_at", { ascending: true }).limit(1000),
@@ -123,33 +124,39 @@ export default function AdminOverviewCharts() {
 
   // ─── Computed data ───
   const dailyData = useMemo(() => {
-    const map = new Map<string, { count: number; volume: number; fees: number }>();
+    const map = new Map<string, { count: number; volume: number; fees: number; commission: number; net: number }>();
     const cutoff = subDays(new Date(), 14);
     txns.filter(t => new Date(t.created_at) >= cutoff).forEach(t => {
       const day = t.created_at.slice(0, 10);
-      const prev = map.get(day) ?? { count: 0, volume: 0, fees: 0 };
-      map.set(day, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + t.fee });
+      const prev = map.get(day) ?? { count: 0, volume: 0, fees: 0, commission: 0, net: 0 };
+      const c = Number(t.commission) || 0;
+      const f = Number(t.fee) || 0;
+      map.set(day, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + f, commission: prev.commission + c, net: prev.net + (f - c) });
     });
     return Array.from(map.entries()).map(([date, v]) => ({ date: format(new Date(date), "MMM dd"), ...v }));
   }, [txns]);
 
   const weeklyData = useMemo(() => {
-    const map = new Map<string, { count: number; volume: number; fees: number }>();
+    const map = new Map<string, { count: number; volume: number; fees: number; commission: number; net: number }>();
     const cutoff = subWeeks(new Date(), 8);
     txns.filter(t => new Date(t.created_at) >= cutoff).forEach(t => {
       const week = format(startOfWeek(new Date(t.created_at), { weekStartsOn: 0 }), "MMM dd");
-      const prev = map.get(week) ?? { count: 0, volume: 0, fees: 0 };
-      map.set(week, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + t.fee });
+      const prev = map.get(week) ?? { count: 0, volume: 0, fees: 0, commission: 0, net: 0 };
+      const c = Number(t.commission) || 0;
+      const f = Number(t.fee) || 0;
+      map.set(week, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + f, commission: prev.commission + c, net: prev.net + (f - c) });
     });
     return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
   }, [txns]);
 
   const monthlyData = useMemo(() => {
-    const map = new Map<string, { count: number; volume: number; fees: number }>();
+    const map = new Map<string, { count: number; volume: number; fees: number; commission: number; net: number }>();
     txns.forEach(t => {
       const month = format(startOfMonth(new Date(t.created_at)), "MMM yy");
-      const prev = map.get(month) ?? { count: 0, volume: 0, fees: 0 };
-      map.set(month, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + t.fee });
+      const prev = map.get(month) ?? { count: 0, volume: 0, fees: 0, commission: 0, net: 0 };
+      const c = Number(t.commission) || 0;
+      const f = Number(t.fee) || 0;
+      map.set(month, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + f, commission: prev.commission + c, net: prev.net + (f - c) });
     });
     return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
   }, [txns]);
@@ -199,13 +206,61 @@ export default function AdminOverviewCharts() {
     return [...map.keys()].sort().map(month => { const v = map.get(month)!; cumA += v.agents; cumM += v.merchants; return { month, agents: cumA, merchants: cumM }; });
   }, [agentDates, merchantDates]);
 
+  const revenueByType = useMemo(() => {
+    const map = new Map<string, { fees: number; commission: number; net: number }>();
+    txns.forEach(t => {
+      const f = Number(t.fee) || 0;
+      const c = Number(t.commission) || 0;
+      const prev = map.get(t.type) ?? { fees: 0, commission: 0, net: 0 };
+      map.set(t.type, { fees: prev.fees + f, commission: prev.commission + c, net: prev.net + (f - c) });
+    });
+    return Array.from(map.entries())
+      .map(([name, v]) => ({ name, ...v }))
+      .filter(r => r.fees > 0 || r.commission > 0)
+      .sort((a, b) => b.net - a.net)
+      .slice(0, 8);
+  }, [txns]);
+
+  const revenueKpis = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const monthStart = startOfMonth(new Date()).toISOString().slice(0, 10);
+    const prevMonthStart = startOfMonth(subMonths(new Date(), 1)).toISOString().slice(0, 10);
+    let today = 0, mtd = 0, prevMtd = 0, totalFees = 0, totalCommission = 0;
+    txns.forEach(t => {
+      const f = Number(t.fee) || 0;
+      const c = Number(t.commission) || 0;
+      const net = f - c;
+      const d = t.created_at.slice(0, 10);
+      totalFees += f;
+      totalCommission += c;
+      if (d === todayStr) today += net;
+      if (d >= monthStart) mtd += net;
+      else if (d >= prevMonthStart && d < monthStart) prevMtd += net;
+    });
+    const delta = prevMtd > 0 ? ((mtd - prevMtd) / prevMtd) * 100 : (mtd > 0 ? 100 : 0);
+    return { today, mtd, prevMtd, delta, totalFees, totalCommission, netRevenue: totalFees - totalCommission };
+  }, [txns]);
+
   const chartData = period === "daily" ? dailyData : period === "weekly" ? weeklyData : monthlyData;
 
   const renderDonutLabel = ({ name, percent }: { name: string; percent: number }) =>
     percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : "";
 
+
   // ─── Chart panels map ───
   const panels: Record<string, ReactNode> = {
+    net_revenue_trend: (
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Wallet className="w-4 h-4 text-emerald-500" />Net Revenue Trend (Fees − Commission)</CardTitle></CardHeader>
+        <CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={chartData}><defs><linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(160, 60%, 45%)" stopOpacity={0.35} /><stop offset="95%" stopColor="hsl(160, 60%, 45%)" stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [`৳${Number(v).toLocaleString()}`, name === "fees" ? "Fees" : name === "commission" ? "Commission" : "Net"]} /><Legend wrapperStyle={{ fontSize: 10 }} /><Area type="monotone" dataKey="net" name="Net" stroke="hsl(160, 60%, 45%)" fill="url(#netGrad)" strokeWidth={2} /><Line type="monotone" dataKey="fees" name="Fees" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="commission" name="Commission" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} /></ComposedChart></ResponsiveContainer></div></CardContent>
+      </Card>
+    ),
+    revenue_by_type: (
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Coins className="w-4 h-4 text-amber-500" />Revenue by Transaction Type</CardTitle></CardHeader>
+        <CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={revenueByType} layout="vertical" margin={{ left: 10 }}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><YAxis type="category" dataKey="name" width={80} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [`৳${Number(v).toLocaleString()}`, name === "fees" ? "Fees" : name === "commission" ? "Commission" : "Net"]} /><Legend wrapperStyle={{ fontSize: 10 }} /><Bar dataKey="fees" name="Fees" fill="hsl(var(--primary))" radius={[0, 3, 3, 0]} /><Bar dataKey="commission" name="Commission" fill="hsl(var(--destructive))" radius={[0, 3, 3, 0]} /><Bar dataKey="net" name="Net" fill="hsl(160, 60%, 45%)" radius={[0, 3, 3, 0]} /></BarChart></ResponsiveContainer></div></CardContent>
+      </Card>
+    ),
     txn_volume: (
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" />Transaction Volume & Count</CardTitle></CardHeader>
@@ -310,6 +365,33 @@ export default function AdminOverviewCharts() {
           </div>
         </div>
       </div>
+
+      {/* Revenue KPI strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Net Revenue (6M)", value: `৳${revenueKpis.netRevenue.toLocaleString()}`, icon: Wallet, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+          { label: "Total Fees Collected", value: `৳${revenueKpis.totalFees.toLocaleString()}`, icon: DollarSign, color: "text-primary", bg: "bg-primary/10" },
+          { label: "Commissions Paid", value: `৳${revenueKpis.totalCommission.toLocaleString()}`, icon: Coins, color: "text-amber-500", bg: "bg-amber-500/10" },
+          { label: "Today (Net)", value: `৳${revenueKpis.today.toLocaleString()}`, icon: Calendar, color: "text-blue-500", bg: "bg-blue-500/10", delta: revenueKpis.delta },
+        ].map((k) => (
+          <Card key={k.label} className="border-0 shadow-[var(--shadow-card)]">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl ${k.bg} flex items-center justify-center ${k.color}`}><k.icon className="w-5 h-5" /></div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{k.label}</p>
+                <p className="text-base font-bold text-foreground truncate">{k.value}</p>
+                {typeof k.delta === "number" && (
+                  <p className={`text-[10px] flex items-center gap-0.5 ${k.delta >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+                    {k.delta >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                    {Math.abs(k.delta).toFixed(1)}% MTD vs prev
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={panelOrder} strategy={rectSortingStrategy}>
