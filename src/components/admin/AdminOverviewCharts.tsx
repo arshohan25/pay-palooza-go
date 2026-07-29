@@ -249,6 +249,18 @@ export default function AdminOverviewCharts() {
 
   // ─── Chart panels map ───
   const panels: Record<string, ReactNode> = {
+    net_revenue_trend: (
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Wallet className="w-4 h-4 text-emerald-500" />Net Revenue Trend (Fees − Commission)</CardTitle></CardHeader>
+        <CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={chartData}><defs><linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(160, 60%, 45%)" stopOpacity={0.35} /><stop offset="95%" stopColor="hsl(160, 60%, 45%)" stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [`৳${Number(v).toLocaleString()}`, name === "fees" ? "Fees" : name === "commission" ? "Commission" : "Net"]} /><Legend wrapperStyle={{ fontSize: 10 }} /><Area type="monotone" dataKey="net" name="Net" stroke="hsl(160, 60%, 45%)" fill="url(#netGrad)" strokeWidth={2} /><Line type="monotone" dataKey="fees" name="Fees" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="commission" name="Commission" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} /></ComposedChart></ResponsiveContainer></div></CardContent>
+      </Card>
+    ),
+    revenue_by_type: (
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Coins className="w-4 h-4 text-amber-500" />Revenue by Transaction Type</CardTitle></CardHeader>
+        <CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={revenueByType} layout="vertical" margin={{ left: 10 }}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><YAxis type="category" dataKey="name" width={80} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [`৳${Number(v).toLocaleString()}`, name === "fees" ? "Fees" : name === "commission" ? "Commission" : "Net"]} /><Legend wrapperStyle={{ fontSize: 10 }} /><Bar dataKey="fees" name="Fees" fill="hsl(var(--primary))" radius={[0, 3, 3, 0]} /><Bar dataKey="commission" name="Commission" fill="hsl(var(--destructive))" radius={[0, 3, 3, 0]} /><Bar dataKey="net" name="Net" fill="hsl(160, 60%, 45%)" radius={[0, 3, 3, 0]} /></BarChart></ResponsiveContainer></div></CardContent>
+      </Card>
+    ),
     txn_volume: (
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" />Transaction Volume & Count</CardTitle></CardHeader>
