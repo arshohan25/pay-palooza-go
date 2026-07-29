@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BarChart3, TrendingUp, Users, Clock, PieChart as PieIcon, DollarSign, CheckCircle, Building2, GripVertical, RotateCcw } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Clock, PieChart as PieIcon, DollarSign, CheckCircle, Building2, GripVertical, RotateCcw, Wallet, Coins, Calendar, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, AreaChart, Area, ComposedChart, PieChart, Pie, Cell, Legend,
