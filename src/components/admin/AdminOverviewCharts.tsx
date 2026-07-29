@@ -42,6 +42,7 @@ const STATUS_COLORS = {
 };
 
 const DEFAULT_ORDER = [
+  "net_revenue_trend", "revenue_by_type",
   "txn_volume", "cumulative", "type_breakdown", "revenue_fees",
   "signups", "active_hours", "success_ratio", "growth",
 ];
