@@ -124,33 +124,39 @@ export default function AdminOverviewCharts() {
 
   // ─── Computed data ───
   const dailyData = useMemo(() => {
-    const map = new Map<string, { count: number; volume: number; fees: number }>();
+    const map = new Map<string, { count: number; volume: number; fees: number; commission: number; net: number }>();
     const cutoff = subDays(new Date(), 14);
     txns.filter(t => new Date(t.created_at) >= cutoff).forEach(t => {
       const day = t.created_at.slice(0, 10);
-      const prev = map.get(day) ?? { count: 0, volume: 0, fees: 0 };
-      map.set(day, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + t.fee });
+      const prev = map.get(day) ?? { count: 0, volume: 0, fees: 0, commission: 0, net: 0 };
+      const c = Number(t.commission) || 0;
+      const f = Number(t.fee) || 0;
+      map.set(day, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + f, commission: prev.commission + c, net: prev.net + (f - c) });
     });
     return Array.from(map.entries()).map(([date, v]) => ({ date: format(new Date(date), "MMM dd"), ...v }));
   }, [txns]);
 
   const weeklyData = useMemo(() => {
-    const map = new Map<string, { count: number; volume: number; fees: number }>();
+    const map = new Map<string, { count: number; volume: number; fees: number; commission: number; net: number }>();
     const cutoff = subWeeks(new Date(), 8);
     txns.filter(t => new Date(t.created_at) >= cutoff).forEach(t => {
       const week = format(startOfWeek(new Date(t.created_at), { weekStartsOn: 0 }), "MMM dd");
-      const prev = map.get(week) ?? { count: 0, volume: 0, fees: 0 };
-      map.set(week, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + t.fee });
+      const prev = map.get(week) ?? { count: 0, volume: 0, fees: 0, commission: 0, net: 0 };
+      const c = Number(t.commission) || 0;
+      const f = Number(t.fee) || 0;
+      map.set(week, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + f, commission: prev.commission + c, net: prev.net + (f - c) });
     });
     return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
   }, [txns]);
 
   const monthlyData = useMemo(() => {
-    const map = new Map<string, { count: number; volume: number; fees: number }>();
+    const map = new Map<string, { count: number; volume: number; fees: number; commission: number; net: number }>();
     txns.forEach(t => {
       const month = format(startOfMonth(new Date(t.created_at)), "MMM yy");
-      const prev = map.get(month) ?? { count: 0, volume: 0, fees: 0 };
-      map.set(month, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + t.fee });
+      const prev = map.get(month) ?? { count: 0, volume: 0, fees: 0, commission: 0, net: 0 };
+      const c = Number(t.commission) || 0;
+      const f = Number(t.fee) || 0;
+      map.set(month, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + f, commission: prev.commission + c, net: prev.net + (f - c) });
     });
     return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
   }, [txns]);
