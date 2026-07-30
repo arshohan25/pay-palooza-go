@@ -243,8 +243,6 @@ export default function AdminOverviewCharts() {
 
   const chartData = period === "daily" ? dailyData : period === "weekly" ? weeklyData : monthlyData;
 
-  const renderDonutLabel = ({ name, percent }: { name: string; percent: number }) =>
-    percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : "";
 
 
   // ─── Chart panels map ───
