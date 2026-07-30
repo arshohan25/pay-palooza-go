@@ -276,7 +276,32 @@ export default function AdminOverviewCharts() {
     type_breakdown: (
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><PieIcon className="w-4 h-4 text-violet-500" />Transaction Type Breakdown</CardTitle></CardHeader>
-        <CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={typeBreakdown} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value" label={renderDonutLabel}>{typeBreakdown.map((_, i) => (<Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />))}</Pie><Tooltip contentStyle={tooltipStyle} /><Legend wrapperStyle={{ fontSize: 10 }} /></PieChart></ResponsiveContainer></div></CardContent>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="h-52 w-full sm:w-1/2">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={typeBreakdown} cx="50%" cy="50%" innerRadius={48} outerRadius={78} paddingAngle={2} dataKey="value">
+                    {typeBreakdown.map((_, i) => (<Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="w-full sm:w-1/2 grid grid-cols-2 sm:grid-cols-1 gap-x-4 gap-y-1.5">
+              {(() => {
+                const total = typeBreakdown.reduce((s, d) => s + d.value, 0) || 1;
+                return typeBreakdown.map((d, i) => (
+                  <div key={d.name} className="flex items-center gap-2 text-[11px] min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: TYPE_COLORS[i % TYPE_COLORS.length] }} />
+                    <span className="capitalize text-muted-foreground truncate">{d.name}</span>
+                    <span className="ml-auto font-medium text-foreground tabular-nums">{Math.round((d.value / total) * 100)}%</span>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        </CardContent>
       </Card>
     ),
     revenue_fees: (
