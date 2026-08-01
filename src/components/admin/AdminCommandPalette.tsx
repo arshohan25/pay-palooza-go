@@ -85,15 +85,16 @@ const AdminCommandPalette = ({ open, onOpenChange, navItems, onNavigate, onEntit
           .limit(5),
         supabase
           .from("transactions")
-          .select("id, type, amount, status")
-          .ilike("id", like)
+          .select("id, short_id, type, amount, status, recipient_phone")
+          .or(`short_id.ilike.${like},reference.ilike.${like},recipient_phone.ilike.${like}`)
           .limit(5),
         supabase
           .from("orders")
-          .select("id, order_number, status, total_amount")
-          .or(`order_number.ilike.${like},id.ilike.${like}`)
+          .select("id, order_num, status, total_amount")
+          .ilike("order_num", like)
           .limit(5),
       ]);
+
 
       if (reqId !== reqRef.current) return;
 
