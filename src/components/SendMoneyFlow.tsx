@@ -627,7 +627,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess, onRouteToCashOut }:
       setDirection(1);
       setStep("success");
     } catch (err: any) {
-      if (err?.code === "bad_format" || err?.code === "role_mismatch") {
+      const limitMsg = friendlyLimitError(err, t as any);
+      if (limitMsg) {
+        setError(limitMsg);
+      } else if (err?.code === "bad_format" || err?.code === "role_mismatch") {
         setError(walletFormatError("user", lang));
       } else {
         setError(err?.message || t("smTransactionFailed"));
