@@ -7,6 +7,8 @@ import { loadContacts as loadStoredContacts, saveContacts as saveStoredContacts,
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { transferMoney, getBalance } from "@/lib/balanceStore";
+import SendLimitMeter from "@/components/loyalty/SendLimitMeter";
+import { friendlyLimitError } from "@/lib/limitErrors";
 import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
