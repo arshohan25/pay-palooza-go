@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ChevronLeft, Loader2, User as UserIcon, Phone, Mail, Wallet, ShieldCheck, Calendar, Hash, ShieldOff, UserX, History, ChevronUp } from "lucide-react";
 import { fetchUserByEasypayUid, toggleUserStatus, softDeleteUser } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
@@ -235,7 +235,7 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
