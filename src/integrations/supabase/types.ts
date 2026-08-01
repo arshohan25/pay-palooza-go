@@ -362,6 +362,60 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_ledger_adjustments: {
+        Row: {
+          amount: number
+          applied_at: string | null
+          approval_request_id: string | null
+          approved_by: string | null
+          balance_after: number | null
+          balance_before: number | null
+          created_at: string
+          direction: string
+          id: string
+          notes: string | null
+          reason_code: string
+          requested_by: string
+          status: string
+          target_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          applied_at?: string | null
+          approval_request_id?: string | null
+          approved_by?: string | null
+          balance_after?: number | null
+          balance_before?: number | null
+          created_at?: string
+          direction: string
+          id?: string
+          notes?: string | null
+          reason_code: string
+          requested_by: string
+          status?: string
+          target_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          applied_at?: string | null
+          approval_request_id?: string | null
+          approved_by?: string | null
+          balance_after?: number | null
+          balance_before?: number | null
+          created_at?: string
+          direction?: string
+          id?: string
+          notes?: string | null
+          reason_code?: string
+          requested_by?: string
+          status?: string
+          target_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_notifications: {
         Row: {
           admin_id: string
@@ -9254,6 +9308,16 @@ export type Database = {
         Args: { _new_label: string; _old_name: string }
         Returns: string
       }
+      admin_request_balance_adjustment: {
+        Args: {
+          _amount: number
+          _direction: string
+          _notes?: string
+          _reason_code: string
+          _target_user_id: string
+        }
+        Returns: Json
+      }
       admin_reset_all_milestones: {
         Args: { p_referral_id: string }
         Returns: Json
@@ -9264,6 +9328,10 @@ export type Database = {
       }
       admin_reverse_chargeback: {
         Args: { p_chargeback_txn_id: string; p_reason: string }
+        Returns: Json
+      }
+      admin_review_balance_adjustment: {
+        Args: { _adjustment_id: string; _approve: boolean; _notes?: string }
         Returns: Json
       }
       admin_set_loyalty_override: {
