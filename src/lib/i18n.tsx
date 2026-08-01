@@ -4673,6 +4673,31 @@ const translations = {
   lpUpliftPlus: { en: "+৳{n}/day", bn: "+৳{n}/দিন" },
   lpLimitSourceTier: { en: "Set by EasyPay Club tier", bn: "ইজিপে ক্লাব টায়ার নির্ধারিত" },
 
+  // ─── Send Money remaining-limit meter ───
+  lpRemainingToday: { en: "Remaining today", bn: "আজ বাকি" },
+  lpRemainingMonth: { en: "Remaining this month", bn: "এ মাসে বাকি" },
+  lpLimitOf: { en: "of ৳{n}", bn: "৳{n} এর মধ্যে" },
+  lpSendLimitTitle: { en: "Send Money limit", bn: "সেন্ড মানি লিমিট" },
+  lpNextTierUplift: { en: "{tier} unlocks ৳{n} more per day", bn: "{tier} প্রতিদিন আরও ৳{n} আনলক করে" },
+  lpLimitExceededDaily: { en: "Daily Send Money limit reached. ৳{remaining} left of ৳{limit} today.", bn: "দৈনিক সেন্ড মানি সীমা শেষ। আজ ৳{limit} এর মধ্যে ৳{remaining} বাকি।" },
+  lpLimitExceededMonthly: { en: "Monthly Send Money limit reached. ৳{remaining} left of ৳{limit} this month.", bn: "মাসিক সেন্ড মানি সীমা শেষ। এ মাসে ৳{limit} এর মধ্যে ৳{remaining} বাকি।" },
+  lpLimitExceededCount: { en: "You reached your {period} transaction count limit ({limit}).", bn: "আপনার {period} লেনদেন সংখ্যার সীমা ({limit}) শেষ।" },
+
+  // ─── Loyalty points ───
+  lpPointsTitle: { en: "EasyPay points", bn: "ইজিপে পয়েন্ট" },
+  lpPointsSub: { en: "Earn points on every Send Money, redeem for wallet cash", bn: "প্রতিটি সেন্ড মানিতে পয়েন্ট জমুন, ওয়ালেট ক্যাশে রিডিম করুন" },
+  lpPointsBalance: { en: "Points balance", bn: "পয়েন্ট ব্যালেন্স" },
+  lpPointsEarnRate: { en: "{n} pts per ৳100 sent", bn: "প্রতি ৳১০০ পাঠালে {n} পয়েন্ট" },
+  lpPointsWorth: { en: "Worth ৳{n}", bn: "মূল্য ৳{n}" },
+  lpPointsRedeem: { en: "Redeem points", bn: "পয়েন্ট রিডিম" },
+  lpPointsRedeemHint: { en: "100 points = ৳10 · minimum 500 points", bn: "১০০ পয়েন্ট = ৳১০ · সর্বনিম্ন ৫০০ পয়েন্ট" },
+  lpPointsRedeemed: { en: "Redeemed {points} points for ৳{cash}", bn: "{points} পয়েন্ট ৳{cash} এ রিডিম হয়েছে" },
+  lpPointsEarned: { en: "Earned", bn: "অর্জিত" },
+  lpPointsRedeemedTotal: { en: "Redeemed", bn: "রিডিম" },
+  lpPointsHistory: { en: "Points activity", bn: "পয়েন্ট কার্যক্রম" },
+  lpPointsEmpty: { en: "No points activity yet — send money to start earning.", bn: "এখনও কোনো পয়েন্ট নেই — টাকা পাঠিয়ে শুরু করুন।" },
+  lpPointsNextTierRate: { en: "{tier} earns {n} pts per ৳100", bn: "{tier}-এ প্রতি ৳১০০ তে {n} পয়েন্ট" },
+
 
 
 

@@ -3806,6 +3806,89 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_point_ledger: {
+        Row: {
+          amount: number | null
+          balance_after: number
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          points: number
+          tier_code: string | null
+          txn_id: string | null
+          txn_type: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          balance_after: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind: string
+          points: number
+          tier_code?: string | null
+          txn_id?: string | null
+          txn_type?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          balance_after?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          points?: number
+          tier_code?: string | null
+          txn_id?: string | null
+          txn_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loyalty_point_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          min_amount: number
+          points_per_100: number
+          tier_id: string
+          txn_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_amount?: number
+          points_per_100?: number
+          tier_id: string
+          txn_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_amount?: number
+          points_per_100?: number
+          tier_id?: string
+          txn_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_point_rules_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_tier_audit: {
         Row: {
           change_type: string
@@ -8800,6 +8883,33 @@ export type Database = {
           },
         ]
       }
+      user_loyalty_points: {
+        Row: {
+          created_at: string
+          lifetime_earned: number
+          lifetime_redeemed: number
+          points_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          lifetime_earned?: number
+          lifetime_redeemed?: number
+          points_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          lifetime_earned?: number
+          lifetime_redeemed?: number
+          points_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_notification_settings: {
         Row: {
           created_at: string
@@ -9500,6 +9610,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      award_loyalty_points: {
+        Args: {
+          _amount: number
+          _txn_id?: string
+          _txn_type: string
+          _user_id: string
+        }
+        Returns: number
+      }
       buy_gold: {
         Args: { p_grams: number; p_karat: string; p_price_per_gram: number }
         Returns: Json
@@ -9622,6 +9741,10 @@ export type Database = {
           donor_name: string
           total_amount: number
         }[]
+      }
+      enforce_txn_limit: {
+        Args: { _amount: number; _txn_type: string; _user_id: string }
+        Returns: undefined
       }
       expire_loyalty_overrides: { Args: never; Returns: number }
       expire_payment_links: { Args: never; Returns: undefined }
@@ -9808,6 +9931,20 @@ export type Database = {
       get_threshold: {
         Args: { p_default: number; p_key: string }
         Returns: number
+      }
+      get_txn_limit_status: {
+        Args: { _txn_type: string }
+        Returns: {
+          max_amount: number
+          max_count: number
+          period: string
+          remaining_amount: number
+          remaining_count: number
+          source: string
+          tier_code: string
+          used_amount: number
+          used_count: number
+        }[]
       }
       get_user_feature_visibility: {
         Args: { p_feature_key: string; p_user_id: string }
@@ -10081,6 +10218,7 @@ export type Database = {
         Returns: undefined
       }
       redeem_gift_card: { Args: { p_code: string }; Returns: Json }
+      redeem_loyalty_points: { Args: { _points: number }; Returns: Json }
       refund_payment_link_payment:
         | {
             Args: {
@@ -10156,6 +10294,15 @@ export type Database = {
       resolve_transfer_recipient: {
         Args: { p_flow: string; p_identifier: string }
         Returns: Json
+      }
+      resolve_txn_limit_internal: {
+        Args: { _period: string; _txn_type: string; _user_id: string }
+        Returns: {
+          max_amount: number
+          max_count: number
+          source: string
+          tier_code: string
+        }[]
       }
       restore_preset_version: {
         Args: { _version_id: string }

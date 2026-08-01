@@ -7,6 +7,8 @@ import { loadContacts as loadStoredContacts, saveContacts as saveStoredContacts,
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { transferMoney, getBalance } from "@/lib/balanceStore";
+import SendLimitMeter from "@/components/loyalty/SendLimitMeter";
+import { friendlyLimitError } from "@/lib/limitErrors";
 import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
@@ -625,7 +627,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess, onRouteToCashOut }:
       setDirection(1);
       setStep("success");
     } catch (err: any) {
-      if (err?.code === "bad_format" || err?.code === "role_mismatch") {
+      const limitMsg = friendlyLimitError(err, t as any);
+      if (limitMsg) {
+        setError(limitMsg);
+      } else if (err?.code === "bad_format" || err?.code === "role_mismatch") {
         setError(walletFormatError("user", lang));
       } else {
         setError(err?.message || t("smTransactionFailed"));
@@ -894,6 +899,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess, onRouteToCashOut }:
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
                   )}
+                  <SendLimitMeter />
                 </div>
 
                 {/* Quick amounts — horizontal scroll */}

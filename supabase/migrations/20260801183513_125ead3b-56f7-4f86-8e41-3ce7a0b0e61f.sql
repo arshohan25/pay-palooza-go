@@ -1,0 +1,10 @@
+REVOKE ALL ON FUNCTION public.resolve_txn_limit_internal(uuid, text, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.enforce_txn_limit(uuid, text, numeric) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.award_loyalty_points(uuid, text, numeric, uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.get_txn_limit_status(text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.redeem_loyalty_points(integer) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_txn_limit_status(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.redeem_loyalty_points(integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.resolve_txn_limit_internal(uuid, text, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.enforce_txn_limit(uuid, text, numeric) TO service_role;
+GRANT EXECUTE ON FUNCTION public.award_loyalty_points(uuid, text, numeric, uuid) TO service_role;
