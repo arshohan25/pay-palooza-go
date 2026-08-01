@@ -209,24 +209,33 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
                   </thead>
                   <tbody>
                     {txns.map((t) => (
-                      <tr
-                        key={t.id}
-                        onClick={() => setDetailTx(t as AdminTxnRow)}
-                        className="border-b border-border/50 hover:bg-muted/30 cursor-pointer"
-                      >
-                        <td className="px-4 py-2">
-                          <Badge variant="secondary" className="text-[10px]">{resolveTxnLabel(t as AdminTxnRow)}</Badge>
-                        </td>
-                        <td className={`px-4 py-2 font-semibold ${resolveTxnDirection(t as AdminTxnRow) === "credit" ? "text-emerald-600" : "text-foreground"}`}>
-                          {resolveTxnDirection(t as AdminTxnRow) === "credit" ? "+" : "−"}৳{Number(t.amount || 0).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-muted-foreground hidden md:table-cell">৳{Number(t.fee || 0).toLocaleString()}</td>
-                        <td className="px-4 py-2 text-muted-foreground hidden md:table-cell">{t.recipient_name || t.recipient_phone || "—"}</td>
-                        <td className="px-4 py-2"><Badge variant="outline" className="text-[10px]">{t.status}</Badge></td>
-                        <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(t.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </td>
-                      </tr>
+                      <>
+                        <tr
+                          key={t.id}
+                          onClick={() => setExpandedId((cur) => (cur === t.id ? null : t.id))}
+                          className={`border-b border-border/50 hover:bg-muted/30 cursor-pointer ${expandedId === t.id ? "bg-muted/40" : ""}`}
+                        >
+                          <td className="px-4 py-2">
+                            <Badge variant="secondary" className="text-[10px]">{resolveAdminLedgerLabel(t as AdminTxnRow)}</Badge>
+                          </td>
+                          <td className={`px-4 py-2 font-semibold ${resolveLedgerDirection(t as AdminTxnRow) === "credit" ? "text-emerald-600" : "text-foreground"}`}>
+                            {resolveLedgerDirection(t as AdminTxnRow) === "credit" ? "+" : "−"}৳{Number(t.amount || 0).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2 text-muted-foreground hidden md:table-cell">৳{Number(t.fee || 0).toLocaleString()}</td>
+                          <td className="px-4 py-2 text-muted-foreground hidden md:table-cell">{t.recipient_name || t.recipient_phone || "—"}</td>
+                          <td className="px-4 py-2"><Badge variant="outline" className="text-[10px]">{t.status}</Badge></td>
+                          <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                            {new Date(t.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </td>
+                        </tr>
+                        {expandedId === t.id && (
+                          <tr key={`${t.id}-detail`} className="border-b border-border/50 bg-muted/10">
+                            <td colSpan={6} className="p-3">
+                              <AdminTxnRecordInline tx={t as AdminTxnRow} />
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     ))}
                   </tbody>
                 </table>
