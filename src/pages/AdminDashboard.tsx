@@ -1953,16 +1953,20 @@ export default function AdminDashboard() {
                   <div className="md:hidden divide-y divide-border/50">
                     {merchants.map((m: any) => (
                       <div key={m.id} className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
+                        <button className="w-full text-left flex items-start justify-between gap-2" onClick={() => setPartnerDetail({ kind: "merchant", record: m })}>
                           <div className="min-w-0">
                             <p className="font-semibold text-foreground text-sm truncate">{m.business_name}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{m.category}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{m.category}{m.owner_phone ? ` · ${m.owner_phone}` : ""}</p>
                           </div>
                           <Badge variant={m.status === "suspended" ? "destructive" : m.status === "active" ? "secondary" : "outline"} className="text-[10px] shrink-0">
                             {m.status}
                           </Badge>
-                        </div>
+                        </button>
                         <div className="flex flex-wrap gap-1.5">
+                          <Button size="sm" variant="ghost" className="text-xs h-7 gap-1" onClick={() => setPartnerDetail({ kind: "merchant", record: m })}>
+                            <Eye className="w-3 h-3" /> View
+                          </Button>
+
                           <Button
                             size="sm"
                             variant={m.status === "suspended" ? "default" : "destructive"}
