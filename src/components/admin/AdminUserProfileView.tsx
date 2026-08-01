@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import AdminUserActivityPanel from "@/components/admin/AdminUserActivityPanel";
+import AgentTxnDetailModal, { AgentTxnDetailTx } from "@/components/agent/AgentTxnDetailModal";
 import { formatDistanceToNowStrict } from "date-fns";
 import { toast } from "sonner";
 
@@ -21,6 +22,8 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
   const [showTxns, setShowTxns] = useState(false);
   const [txns, setTxns] = useState<any[]>([]);
   const [txnLoading, setTxnLoading] = useState(false);
+  const [detailTx, setDetailTx] = useState<AgentTxnDetailTx | null>(null);
+
 
   const reload = async () => {
     if (!uid) return;
@@ -205,7 +208,11 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
                   </thead>
                   <tbody>
                     {txns.map((t) => (
-                      <tr key={t.id} className="border-b border-border/50 hover:bg-muted/30">
+                      <tr
+                        key={t.id}
+                        onClick={() => setDetailTx(t as AgentTxnDetailTx)}
+                        className="border-b border-border/50 hover:bg-muted/30 cursor-pointer"
+                      >
                         <td className="px-4 py-2"><Badge variant="secondary" className="text-[10px]">{t.type}</Badge></td>
                         <td className="px-4 py-2 font-semibold text-foreground">৳{Number(t.amount || 0).toLocaleString()}</td>
                         <td className="px-4 py-2 text-muted-foreground hidden md:table-cell">৳{Number(t.fee || 0).toLocaleString()}</td>
@@ -233,6 +240,14 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
             <AdminUserActivityPanel userId={profile.user_id} />
           </CardContent>
         </Card>
+      )}
+
+      {detailTx && (
+        <AgentTxnDetailModal
+          tx={detailTx}
+          onClose={() => setDetailTx(null)}
+          onShare={() => {}}
+        />
       )}
     </div>
   );
