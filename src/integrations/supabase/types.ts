@@ -9335,6 +9335,10 @@ export type Database = {
         Returns: Json
       }
       admin_revoke_trusted_device: { Args: { _id: string }; Returns: boolean }
+      admin_set_kyc_status: {
+        Args: { _notes?: string; _status: string; _user_id: string }
+        Returns: Json
+      }
       admin_set_loyalty_override: {
         Args: {
           _reason?: string
