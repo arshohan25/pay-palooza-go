@@ -169,6 +169,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import AdminNavReorder, { type NavGroup } from "@/components/admin/AdminNavReorder";
 import { GripVertical, Landmark, Zap } from "lucide-react";
 import AdminPushSetupWizard from "@/components/admin/AdminPushSetupWizard";
+import AdminCommandPalette from "@/components/admin/AdminCommandPalette";
+import AdminIncidentMode from "@/components/admin/AdminIncidentMode";
+import AdminScheduledReports from "@/components/admin/AdminScheduledReports";
+import AdminViewAsUser from "@/components/admin/AdminViewAsUser";
+
 
 interface Stats {
   totalUsers: number;
@@ -271,6 +276,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "team", label: "Team", icon: Users },
       { id: "team_activity", label: "Team Activity", icon: Activity },
       { id: "user_activity", label: "User Activity", icon: Activity },
+      { id: "view_as_user", label: "View as User", icon: Eye },
     ],
   },
   {
@@ -377,6 +383,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "pin_history", label: "PIN History", icon: Key },
       { id: "sessions", label: "Sessions", icon: Users },
       { id: "sys_health", label: "Health", icon: Activity },
+      { id: "incident_mode", label: "Incident Mode", icon: AlertTriangle },
     ],
   },
   {
@@ -432,6 +439,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "adv_reports", label: "Adv. Reports", icon: BarChart3 },
       { id: "auditlog", label: "Audit Log", icon: Eye },
       { id: "data_export", label: "Export", icon: Download },
+      { id: "scheduled_reports", label: "Scheduled Reports", icon: CalendarClock },
     ],
   },
   {
@@ -529,6 +537,7 @@ export default function AdminDashboard() {
   };
   const [navGroups, setNavGroups] = useState<NavGroup[]>(loadNavOrder);
   const [showReorder, setShowReorder] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash.replace('#', '');
@@ -546,6 +555,16 @@ export default function AdminDashboard() {
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setShowPalette((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
   const { unreadCount: supportUnread } = useSupportNotifications(activeTab);
   const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0, pendingKyc: 0, totalReferrals: 0, totalRewardsPaid: 0 });
@@ -1301,9 +1320,19 @@ export default function AdminDashboard() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowPalette(true)}
+                title="Search & jump (Ctrl/⌘ + K)"
+                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-primary-foreground backdrop-blur-md transition-all hover:scale-105"
+              >
+                <Search className="w-4 h-4" />
+              </Button>
               <Button variant="ghost" size="icon" onClick={loadData} disabled={refreshing} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-primary-foreground backdrop-blur-md transition-all hover:scale-105">
                 <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               </Button>
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -2244,6 +2273,11 @@ export default function AdminDashboard() {
         {/* ═══ CAREERS ═══ */}
         {activeTab === "careers" && <AdminCareersManager />}
 
+        {/* ═══ NEW ADMIN TOOLS ═══ */}
+        {activeTab === "incident_mode" && <AdminIncidentMode />}
+        {activeTab === "scheduled_reports" && <AdminScheduledReports />}
+        {activeTab === "view_as_user" && <AdminViewAsUser />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
@@ -3053,6 +3087,16 @@ export default function AdminDashboard() {
           }}
         />
       )}
+      <AdminCommandPalette
+        open={showPalette}
+        onOpenChange={setShowPalette}
+        navItems={navGroups.flatMap(g => g.items.map(i => ({ ...i, group: g.label })))}
+        onNavigate={(tabId) => setActiveTab(tabId)}
+        onEntity={(hit) => {
+          if (hit.kind === "user" || hit.kind === "merchant") setSearchQuery(hit.subtitle || hit.title);
+          else setSearchQuery(hit.id);
+        }}
+      />
       <AdminNavReorder
         open={showReorder}
         onOpenChange={setShowReorder}
