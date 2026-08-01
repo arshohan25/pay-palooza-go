@@ -186,6 +186,7 @@ const App = () => (
                     <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                     <Route path="/forgot-pin" element={<ForgotPinPage />} />
                     <Route path="/register/agent" element={<AgentRegister />} />
+                    <Route path="/subscribe/:planId" element={<SubscribePlanPage />} />
 
                     <Route path="/customer" element={<AppLayout />}>
                       <Route index element={<Index />} />
