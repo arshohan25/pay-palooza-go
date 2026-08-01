@@ -106,6 +106,8 @@ import AdminRevenueDashboard from "@/components/admin/AdminRevenueDashboard";
 import AdminInvestmentPnL from "@/components/admin/AdminInvestmentPnL";
 import AdminMfsMonitor from "@/components/admin/AdminMfsMonitor";
 import AdminOperationsWall from "@/components/admin/AdminOperationsWall";
+import AdminQueueHealthBoard from "@/components/admin/AdminQueueHealthBoard";
+import AdminLedgerConsole from "@/components/admin/AdminLedgerConsole";
 import AdminMerchantApplications from "@/components/admin/AdminMerchantApplications";
 import AdminApiRequests from "@/components/admin/AdminApiRequests";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
@@ -288,6 +290,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "reconciliation", label: "Reconciliation", icon: AlertTriangle },
       { id: "refund_console", label: "Refund Console", icon: RotateCcw },
       { id: "operations_wall", label: "Operations Wall", icon: Activity },
+      { id: "ops_health", label: "Ops Health Board", icon: Gauge },
       { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
       { id: "paybill_disputes", label: "Paybill Disputes", icon: Scale },
@@ -335,6 +338,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "settlements", label: "Settlements", icon: Wallet },
       { id: "bank_recon", label: "Bank Recon", icon: CreditCard },
       { id: "treasury", label: "Treasury", icon: Wallet },
+      { id: "ledger_console", label: "Ledger Adjustments", icon: Scale },
       { id: "float_mgmt", label: "Float Mgmt", icon: Wallet },
       { id: "revenue", label: "Revenue", icon: TrendingUp },
       { id: "investment_pnl", label: "Investment P/L", icon: TrendingUp },
@@ -2165,6 +2169,12 @@ export default function AdminDashboard() {
 
         {/* ═══ OPERATIONS WALL ═══ */}
         {activeTab === "operations_wall" && <AdminOperationsWall />}
+
+        {/* ═══ OPS HEALTH BOARD ═══ */}
+        {activeTab === "ops_health" && <AdminQueueHealthBoard onNavigate={setActiveTab} />}
+
+        {/* ═══ LEDGER ADJUSTMENTS ═══ */}
+        {activeTab === "ledger_console" && <AdminLedgerConsole />}
 
         {/* ═══ RISK CONTROL ═══ */}
         {activeTab === "risk_control" && <AdminRiskControl />}

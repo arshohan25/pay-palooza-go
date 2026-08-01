@@ -75,12 +75,12 @@ const QUEUES: QueueDef[] = [
     load: () => pendingQuery("fund_requests", "status", ["pending"]),
   },
   {
-    key: "pin_reset", label: "Merchant PIN resets", icon: KeyRound, tab: "merchant_pin_resets",
+    key: "pin_reset", label: "Merchant PIN resets", icon: KeyRound, tab: "pin_reset_queue",
     slaWarnHours: 2, slaBreachHours: 8,
     load: () => pendingQuery("merchant_pin_reset_requests", "status", ["open", "pending"]),
   },
   {
-    key: "merchant_apps", label: "Merchant applications", icon: Store, tab: "merchant_applications",
+    key: "merchant_apps", label: "Merchant applications", icon: Store, tab: "merchant_apps",
     slaWarnHours: 24, slaBreachHours: 72,
     load: () => pendingQuery("merchant_applications", "status", ["pending", "submitted", "under_review"]),
   },
