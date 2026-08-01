@@ -3108,6 +3108,172 @@ export type Database = {
           },
         ]
       }
+      fx_conversions: {
+        Row: {
+          created_at: string
+          effective_rate: number
+          fee_amount: number
+          fee_currency: string
+          from_amount: number
+          from_currency: string
+          id: string
+          mid_rate: number
+          spread_bps: number
+          status: string
+          to_amount: number
+          to_currency: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          effective_rate: number
+          fee_amount?: number
+          fee_currency?: string
+          from_amount: number
+          from_currency: string
+          id?: string
+          mid_rate: number
+          spread_bps: number
+          status?: string
+          to_amount: number
+          to_currency: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          effective_rate?: number
+          fee_amount?: number
+          fee_currency?: string
+          from_amount?: number
+          from_currency?: string
+          id?: string
+          mid_rate?: number
+          spread_bps?: number
+          status?: string
+          to_amount?: number
+          to_currency?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fx_currencies: {
+        Row: {
+          code: string
+          created_at: string
+          decimals: number
+          is_active: boolean
+          mid_rate_bdt: number
+          name: string
+          rate_source: string | null
+          sort_order: number
+          spread_bps: number
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          decimals?: number
+          is_active?: boolean
+          mid_rate_bdt?: number
+          name: string
+          rate_source?: string | null
+          sort_order?: number
+          spread_bps?: number
+          symbol?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          decimals?: number
+          is_active?: boolean
+          mid_rate_bdt?: number
+          name?: string
+          rate_source?: string | null
+          sort_order?: number
+          spread_bps?: number
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fx_rate_history: {
+        Row: {
+          changed_by: string | null
+          code: string
+          created_at: string
+          id: string
+          new_rate: number
+          new_spread_bps: number | null
+          old_rate: number | null
+          old_spread_bps: number | null
+        }
+        Insert: {
+          changed_by?: string | null
+          code: string
+          created_at?: string
+          id?: string
+          new_rate: number
+          new_spread_bps?: number | null
+          old_rate?: number | null
+          old_spread_bps?: number | null
+        }
+        Update: {
+          changed_by?: string | null
+          code?: string
+          created_at?: string
+          id?: string
+          new_rate?: number
+          new_spread_bps?: number | null
+          old_rate?: number | null
+          old_spread_bps?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fx_rate_history_code_fkey"
+            columns: ["code"]
+            isOneToOne: false
+            referencedRelation: "fx_currencies"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      fx_wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          currency_code: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          currency_code: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          currency_code?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fx_wallets_currency_code_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "fx_currencies"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       gift_cards: {
         Row: {
           brand: string
@@ -4724,6 +4890,59 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_plans: {
+        Row: {
+          amount: number
+          billing_interval: string
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          interval_count: number
+          is_active: boolean
+          merchant_id: string
+          name: string
+          trial_days: number
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          billing_interval?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          interval_count?: number
+          is_active?: boolean
+          merchant_id: string
+          name: string
+          trial_days?: number
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          billing_interval?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          interval_count?: number
+          is_active?: boolean
+          merchant_id?: string
+          name?: string
+          trial_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_plans_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_products: {
         Row: {
           badge: string | null
@@ -5061,6 +5280,69 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "merchant_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          charges_count: number
+          created_at: string
+          customer_id: string
+          failed_count: number
+          id: string
+          last_charge_at: string | null
+          mandate_max_amount: number | null
+          merchant_id: string
+          next_charge_at: string
+          plan_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          charges_count?: number
+          created_at?: string
+          customer_id: string
+          failed_count?: number
+          id?: string
+          last_charge_at?: string | null
+          mandate_max_amount?: number | null
+          merchant_id: string
+          next_charge_at?: string
+          plan_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          charges_count?: number
+          created_at?: string
+          customer_id?: string
+          failed_count?: number
+          id?: string
+          last_charge_at?: string | null
+          mandate_max_amount?: number | null
+          merchant_id?: string
+          next_charge_at?: string
+          plan_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_subscriptions_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -7515,6 +7797,50 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_charges: {
+        Row: {
+          amount: number
+          charged_at: string
+          currency: string
+          customer_id: string
+          failure_reason: string | null
+          id: string
+          merchant_id: string
+          status: string
+          subscription_id: string
+        }
+        Insert: {
+          amount: number
+          charged_at?: string
+          currency?: string
+          customer_id: string
+          failure_reason?: string | null
+          id?: string
+          merchant_id: string
+          status?: string
+          subscription_id: string
+        }
+        Update: {
+          amount?: number
+          charged_at?: string
+          currency?: string
+          customer_id?: string
+          failure_reason?: string | null
+          id?: string
+          merchant_id?: string
+          status?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_charges_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_complaints: {
         Row: {
           assigned_to: string | null
@@ -9082,6 +9408,11 @@ export type Database = {
         Args: { p_order_id: string; p_reason?: string }
         Returns: Json
       }
+      cancel_subscription: {
+        Args: { p_subscription_id: string }
+        Returns: undefined
+      }
+      charge_due_subscriptions: { Args: { p_limit?: number }; Returns: Json }
       check_agent_pin_reissue_throttle: {
         Args: { _agent_user_id: string }
         Returns: {
@@ -9184,6 +9515,10 @@ export type Database = {
       expire_stale_permission_requests: { Args: never; Returns: number }
       expire_stale_promotions: { Args: never; Returns: undefined }
       find_chat_user_by_phone: { Args: { p_phone: string }; Returns: Json }
+      fx_convert: {
+        Args: { p_amount: number; p_from: string; p_to: string }
+        Returns: Json
+      }
       generate_referral_code: { Args: never; Returns: string }
       generate_role_wallet_id_from_phone: {
         Args: { p_phone: string; p_role?: string; p_route?: string }
@@ -9757,6 +10092,10 @@ export type Database = {
           p_bank_name: string
         }
         Returns: Json
+      }
+      subscribe_to_plan: {
+        Args: { p_mandate_max?: number; p_plan_id: string }
+        Returns: string
       }
       system_approve_addmoney_request: {
         Args: { p_gateway_ref: string; p_request_id: string }
