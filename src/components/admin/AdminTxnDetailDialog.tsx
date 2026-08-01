@@ -69,7 +69,6 @@ export default function AdminTxnDetailDialog({
   const label = resolveTxnLabel(tx);
   const status = (tx.status || "completed").toLowerCase();
   const isCredit = direction === "credit";
-  const net = (Number(tx.amount) || 0) + (isCredit ? 1 : -1) * 0; // amount is gross
 
   const copy = (v: string, what: string) => {
     void navigator.clipboard.writeText(v);
