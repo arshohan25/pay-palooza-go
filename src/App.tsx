@@ -101,6 +101,11 @@ const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
 const AddMoneyStatusPage = lazy(() => import("./pages/AddMoneyStatusPage"));
 const ForgotPinPage = lazy(() => import("./pages/ForgotPinPage"));
 const AdminAuthDiagnosticsPage = lazy(() => import("./pages/AdminAuthDiagnosticsPage"));
+const MultiCurrencyPage = lazy(() => import("./pages/MultiCurrencyPage"));
+const MySubscriptionsPage = lazy(() => import("./pages/MySubscriptionsPage"));
+const SubscribePlanPage = lazy(() => import("./pages/SubscribePlanPage"));
+const MerchantPlansPage = lazy(() => retryLazyImport(() => import("./pages/MerchantPlansPage")));
+const AdminFxRatesPage = lazy(() => retryLazyImport(() => import("./pages/AdminFxRatesPage")));
 
 
 
