@@ -537,6 +537,7 @@ export default function AdminDashboard() {
   };
   const [navGroups, setNavGroups] = useState<NavGroup[]>(loadNavOrder);
   const [showReorder, setShowReorder] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash.replace('#', '');
@@ -554,6 +555,16 @@ export default function AdminDashboard() {
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setShowPalette((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
   const { unreadCount: supportUnread } = useSupportNotifications(activeTab);
   const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0, pendingKyc: 0, totalReferrals: 0, totalRewardsPaid: 0 });
@@ -3066,6 +3077,16 @@ export default function AdminDashboard() {
           }}
         />
       )}
+      <AdminCommandPalette
+        open={showPalette}
+        onOpenChange={setShowPalette}
+        navItems={navGroups.flatMap(g => g.items.map(i => ({ ...i, group: g.label })))}
+        onNavigate={(tabId) => setActiveTab(tabId)}
+        onEntity={(hit) => {
+          if (hit.kind === "user" || hit.kind === "merchant") setSearchQuery(hit.subtitle || hit.title);
+          else setSearchQuery(hit.id);
+        }}
+      />
       <AdminNavReorder
         open={showReorder}
         onOpenChange={setShowReorder}
