@@ -199,6 +199,7 @@ const App = () => (
                     <Route path="/admin/users/:uid" element={<RoleGuard roles={["admin", "compliance"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminUserProfilePage /></RoleGuard>} />
                     <Route path="/admin/blocked-phones" element={<RoleGuard roles={["admin", "compliance"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminBlockedPhonesPage /></RoleGuard>} />
                     <Route path="/admin/mcp-activity" element={<RoleGuard roles={["admin", "developer", "audit"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminMcpActivityLog /></RoleGuard>} />
+                    <Route path="/admin/auth-diagnostics" element={<RoleGuard roles={["admin", "developer"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminAuthDiagnosticsPage /></RoleGuard>} />
                     <Route path="/admin/fx-rates" element={<RoleGuard roles={["admin", "finance"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminFxRatesPage /></RoleGuard>} />
 
 
