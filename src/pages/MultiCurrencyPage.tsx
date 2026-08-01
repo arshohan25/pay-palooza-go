@@ -208,11 +208,12 @@ export default function MultiCurrencyPage() {
 
       <PinConfirmSheet
         open={pinOpen}
-        onOpenChange={setPinOpen}
-        onVerified={doConvert}
+        onClose={() => setPinOpen(false)}
+        onConfirmed={doConvert}
         title="Confirm conversion"
         description={quote ? `Convert ${fmt(amt, from)} to ${fmt(quote.receive, to)}` : undefined}
       />
+
     </div>
   );
 }
