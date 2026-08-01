@@ -2087,7 +2087,12 @@ export default function AdminDashboard() {
         {activeTab === "recharge" && <RechargeSection />}
 
         {/* ═══ KYC REVIEW ═══ */}
-        {activeTab === "kyc" && <AdminKycReview />}
+        {activeTab === "kyc" && (
+          <div className="space-y-4">
+            <AdminKycStatusManager />
+            <AdminKycReview />
+          </div>
+        )}
 
         {/* ═══ REFERRAL MANAGEMENT ═══ */}
         {activeTab === "referrals" && <AdminReferralManagement />}
