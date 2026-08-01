@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLoyaltyTiers, type LoyaltyTier } from "@/hooks/use-loyalty";
 import LoyaltyBadge from "@/components/LoyaltyBadge";
 import AdminLoyaltyNotificationTemplates from "@/components/admin/AdminLoyaltyNotificationTemplates";
+import AdminLoyaltyTierLimits from "@/components/admin/AdminLoyaltyTierLimits";
 import { Sparkles, Save, Search, Crown, RefreshCw } from "lucide-react";
 
 /* -------------------------------------------------------------- */
@@ -248,6 +249,7 @@ export default function AdminLoyaltyTiers() {
       <Tabs defaultValue="catalog">
         <TabsList>
           <TabsTrigger value="catalog">Tier catalog</TabsTrigger>
+          <TabsTrigger value="limits">Tier limits</TabsTrigger>
           <TabsTrigger value="override">User override</TabsTrigger>
           <TabsTrigger value="templates">Notification templates</TabsTrigger>
         </TabsList>
@@ -282,6 +284,10 @@ export default function AdminLoyaltyTiers() {
               </CardContent>
             </Card>
           ))}
+        </TabsContent>
+
+        <TabsContent value="limits">
+          <AdminLoyaltyTierLimits />
         </TabsContent>
 
         <TabsContent value="override">

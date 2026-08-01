@@ -4664,6 +4664,15 @@ const translations = {
   lpActionAddMoney: { en: "Add money", bn: "টাকা যোগ" },
   lpActionTopUp: { en: "Top up", bn: "টপ আপ" },
   lpActionGrow: { en: "Grow savings", bn: "সেভিংস বাড়ান" },
+  lpTierLimits: { en: "Your tier limits", bn: "আপনার টায়ার লিমিট" },
+  lpTierLimitsSub: { en: "Daily and monthly ceilings unlocked by your tier", bn: "আপনার টায়ারে আনলক হওয়া দৈনিক ও মাসিক সীমা" },
+  lpPerDay: { en: "per day", bn: "প্রতিদিন" },
+  lpPerMonth: { en: "per month", bn: "প্রতি মাস" },
+  lpTxnPerDay: { en: "{n} txn/day", bn: "{n} লেনদেন/দিন" },
+  lpUnlockNext: { en: "Unlocks at {tier}", bn: "{tier}-এ আনলক হবে" },
+  lpUpliftPlus: { en: "+৳{n}/day", bn: "+৳{n}/দিন" },
+  lpLimitSourceTier: { en: "Set by EasyPay Club tier", bn: "ইজিপে ক্লাব টায়ার নির্ধারিত" },
+
 
 
 
