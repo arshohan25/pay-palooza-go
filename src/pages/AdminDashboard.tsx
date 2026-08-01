@@ -48,6 +48,7 @@ import AdminActivityMonitor from "@/components/admin/AdminActivityMonitor";
 import AdminChargebackDialog from "@/components/admin/AdminChargebackDialog";
 import AdminChargebackHistory from "@/components/admin/AdminChargebackHistory";
 import UserLockDialog from "@/components/admin/UserLockDialog";
+import AdminPartnerDetailDialog from "@/components/admin/AdminPartnerDetailDialog";
 import AdminOrderManagement from "@/components/admin/AdminOrderManagement";
 import AdminGatewayConfig from "@/components/admin/AdminGatewayConfig";
 import AdminGlobalToggles from "@/components/admin/AdminGlobalToggles";
