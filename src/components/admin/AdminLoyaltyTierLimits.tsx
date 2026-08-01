@@ -103,7 +103,10 @@ export default function AdminLoyaltyTierLimits() {
       <CardContent>
         <p className="text-xs text-muted-foreground mb-3">
           These ceilings override the platform defaults for users in each tier. A personal admin
-          override on a user still wins over the tier value.
+          override on a user still wins over the tier value. Each cell has two fields:{" "}
+          <span className="font-medium text-foreground">Max amount (৳)</span> and{" "}
+          <span className="font-medium text-foreground">Max transactions</span> for the selected
+          period.
         </p>
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
@@ -112,10 +115,20 @@ export default function AdminLoyaltyTierLimits() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
-                  <th className="text-left px-2 py-2 text-xs font-medium">Service</th>
+                  <th className="text-left px-2 py-2 text-xs font-medium" rowSpan={2}>Service</th>
                   {sortedTiers.map((t) => (
                     <th key={t.id} className="text-left px-2 py-2 text-xs font-medium whitespace-nowrap">
                       {t.name} <Badge variant="outline" className="text-[9px]">R{t.rank}</Badge>
+                    </th>
+                  ))}
+                </tr>
+                <tr className="border-b text-muted-foreground">
+                  {sortedTiers.map((t) => (
+                    <th key={t.id} className="px-2 pb-2 text-left font-normal">
+                      <div className="flex gap-1">
+                        <span className="w-28 text-[10px] uppercase tracking-wide">Max amount (৳)</span>
+                        <span className="w-16 text-[10px] uppercase tracking-wide">Max txns</span>
+                      </div>
                     </th>
                   ))}
                 </tr>
@@ -130,6 +143,8 @@ export default function AdminLoyaltyTierLimits() {
                           <Input
                             className="h-8 w-28 text-xs"
                             type="number"
+                            aria-label={`${t.name} ${LABELS[txn]} max amount (${period})`}
+                            title={`Max ${period} amount in ৳ for ${LABELS[txn]} — ${t.name}`}
                             value={value(t.id, txn, "max_amount")}
                             onChange={(e) => setValue(t.id, txn, "max_amount", +e.target.value)}
                             placeholder="৳ amount"
@@ -137,9 +152,11 @@ export default function AdminLoyaltyTierLimits() {
                           <Input
                             className="h-8 w-16 text-xs"
                             type="number"
+                            aria-label={`${t.name} ${LABELS[txn]} max transactions (${period})`}
+                            title={`Max number of ${LABELS[txn]} transactions per ${period === "daily" ? "day" : "month"} — ${t.name}`}
                             value={value(t.id, txn, "max_count")}
                             onChange={(e) => setValue(t.id, txn, "max_count", +e.target.value)}
-                            placeholder="txn"
+                            placeholder="txns"
                           />
                         </div>
                       </td>
