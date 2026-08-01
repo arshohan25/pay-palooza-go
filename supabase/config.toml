@@ -88,3 +88,6 @@ verify_jwt = false
 verify_jwt = true
 
 
+
+[functions.charge-subscriptions]
+verify_jwt = false
