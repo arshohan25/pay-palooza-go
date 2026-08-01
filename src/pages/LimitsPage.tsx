@@ -97,6 +97,7 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
   const { t } = useI18n();
   const { daily, monthly, limits, loading } = useUsageStats();
   const { getFeeLabel, loading: feeLoading } = useFeeConfig();
+  const { tier, nextTier, uplift } = useMyTierLimits();
 
   const sendFee = getFeeLabel("send");
   const cashinFee = getFeeLabel("cashin");
