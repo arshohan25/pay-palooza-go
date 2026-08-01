@@ -3857,6 +3857,47 @@ export type Database = {
           },
         ]
       }
+      loyalty_tier_limits: {
+        Row: {
+          created_at: string
+          id: string
+          max_amount: number
+          max_count: number
+          period: string
+          tier_id: string
+          txn_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_amount?: number
+          max_count?: number
+          period: string
+          tier_id: string
+          txn_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_amount?: number
+          max_count?: number
+          period?: string
+          tier_id?: string
+          txn_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_tier_limits_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_tiers: {
         Row: {
           badge_color: string
@@ -9663,6 +9704,15 @@ export type Database = {
       get_effective_commission_rate: {
         Args: { p_category: string; p_merchant_id: string }
         Returns: number
+      }
+      get_effective_txn_limit: {
+        Args: { _period: string; _txn_type: string; _user_id: string }
+        Returns: {
+          max_amount: number
+          max_count: number
+          source: string
+          tier_code: string
+        }[]
       }
       get_merchant_broadcast_audience_count: {
         Args: { p_audience: string; p_merchant_id: string }
