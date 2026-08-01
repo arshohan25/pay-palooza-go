@@ -182,6 +182,9 @@ export default function LoyaltyProgressPage() {
         {/* Tier limits */}
         <TierLimitsCard />
 
+        {/* Points balance, earn rate and redemption */}
+        <LoyaltyPointsCard />
+
         {/* Combined score breakdown */}
         <Card>
           <CardContent className="p-4 space-y-3">
