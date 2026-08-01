@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -560,6 +560,13 @@ export default function AdminDashboard() {
     return hash.startsWith('user=') ? decodeURIComponent(hash.slice(5)) : null;
   });
   const openUserProfile = (uid: string) => { setProfileUid(uid); setActiveTab("users"); };
+  const routerLocation = useLocation();
+
+  // React Router pushState hash changes don't fire `hashchange`, so sync here too.
+  useEffect(() => {
+    const hash = routerLocation.hash.replace('#', '');
+    if (hash.startsWith('user=')) setProfileUid(decodeURIComponent(hash.slice(5)));
+  }, [routerLocation.hash]);
 
   useEffect(() => {
     window.location.hash = profileUid ? `user=${encodeURIComponent(profileUid)}` : activeTab;
