@@ -49,6 +49,7 @@ import AdminChargebackDialog from "@/components/admin/AdminChargebackDialog";
 import AdminChargebackHistory from "@/components/admin/AdminChargebackHistory";
 import UserLockDialog from "@/components/admin/UserLockDialog";
 import AdminPartnerDetailDialog from "@/components/admin/AdminPartnerDetailDialog";
+import AdminUserProfileView from "@/components/admin/AdminUserProfileView";
 import AdminOrderManagement from "@/components/admin/AdminOrderManagement";
 import AdminGatewayConfig from "@/components/admin/AdminGatewayConfig";
 import AdminGlobalToggles from "@/components/admin/AdminGlobalToggles";
@@ -554,14 +555,21 @@ export default function AdminDashboard() {
     const hash = window.location.hash.replace('#', '');
     return ALL_NAV_ITEMS.some(i => i.id === hash) ? hash : "overview";
   });
+  const [profileUid, setProfileUid] = useState<string | null>(() => {
+    const hash = window.location.hash.replace('#', '');
+    return hash.startsWith('user=') ? decodeURIComponent(hash.slice(5)) : null;
+  });
+  const openUserProfile = (uid: string) => { setProfileUid(uid); setActiveTab("users"); };
 
   useEffect(() => {
-    window.location.hash = activeTab;
-  }, [activeTab]);
+    window.location.hash = profileUid ? `user=${encodeURIComponent(profileUid)}` : activeTab;
+  }, [activeTab, profileUid]);
 
   useEffect(() => {
     const onHash = () => {
       const hash = window.location.hash.replace('#', '');
+      if (hash.startsWith('user=')) { setProfileUid(decodeURIComponent(hash.slice(5))); return; }
+      setProfileUid(null);
       if (ALL_NAV_ITEMS.some(i => i.id === hash)) setActiveTab(hash);
     };
     window.addEventListener('hashchange', onHash);
@@ -1398,6 +1406,11 @@ export default function AdminDashboard() {
         <main className="flex-1 px-2 py-4 sm:px-4 md:p-8 overflow-y-auto overflow-x-hidden min-h-0 pb-8">
           <RealtimeUpdateIndicator visible={realtimeVisible} />
 
+        {profileUid && (
+          <AdminUserProfileView uid={profileUid} onBack={() => { setProfileUid(null); setActiveTab("users"); }} />
+        )}
+        {!profileUid && (<>
+
         {/* ═══ OVERVIEW ═══ */}
         {activeTab === "overview" && (
           <div className="space-y-6">
@@ -1525,7 +1538,7 @@ export default function AdminDashboard() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && userSearchScope === "uid" && searchQuery.trim()) {
-                            navigate(`/admin/users/${encodeURIComponent(searchQuery.trim().toUpperCase())}`);
+                            openUserProfile(searchQuery.trim().toUpperCase());
                           }
                         }}
                       />
@@ -1534,7 +1547,7 @@ export default function AdminDashboard() {
                       <Button
                         size="sm"
                         variant="default"
-                        onClick={() => navigate(`/admin/users/${encodeURIComponent(searchQuery.trim().toUpperCase())}`)}
+                        onClick={() => openUserProfile(searchQuery.trim().toUpperCase())}
                       >
                         Open
                       </Button>
@@ -1595,7 +1608,7 @@ export default function AdminDashboard() {
                                 />
                               </td>
                               <td className="px-4 py-3 font-medium text-foreground">{user.name || "—"}</td>
-                              <td className="px-4 py-3">{user.easypay_uid ? (<button onClick={() => navigate(`/admin/users/${user.easypay_uid}`)} className="text-xs font-mono px-2 py-0.5 rounded bg-muted hover:bg-primary/10 hover:text-primary text-foreground transition" title="Open admin profile">{user.easypay_uid}</button>) : <code className="text-xs font-mono px-2 py-0.5 rounded bg-muted text-foreground">—</code>}</td>
+                              <td className="px-4 py-3">{user.easypay_uid ? (<button onClick={() => openUserProfile(user.easypay_uid)} className="text-xs font-mono px-2 py-0.5 rounded bg-muted hover:bg-primary/10 hover:text-primary text-foreground transition" title="Open admin profile">{user.easypay_uid}</button>) : <code className="text-xs font-mono px-2 py-0.5 rounded bg-muted text-foreground">—</code>}</td>
                               <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>
                               <td className="px-4 py-3 font-semibold text-foreground">৳{parseFloat(user.balance).toLocaleString()}</td>
                               <td className="px-4 py-3">
@@ -1716,7 +1729,7 @@ export default function AdminDashboard() {
                                 </div>
                               </div>
                               <p className="text-xs text-muted-foreground">{user.phone}</p>
-                              <p className="text-[10px] font-mono text-muted-foreground mt-0.5">UID: {user.easypay_uid ? (<button onClick={() => navigate(`/admin/users/${user.easypay_uid}`)} className="underline hover:text-primary">{user.easypay_uid}</button>) : "—"}</p>
+                              <p className="text-[10px] font-mono text-muted-foreground mt-0.5">UID: {user.easypay_uid ? (<button onClick={() => openUserProfile(user.easypay_uid)} className="underline hover:text-primary">{user.easypay_uid}</button>) : "—"}</p>
                               <p className="text-sm font-semibold text-foreground mt-1">৳{parseFloat(user.balance).toLocaleString()}</p>
                             </div>
                           </div>
@@ -2564,6 +2577,7 @@ export default function AdminDashboard() {
             </ScrollArea>
           </SheetContent>
         </Sheet>
+        </>)}
       </main>
 
       {/* User Lock Dialog - accessible from any user/agent/merchant row */}
