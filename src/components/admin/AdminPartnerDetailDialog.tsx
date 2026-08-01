@@ -125,7 +125,7 @@ export default function AdminPartnerDetailDialog({ kind, record, onClose }: Prop
                 <Button
                   variant="outline"
                   className="w-full gap-2"
-                  onClick={() => { onClose(); navigate(`/admin/users/${record.easypay_uid}`); }}
+                  onClick={() => { onClose(); navigate(`/admin#user=${encodeURIComponent(record.easypay_uid)}`); }}
                 >
                   <ExternalLink className="w-4 h-4" /> Open owner profile
                 </Button>

@@ -216,7 +216,7 @@ export default function AdminUserActivityPanel({ userId }: Props) {
                     tabIndex={0}
                     onClick={() => {
                       if (r.easypay_uid) {
-                        navigate(`/admin/users/${r.easypay_uid}`);
+                        navigate(`/admin#user=${encodeURIComponent(r.easypay_uid)}`);
                       } else {
                         setExpanded(isOpen ? null : r.id);
                       }
