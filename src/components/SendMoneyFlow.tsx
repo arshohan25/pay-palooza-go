@@ -894,6 +894,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess, onRouteToCashOut }:
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
                   )}
+                  <SendLimitMeter />
                 </div>
 
                 {/* Quick amounts — horizontal scroll */}
