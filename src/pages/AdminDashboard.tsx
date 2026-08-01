@@ -1320,9 +1320,19 @@ export default function AdminDashboard() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowPalette(true)}
+                title="Search & jump (Ctrl/⌘ + K)"
+                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-primary-foreground backdrop-blur-md transition-all hover:scale-105"
+              >
+                <Search className="w-4 h-4" />
+              </Button>
               <Button variant="ghost" size="icon" onClick={loadData} disabled={refreshing} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-primary-foreground backdrop-blur-md transition-all hover:scale-105">
                 <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               </Button>
+
               <Button
                 variant="ghost"
                 size="icon"
