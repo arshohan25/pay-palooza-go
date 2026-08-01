@@ -108,6 +108,9 @@ import AdminMfsMonitor from "@/components/admin/AdminMfsMonitor";
 import AdminOperationsWall from "@/components/admin/AdminOperationsWall";
 import AdminQueueHealthBoard from "@/components/admin/AdminQueueHealthBoard";
 import AdminLedgerConsole from "@/components/admin/AdminLedgerConsole";
+import AdminTrustedDevices from "@/components/admin/AdminTrustedDevices";
+import AdminKycExemptAudit from "@/components/admin/AdminKycExemptAudit";
+import AdminTreasuryIntegrity from "@/components/admin/AdminTreasuryIntegrity";
 import AdminMerchantApplications from "@/components/admin/AdminMerchantApplications";
 import AdminApiRequests from "@/components/admin/AdminApiRequests";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
@@ -339,6 +342,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "bank_recon", label: "Bank Recon", icon: CreditCard },
       { id: "treasury", label: "Treasury", icon: Wallet },
       { id: "ledger_console", label: "Ledger Adjustments", icon: Scale },
+      { id: "treasury_integrity", label: "Treasury Integrity", icon: Scale },
       { id: "float_mgmt", label: "Float Mgmt", icon: Wallet },
       { id: "revenue", label: "Revenue", icon: TrendingUp },
       { id: "investment_pnl", label: "Investment P/L", icon: TrendingUp },
@@ -388,6 +392,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "sessions", label: "Sessions", icon: Users },
       { id: "sys_health", label: "Health", icon: Activity },
       { id: "incident_mode", label: "Incident Mode", icon: AlertTriangle },
+      { id: "trusted_devices", label: "Trusted Devices", icon: Smartphone },
     ],
   },
   {
@@ -401,6 +406,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "blacklist", label: "Blacklist", icon: Shield },
       { id: "evidence_vault", label: "Evidence Vault", icon: FileArchive },
       { id: "lea_request", label: "LEA Request", icon: FileText },
+      { id: "kyc_exempt_audit", label: "KYC Exemption Audit", icon: ShieldCheck },
     ],
   },
   {
@@ -2175,6 +2181,15 @@ export default function AdminDashboard() {
 
         {/* ═══ LEDGER ADJUSTMENTS ═══ */}
         {activeTab === "ledger_console" && <AdminLedgerConsole />}
+
+        {/* ═══ TREASURY INTEGRITY ═══ */}
+        {activeTab === "treasury_integrity" && <AdminTreasuryIntegrity />}
+
+        {/* ═══ TRUSTED DEVICES ═══ */}
+        {activeTab === "trusted_devices" && <AdminTrustedDevices />}
+
+        {/* ═══ KYC EXEMPTION AUDIT ═══ */}
+        {activeTab === "kyc_exempt_audit" && <AdminKycExemptAudit />}
 
         {/* ═══ RISK CONTROL ═══ */}
         {activeTab === "risk_control" && <AdminRiskControl />}
