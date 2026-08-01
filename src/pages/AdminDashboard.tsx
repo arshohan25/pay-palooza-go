@@ -680,6 +680,7 @@ export default function AdminDashboard() {
     setMetricFilterUserIds(null);
   };
   const [lockTarget, setLockTarget] = useState<{ userId: string; label: string } | null>(null);
+  const [partnerDetail, setPartnerDetail] = useState<{ kind: "agent" | "merchant"; record: any } | null>(null);
   const [chargebackTarget, setChargebackTarget] = useState<any>(null);
   const [showNavMenu, setShowNavMenu] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
