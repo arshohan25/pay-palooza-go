@@ -1905,15 +1905,22 @@ export default function AdminDashboard() {
                       </thead>
                       <tbody>
                         {merchants.map((m: any) => (
-                          <tr key={m.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                            <td className="px-4 py-3 font-medium text-foreground">{m.business_name}</td>
+                          <tr key={m.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setPartnerDetail({ kind: "merchant", record: m })}>
+                            <td className="px-4 py-3 font-medium text-foreground">
+                              <span className="hover:text-primary transition-colors">{m.business_name}</span>
+                              <span className="block text-xs text-muted-foreground font-normal">{m.owner_phone || m.owner_name || "—"}</span>
+                            </td>
                             <td className="px-4 py-3 text-muted-foreground capitalize">{m.category}</td>
                             <td className="px-4 py-3">
                               <Badge variant={m.status === "suspended" ? "destructive" : m.status === "active" ? "secondary" : "outline"} className="text-xs">
                                 {m.status}
                               </Badge>
                             </td>
-                            <td className="px-4 py-3 flex items-center gap-1.5">
+                            <td className="px-4 py-3 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                              <Button size="sm" variant="ghost" className="text-xs h-7 gap-1" onClick={() => setPartnerDetail({ kind: "merchant", record: m })}>
+                                <Eye className="w-3 h-3" /> View
+                              </Button>
+
                               <Button
                                 size="sm"
                                 variant={m.status === "suspended" ? "default" : "destructive"}
