@@ -255,10 +255,6 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
           </CardContent>
         </Card>
       )}
-
-      {detailTx && (
-        <AdminTxnDetailDialog tx={detailTx} onClose={() => setDetailTx(null)} />
-      )}
     </div>
   );
 }
