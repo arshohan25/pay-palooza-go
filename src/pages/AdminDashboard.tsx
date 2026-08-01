@@ -1834,16 +1834,20 @@ export default function AdminDashboard() {
                   <div className="md:hidden divide-y divide-border/50">
                     {agents.map((agent: any) => (
                       <div key={agent.id} className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
+                        <button className="w-full text-left flex items-start justify-between gap-2" onClick={() => setPartnerDetail({ kind: "agent", record: agent })}>
                           <div className="min-w-0">
                             <p className="font-semibold text-foreground text-sm truncate">{agent.business_name || "—"}</p>
-                            <p className="text-xs text-muted-foreground">{agent.territory_code || "No territory"}</p>
+                            <p className="text-xs text-muted-foreground">{agent.territory_code || "No territory"}{agent.owner_phone ? ` · ${agent.owner_phone}` : ""}</p>
                           </div>
                           <Badge variant={agent.status === "suspended" ? "destructive" : agent.status === "active" ? "secondary" : "outline"} className="text-[10px] shrink-0">
                             {agent.status}
                           </Badge>
-                        </div>
+                        </button>
                         <div className="flex flex-wrap gap-1.5">
+                          <Button size="sm" variant="ghost" className="text-xs h-7 gap-1" onClick={() => setPartnerDetail({ kind: "agent", record: agent })}>
+                            <Eye className="w-3 h-3" /> View
+                          </Button>
+
                           <Button
                             size="sm"
                             variant={agent.status === "suspended" ? "default" : "destructive"}
