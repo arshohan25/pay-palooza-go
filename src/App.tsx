@@ -175,6 +175,8 @@ const App = () => (
                       <Route path="savings" element={<SavingsPage />} />
                       <Route path="savings/journey" element={<InstallmentJourneyPage />} />
                       <Route path="payment-requests" element={<PaymentRequestsPage />} />
+                      <Route path="currencies" element={<MultiCurrencyPage />} />
+                      <Route path="subscriptions" element={<MySubscriptionsPage />} />
                     </Route>
 
                     <Route path="/r/:shortCode" element={<PayLinkPage />} />
