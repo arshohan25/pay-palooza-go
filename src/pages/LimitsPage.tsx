@@ -207,6 +207,26 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       </div>
     </div>
 
+    {/* Loyalty tier banner — limits are unlocked by the EasyPay Club tier */}
+    {tier && (
+      <div
+        className="rounded-2xl px-4 py-3 text-white flex items-center gap-3"
+        style={{ background: `linear-gradient(135deg, ${tier.gradient_from ?? tier.badge_color}, ${tier.gradient_to ?? tier.badge_color})` }}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-[10.5px] uppercase tracking-wider opacity-85">{t("lpEasypayClub")}</p>
+          <p className="text-[15px] font-bold truncate">{tier.name}</p>
+          <p className="text-[10.5px] opacity-90">{t("lpLimitSourceTier")}</p>
+        </div>
+        {nextTier && (uplift.send ?? 0) > 0 && (
+          <div className="text-right shrink-0">
+            <p className="text-[10px] opacity-85">{t("lpUnlockNext").replace("{tier}", nextTier.name)}</p>
+            <p className="text-[13px] font-bold">{t("lpUpliftPlus").replace("{n}", Math.round(uplift.send!).toLocaleString())}</p>
+          </div>
+        )}
+      </div>
+    )}
+
     {/* Info banner */}
     <div className="flex gap-3 items-start bg-primary/8 border border-primary/20 rounded-2xl px-4 py-3.5">
       <Info size={15} className="text-primary mt-0.5 shrink-0" />
@@ -214,6 +234,7 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
         {t("limitsInfoBanner")}
       </p>
     </div>
+
 
     {/* Loading state */}
     {loading || feeLoading ? (
