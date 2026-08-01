@@ -209,7 +209,7 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
                   </thead>
                   <tbody>
                     {txns.map((t) => (
-                      <>
+                      <Fragment key={t.id}>
                         <tr
                           key={t.id}
                           onClick={() => setExpandedId((cur) => (cur === t.id ? null : t.id))}
