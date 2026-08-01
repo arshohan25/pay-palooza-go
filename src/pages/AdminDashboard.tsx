@@ -2575,6 +2575,14 @@ export default function AdminDashboard() {
         onLocked={() => setLockTarget(null)}
       />
 
+      {/* Agent / Merchant detail dialog */}
+      <AdminPartnerDetailDialog
+        kind={partnerDetail?.kind ?? "agent"}
+        record={partnerDetail?.record ?? null}
+        onClose={() => setPartnerDetail(null)}
+      />
+
+
       {/* Admin Chargeback Dialog */}
       <AdminChargebackDialog
         target={chargebackTarget}
