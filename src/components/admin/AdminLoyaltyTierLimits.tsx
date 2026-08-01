@@ -143,6 +143,8 @@ export default function AdminLoyaltyTierLimits() {
                           <Input
                             className="h-8 w-28 text-xs"
                             type="number"
+                            aria-label={`${t.name} ${LABELS[txn]} max amount (${period})`}
+                            title={`Max ${period} amount in ৳ for ${LABELS[txn]} — ${t.name}`}
                             value={value(t.id, txn, "max_amount")}
                             onChange={(e) => setValue(t.id, txn, "max_amount", +e.target.value)}
                             placeholder="৳ amount"
@@ -150,9 +152,11 @@ export default function AdminLoyaltyTierLimits() {
                           <Input
                             className="h-8 w-16 text-xs"
                             type="number"
+                            aria-label={`${t.name} ${LABELS[txn]} max transactions (${period})`}
+                            title={`Max number of ${LABELS[txn]} transactions per ${period === "daily" ? "day" : "month"} — ${t.name}`}
                             value={value(t.id, txn, "max_count")}
                             onChange={(e) => setValue(t.id, txn, "max_count", +e.target.value)}
-                            placeholder="txn"
+                            placeholder="txns"
                           />
                         </div>
                       </td>
