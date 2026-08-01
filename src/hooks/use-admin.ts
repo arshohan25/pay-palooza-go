@@ -59,15 +59,40 @@ export async function fetchAllTransactions(limit = 200) {
   return data ?? [];
 }
 
+/** Roles that get their own admin section — excluded from the plain "Users" list. */
+const ELEVATED_ROLES = new Set([
+  "agent", "merchant", "distributor", "super_distributor",
+  "admin", "compliance", "finance", "support", "operations",
+  "marketing", "hr", "audit", "risk", "developer", "manager",
+]);
+
 export async function fetchAllUsers(limit = 50) {
+  // Over-fetch: elevated-role accounts (agent/merchant/distributor/SD/admin) are
+  // filtered out below so the customer list still fills up to `limit`.
   const { data } = await supabase
     .from("profiles")
     .select("*")
     .not("phone", "like", "staff-%")
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(limit * 4);
 
-  const users = data ?? [];
+  const fetched = data ?? [];
+
+  const allIds = fetched.map((u: any) => u.user_id);
+  let elevated = new Set<string>();
+  if (allIds.length > 0) {
+    const { data: roleRows } = await supabase
+      .from("user_roles")
+      .select("user_id, role")
+      .in("user_id", allIds);
+    elevated = new Set(
+      (roleRows ?? [])
+        .filter((r: any) => ELEVATED_ROLES.has(r.role))
+        .map((r: any) => r.user_id)
+    );
+  }
+
+  const users = fetched.filter((u: any) => !elevated.has(u.user_id)).slice(0, limit);
 
   const userIds = users.map((u: any) => u.user_id);
   let kycMap: Record<string, string> = {};
@@ -92,6 +117,7 @@ export async function fetchAllUsers(limit = 50) {
     easypay_uid: uidMap[u.user_id] ?? null,
     kyc_status: u.kyc_exempt ? "exempt" : (kycMap[u.user_id] || "not_started"),
   }));
+
 
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.user) {
