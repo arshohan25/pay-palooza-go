@@ -246,6 +246,14 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
       )}
 
       {profile?.user_id && (
+        <AdminKycStatusManager
+          userId={profile.user_id}
+          compact
+          onChanged={(s) => setProfile((p: any) => ({ ...p, kyc_status: s }))}
+        />
+      )}
+
+      {profile?.user_id && (
         <Card className="border-0 shadow-[var(--shadow-card)]">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Activity</CardTitle>
