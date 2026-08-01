@@ -22,6 +22,8 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
   const [showTxns, setShowTxns] = useState(false);
   const [txns, setTxns] = useState<any[]>([]);
   const [txnLoading, setTxnLoading] = useState(false);
+  const [detailTx, setDetailTx] = useState<AgentTxnDetailTx | null>(null);
+
 
   const reload = async () => {
     if (!uid) return;
