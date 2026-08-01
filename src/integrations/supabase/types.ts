@@ -518,6 +518,89 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_scheduled_report_runs: {
+        Row: {
+          created_at: string
+          csv_content: string | null
+          error_message: string | null
+          id: string
+          report_id: string
+          row_count: number
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          csv_content?: string | null
+          error_message?: string | null
+          id?: string
+          report_id: string
+          row_count?: number
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          csv_content?: string | null
+          error_message?: string | null
+          id?: string
+          report_id?: string
+          row_count?: number
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_scheduled_report_runs_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "admin_scheduled_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_scheduled_reports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          frequency: string
+          id: string
+          is_active: boolean
+          label: string
+          last_run_at: string | null
+          next_run_at: string
+          recipients: string[]
+          report_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          recipients?: string[]
+          report_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          recipients?: string[]
+          report_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_security_policies: {
         Row: {
           category: string
@@ -665,6 +748,36 @@ export type Database = {
           segment_key?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_view_as_sessions: {
+        Row: {
+          admin_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          reason: string
+          started_at: string
+          target_user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          reason?: string
+          started_at?: string
+          target_user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          reason?: string
+          started_at?: string
+          target_user_id?: string
         }
         Relationships: []
       }
@@ -6171,6 +6284,51 @@ export type Database = {
           show_for_customer?: boolean
           show_for_merchant?: boolean
           sort_order?: number | null
+        }
+        Relationships: []
+      }
+      platform_incidents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          message: string
+          read_only: boolean
+          scope: string
+          severity: string
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string
+          read_only?: boolean
+          scope?: string
+          severity?: string
+          starts_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string
+          read_only?: boolean
+          scope?: string
+          severity?: string
+          starts_at?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
