@@ -101,6 +101,11 @@ const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
 const AddMoneyStatusPage = lazy(() => import("./pages/AddMoneyStatusPage"));
 const ForgotPinPage = lazy(() => import("./pages/ForgotPinPage"));
 const AdminAuthDiagnosticsPage = lazy(() => import("./pages/AdminAuthDiagnosticsPage"));
+const MultiCurrencyPage = lazy(() => import("./pages/MultiCurrencyPage"));
+const MySubscriptionsPage = lazy(() => import("./pages/MySubscriptionsPage"));
+const SubscribePlanPage = lazy(() => import("./pages/SubscribePlanPage"));
+const MerchantPlansPage = lazy(() => retryLazyImport(() => import("./pages/MerchantPlansPage")));
+const AdminFxRatesPage = lazy(() => retryLazyImport(() => import("./pages/AdminFxRatesPage")));
 
 
 
@@ -170,6 +175,8 @@ const App = () => (
                       <Route path="savings" element={<SavingsPage />} />
                       <Route path="savings/journey" element={<InstallmentJourneyPage />} />
                       <Route path="payment-requests" element={<PaymentRequestsPage />} />
+                      <Route path="currencies" element={<MultiCurrencyPage />} />
+                      <Route path="subscriptions" element={<MySubscriptionsPage />} />
                     </Route>
 
                     <Route path="/r/:shortCode" element={<PayLinkPage />} />
@@ -179,6 +186,7 @@ const App = () => (
                     <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                     <Route path="/forgot-pin" element={<ForgotPinPage />} />
                     <Route path="/register/agent" element={<AgentRegister />} />
+                    <Route path="/subscribe/:planId" element={<SubscribePlanPage />} />
 
                     <Route path="/customer" element={<AppLayout />}>
                       <Route index element={<Index />} />
@@ -192,6 +200,7 @@ const App = () => (
                     <Route path="/admin/blocked-phones" element={<RoleGuard roles={["admin", "compliance"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminBlockedPhonesPage /></RoleGuard>} />
                     <Route path="/admin/mcp-activity" element={<RoleGuard roles={["admin", "developer", "audit"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminMcpActivityLog /></RoleGuard>} />
                     <Route path="/admin/auth-diagnostics" element={<RoleGuard roles={["admin", "developer"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminAuthDiagnosticsPage /></RoleGuard>} />
+                    <Route path="/admin/fx-rates" element={<RoleGuard roles={["admin", "finance"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminFxRatesPage /></RoleGuard>} />
 
 
                     <Route path="/agent" element={<RoleGuardLayout themeClass="agent-theme" roles={["agent", "admin"]} unauthenticatedRedirect="/agent/login" unauthorizedRedirect="/agent/login" />}>
@@ -223,6 +232,7 @@ const App = () => (
 
                     <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant/login" unauthorizedRedirect="/merchant/login"><MerchantDashboard /></RoleGuard>} />
                     <Route path="/merchant/apply-vendor" element={<RoleGuard roles={["merchant", "admin"]} unauthenticatedRedirect="/merchant/login" unauthorizedRedirect="/merchant/login"><MerchantApplyVendor /></RoleGuard>} />
+                    <Route path="/merchant/plans" element={<RoleGuard roles={["merchant", "admin"]} allowStaff unauthenticatedRedirect="/merchant/login" unauthorizedRedirect="/merchant/login"><MerchantPlansPage /></RoleGuard>} />
                     <Route path="/merchant/apply" element={<MerchantApplyPage />} />
                     <Route path="/admin/merchant-categories" element={<RoleGuard roles={["admin"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminMerchantCategoriesPage /></RoleGuard>} />
                     <Route path="/admin/seed-health" element={<RoleGuard roles={["admin"]} unauthenticatedRedirect="/admin/login" unauthorizedRedirect="/admin/login"><AdminSeedHealthPage /></RoleGuard>} />
