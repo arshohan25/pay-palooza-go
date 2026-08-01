@@ -276,6 +276,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "team", label: "Team", icon: Users },
       { id: "team_activity", label: "Team Activity", icon: Activity },
       { id: "user_activity", label: "User Activity", icon: Activity },
+      { id: "view_as_user", label: "View as User", icon: Eye },
     ],
   },
   {
@@ -382,6 +383,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "pin_history", label: "PIN History", icon: Key },
       { id: "sessions", label: "Sessions", icon: Users },
       { id: "sys_health", label: "Health", icon: Activity },
+      { id: "incident_mode", label: "Incident Mode", icon: AlertTriangle },
     ],
   },
   {
@@ -437,6 +439,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "adv_reports", label: "Adv. Reports", icon: BarChart3 },
       { id: "auditlog", label: "Audit Log", icon: Eye },
       { id: "data_export", label: "Export", icon: Download },
+      { id: "scheduled_reports", label: "Scheduled Reports", icon: CalendarClock },
     ],
   },
   {
@@ -2248,6 +2251,11 @@ export default function AdminDashboard() {
 
         {/* ═══ CAREERS ═══ */}
         {activeTab === "careers" && <AdminCareersManager />}
+
+        {/* ═══ NEW ADMIN TOOLS ═══ */}
+        {activeTab === "incident_mode" && <AdminIncidentMode />}
+        {activeTab === "scheduled_reports" && <AdminScheduledReports />}
+        {activeTab === "view_as_user" && <AdminViewAsUser />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
