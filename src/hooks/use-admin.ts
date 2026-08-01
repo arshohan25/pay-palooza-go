@@ -59,15 +59,40 @@ export async function fetchAllTransactions(limit = 200) {
   return data ?? [];
 }
 
+/** Roles that get their own admin section — excluded from the plain "Users" list. */
+const ELEVATED_ROLES = new Set([
+  "agent", "merchant", "distributor", "super_distributor",
+  "admin", "compliance", "finance", "support", "operations",
+  "marketing", "hr", "audit", "risk", "developer", "manager",
+]);
+
 export async function fetchAllUsers(limit = 50) {
+  // Over-fetch: elevated-role accounts (agent/merchant/distributor/SD/admin) are
+  // filtered out below so the customer list still fills up to `limit`.
   const { data } = await supabase
     .from("profiles")
     .select("*")
     .not("phone", "like", "staff-%")
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(limit * 4);
 
-  const users = data ?? [];
+  const fetched = data ?? [];
+
+  const allIds = fetched.map((u: any) => u.user_id);
+  let elevated = new Set<string>();
+  if (allIds.length > 0) {
+    const { data: roleRows } = await supabase
+      .from("user_roles")
+      .select("user_id, role")
+      .in("user_id", allIds);
+    elevated = new Set(
+      (roleRows ?? [])
+        .filter((r: any) => ELEVATED_ROLES.has(r.role))
+        .map((r: any) => r.user_id)
+    );
+  }
+
+  const users = fetched.filter((u: any) => !elevated.has(u.user_id)).slice(0, limit);
 
   const userIds = users.map((u: any) => u.user_id);
   let kycMap: Record<string, string> = {};
@@ -92,6 +117,7 @@ export async function fetchAllUsers(limit = 50) {
     easypay_uid: uidMap[u.user_id] ?? null,
     kyc_status: u.kyc_exempt ? "exempt" : (kycMap[u.user_id] || "not_started"),
   }));
+
 
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.user) {
@@ -134,13 +160,36 @@ export async function fetchFraudAlerts(limit = 50) {
   return data ?? [];
 }
 
+/** Attaches owner profile (name/phone/balance) + EasyPay UID to agent/merchant rows. */
+async function attachOwnerProfiles(rows: any[]) {
+  const ids = Array.from(new Set(rows.map((r: any) => r.user_id).filter(Boolean)));
+  if (ids.length === 0) return rows;
+
+  const [{ data: profs }, { data: uids }] = await Promise.all([
+    supabase.from("profiles").select("user_id, name, phone, balance, status").in("user_id", ids),
+    supabase.rpc("admin_get_easypay_uids" as any, { _user_ids: ids }),
+  ]);
+
+  const pMap = Object.fromEntries((profs ?? []).map((p: any) => [p.user_id, p]));
+  const uMap = Object.fromEntries(((uids as any[]) ?? []).map((u: any) => [u.user_id, u.easypay_uid]));
+
+  return rows.map((r: any) => ({
+    ...r,
+    owner_profile: pMap[r.user_id] ?? null,
+    owner_name: r.owner_name ?? pMap[r.user_id]?.name ?? null,
+    owner_phone: pMap[r.user_id]?.phone ?? null,
+    owner_balance: pMap[r.user_id]?.balance ?? null,
+    easypay_uid: uMap[r.user_id] ?? null,
+  }));
+}
+
 export async function fetchAllAgents(limit = 100) {
   const { data } = await supabase
     .from("agents")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(limit);
-  return data ?? [];
+  return attachOwnerProfiles(data ?? []);
 }
 
 export async function fetchAllMerchants(limit = 100) {
@@ -149,8 +198,9 @@ export async function fetchAllMerchants(limit = 100) {
     .select("*")
     .order("created_at", { ascending: false })
     .limit(limit);
-  return data ?? [];
+  return attachOwnerProfiles(data ?? []);
 }
+
 
 export async function toggleUserStatus(userId: string, currentStatus: string) {
   const newStatus = currentStatus === "suspended" ? "active" : "suspended";

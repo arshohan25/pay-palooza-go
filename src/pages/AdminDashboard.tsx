@@ -48,6 +48,7 @@ import AdminActivityMonitor from "@/components/admin/AdminActivityMonitor";
 import AdminChargebackDialog from "@/components/admin/AdminChargebackDialog";
 import AdminChargebackHistory from "@/components/admin/AdminChargebackHistory";
 import UserLockDialog from "@/components/admin/UserLockDialog";
+import AdminPartnerDetailDialog from "@/components/admin/AdminPartnerDetailDialog";
 import AdminOrderManagement from "@/components/admin/AdminOrderManagement";
 import AdminGatewayConfig from "@/components/admin/AdminGatewayConfig";
 import AdminGlobalToggles from "@/components/admin/AdminGlobalToggles";
@@ -679,6 +680,7 @@ export default function AdminDashboard() {
     setMetricFilterUserIds(null);
   };
   const [lockTarget, setLockTarget] = useState<{ userId: string; label: string } | null>(null);
+  const [partnerDetail, setPartnerDetail] = useState<{ kind: "agent" | "merchant"; record: any } | null>(null);
   const [chargebackTarget, setChargebackTarget] = useState<any>(null);
   const [showNavMenu, setShowNavMenu] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
@@ -1784,15 +1786,22 @@ export default function AdminDashboard() {
                       </thead>
                       <tbody>
                         {agents.map((agent: any) => (
-                          <tr key={agent.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                            <td className="px-4 py-3 font-medium text-foreground">{agent.business_name || "—"}</td>
+                          <tr key={agent.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setPartnerDetail({ kind: "agent", record: agent })}>
+                            <td className="px-4 py-3 font-medium text-foreground">
+                              <span className="hover:text-primary transition-colors">{agent.business_name || "—"}</span>
+                              <span className="block text-xs text-muted-foreground font-normal">{agent.owner_phone || agent.owner_name || "—"}</span>
+                            </td>
                             <td className="px-4 py-3 text-muted-foreground">{agent.territory_code || "—"}</td>
                             <td className="px-4 py-3">
                               <Badge variant={agent.status === "suspended" ? "destructive" : agent.status === "active" ? "secondary" : "outline"} className="text-xs">
                                 {agent.status}
                               </Badge>
                             </td>
-                            <td className="px-4 py-3 flex items-center gap-1.5">
+                            <td className="px-4 py-3 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                              <Button size="sm" variant="ghost" className="text-xs h-7 gap-1" onClick={() => setPartnerDetail({ kind: "agent", record: agent })}>
+                                <Eye className="w-3 h-3" /> View
+                              </Button>
+
                               <Button
                                 size="sm"
                                 variant={agent.status === "suspended" ? "default" : "destructive"}
@@ -1825,16 +1834,20 @@ export default function AdminDashboard() {
                   <div className="md:hidden divide-y divide-border/50">
                     {agents.map((agent: any) => (
                       <div key={agent.id} className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
+                        <button className="w-full text-left flex items-start justify-between gap-2" onClick={() => setPartnerDetail({ kind: "agent", record: agent })}>
                           <div className="min-w-0">
                             <p className="font-semibold text-foreground text-sm truncate">{agent.business_name || "—"}</p>
-                            <p className="text-xs text-muted-foreground">{agent.territory_code || "No territory"}</p>
+                            <p className="text-xs text-muted-foreground">{agent.territory_code || "No territory"}{agent.owner_phone ? ` · ${agent.owner_phone}` : ""}</p>
                           </div>
                           <Badge variant={agent.status === "suspended" ? "destructive" : agent.status === "active" ? "secondary" : "outline"} className="text-[10px] shrink-0">
                             {agent.status}
                           </Badge>
-                        </div>
+                        </button>
                         <div className="flex flex-wrap gap-1.5">
+                          <Button size="sm" variant="ghost" className="text-xs h-7 gap-1" onClick={() => setPartnerDetail({ kind: "agent", record: agent })}>
+                            <Eye className="w-3 h-3" /> View
+                          </Button>
+
                           <Button
                             size="sm"
                             variant={agent.status === "suspended" ? "default" : "destructive"}
@@ -1892,15 +1905,22 @@ export default function AdminDashboard() {
                       </thead>
                       <tbody>
                         {merchants.map((m: any) => (
-                          <tr key={m.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                            <td className="px-4 py-3 font-medium text-foreground">{m.business_name}</td>
+                          <tr key={m.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setPartnerDetail({ kind: "merchant", record: m })}>
+                            <td className="px-4 py-3 font-medium text-foreground">
+                              <span className="hover:text-primary transition-colors">{m.business_name}</span>
+                              <span className="block text-xs text-muted-foreground font-normal">{m.owner_phone || m.owner_name || "—"}</span>
+                            </td>
                             <td className="px-4 py-3 text-muted-foreground capitalize">{m.category}</td>
                             <td className="px-4 py-3">
                               <Badge variant={m.status === "suspended" ? "destructive" : m.status === "active" ? "secondary" : "outline"} className="text-xs">
                                 {m.status}
                               </Badge>
                             </td>
-                            <td className="px-4 py-3 flex items-center gap-1.5">
+                            <td className="px-4 py-3 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                              <Button size="sm" variant="ghost" className="text-xs h-7 gap-1" onClick={() => setPartnerDetail({ kind: "merchant", record: m })}>
+                                <Eye className="w-3 h-3" /> View
+                              </Button>
+
                               <Button
                                 size="sm"
                                 variant={m.status === "suspended" ? "default" : "destructive"}
@@ -1933,16 +1953,20 @@ export default function AdminDashboard() {
                   <div className="md:hidden divide-y divide-border/50">
                     {merchants.map((m: any) => (
                       <div key={m.id} className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
+                        <button className="w-full text-left flex items-start justify-between gap-2" onClick={() => setPartnerDetail({ kind: "merchant", record: m })}>
                           <div className="min-w-0">
                             <p className="font-semibold text-foreground text-sm truncate">{m.business_name}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{m.category}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{m.category}{m.owner_phone ? ` · ${m.owner_phone}` : ""}</p>
                           </div>
                           <Badge variant={m.status === "suspended" ? "destructive" : m.status === "active" ? "secondary" : "outline"} className="text-[10px] shrink-0">
                             {m.status}
                           </Badge>
-                        </div>
+                        </button>
                         <div className="flex flex-wrap gap-1.5">
+                          <Button size="sm" variant="ghost" className="text-xs h-7 gap-1" onClick={() => setPartnerDetail({ kind: "merchant", record: m })}>
+                            <Eye className="w-3 h-3" /> View
+                          </Button>
+
                           <Button
                             size="sm"
                             variant={m.status === "suspended" ? "default" : "destructive"}
@@ -2550,6 +2574,14 @@ export default function AdminDashboard() {
         targetLabel={lockTarget?.label ?? ""}
         onLocked={() => setLockTarget(null)}
       />
+
+      {/* Agent / Merchant detail dialog */}
+      <AdminPartnerDetailDialog
+        kind={partnerDetail?.kind ?? "agent"}
+        record={partnerDetail?.record ?? null}
+        onClose={() => setPartnerDetail(null)}
+      />
+
 
       {/* Admin Chargeback Dialog */}
       <AdminChargebackDialog
