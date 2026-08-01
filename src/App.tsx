@@ -19,6 +19,7 @@ import LazyLoadErrorBoundary from "@/components/LazyLoadErrorBoundary";
 
 
 import MissingTranslationsBanner from "@/components/MissingTranslationsBanner";
+import IncidentBanner from "@/components/IncidentBanner";
 import { retryLazyImport } from "@/lib/cacheReset";
 
 const Index = lazy(() => retryLazyImport(() => import("./pages/Index")));
@@ -135,6 +136,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <MissingTranslationsBanner />
+            <IncidentBanner />
             <BrowserRouter>
               <MerchantSessionWatchdog />
               <AppRoleEnforcer />
