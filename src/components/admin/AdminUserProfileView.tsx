@@ -241,6 +241,14 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
           </CardContent>
         </Card>
       )}
+
+      {detailTx && (
+        <AgentTxnDetailModal
+          tx={detailTx}
+          onClose={() => setDetailTx(null)}
+          onShare={() => {}}
+        />
+      )}
     </div>
   );
 }
