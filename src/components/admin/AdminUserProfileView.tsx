@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import AdminUserActivityPanel from "@/components/admin/AdminUserActivityPanel";
+import AdminKycStatusManager from "@/components/admin/AdminKycStatusManager";
 import AdminTxnRecordInline, { AdminTxnRow } from "@/components/admin/AdminTxnRecordInline";
 import { resolveAdminLedgerLabel, resolveLedgerDirection } from "@/lib/adminLedger";
 import { formatDistanceToNowStrict } from "date-fns";
