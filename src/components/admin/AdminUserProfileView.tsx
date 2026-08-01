@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import AdminUserActivityPanel from "@/components/admin/AdminUserActivityPanel";
+import AgentTxnDetailModal, { AgentTxnDetailTx } from "@/components/agent/AgentTxnDetailModal";
 import { formatDistanceToNowStrict } from "date-fns";
 import { toast } from "sonner";
 
