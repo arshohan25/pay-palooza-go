@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import LoyaltyBadge from "@/components/LoyaltyBadge";
+import TierLimitsCard from "@/components/loyalty/TierLimitsCard";
 import { useLoyaltyTiers, useMyLoyalty, type LoyaltyTier } from "@/hooks/use-loyalty";
 import { useLoyaltyPerks } from "@/hooks/use-loyalty-perks";
 import { computeScoreBreakdown, LOYALTY_SCORE_WEIGHTS } from "@/lib/loyaltyScore";
@@ -177,6 +178,9 @@ export default function LoyaltyProgressPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Tier limits */}
+        <TierLimitsCard />
 
         {/* Combined score breakdown */}
         <Card>

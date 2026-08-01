@@ -4,6 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import { Progress } from "@/components/ui/progress";
 import { useUsageStats } from "@/hooks/use-usage-stats";
 import { useFeeConfig } from "@/hooks/use-fee-config";
+import { useMyTierLimits } from "@/hooks/use-loyalty-tier-limits";
 
 interface LimitRowProps {
   label: string;
