@@ -33,6 +33,36 @@ async function getLoyaltyLimitMultiplier(userId: string): Promise<number> {
   }
 }
 
+/**
+ * Server-side resolver: user override → EasyPay Club tier limit → platform
+ * default × tier multiplier. Returns null when unavailable so callers can fall
+ * back to the local computation.
+ */
+async function getServerEffectiveLimit(
+  userId: string,
+  txnType: string,
+  period: "daily" | "monthly" = "daily",
+): Promise<{ amount: number; count: number; source: string; tierCode: string | null } | null> {
+  try {
+    const { data, error } = await supabase.rpc("get_effective_txn_limit" as any, {
+      _user_id: userId,
+      _txn_type: txnType,
+      _period: period,
+    });
+    if (error) return null;
+    const row = Array.isArray(data) ? (data as any[])[0] : (data as any);
+    if (!row) return null;
+    return {
+      amount: Number(row.max_amount ?? 0),
+      count: Number(row.max_count ?? 0),
+      source: String(row.source ?? "unknown"),
+      tierCode: row.tier_code ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 interface DailyLimitConfig {
   type: string;
   maxDaily: number;
@@ -106,9 +136,16 @@ export async function checkDailyLimit(
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return { allowed: false, remaining: 0, used: 0, limit: config.maxDaily };
 
-  const baseLimit = await getEffectiveLimit(session.user.id, txnType);
-  const multiplier = await getLoyaltyLimitMultiplier(session.user.id);
-  const effectiveLimit = baseLimit > 0 ? baseLimit * multiplier : baseLimit;
+  // Prefer the authoritative server resolver (tier-aware), fall back locally.
+  const server = await getServerEffectiveLimit(session.user.id, txnType, "daily");
+  let effectiveLimit: number;
+  if (server && server.amount > 0) {
+    effectiveLimit = server.amount;
+  } else {
+    const baseLimit = await getEffectiveLimit(session.user.id, txnType);
+    const multiplier = await getLoyaltyLimitMultiplier(session.user.id);
+    effectiveLimit = baseLimit > 0 ? baseLimit * multiplier : baseLimit;
+  }
 
   // No limit (0 means unlimited in the system)
   if (effectiveLimit <= 0) return { allowed: true, remaining: Infinity, used: 0, limit: 0 };
