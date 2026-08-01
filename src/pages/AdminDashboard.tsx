@@ -169,6 +169,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import AdminNavReorder, { type NavGroup } from "@/components/admin/AdminNavReorder";
 import { GripVertical, Landmark, Zap } from "lucide-react";
 import AdminPushSetupWizard from "@/components/admin/AdminPushSetupWizard";
+import AdminCommandPalette from "@/components/admin/AdminCommandPalette";
+import AdminIncidentMode from "@/components/admin/AdminIncidentMode";
+import AdminScheduledReports from "@/components/admin/AdminScheduledReports";
+import AdminViewAsUser from "@/components/admin/AdminViewAsUser";
+
 
 interface Stats {
   totalUsers: number;
