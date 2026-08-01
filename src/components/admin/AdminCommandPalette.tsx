@@ -115,19 +115,20 @@ const AdminCommandPalette = ({ open, onOpenChange, navItems, onNavigate, onEntit
         })),
         ...(txnRes.data ?? []).map((t: any) => ({
           kind: "transaction" as const,
-          id: t.id,
+          id: t.short_id || t.id,
           title: `৳${Number(t.amount ?? 0).toLocaleString()} · ${t.type}`,
-          subtitle: `${t.status} · ${t.id.slice(0, 8)}`,
+          subtitle: `${t.status} · ${t.short_id ?? ""}`,
           tab: "transactions",
         })),
         ...(ordersRes.data ?? []).map((o: any) => ({
           kind: "order" as const,
           id: o.id,
-          title: o.order_number || o.id.slice(0, 8),
+          title: o.order_num || o.id.slice(0, 8),
           subtitle: `${o.status} · ৳${Number(o.total_amount ?? 0).toLocaleString()}`,
           tab: "orders",
         })),
       ];
+
       setHits(next);
       setSearching(false);
     }, 250);
