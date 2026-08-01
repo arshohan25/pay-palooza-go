@@ -9334,6 +9334,7 @@ export type Database = {
         Args: { _adjustment_id: string; _approve: boolean; _notes?: string }
         Returns: Json
       }
+      admin_revoke_trusted_device: { Args: { _id: string }; Returns: boolean }
       admin_set_loyalty_override: {
         Args: {
           _reason?: string
