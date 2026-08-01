@@ -60,6 +60,7 @@ import AdminRechargeImportExport from "@/components/admin/AdminRechargeImportExp
 import AdminRechargeApiConnect from "@/components/admin/AdminRechargeApiConnect";
 import AdminRechargeLog from "@/components/admin/AdminRechargeLog";
 import AdminKycReview from "@/components/admin/AdminKycReview";
+import AdminKycStatusManager from "@/components/admin/AdminKycStatusManager";
 import AdminReferralManagement from "@/components/admin/AdminReferralManagement";
 import AdminPermissions from "@/components/admin/AdminPermissions";
 import AdminTreasury from "@/components/admin/AdminTreasury";
@@ -2087,7 +2088,12 @@ export default function AdminDashboard() {
         {activeTab === "recharge" && <RechargeSection />}
 
         {/* ═══ KYC REVIEW ═══ */}
-        {activeTab === "kyc" && <AdminKycReview />}
+        {activeTab === "kyc" && (
+          <div className="space-y-4">
+            <AdminKycStatusManager />
+            <AdminKycReview />
+          </div>
+        )}
 
         {/* ═══ REFERRAL MANAGEMENT ═══ */}
         {activeTab === "referrals" && <AdminReferralManagement />}

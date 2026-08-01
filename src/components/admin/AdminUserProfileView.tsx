@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import AdminUserActivityPanel from "@/components/admin/AdminUserActivityPanel";
+import AdminKycStatusManager from "@/components/admin/AdminKycStatusManager";
 import AdminTxnRecordInline, { AdminTxnRow } from "@/components/admin/AdminTxnRecordInline";
 import { resolveAdminLedgerLabel, resolveLedgerDirection } from "@/lib/adminLedger";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -243,6 +244,14 @@ export default function AdminUserProfileView({ uid, onBack }: Props) {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {profile?.user_id && (
+        <AdminKycStatusManager
+          userId={profile.user_id}
+          compact
+          onChanged={(s) => setProfile((p: any) => ({ ...p, kyc_status: s }))}
+        />
       )}
 
       {profile?.user_id && (
