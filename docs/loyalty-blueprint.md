@@ -199,11 +199,14 @@ history card, redemption to wallet, tier badge and progress page, tier limit
 ladder with server enforcement, admin tier/limit/points editors with validation
 and audit.
 
-**Phase 2 — next.** Accrual on cash out / pay bill / payment; campaign
-multipliers and scheduled offers; targeted promos by segment
-(`admin_user_segments`); fraud guards specific to loyalty (below); partner earn
-API; points expiry after 6 months of account inactivity, with a 30-day warning
-notification before the sweep.
+**Phase 2 — done.** Accrual on cash out / pay bill / payment
+(`trg_award_loyalty_on_txn`); campaign multipliers with scheduled windows
+(`loyalty_point_multipliers` + admin editor); points expiry after 6 months of
+inactivity with a 30-day warning notification, swept nightly at 02:20 UTC by
+`expire_inactive_loyalty_points()` (cron job `loyalty-points-expiry`).
+**Still open in Phase 2:** targeted promos by segment (`admin_user_segments`),
+loyalty-specific fraud guards (below), partner earn API.
+
 
 **Phase 3 — later.** Cohort analytics (accrual vs. redemption vs. retention),
 A/B experimentation on earn rates, personalized rewards from spend patterns,
