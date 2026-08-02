@@ -98,8 +98,10 @@ export function useMyTierLimits(): MyTierLimits {
 
     const uplift: Partial<Record<TierTxnKey, number>> = {};
     for (const k of TIER_TXN_KEYS) {
-      const cur = limits[k]?.dailyAmount ?? 0;
-      const nxt = nextLimits[k]?.dailyAmount ?? 0;
+      // Headline ladder is the MONTHLY ceiling (৳150k → ৳400k for Send Money),
+      // so tier uplift is advertised on the monthly allowance.
+      const cur = limits[k]?.monthlyAmount ?? 0;
+      const nxt = nextLimits[k]?.monthlyAmount ?? 0;
       if (nxt > cur) uplift[k] = nxt - cur;
     }
 
