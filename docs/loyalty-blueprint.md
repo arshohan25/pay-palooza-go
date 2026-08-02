@@ -110,10 +110,21 @@ with an outbox table for asynchronous accrual.
 | Prime | 4 | 2.5 | 10% | +3% | yes |
 | Signature | 5 | 3.0 | 15% | +5% | yes |
 
-Multipliers and events (`TODO`): campaign multiplier (× 1.5–3 for a window),
-first-transaction bonus, referral completion bonus, streak bonus. Implement as
-additional `loyalty_point_rules` rows scoped by `campaign_id` so accrual stays
-one lookup; never hardcode a promo in application code.
+Multipliers and events (`LIVE`): campaign multipliers live in
+`loyalty_point_multipliers` (name, optional txn_type, multiplier 1–5, window,
+active flag). `award_loyalty_points` picks the **highest active** multiplier for the
+flow, so accrual stays one lookup and no promo is ever hardcoded in application
+code. Admins manage campaigns from the EasyPay Club tab. First-transaction,
+referral and streak bonuses remain `TODO`.
+
+Accrual now covers **send, payment, cash out and pay bill** (`LIVE`). Send is
+awarded inside `transfer_money`; the other three are awarded by
+`trg_award_loyalty_on_txn` on `transactions` when a row reaches `completed`.
+Partner legs (rows carrying commission) and any account holding an elevated role
+are excluded, and a unique index on `loyalty_point_ledger(txn_id, kind)` makes
+re-delivery a no-op. Earn rates: payment = send rate, cash out and pay bill = 50%
+of the send rate.
+
 
 ### 3.2 Tier thresholds (`LIVE`)
 
