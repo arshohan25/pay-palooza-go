@@ -97,6 +97,7 @@ import AdminPushDeliveryLogs from "@/components/admin/AdminPushDeliveryLogs";
 
 import AdminLoyaltyPoints from "@/components/admin/AdminLoyaltyPoints";
 import AdminLoyaltyCampaigns from "@/components/admin/AdminLoyaltyCampaigns";
+import AdminLoyaltyAnalytics from "@/components/admin/AdminLoyaltyAnalytics";
 import AdminAiFraudDetection from "@/components/admin/AdminAiFraudDetection";
 import AdminGeoTracking from "@/components/admin/AdminGeoTracking";
 import AdminSmartRouting from "@/components/admin/AdminSmartRouting";
@@ -2276,6 +2277,8 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <AdminLoyaltyTiers />
             <AdminLoyaltyCampaigns />
+            <AdminLoyaltyAnalytics />
+
           </div>
         )}
         {activeTab === "perm_audit" && <AdminPermissionAuditLog />}

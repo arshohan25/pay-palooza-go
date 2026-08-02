@@ -186,6 +186,11 @@ export default function LoyaltyProgressPage() {
         {/* Points balance, earn rate and redemption */}
         <LoyaltyPointsCard />
 
+        <Button variant="outline" className="w-full" onClick={() => navigate("/points")}>
+          <Gift className="w-4 h-4 mr-2" /> Open points wallet
+        </Button>
+
+
         {/* Combined score breakdown */}
         <Card>
           <CardContent className="p-4 space-y-3">
