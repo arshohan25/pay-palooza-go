@@ -19,7 +19,7 @@ commission, not loyalty points, and are excluded from the customer ladder.
   `credit_user_balance` / `debit_user_balance`.
 - **Points** — a non-monetary reward unit in `user_loyalty_points.points_balance`.
   Points are a liability, not legal tender: no P2P transfer, no cash-out,
-  no expiry-free accumulation beyond the retention window.
+  points expire after 6 months of account inactivity.
 - Conversion is one-way: **100 points = ৳10** (`POINT_VALUE_BDT = 0.1`),
   minimum 500 points, in multiples of 100.
 
@@ -105,10 +105,10 @@ with an outbox table for asynchronous accrual.
 | Tier | Rank | Points per ৳100 sent | Fee discount | Cashback bonus | Priority support |
 | --- | --- | --- | --- | --- | --- |
 | Starter | 1 | 1.0 | 0% | 0% | no |
-| Pro | 2 | 1.5 | 5% | +1% | no |
-| Elite | 3 | 2.0 | 10% | +2% | yes |
-| Prime | 4 | 2.5 | 20% | +3% | yes |
-| Signature | 5 | 3.0 | 40% | +5% | yes |
+| Pro | 2 | 1.5 | 3% | +1% | no |
+| Elite | 3 | 2.0 | 6% | +2% | yes |
+| Prime | 4 | 2.5 | 10% | +3% | yes |
+| Signature | 5 | 3.0 | 15% | +5% | yes |
 
 Multipliers and events (`TODO`): campaign multiplier (× 1.5–3 for a window),
 first-transaction bonus, referral completion bonus, streak bonus. Implement as
@@ -141,11 +141,11 @@ localized message with the remaining headroom (`src/lib/limitErrors.ts`).
 
 ### 3.4 Fees by amount band (`LIVE`, Send Money)
 
-| Send amount | Fee | Effective fee at Signature (40% off) |
+| Send amount | Fee | Effective fee at Signature (15% off) |
 | --- | --- | --- |
 | ৳0 – ৳5,000 | **Free** | ৳0.00 |
-| ৳5,000.01 – ৳50,000 | **৳3 flat** | ৳1.80 |
-| ৳50,000.01 – ৳400,000 | **৳5 flat** | ৳3.00 |
+| ৳5,000.01 – ৳50,000 | **৳3 flat** | ৳2.55 |
+| ৳50,000.01 – ৳400,000 | **৳5 flat** | ৳4.25 |
 
 Other flows: Add money, Payment, Recharge, Pay bill — **free** to the customer
 (pay bill pays the agent 1.9% commission from platform share). Cash out **0.99%**,
@@ -191,7 +191,8 @@ and audit.
 **Phase 2 — next.** Accrual on cash out / pay bill / payment; campaign
 multipliers and scheduled offers; targeted promos by segment
 (`admin_user_segments`); fraud guards specific to loyalty (below); partner earn
-API; points expiry (24 months rolling) with a 30-day warning notification.
+API; points expiry after 6 months of account inactivity, with a 30-day warning
+notification before the sweep.
 
 **Phase 3 — later.** Cohort analytics (accrual vs. redemption vs. retention),
 A/B experimentation on earn rates, personalized rewards from spend patterns,
@@ -319,11 +320,17 @@ where p.points_balance <> d.net;   -- must return zero rows
 
 ## Constraints to confirm
 
-1. **Compliance** — is Bangladesh Bank MFS reporting required for points as a
-   liability, and is there a cap on non-cash rewards per customer per month?
-2. **Points expiry** — 24-month rolling expiry assumed; confirm or make it
-   perpetual (materially changes the liability model).
-3. **Fee discount ceiling** — Signature currently pays ৳3 on a ৳400k send; confirm
-   40% is the intended floor.
-4. **Stack** — this blueprint keeps everything in Postgres + edge functions. Move
-   to separate services only on a volume trigger; confirm that is acceptable.
+## Confirmed decisions
+
+1. **Points expiry — CONFIRMED.** Points expire after **6 months of account
+   inactivity** (no earning or redeeming transaction). A 30-day warning
+   notification fires before the sweep; expiry writes a negative
+   `loyalty_point_ledger` row of kind `expiry` so the balance stays auditable.
+2. **Fee discount ceiling — CONFIRMED at 15%.** Tier discounts are 0 / 3 / 6 /
+   10 / 15%. Signature pays ৳4.25 on a ৳400k send. No code path may apply more
+   than 15% off a customer fee.
+3. **Stack — CONFIRMED.** Everything stays in Postgres + edge functions; split
+   into separate services only on a volume trigger.
+4. **Open — compliance only.** Confirm whether Bangladesh Bank MFS reporting
+   treats outstanding points as a reportable liability and whether a monthly cap
+   on non-cash rewards per customer applies.
