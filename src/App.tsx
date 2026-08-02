@@ -172,6 +172,8 @@ const App = () => (
                       <Route path="giftcards" element={<GiftCardsPage />} />
                       <Route path="account" element={<AccountPage />} />
                       <Route path="loyalty" element={<LoyaltyProgressPage />} />
+                      <Route path="points" element={<PointsWalletPage />} />
+
                       <Route path="savings" element={<SavingsPage />} />
                       <Route path="savings/journey" element={<InstallmentJourneyPage />} />
                       <Route path="payment-requests" element={<PaymentRequestsPage />} />
