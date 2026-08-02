@@ -23,11 +23,12 @@ commission, not loyalty points, and are excluded from the customer ladder.
 - Conversion is one-way: **100 points = ৳10** (`POINT_VALUE_BDT = 0.1`),
   minimum 500 points, in multiples of 100.
 
-**Limits.** Send Money is the anchor flow. Daily ceilings run
-**৳150,000 (Starter) → ৳401,000 (Signature)**; monthly ceilings run
-**৳1,500,000 → ৳4,005,000**. The "150k–400k month transaction range" in the brief
-maps to the *daily* send ladder; monthly is 10× daily by design so a tier is
-never blocked by the monthly cap before the daily one.
+**Limits.** Send Money is the anchor flow. The headline ladder is **monthly**:
+ceilings run **৳150,000 (Starter) → ৳401,000 (Signature)**. Daily ceilings are
+1/5 of the monthly allowance (**৳30,000 → ৳80,000**), so the daily cap paces
+spending inside the month without ever exceeding the monthly ceiling. The
+"150k–400k month transaction range" in the brief maps directly to the *monthly*
+send ladder.
 
 **Core features in scope.** Enrollment (implicit at KYC), tier progression,
 earning rules, points→wallet conversion, redemption, fee discounts, limit uplift,
@@ -138,11 +139,11 @@ grace window so a quiet month does not strip perks instantly. Admin overrides in
 
 | Tier | Daily max | Daily txns | Monthly max | Monthly txns |
 | --- | --- | --- | --- | --- |
-| Starter | ৳150,000 | 50 | ৳1,500,000 | 600 |
-| Pro | ৳200,000 | 67 | ৳1,995,000 | 798 |
-| Elite | ৳251,000 | 84 | ৳2,505,000 | 1,002 |
-| Prime | ৳320,000 | 107 | ৳3,195,000 | 1,278 |
-| Signature | ৳401,000 | 134 | ৳4,005,000 | 1,602 |
+| Starter | ৳30,000 | 10 | ৳150,000 | 50 |
+| Pro | ৳40,000 | 14 | ৳200,000 | 67 |
+| Elite | ৳50,000 | 17 | ৳251,000 | 84 |
+| Prime | ৳64,000 | 22 | ৳320,000 | 107 |
+| Signature | ৳80,000 | 27 | ৳401,000 | 134 |
 
 Resolution order (`get_effective_txn_limit`): **admin per-user override → loyalty
 tier limit → platform default**. Enforcement is server-side inside
