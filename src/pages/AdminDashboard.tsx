@@ -2271,7 +2271,12 @@ export default function AdminDashboard() {
         {activeTab === "sd_overview" && <AdminSuperDistributorOverview />}
         {activeTab === "roles_perms" && <AdminRolesPermissions />}
         {activeTab === "user_roles" && <AdminUserRoleAssignments />}
-        {activeTab === "loyalty_tiers" && <AdminLoyaltyTiers />}
+        {activeTab === "loyalty_tiers" && (
+          <div className="space-y-6">
+            <AdminLoyaltyTiers />
+            <AdminLoyaltyCampaigns />
+          </div>
+        )}
         {activeTab === "perm_audit" && <AdminPermissionAuditLog />}
         {activeTab === "perm_approvals" && <AdminPermissionApprovals />}
         {activeTab === "perm_inbox" && (
