@@ -2277,6 +2277,8 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <AdminLoyaltyTiers />
             <AdminLoyaltyCampaigns />
+            <AdminLoyaltyAnalytics />
+
           </div>
         )}
         {activeTab === "perm_audit" && <AdminPermissionAuditLog />}
