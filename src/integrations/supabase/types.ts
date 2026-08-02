@@ -3848,6 +3848,45 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_point_multipliers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          multiplier: number
+          name: string
+          starts_at: string
+          txn_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          multiplier?: number
+          name: string
+          starts_at?: string
+          txn_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          multiplier?: number
+          name?: string
+          starts_at?: string
+          txn_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       loyalty_point_rules: {
         Row: {
           created_at: string
@@ -9746,6 +9785,7 @@ export type Database = {
         Args: { _amount: number; _txn_type: string; _user_id: string }
         Returns: undefined
       }
+      expire_inactive_loyalty_points: { Args: never; Returns: Json }
       expire_loyalty_overrides: { Args: never; Returns: number }
       expire_payment_links: { Args: never; Returns: undefined }
       expire_stale_payment_sessions: { Args: never; Returns: number }

@@ -96,6 +96,7 @@ import AdminPlatformThresholds from "@/components/admin/AdminPlatformThresholds"
 import AdminPushDeliveryLogs from "@/components/admin/AdminPushDeliveryLogs";
 
 import AdminLoyaltyPoints from "@/components/admin/AdminLoyaltyPoints";
+import AdminLoyaltyCampaigns from "@/components/admin/AdminLoyaltyCampaigns";
 import AdminAiFraudDetection from "@/components/admin/AdminAiFraudDetection";
 import AdminGeoTracking from "@/components/admin/AdminGeoTracking";
 import AdminSmartRouting from "@/components/admin/AdminSmartRouting";
@@ -2271,7 +2272,12 @@ export default function AdminDashboard() {
         {activeTab === "sd_overview" && <AdminSuperDistributorOverview />}
         {activeTab === "roles_perms" && <AdminRolesPermissions />}
         {activeTab === "user_roles" && <AdminUserRoleAssignments />}
-        {activeTab === "loyalty_tiers" && <AdminLoyaltyTiers />}
+        {activeTab === "loyalty_tiers" && (
+          <div className="space-y-6">
+            <AdminLoyaltyTiers />
+            <AdminLoyaltyCampaigns />
+          </div>
+        )}
         {activeTab === "perm_audit" && <AdminPermissionAuditLog />}
         {activeTab === "perm_approvals" && <AdminPermissionApprovals />}
         {activeTab === "perm_inbox" && (
