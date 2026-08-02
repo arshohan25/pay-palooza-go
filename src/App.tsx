@@ -81,6 +81,7 @@ const GiftCardsPage = lazy(() => import("./pages/GiftCardsPage"));
 const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
 const LoyaltyProgressPage = lazy(() => import("./pages/LoyaltyProgressPage"));
+const PointsWalletPage = lazy(() => import("./pages/PointsWalletPage"));
 const SavingsPage = lazy(() => import("./pages/SavingsPage"));
 const InstallmentJourneyPage = lazy(() => import("./pages/InstallmentJourneyPage"));
 const RecipientHarness = lazy(() => import("./pages/RecipientHarness"));
