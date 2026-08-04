@@ -179,6 +179,7 @@ const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: strin
   { id: "broadcast",    icon: Megaphone,    label: "Broadcast",        desc: "Message your customers",         labelKey: "mdMenuBroadcast",     descKey: "mdMenuBroadcastDesc" },
   { id: "coupons",      icon: Ticket,       label: "Coupons",          desc: "Create store discount codes",    labelKey: "mdMenuCoupons",       descKey: "mdMenuCouponsDesc",       toggleKey: "merchant_coupons" },
   { id: "payouts",      icon: Landmark,     label: "Payouts",          desc: "Request bank withdrawals",       labelKey: "mdMenuPayouts",       descKey: "mdMenuPayoutsDesc",       toggleKey: "merchant_payouts" },
+  { id: "zones",        icon: Truck,        label: "Delivery Zones",   desc: "Shipping fees by district",      labelKey: "mdMenuZones",         descKey: "mdMenuZonesDesc" },
   { id: "notifications",icon: Bell,         label: "Notifications",    desc: "Push alerts & preferences",      labelKey: "mdMenuNotifications", descKey: "mdMenuNotificationsDesc" },
 ];
 
