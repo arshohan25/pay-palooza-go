@@ -32,6 +32,7 @@ interface Product {
   images: string[];
   video_url: string | null;
   stock: number;
+  low_stock_threshold: number | null;
   is_active: boolean;
   badge: string | null;
   badge_color: string | null;
@@ -224,7 +225,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
 
   const [form, setForm] = useState({
     name: "", name_bn: "", description: "", description_bn: "", price: "", original_price: "",
-    category: "General", emoji: "📦", stock: "0",
+    category: "General", emoji: "📦", stock: "0", low_stock_threshold: "5",
     badge: "", badge_color: "", is_active: true,
     images: [] as string[],
     video_url: "",
@@ -233,7 +234,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const resetForm = () => {
     setForm({
       name: "", name_bn: "", description: "", description_bn: "", price: "", original_price: "",
-      category: "General", emoji: "📦", stock: "0",
+      category: "General", emoji: "📦", stock: "0", low_stock_threshold: "5",
       badge: "", badge_color: "", is_active: true,
       images: [],
       video_url: "",
@@ -334,7 +335,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
     setForm({
       name: p.name, name_bn: p.name_bn || "", description: p.description || "", description_bn: p.description_bn || "",
       price: String(p.price), original_price: p.original_price ? String(p.original_price) : "",
-      category: p.category, emoji: p.emoji, stock: String(p.stock),
+      category: p.category, emoji: p.emoji, stock: String(p.stock), low_stock_threshold: String(p.low_stock_threshold ?? 5),
       badge: p.badge || "", badge_color: p.badge_color || "", is_active: p.is_active,
       images: p.images || [],
       video_url: p.video_url || "",
@@ -361,6 +362,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
       category: form.category,
       emoji: form.emoji,
       stock: Number(form.stock) || 0,
+      low_stock_threshold: Number(form.low_stock_threshold) || 0,
       badge: form.badge || null,
       badge_color: form.badge_color || null,
       is_active: form.is_active,
@@ -711,6 +713,10 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprStockLabel")}</label>
                 <Input type="number" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
                   className="mt-1.5 rounded-xl" />
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-2 block">{t("mprLowStockThreshold")}</label>
+                <Input type="number" value={form.low_stock_threshold}
+                  onChange={e => setForm(f => ({ ...f, low_stock_threshold: e.target.value }))}
+                  className="mt-1 rounded-xl" />
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mprCategory")}</label>

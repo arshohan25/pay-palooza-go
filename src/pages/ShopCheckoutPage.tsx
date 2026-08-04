@@ -141,10 +141,37 @@ export default function ShopCheckoutPage() {
         z.cities.some((c) => c.toLowerCase() === selectedAddress.city.toLowerCase())
       )
     : null;
-  const deliveryFee = matchedZone?.delivery_fee ?? 0;
+  const platformFee = matchedZone?.delivery_fee ?? 0;
+
+  // Merchant-defined delivery zones override the platform zone when the cart
+  // belongs to a single store.
+  const soleMerchantId = useMemo(() => {
+    const ids = Array.from(new Set(items.map((i) => (i as any).merchant_id).filter(Boolean)));
+    return ids.length === 1 ? (ids[0] as string) : null;
+  }, [items]);
+  const [merchantFee, setMerchantFee] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!soleMerchantId || !selectedAddress) { setMerchantFee(null); return; }
+    let alive = true;
+    (async () => {
+      const { data } = await (supabase as any).rpc("get_merchant_shipping_fee", {
+        p_merchant_id: soleMerchantId,
+        p_district: selectedAddress.city,
+        p_order_total: subtotal,
+      });
+      if (!alive) return;
+      const fee = data && typeof data === "object" ? (data as any).fee : null;
+      setMerchantFee(typeof fee === "number" ? fee : null);
+    })();
+    return () => { alive = false; };
+  }, [soleMerchantId, selectedAddress?.city, subtotal]);
+
+  const deliveryFee = merchantFee ?? platformFee;
 
   const discountAmt = appliedPromo ? Math.min(appliedPromo.discount, subtotal) : 0;
   const orderTotal = Math.max(0, subtotal - discountAmt + deliveryFee);
+
 
   const applyPromo = async () => {
     const code = promoInput.trim().toUpperCase();

@@ -4644,6 +4644,53 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_delivery_zones: {
+        Row: {
+          created_at: string
+          delivery_fee: number
+          districts: string[]
+          estimated_days: string | null
+          free_shipping_threshold: number | null
+          id: string
+          is_active: boolean
+          merchant_id: string
+          updated_at: string
+          zone_name: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_fee?: number
+          districts?: string[]
+          estimated_days?: string | null
+          free_shipping_threshold?: number | null
+          id?: string
+          is_active?: boolean
+          merchant_id: string
+          updated_at?: string
+          zone_name: string
+        }
+        Update: {
+          created_at?: string
+          delivery_fee?: number
+          districts?: string[]
+          estimated_days?: string | null
+          free_shipping_threshold?: number | null
+          id?: string
+          is_active?: boolean
+          merchant_id?: string
+          updated_at?: string
+          zone_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_delivery_zones_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_idempotency_keys: {
         Row: {
           created_at: string
@@ -5174,6 +5221,7 @@ export type Database = {
           image_url: string | null
           images: string[] | null
           is_active: boolean
+          low_stock_threshold: number
           merchant_id: string
           name: string
           name_bn: string | null
@@ -5201,6 +5249,7 @@ export type Database = {
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean
+          low_stock_threshold?: number
           merchant_id: string
           name: string
           name_bn?: string | null
@@ -5228,6 +5277,7 @@ export type Database = {
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean
+          low_stock_threshold?: number
           merchant_id?: string
           name?: string
           name_bn?: string | null
@@ -6977,6 +7027,54 @@ export type Database = {
           },
           {
             foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_stock_alerts: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          merchant_id: string
+          product_id: string
+          resolved_at: string | null
+          stock_at_alert: number
+          threshold_at_alert: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level: string
+          merchant_id: string
+          product_id: string
+          resolved_at?: string | null
+          stock_at_alert?: number
+          threshold_at_alert?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          merchant_id?: string
+          product_id?: string
+          resolved_at?: string | null
+          stock_at_alert?: number
+          threshold_at_alert?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_stock_alerts_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_stock_alerts_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "merchant_products"
@@ -9902,6 +10000,14 @@ export type Database = {
         }[]
       }
       get_merchant_review_eta: { Args: never; Returns: Json }
+      get_merchant_shipping_fee: {
+        Args: { p_district: string; p_merchant_id: string; p_subtotal: number }
+        Returns: Json
+      }
+      get_merchant_stock_alerts: {
+        Args: { p_merchant_id: string }
+        Returns: Json
+      }
       get_merchant_today_snapshot: {
         Args: { p_merchant_id: string }
         Returns: Json
