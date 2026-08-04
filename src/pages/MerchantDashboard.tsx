@@ -19,7 +19,7 @@ import {
   Percent, Receipt, ChevronLeft, ChevronRight, Eye, EyeOff, BanknoteIcon, Users,
   Zap, Gift, Star, ShieldCheck, Smartphone, Globe, TrendingDown,
   Target, Award, Sparkles, ArrowUpRight, ArrowDownRight, PieChart,
-  Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2,
+  Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2, Truck,
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
   ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine,
   Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package, MessageCircle, Search,
