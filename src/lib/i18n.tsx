@@ -4737,6 +4737,47 @@ const translations = {
   mdSnapNewReturn: { en: "New / Return", bn: "নতুন / পুনরায়" },
   mdSnapTopToday: { en: "Top today:", bn: "আজকের সেরা:" },
 
+  // Stock alerts (Batch 2)
+  miaThresholdShort: { en: "alert at {n}", bn: "সতর্কতা {n}-এ" },
+  miaOutOfStockCount: { en: "{n} product(s) out of stock", bn: "{n}টি পণ্য স্টকে নেই" },
+  mprLowStockThreshold: { en: "Low stock alert at", bn: "কম স্টক সতর্কতা" },
+
+  // Delivery zones (Batch 2)
+  mdzTitle: { en: "Delivery zones", bn: "ডেলিভারি জোন" },
+  mdzSubtitle: { en: "Set shipping fees by district", bn: "জেলা অনুযায়ী ডেলিভারি ফি সেট করুন" },
+  mdzNewZone: { en: "New zone", bn: "নতুন জোন" },
+  mdzZoneName: { en: "Zone name", bn: "জোনের নাম" },
+  mdzZoneNamePh: { en: "e.g. Inside Dhaka", bn: "যেমন ঢাকার ভেতরে" },
+  mdzDistricts: { en: "Districts", bn: "জেলা" },
+  mdzFee: { en: "Delivery fee (৳)", bn: "ডেলিভারি ফি (৳)" },
+  mdzFreeAbove: { en: "Free shipping above (৳)", bn: "ফ্রি ডেলিভারি (৳ এর উপরে)" },
+  mdzEta: { en: "Estimated days", bn: "সম্ভাব্য দিন" },
+  mdzEtaPh: { en: "e.g. 1-2 days", bn: "যেমন ১-২ দিন" },
+  mdzSave: { en: "Save zone", bn: "জোন সংরক্ষণ" },
+  mdzSaved: { en: "Zone saved", bn: "জোন সংরক্ষিত হয়েছে" },
+  mdzDeleted: { en: "Zone deleted", bn: "জোন মুছে ফেলা হয়েছে" },
+  mdzEmpty: { en: "No zones yet — add one so buyers see shipping fees.", bn: "এখনো কোনো জোন নেই — ক্রেতাদের ডেলিভারি ফি দেখাতে একটি যোগ করুন।" },
+  mdzNeedNameDistricts: { en: "Add a zone name and at least one district", bn: "জোনের নাম ও অন্তত একটি জেলা দিন" },
+  mdzFreeAboveTag: { en: "Free above ৳{n}", bn: "৳{n} এর উপরে ফ্রি" },
+  mdzInactive: { en: "Inactive", bn: "নিষ্ক্রিয়" },
+  mdzSearchDistrict: { en: "Search district", bn: "জেলা খুঁজুন" },
+  mdMenuZones: { en: "Delivery Zones", bn: "ডেলিভারি জোন" },
+  mdMenuZonesDesc: { en: "Shipping fees by district", bn: "জেলা অনুযায়ী ডেলিভারি ফি" },
+
+  // KYC status banner (Batch 2)
+  mkycRejectedTitle: { en: "Business verification rejected", bn: "ব্যবসা যাচাই বাতিল হয়েছে" },
+  mkycPendingTitle: { en: "Business verification under review", bn: "ব্যবসা যাচাই পর্যালোচনায়" },
+  mkycNoneTitle: { en: "Business verification required", bn: "ব্যবসা যাচাই প্রয়োজন" },
+  mkycResubmit: { en: "Re-submit documents", bn: "কাগজপত্র পুনরায় জমা দিন" },
+  mkycStart: { en: "Start verification", bn: "যাচাই শুরু করুন" },
+  mkycPendingDesc: { en: "We're reviewing your documents. Payouts unlock once approved.", bn: "আমরা আপনার কাগজপত্র পরীক্ষা করছি। অনুমোদনের পর পেআউট চালু হবে।" },
+
+  // Checkout shipping (Batch 2)
+  scpMerchantShipping: { en: "Store shipping", bn: "স্টোর ডেলিভারি" },
+  scpFreeShipping: { en: "Free shipping", bn: "ফ্রি ডেলিভারি" },
+
+
+
   // Weekly digest
   mdWklyInsights: { en: "Weekly insights", bn: "সাপ্তাহিক অন্তর্দৃষ্টি" },
   mdWklyShipToUnlock: { en: "Ship a few orders to unlock trend insights.", bn: "প্রবণতা দেখতে কয়েকটি অর্ডার ডেলিভারি করুন।" },
