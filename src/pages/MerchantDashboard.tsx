@@ -74,6 +74,8 @@ import MerchantCouponsTab from "@/components/merchant/MerchantCouponsTab";
 import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
 import MerchantBroadcastTab from "@/components/merchant/MerchantBroadcastTab";
 import MerchantTodaySnapshot from "@/components/merchant/MerchantTodaySnapshot";
+import MerchantDeliveryZonesTab from "@/components/merchant/MerchantDeliveryZonesTab";
+import MerchantKycStatusBanner from "@/components/merchant/MerchantKycStatusBanner";
 import MerchantInventoryAlerts from "@/components/MerchantInventoryAlerts";
 import MerchantPayoutEtaCard from "@/components/merchant/MerchantPayoutEtaCard";
 import MerchantDisputesTile from "@/components/merchant/MerchantDisputesTile";
@@ -84,7 +86,7 @@ import RequestAccessSheet from "@/components/merchant/RequestAccessSheet";
 import VendorApplyBanner from "@/components/merchant/VendorApplyBanner";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts" | "notifications" | "broadcast";
+type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts" | "notifications" | "broadcast" | "zones";
 
 interface MerchantInfo {
   id: string;
@@ -809,6 +811,7 @@ const MerchantDashboard = () => {
               {activeTab === "coupons"      && merchant && <div className="px-4 py-4"><MerchantCouponsTab merchantId={merchant.id} /></div>}
               {activeTab === "payouts"      && merchant && <div className="px-4 py-4"><MerchantPayoutsTab merchantId={merchant.id} /></div>}
               {activeTab === "broadcast"    && merchant && <div className="px-4 py-4"><MerchantBroadcastTab merchantId={merchant.id} /></div>}
+              {activeTab === "zones"        && merchant && <div className="px-4 py-4"><MerchantDeliveryZonesTab merchantId={merchant.id} /></div>}
               {activeTab === "notifications" && <div className="px-4 py-4"><NotificationPreferences scope="merchant" /></div>}
             </div>
           </motion.div>
@@ -1335,6 +1338,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       {/* Today snapshot */}
       {merchant && (
         <motion.div variants={stagger.item} className="space-y-3">
+          <MerchantKycStatusBanner merchantId={merchant.id} />
           <MerchantTodaySnapshot merchantId={merchant.id} />
           <MerchantInventoryAlerts merchantId={merchant.id} threshold={5} />
           <MerchantWeeklyDigestCard merchantId={merchant.id} />
