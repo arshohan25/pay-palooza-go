@@ -4536,14 +4536,14 @@ const translations = {
   mtipTotal: { en: "Total", bn: "সর্বমোট" },
 
   // Smart courier routing (mrt*)
-  mrtTitle: { en: "Smart courier routing", bn: "স্মার্ট কুরিয়ার রাউটিং" },
-  mrtSubtitle: { en: "Cheapest courier per city, last 30 days", bn: "শেষ ৩০ দিনে প্রতি শহরে সস্তা কুরিয়ার" },
-  mrtLoading: { en: "Analysing your shipments…", bn: "আপনার শিপমেন্ট বিশ্লেষণ হচ্ছে…" },
-  mrtEmpty: { en: "No courier-booked orders yet. Suggestions appear once you ship with a courier.", bn: "এখনও কুরিয়ার বুক করা অর্ডার নেই। কুরিয়ারে পাঠালে পরামর্শ দেখা যাবে।" },
-  mrtUse: { en: "Use {courier}", bn: "{courier} ব্যবহার করুন" },
-  mrtAvgDays: { en: "{n} days avg", bn: "গড়ে {n} দিন" },
-  mrtShipments: { en: "{n} shipments", bn: "{n}টি শিপমেন্ট" },
-  mrtSaves: { en: "saves ৳{n}/order", bn: "প্রতি অর্ডারে ৳{n} সাশ্রয়" },
+  mcrTitle: { en: "Smart courier routing", bn: "স্মার্ট কুরিয়ার রাউটিং" },
+  mcrSubtitle: { en: "Cheapest courier per city, last 30 days", bn: "শেষ ৩০ দিনে প্রতি শহরে সস্তা কুরিয়ার" },
+  mcrLoading: { en: "Analysing your shipments…", bn: "আপনার শিপমেন্ট বিশ্লেষণ হচ্ছে…" },
+  mcrEmpty: { en: "No courier-booked orders yet. Suggestions appear once you ship with a courier.", bn: "এখনও কুরিয়ার বুক করা অর্ডার নেই। কুরিয়ারে পাঠালে পরামর্শ দেখা যাবে।" },
+  mcrUse: { en: "Use {courier}", bn: "{courier} ব্যবহার করুন" },
+  mcrAvgDays: { en: "{n} days avg", bn: "গড়ে {n} দিন" },
+  mcrShipments: { en: "{n} shipments", bn: "{n}টি শিপমেন্ট" },
+  mcrSaves: { en: "saves ৳{n}/order", bn: "প্রতি অর্ডারে ৳{n} সাশ্রয়" },
 
   // Customer segment export (mcx*)
   mcxExport: { en: "Export CSV", bn: "CSV ডাউনলোড" },

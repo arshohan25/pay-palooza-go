@@ -96,7 +96,7 @@ export default function MerchantCourierRoutingCard({ merchantId }: { merchantId:
     return (
       <Card className="p-4 border-0 shadow-card rounded-2xl flex items-center gap-2">
         <Loader2 size={14} className="animate-spin text-muted-foreground" />
-        <span className="text-[12px] text-muted-foreground">{t("mrtLoading")}</span>
+        <span className="text-[12px] text-muted-foreground">{t("mcrLoading")}</span>
       </Card>
     );
   }
@@ -108,13 +108,13 @@ export default function MerchantCourierRoutingCard({ merchantId }: { merchantId:
           <Route size={16} className="text-primary" />
         </div>
         <div>
-          <p className="text-sm font-bold text-foreground">{t("mrtTitle")}</p>
-          <p className="text-[11px] text-muted-foreground">{t("mrtSubtitle")}</p>
+          <p className="text-sm font-bold text-foreground">{t("mcrTitle")}</p>
+          <p className="text-[11px] text-muted-foreground">{t("mcrSubtitle")}</p>
         </div>
       </div>
 
       {suggestions.length === 0 ? (
-        <p className="text-[12px] text-muted-foreground text-center py-3">{t("mrtEmpty")}</p>
+        <p className="text-[12px] text-muted-foreground text-center py-3">{t("mcrEmpty")}</p>
       ) : (
         <div className="space-y-1.5">
           {suggestions.map((s) => (
@@ -122,16 +122,16 @@ export default function MerchantCourierRoutingCard({ merchantId }: { merchantId:
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-bold text-foreground truncate">{s.city}</p>
                 <p className="text-[10.5px] text-muted-foreground">
-                  {t("mrtUse").replace("{courier}", s.courier)}
-                  {s.avgDays != null ? ` · ${t("mrtAvgDays").replace("{n}", s.avgDays.toFixed(1))}` : ""}
-                  {` · ${t("mrtShipments").replace("{n}", fmt(s.shipments))}`}
+                  {t("mcrUse").replace("{courier}", s.courier)}
+                  {s.avgDays != null ? ` · ${t("mcrAvgDays").replace("{n}", s.avgDays.toFixed(1))}` : ""}
+                  {` · ${t("mcrShipments").replace("{n}", fmt(s.shipments))}`}
                 </p>
               </div>
               <div className="text-right shrink-0">
                 <p className="text-[12px] font-bold text-foreground">৳{fmt(Math.round(s.avgFee))}</p>
                 {s.savings > 0 && (
                   <p className="text-[10px] font-bold text-emerald-600">
-                    {t("mrtSaves").replace("{n}", fmt(Math.round(s.savings)))}
+                    {t("mcrSaves").replace("{n}", fmt(Math.round(s.savings)))}
                   </p>
                 )}
               </div>
