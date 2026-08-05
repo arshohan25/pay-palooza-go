@@ -118,9 +118,42 @@ export default function MerchantCustomersTab({ merchantId }: { merchantId: strin
 
   return (
     <div className="space-y-4">
-      <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-        <Users size={18} className="text-primary" /> {t("mcuTitle")}
-      </h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+          <Users size={18} className="text-primary" /> {t("mcuTitle")}
+        </h3>
+        <button
+          onClick={exportCsv}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary/10 text-[11px] font-bold text-primary"
+        >
+          <Download size={12} /> {t("mcxExport")}
+        </button>
+      </div>
+
+      {customers.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+          {["All", "Gold", "Silver", "Bronze", "New"].map(seg => {
+            const count = seg === "All" ? customers.length : customers.filter(c => c.tier === seg).length;
+            const label = seg === "All"
+              ? t("mcxAll")
+              : tierLabelKey[seg] ? t(tierLabelKey[seg]) : seg;
+            return (
+              <button
+                key={seg}
+                onClick={() => setSegment(seg)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap transition-colors ${
+                  segment === seg
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/50 text-foreground border-border/50"
+                }`}
+              >
+                {label} · {fmt(count)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-2">
