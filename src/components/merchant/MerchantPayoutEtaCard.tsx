@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Landmark, CalendarClock } from "lucide-react";
-import { useUserRoles } from "@/hooks/use-user-roles";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 function computeNextPayout(
@@ -32,8 +31,6 @@ function computeNextPayout(
 export default function MerchantPayoutEtaCard({ merchantId, frequency }: { merchantId: string; frequency: string | null }) {
   const { t, lang } = useI18n();
   const fmt = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-BD").format(Math.round(n));
-  const { roles } = useUserRoles();
-  const isMerchantOnly = roles.includes("merchant" as any) && !roles.includes("admin" as any);
   const [pending, setPending] = useState(0);
   const [available, setAvailable] = useState(0);
 
@@ -58,8 +55,6 @@ export default function MerchantPayoutEtaCard({ merchantId, frequency }: { merch
   }, [merchantId, load]);
 
   const next = computeNextPayout(frequency, lang, t);
-
-  if (isMerchantOnly) return null;
 
   return (
     <Card className="p-3 border-0 shadow-elevated bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent">

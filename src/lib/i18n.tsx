@@ -4522,6 +4522,21 @@ const translations = {
   mpeAvailable: { en: "available", bn: "উপলব্ধ" },
   mpePending: { en: "pending", bn: "বিচারাধীন" },
 
+  // Merchant tips / gratuity (mtip*)
+  mtipTitle: { en: "Tips & Gratuity", bn: "টিপস ও বকশিশ" },
+  mtipDesc: { en: "Let customers add an optional tip when they pay you.", bn: "গ্রাহকরা পেমেন্টের সময় ইচ্ছামতো টিপ যোগ করতে পারবে।" },
+  mtipPresets: { en: "Suggested tip percentages", bn: "প্রস্তাবিত টিপের হার" },
+  mtipPresetsHint: { en: "Comma separated, e.g. 5, 10, 15", bn: "কমা দিয়ে লিখুন, যেমন ৫, ১০, ১৫" },
+  mtipSave: { en: "Save tip settings", bn: "টিপ সেটিংস সংরক্ষণ" },
+  mtipSaved: { en: "Tip settings updated", bn: "টিপ সেটিংস আপডেট হয়েছে" },
+  mtipSaveFailed: { en: "Save failed", bn: "সংরক্ষণ ব্যর্থ" },
+  mtipAddTip: { en: "Add a tip", bn: "টিপ যোগ করুন" },
+  mtipNone: { en: "No tip", bn: "টিপ নেই" },
+  mtipTipLabel: { en: "Tip", bn: "টিপ" },
+  mtipTotal: { en: "Total", bn: "সর্বমোট" },
+
+
+
   // Courier tracking timeline (ctt*)
   cttAwaitingFirstScan: { en: "Awaiting first scan", bn: "প্রথম স্ক্যানের অপেক্ষায়" },
   cttLive: { en: "LIVE", bn: "লাইভ" },

@@ -4879,6 +4879,7 @@ export type Database = {
           reference: string | null
           status: string
           success_url: string | null
+          tip_amount: number
           updated_at: string
           webhook_attempts: number
           webhook_delivered: boolean
@@ -4903,6 +4904,7 @@ export type Database = {
           reference?: string | null
           status?: string
           success_url?: string | null
+          tip_amount?: number
           updated_at?: string
           webhook_attempts?: number
           webhook_delivered?: boolean
@@ -4927,6 +4929,7 @@ export type Database = {
           reference?: string | null
           status?: string
           success_url?: string | null
+          tip_amount?: number
           updated_at?: string
           webhook_attempts?: number
           webhook_delivered?: boolean
@@ -5763,6 +5766,8 @@ export type Database = {
           service_charge_rate: number
           settlement_frequency: string
           status: Database["public"]["Enums"]["agent_status"]
+          tip_presets: number[]
+          tips_enabled: boolean
           trade_license: string | null
           trade_license_url: string | null
           updated_at: string
@@ -5803,6 +5808,8 @@ export type Database = {
           service_charge_rate?: number
           settlement_frequency?: string
           status?: Database["public"]["Enums"]["agent_status"]
+          tip_presets?: number[]
+          tips_enabled?: boolean
           trade_license?: string | null
           trade_license_url?: string | null
           updated_at?: string
@@ -5843,6 +5850,8 @@ export type Database = {
           service_charge_rate?: number
           settlement_frequency?: string
           status?: Database["public"]["Enums"]["agent_status"]
+          tip_presets?: number[]
+          tips_enabled?: boolean
           trade_license?: string | null
           trade_license_url?: string | null
           updated_at?: string
@@ -10232,6 +10241,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      merchant_session_set_tip: {
+        Args: { p_session_id: string; p_tip: number }
+        Returns: number
+      }
       merchant_temp_pin_status: {
         Args: { _merchant_user_id: string }
         Returns: {
@@ -10245,6 +10258,10 @@ export type Database = {
         | { Args: { p_name: string; p_name_bn?: string }; Returns: undefined }
       merchant_update_service_charge: {
         Args: { p_absorb: boolean; p_enabled: boolean; p_rate: number }
+        Returns: undefined
+      }
+      merchant_update_tips: {
+        Args: { p_enabled: boolean; p_merchant_id: string; p_presets: number[] }
         Returns: undefined
       }
       nearby_agents: {
