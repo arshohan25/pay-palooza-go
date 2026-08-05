@@ -58,12 +58,45 @@ export default function MerchantCustomersTab({ merchantId }: { merchantId: strin
     return () => { supabase.removeChannel(channel); };
   }, [fetchCustomers, merchantId]);
 
+  const [segment, setSegment] = useState<string>("All");
+
+  const bySegment = segment === "All" ? customers : customers.filter(c => c.tier === segment);
+
   const filtered = search
-    ? customers.filter(c =>
+    ? bySegment.filter(c =>
         (c.customer_name || "").toLowerCase().includes(search.toLowerCase()) ||
         (c.customer_phone || "").includes(search)
       )
-    : customers;
+    : bySegment;
+
+  const exportCsv = () => {
+    if (bySegment.length === 0) {
+      toast({ title: t("mcxNothing"), variant: "destructive" });
+      return;
+    }
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const header = ["Name", "Phone", "Tier", "Orders", "Total spent (BDT)", "Last order"];
+    const lines = [
+      header.join(","),
+      ...bySegment.map(c => [
+        esc(c.customer_name),
+        esc(c.customer_phone),
+        esc(c.tier),
+        esc(c.order_count),
+        esc(Number(c.total_spent).toFixed(2)),
+        esc(c.last_order_at ? new Date(c.last_order_at).toISOString().slice(0, 10) : ""),
+      ].join(",")),
+    ];
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `customers-${segment.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: t("mcxExported").replace("{n}", String(bySegment.length)) });
+  };
+
 
   const totalRevenue = customers.reduce((s, c) => s + Number(c.total_spent), 0);
   const totalOrders = customers.reduce((s, c) => s + Number(c.order_count), 0);
