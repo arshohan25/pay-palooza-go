@@ -177,15 +177,55 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
 
                   <div className="text-center py-2">
                     <p className="text-sm text-muted-foreground">{t("dqAmountToPay")}</p>
-                    <p className="text-4xl font-extrabold text-foreground">৳{fmt(amount)}</p>
+                    <p className="text-4xl font-extrabold text-foreground">৳{fmt(baseAmount + tipAmount)}</p>
+                    {tipAmount > 0 && (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        ৳{fmt(baseAmount)} + {t("mtipTipLabel")} ৳{fmt(tipAmount)}
+                      </p>
+                    )}
                   </div>
+
+                  {tipsEnabled && tipPresets.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mtipAddTip")}</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setTipPct(0)}
+                          className={`flex-1 h-10 rounded-xl text-[12px] font-bold border transition-colors ${tipPct === 0 ? "border-primary bg-primary/10 text-primary" : "border-border/60 text-muted-foreground"}`}
+                        >
+                          {t("mtipNone")}
+                        </button>
+                        {tipPresets.map(p => (
+                          <button
+                            key={p}
+                            onClick={() => setTipPct(p)}
+                            className={`flex-1 h-10 rounded-xl text-[12px] font-bold border transition-colors ${tipPct === p ? "border-primary bg-primary/10 text-primary" : "border-border/60 text-foreground"}`}
+                          >
+                            {p}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <Button
                     className="w-full h-13 rounded-2xl font-bold text-base gradient-primary text-primary-foreground"
-                    onClick={() => { setStep("pin"); setTimeout(() => inputRef.current?.focus(), 100); }}
+                    onClick={async () => {
+                      if (tipsEnabled) {
+                        const { data, error } = await (supabase as any).rpc("merchant_session_set_tip", {
+                          p_session_id: sessionId,
+                          p_tip: tipAmount,
+                        });
+                        if (error) { setErrorMsg(error.message); setStep("error"); return; }
+                        setAmount(Number(data) || baseAmount + tipAmount);
+                      }
+                      setStep("pin");
+                      setTimeout(() => inputRef.current?.focus(), 100);
+                    }}
                   >
                     {t("dqConfirmPay")}
                   </Button>
+
                 </motion.div>
               )}
 
