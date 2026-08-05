@@ -2,13 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { AlertOctagon, Shield } from "lucide-react";
-import { useUserRoles } from "@/hooks/use-user-roles";
 import { useI18n } from "@/lib/i18n";
 
 export default function MerchantDisputesTile({ merchantId, onOpen }: { merchantId: string; onOpen?: () => void }) {
   const { t } = useI18n();
-  const { roles } = useUserRoles();
-  const isMerchantOnly = roles.includes("merchant" as any) && !roles.includes("admin" as any);
   const [openCount, setOpenCount] = useState(0);
   const [total, setTotal] = useState(0);
 
@@ -40,8 +37,6 @@ export default function MerchantDisputesTile({ merchantId, onOpen }: { merchantI
   }, [merchantId, load]);
 
   const hasOpen = openCount > 0;
-
-  if (isMerchantOnly) return null;
 
   return (
     <Card

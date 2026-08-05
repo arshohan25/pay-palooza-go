@@ -31,6 +31,11 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
   const [pin, setPin] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const [baseAmount, setBaseAmount] = useState(qrAmount || 0);
+  const [tipsEnabled, setTipsEnabled] = useState(false);
+  const [tipPresets, setTipPresets] = useState<number[]>([]);
+  const [tipPct, setTipPct] = useState(0);
+  const tipAmount = Math.round((baseAmount * tipPct) / 100);
 
   // Load session details
   useEffect(() => {
@@ -38,31 +43,51 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
     setStep("loading");
     setPin("");
     setErrorMsg("");
-
-    // Also reset pin whenever step changes away from pin
-    return () => { setPin(""); };
+    setTipPct(0);
+    let alive = true;
 
     (async () => {
       const { data: session, error } = await supabase
         .from("merchant_payment_sessions")
-        .select("id, amount, reference, description, status, expires_at, merchant_id")
+        .select("id, amount, tip_amount, reference, description, status, expires_at, merchant_id")
         .eq("id", sessionId)
         .single();
 
+      if (!alive) return;
       if (error || !session) { setErrorMsg(t("dqSessionNotFound")); setStep("error"); return; }
       if (session.status !== "pending") { setErrorMsg(`${t("dqSessionAlready")} ${session.status}`); setStep("error"); return; }
       if (new Date(session.expires_at) < new Date()) { setErrorMsg(t("dqSessionExpired")); setStep("error"); return; }
 
-      setAmount(session.amount);
+      const base = Number(session.amount) - Number((session as any).tip_amount || 0);
+      setBaseAmount(base);
+      setAmount(base);
       setReference(session.reference || "");
 
       const { data: merchRows } = await supabase.rpc("get_merchant_display_name", { p_merchant_id: session.merchant_id });
       const merch = Array.isArray(merchRows) ? merchRows[0] : null;
+      if (!alive) return;
       if (merch?.business_name) setMerchantName(merch.business_name);
+
+      const { data: mRow } = await (supabase as any)
+        .from("merchants")
+        .select("tips_enabled, tip_presets")
+        .eq("id", session.merchant_id)
+        .maybeSingle();
+      if (!alive) return;
+      if (mRow?.tips_enabled) {
+        setTipsEnabled(true);
+        const presets = (mRow.tip_presets as number[] | null) ?? [5, 10, 15];
+        setTipPresets(presets.filter(p => p > 0).slice(0, 4));
+      } else {
+        setTipsEnabled(false);
+      }
 
       setStep("confirm");
     })();
+
+    return () => { alive = false; setPin(""); };
   }, [open, sessionId]);
+
 
   // Pay with PIN
   const handlePay = useCallback(async () => {
@@ -152,15 +177,55 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
 
                   <div className="text-center py-2">
                     <p className="text-sm text-muted-foreground">{t("dqAmountToPay")}</p>
-                    <p className="text-4xl font-extrabold text-foreground">৳{fmt(amount)}</p>
+                    <p className="text-4xl font-extrabold text-foreground">৳{fmt(baseAmount + tipAmount)}</p>
+                    {tipAmount > 0 && (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        ৳{fmt(baseAmount)} + {t("mtipTipLabel")} ৳{fmt(tipAmount)}
+                      </p>
+                    )}
                   </div>
+
+                  {tipsEnabled && tipPresets.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mtipAddTip")}</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setTipPct(0)}
+                          className={`flex-1 h-10 rounded-xl text-[12px] font-bold border transition-colors ${tipPct === 0 ? "border-primary bg-primary/10 text-primary" : "border-border/60 text-muted-foreground"}`}
+                        >
+                          {t("mtipNone")}
+                        </button>
+                        {tipPresets.map(p => (
+                          <button
+                            key={p}
+                            onClick={() => setTipPct(p)}
+                            className={`flex-1 h-10 rounded-xl text-[12px] font-bold border transition-colors ${tipPct === p ? "border-primary bg-primary/10 text-primary" : "border-border/60 text-foreground"}`}
+                          >
+                            {p}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <Button
                     className="w-full h-13 rounded-2xl font-bold text-base gradient-primary text-primary-foreground"
-                    onClick={() => { setStep("pin"); setTimeout(() => inputRef.current?.focus(), 100); }}
+                    onClick={async () => {
+                      if (tipsEnabled) {
+                        const { data, error } = await (supabase as any).rpc("merchant_session_set_tip", {
+                          p_session_id: sessionId,
+                          p_tip: tipAmount,
+                        });
+                        if (error) { setErrorMsg(error.message); setStep("error"); return; }
+                        setAmount(Number(data) || baseAmount + tipAmount);
+                      }
+                      setStep("pin");
+                      setTimeout(() => inputRef.current?.focus(), 100);
+                    }}
                   >
                     {t("dqConfirmPay")}
                   </Button>
+
                 </motion.div>
               )}
 

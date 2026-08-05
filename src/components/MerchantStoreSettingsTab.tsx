@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Store, ImagePlus, Globe, Loader2, Check, Eye, Percent } from "lucide-react";
+import { Store, ImagePlus, Globe, Loader2, Check, Eye, Percent, HandCoins } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 interface StoreData {
@@ -41,12 +41,16 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
   const [svcLoaded, setSvcLoaded] = useState(false);
   const [svcSaving, setSvcSaving] = useState(false);
 
+  // Tips / gratuity settings
+  const [tips, setTips] = useState({ enabled: false, presets: "5, 10, 15" });
+  const [tipsSaving, setTipsSaving] = useState(false);
+
   useEffect(() => {
     let alive = true;
     (async () => {
       const { data } = await (supabase as any)
         .from("merchants")
-        .select("service_charge_enabled, service_charge_rate, service_charge_absorb")
+        .select("service_charge_enabled, service_charge_rate, service_charge_absorb, tips_enabled, tip_presets")
         .eq("id", merchantId)
         .maybeSingle();
       if (alive && data) {
@@ -54,6 +58,12 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
           enabled: !!data.service_charge_enabled,
           rate: Number(data.service_charge_rate || 0),
           absorb: !!data.service_charge_absorb,
+        });
+        setTips({
+          enabled: !!data.tips_enabled,
+          presets: Array.isArray(data.tip_presets) && data.tip_presets.length > 0
+            ? data.tip_presets.join(", ")
+            : "5, 10, 15",
         });
       }
       if (alive) setSvcLoaded(true);
@@ -79,6 +89,28 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       toast({ title: "Service charge updated" });
     }
   };
+
+  const saveTips = async () => {
+    const presets = tips.presets
+      .split(",")
+      .map(v => Math.round(Number(v.trim())))
+      .filter(v => Number.isFinite(v) && v > 0 && v <= 100)
+      .slice(0, 4);
+    setTipsSaving(true);
+    const { error } = await (supabase as any).rpc("merchant_update_tips", {
+      p_merchant_id: merchantId,
+      p_enabled: tips.enabled,
+      p_presets: presets.length > 0 ? presets : [5, 10, 15],
+    });
+    setTipsSaving(false);
+    if (error) {
+      toast({ title: t("mtipSaveFailed"), description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: t("mtipSaved") });
+      setTips(s => ({ ...s, presets: (presets.length > 0 ? presets : [5, 10, 15]).join(", ") }));
+    }
+  };
+
 
 
   const [form, setForm] = useState({
@@ -375,6 +407,44 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
           </Button>
         </Card>
       )}
+
+      {/* Tips / gratuity */}
+      {svcLoaded && (
+        <Card className="p-4 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                <HandCoins size={13} className="text-primary" /> {t("mtipTitle")}
+              </h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{t("mtipDesc")}</p>
+            </div>
+            <button onClick={() => setTips(s => ({ ...s, enabled: !s.enabled }))}
+              className={`w-12 h-7 rounded-full transition-colors relative shrink-0 ${tips.enabled ? "bg-primary" : "bg-muted"}`}>
+              <div className={`absolute top-1 w-5 h-5 rounded-full bg-background shadow-sm transition-transform ${tips.enabled ? "left-6" : "left-1"}`} />
+            </button>
+          </div>
+
+          {tips.enabled && (
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t("mtipPresets")}</label>
+              <Input
+                value={tips.presets}
+                onChange={e => setTips(s => ({ ...s, presets: e.target.value }))}
+                className="mt-1 h-10 rounded-xl text-sm"
+                placeholder="5, 10, 15"
+              />
+              <p className="text-[10.5px] text-muted-foreground mt-1">{t("mtipPresetsHint")}</p>
+            </div>
+          )}
+
+          <Button onClick={saveTips} disabled={tipsSaving} variant="outline" size="sm"
+            className="w-full rounded-xl h-9 gap-1.5 text-[12px] font-bold">
+            {tipsSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+            {t("mtipSave")}
+          </Button>
+        </Card>
+      )}
+
 
       {/* Active toggle */}
       <div className="flex items-center justify-between bg-card border border-border/60 rounded-2xl p-4">

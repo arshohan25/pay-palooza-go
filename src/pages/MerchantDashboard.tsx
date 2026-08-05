@@ -690,7 +690,7 @@ const MerchantDashboard = () => {
       {activeTab === "overview" && (
         <div className="px-4 py-4 pb-24">
           {user && !isStaff && <VendorApplyBanner userId={user.id} />}
-          <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} allTxns={txns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} isStaff={isStaff} can={can} staffId={staffId} />
+          <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} allTxns={txns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} onOpenDisputes={() => setActiveTab("refunds")} isStaff={isStaff} can={can} staffId={staffId} />
         </div>
       )}
 
@@ -1173,7 +1173,7 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Overview Tab ── */
-const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onSeeAll, onOpenInbox, isStaff, can, staffId }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; allTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void; onOpenInbox: () => void; isStaff: boolean; can: (key: string) => boolean; staffId: string | null }) => {
+const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onSeeAll, onOpenInbox, onOpenDisputes, isStaff, can, staffId }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; allTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void; onOpenInbox: () => void; onOpenDisputes: () => void; isStaff: boolean; can: (key: string) => boolean; staffId: string | null }) => {
   const { toast } = useToast();
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -1340,6 +1340,10 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
         <motion.div variants={stagger.item} className="space-y-3">
           <MerchantKycStatusBanner merchantId={merchant.id} />
           <MerchantTodaySnapshot merchantId={merchant.id} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <MerchantPayoutEtaCard merchantId={merchant.id} frequency={merchant.settlement_frequency} />
+            <MerchantDisputesTile merchantId={merchant.id} onOpen={onOpenDisputes} />
+          </div>
           <MerchantInventoryAlerts merchantId={merchant.id} threshold={5} />
           <MerchantWeeklyDigestCard merchantId={merchant.id} />
         </motion.div>
