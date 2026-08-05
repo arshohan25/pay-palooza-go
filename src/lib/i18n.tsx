@@ -4535,6 +4535,24 @@ const translations = {
   mtipTipLabel: { en: "Tip", bn: "টিপ" },
   mtipTotal: { en: "Total", bn: "সর্বমোট" },
 
+  // Smart courier routing (mrt*)
+  mcrTitle: { en: "Smart courier routing", bn: "স্মার্ট কুরিয়ার রাউটিং" },
+  mcrSubtitle: { en: "Cheapest courier per city, last 30 days", bn: "শেষ ৩০ দিনে প্রতি শহরে সস্তা কুরিয়ার" },
+  mcrLoading: { en: "Analysing your shipments…", bn: "আপনার শিপমেন্ট বিশ্লেষণ হচ্ছে…" },
+  mcrEmpty: { en: "No courier-booked orders yet. Suggestions appear once you ship with a courier.", bn: "এখনও কুরিয়ার বুক করা অর্ডার নেই। কুরিয়ারে পাঠালে পরামর্শ দেখা যাবে।" },
+  mcrUse: { en: "Use {courier}", bn: "{courier} ব্যবহার করুন" },
+  mcrAvgDays: { en: "{n} days avg", bn: "গড়ে {n} দিন" },
+  mcrShipments: { en: "{n} shipments", bn: "{n}টি শিপমেন্ট" },
+  mcrSaves: { en: "saves ৳{n}/order", bn: "প্রতি অর্ডারে ৳{n} সাশ্রয়" },
+
+  // Customer segment export (mcx*)
+  mcxExport: { en: "Export CSV", bn: "CSV ডাউনলোড" },
+  mcxSegment: { en: "Segment", bn: "সেগমেন্ট" },
+  mcxAll: { en: "All", bn: "সব" },
+  mcxExported: { en: "Exported {n} customers", bn: "{n} জন গ্রাহক এক্সপোর্ট হয়েছে" },
+  mcxNothing: { en: "No customers in this segment", bn: "এই সেগমেন্টে কোনো গ্রাহক নেই" },
+
+
 
 
   // Courier tracking timeline (ctt*)

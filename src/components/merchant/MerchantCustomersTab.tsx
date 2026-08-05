@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, ShoppingBag, Search } from "lucide-react";
+import { Users, ShoppingBag, Search, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
@@ -34,6 +35,7 @@ const tierLabelKey: Record<string, TranslationKey> = {
 
 export default function MerchantCustomersTab({ merchantId }: { merchantId: string }) {
   const { t, lang } = useI18n();
+  const { toast } = useToast();
   const fmt = (n: number) => n.toLocaleString(lang === "bn" ? "bn-BD" : "en-US");
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,12 +60,45 @@ export default function MerchantCustomersTab({ merchantId }: { merchantId: strin
     return () => { supabase.removeChannel(channel); };
   }, [fetchCustomers, merchantId]);
 
+  const [segment, setSegment] = useState<string>("All");
+
+  const bySegment = segment === "All" ? customers : customers.filter(c => c.tier === segment);
+
   const filtered = search
-    ? customers.filter(c =>
+    ? bySegment.filter(c =>
         (c.customer_name || "").toLowerCase().includes(search.toLowerCase()) ||
         (c.customer_phone || "").includes(search)
       )
-    : customers;
+    : bySegment;
+
+  const exportCsv = () => {
+    if (bySegment.length === 0) {
+      toast({ title: t("mcxNothing"), variant: "destructive" });
+      return;
+    }
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const header = ["Name", "Phone", "Tier", "Orders", "Total spent (BDT)", "Last order"];
+    const lines = [
+      header.join(","),
+      ...bySegment.map(c => [
+        esc(c.customer_name),
+        esc(c.customer_phone),
+        esc(c.tier),
+        esc(c.order_count),
+        esc(Number(c.total_spent).toFixed(2)),
+        esc(c.last_order_at ? new Date(c.last_order_at).toISOString().slice(0, 10) : ""),
+      ].join(",")),
+    ];
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `customers-${segment.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: t("mcxExported").replace("{n}", String(bySegment.length)) });
+  };
+
 
   const totalRevenue = customers.reduce((s, c) => s + Number(c.total_spent), 0);
   const totalOrders = customers.reduce((s, c) => s + Number(c.order_count), 0);
@@ -83,9 +118,42 @@ export default function MerchantCustomersTab({ merchantId }: { merchantId: strin
 
   return (
     <div className="space-y-4">
-      <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-        <Users size={18} className="text-primary" /> {t("mcuTitle")}
-      </h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+          <Users size={18} className="text-primary" /> {t("mcuTitle")}
+        </h3>
+        <button
+          onClick={exportCsv}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary/10 text-[11px] font-bold text-primary"
+        >
+          <Download size={12} /> {t("mcxExport")}
+        </button>
+      </div>
+
+      {customers.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+          {["All", "Gold", "Silver", "Bronze", "New"].map(seg => {
+            const count = seg === "All" ? customers.length : customers.filter(c => c.tier === seg).length;
+            const label = seg === "All"
+              ? t("mcxAll")
+              : tierLabelKey[seg] ? t(tierLabelKey[seg]) : seg;
+            return (
+              <button
+                key={seg}
+                onClick={() => setSegment(seg)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap transition-colors ${
+                  segment === seg
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/50 text-foreground border-border/50"
+                }`}
+              >
+                {label} · {fmt(count)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-2">

@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Truck, Plus, Trash2, MapPin, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
+import MerchantCourierRoutingCard from "@/components/merchant/MerchantCourierRoutingCard";
 
 interface Zone {
   id: string;
@@ -107,6 +108,8 @@ export default function MerchantDeliveryZonesTab({ merchantId }: { merchantId: s
 
   return (
     <div className="space-y-3">
+      <MerchantCourierRoutingCard merchantId={merchantId} />
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
