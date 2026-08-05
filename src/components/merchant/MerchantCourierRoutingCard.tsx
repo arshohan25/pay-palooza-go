@@ -86,7 +86,7 @@ export default function MerchantCourierRoutingCard({ merchantId }: { merchantId:
         avgFee: best.avgFee,
         avgDays: best.avgDays,
         shipments: entries.reduce((s, e) => s + e.shipments, 0),
-        savings: Math.max(0, (worst.avgFee - best.avgFee)) * out.length === 0 ? Math.max(0, worst.avgFee - best.avgFee) : Math.max(0, worst.avgFee - best.avgFee),
+        savings: Math.max(0, worst.avgFee - best.avgFee),
       });
     }
     return out.sort((a, b) => b.shipments - a.shipments).slice(0, 8);
