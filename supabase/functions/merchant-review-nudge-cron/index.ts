@@ -18,11 +18,11 @@ Deno.serve(async (req) => {
 
   const { data: orders, error } = await admin
     .from('orders')
-    .select('id, merchant_id, buyer_user_id, status, delivered_at, order_number')
+    .select('id, merchant_id, user_id, status, updated_at, order_num')
     .eq('status', 'delivered')
-    .gte('delivered_at', since)
-    .lte('delivered_at', until)
-    .not('buyer_user_id', 'is', null);
+    .gte('updated_at', since)
+    .lte('updated_at', until)
+    .not('user_id', 'is', null);
 
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
 
@@ -31,9 +31,9 @@ Deno.serve(async (req) => {
     const { data: existing } = await admin.from('merchant_review_nudges').select('id').eq('order_id', o.id).maybeSingle();
     if (existing) continue;
     const { error: nErr } = await admin.from('notifications').insert({
-      user_id: o.buyer_user_id,
+      user_id: o.user_id,
       title: '⭐ How was your order?',
-      body: `Order #${o.order_number || o.id.slice(0, 8)} was delivered. Tap to rate & help other shoppers.`,
+      body: `Order #${o.order_num || o.id.slice(0, 8)} was delivered. Tap to rate & help other shoppers.`,
       type: 'review_request',
       metadata: { order_id: o.id, merchant_id: o.merchant_id },
     });
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     await admin.from('merchant_review_nudges').insert({
       order_id: o.id,
       merchant_id: o.merchant_id,
-      user_id: o.buyer_user_id,
+      user_id: o.user_id,
     });
     sent++;
   }
