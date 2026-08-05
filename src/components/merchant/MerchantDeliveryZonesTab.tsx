@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Truck, Plus, Trash2, MapPin, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
+import MerchantCourierRoutingCard from "@/components/merchant/MerchantCourierRoutingCard";
 
 interface Zone {
   id: string;
