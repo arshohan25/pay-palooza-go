@@ -41,12 +41,16 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
   const [svcLoaded, setSvcLoaded] = useState(false);
   const [svcSaving, setSvcSaving] = useState(false);
 
+  // Tips / gratuity settings
+  const [tips, setTips] = useState({ enabled: false, presets: "5, 10, 15" });
+  const [tipsSaving, setTipsSaving] = useState(false);
+
   useEffect(() => {
     let alive = true;
     (async () => {
       const { data } = await (supabase as any)
         .from("merchants")
-        .select("service_charge_enabled, service_charge_rate, service_charge_absorb")
+        .select("service_charge_enabled, service_charge_rate, service_charge_absorb, tips_enabled, tip_presets")
         .eq("id", merchantId)
         .maybeSingle();
       if (alive && data) {
@@ -54,6 +58,12 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
           enabled: !!data.service_charge_enabled,
           rate: Number(data.service_charge_rate || 0),
           absorb: !!data.service_charge_absorb,
+        });
+        setTips({
+          enabled: !!data.tips_enabled,
+          presets: Array.isArray(data.tip_presets) && data.tip_presets.length > 0
+            ? data.tip_presets.join(", ")
+            : "5, 10, 15",
         });
       }
       if (alive) setSvcLoaded(true);
@@ -79,6 +89,28 @@ const MerchantStoreSettingsTab = ({ merchantId, businessName }: Props) => {
       toast({ title: "Service charge updated" });
     }
   };
+
+  const saveTips = async () => {
+    const presets = tips.presets
+      .split(",")
+      .map(v => Math.round(Number(v.trim())))
+      .filter(v => Number.isFinite(v) && v > 0 && v <= 100)
+      .slice(0, 4);
+    setTipsSaving(true);
+    const { error } = await (supabase as any).rpc("merchant_update_tips", {
+      p_merchant_id: merchantId,
+      p_enabled: tips.enabled,
+      p_presets: presets.length > 0 ? presets : [5, 10, 15],
+    });
+    setTipsSaving(false);
+    if (error) {
+      toast({ title: t("mtipSaveFailed"), description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: t("mtipSaved") });
+      setTips(s => ({ ...s, presets: (presets.length > 0 ? presets : [5, 10, 15]).join(", ") }));
+    }
+  };
+
 
 
   const [form, setForm] = useState({
