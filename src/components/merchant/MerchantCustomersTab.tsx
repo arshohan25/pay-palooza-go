@@ -34,6 +34,7 @@ const tierLabelKey: Record<string, TranslationKey> = {
 
 export default function MerchantCustomersTab({ merchantId }: { merchantId: string }) {
   const { t, lang } = useI18n();
+  const { toast } = useToast();
   const fmt = (n: number) => n.toLocaleString(lang === "bn" ? "bn-BD" : "en-US");
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState(true);
