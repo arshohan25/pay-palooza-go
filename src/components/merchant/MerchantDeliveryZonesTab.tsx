@@ -107,6 +107,8 @@ export default function MerchantDeliveryZonesTab({ merchantId }: { merchantId: s
 
   return (
     <div className="space-y-3">
+      <MerchantCourierRoutingCard merchantId={merchantId} />
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
