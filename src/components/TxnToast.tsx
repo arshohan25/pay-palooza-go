@@ -40,7 +40,7 @@ const TxnToast = () => {
 
   return (
     <div className="fixed top-4 left-0 right-0 z-[200] flex flex-col items-center gap-2 pointer-events-none px-4">
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence>
         {toasts.map((t) => (
           <motion.div
             key={t.id}

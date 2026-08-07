@@ -39,7 +39,7 @@ export default function AiRewardBanner({ rewards, onClaim, onApply }: Props) {
         <span className="text-xs font-semibold text-foreground">{t("arbTitle")}</span>
         <span className="text-[9px] px-1.5 py-px rounded-full bg-primary/10 text-primary font-medium">{t("arbSmart")}</span>
       </div>
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence>
         {rewards.map((reward, i) => {
           const cfg = typeConfig[reward.reward_type] || typeConfig.offer;
           const Icon = cfg.icon;

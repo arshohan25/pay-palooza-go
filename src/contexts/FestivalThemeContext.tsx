@@ -66,7 +66,7 @@ export function FestivalThemeProvider({ children }: { children: ReactNode }) {
         .select("id, name, emoji, greeting_text, banner_gradient, overlay_effect, accent_color, theme_palette, body_pattern")
         .eq("is_active", true)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (data) {
         const t: FestivalTheme = {

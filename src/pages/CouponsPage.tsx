@@ -63,12 +63,15 @@ function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
   const dLeft = coupon.expires_at ? daysLeft(coupon.expires_at) : null;
 
   return (
-    <motion.button
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
-      className="w-full text-left relative rounded-[26px] overflow-hidden active:scale-[0.99] transition-transform"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
+      className="w-full text-left relative rounded-[26px] overflow-hidden active:scale-[0.99] transition-transform cursor-pointer"
       style={{
         background:
           "linear-gradient(135deg, hsl(var(--shariah-green-900)) 0%, hsl(var(--shariah-green-600)) 55%, hsl(var(--shariah-green-800)) 100%)",
@@ -161,7 +164,7 @@ function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
           </div>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }
 
@@ -509,7 +512,7 @@ export default function CouponsPage() {
                   </div>
                   <span className="text-[10px] font-semibold text-muted-foreground">{endingSoon.length}</span>
                 </div>
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence>
                   <div className="space-y-2.5">
                     {endingSoon.map((coupon, i) => (
                       <CouponRow
@@ -540,7 +543,7 @@ export default function CouponsPage() {
                   </div>
                   <span className="text-[10px] font-semibold text-muted-foreground">{everythingElse.length}</span>
                 </div>
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence>
                   <div className="space-y-2.5">
                     {everythingElse.map((coupon, i) => (
                       <CouponRow
