@@ -164,7 +164,7 @@ function FeaturedCoupon({ coupon, onOpen, onCopy, copied }: {
           </div>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }
 
