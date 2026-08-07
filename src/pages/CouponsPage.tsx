@@ -512,7 +512,7 @@ export default function CouponsPage() {
                   </div>
                   <span className="text-[10px] font-semibold text-muted-foreground">{endingSoon.length}</span>
                 </div>
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence>
                   <div className="space-y-2.5">
                     {endingSoon.map((coupon, i) => (
                       <CouponRow
@@ -543,7 +543,7 @@ export default function CouponsPage() {
                   </div>
                   <span className="text-[10px] font-semibold text-muted-foreground">{everythingElse.length}</span>
                 </div>
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence>
                   <div className="space-y-2.5">
                     {everythingElse.map((coupon, i) => (
                       <CouponRow

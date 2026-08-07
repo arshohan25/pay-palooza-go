@@ -317,7 +317,7 @@ export default function ProductDetailPage() {
             if (Math.abs(dx) > 50) goImg(dx < 0 ? 1 : -1);
           }}
         >
-          <AnimatePresence mode="popLayout" custom={swipeDir}>
+          <AnimatePresence mode="wait" custom={swipeDir}>
             <motion.img
               key={imgIdx}
               src={images[imgIdx] || "/placeholder.svg"}
@@ -483,7 +483,7 @@ export default function ProductDetailPage() {
                 <Minus className="w-3.5 h-3.5" />
               </motion.button>
               <div className="w-10 text-center text-sm font-bold overflow-hidden relative h-6">
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence>
                   <motion.span key={qty} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     className="absolute inset-0 flex items-center justify-center">

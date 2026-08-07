@@ -1137,7 +1137,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
           <div className="flex-1 overflow-y-auto scrollbar-none bg-background rounded-t-[28px] -mt-4 relative z-10">
             <div className="min-h-full flex flex-col items-center justify-start px-5 py-8">
               <div className="w-full max-w-sm">
-                <AnimatePresence custom={direction} mode="popLayout">
+                <AnimatePresence custom={direction} mode="wait">
                   <motion.div key={mode + (confirmStage ? "_confirm" : "")} custom={direction} variants={slideV}
                     initial="enter" animate="center" exit="exit"
                     transition={{ type: "spring", stiffness: 340, damping: 32 }} className="space-y-6">
