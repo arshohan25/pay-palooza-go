@@ -217,8 +217,11 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
         <div className="min-w-0 flex-1">
           <p className="text-[10.5px] uppercase tracking-wider opacity-85">{t("lpEasypayClub")}</p>
           <p className="text-[15px] font-bold truncate">{tier.name}</p>
-          <p className="text-[10.5px] opacity-90">{t("lpLimitSourceTier")}</p>
-        </div>
+          <p className="text-[10.5px] opacity-90">
+            {t("lpLimitSourceTier")}
+            {feeDiscountPct > 0 && ` · −${feeDiscountPct}% ${t("fee")}`}
+          </p>
+
         {nextTier && (uplift.send ?? 0) > 0 && (
           <div className="text-right shrink-0">
             <p className="text-[10px] opacity-85">{t("lpUnlockNext").replace("{tier}", nextTier.name)}</p>
