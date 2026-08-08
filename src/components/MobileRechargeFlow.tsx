@@ -183,7 +183,7 @@ const formatPhone = (raw: string) => {
 // ─── PIN Input ────────────────────────────────────────────────────────────────
 interface PinInputProps { pin: string; onChange: (p: string) => void; error: string; accentColor: string; }
 const PinInput = ({ pin, onChange, error, accentColor }: PinInputProps) => (
-  <div className="space-y-5">
+  <div className="relative space-y-5">
     <div className="flex justify-center gap-5">
       {[0, 1, 2, 3].map((i) => (
         <motion.div
