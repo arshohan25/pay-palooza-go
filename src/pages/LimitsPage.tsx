@@ -98,6 +98,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
   const { daily, monthly, limits, loading } = useUsageStats();
   const { getFeeLabel, loading: feeLoading } = useFeeConfig();
   const { tier, nextTier, uplift } = useMyTierLimits();
+  const { feeDiscountPct } = useLoyaltyPerks();
+
 
   const sendFee = getFeeLabel("send");
   const cashinFee = getFeeLabel("cashin");
