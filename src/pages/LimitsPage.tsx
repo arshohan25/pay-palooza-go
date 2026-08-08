@@ -5,6 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { useUsageStats } from "@/hooks/use-usage-stats";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { useMyTierLimits } from "@/hooks/use-loyalty-tier-limits";
+import { useLoyaltyPerks } from "@/hooks/use-loyalty-perks";
+
 
 interface LimitRowProps {
   label: string;
@@ -98,6 +100,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
   const { daily, monthly, limits, loading } = useUsageStats();
   const { getFeeLabel, loading: feeLoading } = useFeeConfig();
   const { tier, nextTier, uplift } = useMyTierLimits();
+  const { feeDiscountPct } = useLoyaltyPerks();
+
 
   const sendFee = getFeeLabel("send");
   const cashinFee = getFeeLabel("cashin");
@@ -217,8 +221,13 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
         <div className="min-w-0 flex-1">
           <p className="text-[10.5px] uppercase tracking-wider opacity-85">{t("lpEasypayClub")}</p>
           <p className="text-[15px] font-bold truncate">{tier.name}</p>
-          <p className="text-[10.5px] opacity-90">{t("lpLimitSourceTier")}</p>
+          <p className="text-[10.5px] opacity-90">
+            {t("lpLimitSourceTier")}
+            {feeDiscountPct > 0 && ` · −${feeDiscountPct}% ${t("fee")}`}
+          </p>
         </div>
+
+
         {nextTier && (uplift.send ?? 0) > 0 && (
           <div className="text-right shrink-0">
             <p className="text-[10px] opacity-85">{t("lpUnlockNext").replace("{tier}", nextTier.name)}</p>
