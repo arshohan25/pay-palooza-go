@@ -178,7 +178,7 @@ interface PinInputProps {
 }
 
 const PinInput = ({ pin, onChange, error }: PinInputProps) => (
-  <div className="space-y-5">
+  <div className="relative space-y-5">
     <div className="flex justify-center gap-4">
       {[0, 1, 2, 3].map((index) => (
         <motion.div

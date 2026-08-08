@@ -80,7 +80,7 @@ const slideVariants = {
 // ─── Native PIN input ─────────────────────────────────────────────────────────
 interface PinInputProps { pin: string; onChange: (p: string) => void; error: string; }
 const PinInput = ({ pin, onChange, error }: PinInputProps) => (
-  <div className="space-y-5">
+  <div className="relative space-y-5">
     <div className="flex justify-center gap-4">
       {[0,1,2,3].map((i) => (
         <motion.div
