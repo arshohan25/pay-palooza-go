@@ -221,6 +221,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
             {t("lpLimitSourceTier")}
             {feeDiscountPct > 0 && ` · −${feeDiscountPct}% ${t("fee")}`}
           </p>
+        </div>
+
 
         {nextTier && (uplift.send ?? 0) > 0 && (
           <div className="text-right shrink-0">
