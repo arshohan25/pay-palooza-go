@@ -103,15 +103,23 @@ export function useFeeConfig(): FeeConfig {
     const typeRules = rules.filter((r) => r.txn_type === txnType && r.is_active);
     if (typeRules.length === 0) return "Free";
 
+    // Loyalty tier fee discount applies to every displayed charge, so the
+    // Limits & Charges page always matches what the user is actually charged.
+    const disc = Math.max(0, 1 - Math.max(0, feeDiscountPct) / 100);
+    const val = (v: number) => {
+      const d = v * disc;
+      return Number.isInteger(d) ? String(d) : d.toFixed(2).replace(/\.?0+$/, "");
+    };
+
     // Check if all rules are free
     if (typeRules.every((r) => r.fee_value === 0)) return "Free";
 
     // Single percentage rule
     if (typeRules.length === 1) {
       const r = typeRules[0];
-      if (r.fee_type === "percentage") return `${r.fee_value}%`;
+      if (r.fee_type === "percentage") return `${val(r.fee_value)}%`;
       if (r.fee_value === 0) return "Free";
-      return `৳${r.fee_value}`;
+      return `৳${val(r.fee_value)}`;
     }
 
     // Multiple tiers (like send money)
@@ -119,14 +127,15 @@ export function useFeeConfig(): FeeConfig {
       .sort((a, b) => (a.min_amount ?? 0) - (b.min_amount ?? 0))
       .map((r) => {
         if (r.fee_value === 0) return `Free ≤৳${r.max_amount?.toLocaleString()}`;
-        if (r.fee_type === "percentage") return `${r.fee_value}%`;
+        if (r.fee_type === "percentage") return `${val(r.fee_value)}%`;
         const minLabel = r.min_amount && r.min_amount > 0 ? `>৳${Math.floor(r.min_amount).toLocaleString()}` : "";
         const maxLabel = r.max_amount ? `–৳${r.max_amount.toLocaleString()}` : "/txn";
-        return `৳${r.fee_value} ${minLabel}${maxLabel}`;
+        return `৳${val(r.fee_value)} ${minLabel}${maxLabel}`;
       });
 
     return labels.join(", ");
-  }, [rules]);
+  }, [rules, feeDiscountPct]);
+
 
   const getMasterDistributorCommission = useCallback((txnType: string, amount: number): number => {
     if (amount <= 0) return 0;
