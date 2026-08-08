@@ -85,14 +85,36 @@ export function clearAuthError() { _setAuthError(null); }
 let _fetchPatched = false;
 let _refreshInFlight: Promise<boolean> | null = null;
 
+function _isSessionMissing(msg?: string | null) {
+  const m = (msg || "").toLowerCase();
+  return m.includes("auth session missing") || m.includes("session not found") || m.includes("refresh token not found");
+}
+
 async function _refreshSessionOnce(): Promise<boolean> {
   if (_refreshInFlight) return _refreshInFlight;
   _refreshInFlight = (async () => {
     _diagnostics.refreshAttempts += 1;
     _emit();
     try {
+      // No stored session at all → the user is simply signed out. Don't attempt
+      // a refresh (it 400s with "Auth session missing!") and don't raise an
+      // auth error overlay for anonymous visitors.
+      const { data: existing } = await supabase.auth.getSession();
+      if (!existing.session) {
+        _cachedSession = null;
+        _sessionResolved = true;
+        _patch({ status: "unauthenticated", userId: null, lastValidatedAt: Date.now(), lastValidationOk: null });
+        return false;
+      }
+
       const { data, error } = await supabase.auth.refreshSession();
       if (error || !data.session) {
+        if (_isSessionMissing(error?.message)) {
+          _cachedSession = null;
+          _sessionResolved = true;
+          _patch({ status: "unauthenticated", userId: null, lastValidatedAt: Date.now(), lastValidationOk: null });
+          return false;
+        }
         _setAuthError({
           message: error?.message || "Session expired. Please sign in again.",
           code: (error as any)?.status,
@@ -112,6 +134,12 @@ async function _refreshSessionOnce(): Promise<boolean> {
       });
       return true;
     } catch (e: any) {
+      if (_isSessionMissing(e?.message)) {
+        _cachedSession = null;
+        _sessionResolved = true;
+        _patch({ status: "unauthenticated", userId: null, lastValidatedAt: Date.now(), lastValidationOk: null });
+        return false;
+      }
       _setAuthError({
         message: e?.message || "Failed to refresh session.",
         at: Date.now(),
@@ -124,6 +152,7 @@ async function _refreshSessionOnce(): Promise<boolean> {
   })();
   return _refreshInFlight;
 }
+
 
 function _patchFetchForAuthRecovery() {
   if (_fetchPatched || typeof window === "undefined") return;
