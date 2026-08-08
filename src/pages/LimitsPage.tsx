@@ -5,6 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { useUsageStats } from "@/hooks/use-usage-stats";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { useMyTierLimits } from "@/hooks/use-loyalty-tier-limits";
+import { useLoyaltyPerks } from "@/hooks/use-loyalty-perks";
+
 
 interface LimitRowProps {
   label: string;
