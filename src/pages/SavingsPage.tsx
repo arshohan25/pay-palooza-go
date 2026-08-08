@@ -62,7 +62,7 @@ function PinDots({ pin, error }: { pin: string; error?: string }) {
 function PinPad({ pin, setPin, error }: { pin: string; setPin: (v: string) => void; error?: string }) {
   const { t } = useI18n();
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
       <PinDots pin={pin} error={error} />
       <input
         type="password" inputMode="numeric" pattern="[0-9]*" maxLength={4}
@@ -72,7 +72,7 @@ function PinPad({ pin, setPin, error }: { pin: string; setPin: (v: string) => vo
           if (v.length > pin.length) haptics.light();
           setPin(v);
         }}
-        className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-[19px] focus:outline-none focus:border-primary"
+        className="absolute inset-0 w-full h-full opacity-0 cursor-text"
         placeholder="••••" />
       <p className="text-center text-xs text-muted-foreground">{t("savEnterPin")}</p>
     </div>

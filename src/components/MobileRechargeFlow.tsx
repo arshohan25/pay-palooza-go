@@ -183,7 +183,7 @@ const formatPhone = (raw: string) => {
 // ─── PIN Input ────────────────────────────────────────────────────────────────
 interface PinInputProps { pin: string; onChange: (p: string) => void; error: string; accentColor: string; }
 const PinInput = ({ pin, onChange, error, accentColor }: PinInputProps) => (
-  <div className="space-y-5">
+  <div className="relative space-y-5">
     <div className="flex justify-center gap-5">
       {[0, 1, 2, 3].map((i) => (
         <motion.div
@@ -212,7 +212,7 @@ const PinInput = ({ pin, onChange, error, accentColor }: PinInputProps) => (
         onChange(v);
       }}
       autoFocus
-      className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none transition-colors placeholder:text-muted-foreground/30"
+      className="absolute inset-0 w-full h-full opacity-0 cursor-text"
       placeholder="••••"
     />
   </div>

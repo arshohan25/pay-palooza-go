@@ -707,22 +707,21 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       <h2 className="text-xl font-bold text-foreground">{t("amConfirmPin")}</h2>
                       <p className="text-sm text-muted-foreground">{t("amEnter4Pin")}</p>
                     </div>
-                    <div className="flex justify-center gap-3">
+                    <div className="relative flex justify-center gap-3 py-3 cursor-text" onClick={() => pinRef.current?.focus()}>
                       {[0, 1, 2, 3].map(i => (
                         <div key={i} className={`w-4 h-4 rounded-full transition-all ${i < pin.length ? "bg-emerald-500 scale-110" : "bg-border"}`} />
                       ))}
+                      <Input
+                        ref={pinRef}
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={4}
+                        autoFocus
+                        value={pin}
+                        onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-text"
+                      />
                     </div>
-                    <Input
-                      ref={pinRef}
-                      type="password"
-                      inputMode="numeric"
-                      maxLength={4}
-                      autoFocus
-                      value={pin}
-                      onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
-                      className="w-48 h-14 text-center text-2xl tracking-[0.5em] font-bold bg-card border-border"
-                      placeholder="····"
-                    />
                     {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}
                     <Button
                       className="w-full max-w-xs h-11 gradient-primary border-0 text-white font-semibold"
