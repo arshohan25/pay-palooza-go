@@ -62,7 +62,7 @@ function PinDots({ pin, error }: { pin: string; error?: string }) {
 function PinPad({ pin, setPin, error }: { pin: string; setPin: (v: string) => void; error?: string }) {
   const { t } = useI18n();
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
       <PinDots pin={pin} error={error} />
       <input
         type="password" inputMode="numeric" pattern="[0-9]*" maxLength={4}
