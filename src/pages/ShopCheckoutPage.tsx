@@ -583,7 +583,7 @@ export default function ShopCheckoutPage() {
           <p className="text-xs text-muted-foreground">
             {t("scpConfirmPinDesc")}
           </p>
-          <div className="flex justify-center gap-5 py-2">
+          <div className="relative flex justify-center gap-5 py-3 cursor-text">
             {[0, 1, 2, 3].map((i) => (
               <motion.div
                 key={i}
@@ -596,27 +596,26 @@ export default function ShopCheckoutPage() {
                 }`}
               />
             ))}
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              value={pin}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                if (v.length > pin.length) haptics.light();
+                setPin(v);
+                setPinError("");
+              }}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-text"
+            />
           </div>
           {pinError && (
             <p className="text-xs text-destructive flex items-center justify-center gap-1">
               <AlertCircle className="w-3 h-3" /> {pinError}
             </p>
           )}
-          <input
-            type="password"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={4}
-            value={pin}
-            onChange={(e) => {
-              const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-              if (v.length > pin.length) haptics.light();
-              setPin(v);
-              setPinError("");
-            }}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-text"
-            placeholder="••••"
-          />
         </div>
         )}
 
