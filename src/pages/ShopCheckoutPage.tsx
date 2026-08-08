@@ -614,7 +614,7 @@ export default function ShopCheckoutPage() {
               setPin(v);
               setPinError("");
             }}
-            className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none transition-colors placeholder:text-muted-foreground/30"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-text"
             placeholder="••••"
           />
         </div>

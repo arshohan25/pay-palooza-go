@@ -133,7 +133,7 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
           onChange(v);
         }}
         autoFocus
-        className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors"
+        className="absolute inset-0 w-full h-full opacity-0 cursor-text"
         placeholder="••••"
       />
       <p className="text-center text-xs text-muted-foreground">{t("enterPin")}</p>

@@ -72,7 +72,7 @@ function PinPad({ pin, setPin, error }: { pin: string; setPin: (v: string) => vo
           if (v.length > pin.length) haptics.light();
           setPin(v);
         }}
-        className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-[19px] focus:outline-none focus:border-primary"
+        className="absolute inset-0 w-full h-full opacity-0 cursor-text"
         placeholder="••••" />
       <p className="text-center text-xs text-muted-foreground">{t("savEnterPin")}</p>
     </div>

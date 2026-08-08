@@ -720,7 +720,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       autoFocus
                       value={pin}
                       onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
-                      className="w-48 h-14 text-center text-2xl tracking-[0.5em] font-bold bg-card border-border"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-text"
                       placeholder="····"
                     />
                     {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}

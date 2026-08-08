@@ -105,7 +105,7 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
       value={pin}
       onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); if (v.length > pin.length) haptics.light(); onChange(v); }}
       autoFocus
-      className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/30"
+      className="absolute inset-0 w-full h-full opacity-0 cursor-text"
       placeholder="••••"
     />
   </div>
