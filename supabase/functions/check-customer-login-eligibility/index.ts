@@ -109,9 +109,17 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
+    // Never hard-fail the login screen: if the backend is momentarily
+    // unavailable (restart/upgrade), fall through and let signIn decide.
+    console.error("eligibility check failed:", e);
     return new Response(
-      JSON.stringify({ ok: false, error: (e as Error).message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify({
+        ok: false,
+        allowed: true,
+        degraded: true,
+        error: (e as Error)?.message ?? String(e),
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
