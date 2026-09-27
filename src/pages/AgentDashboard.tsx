@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import SupportChat from "@/components/SupportChat";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -327,6 +327,20 @@ const AgentDashboard = () => {
                       </motion.span>
                     )}
                   </AnimatePresence>
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
+                  onClick={async () => {
+                    if (!confirm("Sign out of your agent account?")) return;
+                    haptics.light();
+                    await supabase.auth.signOut();
+                    navigate("/agent/login", { replace: true });
+                  }}
+                  aria-label="Sign out"
+                  title="Sign out"
+                  className="w-9 h-9 rounded-2xl glass-hero flex items-center justify-center text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+                >
+                  <LogOut size={16} />
                 </motion.button>
               </div>
             </div>
