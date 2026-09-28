@@ -37,6 +37,14 @@ const AgentBillPay = () => {
   const [step, setStep] = useState<"select" | "form" | "done">("select");
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filtered = search.trim()
+    ? providers.filter(p =>
+        p.name.toLowerCase().includes(search.trim().toLowerCase()) ||
+        p.category.toLowerCase().includes(search.trim().toLowerCase())
+      )
+    : providers;
 
   const handlePay = async () => {
     if (processing) return;
