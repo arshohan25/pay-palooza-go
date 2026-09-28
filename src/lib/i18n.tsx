@@ -3734,6 +3734,8 @@ const translations = {
   agBillAllBillers: { en: "All Billers", bn: "সব বিলার" },
   agBillFilteredBillers: { en: "Filtered Billers", bn: "ফিল্টার করা বিলার" },
   agBillNoBillers: { en: "No biller found", bn: "কোনো বিলার পাওয়া যায়নি" },
+  agBillAllCats: { en: "All", bn: "সব" },
+  agBillCatsTitle: { en: "Categories", bn: "ক্যাটাগরি" },
 
   agLbLeaderboard: { en: "Leaderboard", bn: "লিডারবোর্ড" },
   agLbTopAgentsTerritory: { en: "Top agents · {code} · last 30 days", bn: "শীর্ষ এজেন্ট · {code} · গত ৩০ দিন" },

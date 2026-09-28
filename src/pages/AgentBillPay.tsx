@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Receipt, CheckCircle2, Home, ScanLine, Search, X } from "lucide-react";
+import { ArrowLeft, Receipt, CheckCircle2, Home, ScanLine, Search, X, Zap, Flame, Droplets, Globe, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,13 +22,23 @@ const AgentBillPay = () => {
   const { t } = useI18n();
 
   const providers = [
-    { name: "DESCO", category: t("agBillCatElectricity"), icon: "⚡" },
-    { name: "DPDC", category: t("agBillCatElectricity"), icon: "⚡" },
-    { name: "Titas Gas", category: t("agBillCatGas"), icon: "🔥" },
-    { name: "WASA", category: t("agBillCatWater"), icon: "💧" },
-    { name: "Link3", category: t("agBillCatInternet"), icon: "🌐" },
-    { name: "Carnival", category: t("agBillCatInternet"), icon: "🌐" },
+    { name: "DESCO", categoryKey: "electricity", icon: "⚡" },
+    { name: "DPDC", categoryKey: "electricity", icon: "⚡" },
+    { name: "Titas Gas", categoryKey: "gas", icon: "🔥" },
+    { name: "WASA", categoryKey: "water", icon: "💧" },
+    { name: "Link3", categoryKey: "internet", icon: "🌐" },
+    { name: "Carnival", categoryKey: "internet", icon: "🌐" },
   ];
+
+  const categoryMeta: Record<string, { label: string; Icon: typeof Zap }> = {
+    electricity: { label: t("agBillCatElectricity"), Icon: Zap },
+    gas: { label: t("agBillCatGas"), Icon: Flame },
+    water: { label: t("agBillCatWater"), Icon: Droplets },
+    internet: { label: t("agBillCatInternet"), Icon: Globe },
+  };
+  const categoryKeys = Object.keys(categoryMeta).filter(k =>
+    providers.some(p => p.categoryKey === k)
+  );
 
   const [selected, setSelected] = useState<string | null>(null);
   const [accountNo, setAccountNo] = useState("");
@@ -38,13 +48,23 @@ const AgentBillPay = () => {
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [search, setSearch] = useState("");
+  const [cat, setCat] = useState<string>("all");
 
-  const filtered = search.trim()
-    ? providers.filter(p =>
-        p.name.toLowerCase().includes(search.trim().toLowerCase()) ||
-        p.category.toLowerCase().includes(search.trim().toLowerCase())
-      )
-    : providers;
+  const filtered = providers.filter(p => {
+    if (cat !== "all" && p.categoryKey !== cat) return false;
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (
+      p.name.toLowerCase().includes(q) ||
+      categoryMeta[p.categoryKey].label.toLowerCase().includes(q)
+    );
+  });
+
+  const headingLabel = search.trim()
+    ? t("agBillFilteredBillers")
+    : cat === "all"
+      ? t("agBillAllBillers")
+      : categoryMeta[cat].label;
 
   const handlePay = async () => {
     if (processing) return;
@@ -170,8 +190,44 @@ const AgentBillPay = () => {
                 </button>
               )}
             </div>
+            {/* Main categories */}
+            <p className="text-xs font-bold text-muted-foreground mb-2 px-1">{t("agBillCatsTitle")}</p>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 mb-3">
+              <button
+                onClick={() => setCat("all")}
+                className={`shrink-0 flex items-center gap-1.5 px-3.5 h-9 rounded-full text-xs font-bold transition-colors ${
+                  cat === "all"
+                    ? "gradient-primary text-primary-foreground shadow-card"
+                    : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid size={13} />
+                {t("agBillAllCats")}
+                <span className={`text-[9px] font-semibold ${cat === "all" ? "text-primary-foreground/70" : "text-muted-foreground/60"}`}>{providers.length}</span>
+              </button>
+              {categoryKeys.map(k => {
+                const meta = categoryMeta[k];
+                const active = cat === k;
+                const count = providers.filter(p => p.categoryKey === k).length;
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setCat(k)}
+                    className={`shrink-0 flex items-center gap-1.5 px-3.5 h-9 rounded-full text-xs font-bold transition-colors ${
+                      active
+                        ? "gradient-primary text-primary-foreground shadow-card"
+                        : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <meta.Icon size={13} />
+                    {meta.label}
+                    <span className={`text-[9px] font-semibold ${active ? "text-primary-foreground/70" : "text-muted-foreground/60"}`}>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
             <p className="text-xs font-bold text-muted-foreground mb-2 px-1">
-              {search.trim() ? t("agBillFilteredBillers") : t("agBillAllBillers")}
+              {headingLabel}
               <span className="font-semibold text-muted-foreground/70"> · {filtered.length}</span>
             </p>
             {filtered.length === 0 ? (
@@ -188,7 +244,7 @@ const AgentBillPay = () => {
                     >
                       <span className="text-2xl">{p.icon}</span>
                       <p className="text-xs font-bold text-foreground mt-2">{p.name}</p>
-                      <p className="text-[9px] text-muted-foreground">{p.category}</p>
+                      <p className="text-[9px] text-muted-foreground">{categoryMeta[p.categoryKey].label}</p>
                     </Card>
                   </motion.div>
                 ))}
