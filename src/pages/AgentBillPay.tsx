@@ -22,13 +22,23 @@ const AgentBillPay = () => {
   const { t } = useI18n();
 
   const providers = [
-    { name: "DESCO", category: t("agBillCatElectricity"), icon: "⚡" },
-    { name: "DPDC", category: t("agBillCatElectricity"), icon: "⚡" },
-    { name: "Titas Gas", category: t("agBillCatGas"), icon: "🔥" },
-    { name: "WASA", category: t("agBillCatWater"), icon: "💧" },
-    { name: "Link3", category: t("agBillCatInternet"), icon: "🌐" },
-    { name: "Carnival", category: t("agBillCatInternet"), icon: "🌐" },
+    { name: "DESCO", categoryKey: "electricity", icon: "⚡" },
+    { name: "DPDC", categoryKey: "electricity", icon: "⚡" },
+    { name: "Titas Gas", categoryKey: "gas", icon: "🔥" },
+    { name: "WASA", categoryKey: "water", icon: "💧" },
+    { name: "Link3", categoryKey: "internet", icon: "🌐" },
+    { name: "Carnival", categoryKey: "internet", icon: "🌐" },
   ];
+
+  const categoryMeta: Record<string, { label: string; icon: string }> = {
+    electricity: { label: t("agBillCatElectricity"), icon: "⚡" },
+    gas: { label: t("agBillCatGas"), icon: "🔥" },
+    water: { label: t("agBillCatWater"), icon: "💧" },
+    internet: { label: t("agBillCatInternet"), icon: "🌐" },
+  };
+  const categoryKeys = Object.keys(categoryMeta).filter(k =>
+    providers.some(p => p.categoryKey === k)
+  );
 
   const [selected, setSelected] = useState<string | null>(null);
   const [accountNo, setAccountNo] = useState("");
@@ -38,13 +48,23 @@ const AgentBillPay = () => {
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [search, setSearch] = useState("");
+  const [cat, setCat] = useState<string>("all");
 
-  const filtered = search.trim()
-    ? providers.filter(p =>
-        p.name.toLowerCase().includes(search.trim().toLowerCase()) ||
-        p.category.toLowerCase().includes(search.trim().toLowerCase())
-      )
-    : providers;
+  const filtered = providers.filter(p => {
+    if (cat !== "all" && p.categoryKey !== cat) return false;
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (
+      p.name.toLowerCase().includes(q) ||
+      categoryMeta[p.categoryKey].label.toLowerCase().includes(q)
+    );
+  });
+
+  const headingLabel = search.trim()
+    ? t("agBillFilteredBillers")
+    : cat === "all"
+      ? t("agBillAllBillers")
+      : categoryMeta[cat].label;
 
   const handlePay = async () => {
     if (processing) return;
