@@ -3730,6 +3730,10 @@ const translations = {
   agBillPaid: { en: "Bill Paid", bn: "বিল পরিশোধিত" },
   agBillFailed: { en: "Failed", bn: "ব্যর্থ" },
   agBillScanQr: { en: "Scan Account QR", bn: "অ্যাকাউন্ট QR স্ক্যান করুন" },
+  agBillSearchPh: { en: "Search biller by name", bn: "নাম দিয়ে বিলার খুঁজুন" },
+  agBillAllBillers: { en: "All Billers", bn: "সব বিলার" },
+  agBillFilteredBillers: { en: "Filtered Billers", bn: "ফিল্টার করা বিলার" },
+  agBillNoBillers: { en: "No biller found", bn: "কোনো বিলার পাওয়া যায়নি" },
 
   agLbLeaderboard: { en: "Leaderboard", bn: "লিডারবোর্ড" },
   agLbTopAgentsTerritory: { en: "Top agents · {code} · last 30 days", bn: "শীর্ষ এজেন্ট · {code} · গত ৩০ দিন" },
