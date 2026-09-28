@@ -193,25 +193,38 @@ const AgentBillPay = () => {
             {/* Main categories */}
             <p className="text-xs font-bold text-muted-foreground mb-2 px-1">{t("agBillCatsTitle")}</p>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 mb-3">
-              {[{ key: "all", icon: "🗂️" }, ...categoryKeys.map(k => ({ key: k, icon: categoryMeta[k].icon }))].map(c => {
-                const active = cat === c.key;
-                const count = c.key === "all" ? providers.length : providers.filter(p => p.categoryKey === c.key).length;
+              {categoryKeys.map(k => {
+                const meta = categoryMeta[k];
+                const active = cat === k;
+                const count = providers.filter(p => p.categoryKey === k).length;
                 return (
                   <button
-                    key={c.key}
-                    onClick={() => setCat(c.key)}
+                    key={k}
+                    onClick={() => setCat(k)}
                     className={`shrink-0 flex items-center gap-1.5 px-3.5 h-9 rounded-full text-xs font-bold transition-colors ${
                       active
                         ? "gradient-primary text-primary-foreground shadow-card"
                         : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <span className="text-sm">{c.icon}</span>
-                    {c.key === "all" ? t("agBillAllCats") : categoryMeta[c.key].label}
+                    <meta.Icon size={13} />
+                    {meta.label}
                     <span className={`text-[9px] font-semibold ${active ? "text-primary-foreground/70" : "text-muted-foreground/60"}`}>{count}</span>
                   </button>
                 );
               })}
+              <button
+                onClick={() => setCat("all")}
+                className={`shrink-0 flex items-center gap-1.5 px-3.5 h-9 rounded-full text-xs font-bold transition-colors ${
+                  cat === "all"
+                    ? "gradient-primary text-primary-foreground shadow-card"
+                    : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid size={13} />
+                {t("agBillAllCats")}
+                <span className={`text-[9px] font-semibold ${cat === "all" ? "text-primary-foreground/70" : "text-muted-foreground/60"}`}>{providers.length}</span>
+              </button>
             </div>
             <p className="text-xs font-bold text-muted-foreground mb-2 px-1">
               {headingLabel}
