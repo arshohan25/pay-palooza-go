@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Receipt, CheckCircle2, Home, ScanLine, Search, X } from "lucide-react";
+import { ArrowLeft, Receipt, CheckCircle2, Home, ScanLine, Search, X, Zap, Flame, Droplets, Globe, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,11 +30,11 @@ const AgentBillPay = () => {
     { name: "Carnival", categoryKey: "internet", icon: "🌐" },
   ];
 
-  const categoryMeta: Record<string, { label: string; icon: string }> = {
-    electricity: { label: t("agBillCatElectricity"), icon: "⚡" },
-    gas: { label: t("agBillCatGas"), icon: "🔥" },
-    water: { label: t("agBillCatWater"), icon: "💧" },
-    internet: { label: t("agBillCatInternet"), icon: "🌐" },
+  const categoryMeta: Record<string, { label: string; Icon: typeof Zap }> = {
+    electricity: { label: t("agBillCatElectricity"), Icon: Zap },
+    gas: { label: t("agBillCatGas"), Icon: Flame },
+    water: { label: t("agBillCatWater"), Icon: Droplets },
+    internet: { label: t("agBillCatInternet"), Icon: Globe },
   };
   const categoryKeys = Object.keys(categoryMeta).filter(k =>
     providers.some(p => p.categoryKey === k)
