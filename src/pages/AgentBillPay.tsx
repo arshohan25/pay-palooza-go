@@ -153,20 +153,47 @@ const AgentBillPay = () => {
           </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="grid grid-cols-2 gap-3">
-              {providers.map((p, i) => (
-                <motion.div key={p.name} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card
-                    className="p-4 border-0 shadow-card rounded-2xl cursor-pointer press-effect hover:shadow-elevated transition-shadow"
-                    onClick={() => { setSelected(p.name); setStep("form"); }}
-                  >
-                    <span className="text-2xl">{p.icon}</span>
-                    <p className="text-xs font-bold text-foreground mt-2">{p.name}</p>
-                    <p className="text-[9px] text-muted-foreground">{p.category}</p>
-                  </Card>
-                </motion.div>
-              ))}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder={t("agBillSearchPh")}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9 pr-8 h-10 text-sm rounded-full border-border/40 bg-card shadow-card"
+              />
+              {search && (
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setSearch("")}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
+            <p className="text-xs font-bold text-muted-foreground mb-2 px-1">
+              {search.trim() ? t("agBillFilteredBillers") : t("agBillAllBillers")}
+              <span className="font-semibold text-muted-foreground/70"> · {filtered.length}</span>
+            </p>
+            {filtered.length === 0 ? (
+              <Card className="p-8 border-0 shadow-card rounded-2xl text-center">
+                <p className="text-sm text-muted-foreground">{t("agBillNoBillers")}</p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {filtered.map((p, i) => (
+                  <motion.div key={p.name} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                    <Card
+                      className="p-4 border-0 shadow-card rounded-2xl cursor-pointer press-effect hover:shadow-elevated transition-shadow"
+                      onClick={() => { setSelected(p.name); setStep("form"); }}
+                    >
+                      <span className="text-2xl">{p.icon}</span>
+                      <p className="text-xs font-bold text-foreground mt-2">{p.name}</p>
+                      <p className="text-[9px] text-muted-foreground">{p.category}</p>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
       </div>
